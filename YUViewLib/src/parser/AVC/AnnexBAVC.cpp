@@ -148,7 +148,7 @@ AnnexBAVC::parseAndAddNALUnit(int                                           nalI
                               const ByteVector &                            data,
                               std::optional<BitratePlotModel::BitrateEntry> bitrateEntry,
                               std::optional<pairUint64>                     nalStartEndPosFile,
-                              TreeItem *                                    parent)
+                              std::shared_ptr<TreeItem>                                    parent)
 {
   AnnexB::ParseResult parseResult;
 
@@ -160,8 +160,8 @@ AnnexBAVC::parseAndAddNALUnit(int                                           nalI
       if (!this->addFrameToList(
               this->curFramePOC, this->curFrameFileStartEndPos, this->curFrameIsRandomAccess))
       {
-        new TreeItem(
-            parent, "Error - POC " + std::to_string(this->curFramePOC) + "alread in the POC list.");
+        if (parent)
+          parent->createChildItem("Error - POC " + std::to_string(this->curFramePOC) + "alread in the POC list.");
         return parseResult;
       }
       if (this->curFrameFileStartEndPos)
@@ -181,13 +181,14 @@ AnnexBAVC::parseAndAddNALUnit(int                                           nalI
   // Use the given tree item. If it is not set, use the nalUnitMode (if active).
   // We don't set data (a name) for this item yet.
   // We want to parse the item and then set a good description.
-  TreeItem *nalRoot = nullptr;
+  std::shared_ptr<TreeItem> nalRoot;
   if (parent)
-    nalRoot = new TreeItem(parent);
-  else if (!this->packetModel->isNull())
-    nalRoot = new TreeItem(this->packetModel->getRootItem());
+    nalRoot = parent->createChildItem();
+  else if (packetModel->rootItem)
+    nalRoot = packetModel->rootItem->createChildItem();
 
-  AnnexB::logNALSize(data, nalRoot, nalStartEndPosFile);
+  if (nalRoot)
+    AnnexB::logNALSize(data, nalRoot, nalStartEndPosFile);
 
   reader::SubByteReaderLogging reader(data, nalRoot, "", getStartCodeOffset(data));
 
@@ -537,10 +538,10 @@ AnnexBAVC::parseAndAddNALUnit(int                                           nalI
 
 std::optional<AnnexB::SeekData> AnnexBAVC::getSeekData(int iFrameNr)
 {
-  if (iFrameNr >= int(this->getNumberPOCs()))
+  if (iFrameNr >= int(this->getNumberPOCs()) || iFrameNr < 0)
     return {};
 
-  auto seekPOC = this->getFramePOC(iFrameNr);
+  auto seekPOC = this->getFramePOC(unsigned(iFrameNr));
 
   // Collect the active parameter sets
   using NalMap = std::map<unsigned, std::shared_ptr<NalUnitAVC>>;

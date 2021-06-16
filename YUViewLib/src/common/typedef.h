@@ -45,6 +45,7 @@
 #include <map>
 #include <sstream>
 #include <string>
+#include <type_traits>
 #include <utility>
 #include <vector>
 
@@ -59,27 +60,6 @@ typedef enum
   raw_RGB
 } RawFormat;
 
-typedef enum
-{
-  inputInvalid = -1,
-  inputAnnexBHEVC,  // Raw HEVC annex B file
-  inputAnnexBAVC,   // Raw AVC annex B file
-  inputAnnexBVVC,   // Raw VVC annex B file
-  inputLibavformat, // This is some sort of container file which we will read using libavformat
-  input_NUM
-} inputFormat;
-
-typedef enum
-{
-  decoderEngineInvalid = -1, // invalid value
-  decoderEngineLibde265,     // The libde265 decoder
-  decoderEngineHM,           // The HM reference software decoder
-  decoderEngineVTM,          // The VTM reference software decoder
-  decoderEngineVVDec,        // The VVDec VVC decoder
-  decoderEngineDav1d,        // The dav1d AV1 decoder
-  decoderEngineFFMpeg,       // The FFMpeg decoder
-  decoderEngineNum
-} decoderEngine;
 } // namespace YUView
 
 // Maximum possible value for int
@@ -239,9 +219,12 @@ template <typename T> inline T clip(const T n, const T lower, const T upper)
 }
 
 /// ---- Custom types
-typedef std::pair<uint64_t, uint64_t> pairUint64;
-typedef std::pair<int64_t, int64_t>   pairInt64;
-typedef std::pair<int, int>           IntPair;
+typedef std::pair<uint64_t, uint64_t>       pairUint64;
+typedef std::pair<int64_t, int64_t>         pairInt64;
+typedef std::pair<int, int>                 IntPair;
+typedef std::pair<unsigned, unsigned>       UIntPair;
+typedef std::pair<std::string, std::string> StringPair;
+typedef std::vector<StringPair>             StringPairVec;
 
 /// ---- Legacy types that will be replaced
 typedef QPair<QString, QString>           QStringPair;
@@ -313,7 +296,7 @@ struct Ratio
 struct Size
 {
   Size(unsigned width, unsigned height) : width(width), height(height) {}
-  Size(int w, int h) 
+  Size(int w, int h)
   {
     if (w > 0)
       this->width = unsigned(w);
@@ -338,16 +321,10 @@ struct Offset
 {
   Offset(int x, int y) : x(x), y(y) {}
   Offset() = default;
-  bool operator==(const Offset &other) const
-  {
-    return this->x == other.x && this->x == other.x;
-  }
-  bool operator!=(const Offset &other) const
-  {
-    return this->x != other.x || this->y != other.y;
-  }
-  int x{};
-  int y{};
+  bool operator==(const Offset &other) const { return this->x == other.x && this->x == other.x; }
+  bool operator!=(const Offset &other) const { return this->x != other.x || this->y != other.y; }
+  int  x{};
+  int  y{};
 };
 
 // A list of value pair lists, where every list has a string (title)
@@ -378,7 +355,7 @@ Q_DECL_CONSTEXPR inline QPoint centerRoundTL(const QRect &r) Q_DECL_NOTHROW
 }
 
 // When asking the playlist item if it needs loading, there are some states that the item can return
-enum itemLoadingState
+enum class ItemLoadingState
 {
   LoadingNeeded,    ///< The item needs to perform loading before the given frame index can be
                     ///< displayed

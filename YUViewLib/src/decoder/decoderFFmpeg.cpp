@@ -37,10 +37,13 @@
 #define DECODERFFMPEG_DEBUG_OUTPUT 0
 #if DECODERFFMPEG_DEBUG_OUTPUT && !NDEBUG
 #include <QDebug>
-#define DEBUG_FFMPEG qDebug
+#define DEBUG_FFMPEG(f) qDebug() << f
 #else
-#define DEBUG_FFMPEG(fmt, ...) ((void)0)
+#define DEBUG_FFMPEG(f) ((void)0)
 #endif
+
+namespace decoder
+{
 
 using namespace YUView;
 using namespace YUV_Internals;
@@ -90,9 +93,8 @@ decoderFFmpeg::decoderFFmpeg(AVCodecIDWrapper codecID,
   for (int i = 0; i < AV_INPUT_BUFFER_PADDING_SIZE; i++)
     this->avPacketPaddingData.append((char)0);
 
-  DEBUG_FFMPEG("Created new FFmpeg decoder - codec %s%s",
-               this->getCodecName(),
-               cachingDecoder ? " - caching" : "");
+  DEBUG_FFMPEG("decoderFFmpeg::decoderFFmpeg Created new FFmpeg decoder - codec "
+               << this->getCodecName() << (cachingDecoder ? " - caching" : ""));
 }
 
 decoderFFmpeg::decoderFFmpeg(AVCodecParametersWrapper codecpar, bool cachingDecoder)
@@ -104,6 +106,7 @@ decoderFFmpeg::decoderFFmpeg(AVCodecParametersWrapper codecpar, bool cachingDeco
     return;
 
   AVCodecIDWrapper codecID = this->ff.getCodecIDWrapper(codecpar.getCodecID());
+  this->codecName = codecID.getCodecName();
   if (!this->createDecoder(codecID, codecpar))
   {
     this->setError("Error creating the needed decoder.");
@@ -113,9 +116,8 @@ decoderFFmpeg::decoderFFmpeg(AVCodecParametersWrapper codecpar, bool cachingDeco
   this->flushing           = false;
   this->internalsSupported = true;
 
-  DEBUG_FFMPEG("Created new FFmpeg decoder - codec %s%s",
-               this->getCodecName(),
-               cachingDecoder ? " - caching" : "");
+  DEBUG_FFMPEG("decoderFFmpeg::decoderFFmpeg Created new FFmpeg decoder - codec "
+               << this->getCodecName() << (cachingDecoder ? " - caching" : ""));
 }
 
 decoderFFmpeg::~decoderFFmpeg()
@@ -187,10 +189,10 @@ void decoderFFmpeg::copyCurImageToBuffer()
   if (this->rawFormat == raw_YUV)
   {
     // At first get how many bytes we are going to write
-    const YUVPixelFormat pixFmt           = this->getYUVPixelFormat();
-    const auto           nrBytesPerSample = pixFmt.getBitsPerSample() <= 8 ? 1 : 2;
-    const auto nrBytesY = this->frameSize.width * this->frameSize.height * nrBytesPerSample;
-    const auto nrBytesC = this->frameSize.width / pixFmt.getSubsamplingHor() *
+    const auto pixFmt           = this->getYUVPixelFormat();
+    const auto nrBytesPerSample = pixFmt.getBitsPerSample() <= 8 ? 1 : 2;
+    const auto nrBytesY         = this->frameSize.width * this->frameSize.height * nrBytesPerSample;
+    const auto nrBytesC         = this->frameSize.width / pixFmt.getSubsamplingHor() *
                           this->frameSize.height / pixFmt.getSubsamplingVer() * nrBytesPerSample;
     const auto nrBytes = nrBytesY + 2 * nrBytesC;
 
@@ -309,7 +311,7 @@ bool decoderFFmpeg::pushData(QByteArray &data)
     return this->pushAVPacket(emptyPacket);
   }
   else
-    DEBUG_FFMPEG("decoderFFmpeg::pushData: Pushing data length %d", data.length());
+    DEBUG_FFMPEG("decoderFFmpeg::pushData: Pushing data length " << data.length());
 
   // Add some padding
   data.append(this->avPacketPaddingData);
@@ -370,10 +372,9 @@ bool decoderFFmpeg::pushAVPacket(AVPacketWrapper &pkt)
     return false;
   }
   else
-    DEBUG_FFMPEG("decoderFFmpeg::pushAVPacket: Send packet PTS %ld duration %ld flags %d",
-                 pkt.getPTS(),
-                 pkt.getDuration(),
-                 pkt.getFlags());
+    DEBUG_FFMPEG("decoderFFmpeg::pushAVPacket: Send packet PTS " << pkt.getPTS() << " duration "
+                                                                 << pkt.getDuration() << " flags "
+                                                                 << pkt.getFlags());
 
   if (retPush == AVERROR(EAGAIN))
   {
@@ -394,12 +395,9 @@ bool decoderFFmpeg::decodeFrame()
   if (retRecieve == 0)
   {
     // We recieved a frame.
-    DEBUG_FFMPEG("Received frame: Size(%dx%d) PTS %ld type %d %s",
-                 frame.getWidth(),
-                 frame.getHeight(),
-                 frame.getPTS(),
-                 frame.getPictType(),
-                 frame.getKeyFrame() ? "key frame" : "");
+    DEBUG_FFMPEG("Received frame: Size(" << frame.getWidth() << "x" << frame.getHeight() << ") PTS "
+                                         << frame.getPTS() << " type " << frame.getPictType() << " "
+                                         << (frame.getKeyFrame() ? "key frame" : ""));
     // Checkt the size of the retrieved image
     if (frameSize != frame.getSize())
       return this->setErrorB("Received a frame of different size");
@@ -497,10 +495,4 @@ bool decoderFFmpeg::createDecoder(AVCodecIDWrapper codecID, AVCodecParametersWra
   return true;
 }
 
-QString decoderFFmpeg::getCodecName()
-{
-  if (!this->decCtx)
-    return "";
-
-  return this->ff.getCodecIDWrapper(this->decCtx.getCodecID()).getCodecName();
-}
+} // namespace decoder

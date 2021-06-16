@@ -1409,17 +1409,17 @@ int FFmpegVersionHandler::dictSet(AVDictionaryWrapper &dict,
   return ret;
 }
 
-QStringPairList
+StringPairVec
 FFmpegVersionHandler::getDictionaryEntries(AVDictionaryWrapper d, QString key, int flags)
 {
-  QStringPairList    ret;
+  StringPairVec      ret;
   AVDictionaryEntry *tag = NULL;
   while ((tag = lib.av_dict_get(d.getDictionary(), key.toLatin1().data(), tag, flags)))
   {
-    QStringPair pair;
-    pair.first  = QString(tag->key);
-    pair.second = QString(tag->value);
-    ret.append(pair);
+    StringPair pair;
+    pair.first  = std::string(tag->key);
+    pair.second = std::string(tag->value);
+    ret.push_back(pair);
   }
   return ret;
 }
@@ -2451,11 +2451,15 @@ QStringPairList AVStreamWrapper::getInfoText(AVCodecIDWrapper &codecIdWrapper)
   info.append(
       QStringPair("Sample Aspect Ratio",
                   QString("%1:%2").arg(sample_aspect_ratio.num).arg(sample_aspect_ratio.den)));
+
+  auto divFrameRate = 0.0;
+  if (avg_frame_rate.den > 0)
+    divFrameRate = double(avg_frame_rate.num) / double(avg_frame_rate.den);
   info.append(QStringPair("Average Frame Rate",
                           QString("%1/%2 (%3)")
                               .arg(avg_frame_rate.num)
                               .arg(avg_frame_rate.den)
-                              .arg((double)avg_frame_rate.num / avg_frame_rate.den, 0, 'f', 2)));
+                              .arg(divFrameRate, 0, 'f', 2)));
 
   info += codecpar.getInfoText();
   return info;

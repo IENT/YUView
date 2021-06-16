@@ -51,6 +51,12 @@ void videoHandler::slotVideoControlChanged()
   // Update the controls and get the new selected size
   auto newSize = getNewSizeFromControls();
 
+  // Set the current frame in the buffer to be invalid
+  this->currentImageIndex = -1;
+
+  // The cache is invalid until the item is recached
+  setCacheInvalid();
+
   if (newSize != frameSize && newSize.isValid())
   {
     // Set the new size and update the controls.
@@ -58,32 +64,27 @@ void videoHandler::slotVideoControlChanged()
     // The frame size changed. We need to redraw/re-cache.
     emit signalHandlerChanged(true, RECACHE_CLEAR);
   }
-
-  // Set the current frame in the buffer to be invalid
-  this->currentImageIndex = -1;
-
-  // The cache is invalid until the item is recached
-  setCacheInvalid();
 }
 
 void videoHandler::setFrameSize(Size size)
 {
   if (size != frameSize)
   {
-    currentFrameRawData_frameIndex = -1;
-    currentImageIndex              = -1;
+    this->currentFrameRawData_frameIndex = -1;
+    this->currentImageIndex              = -1;
+    this->rawData_frameIndex             = -1;
   }
 
   frameHandler::setFrameSize(size);
 }
 
-itemLoadingState videoHandler::needsLoading(int frameIdx, bool loadRawValues)
+ItemLoadingState videoHandler::needsLoading(int frameIdx, bool loadRawValues)
 {
   if (loadRawValues)
   {
     // First, let's check the raw values buffer.
-    itemLoadingState state = needsLoadingRawValues(frameIdx);
-    if (state != LoadingNotNeeded)
+    auto state = needsLoadingRawValues(frameIdx);
+    if (state != ItemLoadingState::LoadingNotNeeded)
       return state;
   }
 
@@ -98,13 +99,13 @@ itemLoadingState videoHandler::needsLoading(int frameIdx, bool loadRawValues)
       DEBUG_VIDEO("videoHandler::needsLoading %d is current and %d found in double buffer",
                   frameIdx,
                   frameIdx + 1);
-      return LoadingNotNeeded;
+      return ItemLoadingState::LoadingNotNeeded;
     }
     else if (cacheValid && imageCache.contains(frameIdx + 1))
     {
       DEBUG_VIDEO(
           "videoHandler::needsLoading %d is current and %d found in cache", frameIdx, frameIdx + 1);
-      return LoadingNotNeeded;
+      return ItemLoadingState::LoadingNotNeeded;
     }
     else
     {
@@ -112,7 +113,7 @@ itemLoadingState videoHandler::needsLoading(int frameIdx, bool loadRawValues)
       DEBUG_VIDEO("videoHandler::needsLoading %d is current but %d not found in double buffer",
                   frameIdx,
                   frameIdx + 1);
-      return LoadingNeededDoubleBuffer;
+      return ItemLoadingState::LoadingNeededDoubleBuffer;
     }
   }
 
@@ -125,7 +126,7 @@ itemLoadingState videoHandler::needsLoading(int frameIdx, bool loadRawValues)
       // ... and the one after that is in the cache.
       DEBUG_VIDEO("videoHandler::needsLoading %d found in double buffer. Next frame in cache.",
                   frameIdx);
-      return LoadingNotNeeded;
+      return ItemLoadingState::LoadingNotNeeded;
     }
     else
     {
@@ -133,7 +134,7 @@ itemLoadingState videoHandler::needsLoading(int frameIdx, bool loadRawValues)
       // Loading of the given frame index is not needed because it is in the double buffer but if
       // you draw it, the double buffer needs an update.
       DEBUG_VIDEO("videoHandler::needsLoading %d found in double buffer", frameIdx);
-      return LoadingNeededDoubleBuffer;
+      return ItemLoadingState::LoadingNeededDoubleBuffer;
     }
   }
 
@@ -146,13 +147,13 @@ itemLoadingState videoHandler::needsLoading(int frameIdx, bool loadRawValues)
       DEBUG_VIDEO("videoHandler::needsLoading %d in cache and %d found in double buffer",
                   frameIdx,
                   frameIdx + 1);
-      return LoadingNotNeeded;
+      return ItemLoadingState::LoadingNotNeeded;
     }
     else if (cacheValid && imageCache.contains(frameIdx + 1))
     {
       DEBUG_VIDEO(
           "videoHandler::needsLoading %d in cache and %d found in cache", frameIdx, frameIdx + 1);
-      return LoadingNotNeeded;
+      return ItemLoadingState::LoadingNotNeeded;
     }
     else
     {
@@ -160,13 +161,13 @@ itemLoadingState videoHandler::needsLoading(int frameIdx, bool loadRawValues)
       DEBUG_VIDEO("videoHandler::needsLoading %d found in cache but %d not found in double buffer",
                   frameIdx,
                   frameIdx + 1);
-      return LoadingNeededDoubleBuffer;
+      return ItemLoadingState::LoadingNeededDoubleBuffer;
     }
   }
 
   // Frame not in buffer. Return false and request the background loading thread to load the frame.
   DEBUG_VIDEO("videoHandler::needsLoading %d not found in cache - request load", frameIdx);
-  return LoadingNeeded;
+  return ItemLoadingState::LoadingNeeded;
 }
 
 void videoHandler::drawFrame(QPainter *painter, int frameIdx, double zoomFactor, bool drawRawValues)
@@ -425,4 +426,10 @@ int videoHandler::convScaleLimitedRange(int value)
       246, 248, 249, 250, 251, 252, 253, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255,
       255, 255, 255, 255, 255, 255, 255, 255, 255};
   return convScaleLimitedRange[value];
+}
+
+ItemLoadingState videoHandler::needsLoadingRawValues(int frameIndex)
+{
+  return (this->currentFrameRawData_frameIndex == frameIndex) ? ItemLoadingState::LoadingNotNeeded
+                                                              : ItemLoadingState::LoadingNeeded;
 }

@@ -60,6 +60,7 @@ public:
   void setRGBFormatFromString(const std::string &sFormat);
   // Get the number of bytes for a frame with this rgbPixelFormat and the given size
   int64_t bytesPerFrame(Size frameSize) const;
+  int getComponentPosition(unsigned channel) const;
   
   // The order of each component (E.g. for GBR this is posR=2,posG=0,posB=1)
   int posR {0};

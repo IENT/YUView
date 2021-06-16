@@ -215,10 +215,10 @@ QByteArray FileSourceFFmpegFile::getExtradata()
   return codec.getExtradata();
 }
 
-QStringPairList FileSourceFFmpegFile::getMetadata()
+StringPairVec FileSourceFFmpegFile::getMetadata()
 {
   if (!formatCtx)
-    return QStringPairList();
+    return {};
   return ff.getDictionaryEntries(formatCtx.getMetadata(), "", 0);
 }
 
@@ -473,7 +473,7 @@ void FileSourceFFmpegFile::openFileAndFindVideoStream(QString fileName)
   if (!this->ff.openInput(this->formatCtx, fileName))
     return;
 
-  auto inputFormat = this->formatCtx.getInputFormat();
+  this->formatCtx.getInputFormat();
 
   // Iterate through all streams
   for (unsigned idx = 0; idx < this->formatCtx.getNbStreams(); idx++)

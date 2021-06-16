@@ -52,7 +52,8 @@ public:
   vector<unsigned> initial_cpb_removal_delay;
   vector<unsigned> initial_cpb_removal_delay_offset;
 
-  reader::SubByteReaderLoggingSubLevel subLevel;
+private:
+  std::shared_ptr<TreeItem> reparseTreeItem;
 };
 
 } // namespace parser::avc

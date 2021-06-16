@@ -37,15 +37,6 @@
 namespace functions
 {
 
-QString getInputFormatName(YUView::inputFormat i);
-YUView::inputFormat getInputFormatFromName(QString name);
-
-QString getDecoderEngineName(YUView::decoderEngine e);
-YUView::decoderEngine getDecoderEngineFromName(QString name);
-
-bool isInputFormatTypeAnnexB(YUView::inputFormat format);
-bool isInputFormatTypeFFmpeg(YUView::inputFormat format);
-
 // Get the optimal thread count (QThread::optimalThreadCount()-1) or at least 1
 // so that one thread is "reserved" for the main GUI. I don't know if this is optimal.
 unsigned int getOptimalThreadCount();
@@ -70,6 +61,8 @@ QString formatDataSize(double size, bool isBits = false);
 
 QStringList toQStringList(const std::vector<std::string> &stringVec);
 std::string toLower(std::string str);
+
+inline std::string booToString(bool b) { return b ? "True" : "False"; }
 
 template<typename T>
 unsigned clipToUnsigned(T val)

@@ -46,9 +46,6 @@ SEIParsingResult pic_timing::parse(SubByteReaderLogging &                  reade
 {
   (void)spsMap;
 
-  if (!reparse)
-    this->subLevel = SubByteReaderLoggingSubLevel(reader, "pic_timing()");
-
   if (!associatedSPS)
   {
     if (reparse)
@@ -56,6 +53,8 @@ SEIParsingResult pic_timing::parse(SubByteReaderLogging &                  reade
     else
       return SEIParsingResult::WAIT_FOR_PARAMETER_SETS;
   }
+
+  auto subLevel = SubByteReaderLoggingSubLevel(reader, "pic_timing()");
 
   // ... is dependent on the content of the sequence parameter set that is active for the primary
   // coded picture associated with the picture timing SEI message.

@@ -49,6 +49,9 @@ using namespace YUV_Internals;
 namespace parser
 {
 
+using FrameIndexDisplayOrder = unsigned;
+using FrameIndexCodingOrder = unsigned;
+
 /* The (abstract) base class for the various types of AnnexB files (AVC, HEVC, VVC) that we can
  * parse.
  */
@@ -61,7 +64,7 @@ public:
   virtual ~AnnexB(){};
 
   // How many POC's have been found in the file
-  size_t getNumberPOCs() const { return this->frameList.size(); }
+  size_t getNumberPOCs() const { return this->frameListCodingOrder.size(); }
 
   // Clear all knowledge about the bitstream.
   void clearData();
@@ -91,7 +94,7 @@ public:
                                          const ByteVector &                            data,
                                          std::optional<BitratePlotModel::BitrateEntry> bitrateEntry,
                                          std::optional<pairUint64> nalStartEndPosFile = {},
-                                         TreeItem *                parent = nullptr) = 0;
+                                         std::shared_ptr<TreeItem> parent = nullptr) = 0;
 
   // Get some format properties
   virtual double         getFramerate() const           = 0;
@@ -111,7 +114,13 @@ public:
   // Look through the random access points and find the closest one before (or equal)
   // the given frameIdx where we can start decoding
   // frameIdx: The frame index in display order that we want to seek to
-  size_t getClosestSeekableFrameNumberBefore(int frameIdx);
+  struct SeekPointInfo
+  {
+    FrameIndexDisplayOrder frameIndex{};
+    unsigned               frameDistanceInCodingOrder{};
+  };
+  auto getClosestSeekPoint(FrameIndexDisplayOrder targetFrame, FrameIndexDisplayOrder currentFrame)
+      -> SeekPointInfo;
 
   // Get the parameters sets as extradata. The format of this depends on the underlying codec.
   virtual QByteArray getExtradata() = 0;
@@ -119,7 +128,7 @@ public:
   virtual IntPair getProfileLevel()      = 0;
   virtual Ratio   getSampleAspectRatio() = 0;
 
-  std::optional<pairUint64> getFrameStartEndPos(int codingOrderFrameIdx);
+  std::optional<pairUint64> getFrameStartEndPos(FrameIndexCodingOrder idx);
 
   bool parseAnnexBFile(QScopedPointer<FileSourceAnnexBFile> &file, QWidget *mainWindow = nullptr);
 
@@ -136,13 +145,15 @@ protected:
     bool randomAccessPoint{false}; //< Can we start decoding here?
 
     bool operator<(AnnexBFrame const &b) const { return (this->poc < b.poc); }
+    bool operator==(AnnexBFrame const &b) const { return (this->poc == b.poc); }
   };
 
   // Returns false if the POC was already present int the list
   bool addFrameToList(int poc, std::optional<pairUint64> fileStartEndPos, bool randomAccessPoint);
 
-  static void
-  logNALSize(const ByteVector &data, TreeItem *root, std::optional<pairUint64> nalStartEndPos);
+  static void logNALSize(const ByteVector &        data,
+                         std::shared_ptr<TreeItem> root,
+                         std::optional<pairUint64> nalStartEndPos);
 
   int pocOfFirstRandomAccessFrame{-1};
 
@@ -158,14 +169,17 @@ protected:
   };
   stream_info_type stream_info;
 
-  int getFramePOC(int frameIdx);
+  int getFramePOC(FrameIndexDisplayOrder frameIdx);
 
 private:
   // A list of all frames in the sequence (in coding order) with POC and the file positions of all
   // slice NAL units associated with a frame. POC's don't have to be consecutive, so the only way to
   // know how many pictures are in a sequences is to keep a list of all POCs.
-  vector<AnnexBFrame> frameList;
-  bool                frameListNeedsParsing{};
+  vector<AnnexBFrame> frameListCodingOrder;
+  // The same list of frames but sorted in display order. Generated from the list above whenever
+  // needed.
+  vector<AnnexBFrame> frameListDisplayOder;
+  void                updateFrameListDisplayOrder();
 };
 
 } // namespace parser

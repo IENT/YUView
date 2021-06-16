@@ -72,7 +72,7 @@ void playlistItemWithVideo::slotVideoHandlerChanged(bool redrawNeeded, recacheIn
 void playlistItemWithVideo::connectVideo()
 {
   // Forward these signals from the video source up
-  connect(video.data(), &videoHandler::signalHandlerChanged, this, &playlistItemWithVideo::slotVideoHandlerChanged);
+  connect(video.get(), &videoHandler::signalHandlerChanged, this, &playlistItemWithVideo::slotVideoHandlerChanged);
 }
 
 void playlistItemWithVideo::drawItem(QPainter *painter, int frameIdx, double zoomFactor, bool drawRawValues)
@@ -92,7 +92,7 @@ void playlistItemWithVideo::loadFrame(int frameIdx, bool playing, bool loadRawDa
 {
   auto state = video->needsLoading(frameIdx, loadRawData);
 
-  if (state == LoadingNeeded)
+  if (state == ItemLoadingState::LoadingNeeded)
   {
     // Load the requested current frame
     DEBUG_PLVIDEO("playlistItemWithVideo::loadFrame loading frame %d%s%s", frameIdx, playing ? " playing" : "", loadRawData ? " raw" : "");
@@ -103,7 +103,7 @@ void playlistItemWithVideo::loadFrame(int frameIdx, bool playing, bool loadRawDa
       emit signalItemChanged(true, RECACHE_NONE);
   }
   
-  if (playing && (state == LoadingNeeded || state == LoadingNeededDoubleBuffer))
+  if (playing && (state == ItemLoadingState::LoadingNeeded || state == ItemLoadingState::LoadingNeededDoubleBuffer))
   {
     // Load the next frame into the double buffer
     int nextFrameIdx = frameIdx + 1;
@@ -119,16 +119,16 @@ void playlistItemWithVideo::loadFrame(int frameIdx, bool playing, bool loadRawDa
   }
 }
 
-itemLoadingState playlistItemWithVideo::needsLoading(int frameIdx, bool loadRawValues)
+ItemLoadingState playlistItemWithVideo::needsLoading(int frameIdx, bool loadRawValues)
 {
   // See if the item has so many frames
   auto range = this->properties().startEndRange;
   if (frameIdx < range.first || frameIdx > range.second)
-    return LoadingNotNeeded;
+    return ItemLoadingState::LoadingNotNeeded;
 
   if (video)
     return video->needsLoading(frameIdx, loadRawValues);
-  return LoadingNotNeeded;
+  return ItemLoadingState::LoadingNotNeeded;
 }
 
 QList<int> playlistItemWithVideo::getCachedFrames() const

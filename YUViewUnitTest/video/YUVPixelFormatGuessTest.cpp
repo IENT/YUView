@@ -86,6 +86,15 @@ void YUVPixelFormatGuessTest::testFormatGuessFromFilename_data()
   QTest::newRow("testIssueV210_2") << "sample_1280x720_v210.something.yuv" << bytes1280V210 << 1280u
                                    << 720u << 10u << true << "V210";
 
+  QTest::newRow("testIssue310_1")
+      << "sample_1920x1080_YUV400p16LE.yuv" << (1920u * 1080u * 2u) << 1920u << 1080u << 16u << false << "YUV 4:0:0 16-bit LE";
+  QTest::newRow("testIssue310_2")
+      << "sample_1920x1080_gray8le.yuv" << (1920u * 1080u) << 1920u << 1080u << 0u << false << "YUV 4:0:0 8-bit";
+  QTest::newRow("testIssue310_3")
+      << "sample_1920x1080_gray10le.yuv" << (1920u * 1080u * 2u) << 1920u << 1080u << 0u << false << "YUV 4:0:0 10-bit LE";
+  QTest::newRow("testIssue310_4")
+      << "sample_1920x1080_gray16le.yuv" << (1920u * 1080u * 2u) << 1920u << 1080u << 0u << false << "YUV 4:0:0 16-bit LE";
+
   // We need more tests here ... but I don't want to do this now :)
 }
 

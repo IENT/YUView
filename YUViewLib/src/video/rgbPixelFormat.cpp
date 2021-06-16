@@ -128,13 +128,13 @@ std::string rgbPixelFormat::getRGBFormatString() const
 
 void rgbPixelFormat::setRGBFormatFromString(const std::string &format)
 {
-  int n = format.length();
+  auto n = format.length();
   if (n < 3)
     return;
   if (n > 4)
     n = 4;
 
-  for (int i = 0; i < n; i++)
+  for (unsigned i = 0; i < n; i++)
   {
     if (format[i] == 'r' || format[i] == 'R')
       posR = i;
@@ -161,6 +161,19 @@ int64_t rgbPixelFormat::bytesPerFrame(Size frameSize) const
                    nrChannels(),
                    nrBytes);
   return nrBytes;
+}
+
+int rgbPixelFormat::getComponentPosition(unsigned channel) const
+{
+  if (channel == 0)
+    return this->posR;
+  if (channel == 1)
+    return this->posG;
+  if (channel == 2)
+    return this->posB;
+  if (channel == 3)
+    return this->posA;
+  return -1;
 }
 
 } // namespace RGB_Internals

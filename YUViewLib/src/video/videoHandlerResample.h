@@ -55,7 +55,7 @@ public:
   // We need to override these videoHandler functions in order to map the frameIndex
   void drawFrame(QPainter *painter, int frameIndex, double zoomFactor, bool drawRawValues) override;
   QImage calculateDifference(frameHandler *item2, const int frameIndex0, const int frameIndex1, QList<infoItem> &differenceInfoList, const int amplificationFactor, const bool markDifference) override;
-  itemLoadingState needsLoading(int frameIndex, bool loadRawValues) override;
+  ItemLoadingState needsLoading(int frameIndex, bool loadRawValues) override;
 
   void loadResampledFrame(int frameIndex, bool loadToDoubleBuffer=false);
   bool inputValid() const;

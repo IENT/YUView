@@ -52,7 +52,7 @@ namespace parser
 QString AnnexB::getShortStreamDescription(int) const
 {
   QString info      = "Video";
-  auto   frameSize = this->getSequenceSizeSamples();
+  auto    frameSize = this->getSequenceSizeSamples();
   if (frameSize.isValid())
     info += QString(" (%1x%2)").arg(frameSize.width).arg(frameSize.height);
   return info;
@@ -62,7 +62,7 @@ bool AnnexB::addFrameToList(int                       poc,
                             std::optional<pairUint64> fileStartEndPos,
                             bool                      randomAccessPoint)
 {
-  for (const auto &f : this->frameList)
+  for (const auto &f : this->frameListCodingOrder)
     if (f.poc == poc)
       return false;
 
@@ -75,14 +75,14 @@ bool AnnexB::addFrameToList(int                       poc,
     newFrame.poc               = poc;
     newFrame.fileStartEndPos   = fileStartEndPos;
     newFrame.randomAccessPoint = randomAccessPoint;
-    this->frameList.push_back(newFrame);
-    this->frameListNeedsParsing = true;
+    this->frameListCodingOrder.push_back(newFrame);
+    this->frameListDisplayOder.clear();
   }
   return true;
 }
 
 void AnnexB::logNALSize(const ByteVector &        data,
-                        TreeItem *                root,
+                        std::shared_ptr<TreeItem> root,
                         std::optional<pairUint64> nalStartEndPos)
 {
   size_t startCodeSize = 0;
@@ -92,61 +92,58 @@ void AnnexB::logNALSize(const ByteVector &        data,
     startCodeSize = 3;
 
   if (startCodeSize > 0)
-    new TreeItem(root, "Start code size", std::to_string(startCodeSize));
+    root->createChildItem("Start code size", startCodeSize);
 
-  new TreeItem(root, "Payload size", std::to_string(data.size() - startCodeSize));
+  root->createChildItem("Payload size", data.size() - startCodeSize);
   if (nalStartEndPos)
-    new TreeItem(root, "Start/End pos", to_string(*nalStartEndPos));
+    root->createChildItem("Start/End pos", to_string(*nalStartEndPos));
 }
 
-size_t AnnexB::getClosestSeekableFrameNumberBefore(int frameIdx)
+auto AnnexB::getClosestSeekPoint(FrameIndexDisplayOrder targetFrame,
+                                 FrameIndexDisplayOrder currentFrame) -> SeekPointInfo
 {
-  if (frameIdx < 0 || unsigned(frameIdx) >= this->frameList.size())
+  if (targetFrame >= this->frameListCodingOrder.size())
     return {};
 
-  auto seekPOC = this->getFramePOC(frameIdx);
+  this->updateFrameListDisplayOrder();
+  auto frameTarget  = this->frameListDisplayOder[targetFrame];
+  auto frameCurrent = this->frameListDisplayOder[currentFrame];
 
-  int    bestSeekPOC      = -1;
-  size_t bestSeekPocIndex = 0;
-  for (size_t i = 0; i < frameList.size(); i++)
+  auto bestSeekFrame            = this->frameListCodingOrder.begin();
+  for (auto it = this->frameListCodingOrder.begin(); it != this->frameListCodingOrder.end(); it++)
   {
-    const auto &f = this->frameList[i];
-    if (f.randomAccessPoint)
-    {
-      if (bestSeekPOC == -1)
-      {
-        bestSeekPOC      = f.poc;
-        bestSeekPocIndex = i;
-      }
-      else
-      {
-        if (f.poc <= seekPOC)
-        {
-          // We could seek here
-          bestSeekPOC      = f.poc;
-          bestSeekPocIndex = i;
-        }
-        else
-          break;
-      }
-    }
+    if (it->randomAccessPoint && it->poc < frameTarget.poc)
+      bestSeekFrame = it;
+    if (it->poc == frameTarget.poc)
+      break;
   }
 
-  DEBUG_ANNEXB("AnnexB::getClosestSeekableFrameNumberBefore franeIdx " << frameIdx << " seekPoc "
-                                                                       << bestSeekPocIndex);
-  return bestSeekPocIndex;
+  SeekPointInfo seekPointInfo;
+  {
+    auto itInDisplayOrder = std::find(
+        this->frameListDisplayOder.begin(), this->frameListDisplayOder.end(), *bestSeekFrame);
+    seekPointInfo.frameIndex = std::distance(this->frameListDisplayOder.begin(), itInDisplayOrder);
+  }
+  {
+    auto itCurrentFrameCodingOrder = std::find(
+        this->frameListCodingOrder.begin(), this->frameListCodingOrder.end(), frameCurrent);
+    seekPointInfo.frameDistanceInCodingOrder =
+        std::distance(itCurrentFrameCodingOrder, bestSeekFrame);
+  }
+
+  DEBUG_ANNEXB("AnnexB::getClosestSeekPoint targetFrame "
+               << targetFrame << "(POC " << frameTarget.poc << " seek to "
+               << seekPointInfo.frameIndex << " (POC " << bestSeekFrame->poc
+               << ") distance in coding order " << seekPointInfo.frameDistanceInCodingOrder);
+  return seekPointInfo;
 }
 
-std::optional<pairUint64> AnnexB::getFrameStartEndPos(int codingOrderFrameIdx)
+std::optional<pairUint64> AnnexB::getFrameStartEndPos(FrameIndexCodingOrder idx)
 {
-  if (codingOrderFrameIdx < 0 || unsigned(codingOrderFrameIdx) >= frameList.size())
+  if (idx >= this->frameListCodingOrder.size())
     return {};
-  if (this->frameListNeedsParsing)
-  {
-    std::sort(this->frameList.begin(), this->frameList.end());
-    this->frameListNeedsParsing = false;
-  }
-  return frameList[codingOrderFrameIdx].fileStartEndPos;
+  this->updateFrameListDisplayOrder();
+  return this->frameListCodingOrder[idx].fileStartEndPos;
 }
 
 bool AnnexB::parseAnnexBFile(QScopedPointer<FileSourceAnnexBFile> &file, QWidget *mainWindow)
@@ -243,7 +240,7 @@ bool AnnexB::parseAnnexBFile(QScopedPointer<FileSourceAnnexBFile> &file, QWidget
       DEBUG_ANNEXB("AnnexB::parseAndAddNALUnit Abort parsing by user request.");
       abortParsing = true;
     }
-    if (parsingLimitEnabled && frameList.size() > PARSER_FILE_FRAME_NR_LIMIT)
+    if (this->parsingLimitEnabled && this->frameListCodingOrder.size() > PARSER_FILE_FRAME_NR_LIMIT)
     {
       DEBUG_ANNEXB("AnnexB::parseAndAddNALUnit Abort parsing because frame limit was reached.");
       abortParsing = true;
@@ -262,7 +259,7 @@ bool AnnexB::parseAnnexBFile(QScopedPointer<FileSourceAnnexBFile> &file, QWidget
 
   stream_info.parsing      = false;
   stream_info.nr_nal_units = nalID;
-  stream_info.nr_frames    = unsigned(frameList.size());
+  stream_info.nr_frames    = unsigned(this->frameListCodingOrder.size());
   emit streamInfoUpdated();
   emit backgroundParsingDone("");
 
@@ -298,14 +295,19 @@ QList<QTreeWidgetItem *> AnnexB::stream_info_type::getStreamInfo()
   return infoList;
 }
 
-int AnnexB::getFramePOC(int frameIdx)
+int AnnexB::getFramePOC(FrameIndexDisplayOrder frameIdx)
 {
-  if (this->frameListNeedsParsing)
-  {
-    std::sort(this->frameList.begin(), this->frameList.end());
-    this->frameListNeedsParsing = false;
-  }
-  return this->frameList[frameIdx].poc;
+  this->updateFrameListDisplayOrder();
+  return this->frameListDisplayOder[frameIdx].poc;
+}
+
+void AnnexB::updateFrameListDisplayOrder()
+{
+  if (this->frameListCodingOrder.size() == 0 || this->frameListDisplayOder.size() > 0)
+    return;
+
+  this->frameListDisplayOder = this->frameListCodingOrder;
+  std::sort(frameListDisplayOder.begin(), frameListDisplayOder.end());
 }
 
 } // namespace parser

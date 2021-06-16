@@ -142,10 +142,10 @@ YUVPixelFormat AnnexBHEVC::getPixelFormat() const
 
 std::optional<AnnexB::SeekData> AnnexBHEVC::getSeekData(int iFrameNr)
 {
-  if (iFrameNr >= int(this->getNumberPOCs()))
+  if (iFrameNr >= int(this->getNumberPOCs()) || iFrameNr < 0)
     return {};
 
-  auto seekPOC = this->getFramePOC(iFrameNr);
+  auto seekPOC = this->getFramePOC(unsigned(iFrameNr));
 
   // Collect the active parameter sets
   using NalMap = std::map<unsigned, std::shared_ptr<NalUnitHEVC>>;
@@ -272,7 +272,7 @@ AnnexBHEVC::parseAndAddNALUnit(int                                           nal
                                const ByteVector &                            data,
                                std::optional<BitratePlotModel::BitrateEntry> bitrateEntry,
                                std::optional<pairUint64>                     nalStartEndPosFile,
-                               TreeItem *                                    parent)
+                               std::shared_ptr<TreeItem>                                    parent)
 {
   AnnexB::ParseResult parseResult;
 
@@ -283,8 +283,8 @@ AnnexBHEVC::parseAndAddNALUnit(int                                           nal
       // Save the info of the last frame
       if (!this->addFrameToList(curFramePOC, curFrameFileStartEndPos, curFrameIsRandomAccess))
       {
-        new TreeItem(parent,
-                     "Error - POC " + std::to_string(curFramePOC) + " alread in the POC list.");
+        parent->createChildItem(
+            "Error - POC " + std::to_string(curFramePOC) + " alread in the POC list.");
         return parseResult;
       }
       if (curFrameFileStartEndPos)
@@ -302,13 +302,14 @@ AnnexBHEVC::parseAndAddNALUnit(int                                           nal
   // Use the given tree item. If it is not set, use the nalUnitMode (if active).
   // Create a new TreeItem root for the NAL unit. We don't set data (a name) for this item
   // yet. We want to parse the item and then set a good description.
-  TreeItem *nalRoot = nullptr;
+  std::shared_ptr<TreeItem> nalRoot;
   if (parent)
-    nalRoot = new TreeItem(parent);
-  else if (!packetModel->isNull())
-    nalRoot = new TreeItem(packetModel->getRootItem());
+    nalRoot = parent->createChildItem();
+  else if (packetModel->rootItem)
+    nalRoot = packetModel->rootItem->createChildItem();
 
-  AnnexB::logNALSize(data, nalRoot, nalStartEndPosFile);
+  if (nalRoot)
+    AnnexB::logNALSize(data, nalRoot, nalStartEndPosFile);
 
   reader::SubByteReaderLogging reader(data, nalRoot, "", getStartCodeOffset(data));
 
@@ -498,9 +499,8 @@ AnnexBHEVC::parseAndAddNALUnit(int                                           nal
 
       DEBUG_HEVC("AnnexBHEVC::parseAndAddNALUnit Slice POC "
                  << POC << " - pocCounterOffset " << pocCounterOffset << " maxPOCCount "
-                 << maxPOCCount << (new_slice->isIRAP() ? " - IRAP" : "")
-                 << (new_slice->NoRaslOutputFlag ? "" : " - RASL")
-                 << (parsingSuccess ? "" : " ERROR"));
+                 << maxPOCCount << (nalHEVC->header.isIRAP() ? " - IRAP" : "")
+                 << (newSlice->sliceSegmentHeader.NoRaslOutputFlag ? "" : " - RASL"));
     }
     else if (nalHEVC->header.nal_unit_type == NalType::PREFIX_SEI_NUT ||
              nalHEVC->header.nal_unit_type == NalType::SUFFIX_SEI_NUT)
@@ -579,7 +579,7 @@ AnnexBHEVC::parseAndAddNALUnit(int                                           nal
         catch (const std::exception &e)
         {
           (void)e;
-          DEBUG_HEVC("AnnexBHEVC::parseAndAddNALUnit Error reparsing SEI message. " + e.what());
+          DEBUG_HEVC("AnnexBHEVC::parseAndAddNALUnit Error reparsing SEI message. " << e.what());
         }
       }
     }

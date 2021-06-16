@@ -39,6 +39,7 @@
 #include <QShortcut>
 #include <QStringList>
 #include <QTextBrowser>
+#include <QTextStream>
 
 #include "common/functions.h"
 #include "common/functionsGui.h"
@@ -204,7 +205,7 @@ MainWindow::MainWindow(bool useAlternativeSources, QWidget *parent) : QMainWindo
                               "Restore Playlist",
                               tr("It looks like YUView crashed the last time you used it. We are "
                                  "sorry about that. However, we have an autosave of the playlist "
-                                 "you were working with. Do you want to resotre this playlist?\n"),
+                                 "you were working with. Do you want to restore this playlist?\n"),
                               QMessageBox::Yes | QMessageBox::No,
                               QMessageBox::No);
     if (resBtn == QMessageBox::Yes)

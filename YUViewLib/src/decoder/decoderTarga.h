@@ -1,6 +1,6 @@
 /*  This file is part of YUView - The YUV player with advanced analytics toolset
  *   <https://github.com/IENT/YUView>
- *   Copyright (C) 2015  Institut f�r Nachrichtentechnik, RWTH Aachen University, GERMANY
+ *   Copyright (C) 2015  Institut für Nachrichtentechnik, RWTH Aachen University, GERMANY
  *
  *   This program is free software; you can redistribute it and/or modify
  *   it under the terms of the GNU General Public License as published by
@@ -32,43 +32,20 @@
 
 #pragma once
 
-#include "parser/common/SubByteReaderLogging.h"
-#include "sei_message.h"
+#include <common/typedef.h>
 
-namespace parser::avc
+#include <optional>
+
+namespace dec::Targa
 {
 
-class seq_parameter_set_rbsp;
-
-class pic_timing : public sei_payload
+// The output image is always 4 bytes per pixel (RGBA)
+struct Image
 {
-public:
-  pic_timing() = default;
-
-  SEIParsingResult parse(reader::SubByteReaderLogging &          reader,
-                         bool                                    reparse,
-                         SPSMap &                                spsMap,
-                         std::shared_ptr<seq_parameter_set_rbsp> associatedSPS) override;
-
-  unsigned cpb_removal_delay{};
-  unsigned dpb_output_delay{};
-
-  unsigned pic_struct{};
-  bool     clock_timestamp_flag[3]{};
-  unsigned ct_type[3]{};
-  bool     nuit_field_based_flag[3]{};
-  unsigned counting_type[3]{};
-  bool     full_timestamp_flag[3]{};
-  bool     discontinuity_flag[3]{};
-  bool     cnt_dropped_flag[3]{};
-  unsigned n_frames[3]{};
-  unsigned seconds_value[3]{};
-  unsigned minutes_value[3]{};
-  unsigned hours_value[3]{};
-  bool     seconds_flag[3]{};
-  bool     minutes_flag[3]{};
-  bool     hours_flag[3]{};
-  unsigned time_offset[3]{};
+  ByteVector data;
+  Size       size{};
 };
 
-} // namespace parser::avc
+std::optional<Image> loadTgaFromFile(std::string filename);
+
+} // namespace dec::Targa

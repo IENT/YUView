@@ -66,7 +66,7 @@ QImage videoHandlerResample::calculateDifference(frameHandler *item2, const int 
   return videoHandler::calculateDifference(item2, mappedIndex, frameIndex1, differenceInfoList, amplificationFactor, markDifference);
 }
 
-itemLoadingState videoHandlerResample::needsLoading(int frameIndex, bool loadRawValues)
+ItemLoadingState videoHandlerResample::needsLoading(int frameIndex, bool loadRawValues)
 {
   auto mappedIndex = this->mapFrameIndex(frameIndex);
   return videoHandler::needsLoading(mappedIndex, loadRawValues);

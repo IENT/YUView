@@ -38,6 +38,7 @@
 
 #include "common/saveUi.h"
 #include "common/typedef.h"
+#include "common/YUViewDomElement.h"
 
 #include "ui_frameHandler.h"
 
@@ -124,6 +125,9 @@ public:
 
   // Load the current image from file and set the correct size.
   bool loadCurrentImageFromFile(const QString &filePath);
+
+  virtual void savePlaylist(YUViewDomElement &root) const;
+  virtual void loadPlaylist(const YUViewDomElement &root);
 
 signals:
   // Signaled if something about the item changed. redrawNeeded is true if the handler needs to be

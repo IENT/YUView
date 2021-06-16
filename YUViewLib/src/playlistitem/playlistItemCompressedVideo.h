@@ -32,6 +32,7 @@
 
 #pragma once
 
+#include "common/typedef.h"
 #include "decoder/decoderBase.h"
 #include "filesource/FileSourceFFmpegFile.h"
 #include "parser/AnnexB.h"
@@ -56,10 +57,10 @@ public:
    * will then call addPropertiesWidget to add the custom properties panel. 'displayComponent'
    * initializes the component to display (reconstruction/prediction/residual/trCoeff).
    */
-  playlistItemCompressedVideo(const QString &       fileName,
-                              int                   displayComponent = 0,
-                              YUView::inputFormat   input            = YUView::inputInvalid,
-                              YUView::decoderEngine decoder = YUView::decoderEngineInvalid);
+  playlistItemCompressedVideo(const QString &        fileName,
+                              int                    displayComponent = 0,
+                              InputFormat            input            = InputFormat::Invalid,
+                              decoder::DecoderEngine decoder = decoder::DecoderEngine::Invalid);
 
   // Save the compressed file element to the given XML structure.
   virtual void savePlaylist(QDomElement &root, const QDir &playlistDir) const override;
@@ -95,7 +96,7 @@ public:
   }
 
   // Do we need to load the given frame first?
-  virtual itemLoadingState needsLoading(int frameIdx, bool loadRawData) override;
+  virtual ItemLoadingState needsLoading(int frameIdx, bool loadRawData) override;
   // Load the frame in the video item. Emit signalItemChanged(true,false) when done.
   virtual void
   loadFrame(int frameIdx, bool playing, bool loadRawData, bool emitSignals = true) override;
@@ -113,7 +114,7 @@ public:
   // is performed.
   virtual int cachingThreadLimit() override { return 1; }
 
-  YUView::inputFormat getInputFormat() const { return inputFormatType; }
+  InputFormat getInputFormat() const { return this->inputFormat; }
 
 protected:
   virtual void createPropertiesWidget() override;
@@ -121,13 +122,13 @@ protected:
   // We allocate two decoder: One for loading images in the foreground and one for caching in the
   // background. This is better if random access and linear decoding (caching) is performed at the
   // same time.
-  QScopedPointer<decoderBase> loadingDecoder;
-  QScopedPointer<decoderBase> cachingDecoder;
+  QScopedPointer<decoder::decoderBase> loadingDecoder;
+  QScopedPointer<decoder::decoderBase> cachingDecoder;
 
   // When opening the file, we will fill this list with the possible decoders
-  QList<YUView::decoderEngine> possibleDecoders;
+  std::vector<decoder::DecoderEngine> possibleDecoders;
   // The actual type of the decoder
-  YUView::decoderEngine decoderEngineType;
+  decoder::DecoderEngine decoderEngine{decoder::DecoderEngine::Invalid};
   // Delete existing decoders and allocate decoders for the type "decoderEngineType"
   bool allocateDecoder(int displayComponent = 0);
 
@@ -143,8 +144,8 @@ protected:
   int readAnnexBFrameCounterCodingOrder{-1};
 
   // Which type is the input?
-  YUView::inputFormat inputFormatType;
-  AVCodecIDWrapper    ffmpegCodec;
+  InputFormat      inputFormat;
+  AVCodecIDWrapper ffmpegCodec;
 
   // For FFMpeg files we don't need a reader to parse them. But if the container contains a
   // supported format, we can read the NAL units from the compressed file.
@@ -152,8 +153,8 @@ protected:
   QScopedPointer<FileSourceFFmpegFile> inputFileFFmpegCaching;
 
   // Is the loadFrame function currently loading?
-  bool isFrameLoading{false};
-  bool isFrameLoadingDoubleBuffer{false};
+  bool isFrameLoading{};
+  bool isFrameLoadingDoubleBuffer{};
 
   // Only cache one frame at a time. Caching should also always be done in display order of the
   // frames.
@@ -177,7 +178,7 @@ protected:
 
   // For certain decoders (FFmpeg or HM), pushing data may fail. The decoder may or may not switch
   // to retrieveing mode. In this case, we must re-push the packet for which pushing failed.
-  bool repushData{false};
+  bool repushData{};
 
   // Besides the normal stats (error / no error) this item might be able to parse the file but not
   // to decode it.
@@ -186,7 +187,7 @@ protected:
     infoText        = err;
     decodingEnabled = false;
   }
-  bool decodingEnabled{false};
+  bool decodingEnabled{};
 
   // If the bitstream is invalid (for example it was cut at a position that it should not be cut
   // at), we might be unable to decode some of the frames at the end of the sequence.

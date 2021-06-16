@@ -143,7 +143,7 @@ FrameTypeData StatisticsData::getFrameTypeData(int typeID)
   return this->frameCache[typeID];
 }
 
-itemLoadingState StatisticsData::needsLoading(int frameIndex) const
+ItemLoadingState StatisticsData::needsLoading(int frameIndex) const
 {
   if (frameIndex != this->frameIdx)
   {
@@ -154,7 +154,7 @@ itemLoadingState StatisticsData::needsLoading(int frameIndex) const
         // At least one statistic type is drawn. We need to load it.
         DEBUG_STATDATA("StatisticsData::needsLoading new frameIndex " << frameIdx
                                                                       << " LoadingNeeded");
-        return LoadingNeeded;
+        return ItemLoadingState::LoadingNeeded;
       }
   }
 
@@ -168,13 +168,13 @@ itemLoadingState StatisticsData::needsLoading(int frameIndex) const
     {
       // Return that loading is needed before we can render the statitics.
       DEBUG_STATDATA("StatisticsData::needsLoading type " << it->typeID << " LoadingNeeded");
-      return LoadingNeeded;
+      return ItemLoadingState::LoadingNeeded;
     }
   }
 
   // Everything needed for drawing is loaded
   DEBUG_STATDATA("StatisticsData::needsLoading " << frameIdx << " LoadingNotNeeded");
-  return LoadingNotNeeded;
+  return ItemLoadingState::LoadingNotNeeded;
 }
 
 std::vector<int> StatisticsData::getTypesThatNeedLoading(int frameIndex) const

@@ -52,7 +52,7 @@ public:
   FrameTypeData       getFrameTypeData(int typeId);
   Size                getFrameSize() const { return this->frameSize; }
   int                 getFrameIndex() const { return this->frameIdx; }
-  itemLoadingState    needsLoading(int frameIndex) const;
+  ItemLoadingState    needsLoading(int frameIndex) const;
   std::vector<int>    getTypesThatNeedLoading(int frameIndex) const;
   QStringPairList     getValuesAt(const QPoint &pos) const;
   StatisticsTypesVec &getStatisticsTypes() { return this->statsTypes; }

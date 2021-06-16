@@ -536,7 +536,8 @@ void parseAlternativeCLUTSegment(SubByteReaderLogging &reader, unsigned segment_
 namespace parser::subtitle
 {
 
-std::tuple<size_t, std::string> dvb::parseDVBSubtitleSegment(ByteVector &data, TreeItem *parent)
+std::tuple<size_t, std::string> dvb::parseDVBSubtitleSegment(ByteVector &              data,
+                                                             std::shared_ptr<TreeItem> parent)
 {
   // Use the given tree item. If it is not set, use the nalUnitMode (if active).
   // We don't set data (a name) for this item yet.

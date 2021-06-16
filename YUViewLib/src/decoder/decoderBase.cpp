@@ -37,6 +37,9 @@
 
 using namespace YUView;
 
+namespace decoder
+{
+
 // Debug the decoder ( 0:off 1:interactive deocder only 2:caching decoder only 3:both)
 #define DECODERBASE_DEBUG_OUTPUT 0
 #if DECODERBASE_DEBUG_OUTPUT && !NDEBUG
@@ -65,11 +68,24 @@ void decoderBase::resetDecoder()
   DEBUG_DECODERBASE("decoderBase::resetDecoder");
   decoderState = DecoderState::NeedsMoreData;
   frameSize = {};
-  formatYUV = YUV_Internals::YUVPixelFormat();
+  formatYUV = {};
   rawFormat = raw_Invalid;
 }
 
-stats::FrameTypeData decoderBase::getCurrentFrameStatsForType(int typeId)
+bool        decoderBase::isSignalDifference(int signalID) const
+  {
+    Q_UNUSED(signalID);
+    return false;
+  }
+
+void decoderBase::setDecodeSignal(int signalID, bool &decoderResetNeeded)
+  {
+    if (signalID >= 0 && signalID < nrSignalsSupported())
+      this->decodeSignal = signalID;
+    decoderResetNeeded = false;
+  }
+
+stats::FrameTypeData decoderBase::getCurrentFrameStatsForType(int typeId) const
 {
   if (!this->statisticsEnabled())
     return {};
@@ -97,7 +113,7 @@ void decoderBaseSingleLib::loadDecoderLibrary(QString specificLibrary)
     // the decLibXXX.so file first. Since this has been compiled for linux
     // it will fail and not even try to open the decLixXXX.dylib.
     // On windows and linux ommitting the extension works
-    QStringList libNames = getLibraryNames();
+    auto libNames = getLibraryNames();
 
     // Get the additional search path from the settings
     QSettings settings;
@@ -138,7 +154,7 @@ void decoderBaseSingleLib::loadDecoderLibrary(QString specificLibrary)
     libraryPath.clear();
     QString error = "Error loading library: " + library.errorString() + "\n";
     error += "We could not load one of the supported decoder library (";
-    QStringList libNames = getLibraryNames();
+    auto libNames = getLibraryNames();
     for (int i = 0; i < libNames.count(); i++)
     {
       if (i == 0)
@@ -154,4 +170,6 @@ void decoderBaseSingleLib::loadDecoderLibrary(QString specificLibrary)
   }
 
   resolveLibraryFunctionPointers();
+}
+
 }

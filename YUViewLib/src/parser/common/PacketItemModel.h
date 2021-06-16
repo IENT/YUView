@@ -55,9 +55,7 @@ public:
   virtual int columnCount(const QModelIndex &parent = QModelIndex()) const override { (void)parent; return 5; }
 
   // The root of the tree
-  QScopedPointer<TreeItem> rootItem;
-  TreeItem *getRootItem() { return rootItem.data(); }
-  bool isNull() { return rootItem.isNull(); }
+  std::shared_ptr<TreeItem> rootItem;
 
   void setUseColorCoding(bool colorCoding);
   void setShowVideoStreamOnly(bool showVideoOnly);
@@ -69,7 +67,7 @@ private:
   // about them. The bitstream analysis window will then update this count and the view to show the new items.
   unsigned int nrShowChildItems {0};
 
-  unsigned int getNumberFirstLevelChildren() { return rootItem.isNull() ? 0 : rootItem->childItems.size(); }
+  size_t getNumberFirstLevelChildren() const;
 
   bool useColorCoding { true };
   bool showVideoOnly  { false };

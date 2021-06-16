@@ -36,8 +36,10 @@
 #include <optional>
 #include <string>
 #include <vector>
+#include <stdexcept>
 
-
+/* This class implement mapping of "enum class" values to and from names (string).
+ */
 template <typename T> class EnumMapper
 {
 public:
@@ -63,28 +65,31 @@ public:
     return {};
   }
 
-  std::optional<std::string> getName(T value) const
+  std::string getName(T value) const
   {
     for (const auto &entry : this->entryVector)
       if (entry.value == value)
         return entry.name;
-    return {};
+    throw std::logic_error(
+        "The given type T was not registered in the mapper. All possible enums must be mapped.");
   }
 
-  std::optional<std::string> getText(T value) const
+  std::string getText(T value) const
   {
     for (const auto &entry : this->entryVector)
       if (entry.value == value)
         return entry.text;
-    return {};
+    throw std::logic_error(
+        "The given type T was not registered in the mapper. All possible enums must be mapped.");
   }
 
-  std::optional<size_t> indexOf(T value) const
+  size_t indexOf(T value) const
   {
     for (size_t i = 0; i < this->entryVector.size(); i++)
       if (this->entryVector.at(i).value == value)
         return i;
-    return {};
+    throw std::logic_error(
+        "The given type T was not registered in the mapper. All possible enums must be mapped.");
   }
 
   std::optional<T> at(size_t index) const
@@ -107,6 +112,14 @@ public:
     std::vector<std::string> l;
     for (const auto &entry : this->entryVector)
       l.push_back(entry.name);
+    return l;
+  }
+
+  std::vector<std::string> getTextEntries() const
+  {
+    std::vector<std::string> l;
+    for (const auto &entry : this->entryVector)
+      l.push_back(entry.text);
     return l;
   }
 

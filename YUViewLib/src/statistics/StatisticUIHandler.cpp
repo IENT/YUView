@@ -272,17 +272,20 @@ void StatisticUIHandler::onSecondaryStatisticsControlChanged()
     itemOpacitySliders[1][row]->setEnabled(enable);
     itemStyleButtons[1][row]->setEnabled(enable);
 
-    // Update the primary controls that changed
-    if (itemNameCheckBoxes[0][row]->isChecked() != itemNameCheckBoxes[1][row]->isChecked())
+    if (itemNameCheckBoxes[0].size() > row)
     {
-      const QSignalBlocker blocker(itemNameCheckBoxes[0][row]);
-      itemNameCheckBoxes[0][row]->setChecked(itemNameCheckBoxes[1][row]->isChecked());
-    }
+      // Update the primary controls that changed
+      if (itemNameCheckBoxes[0][row]->isChecked() != itemNameCheckBoxes[1][row]->isChecked())
+      {
+        const QSignalBlocker blocker(itemNameCheckBoxes[0][row]);
+        itemNameCheckBoxes[0][row]->setChecked(itemNameCheckBoxes[1][row]->isChecked());
+      }
 
-    if (itemOpacitySliders[0][row]->value() != itemOpacitySliders[1][row]->value())
-    {
-      const QSignalBlocker blocker(itemOpacitySliders[0][row]);
-      itemOpacitySliders[0][row]->setValue(itemOpacitySliders[1][row]->value());
+      if (itemOpacitySliders[0][row]->value() != itemOpacitySliders[1][row]->value())
+      {
+        const QSignalBlocker blocker(itemOpacitySliders[0][row]);
+        itemOpacitySliders[0][row]->setValue(itemOpacitySliders[1][row]->value());
+      }
     }
   }
 
