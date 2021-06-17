@@ -373,7 +373,7 @@ void MainWindow::createMenusAndActions()
                            []() { QDesktopServices::openUrl(QUrl("https://ffmpeg.org/")); });
   downloadsMenu->addAction("VVDec libraries", []() {
     QDesktopServices::openUrl(
-        QUrl("https://github.com/ChristianFeldmann/vvdec/releases/tag/libv0.2.0.1"));
+        QUrl("https://github.com/ChristianFeldmann/vvdec/releases"));
   });
   helpMenu->addSeparator();
   helpMenu->addAction("Performance Tests", [this]() { this->performanceTest(); });
