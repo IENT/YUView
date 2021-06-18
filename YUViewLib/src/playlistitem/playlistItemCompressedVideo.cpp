@@ -1097,7 +1097,7 @@ void playlistItemCompressedVideo::loadStatistics(int frameIdx)
 
     // Reload the current frame (force a seek and decode operation)
     int frameToLoad    = currentFrameIdx[0];
-    currentFrameIdx[0] = INT_MAX;
+    currentFrameIdx[0] = -1;
     this->loadRawData(frameToLoad, false);
 
     // The statistics should now be loaded
