@@ -33,7 +33,7 @@
 #pragma once
 
 #include <QWidget>
-#include <QDomElement>
+#include <QtXml/QDomElement>
 #include <QString>
 #include <QStringList>
 
