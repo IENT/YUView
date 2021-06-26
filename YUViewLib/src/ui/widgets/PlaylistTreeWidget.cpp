@@ -217,10 +217,10 @@ void PlaylistTreeWidget::dropEvent(QDropEvent *event)
   if (event->mimeData()->hasUrls())
   {
     QStringList       fileList;
-    const QList<QUrl> urls = event->mimeData()->urls();
+    const auto urls = event->mimeData()->urls();
     for (auto &url : urls)
     {
-      QString fileName = url.toLocalFile();
+      auto fileName = url.toLocalFile();
       fileList.append(fileName);
     }
     event->acceptProposedAction();
@@ -233,7 +233,7 @@ void PlaylistTreeWidget::dropEvent(QDropEvent *event)
   else
   {
     // get the list of the items that are about to be dragged
-    QList<QTreeWidgetItem *> dragItems = selectedItems();
+    auto dragItems = selectedItems();
 
     // Actually move all the items
     QTreeWidget::dropEvent(event);

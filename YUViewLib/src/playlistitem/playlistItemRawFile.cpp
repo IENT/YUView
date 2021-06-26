@@ -33,7 +33,6 @@
 #include "playlistItemRawFile.h"
 
 #include <QPainter>
-#include <QUrl>
 #include <QVBoxLayout>
 
 #include "common/functions.h"
@@ -443,10 +442,7 @@ void playlistItemRawFile::createPropertiesWidget()
 
 void playlistItemRawFile::savePlaylist(QDomElement &root, const QDir &playlistDir) const
 {
-  // Determine the relative path to the raw file. We save both in the playlist.
-  QUrl fileURL(dataSource.getAbsoluteFilePath());
-  fileURL.setScheme("file");
-  auto relativePath = playlistDir.relativeFilePath(dataSource.getAbsoluteFilePath());
+  auto filename = dataSource.getAbsoluteFilePath();
 
   auto d = YUViewDomElement(root.ownerDocument().createElement("playlistItemRawFile"));
 
@@ -454,8 +450,8 @@ void playlistItemRawFile::savePlaylist(QDomElement &root, const QDir &playlistDi
   playlistItem::appendPropertiesToPlaylist(d);
 
   // Append all the properties of the raw file (the path to the file. Relative and absolute)
-  d.appendProperiteChild("absolutePath", fileURL.toString());
-  d.appendProperiteChild("relativePath", relativePath);
+  d.appendProperiteChild("absolutePath", playlistDir.absoluteFilePath(filename));
+  d.appendProperiteChild("relativePath", playlistDir.relativeFilePath(filename));
   d.appendProperiteChild(std::string("type"), (rawFormat == raw_YUV) ? "YUV" : "RGB");
 
   this->video->savePlaylist(d);
@@ -480,7 +476,7 @@ playlistItemRawFile *playlistItemRawFile::newplaylistItemRawFile(const YUViewDom
 
   // We can still not be sure that the file really exists, but we gave our best to try to find it.
   auto newFile = new playlistItemRawFile(filePath, {}, {}, type);
-  
+
   newFile->video->loadPlaylist(root);
   playlistItem::loadPropertiesFromPlaylist(root, newFile);
 

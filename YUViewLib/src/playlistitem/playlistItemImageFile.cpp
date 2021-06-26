@@ -35,7 +35,6 @@
 #include <QImageReader>
 #include <QPainter>
 #include <QSettings>
-#include <QUrl>
 
 #include "common/functionsGui.h"
 #include "filesource/FileSource.h"
@@ -85,19 +84,14 @@ void playlistItemImageFile::savePlaylist(QDomElement &root, const QDir &playlist
 {
   const auto filename = this->properties().name;
 
-  // Determine the relative path to the raw file. We save both in the playlist.
-  QUrl fileURL(filename);
-  fileURL.setScheme("file");
-  QString relativePath = playlistDir.relativeFilePath(filename);
-
   YUViewDomElement d = root.ownerDocument().createElement("playlistItemImageFile");
 
   // Append the properties of the playlistItem
   playlistItem::appendPropertiesToPlaylist(d);
 
   // Append all the properties of the raw file (the path to the file. Relative and absolute)
-  d.appendProperiteChild("absolutePath", fileURL.toString());
-  d.appendProperiteChild("relativePath", relativePath);
+  d.appendProperiteChild("absolutePath", playlistDir.absoluteFilePath(filename));
+  d.appendProperiteChild("relativePath", playlistDir.relativeFilePath(filename));
 
   root.appendChild(d);
 }
@@ -109,11 +103,11 @@ playlistItemImageFile::newplaylistItemImageFile(const YUViewDomElement &root,
                                                 const QString &         playlistFilePath)
 {
   // Parse the DOM element. It should have all values of a playlistItemImageFile
-  QString absolutePath = root.findChildValue("absolutePath");
-  QString relativePath = root.findChildValue("relativePath");
+  auto absolutePath = root.findChildValue("absolutePath");
+  auto relativePath = root.findChildValue("relativePath");
 
   // check if file with absolute path exists, otherwise check relative path
-  QString filePath =
+  auto filePath =
       FileSource::getAbsPathFromAbsAndRel(playlistFilePath, absolutePath, relativePath);
   if (filePath.isEmpty())
     return nullptr;
