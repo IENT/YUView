@@ -170,12 +170,12 @@ PlaylistTreeWidget::~PlaylistTreeWidget()
 
 playlistItem *PlaylistTreeWidget::getDropTarget(const QPoint &pos) const
 {
-  playlistItem *pItem = dynamic_cast<playlistItem *>(this->itemAt(pos));
+  auto pItem = dynamic_cast<playlistItem *>(this->itemAt(pos));
   if (pItem != nullptr)
   {
     // check if dropped on or below/above pItem
-    QRect rc    = this->visualItemRect(pItem);
-    QRect rcNew = QRect(rc.left(), rc.top() + 2, rc.width(), rc.height() - 4);
+    auto rc    = this->visualItemRect(pItem);
+    auto rcNew = QRect(rc.left(), rc.top() + 2, rc.width(), rc.height() - 4);
     if (!rcNew.contains(pos, true))
       // dropped next to pItem
       pItem = nullptr;
@@ -186,11 +186,11 @@ playlistItem *PlaylistTreeWidget::getDropTarget(const QPoint &pos) const
 
 void PlaylistTreeWidget::dragMoveEvent(QDragMoveEvent *event)
 {
-  playlistItem *dropTarget = getDropTarget(event->pos());
+  auto dropTarget = this->getDropTarget(event->position().toPoint());
   if (dropTarget)
   {
-    QList<QTreeWidgetItem *> draggedItems = selectedItems();
-    playlistItem *           draggedItem  = dynamic_cast<playlistItem *>(draggedItems[0]);
+    auto draggedItems = selectedItems();
+    auto draggedItem  = dynamic_cast<playlistItem *>(draggedItems[0]);
 
     // handle video items as target
     if (!dropTarget->acceptDrops(draggedItem))

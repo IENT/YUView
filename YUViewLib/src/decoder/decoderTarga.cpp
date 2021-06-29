@@ -307,7 +307,7 @@ void readColormap(std::ifstream &file, Header &header)
 
 color_t readRunLengthColor(std::ifstream &file, const Header &header)
 {
-  color_t color;
+  color_t color{};
   if (header.imageType == ImageType::RleIndexed)
   {
     auto colormapIndex = read8(file);

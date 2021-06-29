@@ -266,7 +266,7 @@ AVFormat::parseByteVectorAnnexBStartCodes(ByteVector &                   data,
     }
     else if (dataFormat == PacketDataFormat::MP4)
     {
-      unsigned size = 0;
+      int size = 0;
       size += ((*(searchStart++)) << 24);
       size += ((*(searchStart++)) << 16);
       size += ((*(searchStart++)) << 8);

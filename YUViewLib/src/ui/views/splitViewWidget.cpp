@@ -59,7 +59,7 @@
 const int SPLITVIEWWIDGET_SPLITTER_MARGIN_DPI_DIV = 24;
 // The splitter cannot be moved closer to the border of the widget than SPLITTER_CLIPX pixels
 // If the splitter is moved closer it cannot be moved back into view and is "lost"
-const int SPLITVIEWWIDGET_SPLITTER_CLIPX = 10;
+constexpr auto SPLITVIEWWIDGET_SPLITTER_CLIPX = 10.0;
 // The font and size of the text that will be drawn in the top left corner indicating the zoom
 // factor
 const QString SPLITVIEWWIDGET_ZOOMFACTOR_FONT     = "helvetica";
@@ -953,9 +953,9 @@ void splitViewWidget::mouseMoveEvent(QMouseEvent *mouse_event)
     mouse_event->accept();
 
     // The user is currently dragging the splitter. Calculate the new splitter point.
-    int xClip = clip(mouse_event->x(),
-                     SPLITVIEWWIDGET_SPLITTER_CLIPX,
-                     (width() - 2 - SPLITVIEWWIDGET_SPLITTER_CLIPX));
+    auto xClip = clip(mouse_event->position().x(),
+                      SPLITVIEWWIDGET_SPLITTER_CLIPX,
+                      (width() - 2 - SPLITVIEWWIDGET_SPLITTER_CLIPX));
     setSplittingPoint((double)xClip / (double)(width() - 2));
 
     update();
@@ -976,14 +976,14 @@ void splitViewWidget::mousePressEvent(QMouseEvent *mouse_event)
     return;
 
   // Are we over the split line?
-  int  splitPosPix        = int((width() - 2) * splittingPoint);
+  auto splitPosPix        = (width() - 2) * splittingPoint;
   bool mouseOverSplitLine = false;
   if (isSplitting())
   {
     // Calculate the margin of the split line according to the display DPI.
-    int margin = logicalDpiX() / SPLITVIEWWIDGET_SPLITTER_MARGIN_DPI_DIV;
-    mouseOverSplitLine =
-        (mouse_event->x() > (splitPosPix - margin) && mouse_event->x() < (splitPosPix + margin));
+    int margin         = logicalDpiX() / SPLITVIEWWIDGET_SPLITTER_MARGIN_DPI_DIV;
+    mouseOverSplitLine = (mouse_event->position().x() > (splitPosPix - margin) &&
+                          mouse_event->position().x() < (splitPosPix + margin));
   }
 
   if (mouse_event->button() == Qt::LeftButton && mouseOverSplitLine)
@@ -1009,7 +1009,7 @@ void splitViewWidget::mouseReleaseEvent(QMouseEvent *mouse_event)
     splittingDragging = false;
 
     // Update current splitting position / update last time
-    int xClip = clip(mouse_event->x(),
+    int xClip = clip(mouse_event->position().x(),
                      SPLITVIEWWIDGET_SPLITTER_CLIPX,
                      (width() - 2 - SPLITVIEWWIDGET_SPLITTER_CLIPX));
     setSplittingPoint((double)xClip / (double)(width() - 2));
@@ -1613,7 +1613,8 @@ void splitViewWidget::createMenuActions()
                                          bool          checked,
                                          void (splitViewWidget::*func)(bool),
                                          const QKeySequence &shortcut  = {},
-                                         bool                isEnabled = true) {
+                                         bool                isEnabled = true)
+  {
     action.setParent(this);
     action.setCheckable(true);
     action.setChecked(checked);
@@ -1693,7 +1694,7 @@ void splitViewWidget::createMenuActions()
                              "&Show Separate Window",
                              false,
                              &splitViewWidget::toggleSeparateWindow,
-                             Qt::CTRL + Qt::Key_W);
+                             Qt::CTRL | Qt::Key_W);
     configureCheckableAction(actionSeparateViewLink,
                              nullptr,
                              "Link Views",
@@ -1722,7 +1723,7 @@ void splitViewWidget::createMenuActions()
                            "&Fullscreen Mode",
                            false,
                            &splitViewWidget::toggleFullScreen,
-                           Qt::CTRL + Qt::Key_F);
+                           Qt::CTRL | Qt::Key_F);
 }
 
 void splitViewWidget::addContextMenuActions(QMenu *menu)
