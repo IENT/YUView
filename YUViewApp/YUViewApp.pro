@@ -1,4 +1,4 @@
-QT += gui widgets opengl xml concurrent network
+QT += core gui widgets opengl xml concurrent network
 
 TARGET = YUView
 TEMPLATE = app
@@ -11,7 +11,7 @@ HEADERS += $$files(src/*.h, false)
 INCLUDEPATH += $$top_srcdir/YUViewLib/src
 LIBS += -L$$top_builddir/YUViewLib -lYUViewLib
 
-win32 {
+win32-msvc* {
     PRE_TARGETDEPS += $$top_builddir/YUViewLib/YUViewLib.lib
 } else {
     PRE_TARGETDEPS += $$top_builddir/YUViewLib/libYUViewLib.a
@@ -62,11 +62,6 @@ linux {
 }
 win32-msvc* {
     message("MSVC Compiler detected.")
-}
-win32-g++ {
-    message("MinGW Compiler detected.")
-    QMAKE_FLAGS_RELEASE += -O3 -Ofast -msse4.1 -mssse3 -msse3 -msse2 -msse -mfpmath=sse
-    QMAKE_CXXFLAGS_RELEASE += -O3 -Ofast -msse4.1 -mssse3 -msse3 -msse2 -msse -mfpmath=sse
 }
 win32 {
     RC_FILE += images/WindowsAppIcon.rc
