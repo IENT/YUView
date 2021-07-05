@@ -953,10 +953,16 @@ void splitViewWidget::mouseMoveEvent(QMouseEvent *mouse_event)
     mouse_event->accept();
 
     // The user is currently dragging the splitter. Calculate the new splitter point.
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
     auto xClip = clip(mouse_event->position().x(),
                       SPLITVIEWWIDGET_SPLITTER_CLIPX,
                       (width() - 2 - SPLITVIEWWIDGET_SPLITTER_CLIPX));
-    setSplittingPoint((double)xClip / (double)(width() - 2));
+#else
+    auto xClip = clip(double(mouse_event->x()),
+                      SPLITVIEWWIDGET_SPLITTER_CLIPX,
+                      (double(width()) - 2.0 - SPLITVIEWWIDGET_SPLITTER_CLIPX));
+#endif
+    setSplittingPoint(xClip / (double(width()) - 2.0));
 
     update();
   }
@@ -981,9 +987,14 @@ void splitViewWidget::mousePressEvent(QMouseEvent *mouse_event)
   if (isSplitting())
   {
     // Calculate the margin of the split line according to the display DPI.
-    int margin         = logicalDpiX() / SPLITVIEWWIDGET_SPLITTER_MARGIN_DPI_DIV;
+    int margin = logicalDpiX() / SPLITVIEWWIDGET_SPLITTER_MARGIN_DPI_DIV;
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
     mouseOverSplitLine = (mouse_event->position().x() > (splitPosPix - margin) &&
                           mouse_event->position().x() < (splitPosPix + margin));
+#else
+    mouseOverSplitLine =
+        (mouse_event->x() > (splitPosPix - margin) && mouse_event->x() < (splitPosPix + margin));
+#endif
   }
 
   if (mouse_event->button() == Qt::LeftButton && mouseOverSplitLine)
@@ -1009,10 +1020,16 @@ void splitViewWidget::mouseReleaseEvent(QMouseEvent *mouse_event)
     splittingDragging = false;
 
     // Update current splitting position / update last time
-    int xClip = clip(mouse_event->position().x(),
-                     SPLITVIEWWIDGET_SPLITTER_CLIPX,
-                     (width() - 2 - SPLITVIEWWIDGET_SPLITTER_CLIPX));
-    setSplittingPoint((double)xClip / (double)(width() - 2));
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+    auto xClip = clip(mouse_event->position().x(),
+                      SPLITVIEWWIDGET_SPLITTER_CLIPX,
+                      (double(width()) - 2.0 - SPLITVIEWWIDGET_SPLITTER_CLIPX));
+#else
+    auto xClip = clip(double(mouse_event->x()),
+                      SPLITVIEWWIDGET_SPLITTER_CLIPX,
+                      (double(width()) - 2.0 - SPLITVIEWWIDGET_SPLITTER_CLIPX));
+#endif
+    setSplittingPoint(xClip / (double(width()) - 2.0));
 
     update();
   }

@@ -186,7 +186,11 @@ playlistItem *PlaylistTreeWidget::getDropTarget(const QPoint &pos) const
 
 void PlaylistTreeWidget::dragMoveEvent(QDragMoveEvent *event)
 {
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
   auto dropTarget = this->getDropTarget(event->position().toPoint());
+#else
+  auto dropTarget = getDropTarget(event->pos());
+#endif
   if (dropTarget)
   {
     auto draggedItems = selectedItems();
