@@ -1,4 +1,4 @@
-QT += gui widgets opengl xml concurrent network
+QT += core gui widgets opengl xml concurrent network
 
 TEMPLATE = lib
 CONFIG += staticlib
@@ -30,10 +30,6 @@ isEmpty(SVNN) {
     SVNN = 0
 }
 
-win32-g++ {
-    QMAKE_FLAGS_RELEASE += -O3 -Ofast -msse4.1 -mssse3 -msse3 -msse2 -msse -mfpmath=sse
-    QMAKE_CXXFLAGS_RELEASE += -O3 -Ofast -msse4.1 -mssse3 -msse3 -msse2 -msse -mfpmath=sse
-}
 win32 {
     DEFINES += NOMINMAX
 }

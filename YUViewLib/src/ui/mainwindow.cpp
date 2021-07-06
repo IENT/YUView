@@ -238,7 +238,7 @@ void MainWindow::createMenusAndActions()
 {
   // File menu
   QMenu *fileMenu = menuBar()->addMenu(tr("&File"));
-  fileMenu->addAction("&Open File...", this, &MainWindow::showFileOpenDialog, Qt::CTRL + Qt::Key_O);
+  fileMenu->addAction("&Open File...", this, &MainWindow::showFileOpenDialog, Qt::CTRL | Qt::Key_O);
   QMenu *recentFileMenu = fileMenu->addMenu("Recent Files");
   for (int i = 0; i < MAX_RECENT_FILES; i++)
   {
@@ -257,7 +257,7 @@ void MainWindow::createMenusAndActions()
   fileMenu->addAction("&Save Playlist...",
                       ui.playlistTreeWidget,
                       &PlaylistTreeWidget::savePlaylistToFile,
-                      Qt::CTRL + Qt::Key_S);
+                      Qt::CTRL | Qt::Key_S);
   fileMenu->addSeparator();
   fileMenu->addAction("&Save Screenshot...", this, &MainWindow::saveScreenshot);
   fileMenu->addSeparator();
@@ -274,21 +274,21 @@ void MainWindow::createMenusAndActions()
   // Sub menu save/load state
   QMenu *saveStateMenu = viewMenu->addMenu("Save View State");
   saveStateMenu->addAction(
-      "Slot 1", &stateHandler, &ViewStateHandler::saveViewState1, Qt::CTRL + Qt::Key_1);
+      "Slot 1", &stateHandler, &ViewStateHandler::saveViewState1, Qt::CTRL | Qt::Key_1);
   saveStateMenu->addAction(
-      "Slot 2", &stateHandler, &ViewStateHandler::saveViewState2, Qt::CTRL + Qt::Key_2);
+      "Slot 2", &stateHandler, &ViewStateHandler::saveViewState2, Qt::CTRL | Qt::Key_2);
   saveStateMenu->addAction(
-      "Slot 3", &stateHandler, &ViewStateHandler::saveViewState3, Qt::CTRL + Qt::Key_3);
+      "Slot 3", &stateHandler, &ViewStateHandler::saveViewState3, Qt::CTRL | Qt::Key_3);
   saveStateMenu->addAction(
-      "Slot 4", &stateHandler, &ViewStateHandler::saveViewState4, Qt::CTRL + Qt::Key_4);
+      "Slot 4", &stateHandler, &ViewStateHandler::saveViewState4, Qt::CTRL | Qt::Key_4);
   saveStateMenu->addAction(
-      "Slot 5", &stateHandler, &ViewStateHandler::saveViewState5, Qt::CTRL + Qt::Key_5);
+      "Slot 5", &stateHandler, &ViewStateHandler::saveViewState5, Qt::CTRL | Qt::Key_5);
   saveStateMenu->addAction(
-      "Slot 6", &stateHandler, &ViewStateHandler::saveViewState6, Qt::CTRL + Qt::Key_6);
+      "Slot 6", &stateHandler, &ViewStateHandler::saveViewState6, Qt::CTRL | Qt::Key_6);
   saveStateMenu->addAction(
-      "Slot 7", &stateHandler, &ViewStateHandler::saveViewState7, Qt::CTRL + Qt::Key_7);
+      "Slot 7", &stateHandler, &ViewStateHandler::saveViewState7, Qt::CTRL | Qt::Key_7);
   saveStateMenu->addAction(
-      "Slot 8", &stateHandler, &ViewStateHandler::saveViewState8, Qt::CTRL + Qt::Key_8);
+      "Slot 8", &stateHandler, &ViewStateHandler::saveViewState8, Qt::CTRL | Qt::Key_8);
   QMenu *loadStateMenu = viewMenu->addMenu("Restore View State");
   loadStateMenu->addAction("Slot 1", &stateHandler, &ViewStateHandler::loadViewState1, Qt::Key_1);
   loadStateMenu->addAction("Slot 2", &stateHandler, &ViewStateHandler::loadViewState2, Qt::Key_2);
@@ -307,21 +307,21 @@ void MainWindow::createMenusAndActions()
         action->setShortcut(shortcut);
         dockPanelsMenu->addAction(action);
       };
-  addDockViewAction(ui.playlistDockWidget, "Show P&laylist", Qt::CTRL + Qt::Key_L);
-  addDockViewAction(ui.propertiesDock, "Show &Properties", Qt::CTRL + Qt::Key_P);
-  addDockViewAction(ui.fileInfoDock, "Show &Info", Qt::CTRL + Qt::Key_I);
+  addDockViewAction(ui.playlistDockWidget, "Show P&laylist", Qt::CTRL | Qt::Key_L);
+  addDockViewAction(ui.propertiesDock, "Show &Properties", Qt::CTRL | Qt::Key_P);
+  addDockViewAction(ui.fileInfoDock, "Show &Info", Qt::CTRL | Qt::Key_I);
   addDockViewAction(ui.cachingInfoDock, "Show Caching Info");
   viewMenu->addSeparator();
-  addDockViewAction(ui.playbackControllerDock, "Show Playback &Controls", Qt::CTRL + Qt::Key_D);
+  addDockViewAction(ui.playbackControllerDock, "Show Playback &Controls", Qt::CTRL | Qt::Key_D);
 
   QMenu *splitViewMenu = viewMenu->addMenu("Split View");
   ui.displaySplitView->addMenuActions(splitViewMenu);
 
   QMenu *zoomMenu = viewMenu->addMenu("Zoom");
-  zoomMenu->addAction("Zoom to 1:1", this, &MainWindow::onMenuResetView, Qt::CTRL + Qt::Key_0);
-  zoomMenu->addAction("Zoom to Fit", this, &MainWindow::onMenuZoomToFit, Qt::CTRL + Qt::Key_9);
-  zoomMenu->addAction("Zoom in", this, &MainWindow::onMenuZoomIn, Qt::CTRL + Qt::Key_Plus);
-  zoomMenu->addAction("Zoom out", this, &MainWindow::onMenuZoomOut, Qt::CTRL + Qt::Key_Minus);
+  zoomMenu->addAction("Zoom to 1:1", this, &MainWindow::onMenuResetView, Qt::CTRL | Qt::Key_0);
+  zoomMenu->addAction("Zoom to Fit", this, &MainWindow::onMenuZoomToFit, Qt::CTRL | Qt::Key_9);
+  zoomMenu->addAction("Zoom in", this, &MainWindow::onMenuZoomIn, Qt::CTRL | Qt::Key_Plus);
+  zoomMenu->addAction("Zoom out", this, &MainWindow::onMenuZoomOut, Qt::CTRL | Qt::Key_Minus);
   zoomMenu->addSeparator();
   zoomMenu->addAction("Zoom to 50%", this, &MainWindow::onMenuZoomTo50);
   zoomMenu->addAction("Zoom to 100%", this, &MainWindow::onMenuZoomTo100);

@@ -73,10 +73,10 @@ void MoveAndZoomableView::addSlaveView(MoveAndZoomableView *view)
 
 void MoveAndZoomableView::addContextMenuActions(QMenu *menu)
 {
-  menu->addAction("Zoom to 1:1", this, &MoveAndZoomableView::resetView, Qt::CTRL + Qt::Key_0);
-  menu->addAction("Zoom to Fit", this, &MoveAndZoomableView::zoomToFit, Qt::CTRL + Qt::Key_9);
-  menu->addAction("Zoom in", this, &MoveAndZoomableView::zoomIn, Qt::CTRL + Qt::Key_Plus);
-  menu->addAction("Zoom out", this, &MoveAndZoomableView::zoomOut, Qt::CTRL + Qt::Key_Minus);
+  menu->addAction("Zoom to 1:1", this, &MoveAndZoomableView::resetView, Qt::CTRL | Qt::Key_0);
+  menu->addAction("Zoom to Fit", this, &MoveAndZoomableView::zoomToFit, Qt::CTRL | Qt::Key_9);
+  menu->addAction("Zoom in", this, &MoveAndZoomableView::zoomIn, Qt::CTRL | Qt::Key_Plus);
+  menu->addAction("Zoom out", this, &MoveAndZoomableView::zoomOut, Qt::CTRL | Qt::Key_Minus);
   menu->addSeparator();
   menu->addAction("Zoom to 50%", this, &MoveAndZoomableView::zoomTo50);
   menu->addAction("Zoom to 100%", this, &MoveAndZoomableView::zoomTo100);
@@ -390,7 +390,11 @@ void MoveAndZoomableView::mouseReleaseEvent(QMouseEvent *mouse_event)
     {
       QMenu menu(this);
       this->addContextMenuActions(&menu);
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+      menu.exec(mouse_event->globalPosition().toPoint());
+#else
       menu.exec(mouse_event->globalPos());
+#endif
     }
 
     this->setMoveOffset(this->viewDraggingStartOffset +
@@ -417,9 +421,13 @@ void MoveAndZoomableView::mouseReleaseEvent(QMouseEvent *mouse_event)
       {
         QMenu menu(this);
         this->addContextMenuActions(&menu);
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+        menu.exec(mouse_event->globalPosition().toPoint());
+#else
         menu.exec(mouse_event->globalPos());
+#endif
       }
-      
+
       this->viewAction = ViewAction::NONE;
       update();
       return;
@@ -453,7 +461,7 @@ bool MoveAndZoomableView::event(QEvent *event)
 #if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
     isTouchScreenEvent = (device->type() == QInputDevice::DeviceType::TouchScreen);
 #else
-    isTouchScreenEvent = (device->type() == QTouchDevice::TouchScreen);
+    isTouchScreenEvent      = (device->type() == QTouchDevice::TouchScreen);
 #endif
   }
 
@@ -565,12 +573,21 @@ bool MoveAndZoomableView::event(QEvent *event)
   }
   else if (isTouchScreenEvent)
   {
-    auto        touchEvent  = static_cast<QTouchEvent *>(event);
+    auto touchEvent = static_cast<QTouchEvent *>(event);
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+    const auto &touchPoints = touchEvent->points();
+#else
     const auto &touchPoints = touchEvent->touchPoints();
+#endif
+
     if (touchPoints.size() >= 1)
     {
       DEBUG_VIEW("MoveAndZoomableView::event handle touch even " << event->type());
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+      auto pos = touchPoints[0].position().toPoint();
+#else
       auto pos = touchPoints[0].pos().toPoint();
+#endif
       if (this->viewAction == ViewAction::NONE && event->type() == QEvent::TouchBegin)
       {
         this->viewAction = ViewAction::DRAGGING_TOUCH;

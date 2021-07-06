@@ -141,12 +141,14 @@ public:
 
   std::weak_ptr<TreeItem> getParentItem() const { return this->parent; }
 
-  std::optional<size_t> getIndexOfChildItem(std::shared_ptr<TreeItem> child)
+  std::optional<size_t> getIndexOfChildItem(std::shared_ptr<TreeItem> child) const
   {
     for (size_t i = 0; i < this->childItems.size(); i++)
       if (this->childItems[i] == child)
         return i;
-    return {};
+
+    std::optional<size_t> ret;
+    return ret;
   }
 
 private:
