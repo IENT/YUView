@@ -194,15 +194,15 @@ private:
   void update();
 
   // These are here for debugging purposes.
-  QString name;
-  QString long_name;
-  int     flags;
-  QString extensions;
+  QString name{};
+  QString long_name{};
+  int     flags{};
+  QString extensions{};
   // const struct AVCodecTag * const *codec_tag;
   // const AVClass *priv_class;
-  QString mime_type;
+  QString mime_type{};
 
-  AVInputFormat *      fmt;
+  AVInputFormat *      fmt{};
   FFmpegLibraryVersion libVer;
 };
 
@@ -752,7 +752,7 @@ private:
   int                    ctx_flags{0};
   unsigned int           nb_streams{0};
   QList<AVStreamWrapper> streams;
-  QString                filename;
+  QString                filename{};
   int64_t                start_time{-1};
   int64_t                duration{-1};
   int                    bit_rate{0};
@@ -762,7 +762,7 @@ private:
 
   unsigned int        probesize{0};
   int                 max_analyze_duration{0};
-  QString             key;
+  QString             key{};
   unsigned int        nb_programs{0};
   AVCodecID           video_codec_id{AV_CODEC_ID_NONE};
   AVCodecID           audio_codec_id{AV_CODEC_ID_NONE};
@@ -802,8 +802,8 @@ public:
 private:
   void update();
 
-  QString               name;
-  QString               long_name;
+  QString               name{};
+  QString               long_name{};
   AVMediaType           type;
   AVCodecID             id{AV_CODEC_ID_NONE};
   int                   capabilities{0};       ///< see AV_CODEC_CAP_
@@ -1045,7 +1045,7 @@ public:
     int depth;  ///< number of bits in the component
   };
 
-  QString               aliases;
+  QString               aliases{};
   AVComponentDescriptor comp[4];
 
   bool operator==(const AVPixFmtDescriptorWrapper &a);
@@ -1164,9 +1164,9 @@ private:
 
   // Log what is happening when loading the libraries / opening files.
   void        log(QString f, QString s) { logList.append(f + " " + s); }
-  QStringList logList;
+  QStringList logList{};
 
   // FFmpeg has a callback where it loggs stuff. This log goes here.
-  static QStringList logListFFmpeg;
+  static QStringList logListFFmpeg{};
   static void        avLogCallback(void *ptr, int level, const char *fmt, va_list vargs);
 };

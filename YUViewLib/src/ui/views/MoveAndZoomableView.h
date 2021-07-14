@@ -83,7 +83,7 @@ protected:
   void         update();
   virtual void resetViewInternal();
   void         updatePaletteIfNeeded();
-  QString      paletteBackgroundColorSettingsTag;
+  QString      paletteBackgroundColorSettingsTag{};
 
   void         updateMouseCursor();
   virtual bool updateMouseCursor(const QPoint &srcMousePos);

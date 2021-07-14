@@ -138,6 +138,6 @@ private:
   int totalDownloadSize;
   int currentDownloadProgress;
 
-  QString updatePath;
+  QString updatePath{};
 };
 

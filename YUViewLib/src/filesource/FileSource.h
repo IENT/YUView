@@ -139,7 +139,7 @@ private slots:
 
 protected:
   // Info on the source file.
-  QString   fullFilePath;
+  QString   fullFilePath{};
   QFileInfo fileInfo;
 
   // This file might not be open if the opening has failed.

@@ -96,8 +96,8 @@ public:
 
   // Every statistics type has an ID, a name and possibly a description
   int     typeID{};
-  QString typeName;
-  QString description;
+  QString typeName{};
+  QString description{};
 
   // Get the value text (from the value map (if there is an entry))
   QString getValueTxt(int val) const;

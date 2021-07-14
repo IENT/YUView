@@ -163,7 +163,7 @@ protected:
   QFileSystemWatcher fileWatcher;
   bool               fileChanged{false};
 
-  QString   fullFilePath;
+  QString   fullFilePath{};
   QFileInfo fileInfo;
   bool      isFileOpened{false};
 

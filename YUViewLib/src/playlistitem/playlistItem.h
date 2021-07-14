@@ -65,7 +65,7 @@ public:
 
   struct Properties
   {
-    QString name;
+    QString name{};
     // Every playlist item has a unique (within the playlist) ID
     // TODO: This ID is also saved in the playlist. We can append playlists to existing
     //       playlists. In this case, we could get items with identical IDs. This must not happen.
@@ -76,7 +76,7 @@ public:
     // after the playlist was loaded.
     int playlistID{0};
 
-    QString propertiesWidgetTitle;
+    QString propertiesWidgetTitle{};
     bool    isFileSource{false};
 
     Type type;
@@ -293,7 +293,7 @@ protected:
 
   // The default implementation of playlistItem::drawItem will draw this text on screen. You can use
   // this in derived classes to draw an info text on screen.
-  QString infoText;
+  QString infoText{};
 
   Properties prop;
 
