@@ -103,7 +103,7 @@ BitratePlotModel::getPointInfo(unsigned streamIndex, unsigned plotIndex, unsigne
 {
   QMutexLocker locker(&this->dataMutex);
 
-  if (!this->dataPerStream.contains(stream_index) ||
+  if (!this->dataPerStream.contains(streamIndex) ||
       this->dataPerStream[streamIndex].size() <= pointIndex)
     return {};
 
