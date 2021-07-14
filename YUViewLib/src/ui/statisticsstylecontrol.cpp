@@ -124,7 +124,7 @@ void StatisticsStyleControl::setStatsItem(stats::StatisticsType *item)
       ui.comboBoxVectorLineStyle->setCurrentIndex(penStyleIndex);
     ui.doubleSpinBoxVectorLineWidth->setValue(this->currentItem->vectorStyle.width);
     ui.checkBoxVectorScaleToZoom->setChecked(this->currentItem->scaleVectorToZoom);
-    ui.comboBoxVectorHeadStyle->setCurrentIndex((int)this->currentItem->arrowHead);
+    ui.comboBoxVectorHeadStyle->setCurrentIndex(int(this->currentItem->arrowHead));
     ui.checkBoxVectorMapToColor->setChecked(this->currentItem->mapVectorToColor);
     ui.colorFrameVectorColor->setPlainColor(
         functionsGui::toQColor(this->currentItem->vectorStyle.color));
@@ -160,14 +160,14 @@ void StatisticsStyleControl::on_groupBoxVector_clicked(bool check)
 
 void StatisticsStyleControl::on_comboBoxDataColorMap_currentIndexChanged(int index)
 {
-  const auto isCustomrange = (index == 0);
+  const auto isCustomRange = (index == 0);
   const auto isMap         = (index == 1);
 
   // Enable/Disable the color min/max controls
-  ui.frameMinColor->setEnabled(isCustomrange);
-  ui.pushButtonEditMinColor->setEnabled(isCustomrange);
-  ui.frameMaxColor->setEnabled(isCustomrange);
-  ui.pushButtonEditMaxColor->setEnabled(isCustomrange);
+  ui.frameMinColor->setEnabled(isCustomRange);
+  ui.pushButtonEditMinColor->setEnabled(isCustomRange);
+  ui.frameMaxColor->setEnabled(isCustomRange);
+  ui.pushButtonEditMaxColor->setEnabled(isCustomRange);
   ui.spinBoxRangeMin->setEnabled(!isMap);
   ui.spinBoxRangeMax->setEnabled(!isMap);
 
@@ -178,7 +178,7 @@ void StatisticsStyleControl::on_comboBoxDataColorMap_currentIndexChanged(int ind
   else
     ui.pushButtonEditColorMap->setText("Convert to Color Map");
 
-  if (isCustomrange)
+  if (isCustomRange)
   {
     this->currentItem->colorMapper.mappingType = stats::ColorMapper::MappingType::gradient;
     this->currentItem->colorMapper.rangeMin    = ui.spinBoxRangeMin->value();
