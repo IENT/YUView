@@ -74,31 +74,31 @@ void StatisticsStyleControl::setStatsItem(stats::StatisticsType *item)
 {
   DEBUG_STAT_STYLE("StatisticsStyleControl::setStatsItem %s", item->typeName.toStdString().c_str());
   currentItem = item;
-  setWindowTitle("Edit statistics rendering: " + currentItem->typeName);
+  setWindowTitle("Edit statistics rendering: " + this->currentItem->typeName);
 
   // Does this statistics type have any value data to show? Show the controls only if it does.
-  if (currentItem->hasValueData)
+  if (this->currentItem->hasValueData)
   {
     ui.groupBoxBlockData->show();
 
-    ui.spinBoxRangeMin->setValue(currentItem->colorMapper.getMinVal());
-    ui.spinBoxRangeMax->setValue(currentItem->colorMapper.getMaxVal());
-    ui.frameDataColor->setColorMapper(currentItem->colorMapper);
+    ui.spinBoxRangeMin->setValue(this->currentItem->colorMapper.getMinVal());
+    ui.spinBoxRangeMax->setValue(this->currentItem->colorMapper.getMaxVal());
+    ui.frameDataColor->setColorMapper(this->currentItem->colorMapper);
 
     // Update all the values in the block data controls.
-    ui.comboBoxDataColorMap->setCurrentIndex((int)currentItem->colorMapper.getID());
-    if (currentItem->colorMapper.getID() == 0)
+    ui.comboBoxDataColorMap->setCurrentIndex((int)this->currentItem->colorMapper.getID());
+    if (this->currentItem->colorMapper.getID() == 0)
     {
       // The color range is a custom range
       // Enable/setup the controls for the minimum and maximum color
       ui.frameMinColor->setEnabled(true);
       ui.pushButtonEditMinColor->setEnabled(true);
       ui.frameMinColor->setPlainColor(
-          functionsGui::toQColor(currentItem->colorMapper.minColor));
+          functionsGui::toQColor(this->currentItem->colorMapper.minColor));
       ui.frameMaxColor->setEnabled(true);
       ui.pushButtonEditMaxColor->setEnabled(true);
       ui.frameMaxColor->setPlainColor(
-          functionsGui::toQColor(currentItem->colorMapper.maxColor));
+          functionsGui::toQColor(this->currentItem->colorMapper.maxColor));
     }
     else
     {
@@ -114,125 +114,131 @@ void StatisticsStyleControl::setStatsItem(stats::StatisticsType *item)
     ui.groupBoxBlockData->hide();
 
   // Does this statistics type have vector data to show?
-  if (currentItem->hasVectorData)
+  if (this->currentItem->hasVectorData)
   {
     ui.groupBoxVector->show();
 
     // Update all the values in the vector controls
-    auto penStyleIndex = indexInVec(stats::AllPatterns, currentItem->vectorStyle.pattern);
+    auto penStyleIndex = indexInVec(stats::AllPatterns, this->currentItem->vectorStyle.pattern);
     if (penStyleIndex != -1)
       ui.comboBoxVectorLineStyle->setCurrentIndex(penStyleIndex);
-    ui.doubleSpinBoxVectorLineWidth->setValue(currentItem->vectorStyle.width);
-    ui.checkBoxVectorScaleToZoom->setChecked(currentItem->scaleVectorToZoom);
-    ui.comboBoxVectorHeadStyle->setCurrentIndex((int)currentItem->arrowHead);
-    ui.checkBoxVectorMapToColor->setChecked(currentItem->mapVectorToColor);
-    ui.colorFrameVectorColor->setPlainColor(functionsGui::toQColor(currentItem->vectorStyle.color));
-    ui.colorFrameVectorColor->setEnabled(!currentItem->mapVectorToColor);
-    ui.pushButtonEditVectorColor->setEnabled(!currentItem->mapVectorToColor);
+    ui.doubleSpinBoxVectorLineWidth->setValue(this->currentItem->vectorStyle.width);
+    ui.checkBoxVectorScaleToZoom->setChecked(this->currentItem->scaleVectorToZoom);
+    ui.comboBoxVectorHeadStyle->setCurrentIndex((int)this->currentItem->arrowHead);
+    ui.checkBoxVectorMapToColor->setChecked(this->currentItem->mapVectorToColor);
+    ui.colorFrameVectorColor->setPlainColor(
+        functionsGui::toQColor(this->currentItem->vectorStyle.color));
+    ui.colorFrameVectorColor->setEnabled(!this->currentItem->mapVectorToColor);
+    ui.pushButtonEditVectorColor->setEnabled(!this->currentItem->mapVectorToColor);
   }
   else
     ui.groupBoxVector->hide();
 
-  ui.frameGridColor->setPlainColor(functionsGui::toQColor(currentItem->gridStyle.color));
-  ui.doubleSpinBoxGridLineWidth->setValue(currentItem->gridStyle.width);
-  ui.checkBoxGridScaleToZoom->setChecked(currentItem->scaleGridToZoom);
+  ui.frameGridColor->setPlainColor(functionsGui::toQColor(this->currentItem->gridStyle.color));
+  ui.doubleSpinBoxGridLineWidth->setValue(this->currentItem->gridStyle.width);
+  ui.checkBoxGridScaleToZoom->setChecked(this->currentItem->scaleGridToZoom);
 
   // Convert the current pen style to an index and set it in the comboBoxGridLineStyle
-  auto penStyleIndex = indexInVec(stats::AllPatterns, currentItem->vectorStyle.pattern);
+  auto penStyleIndex = indexInVec(stats::AllPatterns, this->currentItem->vectorStyle.pattern);
   if (penStyleIndex != -1)
     ui.comboBoxGridLineStyle->setCurrentIndex(penStyleIndex);
 
-  resize(sizeHint());
+  this->resize(sizeHint());
 }
 
 void StatisticsStyleControl::on_groupBoxBlockData_clicked(bool check)
 {
-  currentItem->renderValueData = check;
+  this->currentItem->renderValueData = check;
   emit StyleChanged();
 }
 
 void StatisticsStyleControl::on_groupBoxVector_clicked(bool check)
 {
-  currentItem->renderVectorData = check;
+  this->currentItem->renderVectorData = check;
   emit StyleChanged();
 }
 
 void StatisticsStyleControl::on_comboBoxDataColorMap_currentIndexChanged(int index)
 {
+  const auto isCustomrange = (index == 0);
+  const auto isMap         = (index == 1);
+
   // Enable/Disable the color min/max controls
-  ui.frameMinColor->setEnabled(index == 0);
-  ui.pushButtonEditMinColor->setEnabled(index == 0);
-  ui.frameMaxColor->setEnabled(index == 0);
-  ui.pushButtonEditMaxColor->setEnabled(index == 0);
-  ui.spinBoxRangeMin->setEnabled(index != 1);
-  ui.spinBoxRangeMax->setEnabled(index != 1);
+  ui.frameMinColor->setEnabled(isCustomrange);
+  ui.pushButtonEditMinColor->setEnabled(isCustomrange);
+  ui.frameMaxColor->setEnabled(isCustomrange);
+  ui.pushButtonEditMaxColor->setEnabled(isCustomrange);
+  ui.spinBoxRangeMin->setEnabled(!isMap);
+  ui.spinBoxRangeMax->setEnabled(!isMap);
 
   // If a color map is selected, the button will edit it. If no color map is selected, the button
   // will convert the color mapping to a map and edit/set that one.
-  if (index == 1)
+  if (isMap)
     ui.pushButtonEditColorMap->setText("Edit Color Map");
   else
     ui.pushButtonEditColorMap->setText("Convert to Color Map");
 
-  if (index == 0)
+  if (isCustomrange)
   {
-    // A custom range is selected
-    currentItem->colorMapper.mappingType = stats::ColorMapper::MappingType::gradient;
-    currentItem->colorMapper.rangeMin    = ui.spinBoxRangeMin->value();
-    currentItem->colorMapper.rangeMax    = ui.spinBoxRangeMax->value();
+    this->currentItem->colorMapper.mappingType = stats::ColorMapper::MappingType::gradient;
+    this->currentItem->colorMapper.rangeMin    = ui.spinBoxRangeMin->value();
+    this->currentItem->colorMapper.rangeMax    = ui.spinBoxRangeMax->value();
 
-    auto plainColor                   = functionsGui::toColor(ui.frameMinColor->getPlainColor());
-    currentItem->colorMapper.minColor = plainColor;
-    currentItem->colorMapper.maxColor = plainColor;
+    this->currentItem->colorMapper.minColor =
+        functionsGui::toColor(ui.frameMinColor->getPlainColor());
+    this->currentItem->colorMapper.maxColor =
+        functionsGui::toColor(ui.frameMaxColor->getPlainColor());
   }
-  else if (index == 1)
-    // A map is selected
-    currentItem->colorMapper.mappingType = stats::ColorMapper::MappingType::map;
+  else if (isMap)
+    this->currentItem->colorMapper.mappingType = stats::ColorMapper::MappingType::map;
   else
   {
     if (index - 2 < stats::ColorMapper::supportedComplexTypes.length())
     {
-      currentItem->colorMapper.mappingType = stats::ColorMapper::MappingType::complex;
-      currentItem->colorMapper.rangeMin    = ui.spinBoxRangeMin->value();
-      currentItem->colorMapper.rangeMax    = ui.spinBoxRangeMax->value();
-      currentItem->colorMapper.complexType = stats::ColorMapper::supportedComplexTypes[index - 2];
+      this->currentItem->colorMapper.mappingType = stats::ColorMapper::MappingType::complex;
+      this->currentItem->colorMapper.rangeMin    = ui.spinBoxRangeMin->value();
+      this->currentItem->colorMapper.rangeMax    = ui.spinBoxRangeMax->value();
+      this->currentItem->colorMapper.complexType =
+          stats::ColorMapper::supportedComplexTypes[index - 2];
     }
   }
 
-  ui.frameDataColor->setColorMapper(currentItem->colorMapper);
+  ui.frameDataColor->setColorMapper(this->currentItem->colorMapper);
   emit StyleChanged();
 }
 
 void StatisticsStyleControl::on_frameMinColor_clicked()
 {
-  auto newQColor = QColorDialog::getColor(functionsGui::toQColor(currentItem->gridStyle.color),
-                                            this,
-                                            tr("Select color range minimum"),
-                                            QColorDialog::ShowAlphaChannel);
+  auto newQColor =
+      QColorDialog::getColor(functionsGui::toQColor(this->currentItem->gridStyle.color),
+                             this,
+                             tr("Select color range minimum"),
+                             QColorDialog::ShowAlphaChannel);
 
-  Color newColor = functionsGui::toColor(newQColor);
-  if (newQColor.isValid() && currentItem->colorMapper.minColor != newColor)
+  auto newColor = functionsGui::toColor(newQColor);
+  if (newQColor.isValid() && this->currentItem->colorMapper.minColor != newColor)
   {
-    currentItem->colorMapper.minColor = newColor;
+    this->currentItem->colorMapper.minColor = newColor;
     ui.frameMinColor->setPlainColor(newQColor);
-    ui.frameDataColor->setColorMapper(currentItem->colorMapper);
+    ui.frameDataColor->setColorMapper(this->currentItem->colorMapper);
     emit StyleChanged();
   }
 }
 
 void StatisticsStyleControl::on_frameMaxColor_clicked()
 {
-  auto newQColor = QColorDialog::getColor(functionsGui::toQColor(currentItem->gridStyle.color),
-                                            this,
-                                            tr("Select color range maximum"),
-                                            QColorDialog::ShowAlphaChannel);
+  auto newQColor =
+      QColorDialog::getColor(functionsGui::toQColor(this->currentItem->gridStyle.color),
+                             this,
+                             tr("Select color range maximum"),
+                             QColorDialog::ShowAlphaChannel);
 
-  Color newColor = functionsGui::toColor(newQColor);
-  if (newQColor.isValid() && currentItem->colorMapper.maxColor != newColor)
+  auto newColor = functionsGui::toColor(newQColor);
+  if (newQColor.isValid() && this->currentItem->colorMapper.maxColor != newColor)
   {
-    currentItem->colorMapper.maxColor = newColor;
+    this->currentItem->colorMapper.maxColor = newColor;
     ui.frameMaxColor->setPlainColor(newQColor);
-    ui.frameDataColor->setColorMapper(currentItem->colorMapper);
+    ui.frameDataColor->setColorMapper(this->currentItem->colorMapper);
     emit StyleChanged();
   }
 }
@@ -240,28 +246,28 @@ void StatisticsStyleControl::on_frameMaxColor_clicked()
 void StatisticsStyleControl::on_pushButtonEditColorMap_clicked()
 {
   std::map<int, Color> colorMap;
-  auto                 otherColor = currentItem->colorMapper.colorMapOther;
+  auto                 otherColor = this->currentItem->colorMapper.colorMapOther;
 
-  if (currentItem->colorMapper.mappingType == stats::ColorMapper::MappingType::map)
+  if (this->currentItem->colorMapper.mappingType == stats::ColorMapper::MappingType::map)
     // Edit the currently set color map
-    colorMap = currentItem->colorMapper.colorMap;
+    colorMap = this->currentItem->colorMapper.colorMap;
   else
   {
     // Convert the currently selected range to a map and let the user edit that
-    int lower =
-        std::min(currentItem->colorMapper.getMinVal(), currentItem->colorMapper.getMaxVal());
-    int higher =
-        std::max(currentItem->colorMapper.getMinVal(), currentItem->colorMapper.getMaxVal());
+    auto lower  = std::min(this->currentItem->colorMapper.getMinVal(),
+                         this->currentItem->colorMapper.getMaxVal());
+    auto higher = std::max(this->currentItem->colorMapper.getMinVal(),
+                          this->currentItem->colorMapper.getMaxVal());
     for (int i = lower; i <= higher; i++)
-      colorMap[i] = currentItem->colorMapper.getColor(i);
+      colorMap[i] = this->currentItem->colorMapper.getColor(i);
   }
 
-  auto *colorMapEditor = new StatisticsStyleControl_ColorMapEditor(colorMap, otherColor, this);
-  if (colorMapEditor->exec() == QDialog::Accepted)
+  StatisticsStyleControl_ColorMapEditor colorMapEditor(colorMap, otherColor, this);
+  if (colorMapEditor.exec() == QDialog::Accepted)
   {
     // Set the new color map
-    currentItem->colorMapper.colorMap      = colorMapEditor->getColorMap();
-    currentItem->colorMapper.colorMapOther = colorMapEditor->getOtherColor();
+    this->currentItem->colorMapper.colorMap      = colorMapEditor.getColorMap();
+    this->currentItem->colorMapper.colorMapOther = colorMapEditor.getOtherColor();
 
     // Select the color map (if not yet set)
     if (ui.comboBoxDataColorMap->currentIndex() != 1)
@@ -269,7 +275,7 @@ void StatisticsStyleControl::on_pushButtonEditColorMap_clicked()
       ui.comboBoxDataColorMap->setCurrentIndex(1);
     else
     {
-      ui.frameDataColor->setColorMapper(currentItem->colorMapper);
+      ui.frameDataColor->setColorMapper(this->currentItem->colorMapper);
       emit StyleChanged();
     }
   }
@@ -277,55 +283,56 @@ void StatisticsStyleControl::on_pushButtonEditColorMap_clicked()
 
 void StatisticsStyleControl::on_checkBoxScaleValueToBlockSize_stateChanged(int arg1)
 {
-  currentItem->scaleValueToBlockSize = (arg1 != 0);
+  this->currentItem->scaleValueToBlockSize = (arg1 != 0);
   emit StyleChanged();
 }
 
 void StatisticsStyleControl::on_comboBoxVectorLineStyle_currentIndexChanged(int index)
 {
   // Convert the selection to a pen style and set it
-  auto pattern = stats::AllPatterns.at(index);
-  currentItem->vectorStyle.pattern = pattern;
+  auto pattern                           = stats::AllPatterns.at(index);
+  this->currentItem->vectorStyle.pattern = pattern;
   emit StyleChanged();
 }
 
 void StatisticsStyleControl::on_doubleSpinBoxVectorLineWidth_valueChanged(double width)
 {
-  currentItem->vectorStyle.width = width;
+  this->currentItem->vectorStyle.width = width;
   emit StyleChanged();
 }
 
 void StatisticsStyleControl::on_checkBoxVectorScaleToZoom_stateChanged(int arg1)
 {
-  currentItem->scaleVectorToZoom = (arg1 != 0);
+  this->currentItem->scaleVectorToZoom = (arg1 != 0);
   emit StyleChanged();
 }
 
 void StatisticsStyleControl::on_comboBoxVectorHeadStyle_currentIndexChanged(int index)
 {
-  currentItem->arrowHead = (stats::StatisticsType::ArrowHead)(index);
+  this->currentItem->arrowHead = (stats::StatisticsType::ArrowHead)(index);
   emit StyleChanged();
 }
 
 void StatisticsStyleControl::on_checkBoxVectorMapToColor_stateChanged(int arg1)
 {
-  currentItem->mapVectorToColor = (arg1 != 0);
-  ui.colorFrameVectorColor->setEnabled(!currentItem->mapVectorToColor);
-  ui.pushButtonEditVectorColor->setEnabled(!currentItem->mapVectorToColor);
+  this->currentItem->mapVectorToColor = (arg1 != 0);
+  ui.colorFrameVectorColor->setEnabled(!this->currentItem->mapVectorToColor);
+  ui.pushButtonEditVectorColor->setEnabled(!this->currentItem->mapVectorToColor);
   emit StyleChanged();
 }
 
 void StatisticsStyleControl::on_colorFrameVectorColor_clicked()
 {
-  auto newQColor = QColorDialog::getColor(functionsGui::toQColor(currentItem->vectorStyle.color),
-                                           this,
-                                           tr("Select vector color"),
-                                           QColorDialog::ShowAlphaChannel);
+  auto newQColor =
+      QColorDialog::getColor(functionsGui::toQColor(this->currentItem->vectorStyle.color),
+                             this,
+                             tr("Select vector color"),
+                             QColorDialog::ShowAlphaChannel);
 
   auto newColor = functionsGui::toColor(newQColor);
-  if (newQColor.isValid() && newColor != currentItem->vectorStyle.color)
+  if (newQColor.isValid() && newColor != this->currentItem->vectorStyle.color)
   {
-    currentItem->vectorStyle.color = newColor;
+    this->currentItem->vectorStyle.color = newColor;
     ui.colorFrameVectorColor->setPlainColor(newQColor);
     emit StyleChanged();
   }
@@ -333,19 +340,22 @@ void StatisticsStyleControl::on_colorFrameVectorColor_clicked()
 
 void StatisticsStyleControl::on_groupBoxGrid_clicked(bool check)
 {
-  currentItem->renderGrid = check;
+  this->currentItem->renderGrid = check;
   emit StyleChanged();
 }
 
 void StatisticsStyleControl::on_frameGridColor_clicked()
 {
-  auto newQColor = QColorDialog::getColor(
-      functionsGui::toQColor(currentItem->gridStyle.color), this, tr("Select grid color"), QColorDialog::ShowAlphaChannel);
+  auto newQColor =
+      QColorDialog::getColor(functionsGui::toQColor(this->currentItem->gridStyle.color),
+                             this,
+                             tr("Select grid color"),
+                             QColorDialog::ShowAlphaChannel);
 
   auto newColor = functionsGui::toColor(newQColor);
-  if (newQColor.isValid() && newColor != currentItem->gridStyle.color)
+  if (newQColor.isValid() && newColor != this->currentItem->gridStyle.color)
   {
-    currentItem->gridStyle.color = newColor;
+    this->currentItem->gridStyle.color = newColor;
     ui.frameGridColor->setPlainColor(newQColor);
     emit StyleChanged();
   }
@@ -354,33 +364,33 @@ void StatisticsStyleControl::on_frameGridColor_clicked()
 void StatisticsStyleControl::on_comboBoxGridLineStyle_currentIndexChanged(int index)
 {
   // Convert the selection to a pen style and set it
-  auto pattern = stats::AllPatterns.at(index);
-  currentItem->gridStyle.pattern = pattern;
+  auto pattern                         = stats::AllPatterns.at(index);
+  this->currentItem->gridStyle.pattern = pattern;
   emit StyleChanged();
 }
 
 void StatisticsStyleControl::on_doubleSpinBoxGridLineWidth_valueChanged(double width)
 {
-  currentItem->gridStyle.width = width;
+  this->currentItem->gridStyle.width = width;
   emit StyleChanged();
 }
 
 void StatisticsStyleControl::on_checkBoxGridScaleToZoom_stateChanged(int arg1)
 {
-  currentItem->scaleGridToZoom = (arg1 != 0);
+  this->currentItem->scaleGridToZoom = (arg1 != 0);
   emit StyleChanged();
 }
 
 void StatisticsStyleControl::on_spinBoxRangeMin_valueChanged(int minVal)
 {
-  currentItem->colorMapper.rangeMin = minVal;
-  ui.frameDataColor->setColorMapper(currentItem->colorMapper);
+  this->currentItem->colorMapper.rangeMin = minVal;
+  ui.frameDataColor->setColorMapper(this->currentItem->colorMapper);
   emit StyleChanged();
 }
 
 void StatisticsStyleControl::on_spinBoxRangeMax_valueChanged(int maxVal)
 {
-  currentItem->colorMapper.rangeMax = maxVal;
-  ui.frameDataColor->setColorMapper(currentItem->colorMapper);
+  this->currentItem->colorMapper.rangeMax = maxVal;
+  ui.frameDataColor->setColorMapper(this->currentItem->colorMapper);
   emit StyleChanged();
 }
