@@ -80,6 +80,6 @@ private:
   using QLabel::setPicture; // This widget only supports displaying single-line text
   using QLabel::setPixmap;
   using QLabel::setWordWrap;
-  QString m_text;
-  QString m_toolTip;
+  QString m_text{};
+  QString m_toolTip{};
 };

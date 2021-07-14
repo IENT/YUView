@@ -168,7 +168,7 @@ protected:
     setError(reason);
     return false;
   }
-  QString errorString;
+  QString errorString {};
 
   // If set, fill it (if possible). The playlistItem has ownership of this.
   stats::StatisticsData *statisticsData{};
@@ -195,7 +195,7 @@ protected:
   virtual QStringList getLibraryNames() const = 0;
 
   QLibrary library;
-  QString  libraryPath;
+  QString  libraryPath {};
 };
 
 } // namespace decoder

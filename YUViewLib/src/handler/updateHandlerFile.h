@@ -77,6 +77,6 @@ private:
 
   // For every entry, there is the file path/name and a version string
   QList<fileListEntry> updateFileList;
-  QString updatePath;
+  QString updatePath{};
   bool loaded {false};
 };

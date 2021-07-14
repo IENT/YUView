@@ -88,7 +88,7 @@ unsigned int functions::systemMemorySizeInMB()
 
 QStringList functions::getThemeNameList()
 {
-  QStringList ret;
+  QStringList ret {};
   ret.append("Default");
   ret.append("Simple Dark/Blue");
   ret.append("Simple Dark/Orange");

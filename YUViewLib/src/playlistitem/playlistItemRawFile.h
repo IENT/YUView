@@ -115,5 +115,5 @@ private:
   bool            isY4MFile;
   QList<uint64_t> y4mFrameIndices;
 
-  QString pixelFormatAfterLoading;
+  QString pixelFormatAfterLoading{};
 };

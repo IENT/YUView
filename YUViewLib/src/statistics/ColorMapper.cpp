@@ -63,15 +63,6 @@ QStringList ColorMapper::supportedComplexTypes = QStringList() << "jet"
                                                                << "col3_bblg"
                                                                << "col3_bwg";
 
-// Setup an invalid (uninitialized color mapper)
-ColorMapper::ColorMapper()
-{
-  rangeMin      = 0;
-  rangeMax      = 0;
-  colorMapOther = {};
-  mappingType   = MappingType::none;
-}
-
 // Setup a color mapper with a gradient
 ColorMapper::ColorMapper(int min, const Color &colMin, int max, const Color &colMax)
 {
@@ -79,7 +70,6 @@ ColorMapper::ColorMapper(int min, const Color &colMin, int max, const Color &col
   rangeMax      = max;
   minColor      = colMin;
   maxColor      = colMax;
-  colorMapOther = {};
   mappingType   = MappingType::gradient;
 }
 
@@ -92,13 +82,6 @@ ColorMapper::ColorMapper(const QString &rangeName, int min, int max)
     complexType = rangeName;
     mappingType = MappingType::complex;
   }
-  else
-  {
-    rangeMin    = 0;
-    rangeMax    = 0;
-    mappingType = MappingType::none;
-  }
-  colorMapOther = {};
 }
 
 Color ColorMapper::getColor(int value) const

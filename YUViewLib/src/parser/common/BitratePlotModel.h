@@ -61,7 +61,7 @@ public:
     int duration {1};
     size_t bitrate {0};
     bool keyframe {false};
-    QString frameType;
+    QString frameType {};
   };
 
   void addBitratePoint(int streamIndex, BitrateEntry &entry);

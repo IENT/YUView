@@ -92,7 +92,7 @@ private:
   // E.g. for "somehting_0001.png" this will set the name "something_xxxx.png"
   void setInternals(const QString &filePath);
 
-  QString internalName;
+  QString internalName{};
 
   // Fill the given imageFiles list with all the files that can be found for the given file.
   static void fillImageFileList(QStringList &imageFiles, const QString &filePath);

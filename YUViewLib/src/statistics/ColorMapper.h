@@ -52,7 +52,7 @@ namespace stats
 class ColorMapper
 {
 public:
-  ColorMapper();
+  ColorMapper() = default;
   ColorMapper(int min, const Color &colMin, int max, const Color &colMax);
   ColorMapper(const QString &rangeName, int min, int max);
 
@@ -64,11 +64,13 @@ public:
   // ID: 0:colorMapperGradient, 1:colorMapperMap, 2+:ColorMapperComplex
   int getID() const;
 
-  int                  rangeMin, rangeMax;
-  Color                minColor, maxColor;
-  std::map<int, Color> colorMap;      // Each int is mapped to a specific color
-  Color                colorMapOther; // All other values are mapped to this color
-  QString              complexType;
+  int                  rangeMin{0};
+  int                  rangeMax{0};
+  Color                minColor {}
+  Color                maxColor{};
+  std::map<int, Color> colorMap;        // Each int is mapped to a specific color
+  Color                colorMapOther{}; // All other values are mapped to this color
+  QString              complexType{};
 
   // Two colorMappers are identical if they will return the same color when asked for any value.
   // When changing the type of one of the mappers, this might not be true anymore.
@@ -83,7 +85,7 @@ public:
   };
   static unsigned mappingTypeToUInt(MappingType mappingType);
 
-  MappingType        mappingType;
+  MappingType        mappingType{MappingType::none};
   static QStringList supportedComplexTypes;
 };
 

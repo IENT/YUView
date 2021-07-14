@@ -89,7 +89,7 @@ protected:
   int blockOutsideOfFramePOC{-1};
 
   bool    error{false};
-  QString errorMessage;
+  QString errorMessage{};
 
   double parsingProgress{};
   bool   abortParsingDestroy{};
