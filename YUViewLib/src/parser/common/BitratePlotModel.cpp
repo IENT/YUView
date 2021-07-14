@@ -43,10 +43,7 @@
 
 #include <common/functions.h>
 
-unsigned BitratePlotModel::getNrStreams() const
-{
-  return this->dataPerStream.size();
-}
+unsigned BitratePlotModel::getNrStreams() const { return this->dataPerStream.size(); }
 
 PlotModel::StreamParameter BitratePlotModel::getStreamParameter(unsigned streamIndex) const
 {
@@ -55,8 +52,10 @@ PlotModel::StreamParameter BitratePlotModel::getStreamParameter(unsigned streamI
   if (this->dataPerStream.contains(streamIndex))
   {
     PlotModel::StreamParameter streamParameter;
-    streamParameter.xRange.min = (sortMode == SortMode::DECODE_ORDER) ? double(this->rangeDts.min) : double(this->rangePts.min);
-    streamParameter.xRange.max = (sortMode == SortMode::DECODE_ORDER) ? double(this->rangeDts.max) : double(this->rangePts.max);
+    streamParameter.xRange.min = (sortMode == SortMode::DECODE_ORDER) ? double(this->rangeDts.min)
+                                                                      : double(this->rangePts.min);
+    streamParameter.xRange.max = (sortMode == SortMode::DECODE_ORDER) ? double(this->rangeDts.max)
+                                                                      : double(this->rangePts.max);
     streamParameter.yRange.min = double(this->rangeBitratePerStream[streamIndex].min);
     streamParameter.yRange.max = double(this->rangeBitratePerStream[streamIndex].max);
 
@@ -69,7 +68,8 @@ PlotModel::StreamParameter BitratePlotModel::getStreamParameter(unsigned streamI
   return {};
 }
 
-PlotModel::Point BitratePlotModel::getPlotPoint(unsigned streamIndex, unsigned plotIndex, unsigned pointIndex) const
+PlotModel::Point
+BitratePlotModel::getPlotPoint(unsigned streamIndex, unsigned plotIndex, unsigned pointIndex) const
 {
   QMutexLocker locker(&this->dataMutex);
 
@@ -84,7 +84,7 @@ PlotModel::Point BitratePlotModel::getPlotPoint(unsigned streamIndex, unsigned p
     else
       point.x = this->dataPerStream[streamIndex][pointIndex].pts;
     point.intra = this->dataPerStream[streamIndex][pointIndex].keyframe;
-    
+
     const auto isAveragePlot = (plotIndex == 1);
     if (isAveragePlot)
       point.y = this->calculateAverageValue(streamIndex, pointIndex);
@@ -98,33 +98,39 @@ PlotModel::Point BitratePlotModel::getPlotPoint(unsigned streamIndex, unsigned p
   return {};
 }
 
-QString BitratePlotModel::getPointInfo(unsigned streamIndex, unsigned plotIndex, unsigned pointIndex) const
+QString
+BitratePlotModel::getPointInfo(unsigned streamIndex, unsigned plotIndex, unsigned pointIndex) const
 {
   QMutexLocker locker(&this->dataMutex);
-  auto &entry = this->dataPerStream[streamIndex][pointIndex];
+
+  if (!this->dataPerStream.contains(streamIndex) ||
+      this->dataPerStream[streamIndex].size() <= pointIndex)
+    return {};
+
+  auto &     entry         = this->dataPerStream[streamIndex][pointIndex];
   const auto isAveragePlot = (plotIndex == 1);
 
   if (isAveragePlot)
     return QString("<h4>Stream Average %1</h4>"
-                  "<table width=\"100%\">"
-                  "<tr><td>PTS:</td><td align=\"right\">%2</td></tr>"
-                  "<tr><td>DTS:</td><td align=\"right\">%3</td></tr>"
-                  "<tr><td>Average:</td><td align=\"right\">%4</td></tr>"
-                  "<tr><td>Type:</td><td align=\"right\">%5</td></tr>"
-                  "</table>")
-      .arg(streamIndex)
-      .arg(entry.pts)
-      .arg(entry.dts)
-      .arg(this->calculateAverageValue(streamIndex, pointIndex))
-      .arg(entry.frameType);
+                   "<table width=\"100%\">"
+                   "<tr><td>PTS:</td><td align=\"right\">%2</td></tr>"
+                   "<tr><td>DTS:</td><td align=\"right\">%3</td></tr>"
+                   "<tr><td>Average:</td><td align=\"right\">%4</td></tr>"
+                   "<tr><td>Type:</td><td align=\"right\">%5</td></tr>"
+                   "</table>")
+        .arg(streamIndex)
+        .arg(entry.pts)
+        .arg(entry.dts)
+        .arg(this->calculateAverageValue(streamIndex, pointIndex))
+        .arg(entry.frameType);
   else
     return QString("<h4>Stream %1</h4>"
-                    "<table width=\"100%\">"
-                    "<tr><td>PTS:</td><td align=\"right\">%2</td></tr>"
-                    "<tr><td>DTS:</td><td align=\"right\">%3</td></tr>"
-                    "<tr><td>Duration:</td><td align=\"right\">%4</td></tr>"
-                    "<tr><td>Bitrate:</td><td align=\"right\">%5</td></tr>"
-                    "</table>")
+                   "<table width=\"100%\">"
+                   "<tr><td>PTS:</td><td align=\"right\">%2</td></tr>"
+                   "<tr><td>DTS:</td><td align=\"right\">%3</td></tr>"
+                   "<tr><td>Duration:</td><td align=\"right\">%4</td></tr>"
+                   "<tr><td>Bitrate:</td><td align=\"right\">%5</td></tr>"
+                   "</table>")
         .arg(streamIndex)
         .arg(entry.pts)
         .arg(entry.dts)
@@ -185,27 +191,35 @@ void BitratePlotModel::addBitratePoint(int streamIndex, BitrateEntry &entry)
     rangePts.min = std::min(rangePts.min, entry.pts);
     rangePts.max = std::max(rangePts.max, entry.pts);
   }
-  
-  rangeBitratePerStream[streamIndex].min = std::min(rangeBitratePerStream[streamIndex].min, int(entry.bitrate));
-  rangeBitratePerStream[streamIndex].max = std::max(rangeBitratePerStream[streamIndex].max, int(entry.bitrate));
+
+  rangeBitratePerStream[streamIndex].min =
+      std::min(rangeBitratePerStream[streamIndex].min, int(entry.bitrate));
+  rangeBitratePerStream[streamIndex].max =
+      std::max(rangeBitratePerStream[streamIndex].max, int(entry.bitrate));
 
   // Store absolute minimum and maximum over all streams
-  yMaxStreamRange.min = std::min(yMaxStreamRange.min, double(rangeBitratePerStream[streamIndex].min));
-  yMaxStreamRange.max = std::max(yMaxStreamRange.max, double(rangeBitratePerStream[streamIndex].max));
+  yMaxStreamRange.min =
+      std::min(yMaxStreamRange.min, double(rangeBitratePerStream[streamIndex].min));
+  yMaxStreamRange.max =
+      std::max(yMaxStreamRange.max, double(rangeBitratePerStream[streamIndex].max));
 
-  DEBUG_PLOT("BitrateItemModel::addBitratePoint streamIndex " << streamIndex << " pts " << entry.pts << " dts " << entry.dts << " rate " << entry.bitrate << " keyframe " << entry.keyframe);
+  DEBUG_PLOT("BitrateItemModel::addBitratePoint streamIndex "
+             << streamIndex << " pts " << entry.pts << " dts " << entry.dts << " rate "
+             << entry.bitrate << " keyframe " << entry.keyframe);
 
   // Keep the list sorted
-  const auto currentSortMode = this->sortMode;
-  auto compareFunctionLessThen = [currentSortMode](const BitrateEntry &a, const BitrateEntry &b) 
-  {
+  const auto currentSortMode   = this->sortMode;
+  auto compareFunctionLessThen = [currentSortMode](const BitrateEntry &a, const BitrateEntry &b) {
     if (currentSortMode == SortMode::DECODE_ORDER)
       return a.dts < b.dts;
     else
       return b.pts < a.pts;
   };
 
-  auto insertIterator = std::upper_bound(this->dataPerStream[streamIndex].begin(), this->dataPerStream[streamIndex].end(), entry, compareFunctionLessThen);
+  auto insertIterator = std::upper_bound(this->dataPerStream[streamIndex].begin(),
+                                         this->dataPerStream[streamIndex].end(),
+                                         entry,
+                                         compareFunctionLessThen);
   this->dataPerStream[streamIndex].insert(insertIterator, entry);
   this->eventSubsampler.postEvent();
   if (newStream)
@@ -220,9 +234,8 @@ void BitratePlotModel::setBitrateSortingIndex(int index)
 
   this->sortMode = newSortMode;
 
-  const auto currentSortMode = this->sortMode;
-  auto compareFunctionLessThen = [currentSortMode](const BitrateEntry &a, const BitrateEntry &b) 
-  {
+  const auto currentSortMode   = this->sortMode;
+  auto compareFunctionLessThen = [currentSortMode](const BitrateEntry &a, const BitrateEntry &b) {
     if (currentSortMode == SortMode::DECODE_ORDER)
       return a.dts < b.dts;
     else
@@ -234,12 +247,14 @@ void BitratePlotModel::setBitrateSortingIndex(int index)
     std::sort(list.begin(), list.end(), compareFunctionLessThen);
 }
 
-unsigned int BitratePlotModel::calculateAverageValue(unsigned streamIndex, unsigned pointIndex) const
+unsigned int BitratePlotModel::calculateAverageValue(unsigned streamIndex,
+                                                     unsigned pointIndex) const
 {
-  const unsigned int averageRange = 10;
-  unsigned averageBitrate = 0;
-  const unsigned start = std::max(unsigned(0), pointIndex - averageRange);
-  const unsigned end = std::min(pointIndex + averageRange, unsigned(this->dataPerStream[streamIndex].size()));
+  const unsigned int averageRange   = 10;
+  unsigned           averageBitrate = 0;
+  const unsigned     start          = std::max(unsigned(0), pointIndex - averageRange);
+  const unsigned     end =
+      std::min(pointIndex + averageRange, unsigned(this->dataPerStream[streamIndex].size()));
   for (unsigned i = start; i < end; i++)
     averageBitrate += unsigned(this->dataPerStream[streamIndex][i].bitrate);
   return averageBitrate / (end - start);

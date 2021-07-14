@@ -66,7 +66,7 @@ public:
 
   int                  rangeMin{0};
   int                  rangeMax{0};
-  Color                minColor {}
+  Color                minColor{};
   Color                maxColor{};
   std::map<int, Color> colorMap;        // Each int is mapped to a specific color
   Color                colorMapOther{}; // All other values are mapped to this color

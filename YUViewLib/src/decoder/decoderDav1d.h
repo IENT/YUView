@@ -99,12 +99,12 @@ private:
 struct dav1dFrameInfo
 {
   dav1dFrameInfo(Size s, Dav1dFrameType frameType);
-  Size           frameSize;
-  Size           frameSizeAligned;
-  Size           sizeInBlocks;
-  Size           sizeInBlocksAligned;
-  int            b4_stride;
-  Dav1dFrameType frameType;
+  Size           frameSize{};
+  Size           frameSizeAligned{};
+  Size           sizeInBlocks{};
+  Size           sizeInBlocksAligned{};
+  int            b4_stride{};
+  Dav1dFrameType frameType{};
 };
 
 // This class wraps the libde265 library in a demand-load fashion.
