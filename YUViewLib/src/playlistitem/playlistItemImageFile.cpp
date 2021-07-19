@@ -43,20 +43,16 @@
 #define IMAGEFILE_ERROR_TEXT "The given image file could not be loaded."
 
 playlistItemImageFile::playlistItemImageFile(const QString &filePath)
-    : playlistItem(filePath, Type::Static), needToLoadImage(true), imageLoading(false)
+    : playlistItem(filePath, Type::Static)
 {
   // Set the properties of the playlistItem
-  setIcon(0, functionsGui::convertIcon(":img_television.png"));
+  this->setIcon(0, functionsGui::convertIcon(":img_television.png"));
   // Nothing can be dropped onto an image file
-  setFlags(flags() & ~Qt::ItemIsDropEnabled);
+  this->setFlags(flags() & ~Qt::ItemIsDropEnabled);
 
   this->prop.isFileSource          = true;
   this->prop.propertiesWidgetTitle = "Image Properties";
 
-  // The image file is unchanged
-  fileChanged = false;
-
-  // Does the file exits?
   QFileInfo fileInfo(filePath);
   if (!fileInfo.exists() || !fileInfo.isFile())
     return;
@@ -66,16 +62,15 @@ playlistItemImageFile::playlistItemImageFile(const QString &filePath)
           this,
           &playlistItemImageFile::fileSystemWatcherFileChanged);
 
-  // Install a file watcher if file watching is active.
-  updateSettings();
+  this->updateSettings();
 }
 
 void playlistItemImageFile::loadFrame(int, bool, bool, bool emitSignals)
 {
-  imageLoading = true;
-  frame.loadCurrentImageFromFile(this->properties().name);
-  imageLoading    = false;
-  needToLoadImage = false;
+  this->imageLoading = true;
+  this->frame.loadCurrentImageFromFile(this->properties().name);
+  this->imageLoading    = false;
+  this->needToLoadImage = false;
 
   if (emitSignals)
     emit signalItemChanged(true, RECACHE_NONE);
@@ -88,9 +83,9 @@ void playlistItemImageFile::savePlaylist(QDomElement &root, const QDir &playlist
   // Determine the relative path to the raw file. We save both in the playlist.
   QUrl fileURL(filename);
   fileURL.setScheme("file");
-  QString relativePath = playlistDir.relativeFilePath(filename);
+  auto relativePath = playlistDir.relativeFilePath(filename);
 
-  YUViewDomElement d = root.ownerDocument().createElement("playlistItemImageFile");
+  auto d = YUViewDomElement(root.ownerDocument().createElement("playlistItemImageFile"));
 
   // Append the properties of the playlistItem
   playlistItem::appendPropertiesToPlaylist(d);
@@ -109,16 +104,15 @@ playlistItemImageFile::newplaylistItemImageFile(const YUViewDomElement &root,
                                                 const QString &         playlistFilePath)
 {
   // Parse the DOM element. It should have all values of a playlistItemImageFile
-  QString absolutePath = root.findChildValue("absolutePath");
-  QString relativePath = root.findChildValue("relativePath");
+  auto absolutePath = root.findChildValue("absolutePath");
+  auto relativePath = root.findChildValue("relativePath");
 
   // check if file with absolute path exists, otherwise check relative path
-  QString filePath =
-      FileSource::getAbsPathFromAbsAndRel(playlistFilePath, absolutePath, relativePath);
+  auto filePath = FileSource::getAbsPathFromAbsAndRel(playlistFilePath, absolutePath, relativePath);
   if (filePath.isEmpty())
     return nullptr;
 
-  playlistItemImageFile *newImage = new playlistItemImageFile(filePath);
+  auto newImage = new playlistItemImageFile(filePath);
 
   // Load the propertied of the playlistItemIndexed
   playlistItem::loadPropertiesFromPlaylist(root, newImage);
@@ -132,20 +126,23 @@ void playlistItemImageFile::drawItem(QPainter *painter, int, double zoomFactor, 
   {
     // The image could not be loaded. Draw a text instead.
     // Get the size of the text and create a QRect of that size which is centered at (0,0)
-    QFont displayFont = painter->font();
+    auto displayFont = painter->font();
     displayFont.setPointSizeF(painter->font().pointSizeF() * zoomFactor);
     painter->setFont(displayFont);
-    QSize textSize = painter->fontMetrics().size(0, IMAGEFILE_ERROR_TEXT);
+    auto  textSize = painter->fontMetrics().size(0, IMAGEFILE_ERROR_TEXT);
     QRect textRect;
     textRect.setSize(textSize);
     textRect.moveCenter(QPoint(0, 0));
 
-    // Draw the text
     painter->drawText(textRect, IMAGEFILE_ERROR_TEXT);
   }
-  else
-    // Draw the frame
+  else if (!this->imageLoading)
     frame.drawFrame(painter, zoomFactor, drawRawData);
+}
+
+ItemLoadingState playlistItemImageFile::needsLoading(int, bool)
+{
+  return needToLoadImage ? ItemLoadingState::LoadingNeeded : ItemLoadingState::LoadingNotNeeded;
 }
 
 void playlistItemImageFile::getSupportedFileExtensions(QStringList &allExtensions,
@@ -156,7 +153,7 @@ void playlistItemImageFile::getSupportedFileExtensions(QStringList &allExtension
   QString filter = "Static Image (";
   for (auto &fmt : formats)
   {
-    QString formatString = QString(fmt);
+    auto formatString = QString(fmt);
     allExtensions.append(formatString);
     filter += "*." + formatString + " ";
   }
@@ -164,7 +161,7 @@ void playlistItemImageFile::getSupportedFileExtensions(QStringList &allExtension
   // Append Targa/TGA extensions
   for (auto fmt : {"tga", "icb", "vda", "vst"})
   {
-    QString formatString = QString(fmt);
+    auto formatString = QString(fmt);
     allExtensions.append(formatString);
     filter += "*." + formatString + " ";
   }
@@ -221,4 +218,11 @@ void playlistItemImageFile::updateSettings()
     fileWatcher.addPath(this->properties().name);
   else
     fileWatcher.removePath(this->properties().name);
+}
+
+void playlistItemImageFile::fileSystemWatcherFileChanged(const QString &)
+{
+  this->needToLoadImage = true;
+  emit signalItemChanged(true, RECACHE_CLEAR);
+  this->updateSettings();
 }

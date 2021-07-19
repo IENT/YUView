@@ -63,11 +63,7 @@ public:
   virtual void
   drawItem(QPainter *painter, int frameIdx, double zoomFactor, bool drawRawData) override;
 
-  // Do we need to load the given frame first?
-  virtual ItemLoadingState needsLoading(int, bool) override
-  {
-    return needToLoadImage ? ItemLoadingState::LoadingNeeded : ItemLoadingState::LoadingNotNeeded;
-  }
+  virtual ItemLoadingState needsLoading(int, bool) override;
 
   // Add the file type filters and the extensions of files that we can load.
   static void getSupportedFileExtensions(QStringList &allExtensions, QStringList &filters);
@@ -77,13 +73,6 @@ public:
 
   virtual bool canBeUsedInProcessing() const override { return true; }
 
-  // ----- Detection of source/file change events -----
-  virtual bool isSourceChanged() override
-  {
-    bool b      = fileChanged;
-    fileChanged = false;
-    return b;
-  }
   virtual void reloadItemSource() override { needToLoadImage = false; }
   virtual void updateSettings() override;
 
@@ -96,7 +85,7 @@ public:
 
 private slots:
   // The image file that we loaded was changed.
-  void fileSystemWatcherFileChanged(const QString &) { fileChanged = true; }
+  void fileSystemWatcherFileChanged(const QString &);
 
 private:
   // The frame handler that draws the frame
@@ -104,8 +93,8 @@ private:
 
   // Watch the loaded file for modifications
   QFileSystemWatcher fileWatcher;
-  bool               fileChanged;
 
   // Does the image need to be loaded? Is it currently loading?
-  bool needToLoadImage, imageLoading;
+  bool              needToLoadImage{true};
+  std::atomic<bool> imageLoading{false};
 };
