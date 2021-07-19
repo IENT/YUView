@@ -109,7 +109,7 @@ auto AnnexB::getClosestSeekPoint(FrameIndexDisplayOrder targetFrame,
   auto frameTarget  = this->frameListDisplayOder[targetFrame];
   auto frameCurrent = this->frameListDisplayOder[currentFrame];
 
-  auto bestSeekFrame            = this->frameListCodingOrder.begin();
+  auto bestSeekFrame = this->frameListCodingOrder.begin();
   for (auto it = this->frameListCodingOrder.begin(); it != this->frameListCodingOrder.end(); it++)
   {
     if (it->randomAccessPoint && it->poc < frameTarget.poc)

@@ -235,7 +235,7 @@ AnnexBVVC::parseAndAddNALUnit(int                                           nalI
                               const ByteVector &                            data,
                               std::optional<BitratePlotModel::BitrateEntry> bitrateEntry,
                               std::optional<pairUint64>                     nalStartEndPosFile,
-                              std::shared_ptr<TreeItem>                                    parent)
+                              std::shared_ptr<TreeItem>                     parent)
 {
   AnnexB::ParseResult parseResult;
 
@@ -542,6 +542,9 @@ AnnexBVVC::parseAndAddNALUnit(int                                           nalI
 bool AnnexBVVC::auDelimiterDetector_t::isStartOfNewAU(
     std::shared_ptr<vvc::NalUnitVVC> nal, std::shared_ptr<vvc::picture_header_structure> ph)
 {
+  if (!nal || !ph)
+    return false;
+
   auto nalType = nal->header.nal_unit_type;
 
   if (this->lastNalWasVcl &&
