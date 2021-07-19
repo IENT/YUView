@@ -402,7 +402,8 @@ void playlistItemCompressedVideo::savePlaylist(QDomElement &root, const QDir &pl
   d.appendProperiteChild("inputFormat", InputFormatMapper.getName(this->inputFormat));
   d.appendProperiteChild("decoder", DecoderEngineMapper.getName(this->decoderEngine));
 
-  this->video->savePlaylist(d);
+  if (this->video)
+    this->video->savePlaylist(d);
   if (this->loadingDecoder && loadingDecoder->statisticsSupported())
   {
     auto newChild = YUViewDomElement(d.ownerDocument().createElement("StatisticsData"));
