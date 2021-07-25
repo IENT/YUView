@@ -43,7 +43,7 @@
 using namespace YUView;
 
 // Debug the decoder ( 0:off 1:interactive deocder only 2:caching decoder only 3:both)
-#define DECODERLIBD265_DEBUG_OUTPUT 0
+#define DECODERLIBD265_DEBUG_OUTPUT 3
 #if DECODERLIBD265_DEBUG_OUTPUT && !NDEBUG
 #include <QDebug>
 #if DECODERLIBD265_DEBUG_OUTPUT == 1
@@ -425,7 +425,7 @@ bool decoderLibde265::pushData(QByteArray &data)
     DEBUG_LIBDE265("decoderLibde265::pushData push data %d bytes%s%s",
                    data.size(),
                    err != DE265_OK ? " - err " : "",
-                   err != DE265_OK ? de265_get_error_text(err) : "");
+                   err != DE265_OK ? this->lib.de265_get_error_text(err) : "");
     if (err != DE265_OK)
       return setErrorB("Error pushing data to decoder (de265_push_NAL): " +
                        QString(this->lib.de265_get_error_text(err)));

@@ -48,7 +48,7 @@ using namespace YUView;
 using namespace YUV_Internals;
 
 // Debug the decoder (0:off 1:interactive deocder only 2:caching decoder only 3:both)
-#define DECODERDAV1D_DEBUG_OUTPUT 0
+#define DECODERDAV1D_DEBUG_OUTPUT 3
 #if DECODERDAV1D_DEBUG_OUTPUT && !NDEBUG
 #include <QDebug>
 #if DECODERDAV1D_DEBUG_OUTPUT == 1

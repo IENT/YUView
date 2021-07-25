@@ -138,18 +138,18 @@ SettingsDialog::SettingsDialog(QWidget *parent) : QDialog(parent)
   ui.lineEditDecoderPath->setText(settings.value("SearchPath", "").toString());
 
   for (const auto &decoder : decoder::DecodersHEVC)
-    ui.comboBoxDefaultHEVC->addItem(
+    ui.comboBoxDefaultDecoder->addItem(
         QString::fromStdString(decoder::DecoderEngineMapper.getName(decoder)));
   for (const auto &decoder : decoder::DecodersVVC)
-    ui.comboBoxDefaultVVC->addItem(
+    ui.comboBoxDefaultDecoder->addItem(
         QString::fromStdString(decoder::DecoderEngineMapper.getName(decoder)));
   for (const auto &decoder : decoder::DecodersAV1)
-    ui.comboBoxDefaultAV1->addItem(
+    ui.comboBoxDefaultDecoder->addItem(
         QString::fromStdString(decoder::DecoderEngineMapper.getName(decoder)));
 
-  ui.comboBoxDefaultHEVC->setCurrentText(settings.value("DefaultDecoderHEVC", 0).toString());
-  ui.comboBoxDefaultVVC->setCurrentText(settings.value("DefaultDecoderVVC", 0).toString());
-  ui.comboBoxDefaultAV1->setCurrentText(settings.value("DefaultDecoderAV1", 0).toString());
+  ui.comboBoxDefaultDecoder->setCurrentText(settings.value("DefaultDecoderHEVC", 0).toString());
+  ui.comboBoxDefaultDecoder->setCurrentText(settings.value("DefaultDecoderVVC", 0).toString());
+  ui.comboBoxDefaultDecoder->setCurrentText(settings.value("DefaultDecoderAV1", 0).toString());
 
   ui.lineEditLibde265File->setText(settings.value("libde265File", "").toString());
   ui.lineEditLibHMFile->setText(settings.value("libHMFile", "").toString());
@@ -468,9 +468,9 @@ void SettingsDialog::on_pushButtonSave_clicked()
   // "Decoders" tab
   settings.beginGroup("Decoders");
   settings.setValue("SearchPath", ui.lineEditDecoderPath->text());
-  settings.setValue("DefaultDecoderHEVC", ui.comboBoxDefaultHEVC->currentText());
-  settings.setValue("DefaultDecoderVVC", ui.comboBoxDefaultVVC->currentText());
-  settings.setValue("DefaultDecoderAV1", ui.comboBoxDefaultAV1->currentText());
+  settings.setValue("DefaultDecoderHEVC", ui.comboBoxDefaultDecoder->currentText());
+  settings.setValue("DefaultDecoderVVC", ui.comboBoxDefaultDecoder->currentText());
+  settings.setValue("DefaultDecoderAV1", ui.comboBoxDefaultDecoder->currentText());
   // Raw coded video files
   settings.setValue("libde265File", ui.lineEditLibde265File->text());
   settings.setValue("libHMFile", ui.lineEditLibHMFile->text());

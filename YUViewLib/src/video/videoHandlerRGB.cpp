@@ -265,13 +265,13 @@ QLayout *videoHandlerRGB::createVideoHandlerControls(bool isSizeFixed)
   ui.GScaleSpinBox->setMaximum(1000);
   ui.BScaleSpinBox->setValue(componentScale[2]);
   ui.BScaleSpinBox->setMaximum(1000);
-  ui.AScaleSpinBox->setValue(componentScale[3]);
-  ui.AScaleSpinBox->setMaximum(1000);
+  // ui.AScaleSpinBox->setValue(componentScale[3]);
+  // ui.AScaleSpinBox->setMaximum(1000);
 
   ui.RInvertCheckBox->setChecked(this->componentInvert[0]);
   ui.GInvertCheckBox->setChecked(this->componentInvert[1]);
   ui.BInvertCheckBox->setChecked(this->componentInvert[2]);
-  ui.AInvertCheckBox->setChecked(this->componentInvert[3]);
+  // ui.AInvertCheckBox->setChecked(this->componentInvert[3]);
 
   ui.limitedRangeCheckBox->setChecked(this->limitedRange);
 
@@ -283,7 +283,8 @@ QLayout *videoHandlerRGB::createVideoHandlerControls(bool isSizeFixed)
           QOverload<int>::of(&QComboBox::currentIndexChanged),
           this,
           &videoHandlerRGB::slotDisplayOptionsChanged);
-  for (auto spinBox : {ui.RScaleSpinBox, ui.GScaleSpinBox, ui.BScaleSpinBox, ui.AScaleSpinBox})
+  // for (auto spinBox : {ui.RScaleSpinBox, ui.GScaleSpinBox, ui.BScaleSpinBox, ui.AScaleSpinBox})
+  for (auto spinBox : {ui.RScaleSpinBox, ui.GScaleSpinBox, ui.BScaleSpinBox})
     connect(spinBox,
             QOverload<int>::of(&QSpinBox::valueChanged),
             this,
@@ -291,7 +292,7 @@ QLayout *videoHandlerRGB::createVideoHandlerControls(bool isSizeFixed)
   for (auto checkBox : {ui.RInvertCheckBox,
                         ui.GInvertCheckBox,
                         ui.BInvertCheckBox,
-                        ui.AInvertCheckBox,
+                        // ui.AInvertCheckBox,
                         ui.limitedRangeCheckBox})
     connect(checkBox, &QCheckBox::stateChanged, this, &videoHandlerRGB::slotDisplayOptionsChanged);
 
@@ -317,11 +318,11 @@ void videoHandlerRGB::slotDisplayOptionsChanged()
   componentScale[0]  = ui.RScaleSpinBox->value();
   componentScale[1]  = ui.GScaleSpinBox->value();
   componentScale[2]  = ui.BScaleSpinBox->value();
-  componentScale[3]  = ui.AScaleSpinBox->value();
+  // componentScale[3]  = ui.AScaleSpinBox->value();
   componentInvert[0] = ui.RInvertCheckBox->isChecked();
   componentInvert[1] = ui.GInvertCheckBox->isChecked();
   componentInvert[2] = ui.BInvertCheckBox->isChecked();
-  componentInvert[3] = ui.AInvertCheckBox->isChecked();
+  // componentInvert[3] = ui.AInvertCheckBox->isChecked();
   limitedRange       = ui.limitedRangeCheckBox->isChecked();
 
   // Set the current frame in the buffer to be invalid and clear the cache.
@@ -343,11 +344,11 @@ void videoHandlerRGB::updateControlsForNewPixelFormat()
   ui.RScaleSpinBox->setEnabled(valid);
   ui.GScaleSpinBox->setEnabled(valid);
   ui.BScaleSpinBox->setEnabled(valid);
-  ui.AScaleSpinBox->setEnabled(validAndAlpha);
+  // ui.AScaleSpinBox->setEnabled(validAndAlpha);
   ui.RInvertCheckBox->setEnabled(valid);
   ui.GInvertCheckBox->setEnabled(valid);
   ui.BInvertCheckBox->setEnabled(valid);
-  ui.AInvertCheckBox->setEnabled(validAndAlpha);
+  // ui.AInvertCheckBox->setEnabled(validAndAlpha);
 
   QSignalBlocker block(ui.colorComponentsComboBox);
   ui.colorComponentsComboBox->setEnabled(valid);

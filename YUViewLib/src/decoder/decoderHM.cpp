@@ -41,7 +41,7 @@
 #include "common/typedef.h"
 
 // Debug the decoder ( 0:off 1:interactive deocder only 2:caching decoder only 3:both)
-#define DECODERHM_DEBUG_OUTPUT 0
+#define DECODERHM_DEBUG_OUTPUT 3
 #if DECODERHM_DEBUG_OUTPUT && !NDEBUG
 #include <QDebug>
 #if DECODERHM_DEBUG_OUTPUT == 1

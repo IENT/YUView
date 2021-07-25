@@ -39,7 +39,7 @@
 
 #include "common/typedef.h"
 
-// Debug the decoder ( 0:off 1:interactive deocder only 2:caching decoder only 3:both)
+// Debug the decoder ( 0:off 1:interactive decoder only 2:caching decoder only 3:both)
 #define decoderVVDec_DEBUG_OUTPUT 0
 #if decoderVVDec_DEBUG_OUTPUT && !NDEBUG
 #include <QDebug>
@@ -170,17 +170,21 @@ QStringList decoderVVDec::getLibraryNames() const
   // On windows and linux ommitting the extension works
   QStringList names;
   if (is_Q_OS_LINUX)
-    names << "libvvdecLib";
+    names << "libvvdec.so";
   if (is_Q_OS_MAC)
     names << "libvvdecLib.dylib";
   if (is_Q_OS_WIN)
     names << "vvdecLib";
+
+  qDebug() << names;
 
   return names;
 }
 
 void decoderVVDec::resolveLibraryFunctionPointers()
 {
+  qDebug() << __PRETTY_FUNCTION__;
+
   if (!resolve(this->lib.vvdec_get_version, "vvdec_get_version"))
     return;
 
@@ -232,11 +236,14 @@ void decoderVVDec::resolveLibraryFunctionPointers()
 
 template <typename T> T decoderVVDec::resolve(T &fun, const char *symbol, bool optional)
 {
-  auto ptr = this->library.resolve(symbol);
+  qDebug() << "resolve(" << symbol << ")";
+  // auto ptr = this->library.resolve(symbol);
+  auto ptr = dlsym(this->dynamicLibrary, symbol);
+  qDebug() << "ptr = " << ptr;
   if (!ptr)
   {
     if (!optional)
-      this->setError(QStringLiteral("Error loading the libde265 library: Can't find function %1.")
+      this->setError(QStringLiteral("Error loading the libvvdec library: Can't find function %1.")
                          .arg(symbol));
     return nullptr;
   }
@@ -248,7 +255,7 @@ void decoderVVDec::resetDecoder()
 {
   if (this->decoder != nullptr)
     if (this->lib.vvdec_decoder_close(decoder) != VVDEC_OK)
-      return setError("Reset: Freeing the decoder failded.");
+      return setError("Reset: Freeing the decoder failed.");
 
   this->decoder = nullptr;
 
@@ -537,6 +544,8 @@ QString decoderVVDec::getDecoderName() const
 bool decoderVVDec::checkLibraryFile(QString libFilePath, QString &error)
 {
   decoderVVDec testDecoder;
+
+  qDebug() << libFilePath;
 
   // Try to load the library file
   testDecoder.library.setFileName(libFilePath);

@@ -32,6 +32,8 @@
 
 #pragma once
 
+#include <dlfcn.h>
+
 #include <common/EnumMapper.h>
 #include <filesource/FileSourceAnnexBFile.h>
 #include <statistics/StatisticsData.h>
@@ -196,6 +198,8 @@ protected:
 
   QLibrary library;
   QString  libraryPath {};
+
+  void *dynamicLibrary;
 };
 
 } // namespace decoder

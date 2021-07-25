@@ -41,15 +41,15 @@ namespace decoder
 {
 
 // Debug the decoder ( 0:off 1:interactive deocder only 2:caching decoder only 3:both)
-#define DECODERBASE_DEBUG_OUTPUT 0
+#define DECODERBASE_DEBUG_OUTPUT 3
 #if DECODERBASE_DEBUG_OUTPUT && !NDEBUG
 #include <QDebug>
 #if DECODERBASE_DEBUG_OUTPUT == 1
-#define DEBUG_HEVCDECODERBASE if(!isCachingDecoder) qDebug
+#define DEBUG_DECODERBASE if(!isCachingDecoder) qDebug
 #elif DECODERBASE_DEBUG_OUTPUT == 2
-#define DEBUG_HEVCDECODERBASE if(isCachingDecoder) qDebug
+#define DEBUG_DECODERBASE if(isCachingDecoder) qDebug
 #elif DECODERBASE_DEBUG_OUTPUT == 3
-#define DEBUG_HEVCDECODERBASE if (isCachingDecoder) qDebug("c:"); else qDebug("i:"); qDebug
+#define DEBUG_DECODERBASE if (isCachingDecoder) qDebug("c:"); else qDebug("i:"); qDebug
 #endif
 #else
 #define DEBUG_DECODERBASE(fmt,...) ((void)0)
@@ -95,6 +95,7 @@ stats::FrameTypeData decoderBase::getCurrentFrameStatsForType(int typeId) const
 
 void decoderBaseSingleLib::loadDecoderLibrary(QString specificLibrary)
 {
+  DEBUG_DECODERBASE("decoderBase::loadDecoderLibrary Enter");
   // Try to load the HM library from the current working directory
   // Unfortunately relative paths like this do not work: (at least on windows)
   // library.setFileName(".\\libde265");
@@ -126,6 +127,8 @@ void decoderBaseSingleLib::loadDecoderLibrary(QString specificLibrary)
 
     QStringList const libPaths = QStringList()
       << searchPath
+      << "/usr/local/lib64/%1"
+      << "/usr/lib64/%1"
       << QDir::currentPath() + "/%1"
       << QDir::currentPath() + "/decoder/%1"
       << QDir::currentPath() + "/libde265/%1"                       // for legacy installations before the decoders were moved to the "decoders" folder
@@ -138,15 +141,25 @@ void decoderBaseSingleLib::loadDecoderLibrary(QString specificLibrary)
     {
       for (auto &libPath : libPaths)
       {
-        library.setFileName(libPath.arg(libName));
         libraryPath = libPath.arg(libName);
+        qDebug() << libraryPath;
+
+        dynamicLibrary = dlopen(libraryPath.toStdString().c_str(), RTLD_NOW);
+
+        libLoaded = dynamicLibrary != NULL;
+        qDebug() << libLoaded;
+        if (libLoaded)
+          break;
+
         libLoaded = library.load();
+        qDebug() << libLoaded;
         if (libLoaded)
           break;
       }
       if (libLoaded)
         break;
     }
+    DEBUG_DECODERBASE("decoderBase::loadDecoderLibrary Leave");
   }
 
   if (!libLoaded)
