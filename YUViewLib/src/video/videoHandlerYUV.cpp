@@ -2895,10 +2895,12 @@ bool videoHandlerYUV::convertYUVPlanarToRGB(const QByteArray &    sourceBuffer,
     // We are displaying all components, so we have to perform conversion to RGB (possibly including
     // interpolation and YUV math)
     if (format.getSubsampling() != Subsampling::YUV_400 &&
-        (format.getChromaOffset().x != 0 || format.getChromaOffset().y != 0))
+        (format.getChromaOffset().x != 0 || format.getChromaOffset().y != 0) &&
+        chromaInterpolation != ChromaInterpolation::NearestNeighbor)
     {
       // If there is a chroma offset, we must resample the chroma components before we convert them
-      // to RGB. If so, the resampled chroma values are saved in these arrays.
+      // to RGB. If so, the resampled chroma values are saved in these arrays. We only ignore the 
+      // chroma offset for other interpolations then nearest neighbor.
       QByteArray uvPlaneChromaResampled[2];
       uvPlaneChromaResampled[0].resize(nrBytesChromaPlane);
       uvPlaneChromaResampled[1].resize(nrBytesChromaPlane);
@@ -2915,6 +2917,7 @@ bool videoHandlerYUV::convertYUVPlanarToRGB(const QByteArray &    sourceBuffer,
       unsigned char *restrict srcV = uPlaneFirst
                                          ? srcY + nrBytesLumaPlane + nrBytesToNextChromaPlane
                                          : srcY + nrBytesLumaPlane;
+
       UVPlaneResamplingChromaOffset(format,
                                     w / format.getSubsamplingHor(),
                                     h / format.getSubsamplingVer(),
