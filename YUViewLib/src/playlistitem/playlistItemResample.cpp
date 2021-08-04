@@ -137,7 +137,8 @@ void playlistItemResample::drawItem(QPainter *painter,
           ui.spinBoxEnd->setValue(this->cutRange.second);
 
           auto sampleAspectRatio = child->properties().sampleAspectRatio;
-          auto sarEnabled        = sampleAspectRatio.num != sampleAspectRatio.den;
+          auto sarEnabled        = sampleAspectRatio.num != 0 && sampleAspectRatio.den != 0 &&
+                            sampleAspectRatio.num != sampleAspectRatio.den;
           ui.labelSAR->setEnabled(sarEnabled);
           ui.pushButtonSARWidth->setEnabled(sarEnabled);
           ui.pushButtonSARHeight->setEnabled(sarEnabled);
@@ -370,6 +371,9 @@ void playlistItemResample::slotButtonSARWidth(bool)
 
   auto childSize = this->getChildPlaylistItem(0)->getFrameHandler()->getFrameSize();
   auto childSAR  = this->getChildPlaylistItem(0)->properties().sampleAspectRatio;
+
+  if (childSize.height == 0 || childSAR.num == 0 || childSAR.den == 0)
+    return;
 
   auto newHeight = childSize.height;
   auto newWidth  = newHeight * childSAR.den / childSAR.num;
