@@ -663,7 +663,7 @@ void playlistItemCompressedVideo::loadRawData(int frameIdx, bool caching)
     }
   }
 
-  // Decode until we get the right frame from the deocder
+  // Decode until we get the right frame from the decoder
   bool rightFrame = caching ? currentFrameIdx[1] == frameIdx : currentFrameIdx[0] == frameIdx;
   while (!rightFrame)
   {
@@ -809,7 +809,6 @@ void playlistItemCompressedVideo::loadRawData(int frameIdx, bool caching)
   }
   else if (loadingDecoder->state() == decoder::DecoderState::Error)
   {
-    // There was an error in the deocder.
     infoText = "There was an error in the decoder: \n";
     infoText += loadingDecoder->decoderErrorString();
     infoText += "\n";

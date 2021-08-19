@@ -138,7 +138,7 @@ public:
   // The length of the list must be a multiple of 3 (name, libName, fullPath)
   virtual QStringList getLibraryPaths() const = 0;
 
-  // Get the deocder name (everyting that is needed to identify the deocder library) and the codec
+  // Get the decoder name (everyting that is needed to identify the decoder library) and the codec
   // that is being decoded. If needed, also version information (like HM 16.4)
   virtual QString getDecoderName() const = 0;
   virtual QString getCodecName() const   = 0;

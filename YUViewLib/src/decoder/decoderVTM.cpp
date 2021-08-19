@@ -40,7 +40,7 @@
 #include "common/functions.h"
 #include "common/typedef.h"
 
-// Debug the decoder ( 0:off 1:interactive deocder only 2:caching decoder only 3:both)
+// Debug the decoder ( 0:off 1:interactive decoder only 2:caching decoder only 3:both)
 #define DECODERVTM_DEBUG_OUTPUT 0
 #if DECODERVTM_DEBUG_OUTPUT && !NDEBUG
 #include <QDebug>
@@ -186,7 +186,7 @@ void decoderVTM::resetDecoder()
   // Delete decoder
   if (decoder != nullptr)
     if (this->lib.libVTMDec_free_decoder(decoder) != LIBVTMDEC_OK)
-      return setError("Reset: Freeing the decoder failded.");
+      return setError("Reset: Freeing the decoder failed.");
 
   decoder             = nullptr;
   decodedFrameWaiting = false;
