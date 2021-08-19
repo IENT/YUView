@@ -39,7 +39,7 @@
 
 #include "common/typedef.h"
 
-// Debug the decoder ( 0:off 1:interactive deocder only 2:caching decoder only 3:both)
+// Debug the decoder ( 0:off 1:interactive decoder only 2:caching decoder only 3:both)
 #define decoderVVDec_DEBUG_OUTPUT 0
 #if decoderVVDec_DEBUG_OUTPUT && !NDEBUG
 #include <QDebug>
@@ -236,7 +236,7 @@ template <typename T> T decoderVVDec::resolve(T &fun, const char *symbol, bool o
   if (!ptr)
   {
     if (!optional)
-      this->setError(QStringLiteral("Error loading the libde265 library: Can't find function %1.")
+      this->setError(QStringLiteral("Error loading the libvvDeC library: Can't find function %1.")
                          .arg(symbol));
     return nullptr;
   }
@@ -248,7 +248,7 @@ void decoderVVDec::resetDecoder()
 {
   if (this->decoder != nullptr)
     if (this->lib.vvdec_decoder_close(decoder) != VVDEC_OK)
-      return setError("Reset: Freeing the decoder failded.");
+      return setError("Reset: Freeing the decoder failed.");
 
   this->decoder = nullptr;
 
@@ -270,7 +270,7 @@ void decoderVVDec::allocateNewDecoder()
   this->decoder = this->lib.vvdec_decoder_open(&params);
   if (this->decoder == nullptr)
   {
-    this->setError("Error allocating deocder");
+    this->setError("Error allocating decoder");
     return;
   }
 
@@ -353,10 +353,11 @@ bool decoderVVDec::decodeNextFrame()
 
 bool decoderVVDec::getNextFrameFromDecoder()
 {
-  DEBUG_vvdec("decoderVVDec::getNextFrameFromDecoder");
-
   if (this->currentFrame == nullptr)
+  {
+    DEBUG_vvdec("decoderVVDec::getNextFrameFromDecoder No frame decoded");
     return false;
+  }
 
   // Check the validity of the picture
   const auto lumaSize = Size({this->currentFrame->width, this->currentFrame->height});

@@ -37,12 +37,12 @@
 #include <QSettings>
 #include <cstring>
 
-#include "common/typedef.h"
 #include "common/functions.h"
+#include "common/typedef.h"
 
 using namespace YUView;
 
-// Debug the decoder ( 0:off 1:interactive deocder only 2:caching decoder only 3:both)
+// Debug the decoder ( 0:off 1:interactive decoder only 2:caching decoder only 3:both)
 #define DECODERLIBD265_DEBUG_OUTPUT 0
 #if DECODERLIBD265_DEBUG_OUTPUT && !NDEBUG
 #include <QDebug>
@@ -102,7 +102,7 @@ void decoderLibde265::resetDecoder()
   // Delete decoder
   de265_error err = this->lib.de265_free_decoder(decoder);
   if (err != DE265_OK)
-    return setError("Reset: Freeing the decoder failded.");
+    return setError("Reset: Freeing the decoder failed.");
 
   decoder             = nullptr;
   decodedFrameWaiting = false;
@@ -311,7 +311,7 @@ bool decoderLibde265::decodeFrame()
   curImage = nullptr;
   while (more && curImage == nullptr)
   {
-    more            = 0;
+    more     = 0;
     auto err = this->lib.de265_decode(decoder, &more);
 
     if (err == DE265_ERROR_WAITING_FOR_INPUT_DATA)
@@ -335,7 +335,8 @@ bool decoderLibde265::decodeFrame()
   if (curImage != nullptr)
   {
     // Get the resolution / yuv format from the frame
-    auto s = Size(this->lib.de265_get_image_width(curImage, 0), this->lib.de265_get_image_height(curImage, 0));
+    auto s = Size(this->lib.de265_get_image_width(curImage, 0),
+                  this->lib.de265_get_image_height(curImage, 0));
     if (!s.isValid())
       DEBUG_LIBDE265("decoderLibde265::decodeFrame got invalid frame size");
     auto subsampling = convertFromInternalSubsampling(this->lib.de265_get_chroma_format(curImage));
@@ -425,7 +426,7 @@ bool decoderLibde265::pushData(QByteArray &data)
     DEBUG_LIBDE265("decoderLibde265::pushData push data %d bytes%s%s",
                    data.size(),
                    err != DE265_OK ? " - err " : "",
-                   err != DE265_OK ? de265_get_error_text(err) : "");
+                   err != DE265_OK ? this->lib.de265_get_error_text(err) : "");
     if (err != DE265_OK)
       return setErrorB("Error pushing data to decoder (de265_push_NAL): " +
                        QString(this->lib.de265_get_error_text(err)));
@@ -455,7 +456,7 @@ void decoderLibde265::copyImgToByteArray(const de265_image *src, QByteArray &dst
 {
   // How many image planes are there?
   auto cMode    = this->lib.de265_get_chroma_format(src);
-  int          nrPlanes = (cMode == de265_chroma_mono) ? 1 : 3;
+  int  nrPlanes = (cMode == de265_chroma_mono) ? 1 : 3;
 
   // At first get how many bytes we are going to write
   int nrBytes = 0;
@@ -561,12 +562,12 @@ void decoderLibde265::cacheStatistics(const de265_image *img)
   QScopedArrayPointer<int16_t> vec1_x(new int16_t[widthInPB * heightInPB]);
   QScopedArrayPointer<int16_t> vec1_y(new int16_t[widthInPB * heightInPB]);
   this->lib.de265_internals_get_PB_info(img,
-                              refPOC0.data(),
-                              refPOC1.data(),
-                              vec0_x.data(),
-                              vec0_y.data(),
-                              vec1_x.data(),
-                              vec1_y.data());
+                                        refPOC0.data(),
+                                        refPOC1.data(),
+                                        vec0_x.data(),
+                                        vec0_y.data(),
+                                        vec1_x.data(),
+                                        vec1_y.data());
 
   // Get intra prediction mode (intra direction) layout from image
   int widthInIntraDirUnits, heightInIntraDirUnits, log2IntraDirUnitsSize;

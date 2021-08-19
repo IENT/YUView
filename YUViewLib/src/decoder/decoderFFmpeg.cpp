@@ -456,7 +456,7 @@ bool decoderFFmpeg::createDecoder(AVCodecIDWrapper codecID, AVCodecParametersWra
   this->decCtx = this->ff.allocDecoder(this->videoCodec);
   if (!this->decCtx)
     return this->setErrorB(
-        QStringLiteral("Could not allocate video deocder (avcodec_alloc_context3)"));
+        QStringLiteral("Could not allocate video decoder (avcodec_alloc_context3)"));
 
   if (codecpar)
   {
