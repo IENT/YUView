@@ -202,9 +202,7 @@ playlistItemCompressedVideo::playlistItemCompressedVideo(const QString &compress
     // Is this file RGB or YUV?
     rawFormat = inputFileFFmpegLoading->getRawFormat();
     DEBUG_COMPRESSED("playlistItemCompressedVideo::playlistItemCompressedVideo Raw format "
-                     << (rawFormat == raw_YUV   ? "YUV"
-                         : rawFormat == raw_RGB ? "RGB"
-                                                : "Unknown"));
+                     << (rawFormat == raw_YUV ? "YUV" : rawFormat == raw_RGB ? "RGB" : "Unknown"));
     if (rawFormat == raw_YUV)
       format_yuv = inputFileFFmpegLoading->getPixelFormatYUV();
     else if (rawFormat == raw_RGB)
@@ -335,6 +333,8 @@ playlistItemCompressedVideo::playlistItemCompressedVideo(const QString &compress
     }
   }
 
+  this->statisticsUIHandler.setStatisticsData(&this->statisticsData);
+
   // Allocate the decoders
   DEBUG_COMPRESSED("playlistItemCompressedVideo::playlistItemCompressedVideo Initializing "
                    << QString::fromStdString(DecoderEngineMapper.getName(this->decoderEngine))
@@ -353,7 +353,6 @@ playlistItemCompressedVideo::playlistItemCompressedVideo(const QString &compress
   DEBUG_COMPRESSED(
       "playlistItemCompressedVideo::playlistItemCompressedVideo Fill the statistics list");
   this->fillStatisticList();
-  this->statisticsUIHandler.setStatisticsData(&this->statisticsData);
 
   // Set the frame number limits
   if (this->prop.startEndRange == indexRange({-1, -1}))
@@ -675,8 +674,8 @@ void playlistItemCompressedVideo::loadRawData(int frameIdx, bool caching)
       {
         // In this scenario, we can read and push AVPackets
         // from the FFmpeg file and pass them to the FFmpeg decoder directly.
-        auto pkt   = caching ? inputFileFFmpegCaching->getNextPacket(repushData)
-                             : inputFileFFmpegLoading->getNextPacket(repushData);
+        auto pkt = caching ? inputFileFFmpegCaching->getNextPacket(repushData)
+                           : inputFileFFmpegLoading->getNextPacket(repushData);
         repushData = false;
         if (pkt)
           DEBUG_COMPRESSED("playlistItemCompressedVideo::loadRawData retrived packet PTS "
