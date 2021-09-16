@@ -162,13 +162,14 @@ void vui_parameters::parse(reader::SubByteReaderLogging &reader,
                            "chroma_loc_info_present_flag should be equal to 0.");
   if (chroma_loc_info_present_flag)
   {
-    this->chroma_sample_loc_type_top_field = reader.readUEV("chroma_sample_loc_type_top_field");
+    auto meaningChromaLoc =
+        std::vector<std::string>({"Left", "Center", "Top Left", "Top", "Bottom Left", "Bottom"});
+    this->chroma_sample_loc_type_top_field =
+        reader.readUEV("chroma_sample_loc_type_top_field",
+                       Options().withMeaningVector(meaningChromaLoc).withCheckRange({0, 5}));
     this->chroma_sample_loc_type_bottom_field =
-        reader.readUEV("chroma_sample_loc_type_bottom_field");
-    if (chroma_sample_loc_type_top_field > 5 || chroma_sample_loc_type_bottom_field > 5)
-      throw std::logic_error(
-          "The value of chroma_sample_loc_type_top_field and chroma_sample_loc_type_bottom_field "
-          "shall be in the range of 0 to 5, inclusive.");
+        reader.readUEV("chroma_sample_loc_type_bottom_field",
+                       Options().withMeaningVector(meaningChromaLoc).withCheckRange({0, 5}));
   }
   this->timing_info_present_flag = reader.readFlag("timing_info_present_flag");
   if (timing_info_present_flag)
@@ -229,4 +230,4 @@ void vui_parameters::parse(reader::SubByteReaderLogging &reader,
   }
 }
 
-} // namespace parser::av1
+} // namespace parser::avc

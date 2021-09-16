@@ -183,9 +183,14 @@ void vui_parameters::parse(SubByteReaderLogging &reader, unsigned sps_max_sub_la
   this->chroma_loc_info_present_flag = reader.readFlag("chroma_loc_info_present_flag");
   if (this->chroma_loc_info_present_flag)
   {
-    this->chroma_sample_loc_type_top_field = reader.readUEV("chroma_sample_loc_type_top_field");
+    auto meaningChromaLoc =
+        std::vector<std::string>({"Left", "Center", "Top Left", "Top", "Bottom Left", "Bottom"});
+    this->chroma_sample_loc_type_top_field =
+        reader.readUEV("chroma_sample_loc_type_top_field",
+                       Options().withMeaningVector(meaningChromaLoc).withCheckRange({0, 5}));
     this->chroma_sample_loc_type_bottom_field =
-        reader.readUEV("chroma_sample_loc_type_bottom_field");
+        reader.readUEV("chroma_sample_loc_type_bottom_field",
+                       Options().withMeaningVector(meaningChromaLoc).withCheckRange({0, 5}));
   }
 
   this->neutral_chroma_indication_flag = reader.readFlag("neutral_chroma_indication_flag");
