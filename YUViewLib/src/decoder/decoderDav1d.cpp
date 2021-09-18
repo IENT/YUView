@@ -140,7 +140,6 @@ decoderDav1d::~decoderDav1d()
 
 void decoderDav1d::resetDecoder()
 {
-  // Delete decoder
   if (!decoder)
     return setError("Resetting the decoder failed. No decoder allocated.");
 
@@ -148,6 +147,7 @@ void decoderDav1d::resetDecoder()
   if (decoder != nullptr)
     DEBUG_DAV1D(
         "Error closing the decoder. The close function should set the decoder pointer to NULL");
+  decoderBase::resetDecoder();
   decoder = nullptr;
 
   allocateNewDecoder();

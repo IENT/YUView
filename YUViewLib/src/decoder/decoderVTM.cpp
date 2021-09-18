@@ -188,6 +188,7 @@ void decoderVTM::resetDecoder()
     if (this->lib.libVTMDec_free_decoder(decoder) != LIBVTMDEC_OK)
       return setError("Reset: Freeing the decoder failed.");
 
+  decoderBase::resetDecoder();
   decoder             = nullptr;
   decodedFrameWaiting = false;
 

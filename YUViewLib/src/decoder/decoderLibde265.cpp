@@ -104,6 +104,7 @@ void decoderLibde265::resetDecoder()
   if (err != DE265_OK)
     return setError("Reset: Freeing the decoder failed.");
 
+  decoderBase::resetDecoder();
   decoder             = nullptr;
   decodedFrameWaiting = false;
 

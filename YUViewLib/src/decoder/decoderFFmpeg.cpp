@@ -106,7 +106,7 @@ decoderFFmpeg::decoderFFmpeg(AVCodecParametersWrapper codecpar, bool cachingDeco
     return;
 
   AVCodecIDWrapper codecID = this->ff.getCodecIDWrapper(codecpar.getCodecID());
-  this->codecName = codecID.getCodecName();
+  this->codecName          = codecID.getCodecName();
   if (!this->createDecoder(codecID, codecpar))
   {
     this->setError("Error creating the needed decoder.");
@@ -135,8 +135,8 @@ void decoderFFmpeg::resetDecoder()
 
   DEBUG_FFMPEG("decoderFFmpeg::resetDecoder");
   this->ff.flush_buffers(this->decCtx);
-  this->decoderState = DecoderState::NeedsMoreData;
-  this->flushing     = false;
+  this->flushing = false;
+  decoderBase::resetDecoder();
 }
 
 bool decoderFFmpeg::decodeNextFrame()

@@ -195,6 +195,7 @@ void decoderHM::resetDecoder()
     if (this->lib.libHMDec_free_decoder(decoder) != LIBHMDEC_OK)
       return setError("Reset: Freeing the decoder failed.");
 
+  decoderBase::resetDecoder();
   decoder             = nullptr;
   decodedFrameWaiting = false;
 
