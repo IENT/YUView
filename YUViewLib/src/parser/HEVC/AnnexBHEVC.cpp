@@ -272,7 +272,7 @@ AnnexBHEVC::parseAndAddNALUnit(int                                           nal
                                const ByteVector &                            data,
                                std::optional<BitratePlotModel::BitrateEntry> bitrateEntry,
                                std::optional<pairUint64>                     nalStartEndPosFile,
-                               std::shared_ptr<TreeItem>                                    parent)
+                               std::shared_ptr<TreeItem>                     parent)
 {
   AnnexB::ParseResult parseResult;
 
@@ -283,9 +283,8 @@ AnnexBHEVC::parseAndAddNALUnit(int                                           nal
       // Save the info of the last frame
       if (!this->addFrameToList(curFramePOC, curFrameFileStartEndPos, curFrameIsRandomAccess))
       {
-        parent->createChildItem(
-            "Error - POC " + std::to_string(curFramePOC) + " alread in the POC list.");
-        return parseResult;
+        throw std::logic_error("Error - POC " + std::to_string(curFramePOC) +
+                               " alread in the POC list.");
       }
       if (curFrameFileStartEndPos)
         DEBUG_HEVC("AnnexBHEVC::parseAndAddNALUnit Adding start/end "

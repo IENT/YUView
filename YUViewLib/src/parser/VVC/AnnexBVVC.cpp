@@ -240,7 +240,26 @@ AnnexBVVC::parseAndAddNALUnit(int                                           nalI
   AnnexB::ParseResult parseResult;
 
   if (nalID == -1 && data.empty())
+  {
+    if (curFramePOC != -1)
+    {
+      // Save the info of the last frame
+      if (!this->addFrameToList(curFramePOC, curFrameFileStartEndPos, curFrameIsRandomAccess))
+      {
+        throw std::logic_error("Error - POC " + std::to_string(curFramePOC) +
+                                   " alread in the POC list.");
+      }
+      if (curFrameFileStartEndPos)
+        DEBUG_HEVC("AnnexBHEVC::parseAndAddNALUnit Adding start/end "
+                   << curFrameFileStartEndPos->first << "/" << curFrameFileStartEndPos->second
+                   << " - POC " << curFramePOC << (curFrameIsRandomAccess ? " - ra" : ""));
+      else
+        DEBUG_HEVC("AnnexBHEVC::parseAndAddNALUnit Adding start/end NA/NA - POC "
+                   << curFramePOC << (curFrameIsRandomAccess ? " - ra" : ""));
+    }
+    // The file ended
     return parseResult;
+  }
 
   // Skip the NAL unit header
   int readOffset = 0;
@@ -505,8 +524,8 @@ AnnexBVVC::parseAndAddNALUnit(int                                           nalI
                         this->parsingState.curFrameFileStartEndPos,
                         this->parsingState.lastFrameIsKeyframe))
     {
-      specificDescription +=
-          " ERROR Adding POC " + std::to_string(this->parsingState.lastFramePOC) + " to frame list";
+      throw std::logic_error("Error - POC " + std::to_string(curFramePOC) +
+                                   " alread in the POC list.");
       parseResult.success = false;
     }
     if (this->parsingState.curFrameFileStartEndPos)
