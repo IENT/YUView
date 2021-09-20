@@ -413,10 +413,9 @@ bool convertYUV420ToRGB(const QByteArray &   sourceBuffer,
                         const Size           size,
                         const YUVPixelFormat format)
 {
-  static_assert(bitDepth == 8 || bitDepth == 10);
-
   typedef std::conditional<bitDepth == 8, uint8_t, uint16_t>::type InValueType;
-  const auto rightShift = (bitDepth == 8) ? 0 : 2;
+  static_assert(bitDepth == 8 || bitDepth == 10);
+  constexpr auto rightShift = (bitDepth == 8) ? 0 : 2;
 
   const auto frameWidth  = size.width;
   const auto frameHeight = size.height;
