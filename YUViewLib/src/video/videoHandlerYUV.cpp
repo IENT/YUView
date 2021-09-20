@@ -413,7 +413,7 @@ bool convertYUV420ToRGB(const QByteArray &   sourceBuffer,
                         const Size           size,
                         const YUVPixelFormat format)
 {
-  typedef std::conditional<bitDepth == 8, uint8_t, uint16_t>::type InValueType;
+  typedef typename std::conditional<bitDepth == 8, uint8_t*, uint16_t*>::type InValueType;
   static_assert(bitDepth == 8 || bitDepth == 10);
   constexpr auto rightShift = (bitDepth == 8) ? 0 : 2;
 
@@ -545,7 +545,7 @@ bool convertYUV420ToRGB(const QByteArray &   sourceBuffer,
   const bool uPplaneFirst =
       (format.getPlaneOrder() == PlaneOrder::YUV ||
        format.getPlaneOrder() == PlaneOrder::YUVA); // Is the U plane the first or the second?
-  const auto *restrict srcY = (InValueType *)sourceBuffer.data();
+  const auto *restrict srcY = InValueType(sourceBuffer.data());
   const auto *restrict srcU =
       uPplaneFirst ? srcY + componentLenghtY : srcY + componentLenghtY + componentLengthUV;
   const auto *restrict srcV =
