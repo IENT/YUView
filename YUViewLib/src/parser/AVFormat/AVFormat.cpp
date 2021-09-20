@@ -129,7 +129,7 @@ bool AVFormat::parseExtradata_generic(ByteVector &extradata)
 
   SubByteReaderLogging reader(extradata, packetModel->rootItem, "Extradata");
   reader.disableEmulationPrevention();
-  unsigned             i = 0;
+  unsigned i = 0;
   while (reader.canReadBits(8))
     reader.readBytes(formatArray("raw_byte", i++), 1);
 
@@ -503,12 +503,12 @@ bool AVFormat::parseAVPacket(unsigned packetID, unsigned streamPacketID, AVPacke
     {
       reader.readBytes("raw_byte", nrBytesToLog);
     }
-    catch(const std::exception& e)
+    catch (const std::exception &e)
     {
-      DEBUG_AVFORMAT(
-          "AVFormat::parseAVPacket Exception occured while parsing generic packet data.");
+      DEBUG_AVFORMAT("AVFormat::parseAVPacket Exception occured while parsing generic packet data: "
+                     << e.what());
     }
-    
+
     BitratePlotModel::BitrateEntry entry;
     entry.pts      = packet.getPTS();
     entry.dts      = packet.getDTS();
