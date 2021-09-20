@@ -235,15 +235,6 @@ private:
                                       YUV_Internals::Subsampling subsampling,
                                       int64_t                    fileSize);
 
-#if SSE_CONVERSION
-  bool convertYUV420ToRGB(const byteArrayAligned &sourceBuffer, byteArrayAligned &targetBuffer);
-#else
-  bool convertYUV420ToRGB(const QByteArray &                  sourceBuffer,
-                          unsigned char *                     targetBuffer,
-                          const Size                          size,
-                          const YUV_Internals::YUVPixelFormat format);
-#endif
-
   bool convertYUVPlanarToRGB(const QByteArray &                   sourceBuffer,
                              unsigned char *                      targetBuffer,
                              const Size                           frameSize,
