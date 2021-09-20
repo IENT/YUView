@@ -34,6 +34,7 @@
 
 #include <algorithm>
 #include <cstdio>
+#include <type_traits>
 #include <vector>
 #if SSE_CONVERSION_420_ALT
 #include <xmmintrin.h>
