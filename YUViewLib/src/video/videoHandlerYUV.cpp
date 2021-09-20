@@ -77,6 +77,20 @@ using namespace YUV_Internals;
 namespace
 {
 
+static unsigned char clp_buf[384 + 256 + 384];
+static bool          clp_buf_initialized = false;
+
+void initClippingTable()
+{
+  // Initialize clipping table. Because of the static bool, this will only be called once.
+  memset(clp_buf, 0, 384);
+  int i;
+  for (i = 0; i < 256; i++)
+    clp_buf[384 + i] = i;
+  memset(clp_buf + 384 + 256, 255, 384);
+  clp_buf_initialized = true;
+}
+
 // Compute the MSE between the given char sources for numPixels bytes
 template <typename T> double computeMSE(T ptr, T ptr2, int numPixels)
 {
@@ -386,6 +400,237 @@ yuv_t getPixelValueV210(const QByteArray &sourceBuffer,
   }
 
   return ret;
+}
+
+// This is a specialized function that can convert 8 - bit YUV 4 : 2 : 0 to RGB888 using
+// NearestNeighborInterpolation. The chroma must be 0 in x direction and 1 in y direction. No
+// yuvMath is supported.
+// TODO: Correct the chroma subsampling offset.
+template <int bitDepth>
+bool convertYUV420ToRGB(const QByteArray &   sourceBuffer,
+                        unsigned char *      targetBuffer,
+                        const Size           size,
+                        const YUVPixelFormat format)
+{
+  static_assert(bitDepth == 8 || bitDepth == 10);
+
+  typedef std::conditional<bitDepth == 8, uint8_t, uint16_t>::type InValueType;
+  const auto rightShift = (bitDepth == 8) ? 0 : 2;
+
+  const auto frameWidth  = size.width;
+  const auto frameHeight = size.height;
+
+  // For 4:2:0, w and h must be dividible by 2
+  assert(frameWidth % 2 == 0 && frameHeight % 2 == 0);
+
+  int componentLenghtY  = frameWidth * frameHeight;
+  int componentLengthUV = componentLenghtY >> 2;
+  Q_ASSERT(sourceBuffer.size() >= componentLenghtY + componentLengthUV +
+                                      componentLengthUV); // YUV 420 must be (at least) 1.5*Y-area
+
+#if SSE_CONVERSION_420_ALT
+  quint8 *srcYRaw = (quint8 *)sourceBuffer.data();
+  quint8 *srcURaw = srcYRaw + componentLenghtY;
+  quint8 *srcVRaw = srcURaw + componentLengthUV;
+
+  quint8 *dstBuffer       = (quint8 *)targetBuffer.data();
+  quint32 dstBufferStride = frameWidth * 4;
+
+  yuv420_to_argb8888(srcYRaw,
+                     srcURaw,
+                     srcVRaw,
+                     frameWidth,
+                     frameWidth >> 1,
+                     frameWidth,
+                     frameHeight,
+                     dstBuffer,
+                     dstBufferStride);
+  return false;
+#endif
+
+#if SSE_CONVERSION
+  // Try to use SSE. If this fails use conventional algorithm
+
+  if (frameWidth % 32 == 0 && frameHeight % 2 == 0)
+  {
+    // We can use 16byte aligned read/write operations
+
+    quint8 *srcY = (quint8 *)sourceBuffer.data();
+    quint8 *srcU = srcY + componentLenghtY;
+    quint8 *srcV = srcU + componentLengthUV;
+
+    __m128i yMult  = _mm_set_epi16(75, 75, 75, 75, 75, 75, 75, 75);
+    __m128i ySub   = _mm_set_epi16(16, 16, 16, 16, 16, 16, 16, 16);
+    __m128i ugMult = _mm_set_epi16(25, 25, 25, 25, 25, 25, 25, 25);
+    //__m128i sub16  = _mm_set_epi8(16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16);
+    __m128i sub128 = _mm_set_epi8(
+        128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128);
+
+    //__m128i test = _mm_set_epi8(128, 0, 1, 2, 3, 245, 254, 255, 128, 128, 128, 128, 128, 128, 128,
+    // 128);
+
+    __m128i y, u, v, uMult, vMult;
+    __m128i RGBOut0, RGBOut1, RGBOut2;
+    __m128i tmp;
+
+    for (int yh = 0; yh < frameHeight / 2; yh++)
+    {
+      for (int x = 0; x < frameWidth / 32; x += 32)
+      {
+        // Load 16 bytes U/V
+        u = _mm_load_si128((__m128i *)&srcU[x / 2]);
+        v = _mm_load_si128((__m128i *)&srcV[x / 2]);
+        // Subtract 128 from each U/V value (16 values)
+        u = _mm_sub_epi8(u, sub128);
+        v = _mm_sub_epi8(v, sub128);
+
+        // Load 16 bytes Y from this line and the next one
+        y = _mm_load_si128((__m128i *)&srcY[x]);
+
+        // Get the lower 8 (8bit signed) Y values and put them into a 16bit register
+        tmp = _mm_srai_epi16(_mm_unpacklo_epi8(y, y), 8);
+        // Subtract 16 and multiply by 75
+        tmp = _mm_sub_epi16(tmp, ySub);
+        tmp = _mm_mullo_epi16(tmp, yMult);
+
+        // Now to add them to the 16 bit RGB output values
+        RGBOut0 = _mm_shuffle_epi32(tmp, _MM_SHUFFLE(1, 0, 1, 0));
+        RGBOut0 = _mm_shufflelo_epi16(RGBOut0, _MM_SHUFFLE(1, 0, 0, 0));
+        RGBOut0 = _mm_shufflehi_epi16(RGBOut0, _MM_SHUFFLE(2, 2, 1, 1));
+
+        RGBOut1 = _mm_shuffle_epi32(tmp, _MM_SHUFFLE(2, 1, 2, 1));
+        RGBOut1 = _mm_shufflelo_epi16(RGBOut1, _MM_SHUFFLE(1, 1, 1, 0));
+        RGBOut1 = _mm_shufflehi_epi16(RGBOut1, _MM_SHUFFLE(3, 2, 2, 2));
+
+        RGBOut2 = _mm_shuffle_epi32(tmp, _MM_SHUFFLE(3, 2, 3, 2));
+        RGBOut2 = _mm_shufflelo_epi16(RGBOut2, _MM_SHUFFLE(2, 2, 1, 1));
+        RGBOut2 = _mm_shufflehi_epi16(RGBOut2, _MM_SHUFFLE(3, 3, 3, 2));
+
+        // y2 = _mm_load_si128((__m128i *) &srcY[x + 16]);
+
+        // --- Start with the left 8 values from U/V
+
+        // Get the lower 8 (8bit signed) U/V values and put them into a 16bit register
+        uMult = _mm_srai_epi16(_mm_unpacklo_epi8(u, u), 8);
+        vMult = _mm_srai_epi16(_mm_unpacklo_epi8(v, v), 8);
+
+        // Multiply
+
+        /*y3 = _mm_load_si128((__m128i *) &srcY[x + frameWidth]);
+        y4 = _mm_load_si128((__m128i *) &srcY[x + frameWidth + 16]);*/
+      }
+    }
+
+    return true;
+  }
+#endif
+
+  static unsigned char *clip_buf = clp_buf + 384;
+  if (!clp_buf_initialized)
+    initClippingTable();
+
+  unsigned char *restrict dst = targetBuffer;
+
+  // Get/set the parameters used for YUV -> RGB conversion
+  auto       yuvColorConversionType = ColorConversion::BT709_LimitedRange;
+  const bool fullRange              = (yuvColorConversionType == ColorConversion::BT709_FullRange ||
+                          yuvColorConversionType == ColorConversion::BT601_FullRange ||
+                          yuvColorConversionType == ColorConversion::BT2020_FullRange);
+  const int  yOffset                = (fullRange ? 0 : 16);
+  const int  cZero                  = 128;
+  int        RGBConv[5];
+  getColorConversionCoefficients(yuvColorConversionType, RGBConv);
+
+  // Get pointers to the source and the output array
+  const bool uPplaneFirst =
+      (format.getPlaneOrder() == PlaneOrder::YUV ||
+       format.getPlaneOrder() == PlaneOrder::YUVA); // Is the U plane the first or the second?
+  const auto *restrict srcY = (InValueType *)sourceBuffer.data();
+  const auto *restrict srcU =
+      uPplaneFirst ? srcY + componentLenghtY : srcY + componentLenghtY + componentLengthUV;
+  const auto *restrict srcV =
+      uPplaneFirst ? srcY + componentLenghtY + componentLengthUV : srcY + componentLenghtY;
+
+  for (unsigned yh = 0; yh < frameHeight / 2; yh++)
+  {
+    // Process two lines at once, always 4 RGB values at a time (they have the same U/V components)
+
+    int dstAddr1  = yh * 2 * frameWidth * 4;       // The RGB output address of line yh*2
+    int dstAddr2  = (yh * 2 + 1) * frameWidth * 4; // The RGB output address of line yh*2+1
+    int srcAddrY1 = yh * 2 * frameWidth;           // The Y source address of line yh*2
+    int srcAddrY2 = (yh * 2 + 1) * frameWidth;     // The Y source address of line yh*2+1
+    int srcAddrUV = yh * frameWidth / 2; // The UV source address of both lines (UV are identical)
+
+    for (unsigned xh = 0, x = 0; xh < frameWidth / 2; xh++, x += 2)
+    {
+      // Process four pixels (the ones for which U/V are valid
+
+      // Load UV and pre-multiply
+      const int U_tmp_G = (((int)srcU[srcAddrUV + xh] >> rightShift) - cZero) * RGBConv[2];
+      const int U_tmp_B = (((int)srcU[srcAddrUV + xh] >> rightShift) - cZero) * RGBConv[4];
+      const int V_tmp_R = (((int)srcV[srcAddrUV + xh] >> rightShift) - cZero) * RGBConv[1];
+      const int V_tmp_G = (((int)srcV[srcAddrUV + xh] >> rightShift) - cZero) * RGBConv[3];
+
+      // Pixel top left
+      {
+        const int Y_tmp = (((int)srcY[srcAddrY1 + x] >> rightShift) - yOffset) * RGBConv[0];
+
+        const int R_tmp = (Y_tmp + V_tmp_R) >> 16;
+        const int G_tmp = (Y_tmp + U_tmp_G + V_tmp_G) >> 16;
+        const int B_tmp = (Y_tmp + U_tmp_B) >> 16;
+
+        dst[dstAddr1]     = clip_buf[B_tmp];
+        dst[dstAddr1 + 1] = clip_buf[G_tmp];
+        dst[dstAddr1 + 2] = clip_buf[R_tmp];
+        dst[dstAddr1 + 3] = 255;
+        dstAddr1 += 4;
+      }
+      // Pixel top right
+      {
+        const int Y_tmp = (((int)srcY[srcAddrY1 + x + 1] >> rightShift) - yOffset) * RGBConv[0];
+
+        const int R_tmp = (Y_tmp + V_tmp_R) >> 16;
+        const int G_tmp = (Y_tmp + U_tmp_G + V_tmp_G) >> 16;
+        const int B_tmp = (Y_tmp + U_tmp_B) >> 16;
+
+        dst[dstAddr1]     = clip_buf[B_tmp];
+        dst[dstAddr1 + 1] = clip_buf[G_tmp];
+        dst[dstAddr1 + 2] = clip_buf[R_tmp];
+        dst[dstAddr1 + 3] = 255;
+        dstAddr1 += 4;
+      }
+      // Pixel bottom left
+      {
+        const int Y_tmp = (((int)srcY[srcAddrY2 + x] >> rightShift) - yOffset) * RGBConv[0];
+
+        const int R_tmp = (Y_tmp + V_tmp_R) >> 16;
+        const int G_tmp = (Y_tmp + U_tmp_G + V_tmp_G) >> 16;
+        const int B_tmp = (Y_tmp + U_tmp_B) >> 16;
+
+        dst[dstAddr2]     = clip_buf[B_tmp];
+        dst[dstAddr2 + 1] = clip_buf[G_tmp];
+        dst[dstAddr2 + 2] = clip_buf[R_tmp];
+        dst[dstAddr2 + 3] = 255;
+        dstAddr2 += 4;
+      }
+      // Pixel bottom right
+      {
+        const int Y_tmp = (((int)srcY[srcAddrY2 + x + 1] >> rightShift) - yOffset) * RGBConv[0];
+
+        const int R_tmp = (Y_tmp + V_tmp_R) >> 16;
+        const int G_tmp = (Y_tmp + U_tmp_G + V_tmp_G) >> 16;
+        const int B_tmp = (Y_tmp + U_tmp_B) >> 16;
+
+        dst[dstAddr2]     = clip_buf[B_tmp];
+        dst[dstAddr2 + 1] = clip_buf[G_tmp];
+        dst[dstAddr2 + 2] = clip_buf[R_tmp];
+        dst[dstAddr2 + 3] = 255;
+        dstAddr2 += 4;
+      }
+    }
+  }
+
+  return true;
 }
 
 } // namespace
@@ -2899,7 +3144,7 @@ bool videoHandlerYUV::convertYUVPlanarToRGB(const QByteArray &    sourceBuffer,
         chromaInterpolation != ChromaInterpolation::NearestNeighbor)
     {
       // If there is a chroma offset, we must resample the chroma components before we convert them
-      // to RGB. If so, the resampled chroma values are saved in these arrays. We only ignore the 
+      // to RGB. If so, the resampled chroma values are saved in these arrays. We only ignore the
       // chroma offset for other interpolations then nearest neighbor.
       QByteArray uvPlaneChromaResampled[2];
       uvPlaneChromaResampled[0].resize(nrBytesChromaPlane);
@@ -3186,15 +3431,21 @@ void videoHandlerYUV::convertYUVToImage(const QByteArray &    sourceBuffer,
   // Convert the source to RGB
   if (yuvFormat.isPlanar())
   {
-    if (yuvFormat.getBitsPerSample() == 8 && yuvFormat.getSubsampling() == Subsampling::YUV_420 &&
+    if ((yuvFormat.getBitsPerSample() == 8 || yuvFormat.getBitsPerSample() == 10) &&
+        yuvFormat.getSubsampling() == Subsampling::YUV_420 &&
         chromaInterpolation == ChromaInterpolation::NearestNeighbor &&
         yuvFormat.getChromaOffset().x == 0 && yuvFormat.getChromaOffset().y == 1 &&
         componentDisplayMode == DisplayAll && !yuvFormat.isUVInterleaved() &&
         !mathParameters[Component::Luma].mathRequired() &&
         !mathParameters[Component::Chroma].mathRequired())
-      // 8 bit 4:2:0, nearest neighbor, chroma offset (0,1) (the default for 4:2:0), all components
-      // displayed and no yuv math. We can use a specialized function for this.
-      convOK = convertYUV420ToRGB(sourceBuffer, outputImage.bits(), curFrameSize, yuvFormat);
+    // 8/10 bit 4:2:0, nearest neighbor, chroma offset (0,1) (the default for 4:2:0), all components
+    // displayed and no yuv math. We can use a specialized function for this.
+    {
+      if (yuvFormat.getBitsPerSample() == 8)
+        convOK = convertYUV420ToRGB<8>(sourceBuffer, outputImage.bits(), curFrameSize, yuvFormat);
+      else if (yuvFormat.getBitsPerSample() == 10)
+        convOK = convertYUV420ToRGB<10>(sourceBuffer, outputImage.bits(), curFrameSize, yuvFormat);
+    }
     else
       convOK = convertYUVPlanarToRGB(sourceBuffer, outputImage.bits(), curFrameSize, yuvFormat);
   }
@@ -3396,247 +3647,6 @@ yuv_t videoHandlerYUV::getPixelValue(const QPoint &pixelPos) const
   }
 
   return value;
-}
-
-// This is a specialized function that can convert 8-bit YUV 4:2:0 to RGB888 using
-// NearestNeighborInterpolation. The chroma must be 0 in x direction and 1 in y direction. No
-// yuvMath is supported.
-// TODO: Correct the chroma subsampling offset.
-#if SSE_CONVERSION
-bool videoHandlerYUV::convertYUV420ToRGB(const byteArrayAligned &sourceBuffer,
-                                         byteArrayAligned &      targetBuffer)
-#else
-bool videoHandlerYUV::convertYUV420ToRGB(const QByteArray &sourceBuffer,
-                                         unsigned char *targetBuffer,
-                                         const Size size,
-                                         const YUVPixelFormat format)
-#endif
-{
-  const auto frameWidth  = size.width;
-  const auto frameHeight = size.height;
-
-  // For 4:2:0, w and h must be dividible by 2
-  assert(frameWidth % 2 == 0 && frameHeight % 2 == 0);
-
-  int componentLenghtY  = frameWidth * frameHeight;
-  int componentLengthUV = componentLenghtY >> 2;
-  Q_ASSERT(sourceBuffer.size() >= componentLenghtY + componentLengthUV +
-                                      componentLengthUV); // YUV 420 must be (at least) 1.5*Y-area
-
-#if SSE_CONVERSION_420_ALT
-  quint8 *srcYRaw = (quint8 *)sourceBuffer.data();
-  quint8 *srcURaw = srcYRaw + componentLenghtY;
-  quint8 *srcVRaw = srcURaw + componentLengthUV;
-
-  quint8 *dstBuffer       = (quint8 *)targetBuffer.data();
-  quint32 dstBufferStride = frameWidth * 4;
-
-  yuv420_to_argb8888(srcYRaw,
-                     srcURaw,
-                     srcVRaw,
-                     frameWidth,
-                     frameWidth >> 1,
-                     frameWidth,
-                     frameHeight,
-                     dstBuffer,
-                     dstBufferStride);
-  return false;
-#endif
-
-#if SSE_CONVERSION
-  // Try to use SSE. If this fails use conventional algorithm
-
-  if (frameWidth % 32 == 0 && frameHeight % 2 == 0)
-  {
-    // We can use 16byte aligned read/write operations
-
-    quint8 *srcY = (quint8 *)sourceBuffer.data();
-    quint8 *srcU = srcY + componentLenghtY;
-    quint8 *srcV = srcU + componentLengthUV;
-
-    __m128i yMult  = _mm_set_epi16(75, 75, 75, 75, 75, 75, 75, 75);
-    __m128i ySub   = _mm_set_epi16(16, 16, 16, 16, 16, 16, 16, 16);
-    __m128i ugMult = _mm_set_epi16(25, 25, 25, 25, 25, 25, 25, 25);
-    //__m128i sub16  = _mm_set_epi8(16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16);
-    __m128i sub128 = _mm_set_epi8(
-        128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128);
-
-    //__m128i test = _mm_set_epi8(128, 0, 1, 2, 3, 245, 254, 255, 128, 128, 128, 128, 128, 128, 128,
-    // 128);
-
-    __m128i y, u, v, uMult, vMult;
-    __m128i RGBOut0, RGBOut1, RGBOut2;
-    __m128i tmp;
-
-    for (int yh = 0; yh < frameHeight / 2; yh++)
-    {
-      for (int x = 0; x < frameWidth / 32; x += 32)
-      {
-        // Load 16 bytes U/V
-        u = _mm_load_si128((__m128i *)&srcU[x / 2]);
-        v = _mm_load_si128((__m128i *)&srcV[x / 2]);
-        // Subtract 128 from each U/V value (16 values)
-        u = _mm_sub_epi8(u, sub128);
-        v = _mm_sub_epi8(v, sub128);
-
-        // Load 16 bytes Y from this line and the next one
-        y = _mm_load_si128((__m128i *)&srcY[x]);
-
-        // Get the lower 8 (8bit signed) Y values and put them into a 16bit register
-        tmp = _mm_srai_epi16(_mm_unpacklo_epi8(y, y), 8);
-        // Subtract 16 and multiply by 75
-        tmp = _mm_sub_epi16(tmp, ySub);
-        tmp = _mm_mullo_epi16(tmp, yMult);
-
-        // Now to add them to the 16 bit RGB output values
-        RGBOut0 = _mm_shuffle_epi32(tmp, _MM_SHUFFLE(1, 0, 1, 0));
-        RGBOut0 = _mm_shufflelo_epi16(RGBOut0, _MM_SHUFFLE(1, 0, 0, 0));
-        RGBOut0 = _mm_shufflehi_epi16(RGBOut0, _MM_SHUFFLE(2, 2, 1, 1));
-
-        RGBOut1 = _mm_shuffle_epi32(tmp, _MM_SHUFFLE(2, 1, 2, 1));
-        RGBOut1 = _mm_shufflelo_epi16(RGBOut1, _MM_SHUFFLE(1, 1, 1, 0));
-        RGBOut1 = _mm_shufflehi_epi16(RGBOut1, _MM_SHUFFLE(3, 2, 2, 2));
-
-        RGBOut2 = _mm_shuffle_epi32(tmp, _MM_SHUFFLE(3, 2, 3, 2));
-        RGBOut2 = _mm_shufflelo_epi16(RGBOut2, _MM_SHUFFLE(2, 2, 1, 1));
-        RGBOut2 = _mm_shufflehi_epi16(RGBOut2, _MM_SHUFFLE(3, 3, 3, 2));
-
-        // y2 = _mm_load_si128((__m128i *) &srcY[x + 16]);
-
-        // --- Start with the left 8 values from U/V
-
-        // Get the lower 8 (8bit signed) U/V values and put them into a 16bit register
-        uMult = _mm_srai_epi16(_mm_unpacklo_epi8(u, u), 8);
-        vMult = _mm_srai_epi16(_mm_unpacklo_epi8(v, v), 8);
-
-        // Multiply
-
-        /*y3 = _mm_load_si128((__m128i *) &srcY[x + frameWidth]);
-        y4 = _mm_load_si128((__m128i *) &srcY[x + frameWidth + 16]);*/
-      }
-    }
-
-    return true;
-  }
-#endif
-
-  // Perform software based 420 to RGB conversion
-  static unsigned char  clp_buf[384 + 256 + 384];
-  static unsigned char *clip_buf            = clp_buf + 384;
-  static bool           clp_buf_initialized = false;
-
-  if (!clp_buf_initialized)
-  {
-    // Initialize clipping table. Because of the static bool, this will only be called once.
-    memset(clp_buf, 0, 384);
-    int i;
-    for (i = 0; i < 256; i++)
-      clp_buf[384 + i] = i;
-    memset(clp_buf + 384 + 256, 255, 384);
-    clp_buf_initialized = true;
-  }
-
-  unsigned char *restrict dst = targetBuffer;
-
-  // Get/set the parameters used for YUV -> RGB conversion
-  const bool fullRange = (yuvColorConversionType == ColorConversion::BT709_FullRange ||
-                          yuvColorConversionType == ColorConversion::BT601_FullRange ||
-                          yuvColorConversionType == ColorConversion::BT2020_FullRange);
-  const int  yOffset   = (fullRange ? 0 : 16);
-  const int  cZero     = 128;
-  int        RGBConv[5];
-  getColorConversionCoefficients(yuvColorConversionType, RGBConv);
-
-  // Get pointers to the source and the output array
-  const bool uPplaneFirst =
-      (format.getPlaneOrder() == PlaneOrder::YUV ||
-       format.getPlaneOrder() == PlaneOrder::YUVA); // Is the U plane the first or the second?
-  const unsigned char *restrict srcY = (unsigned char *)sourceBuffer.data();
-  const unsigned char *restrict srcU =
-      uPplaneFirst ? srcY + componentLenghtY : srcY + componentLenghtY + componentLengthUV;
-  const unsigned char *restrict srcV =
-      uPplaneFirst ? srcY + componentLenghtY + componentLengthUV : srcY + componentLenghtY;
-
-  for (unsigned yh = 0; yh < frameHeight / 2; yh++)
-  {
-    // Process two lines at once, always 4 RGB values at a time (they have the same U/V components)
-
-    int dstAddr1  = yh * 2 * frameWidth * 4;       // The RGB output address of line yh*2
-    int dstAddr2  = (yh * 2 + 1) * frameWidth * 4; // The RGB output address of line yh*2+1
-    int srcAddrY1 = yh * 2 * frameWidth;           // The Y source address of line yh*2
-    int srcAddrY2 = (yh * 2 + 1) * frameWidth;     // The Y source address of line yh*2+1
-    int srcAddrUV = yh * frameWidth / 2; // The UV source address of both lines (UV are identical)
-
-    for (unsigned xh = 0, x = 0; xh < frameWidth / 2; xh++, x += 2)
-    {
-      // Process four pixels (the ones for which U/V are valid
-
-      // Load UV and pre-multiply
-      const int U_tmp_G = ((int)srcU[srcAddrUV + xh] - cZero) * RGBConv[2];
-      const int U_tmp_B = ((int)srcU[srcAddrUV + xh] - cZero) * RGBConv[4];
-      const int V_tmp_R = ((int)srcV[srcAddrUV + xh] - cZero) * RGBConv[1];
-      const int V_tmp_G = ((int)srcV[srcAddrUV + xh] - cZero) * RGBConv[3];
-
-      // Pixel top left
-      {
-        const int Y_tmp = ((int)srcY[srcAddrY1 + x] - yOffset) * RGBConv[0];
-
-        const int R_tmp = (Y_tmp + V_tmp_R) >> 16;
-        const int G_tmp = (Y_tmp + U_tmp_G + V_tmp_G) >> 16;
-        const int B_tmp = (Y_tmp + U_tmp_B) >> 16;
-
-        dst[dstAddr1]     = clip_buf[B_tmp];
-        dst[dstAddr1 + 1] = clip_buf[G_tmp];
-        dst[dstAddr1 + 2] = clip_buf[R_tmp];
-        dst[dstAddr1 + 3] = 255;
-        dstAddr1 += 4;
-      }
-      // Pixel top right
-      {
-        const int Y_tmp = ((int)srcY[srcAddrY1 + x + 1] - yOffset) * RGBConv[0];
-
-        const int R_tmp = (Y_tmp + V_tmp_R) >> 16;
-        const int G_tmp = (Y_tmp + U_tmp_G + V_tmp_G) >> 16;
-        const int B_tmp = (Y_tmp + U_tmp_B) >> 16;
-
-        dst[dstAddr1]     = clip_buf[B_tmp];
-        dst[dstAddr1 + 1] = clip_buf[G_tmp];
-        dst[dstAddr1 + 2] = clip_buf[R_tmp];
-        dst[dstAddr1 + 3] = 255;
-        dstAddr1 += 4;
-      }
-      // Pixel bottom left
-      {
-        const int Y_tmp = ((int)srcY[srcAddrY2 + x] - yOffset) * RGBConv[0];
-
-        const int R_tmp = (Y_tmp + V_tmp_R) >> 16;
-        const int G_tmp = (Y_tmp + U_tmp_G + V_tmp_G) >> 16;
-        const int B_tmp = (Y_tmp + U_tmp_B) >> 16;
-
-        dst[dstAddr2]     = clip_buf[B_tmp];
-        dst[dstAddr2 + 1] = clip_buf[G_tmp];
-        dst[dstAddr2 + 2] = clip_buf[R_tmp];
-        dst[dstAddr2 + 3] = 255;
-        dstAddr2 += 4;
-      }
-      // Pixel bottom right
-      {
-        const int Y_tmp = ((int)srcY[srcAddrY2 + x + 1] - yOffset) * RGBConv[0];
-
-        const int R_tmp = (Y_tmp + V_tmp_R) >> 16;
-        const int G_tmp = (Y_tmp + U_tmp_G + V_tmp_G) >> 16;
-        const int B_tmp = (Y_tmp + U_tmp_B) >> 16;
-
-        dst[dstAddr2]     = clip_buf[B_tmp];
-        dst[dstAddr2 + 1] = clip_buf[G_tmp];
-        dst[dstAddr2 + 2] = clip_buf[R_tmp];
-        dst[dstAddr2 + 3] = 255;
-        dstAddr2 += 4;
-      }
-    }
-  }
-
-  return true;
 }
 
 bool videoHandlerYUV::markDifferencesYUVPlanarToRGB(const QByteArray &    sourceBuffer,
