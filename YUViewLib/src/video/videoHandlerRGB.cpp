@@ -768,7 +768,8 @@ void videoHandlerRGB::convertSourceToRGBA32Bit(const QByteArray &sourceBuffer,
   {
     // Convert all components from the source RGB format to an RGB 888 array
 
-    const auto renderAlpha = componentDisplayMode == ComponentShow::RGBA;
+    const auto renderAlpha =
+        componentDisplayMode == ComponentShow::RGBA && srcPixelFormat.posA != -1;
     if (srcPixelFormat.bitsPerValue > 8 && srcPixelFormat.bitsPerValue <= 16)
     {
       // 9 to 16 bits per component. We assume two bytes per value.
