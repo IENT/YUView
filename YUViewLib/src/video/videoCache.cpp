@@ -519,7 +519,7 @@ void videoCache::updateCacheQueue()
       if (i < range.first || i > range.second)
         item->removeFrameFromCache(i);
 
-    int64_t cachingFrameSize = item->getCachingFrameSize();
+    auto cachingFrameSize = item->getCachingFrameSize();
     cacheLevel += item->getNumberCachedFrames() * cachingFrameSize;
   }
   if (cacheLevel > cacheLevelMax)

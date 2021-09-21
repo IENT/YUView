@@ -132,14 +132,14 @@ std::pair<bool, YUVPixelFormat> convertYUVPackedToPlanar(const QByteArray &    s
 
     // What are the offsets withing the 4 samples for the components?
     const int oY = (packing == PackingOrder::YUYV || packing == PackingOrder::YVYU) ? 0 : 1;
-    const int oU = (packing == PackingOrder::UYVY)   ? 0
-                   : (packing == PackingOrder::YUYV) ? 1
-                   : (packing == PackingOrder::VYUY) ? 2
-                                                     : 3;
-    const int oV = (packing == PackingOrder::VYUY)   ? 0
-                   : (packing == PackingOrder::YVYU) ? 1
-                   : (packing == PackingOrder::UYVY) ? 2
-                                                     : 3;
+    const int oU =
+        (packing == PackingOrder::UYVY)
+            ? 0
+            : (packing == PackingOrder::YUYV) ? 1 : (packing == PackingOrder::VYUY) ? 2 : 3;
+    const int oV =
+        (packing == PackingOrder::VYUY)
+            ? 0
+            : (packing == PackingOrder::YVYU) ? 1 : (packing == PackingOrder::UYVY) ? 2 : 3;
 
     if (format.getBitsPerSample() == 10 && format.isBytePacking())
     {
@@ -219,10 +219,10 @@ std::pair<bool, YUVPixelFormat> convertYUVPackedToPlanar(const QByteArray &    s
                     packing == PackingOrder::VUYA)
                        ? 1
                        : 2;
-    const int oV = (packing == PackingOrder::YVU)    ? 1
-                   : (packing == PackingOrder::AYUV) ? 3
-                   : (packing == PackingOrder::VUYA) ? 0
-                                                     : 2;
+    const int oV =
+        (packing == PackingOrder::YVU)
+            ? 1
+            : (packing == PackingOrder::AYUV) ? 3 : (packing == PackingOrder::VUYA) ? 0 : 2;
 
     // How many samples to the next sample?
     const int offsetNext = (packing == PackingOrder::YUV || packing == PackingOrder::YVU ? 3 : 4);
@@ -413,7 +413,7 @@ bool convertYUV420ToRGB(const QByteArray &   sourceBuffer,
                         const Size           size,
                         const YUVPixelFormat format)
 {
-  typedef typename std::conditional<bitDepth == 8, uint8_t*, uint16_t*>::type InValueType;
+  typedef typename std::conditional<bitDepth == 8, uint8_t *, uint16_t *>::type InValueType;
   static_assert(bitDepth == 8 || bitDepth == 10);
   constexpr auto rightShift = (bitDepth == 8) ? 0 : 2;
 
@@ -658,6 +658,13 @@ videoHandlerYUV::videoHandlerYUV() : videoHandler()
 }
 
 videoHandlerYUV::~videoHandlerYUV() { DEBUG_YUV("videoHandlerYUV destruction"); }
+
+unsigned videoHandlerYUV::getCachingFrameSize() const
+{
+  auto hasAlpha = this->srcPixelFormat.hasAlpha();
+  auto bytes    = functionsGui::bytesPerPixel(functionsGui::platformImageFormat(hasAlpha));
+  return this->frameSize.width * this->frameSize.height * bytes;
+}
 
 void videoHandlerYUV::loadValues(Size newFramesize, const QString &)
 {
@@ -2110,12 +2117,12 @@ inline void UVPlaneResamplingChromaOffset(const YUVPixelFormat          format,
   // Which of these position is needed depends on the chromaOffset and the subsampling.
   const int possibleValsX = getMaxPossibleChromaOffsetValues(true, format.getSubsampling());
   const int possibleValsY = getMaxPossibleChromaOffsetValues(false, format.getSubsampling());
-  const int offsetX8      = (possibleValsX == 1)   ? format.getChromaOffset().x * 4
-                            : (possibleValsX == 3) ? format.getChromaOffset().x * 2
-                                                   : format.getChromaOffset().x;
-  const int offsetY8      = (possibleValsY == 1)   ? format.getChromaOffset().y * 4
-                            : (possibleValsY == 3) ? format.getChromaOffset().y * 2
-                                                   : format.getChromaOffset().y;
+  const int offsetX8      = (possibleValsX == 1) ? format.getChromaOffset().x * 4
+                                            : (possibleValsX == 3) ? format.getChromaOffset().x * 2
+                                                                   : format.getChromaOffset().x;
+  const int offsetY8 = (possibleValsY == 1) ? format.getChromaOffset().y * 4
+                                            : (possibleValsY == 3) ? format.getChromaOffset().y * 2
+                                                                   : format.getChromaOffset().y;
 
   // The format to use for input/output
   const bool bigEndian = format.isBigEndian();
@@ -3405,14 +3412,15 @@ void videoHandlerYUV::convertYUVToImage(const QByteArray &    sourceBuffer,
   // (each 8 bit). Internally, this is how QImage allocates the number of bytes per line (with depth
   // = 32): const int bytes_per_line = ((width * depth + 31) >> 5) << 2; // bytes per scanline (must
   // be multiple of 4)
-  auto qFrameSize = QSize(int(curFrameSize.width), int(curFrameSize.height));
+  auto qFrameSize          = QSize(int(curFrameSize.width), int(curFrameSize.height));
+  auto platformImageFormat = functionsGui::platformImageFormat(yuvFormat.hasAlpha());
   if (is_Q_OS_WIN || is_Q_OS_MAC)
-    outputImage = QImage(qFrameSize, functionsGui::platformImageFormat());
+    outputImage = QImage(qFrameSize, platformImageFormat);
   else if (is_Q_OS_LINUX)
   {
-    QImage::Format f = functionsGui::platformImageFormat();
-    if (f == QImage::Format_ARGB32_Premultiplied || f == QImage::Format_ARGB32)
-      outputImage = QImage(qFrameSize, f);
+    if (platformImageFormat == QImage::Format_ARGB32_Premultiplied ||
+        platformImageFormat == QImage::Format_ARGB32)
+      outputImage = QImage(qFrameSize, platformImageFormat);
     else
       outputImage = QImage(qFrameSize, QImage::Format_RGB32);
   }
@@ -3479,10 +3487,10 @@ void videoHandlerYUV::convertYUVToImage(const QByteArray &    sourceBuffer,
   {
     // On linux, we may have to convert the image to the platform image format if it is not one of
     // the RGBA formats.
-    QImage::Format f = functionsGui::platformImageFormat();
-    if (f != QImage::Format_ARGB32_Premultiplied && f != QImage::Format_ARGB32 &&
-        f != QImage::Format_RGB32)
-      outputImage = outputImage.convertToFormat(f);
+    auto format = functionsGui::platformImageFormat(yuvFormat.hasAlpha());
+    if (format != QImage::Format_ARGB32_Premultiplied && format != QImage::Format_ARGB32 &&
+        format != QImage::Format_RGB32)
+      outputImage = outputImage.convertToFormat(format);
   }
 
   DEBUG_YUV("videoHandlerYUV::convertYUVToImage Done");
@@ -3574,14 +3582,14 @@ yuv_t videoHandlerYUV::getPixelValue(const QPoint &pixelPos) const
       // The data is arranged in blocks of 4 samples. How many of these are there?
       // What are the offsets withing the 4 samples for the components?
       const int oY = (packing == PackingOrder::YUYV || packing == PackingOrder::YVYU) ? 0 : 1;
-      const int oU = (packing == PackingOrder::UYVY)   ? 0
-                     : (packing == PackingOrder::YUYV) ? 1
-                     : (packing == PackingOrder::VYUY) ? 2
-                                                       : 3;
-      const int oV = (packing == PackingOrder::VYUY)   ? 0
-                     : (packing == PackingOrder::YVYU) ? 1
-                     : (packing == PackingOrder::UYVY) ? 2
-                                                       : 3;
+      const int oU =
+          (packing == PackingOrder::UYVY)
+              ? 0
+              : (packing == PackingOrder::YUYV) ? 1 : (packing == PackingOrder::VYUY) ? 2 : 3;
+      const int oV =
+          (packing == PackingOrder::VYUY)
+              ? 0
+              : (packing == PackingOrder::YVYU) ? 1 : (packing == PackingOrder::UYVY) ? 2 : 3;
 
       if (format.isBytePacking() && format.getBitsPerSample() == 10)
       {
@@ -3628,10 +3636,10 @@ yuv_t videoHandlerYUV::getPixelValue(const QPoint &pixelPos) const
                       packing == PackingOrder::VUYA)
                          ? 1
                          : 2;
-      const int oV = (packing == PackingOrder::YVU)    ? 1
-                     : (packing == PackingOrder::AYUV) ? 3
-                     : (packing == PackingOrder::VUYA) ? 0
-                                                       : 2;
+      const int oV =
+          (packing == PackingOrder::YVU)
+              ? 1
+              : (packing == PackingOrder::AYUV) ? 3 : (packing == PackingOrder::VUYA) ? 0 : 2;
 
       // How many bytes to the next sample?
       const int offsetNext =
@@ -3990,10 +3998,10 @@ QImage videoHandlerYUV::calculateDifference(frameHandler *   item2,
     outputImage = QImage(QSize(w_out, h_out), QImage::Format_RGB32);
   else if (is_Q_OS_LINUX)
   {
-    auto f = functionsGui::platformImageFormat();
-    if (f == QImage::Format_ARGB32_Premultiplied)
+    auto format = functionsGui::platformImageFormat(tmpDiffYUVFormat.hasAlpha());
+    if (format == QImage::Format_ARGB32_Premultiplied)
       outputImage = QImage(QSize(w_out, h_out), QImage::Format_ARGB32_Premultiplied);
-    if (f == QImage::Format_ARGB32)
+    if (format == QImage::Format_ARGB32)
       outputImage = QImage(QSize(w_out, h_out), QImage::Format_ARGB32);
     else
       outputImage = QImage(QSize(w_out, h_out), QImage::Format_RGB32);
@@ -4026,10 +4034,10 @@ QImage videoHandlerYUV::calculateDifference(frameHandler *   item2,
   {
     // On linux, we may have to convert the image to the platform image format if it is not one of
     // the RGBA formats.
-    auto f = functionsGui::platformImageFormat();
-    if (f != QImage::Format_ARGB32_Premultiplied && f != QImage::Format_ARGB32 &&
-        f != QImage::Format_RGB32)
-      return outputImage.convertToFormat(f);
+    auto format = functionsGui::platformImageFormat(tmpDiffYUVFormat.hasAlpha());
+    if (format != QImage::Format_ARGB32_Premultiplied && format != QImage::Format_ARGB32 &&
+        format != QImage::Format_RGB32)
+      return outputImage.convertToFormat(format);
   }
 
   // we have a yuv differance available

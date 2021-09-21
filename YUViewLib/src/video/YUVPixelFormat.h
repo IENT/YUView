@@ -211,6 +211,7 @@ public:
   unsigned getBitsPerSample() const;
   bool     isBigEndian() const;
   bool     isPlanar() const;
+  bool     hasAlpha() const;
 
   Offset getChromaOffset() const;
 

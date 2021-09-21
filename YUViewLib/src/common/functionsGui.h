@@ -67,7 +67,7 @@ QString pixelFormatToString(QImage::Format f);
 // The platform-specific screen-compatible image format. Using a QImage of this format
 // is fast when drawing on a widget.
 // This function is thread-safe.
-inline QImage::Format platformImageFormat()
+inline QImage::Format platformImageFormat(bool needAlpha)
 {
   // see https://code.woboq.org/qt5/qtbase/src/gui/image/qpixmap_raster.cpp.html#97
   // see https://code.woboq.org/data/symbol.html?root=../qt5/&ref=_ZN21QRasterPlatformPixmap18systemOpaqueFormatEv
@@ -75,7 +75,7 @@ inline QImage::Format platformImageFormat()
     // https://code.woboq.org/qt5/qtbase/src/plugins/platforms/cocoa/qcocoaintegration.mm.html#117
     // https://code.woboq.org/data/symbol.html?root=../qt5/&ref=_ZN12QCocoaScreen14updateGeometryEv
     // Qt Docs: The image is stored using a 32-bit RGB format (0xffRRGGBB).
-    return QImage::Format_RGB32;
+    return needAlpha ? QImage::Format_ARGB32 : QImage::Format_RGB32;
   if (is_Q_OS_WIN)
     // https://code.woboq.org/qt5/qtbase/src/plugins/platforms/windows/qwindowsscreen.cpp.html#59
     // https://code.woboq.org/data/symbol.html?root=../qt5/&ref=_ZN18QWindowsScreenDataC1Ev
@@ -86,6 +86,8 @@ inline QImage::Format platformImageFormat()
     // premultiplied ARGB32 than with plain ARGB32.
     return QImage::Format_ARGB32_Premultiplied;
   // Fall back on Linux and other platforms.
+  if (needAlpha)
+    return QImage::Format_ARGB32;
   return pixmapImageFormat();
 }
 
