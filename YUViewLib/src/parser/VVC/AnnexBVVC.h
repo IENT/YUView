@@ -96,7 +96,7 @@ protected:
 
     size_t                    counterAU{};
     size_t                    sizeCurrentAU{};
-    unsigned                  lastFramePOC{};
+    int                       lastFramePOC{-1};
     bool                      lastFrameIsKeyframe{};
     std::optional<pairUint64> curFrameFileStartEndPos;
   };

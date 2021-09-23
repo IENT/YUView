@@ -359,7 +359,7 @@ AnnexBVVC::parseAndAddNALUnit(int                                           nalI
 
       if (updatedParsingState.currentPictureHeaderStructure)
         updatedParsingState.lastFramePOC =
-            updatedParsingState.currentPictureHeaderStructure->PicOrderCntVal;
+            int(updatedParsingState.currentPictureHeaderStructure->PicOrderCntVal);
 
       updatedParsingState.currentPictureHeaderStructure =
           newPictureHeader->picture_header_structure_instance;
@@ -393,7 +393,7 @@ AnnexBVVC::parseAndAddNALUnit(int                                           nalI
         updatedParsingState.currentPictureHeaderStructure =
             newSliceLayer->slice_header_instance.picture_header_structure_instance;
         updatedParsingState.lastFramePOC =
-            updatedParsingState.currentPictureHeaderStructure->PicOrderCntVal;
+            (updatedParsingState.currentPictureHeaderStructure->PicOrderCntVal);
       }
       else
       {
