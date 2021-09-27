@@ -225,7 +225,7 @@ void decoderFFmpeg::copyCurImageToBuffer()
   else if (this->rawFormat == raw_RGB)
   {
     const rgbPixelFormat pixFmt           = this->getRGBPixelFormat();
-    const auto           nrBytesPerSample = pixFmt.bitsPerValue <= 8 ? 1 : 2;
+    const auto           nrBytesPerSample = pixFmt.getBitsPerSample() <= 8 ? 1 : 2;
     const auto           nrBytesPerComponent =
         this->frameSize.width * this->frameSize.height * nrBytesPerSample;
     const auto nrBytes = nrBytesPerComponent * pixFmt.nrChannels();
@@ -236,7 +236,7 @@ void decoderFFmpeg::copyCurImageToBuffer()
 
     char *     dst  = this->currentOutputBuffer.data();
     const auto hDst = this->frameSize.height;
-    if (pixFmt.planar)
+    if (pixFmt.isPlanar())
     {
       // Copy line by line. The linesize of the source may be larger than the width of the frame.
       // This may be because the frame buffer is (8) byte aligned. Also the internal decoded

@@ -241,7 +241,7 @@ typedef struct AVCodec_56_57_58
   const AVRational *supported_framerates; ///< array of supported framerates, or NULL if any, array
                                           ///< is terminated by {0,0}
   const enum AVPixelFormat *
-      pix_fmts; ///< array of supported pixel formats, or NULL if unknown, array is terminated by -1
+             pix_fmts; ///< array of supported pixel formats, or NULL if unknown, array is terminated by -1
   const int *supported_samplerates; ///< array of supported audio samplerates, or NULL if unknown,
                                     ///< array is terminated by 0
   const enum AVSampleFormat *sample_fmts; ///< array of supported sample formats, or NULL if
@@ -1702,16 +1702,21 @@ RGB_Internals::rgbPixelFormat AVPixFmtDescriptorWrapper::getRGBPixelFormat()
   for (int i = 1; i < nb_components; i++)
     if (comp[i].depth != bitsPerSample)
       // Varying bit depths for components is not supported
-      return RGB_Internals::rgbPixelFormat();
+      return {};
 
   if (this->flagIsBitWisePacked())
     // Maybe this could be supported but I don't think that any decoder actually uses this.
     // If you encounter a format that does not work because of this check please let us know.
-    return RGB_Internals::rgbPixelFormat();
+    return {};
 
   // The only possible order of planes seems to be RGB(A)
-  return RGB_Internals::rgbPixelFormat(
-      bitsPerSample, this->flagIsPlanar(), 0, 1, 2, flagHasAlphaPlane() ? 3 : -1);
+  const bool alphaIsLast = true;
+  return RGB_Internals::rgbPixelFormat(bitsPerSample,
+                                       this->flagIsPlanar(),
+                                       RGB_Internals::ChannelOrder::RGB,
+                                       this->flagHasAlphaPlane(),
+                                       alphaIsLast,
+                                       this->flagIsBigEndian());
 }
 
 bool AVPixFmtDescriptorWrapper::setValuesFromYUVPixelFormat(YUV_Internals::YUVPixelFormat fmt)

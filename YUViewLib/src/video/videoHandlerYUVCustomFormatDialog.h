@@ -34,9 +34,11 @@
 
 #include "YUVPixelFormat.h"
 
+#include <QDialog>
+
 #include "ui_videoHandlerYUV_CustomFormatDialog.h"
 
-class videoHandlerYUVCustomFormatDialog : public QDialog, public Ui::CustomYUVFormatDialog
+class videoHandlerYUVCustomFormatDialog : public QDialog
 {
   Q_OBJECT
 
@@ -47,7 +49,10 @@ public:
 
 private slots:
   void on_groupBoxPlanar_toggled(bool checked);
-  void on_groupBoxPacked_toggled(bool checked) { groupBoxPlanar->setChecked(!checked); }
+  void on_groupBoxPacked_toggled(bool checked) { this->ui.groupBoxPlanar->setChecked(!checked); }
   void on_comboBoxChromaSubsampling_currentIndexChanged(int idx);
   void on_comboBoxBitDepth_currentIndexChanged(int idx);
+
+private:
+  Ui::CustomYUVFormatDialog ui;
 };
