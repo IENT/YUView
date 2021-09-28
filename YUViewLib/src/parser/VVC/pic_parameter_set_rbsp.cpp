@@ -54,12 +54,18 @@ void pic_parameter_set_rbsp::parse(SubByteReaderLogging &reader, SPSMap &spsMap)
   auto sps = spsMap[this->pps_seq_parameter_set_id];
 
   this->pps_mixed_nalu_types_in_pic_flag = reader.readFlag("pps_mixed_nalu_types_in_pic_flag");
-  this->pps_pic_width_in_luma_samples =
-      reader.readUEV("pps_pic_width_in_luma_samples",
-                     Options().withCheckEqualTo(sps->sps_pic_width_max_in_luma_samples));
-  this->pps_pic_height_in_luma_samples =
-      reader.readUEV("pps_pic_height_in_luma_samples",
-                     Options().withCheckEqualTo(sps->sps_pic_height_max_in_luma_samples));
+  {
+    auto check = sps->sps_res_change_in_clvs_allowed_flag
+                     ? Options().withCheckSmaller(sps->sps_pic_width_max_in_luma_samples)
+                     : Options().withCheckEqualTo(sps->sps_pic_width_max_in_luma_samples);
+    this->pps_pic_width_in_luma_samples = reader.readUEV("pps_pic_width_in_luma_samples", check);
+  }
+  {
+    auto check = sps->sps_res_change_in_clvs_allowed_flag
+                     ? Options().withCheckSmaller(sps->sps_pic_height_max_in_luma_samples)
+                     : Options().withCheckEqualTo(sps->sps_pic_height_max_in_luma_samples);
+    this->pps_pic_height_in_luma_samples = reader.readUEV("pps_pic_height_in_luma_samples", check);
+  }
 
   // (64) -> (72)
   this->PicWidthInCtbsY    = std::ceil(this->pps_pic_width_in_luma_samples / sps->CtbSizeY);
