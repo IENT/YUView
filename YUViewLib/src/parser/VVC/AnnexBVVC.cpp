@@ -134,7 +134,8 @@ std::optional<AnnexB::SeekData> AnnexBVVC::getSeekData(int iFrameNr)
   NalMap activeVPSNal;
   NalMap activeSPSNal;
   NalMap activePPSNal;
-  NalMap activeAPSNal;
+  using ApsMap = std::map<std::pair<unsigned, unsigned>, std::shared_ptr<NalUnitVVC>>;
+  ApsMap activeAPSNal;
 
   for (const auto &nal : this->nalUnitsForSeeking)
   {
@@ -156,11 +157,13 @@ std::optional<AnnexB::SeekData> AnnexBVVC::getSeekData(int iFrameNr)
         if (nal->filePosStartEnd)
           seekData.filePos = nal->filePosStartEnd->first;
 
-        for (const auto &nalMap : {activeVPSNal, activeSPSNal, activePPSNal, activeAPSNal})
+        for (const auto &nalMap : {activeVPSNal, activeSPSNal, activePPSNal})
         {
-          for (auto const &entry : nalMap)
+          for (const auto &entry : nalMap)
             seekData.parameterSets.push_back(entry.second->rawData);
         }
+        for (const auto &aps : activeAPSNal)
+          seekData.parameterSets.push_back(aps.second->rawData);
 
         return seekData;
       }
@@ -183,8 +186,9 @@ std::optional<AnnexB::SeekData> AnnexBVVC::getSeekData(int iFrameNr)
     if (nal->header.nal_unit_type == NalType::PREFIX_APS_NUT ||
         nal->header.nal_unit_type == NalType::SUFFIX_APS_NUT)
     {
-      auto aps = std::dynamic_pointer_cast<adaptation_parameter_set_rbsp>(nal->rbsp);
-      activeAPSNal[aps->aps_adaptation_parameter_set_id] = nal;
+      auto aps     = std::dynamic_pointer_cast<adaptation_parameter_set_rbsp>(nal->rbsp);
+      auto apsType = apsParamTypeMapper.indexOf(aps->aps_params_type);
+      activeAPSNal[{apsType, aps->aps_adaptation_parameter_set_id}] = nal;
     }
   }
 
@@ -333,7 +337,8 @@ AnnexBVVC::parseAndAddNALUnit(int                                           nalI
       auto newAPS         = std::make_shared<adaptation_parameter_set_rbsp>();
       newAPS->parse(reader);
 
-      this->activeParameterSets.apsMap[newAPS->aps_adaptation_parameter_set_id] = newAPS;
+      auto apsType = apsParamTypeMapper.indexOf(newAPS->aps_params_type);
+      this->activeParameterSets.apsMap[{apsType, newAPS->aps_adaptation_parameter_set_id}] = newAPS;
 
       specificDescription += " ID " + std::to_string(newAPS->aps_adaptation_parameter_set_id);
 

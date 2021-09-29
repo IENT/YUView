@@ -35,17 +35,6 @@
 namespace parser::vvc
 {
 
-namespace
-{
-
-const std::map<unsigned, std::pair<adaptation_parameter_set_rbsp::APSParamType, std::string>>
-    apsParamTypeMap({{0, {adaptation_parameter_set_rbsp::APSParamType::ALF_APS, "ALF_APS"}},
-                     {1, {adaptation_parameter_set_rbsp::APSParamType::LMCS_APS, "LMCS_APS"}},
-                     {2,
-                      {adaptation_parameter_set_rbsp::APSParamType::SCALING_APS, "SCALING_APS"}}});
-
-} // namespace
-
 using namespace parser::reader;
 
 void adaptation_parameter_set_rbsp::parse(SubByteReaderLogging &reader)
@@ -57,7 +46,7 @@ void adaptation_parameter_set_rbsp::parse(SubByteReaderLogging &reader)
                       3,
                       Options().withCheckRange({0, 2}).withMeaningVector(
                           {"ALF parameters", "LMCS parameters", "Scaling list parameters"}));
-  this->aps_params_type = apsParamTypeMap.at(aps_params_type_ID).first;
+  this->aps_params_type = *apsParamTypeMapper.at(aps_params_type_ID);
 
   this->aps_adaptation_parameter_set_id =
       reader.readBits("aps_adaptation_parameter_set_id", 5, Options().withCheckRange({0, 7}));
