@@ -605,7 +605,8 @@ void seq_parameter_set_rbsp::setDefaultSubpicValues(unsigned numSubPic)
       this->sps_subpic_ctu_top_left_x.push_back(0);
       this->sps_subpic_ctu_top_left_y.push_back(0);
       this->sps_subpic_width_minus1.push_back(tmpWidthVal - this->sps_subpic_ctu_top_left_x[i] - 1);
-      this->sps_subpic_height_minus1.push_back(tmpHeightVal - sps_subpic_ctu_top_left_y[i] - 1);
+      this->sps_subpic_height_minus1.push_back(tmpHeightVal - this->sps_subpic_ctu_top_left_y[i] -
+                                               1);
     }
     else
     {
