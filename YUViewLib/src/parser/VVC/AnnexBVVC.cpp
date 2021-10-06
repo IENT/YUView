@@ -242,6 +242,7 @@ AnnexBVVC::parseAndAddNALUnit(int                                           nalI
                               std::shared_ptr<TreeItem>                     parent)
 {
   AnnexB::ParseResult parseResult;
+  parseResult.success = true;
 
   if (nalID == -1 && data.empty())
   {
@@ -272,8 +273,6 @@ AnnexBVVC::parseAndAddNALUnit(int                                           nalI
     nalRoot = parent->createChildItem();
   else if (packetModel->rootItem)
     nalRoot = packetModel->rootItem->createChildItem();
-
-  parseResult.success = true;
 
   if (nalRoot)
     AnnexB::logNALSize(data, nalRoot, nalStartEndPosFile);
