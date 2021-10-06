@@ -99,6 +99,7 @@ protected:
     int                       lastFramePOC{-1};
     bool                      lastFrameIsKeyframe{};
     std::optional<pairUint64> curFrameFileStartEndPos;
+    bool                      NoOutputBeforeRecoveryFlag{true};
   };
   ParsingState parsingState;
 

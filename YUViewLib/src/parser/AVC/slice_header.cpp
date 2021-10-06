@@ -33,6 +33,7 @@
 #include "slice_header.h"
 
 #include "dec_ref_pic_marking.h"
+#include "parser/common/CodingEnum.h"
 #include "pic_parameter_set_rbsp.h"
 #include "pred_weight_table.h"
 #include "ref_pic_list_modification.h"

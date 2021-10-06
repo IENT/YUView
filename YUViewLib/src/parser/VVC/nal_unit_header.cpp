@@ -36,12 +36,10 @@
 namespace parser::vvc
 {
 
-using namespace parser::reader;
-
 namespace
 {
 
-parser::CodingEnum<NalType> nalTypeCoding(
+static const parser::CodingEnum<NalType> nalTypeCoding(
     {{0, NalType::TRAIL_NUT, "TRAIL_NUT", "Coded slice of a trailing picture or subpicture"},
      {1, NalType::STSA_NUT, "STSA_NUT", "Coded slice of an STSA picture or subpicture"},
      {2, NalType::RADL_NUT, "RADL_NUT", "Coded slice of a RADL picture or subpicture"},
@@ -78,6 +76,8 @@ parser::CodingEnum<NalType> nalTypeCoding(
     NalType::UNSPECIFIED);
 
 }
+
+using namespace parser::reader;
 
 void nal_unit_header::parse(SubByteReaderLogging &reader)
 {

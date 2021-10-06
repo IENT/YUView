@@ -33,7 +33,6 @@
 #pragma once
 
 #include "parser/common/SubByteReaderLogging.h"
-#include "parser/common/CodingEnum.h"
 
 namespace parser::av1
 {

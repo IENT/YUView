@@ -62,7 +62,8 @@ public:
                                   NalType                                   nalType,
                                   SPSMap &                                  spsMap,
                                   PPSMap &                                  ppsMap,
-                                  std::shared_ptr<picture_header_structure> previousPicture);
+                                  std::shared_ptr<picture_header_structure> previousPicture,
+                                  bool NoOutputBeforeRecoveryFlag);
 
   bool                           ph_gdr_or_irap_pic_flag{};
   bool                           ph_non_ref_pic_flag{};
