@@ -494,12 +494,6 @@ AnnexBHEVC::parseAndAddNALUnit(int                                           nal
                             std::to_string(POC) + ")";
       parseResult.nalTypeName = "Slice(POC " + std::to_string(POC) + ")";
 
-      if (nalHEVC->header.nal_unit_type != NalType::TRAIL_N && nalHEVC->header.nal_unit_type != NalType::TRAIL_R)
-      {
-        int debugSopt = 234;
-        (void)debugSopt;
-      }
-
       DEBUG_HEVC("AnnexBHEVC::parseAndAddNALUnit Slice POC "
                  << POC << " - pocCounterOffset " << pocCounterOffset << " maxPOCCount "
                  << maxPOCCount << (nalHEVC->header.isIRAP() ? " - IRAP" : "")
