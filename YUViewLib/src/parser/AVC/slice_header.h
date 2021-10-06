@@ -34,7 +34,6 @@
 
 #include "commonMaps.h"
 #include "nal_unit_header.h"
-#include "parser/common/CodingEnum.h"
 #include "parser/common/SubByteReaderLogging.h"
 
 namespace parser::avc

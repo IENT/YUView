@@ -32,6 +32,7 @@
 
 #include "interpolation_filter.h"
 
+#include "parser/common/CodingEnum.h"
 #include "typedef.h"
 
 namespace parser::av1

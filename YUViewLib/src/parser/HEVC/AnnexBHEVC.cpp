@@ -321,10 +321,10 @@ AnnexBHEVC::parseAndAddNALUnit(int                                           nal
   try
   {
     nalHEVC->header.parse(reader);
+    specificDescription = " " + NalTypeMapper.getName(nalHEVC->header.nal_unit_type);
 
     if (nalHEVC->header.nal_unit_type == NalType::VPS_NUT)
     {
-      specificDescription = " VPS";
       auto newVPS         = std::make_shared<video_parameter_set_rbsp>();
       newVPS->parse(reader);
 
@@ -341,7 +341,6 @@ AnnexBHEVC::parseAndAddNALUnit(int                                           nal
     }
     else if (nalHEVC->header.nal_unit_type == hevc::NalType::SPS_NUT)
     {
-      specificDescription = " SPS";
       auto newSPS         = std::make_shared<seq_parameter_set_rbsp>();
       newSPS->parse(reader);
 
@@ -359,7 +358,6 @@ AnnexBHEVC::parseAndAddNALUnit(int                                           nal
     }
     else if (nalHEVC->header.nal_unit_type == hevc::NalType::PPS_NUT)
     {
-      specificDescription = " PPS";
       auto newPPS         = std::make_shared<pic_parameter_set_rbsp>();
       newPPS->parse(reader);
 
@@ -377,8 +375,7 @@ AnnexBHEVC::parseAndAddNALUnit(int                                           nal
     }
     else if (nalHEVC->header.isSlice())
     {
-      specificDescription = " Slice";
-      auto newSlice       = std::make_shared<slice_segment_layer_rbsp>();
+      auto newSlice = std::make_shared<slice_segment_layer_rbsp>();
       newSlice->parse(reader,
                       this->firstAUInDecodingOrder,
                       this->prevTid0PicSlicePicOrderCntLsb,
@@ -493,7 +490,8 @@ AnnexBHEVC::parseAndAddNALUnit(int                                           nal
       }
       currentSliceType = to_string(newSlice->sliceSegmentHeader.slice_type);
 
-      specificDescription     = " POC " + std::to_string(POC);
+      specificDescription += " (POC " +
+                            std::to_string(POC) + ")";
       parseResult.nalTypeName = "Slice(POC " + std::to_string(POC) + ")";
 
       DEBUG_HEVC("AnnexBHEVC::parseAndAddNALUnit Slice POC "
@@ -504,7 +502,6 @@ AnnexBHEVC::parseAndAddNALUnit(int                                           nal
     else if (nalHEVC->header.nal_unit_type == NalType::PREFIX_SEI_NUT ||
              nalHEVC->header.nal_unit_type == NalType::SUFFIX_SEI_NUT)
     {
-      specificDescription = " SEI";
       auto newSEI         = std::make_shared<sei_rbsp>();
       newSEI->parse(reader,
                     nalHEVC->header.nal_unit_type,
@@ -546,7 +543,6 @@ AnnexBHEVC::parseAndAddNALUnit(int                                           nal
     }
     else if (nalHEVC->header.nal_unit_type == NalType::FD_NUT)
     {
-      specificDescription = " Filler";
       DEBUG_HEVC("AnnexBHEVC::parseAndAddNALUnit Parsed Fillerdata");
       parseResult.nalTypeName = "Filler ";
     }
