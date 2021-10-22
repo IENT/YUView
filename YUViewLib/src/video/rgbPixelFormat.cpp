@@ -59,14 +59,14 @@ rgbPixelFormat::rgbPixelFormat(const std::string &name)
 {
   if (name != "Unknown Pixel Format")
   {
-    std::string channelOrderString;
+    auto channelOrderString = name.substr(0, 3);
     if (name[0] == 'a' || name[0] == 'A')
     {
       this->hasAlpha     = true;
       this->alphaLast    = false;
       channelOrderString = name.substr(1, 3);
     }
-    if (name[3] == 'a' || name[3] == 'A')
+    else if (name[3] == 'a' || name[3] == 'A')
     {
       this->hasAlpha     = true;
       this->alphaLast    = true;
