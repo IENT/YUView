@@ -39,7 +39,7 @@ void YUVPixelFormatGuessTest::testFormatGuessFromFilename_data()
   const unsigned bytes1280 = 1280 * 720 * 3 * 6;  // 6 frames 444
 
   QTest::newRow("testResolutionOnly1") << "something_1920x1080.yuv" << bytes1080 << 1920u << 1080u
-                                       << 0u << false << "YUV 4:2:0 8-bit";
+                                       << 0u << DataLayout::Planar << "YUV 4:2:0 8-bit";
 
   QTest::newRow("testResolutionAndFPSAndBitDepth1")
       << "something_1920x1080_25_8.yuv" << bytes1080 << 1920u << 1080u << 8u << DataLayout::Planar
