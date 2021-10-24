@@ -2,6 +2,8 @@
 
 #include <video/YUVPixelFormat.h>
 
+using namespace video::yuv;
+
 class YUVPixelFormatTest : public QObject
 {
   Q_OBJECT
@@ -13,8 +15,6 @@ public:
 private slots:
   void testFormatFromToString();
 };
-
-using namespace YUV_Internals;
 
 std::vector<YUVPixelFormat> getAllFormats()
 {

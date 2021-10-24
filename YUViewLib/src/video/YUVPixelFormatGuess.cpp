@@ -37,7 +37,7 @@
 #include <QDir>
 #include <regex>
 
-namespace YUV_Internals
+namespace video::yuv
 {
 
 Subsampling findSubsamplingTypeIndicatorInName(std::string name)
@@ -98,9 +98,7 @@ std::vector<Subsampling> getDetectionSubsamplingList(Subsampling forceAsFirst, b
   return subsamplingList;
 }
 
-bool checkFormat(const YUV_Internals::YUVPixelFormat pixelFormat,
-                 const Size                          frameSize,
-                 const int64_t                       fileSize)
+bool checkFormat(const YUVPixelFormat pixelFormat, const Size frameSize, const int64_t fileSize)
 {
   int bpf = pixelFormat.bytesPerFrame(frameSize);
   return (bpf != 0 && (fileSize % bpf) == 0);
@@ -227,8 +225,11 @@ YUVPixelFormat testFormatFromSizeAndNamePacked(std::string name,
   return {};
 }
 
-YUVPixelFormat guessFormatFromSizeAndName(
-    const Size size, unsigned bitDepth, bool packed, int64_t fileSize, const QFileInfo &fileInfo)
+YUVPixelFormat guessFormatFromSizeAndName(const Size       size,
+                                          unsigned         bitDepth,
+                                          DataLayout       dataLayout,
+                                          int64_t          fileSize,
+                                          const QFileInfo &fileInfo)
 {
   // We are going to check two strings (one after the other) for indicators on the YUV format.
   // 1: The file name, 2: The folder name that the file is contained in.
@@ -266,7 +267,7 @@ YUVPixelFormat guessFormatFromSizeAndName(
     // First the YUV order, then the subsampling, then a 'p' if the format is planar, then the
     // number of bits (if > 8), finally 'le' or 'be' if bits is > 8. E.g: yuv420p, yuv420p10le,
     // yuv444p16be
-    if (packed)
+    if (dataLayout == DataLayout::Packed)
     {
       // Check packed formats first
       auto fmt = testFormatFromSizeAndNamePacked(name, size, bitDepth, subsampling, fileSize);
@@ -323,7 +324,7 @@ YUVPixelFormat guessFormatFromSizeAndName(
         for (auto bd : bitDepths)
         {
           YUVPixelFormat fmt;
-          if (packed)
+          if (dataLayout == DataLayout::Packed)
             fmt = YUVPixelFormat(subsamplingEntry.value, bd, PackingOrder::YUV);
           else
             fmt = YUVPixelFormat(subsamplingEntry.value, bd, PlaneOrder::YUV);
@@ -361,4 +362,4 @@ YUVPixelFormat guessFormatFromSizeAndName(
   return {};
 }
 
-} // namespace YUV_Internals
+} // namespace video::yuv

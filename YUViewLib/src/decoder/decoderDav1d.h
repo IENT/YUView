@@ -68,11 +68,11 @@ public:
 
   void setInternalsSupported() { internalsSupported = true; }
 
-  void clear() { memset(&curPicture, 0, sizeof(Dav1dPicture)); }
-  Size getFrameSize() const { return Size({curPicture.p.w, curPicture.p.h}); }
-  Dav1dPicture *             getPicture() const { return (Dav1dPicture *)(&curPicture); }
-  YUV_Internals::Subsampling getSubsampling() const;
-  int                        getBitDepth() const { return curPicture.p.bpc; }
+  void                    clear() { memset(&curPicture, 0, sizeof(Dav1dPicture)); }
+  Size                    getFrameSize() const { return Size({curPicture.p.w, curPicture.p.h}); }
+  Dav1dPicture *          getPicture() const { return (Dav1dPicture *)(&curPicture); }
+  video::yuv::Subsampling getSubsampling() const;
+  int                     getBitDepth() const { return curPicture.p.bpc; }
   uint8_t * getData(int component) const { return (uint8_t *)curPicture.data[component]; }
   ptrdiff_t getStride(int component) const { return curPicture.stride[component]; }
   uint8_t * getDataPrediction(int component) const

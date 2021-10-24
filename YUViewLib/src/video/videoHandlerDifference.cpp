@@ -38,6 +38,9 @@
 #include "common/functions.h"
 #include "videoHandlerYUV.h"
 
+namespace video
+{
+
 // Activate this if you want to know when which buffer is loaded/converted to image and so on.
 #define VIDEOHANDLERDIFFERENCE_DEBUG_LOADING 0
 #if VIDEOHANDLERDIFFERENCE_DEBUG_LOADING && !NDEBUG
@@ -46,7 +49,9 @@
 #define DEBUG_VIDEO(fmt, ...) ((void)0)
 #endif
 
-videoHandlerDifference::videoHandlerDifference() : videoHandler() {}
+videoHandlerDifference::videoHandlerDifference() : videoHandler()
+{
+}
 
 void videoHandlerDifference::drawDifferenceFrame(QPainter *painter,
                                                  int       frameIdx,
@@ -178,6 +183,12 @@ QStringPairList videoHandlerDifference::getPixelValues(const QPoint &pixelPos,
   return inputVideo[0]->getPixelValues(pixelPos, frameIdx, inputVideo[1], frameIdx1);
 }
 
+void videoHandlerDifference::setFormatFromSizeAndName(
+    const Size, int, DataLayout, int64_t, const QFileInfo &)
+{
+  assert(false);
+}
+
 QLayout *videoHandlerDifference::createDifferenceHandlerControls()
 {
   Q_ASSERT_X(!ui.created(), "createResampleHandlerControls", "Controls must only be created once");
@@ -265,10 +276,9 @@ void videoHandlerDifference::reportFirstDifferencePosition(QList<infoItem> &info
         // Now take the tree approach
         int firstX, firstY, partIndex = 0;
 
-        videoHandlerYUV *video0 = dynamic_cast<videoHandlerYUV *>(inputVideo[0].data());
-        if (video0 != NULL && video0->getIs_YUV_diff())
+        auto videoYUV0 = dynamic_cast<videoHandlerYUV *>(inputVideo[0].data());
+        if (videoYUV0 != NULL && videoYUV0->isDiffReady())
         {
-
           // find first difference using YUV instead of QImage. The latter does not work for 10bit
           // videos and very small differences, since it only supports 8bit
           if (hierarchicalPositionYUV(x * 64,
@@ -277,8 +287,8 @@ void videoHandlerDifference::reportFirstDifferencePosition(QList<infoItem> &info
                                       firstX,
                                       firstY,
                                       partIndex,
-                                      video0->getDiffYUV(),
-                                      video0->getDiffYUVFormat()))
+                                      videoYUV0->getDiffYUV(),
+                                      videoYUV0->getDiffYUVFormat()))
           {
             // We found a difference in this block
             infoList.append(infoItem("First Difference LCU", QString::number(y * widthLCU + x)));
@@ -335,7 +345,7 @@ ItemLoadingState videoHandlerDifference::needsLoadingRawValues(int frameIndex)
   if (auto video = dynamic_cast<videoHandler *>(inputVideo[0].data()))
     if (video->needsLoadingRawValues(frameIndex) == ItemLoadingState::LoadingNeeded)
       return ItemLoadingState::LoadingNeeded;
-  
+
   if (auto video = dynamic_cast<videoHandler *>(inputVideo[1].data()))
     if (video->needsLoadingRawValues(frameIndex) == ItemLoadingState::LoadingNeeded)
       return ItemLoadingState::LoadingNeeded;
@@ -427,15 +437,14 @@ getValueFromSource(const unsigned char *src, const int idx, const int bps, const
     return src[idx];
 }
 
-bool videoHandlerDifference::hierarchicalPositionYUV(
-    int                                  x,
-    int                                  y,
-    int                                  blockSize,
-    int &                                firstX,
-    int &                                firstY,
-    int &                                partIndex,
-    const QByteArray &                   diffYUV,
-    const YUV_Internals::YUVPixelFormat &diffYUVFormat) const
+bool videoHandlerDifference::hierarchicalPositionYUV(int                        x,
+                                                     int                        y,
+                                                     int                        blockSize,
+                                                     int &                      firstX,
+                                                     int &                      firstY,
+                                                     int &                      partIndex,
+                                                     const QByteArray &         diffYUV,
+                                                     const yuv::YUVPixelFormat &diffYUVFormat) const
 {
   if (x >= int(frameSize.width) || y >= int(frameSize.height))
     // This block is entirely outside of the picture
@@ -473,12 +482,12 @@ bool videoHandlerDifference::hierarchicalPositionYUV(
   if (blockSize == 4)
   {
     const unsigned char *srcY1 = (unsigned char *)diffYUV.data();
-    const unsigned char *srcU1 = (diffYUVFormat.getPlaneOrder() == YUV_Internals::PlaneOrder::YUV ||
-                                  diffYUVFormat.getPlaneOrder() == YUV_Internals::PlaneOrder::YUVA)
+    const unsigned char *srcU1 = (diffYUVFormat.getPlaneOrder() == yuv::PlaneOrder::YUV ||
+                                  diffYUVFormat.getPlaneOrder() == yuv::PlaneOrder::YUVA)
                                      ? srcY1 + nrBytesLumaPlane_In
                                      : srcY1 + nrBytesLumaPlane_In + nrBytesChromaPlane_In;
-    const unsigned char *srcV1 = (diffYUVFormat.getPlaneOrder() == YUV_Internals::PlaneOrder::YUV ||
-                                  diffYUVFormat.getPlaneOrder() == YUV_Internals::PlaneOrder::YUVA)
+    const unsigned char *srcV1 = (diffYUVFormat.getPlaneOrder() == yuv::PlaneOrder::YUV ||
+                                  diffYUVFormat.getPlaneOrder() == yuv::PlaneOrder::YUVA)
                                      ? srcY1 + nrBytesLumaPlane_In + nrBytesChromaPlane_In
                                      : srcY1 + nrBytesLumaPlane_In;
 
@@ -548,3 +557,5 @@ bool videoHandlerDifference::hierarchicalPositionYUV(
   }
   return false;
 }
+
+} // namespace video

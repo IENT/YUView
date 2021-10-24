@@ -102,8 +102,10 @@ Size AnnexBHEVC::getSequenceSizeSamples() const
   return {};
 }
 
-YUVPixelFormat AnnexBHEVC::getPixelFormat() const
+video::yuv::YUVPixelFormat AnnexBHEVC::getPixelFormat() const
 {
+  using Subsampling = video::yuv::Subsampling;
+
   // Get the subsampling and bit-depth from the sps
   int  bitDepthY   = -1;
   int  bitDepthC   = -1;
@@ -131,13 +133,13 @@ YUVPixelFormat AnnexBHEVC::getPixelFormat() const
       if (bitDepthY != bitDepthC)
       {
         // Different luma and chroma bit depths currently not supported
-        return YUVPixelFormat();
+        return {};
       }
-      return YUVPixelFormat(subsampling, bitDepthY);
+      return video::yuv::YUVPixelFormat(subsampling, bitDepthY);
     }
   }
 
-  return YUVPixelFormat();
+  return {};
 }
 
 std::optional<AnnexB::SeekData> AnnexBHEVC::getSeekData(int iFrameNr)

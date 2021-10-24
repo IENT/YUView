@@ -57,7 +57,6 @@
 #include "video/videoHandlerRGB.h"
 #include "video/videoHandlerYUV.h"
 
-using namespace YUView;
 using namespace functions;
 using namespace decoder;
 
@@ -78,7 +77,10 @@ bool isInputFormatTypeAnnexB(InputFormat format)
          format == InputFormat::AnnexBAVC;
 }
 
-bool isInputFormatTypeFFmpeg(InputFormat format) { return format == InputFormat::Libav; }
+bool isInputFormatTypeFFmpeg(InputFormat format)
+{
+  return format == InputFormat::Libav;
+}
 
 enum class Codec
 {
@@ -131,11 +133,11 @@ playlistItemCompressedVideo::playlistItemCompressedVideo(const QString &compress
     this->inputFormat = input;
 
   // While opening the file, also determine which decoders we can use
-  Size                          frameSize;
-  YUV_Internals::YUVPixelFormat format_yuv;
-  RGB_Internals::rgbPixelFormat format_rgb;
-  auto                          mainWindow = MainWindow::getMainWindow();
-  Codec                         codec      = Codec::Other;
+  Size                       frameSize;
+  video::yuv::YUVPixelFormat formatYuv;
+  video::rgb::rgbPixelFormat formatRgb;
+  auto                       mainWindow = MainWindow::getMainWindow();
+  Codec                      codec      = Codec::Other;
   if (isInputFormatTypeAnnexB(this->inputFormat))
   {
     // Open file
@@ -173,10 +175,10 @@ playlistItemCompressedVideo::playlistItemCompressedVideo(const QString &compress
     frameSize = inputFileAnnexBParser->getSequenceSizeSamples();
     DEBUG_COMPRESSED("playlistItemCompressedVideo::playlistItemCompressedVideo Frame size "
                      << frameSize.width << "x" << frameSize.height);
-    format_yuv = inputFileAnnexBParser->getPixelFormat();
+    formatYuv = inputFileAnnexBParser->getPixelFormat();
     DEBUG_COMPRESSED("playlistItemCompressedVideo::playlistItemCompressedVideo YUV format "
-                     << format_yuv.getName().c_str());
-    rawFormat            = raw_YUV; // Raw annexB files will always provide YUV data
+                     << formatYuv.getName().c_str());
+    this->rawFormat      = video::RawFormat::YUV;
     this->prop.frameRate = inputFileAnnexBParser->getFramerate();
     DEBUG_COMPRESSED("playlistItemCompressedVideo::playlistItemCompressedVideo framerate "
                      << this->prop.frameRate);
@@ -200,13 +202,15 @@ playlistItemCompressedVideo::playlistItemCompressedVideo(const QString &compress
       return;
     }
     // Is this file RGB or YUV?
-    rawFormat = inputFileFFmpegLoading->getRawFormat();
+    this->rawFormat = inputFileFFmpegLoading->getRawFormat();
     DEBUG_COMPRESSED("playlistItemCompressedVideo::playlistItemCompressedVideo Raw format "
-                     << (rawFormat == raw_YUV ? "YUV" : rawFormat == raw_RGB ? "RGB" : "Unknown"));
-    if (rawFormat == raw_YUV)
-      format_yuv = inputFileFFmpegLoading->getPixelFormatYUV();
-    else if (rawFormat == raw_RGB)
-      format_rgb = inputFileFFmpegLoading->getPixelFormatRGB();
+                     << (this->rawFormat == raw_YUV                 ? "YUV"
+                         : this->rawFormat == video::RawFormat::RGB ? "RGB"
+                                                                    : "Unknown"));
+    if (this->rawFormat == video::RawFormat::YUV)
+      formatYuv = inputFileFFmpegLoading->getPixelFormatYUV();
+    else if (this->rawFormat == video::RawFormat::RGB)
+      formatRgb = inputFileFFmpegLoading->getPixelFormatRGB();
     else
     {
       setError("Unknown raw format.");
@@ -256,27 +260,28 @@ playlistItemCompressedVideo::playlistItemCompressedVideo(const QString &compress
     setError("Error opening file: Unable to obtain frame size from file.");
     return;
   }
-  if (rawFormat == raw_Invalid || (rawFormat == raw_YUV && !format_yuv.isValid()) ||
-      (rawFormat == raw_RGB && !format_rgb.isValid()))
+  if (rawFormat == video::RawFormat::Invalid ||
+      (rawFormat == video::RawFormat::YUV && !formatYuv.isValid()) ||
+      (rawFormat == video::RawFormat::RGB && !formatRgb.isValid()))
   {
     setError("Error opening file: Unable to obtain a valid pixel format from file.");
     return;
   }
 
   // Allocate the videoHander (RGB or YUV)
-  if (rawFormat == raw_YUV)
+  if (rawFormat == video::RawFormat::YUV)
   {
-    video.reset(new videoHandlerYUV());
+    video.reset(new video::videoHandlerYUV());
     auto yuvVideo = getYUVVideo();
     yuvVideo->setFrameSize(frameSize);
-    yuvVideo->setYUVPixelFormat(format_yuv);
+    yuvVideo->setYUVPixelFormat(formatYuv);
   }
   else
   {
-    video.reset(new videoHandlerRGB());
+    video.reset(new video::videoHandlerRGB());
     auto rgbVideo = getRGBVideo();
     rgbVideo->setFrameSize(frameSize);
-    rgbVideo->setRGBPixelFormat(format_rgb);
+    rgbVideo->setRGBPixelFormat(formatRgb);
   }
 
   // Connect the basic signals from the video
@@ -342,7 +347,7 @@ playlistItemCompressedVideo::playlistItemCompressedVideo(const QString &compress
   if (!allocateDecoder(displayComponent))
     return;
 
-  if (rawFormat == raw_YUV)
+  if (rawFormat == video::RawFormat::YUV)
   {
     auto yuvVideo = getYUVVideo();
     yuvVideo->showPixelValuesAsDiff =
@@ -368,7 +373,7 @@ playlistItemCompressedVideo::playlistItemCompressedVideo(const QString &compress
 
   // Connect signals for requesting data and statistics
   connect(video.get(),
-          &videoHandler::signalRequestRawData,
+          &video::videoHandler::signalRequestRawData,
           this,
           &playlistItemCompressedVideo::loadRawData,
           Qt::DirectConnection);
@@ -674,8 +679,8 @@ void playlistItemCompressedVideo::loadRawData(int frameIdx, bool caching)
       {
         // In this scenario, we can read and push AVPackets
         // from the FFmpeg file and pass them to the FFmpeg decoder directly.
-        auto pkt = caching ? inputFileFFmpegCaching->getNextPacket(repushData)
-                           : inputFileFFmpegLoading->getNextPacket(repushData);
+        auto pkt   = caching ? inputFileFFmpegCaching->getNextPacket(repushData)
+                             : inputFileFFmpegLoading->getNextPacket(repushData);
         repushData = false;
         if (pkt)
           DEBUG_COMPRESSED("playlistItemCompressedVideo::loadRawData retrived packet PTS "
@@ -1286,7 +1291,7 @@ void playlistItemCompressedVideo::displaySignalComboBoxChanged(int idx)
 
     // A different display signal was chosen. Invalidate the cache and signal that we will need a
     // redraw.
-    auto yuvVideo                   = dynamic_cast<videoHandlerYUV *>(video.get());
+    auto yuvVideo                   = dynamic_cast<video::videoHandlerYUV *>(video.get());
     yuvVideo->showPixelValuesAsDiff = loadingDecoder->isSignalDifference(idx);
     yuvVideo->invalidateAllBuffers();
 
@@ -1305,7 +1310,7 @@ void playlistItemCompressedVideo::decoderComboxBoxChanged(int idx)
 
     // A different display signal was chosen. Invalidate the cache and signal that we will need a
     // redraw.
-    auto yuvVideo = dynamic_cast<videoHandlerYUV *>(video.get());
+    auto yuvVideo = dynamic_cast<video::videoHandlerYUV *>(video.get());
     if (loadingDecoder)
       yuvVideo->showPixelValuesAsDiff = loadingDecoder->isSignalDifference(idx);
     yuvVideo->invalidateAllBuffers();

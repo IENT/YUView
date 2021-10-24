@@ -41,17 +41,16 @@
 #define DEBUG_RGB_FORMAT(fmt, ...) ((void)0)
 #endif
 
-namespace RGB_Internals
+namespace video::rgb
 {
 
 rgbPixelFormat::rgbPixelFormat(unsigned     bitsPerSample,
-                               bool         planar,
+                               DataLayout   dataLayout,
                                ChannelOrder channelOrder,
-                               bool         hasAlpha,
-                               bool         alphaLast,
-                               bool         bigEndian)
-    : bitsPerSample(bitsPerSample), planar(planar), channelOrder(channelOrder), hasAlpha(hasAlpha),
-      alphaLast(alphaLast), bigEndian(bigEndian)
+                               AlphaMode    alphaMode,
+                               Endianness   endianness)
+    : bitsPerSample(bitsPerSample), dataLayout(dataLayout), channelOrder(channelOrder),
+      alphaMode(alphaMode), endianness(endianness)
 {
 }
 
@@ -62,30 +61,25 @@ rgbPixelFormat::rgbPixelFormat(const std::string &name)
     auto channelOrderString = name.substr(0, 3);
     if (name[0] == 'a' || name[0] == 'A')
     {
-      this->hasAlpha     = true;
-      this->alphaLast    = false;
+      this->alphaMode    = AlphaMode::First;
       channelOrderString = name.substr(1, 3);
     }
     else if (name[3] == 'a' || name[3] == 'A')
     {
-      this->hasAlpha     = true;
-      this->alphaLast    = true;
+      this->alphaMode    = AlphaMode::Last;
       channelOrderString = name.substr(0, 3);
     }
     auto order = ChannelOrderMapper.getValue(channelOrderString);
-    if (!order)
-    {
-      this->hasAlpha = false;
-      return;
-    }
-    this->channelOrder = *order;
+    if (order)
+      this->channelOrder = *order;
 
     auto bitIdx = name.find("bit");
     if (bitIdx != std::string::npos)
       this->bitsPerSample = std::stoi(name.substr(bitIdx - 2, 2), nullptr);
-    this->planar = (name.find("planar") != std::string::npos);
+    if (name.find("planar") != std::string::npos)
+      this->dataLayout = DataLayout::Planar;
     if (this->bitsPerSample > 8 && name.find("BE") != std::string::npos)
-      this->bigEndian = true;
+      this->endianness = Endianness::Big;
   }
 }
 
@@ -94,22 +88,32 @@ bool rgbPixelFormat::isValid() const
   return this->bitsPerSample >= 8 && this->bitsPerSample <= 16;
 }
 
+unsigned rgbPixelFormat::nrChannels() const
+{
+  return this->alphaMode != AlphaMode::None ? 4 : 3;
+}
+
+bool rgbPixelFormat::hasAlpha() const
+{
+  return this->alphaMode != AlphaMode::None;
+}
+
 std::string rgbPixelFormat::getName() const
 {
   if (!this->isValid())
     return "Unknown Pixel Format";
 
   std::string name;
-  if (this->hasAlpha && !this->alphaLast)
+  if (this->alphaMode == AlphaMode::First)
     name += "A";
   name += ChannelOrderMapper.getName(this->channelOrder);
-  if (this->hasAlpha && this->alphaLast)
+  if (this->alphaMode == AlphaMode::Last)
     name += "A";
 
   name += " " + std::to_string(this->bitsPerSample) + "bit";
-  if (planar)
+  if (this->dataLayout == DataLayout::Planar)
     name += " planar";
-  if (this->bitsPerSample > 8 && this->bigEndian)
+  if (this->bitsPerSample > 8 && this->endianness == Endianness::Big)
     name += " BE";
 
   return name;
@@ -135,12 +139,18 @@ int rgbPixelFormat::getComponentPosition(Channel channel) const
 {
   if (channel == Channel::Alpha)
   {
-    if (!this->hasAlpha)
+    switch (this->alphaMode)
+    {
+    case AlphaMode::First:
+      return 0;
+    case AlphaMode::Last:
+      return 3;
+    default:
       return -1;
-    return this->alphaLast ? 3 : 0;
+    }
   }
 
-  unsigned rgbIdx = 0;
+  auto rgbIdx = 0;
   if (channel == Channel::Red)
   {
     if (this->channelOrder == ChannelOrder::RGB || this->channelOrder == ChannelOrder::RBG)
@@ -169,9 +179,9 @@ int rgbPixelFormat::getComponentPosition(Channel channel) const
       rgbIdx = 2;
   }
 
-  if (this->hasAlpha && !this->alphaLast)
+  if (this->alphaMode == AlphaMode::First)
     return rgbIdx + 1;
   return rgbIdx;
 }
 
-} // namespace RGB_Internals
+} // namespace video::rgb

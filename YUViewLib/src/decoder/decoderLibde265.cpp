@@ -40,7 +40,8 @@
 #include "common/functions.h"
 #include "common/typedef.h"
 
-using namespace YUView;
+namespace decoder
+{
 
 // Debug the decoder ( 0:off 1:interactive decoder only 2:caching decoder only 3:both)
 #define DECODERLIBD265_DEBUG_OUTPUT 0
@@ -66,8 +67,26 @@ using namespace YUView;
 #define DEBUG_LIBDE265(fmt, ...) ((void)0)
 #endif
 
-namespace decoder
+using Subsampling = video::yuv::Subsampling;
+
+namespace
 {
+
+Subsampling convertFromInternalSubsampling(de265_chroma fmt)
+{
+  if (fmt == de265_chroma_mono)
+    return Subsampling::YUV_400;
+  else if (fmt == de265_chroma_420)
+    return Subsampling::YUV_420;
+  else if (fmt == de265_chroma_422)
+    return Subsampling::YUV_422;
+  else if (fmt == de265_chroma_444)
+    return Subsampling::YUV_444;
+
+  return Subsampling::UNKNOWN;
+}
+
+}
 
 decoderLibde265::decoderLibde265(int signalID, bool cachingDecoder)
     : decoderBaseSingleLib(cachingDecoder)
@@ -75,7 +94,7 @@ decoderLibde265::decoderLibde265(int signalID, bool cachingDecoder)
   currentOutputBuffer.clear();
 
   // Libde265 can only decoder HEVC in YUV format
-  rawFormat = raw_YUV;
+  rawFormat = video::RawFormat::YUV;
 
   QSettings settings;
   settings.beginGroup("Decoders");
@@ -341,7 +360,7 @@ bool decoderLibde265::decodeFrame()
     if (!s.isValid())
       DEBUG_LIBDE265("decoderLibde265::decodeFrame got invalid frame size");
     auto subsampling = convertFromInternalSubsampling(this->lib.de265_get_chroma_format(curImage));
-    if (subsampling == YUV_Internals::Subsampling::UNKNOWN)
+    if (subsampling == video::yuv::Subsampling::UNKNOWN)
       DEBUG_LIBDE265("decoderLibde265::decodeFrame got invalid subsampling");
     auto bitDepth = functions::clipToUnsigned(this->lib.de265_get_bits_per_pixel(curImage, 0));
     if (bitDepth < 8 || bitDepth > 16)
@@ -351,7 +370,7 @@ bool decoderLibde265::decodeFrame()
     {
       // Set the values
       frameSize = s;
-      formatYUV = YUV_Internals::YUVPixelFormat(subsampling, bitDepth);
+      formatYUV = video::yuv::YUVPixelFormat(subsampling, bitDepth);
     }
     else
     {
@@ -1002,20 +1021,6 @@ QStringList decoderLibde265::getLibraryNames() const
                                                      << "libde265";
 
   return libNames;
-}
-
-YUV_Internals::Subsampling decoderLibde265::convertFromInternalSubsampling(de265_chroma fmt)
-{
-  if (fmt == de265_chroma_mono)
-    return YUV_Internals::Subsampling::YUV_400;
-  else if (fmt == de265_chroma_420)
-    return YUV_Internals::Subsampling::YUV_420;
-  else if (fmt == de265_chroma_422)
-    return YUV_Internals::Subsampling::YUV_422;
-  else if (fmt == de265_chroma_444)
-    return YUV_Internals::Subsampling::YUV_444;
-
-  return YUV_Internals::Subsampling::UNKNOWN;
 }
 
 } // namespace decoder

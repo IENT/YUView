@@ -53,14 +53,14 @@ playlistItemImageFileSequence::playlistItemImageFileSequence(const QString &rawF
   isFrameLoading           = false;
 
   // Create the video handler
-  video.reset(new videoHandler());
+  video.reset();
 
   // Connect the basic signals from the video
   playlistItemWithVideo::connectVideo();
 
   // Connect the video signalRequestFrame to this::loadFrame
   connect(video.get(),
-          &videoHandler::signalRequestFrame,
+          &video::videoHandler::signalRequestFrame,
           this,
           &playlistItemImageFileSequence::slotFrameRequest);
 

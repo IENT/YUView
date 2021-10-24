@@ -45,8 +45,6 @@
 
 #include <QThread>
 
-using namespace YUView;
-
 unsigned int functions::getOptimalThreadCount()
 {
   int nrThreads = QThread::idealThreadCount() - 1;

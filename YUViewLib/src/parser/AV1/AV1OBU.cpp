@@ -42,7 +42,10 @@ namespace parser
 using namespace reader;
 using namespace av1;
 
-ParserAV1OBU::ParserAV1OBU(QObject *parent) : Base(parent) { decValues.PrevFrameID = -1; }
+ParserAV1OBU::ParserAV1OBU(QObject *parent) : Base(parent)
+{
+  decValues.PrevFrameID = -1;
+}
 
 std::pair<size_t, std::string> ParserAV1OBU::parseAndAddOBU(int                       obuID,
                                                             ByteVector &              data,

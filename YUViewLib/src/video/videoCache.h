@@ -43,6 +43,9 @@
 
 #include "ui/widgets/PlaylistTreeWidget.h"
 
+namespace video
+{
+
 class videoHandler;
 class videoCache;
 
@@ -197,3 +200,5 @@ private:
   QElapsedTimer testDuration;                   //< Used to obtain the duration of the test
   void testFinished();                          //< Report the test results and stop the testProgrssUpdateTimer
 };
+
+}

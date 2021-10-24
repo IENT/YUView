@@ -36,13 +36,15 @@
 #include <QObject>
 #include <QSettings>
 
+#include "common/YUViewDomElement.h"
+#include "common/fileInfo.h"
 #include "common/saveUi.h"
 #include "common/typedef.h"
-#include "common/YUViewDomElement.h"
 
 #include "ui_frameHandler.h"
 
-struct infoItem;
+namespace video
+{
 
 /* The frame handler is the base class that is able to handle single frames. The class videoHandler
  * is a child of this class and adds support for sources with more than one frame. Finally, there
@@ -161,3 +163,5 @@ protected slots:
   // All the valueChanged() signals from the controls are connected here.
   virtual void slotVideoControlChanged();
 };
+
+} // namespace video

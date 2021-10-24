@@ -50,7 +50,10 @@ class QDockWidget;
 class PlaybackController;
 class playlistItem;
 class PlaylistTreeWidget;
+namespace video
+{
 class videoCache;
+}
 
 class splitViewWidget : public MoveAndZoomableView
 {
@@ -62,7 +65,7 @@ public:
   // Set pointers to the playlist tree, the playback controller and the cache.
   void setPlaylistTreeWidget(PlaylistTreeWidget *p);
   void setPlaybackController(PlaybackController *p);
-  void setVideoCache(videoCache *p);
+  void setVideoCache(video::videoCache *p);
 
   // Set the minimum size hint. This will only be valid until the next showEvent. This is used when
   // adding the widget as a new central widget. Then this size guarantees that the splitVie will
@@ -266,7 +269,7 @@ protected:
   // Pointers to the playlist tree widget, the playback controller and the videoCache
   QPointer<PlaylistTreeWidget> playlist;
   QPointer<PlaybackController> playback;
-  QPointer<videoCache>         cache;
+  QPointer<video::videoCache>  cache;
 
   // Freezing of the view
   bool isViewFrozen{false}; //!< Is the view frozen?

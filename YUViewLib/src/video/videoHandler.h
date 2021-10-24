@@ -36,10 +36,12 @@
 #include <QFileInfo>
 #include <QMutex>
 
+#include "pixelFormat.h"
 #include "video/frameHandler.h"
 
-/* TODO
- */
+namespace video
+{
+
 class videoHandler : public frameHandler
 {
   Q_OBJECT
@@ -91,8 +93,11 @@ public:
   // If you know the frame size and the bit depth and the file size then we can try to guess
   // the format from that. You can override this for a specific raw format. The default
   // implementation does nothing.
-  virtual void setFormatFromSizeAndName(
-      const Size size, int bitDepth, bool packed, int64_t fileSize, const QFileInfo &fileInfo);
+  virtual void setFormatFromSizeAndName(const Size       size,
+                                        int              bitDepth,
+                                        DataLayout       dataLayout,
+                                        int64_t          fileSize,
+                                        const QFileInfo &fileInfo) = 0;
 
   // The input frame buffer. After the signal signalRequestFrame(int) is emitted, the corresponding
   // frame should be in here and requestedFrame_idx should be set.
@@ -210,3 +215,5 @@ private slots:
   // have changed.
   void slotVideoControlChanged() override;
 };
+
+} // namespace video

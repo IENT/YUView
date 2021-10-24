@@ -146,10 +146,10 @@ MainWindow::MainWindow(bool useAlternativeSources, QWidget *parent) : QMainWindo
   ui.displaySplitView->setAttribute(Qt::WA_AcceptTouchEvents);
 
   // Create the videoCache object
-  cache.reset(
-      new videoCache(ui.playlistTreeWidget, ui.playbackController, ui.displaySplitView, this));
+  cache.reset(new video::videoCache(
+      ui.playlistTreeWidget, ui.playbackController, ui.displaySplitView, this));
   connect(cache.data(),
-          &videoCache::updateCacheStatus,
+          &video::videoCache::updateCacheStatus,
           ui.cachingInfoWidget,
           &VideoCacheInfoWidget::onUpdateCacheStatus);
 
@@ -159,8 +159,8 @@ MainWindow::MainWindow(bool useAlternativeSources, QWidget *parent) : QMainWindo
   ui.playbackController->setPlaylist(ui.playlistTreeWidget);
   ui.displaySplitView->setPlaybackController(ui.playbackController);
   ui.displaySplitView->setPlaylistTreeWidget(ui.playlistTreeWidget);
-  ui.displaySplitView->setVideoCache(cache.data());
-  ui.cachingInfoWidget->setPlaylistAndCache(ui.playlistTreeWidget, cache.data());
+  ui.displaySplitView->setVideoCache(this->cache.data());
+  ui.cachingInfoWidget->setPlaylistAndCache(ui.playlistTreeWidget, this->cache.data());
   separateViewWindow.splitView.setPlaybackController(ui.playbackController);
   separateViewWindow.splitView.setPlaylistTreeWidget(ui.playlistTreeWidget);
 
@@ -232,7 +232,10 @@ QWidget *MainWindow::getMainWindow()
   return nullptr;
 }
 
-void MainWindow::loadFiles(const QStringList &files) { ui.playlistTreeWidget->loadFiles(files); }
+void MainWindow::loadFiles(const QStringList &files)
+{
+  ui.playlistTreeWidget->loadFiles(files);
+}
 
 void MainWindow::createMenusAndActions()
 {
@@ -372,8 +375,7 @@ void MainWindow::createMenusAndActions()
   downloadsMenu->addAction("FFmpeg libraries",
                            []() { QDesktopServices::openUrl(QUrl("https://ffmpeg.org/")); });
   downloadsMenu->addAction("VVDec libraries", []() {
-    QDesktopServices::openUrl(
-        QUrl("https://github.com/ChristianFeldmann/vvdec/releases"));
+    QDesktopServices::openUrl(QUrl("https://github.com/ChristianFeldmann/vvdec/releases"));
   });
   helpMenu->addSeparator();
   helpMenu->addAction("Performance Tests", [this]() { this->performanceTest(); });
@@ -738,7 +740,7 @@ void MainWindow::updateSettings()
   separateViewWindow.splitView.updateSettings();
   ui.playlistTreeWidget->updateSettings();
   ui.bitstreamAnalysis->updateSettings();
-  cache->updateSettings();
+  this->cache->updateSettings();
   ui.playbackController->updateSettings();
 }
 
@@ -919,7 +921,7 @@ void MainWindow::performanceTest()
   if (dialog.exec() == QDialog::Accepted)
   {
     if (dialog.getSelectedTestIndex() == 0)
-      cache->testConversionSpeed();
+      this->cache->testConversionSpeed();
     else if (dialog.getSelectedTestIndex() == 1)
       ui.displaySplitView->testDrawingSpeed();
     else if (dialog.getSelectedTestIndex() == 2)

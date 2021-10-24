@@ -36,6 +36,9 @@
 
 #include "common/functionsGui.h"
 
+namespace video
+{
+
 // Activate this if you want to know when which buffer is loaded/converted to image and so on.
 #define VIDEOHANDLER_DEBUG_LOADING 0
 #if VIDEOHANDLER_DEBUG_LOADING && !NDEBUG
@@ -44,7 +47,9 @@
 #define DEBUG_VIDEO(fmt, ...) ((void)0)
 #endif
 
-videoHandler::videoHandler() {}
+videoHandler::videoHandler()
+{
+}
 
 void videoHandler::slotVideoControlChanged()
 {
@@ -249,7 +254,10 @@ QImage videoHandler::calculateDifference(frameHandler *   item2,
       item2, frameIdxItem0, frameIdxItem1, differenceInfoList, amplificationFactor, markDifference);
 }
 
-QRgb videoHandler::getPixelVal(int x, int y) { return currentImage.pixel(x, y); }
+QRgb videoHandler::getPixelVal(int x, int y)
+{
+  return currentImage.pixel(x, y);
+}
 
 int videoHandler::getNrFramesCached() const
 {
@@ -376,8 +384,6 @@ void videoHandler::loadFrameForCaching(int frameIndex, QImage &frameToCache)
   frameToCache = requestedFrame;
 }
 
-void videoHandler::setFormatFromSizeAndName(const Size, int, bool, int64_t, const QFileInfo &) {}
-
 void videoHandler::invalidateAllBuffers()
 {
   currentFrameRawData_frameIndex = -1;
@@ -405,7 +411,10 @@ void videoHandler::activateDoubleBuffer()
   }
 }
 
-QLayout *videoHandler::createVideoHandlerControls(bool) { return nullptr; }
+QLayout *videoHandler::createVideoHandlerControls(bool)
+{
+  return nullptr;
+}
 
 int videoHandler::convScaleLimitedRange(int value)
 {
@@ -433,3 +442,5 @@ ItemLoadingState videoHandler::needsLoadingRawValues(int frameIndex)
   return (this->currentFrameRawData_frameIndex == frameIndex) ? ItemLoadingState::LoadingNotNeeded
                                                               : ItemLoadingState::LoadingNeeded;
 }
+
+} // namespace video

@@ -40,6 +40,9 @@
 #include "common/functions.h"
 #include "common/typedef.h"
 
+namespace decoder
+{
+
 // Debug the decoder ( 0:off 1:interactive decoder only 2:caching decoder only 3:both)
 #define DECODERHM_DEBUG_OUTPUT 0
 #if DECODERHM_DEBUG_OUTPUT && !NDEBUG
@@ -80,8 +83,24 @@
 #endif
 #endif
 
-namespace decoder
+using Subsampling = video::yuv::Subsampling;
+
+namespace
 {
+
+Subsampling convertFromInternalSubsampling(libHMDec_ChromaFormat fmt)
+{
+  if (fmt == LIBHMDEC_CHROMA_400)
+    return Subsampling::YUV_400;
+  if (fmt == LIBHMDEC_CHROMA_420)
+    return Subsampling::YUV_420;
+  if (fmt == LIBHMDEC_CHROMA_422)
+    return Subsampling::YUV_422;
+
+  return Subsampling::UNKNOWN;
+}
+
+} // namespace
 
 decoderHM::decoderHM(int, bool cachingDecoder) : decoderBaseSingleLib(cachingDecoder)
 {
@@ -262,7 +281,7 @@ bool decoderHM::getNextFrameFromDecoder()
     DEBUG_DECHM("decoderHM::getNextFrameFromDecoder got invalid size");
   auto subsampling =
       convertFromInternalSubsampling(this->lib.libHMDEC_get_chroma_format(currentHMPic));
-  if (subsampling == YUV_Internals::Subsampling::UNKNOWN)
+  if (subsampling == video::yuv::Subsampling::UNKNOWN)
     DEBUG_DECHM("decoderHM::getNextFrameFromDecoder got invalid chroma format");
   auto bitDepth = functions::clipToUnsigned(
       this->lib.libHMDEC_get_internal_bit_depth(currentHMPic, LIBHMDEC_LUMA));
@@ -273,7 +292,7 @@ bool decoderHM::getNextFrameFromDecoder()
   {
     // Set the values
     frameSize = picSize;
-    formatYUV = YUV_Internals::YUVPixelFormat(subsampling, bitDepth);
+    formatYUV = video::yuv::YUVPixelFormat(subsampling, bitDepth);
   }
   else
   {
@@ -585,18 +604,6 @@ bool decoderHM::checkLibraryFile(QString libFilePath, QString &error)
   testDecoder.resolveLibraryFunctionPointers();
   error = testDecoder.decoderErrorString();
   return testDecoder.state() != DecoderState::Error;
-}
-
-YUV_Internals::Subsampling decoderHM::convertFromInternalSubsampling(libHMDec_ChromaFormat fmt)
-{
-  if (fmt == LIBHMDEC_CHROMA_400)
-    return YUV_Internals::Subsampling::YUV_400;
-  if (fmt == LIBHMDEC_CHROMA_420)
-    return YUV_Internals::Subsampling::YUV_420;
-  if (fmt == LIBHMDEC_CHROMA_422)
-    return YUV_Internals::Subsampling::YUV_422;
-
-  return YUV_Internals::Subsampling::UNKNOWN;
 }
 
 } // namespace decoder

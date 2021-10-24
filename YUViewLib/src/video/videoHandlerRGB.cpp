@@ -40,8 +40,10 @@
 #include <QPainter>
 #include <QtGlobal>
 
-using namespace RGB_Internals;
+namespace video
+{
 
+using namespace rgb;
 namespace
 {
 
@@ -84,12 +86,12 @@ const auto componentShowMapper = EnumMapper<ComponentShow>({{ComponentShow::RGBA
  */
 videoHandlerRGB::RGBFormatList::RGBFormatList()
 {
-  append(rgbPixelFormat(8, false, ChannelOrder::RGB));             // RGB 8bit
-  append(rgbPixelFormat(10, false, ChannelOrder::RGB));            // RGB 10bit
-  append(rgbPixelFormat(8, false, ChannelOrder::RGB, true, true)); // RGBA 8bit
-  append(rgbPixelFormat(8, false, ChannelOrder::BRG));             // BRG 8bit
-  append(rgbPixelFormat(10, false, ChannelOrder::BRG));            // BRG 10bit
-  append(rgbPixelFormat(10, true, ChannelOrder::RGB));             // RGB 10bit planar
+  append(rgbPixelFormat(8, DataLayout::Packed, ChannelOrder::RGB));
+  append(rgbPixelFormat(10, DataLayout::Packed, ChannelOrder::RGB));
+  append(rgbPixelFormat(8, DataLayout::Packed, ChannelOrder::RGB, AlphaMode::First));
+  append(rgbPixelFormat(8, DataLayout::Packed, ChannelOrder::BRG));
+  append(rgbPixelFormat(10, DataLayout::Packed, ChannelOrder::BRG));
+  append(rgbPixelFormat(10, DataLayout::Planar, ChannelOrder::RGB));
 }
 
 /* Put all the names of the RGB formats into a list and return it
@@ -109,7 +111,7 @@ rgbPixelFormat videoHandlerRGB::RGBFormatList::getFromName(const std::string &na
       return at(i);
 
   // If the format could not be found, we return the "Unknown Pixel Format" format
-  return rgbPixelFormat();
+  return {};
 }
 
 // Initialize the static rgbPresetList
@@ -118,7 +120,7 @@ videoHandlerRGB::RGBFormatList videoHandlerRGB::rgbPresetList;
 videoHandlerRGB::videoHandlerRGB() : videoHandler()
 {
   // preset internal values
-  setSrcPixelFormat(rgbPixelFormat(8, false, ChannelOrder::RGB));
+  this->setSrcPixelFormat(rgbPixelFormat(8, DataLayout::Packed, ChannelOrder::RGB));
 }
 
 videoHandlerRGB::~videoHandlerRGB()
@@ -167,7 +169,7 @@ QStringPairList videoHandlerRGB::getPixelValues(const QPoint &pixelPos,
     values.append(QStringPair("R", RString));
     values.append(QStringPair("G", GString));
     values.append(QStringPair("B", BString));
-    if (srcPixelFormat.hasAlphaChannel())
+    if (srcPixelFormat.hasAlpha())
     {
       const int     A       = int(valueThis.A) - int(valueOther.A);
       const QString AString = ((A < 0) ? "-" : "") + QString::number(std::abs(A), formatBase);
@@ -190,7 +192,7 @@ QStringPairList videoHandlerRGB::getPixelValues(const QPoint &pixelPos,
     values.append(QStringPair("R", QString::number(value.R, formatBase)));
     values.append(QStringPair("G", QString::number(value.G, formatBase)));
     values.append(QStringPair("B", QString::number(value.B, formatBase)));
-    if (srcPixelFormat.hasAlphaChannel())
+    if (srcPixelFormat.hasAlpha())
       values.append(QStringPair("A", QString::number(value.A, formatBase)));
   }
 
@@ -212,7 +214,7 @@ bool videoHandlerRGB::setFormatFromString(QString format)
   if (!frameHandler::setFormatFromString(split[0] + ";" + split[1]))
     return false;
 
-  auto fmt = RGB_Internals::rgbPixelFormat(split[3].toStdString());
+  auto fmt = rgbPixelFormat(split[3].toStdString());
   if (!fmt.isValid())
     return false;
 
@@ -337,7 +339,7 @@ void videoHandlerRGB::updateControlsForNewPixelFormat()
     return;
 
   auto valid         = this->srcPixelFormat.isValid();
-  auto hasAlpha      = this->srcPixelFormat.hasAlphaChannel();
+  auto hasAlpha      = this->srcPixelFormat.hasAlpha();
   auto validAndAlpha = valid & hasAlpha;
 
   ui.RScaleSpinBox->setEnabled(valid);
@@ -647,7 +649,7 @@ void videoHandlerRGB::convertRGBToImage(const QByteArray &sourceBuffer, QImage &
   }
 }
 
-void videoHandlerRGB::setSrcPixelFormat(const RGB_Internals::rgbPixelFormat &newFormat)
+void videoHandlerRGB::setSrcPixelFormat(const rgbPixelFormat &newFormat)
 {
   this->rgbFormatMutex.lock();
   this->srcPixelFormat = newFormat;
@@ -672,7 +674,7 @@ void videoHandlerRGB::convertSourceToRGBA32Bit(const QByteArray &sourceBuffer,
   // How many values do we have to skip in src to get to the next input value?
   // In case of 8 or less bits this is 1 byte per value, for 9 to 16 bits it is 2 bytes per value.
   int offsetToNextValue = srcPixelFormat.nrChannels();
-  if (srcPixelFormat.isPlanar())
+  if (srcPixelFormat.getDataLayout() == DataLayout::Planar)
     offsetToNextValue = 1;
 
   const auto bitDepth = srcPixelFormat.getBitsPerSample();
@@ -686,10 +688,11 @@ void videoHandlerRGB::convertSourceToRGBA32Bit(const QByteArray &sourceBuffer,
     // Only convert one of the components to a gray-scale image.
     // Consider inversion and scale of that component
 
-    auto       componentMap = std::map<ComponentShow, Channel>({{ComponentShow::R, Channel::Red},
-                                                          {ComponentShow::G, Channel::Green},
-                                                          {ComponentShow::B, Channel::Blue},
-                                                          {ComponentShow::A, Channel::Alpha}});
+    auto componentMap =
+        std::map<ComponentShow, Channel>({{ComponentShow::R, Channel::Red},
+                                               {ComponentShow::G, Channel::Green},
+                                               {ComponentShow::B, Channel::Blue},
+                                               {ComponentShow::A, Channel::Alpha}});
     const auto displayComponentOffset =
         srcPixelFormat.getComponentPosition(componentMap[componentDisplayMode]);
 
@@ -710,7 +713,7 @@ void videoHandlerRGB::convertSourceToRGBA32Bit(const QByteArray &sourceBuffer,
 
       // First get the pointer to the first value that we will need.
       unsigned short *src = (unsigned short *)sourceBuffer.data();
-      if (srcPixelFormat.isPlanar())
+      if (srcPixelFormat.getDataLayout() == DataLayout::Planar)
         src += displayComponentOffset * frameSize.width * frameSize.height;
       else
         src += displayComponentOffset;
@@ -738,7 +741,7 @@ void videoHandlerRGB::convertSourceToRGBA32Bit(const QByteArray &sourceBuffer,
     {
       // First get the pointer to the first value that we will need.
       unsigned char *src = (unsigned char *)sourceBuffer.data();
-      if (srcPixelFormat.isPlanar())
+      if (srcPixelFormat.getDataLayout() == DataLayout::Planar)
         src += displayComponentOffset * frameSize.width * frameSize.height;
       else
         src += displayComponentOffset;
@@ -772,7 +775,7 @@ void videoHandlerRGB::convertSourceToRGBA32Bit(const QByteArray &sourceBuffer,
     // Convert all components from the source RGB format to an RGB 888 array
 
     const auto renderAlpha =
-        componentDisplayMode == ComponentShow::RGBA && srcPixelFormat.hasAlphaChannel();
+        componentDisplayMode == ComponentShow::RGBA && srcPixelFormat.hasAlpha();
     if (bitDepth > 8 && bitDepth <= 16)
     {
       // 9 to 16 bits per component. We assume two bytes per value.
@@ -782,7 +785,7 @@ void videoHandlerRGB::convertSourceToRGBA32Bit(const QByteArray &sourceBuffer,
 
       // First get the pointer to the first value of each channel.
       unsigned short *srcR, *srcG, *srcB, *srcA;
-      if (srcPixelFormat.isPlanar())
+      if (srcPixelFormat.getDataLayout() == DataLayout::Planar)
       {
         srcR = (unsigned short *)sourceBuffer.data() + (posR * frameSize.width * frameSize.height);
         srcG = (unsigned short *)sourceBuffer.data() + (posG * frameSize.width * frameSize.height);
@@ -856,7 +859,7 @@ void videoHandlerRGB::convertSourceToRGBA32Bit(const QByteArray &sourceBuffer,
     {
       // First get the pointer to the first value of each channel.
       unsigned char *srcR, *srcG, *srcB, *srcA;
-      if (srcPixelFormat.isPlanar())
+      if (srcPixelFormat.getDataLayout() == DataLayout::Planar)
       {
         srcR = (unsigned char *)sourceBuffer.data() + (posR * frameSize.width * frameSize.height);
         srcG = (unsigned char *)sourceBuffer.data() + (posG * frameSize.width * frameSize.height);
@@ -941,7 +944,7 @@ videoHandlerRGB::rgba_t videoHandlerRGB::getPixelValue(const QPoint &pixelPos) c
   // How many values do we have to skip in src to get to the next input value?
   // In case of 8 or less bits this is 1 byte per value, for 9 to 16 bits it is 2 bytes per value.
   int offsetToNextValue = srcPixelFormat.nrChannels();
-  if (srcPixelFormat.isPlanar())
+  if (srcPixelFormat.getDataLayout() == DataLayout::Planar)
     offsetToNextValue = 1;
 
   rgba_t value{0, 0, 0, 0};
@@ -956,7 +959,7 @@ videoHandlerRGB::rgba_t videoHandlerRGB::getPixelValue(const QPoint &pixelPos) c
   {
     // First get the pointer to the first value of each channel.
     unsigned short *srcR = nullptr, *srcG = nullptr, *srcB = nullptr, *srcA = nullptr;
-    if (srcPixelFormat.isPlanar())
+    if (srcPixelFormat.getDataLayout() == DataLayout::Planar)
     {
       srcR = (unsigned short *)currentFrameRawData.data() +
              (posR * frameSize.width * frameSize.height);
@@ -964,7 +967,7 @@ videoHandlerRGB::rgba_t videoHandlerRGB::getPixelValue(const QPoint &pixelPos) c
              (posG * frameSize.width * frameSize.height);
       srcB = (unsigned short *)currentFrameRawData.data() +
              (posB * frameSize.width * frameSize.height);
-      if (srcPixelFormat.hasAlphaChannel())
+      if (srcPixelFormat.hasAlpha())
         srcA = (unsigned short *)currentFrameRawData.data() +
                (posA * frameSize.width * frameSize.height);
     }
@@ -973,21 +976,21 @@ videoHandlerRGB::rgba_t videoHandlerRGB::getPixelValue(const QPoint &pixelPos) c
       srcR = (unsigned short *)currentFrameRawData.data() + posR;
       srcG = (unsigned short *)currentFrameRawData.data() + posG;
       srcB = (unsigned short *)currentFrameRawData.data() + posB;
-      if (srcPixelFormat.hasAlphaChannel())
+      if (srcPixelFormat.hasAlpha())
         srcA = (unsigned short *)currentFrameRawData.data() + posA;
     }
 
     value.R = (unsigned int)(*(srcR + offsetToNextValue * offsetCoordinate));
     value.G = (unsigned int)(*(srcG + offsetToNextValue * offsetCoordinate));
     value.B = (unsigned int)(*(srcB + offsetToNextValue * offsetCoordinate));
-    if (srcPixelFormat.hasAlphaChannel())
+    if (srcPixelFormat.hasAlpha())
       value.A = (unsigned int)(*(srcA + offsetToNextValue * offsetCoordinate));
   }
   else if (bitDept == 8)
   {
     // First get the pointer to the first value of each channel.
     unsigned char *srcR = nullptr, *srcG = nullptr, *srcB = nullptr, *srcA = nullptr;
-    if (srcPixelFormat.isPlanar())
+    if (srcPixelFormat.getDataLayout() == DataLayout::Planar)
     {
       srcR =
           (unsigned char *)currentFrameRawData.data() + (posR * frameSize.width * frameSize.height);
@@ -995,7 +998,7 @@ videoHandlerRGB::rgba_t videoHandlerRGB::getPixelValue(const QPoint &pixelPos) c
           (unsigned char *)currentFrameRawData.data() + (posG * frameSize.width * frameSize.height);
       srcB =
           (unsigned char *)currentFrameRawData.data() + (posB * frameSize.width * frameSize.height);
-      if (srcPixelFormat.hasAlphaChannel())
+      if (srcPixelFormat.hasAlpha())
         srcA = (unsigned char *)currentFrameRawData.data() +
                (posA * frameSize.width * frameSize.height);
     }
@@ -1004,14 +1007,14 @@ videoHandlerRGB::rgba_t videoHandlerRGB::getPixelValue(const QPoint &pixelPos) c
       srcR = (unsigned char *)currentFrameRawData.data() + posR;
       srcG = (unsigned char *)currentFrameRawData.data() + posG;
       srcB = (unsigned char *)currentFrameRawData.data() + posB;
-      if (srcPixelFormat.hasAlphaChannel())
+      if (srcPixelFormat.hasAlpha())
         srcA = (unsigned char *)currentFrameRawData.data() + posA;
     }
 
     value.R = (unsigned int)(*(srcR + offsetToNextValue * offsetCoordinate));
     value.G = (unsigned int)(*(srcG + offsetToNextValue * offsetCoordinate));
     value.B = (unsigned int)(*(srcB + offsetToNextValue * offsetCoordinate));
-    if (srcPixelFormat.hasAlphaChannel())
+    if (srcPixelFormat.hasAlpha())
       value.A = (unsigned int)(*(srcA + offsetToNextValue * offsetCoordinate));
   }
   else
@@ -1021,8 +1024,11 @@ videoHandlerRGB::rgba_t videoHandlerRGB::getPixelValue(const QPoint &pixelPos) c
   return value;
 }
 
-void videoHandlerRGB::setFormatFromSizeAndName(
-    const Size size, int bitDepth, bool packed, int64_t fileSize, const QFileInfo &fileInfo)
+void videoHandlerRGB::setFormatFromSizeAndName(const Size       size,
+                                               int              bitDepth,
+                                               DataLayout       dataLayout,
+                                               int64_t          fileSize,
+                                               const QFileInfo &fileInfo)
 {
   // Get the file extension
   auto        ext       = fileInfo.suffix().toLower().toStdString();
@@ -1072,7 +1078,7 @@ void videoHandlerRGB::setFormatFromSizeAndName(
       // assume RGB if subFormat does not indicate anything else
       auto cFormat = rgbPixelFormat(i == 0 ? subFormat : subFormat + "a");
       cFormat.setBitsPerSample(bitDepth);
-      cFormat.setPlanar(!packed);
+      cFormat.setDataLayout(dataLayout);
 
       // Check if the file size and the assumed format match
       int bpf = cFormat.bytesPerFrame(size);
@@ -1088,7 +1094,7 @@ void videoHandlerRGB::setFormatFromSizeAndName(
 
   // Still no match. Set RGB 8 bit planar no alpha channel.
   // This will probably be wrong but we are out of options
-  this->setSrcPixelFormat(rgbPixelFormat(8, !packed, ChannelOrder::RGB));
+  this->setSrcPixelFormat(rgbPixelFormat(8, dataLayout, ChannelOrder::RGB));
 }
 
 void videoHandlerRGB::drawPixelValues(QPainter *    painter,
@@ -1168,14 +1174,13 @@ void videoHandlerRGB::drawPixelValues(QPainter *    painter,
         const QString BString = ((B < 0) ? "-" : "") + QString::number(std::abs(B), formatBase);
 
         if (markDifference)
-          painter->setPen(
-              (R == 0 && G == 0 && B == 0 && (!srcPixelFormat.hasAlphaChannel() || A == 0))
-                  ? Qt::white
-                  : Qt::black);
+          painter->setPen((R == 0 && G == 0 && B == 0 && (!srcPixelFormat.hasAlpha() || A == 0))
+                              ? Qt::white
+                              : Qt::black);
         else
           painter->setPen((R < 0 && G < 0 && B < 0) ? Qt::white : Qt::black);
 
-        if (srcPixelFormat.hasAlphaChannel())
+        if (srcPixelFormat.hasAlpha())
         {
           const QString AString = ((A < 0) ? "-" : "") + QString::number(std::abs(A), formatBase);
           valText = QString("R%1\nG%2\nB%3\nA%4").arg(RString, GString, BString, AString);
@@ -1186,7 +1191,7 @@ void videoHandlerRGB::drawPixelValues(QPainter *    painter,
       else
       {
         rgba_t value = getPixelValue(QPoint(x, y));
-        if (srcPixelFormat.hasAlphaChannel())
+        if (srcPixelFormat.hasAlpha())
           valText = QString("R%1\nG%2\nB%3\nA%4")
                         .arg(value.R, 0, formatBase)
                         .arg(value.G, 0, formatBase)
@@ -1283,7 +1288,7 @@ QImage videoHandlerRGB::calculateDifference(frameHandler *   item2,
     // How many values do we have to skip in src to get to the next input value?
     // In case of 8 or less bits this is 1 byte per value, for 9 to 16 bits it is 2 bytes per value.
     int offsetToNextValue = srcPixelFormat.nrChannels();
-    if (srcPixelFormat.isPlanar())
+    if (srcPixelFormat.getDataLayout() == DataLayout::Planar)
       offsetToNextValue = 1;
 
     if (bitDepth > 8 && bitDepth <= 16)
@@ -1291,7 +1296,7 @@ QImage videoHandlerRGB::calculateDifference(frameHandler *   item2,
       // 9 to 16 bits per component. We assume two bytes per value.
       // First get the pointer to the first value of each channel. (this item)
       unsigned short *srcR0, *srcG0, *srcB0;
-      if (srcPixelFormat.isPlanar())
+      if (srcPixelFormat.getDataLayout() == DataLayout::Planar)
       {
         srcR0 = (unsigned short *)currentFrameRawData.data() +
                 (posR * frameSize.width * frameSize.height);
@@ -1309,7 +1314,7 @@ QImage videoHandlerRGB::calculateDifference(frameHandler *   item2,
 
       // Next get the pointer to the first value of each channel. (the other item)
       unsigned short *srcR1, *srcG1, *srcB1;
-      if (srcPixelFormat.isPlanar())
+      if (srcPixelFormat.getDataLayout() == DataLayout::Planar)
       {
         srcR1 = (unsigned short *)rgbItem2->currentFrameRawData.data() +
                 (posR * rgbItem2->frameSize.width * rgbItem2->frameSize.height);
@@ -1370,7 +1375,7 @@ QImage videoHandlerRGB::calculateDifference(frameHandler *   item2,
     {
       // First get the pointer to the first value of each channel. (this item)
       unsigned char *srcR0, *srcG0, *srcB0;
-      if (srcPixelFormat.isPlanar())
+      if (srcPixelFormat.getDataLayout() == DataLayout::Planar)
       {
         srcR0 = (unsigned char *)currentFrameRawData.data() +
                 (posR * frameSize.width * frameSize.height);
@@ -1388,7 +1393,7 @@ QImage videoHandlerRGB::calculateDifference(frameHandler *   item2,
 
       // First get the pointer to the first value of each channel. (other item)
       unsigned char *srcR1, *srcG1, *srcB1;
-      if (srcPixelFormat.isPlanar())
+      if (srcPixelFormat.getDataLayout() == DataLayout::Planar)
       {
         srcR1 = (unsigned char *)rgbItem2->currentFrameRawData.data() +
                 (posR * rgbItem2->frameSize.width * rgbItem2->frameSize.height);
@@ -1473,3 +1478,5 @@ QImage videoHandlerRGB::calculateDifference(frameHandler *   item2,
   }
   return outputImage;
 }
+
+} // namespace video

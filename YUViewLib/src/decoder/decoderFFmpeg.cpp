@@ -45,17 +45,13 @@
 namespace decoder
 {
 
-using namespace YUView;
-using namespace YUV_Internals;
-using namespace RGB_Internals;
-
-decoderFFmpeg::decoderFFmpeg(AVCodecIDWrapper codecID,
-                             Size             size,
-                             QByteArray       extradata,
-                             YUVPixelFormat   fmt,
-                             IntPair          profileLevel,
-                             Ratio            sampleAspectRatio,
-                             bool             cachingDecoder)
+decoderFFmpeg::decoderFFmpeg(AVCodecIDWrapper           codecID,
+                             Size                       size,
+                             QByteArray                 extradata,
+                             video::yuv::YUVPixelFormat fmt,
+                             IntPair                    profileLevel,
+                             Ratio                      sampleAspectRatio,
+                             bool                       cachingDecoder)
     : decoderBase(cachingDecoder)
 {
   // The libraries are only loaded on demand. This way a FFmpegLibraries instance can exist without
@@ -186,7 +182,7 @@ void decoderFFmpeg::copyCurImageToBuffer()
   // AVDictionaryWrapper dict = this->ff.get_metadata(frame);
   // QStringPairList values = this->ff.getDictionary_entries(dict, "", 0);
 
-  if (this->rawFormat == raw_YUV)
+  if (this->rawFormat == video::RawFormat::YUV)
   {
     // At first get how many bytes we are going to write
     const auto pixFmt           = this->getYUVPixelFormat();
@@ -205,7 +201,8 @@ void decoderFFmpeg::copyCurImageToBuffer()
     // resolution may be larger than the output frame size.
     for (unsigned plane = 0; plane < pixFmt.getNrPlanes(); plane++)
     {
-      const auto component   = (plane == 0) ? Component::Luma : Component::Chroma;
+      const auto component =
+          (plane == 0) ? video::yuv::Component::Luma : video::yuv::Component::Chroma;
       auto *     src         = frame.getData(plane);
       const auto srcLinesize = frame.getLineSize(plane);
       auto       dst         = this->currentOutputBuffer.data();
@@ -222,11 +219,11 @@ void decoderFFmpeg::copyCurImageToBuffer()
       }
     }
   }
-  else if (this->rawFormat == raw_RGB)
+  else if (this->rawFormat == video::RawFormat::RGB)
   {
-    const rgbPixelFormat pixFmt           = this->getRGBPixelFormat();
-    const auto           nrBytesPerSample = pixFmt.getBitsPerSample() <= 8 ? 1 : 2;
-    const auto           nrBytesPerComponent =
+    const auto pixFmt           = this->getRGBPixelFormat();
+    const auto nrBytesPerSample = pixFmt.getBitsPerSample() <= 8 ? 1 : 2;
+    const auto nrBytesPerComponent =
         this->frameSize.width * this->frameSize.height * nrBytesPerSample;
     const auto nrBytes = nrBytesPerComponent * pixFmt.nrChannels();
 
@@ -236,7 +233,7 @@ void decoderFFmpeg::copyCurImageToBuffer()
 
     char *     dst  = this->currentOutputBuffer.data();
     const auto hDst = this->frameSize.height;
-    if (pixFmt.isPlanar())
+    if (pixFmt.getDataLayout() == video::DataLayout::Planar)
     {
       // Copy line by line. The linesize of the source may be larger than the width of the frame.
       // This may be because the frame buffer is (8) byte aligned. Also the internal decoded
@@ -470,9 +467,9 @@ bool decoderFFmpeg::createDecoder(AVCodecIDWrapper codecID, AVCodecParametersWra
   AVPixFmtDescriptorWrapper ffmpegPixFormat =
       this->ff.getAvPixFmtDescriptionFromAvPixelFormat(decCtx.getPixelFormat());
   this->rawFormat = ffmpegPixFormat.getRawFormat();
-  if (this->rawFormat == raw_YUV)
+  if (this->rawFormat == video::RawFormat::YUV)
     this->formatYUV = ffmpegPixFormat.getYUVPixelFormat();
-  else if (this->rawFormat == raw_RGB)
+  else if (this->rawFormat == video::RawFormat::RGB)
     this->formatRGB = ffmpegPixFormat.getRGBPixelFormat();
 
   // Ask the decoder to provide motion vectors (if possible)

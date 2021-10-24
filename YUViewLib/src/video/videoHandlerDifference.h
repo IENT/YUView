@@ -40,6 +40,9 @@
 
 #include "ui_videoHandlerDifference.h"
 
+namespace video
+{
+
 class videoHandlerDifference : public videoHandler
 {
   Q_OBJECT
@@ -71,6 +74,12 @@ public:
                                          frameHandler *item2     = nullptr,
                                          const int     frameIdx1 = 0) override;
 
+  virtual void setFormatFromSizeAndName(const Size       size,
+                                        int              bitDepth,
+                                        DataLayout       dataLayout,
+                                        int64_t          fileSize,
+                                        const QFileInfo &fileInfo) override;
+
   // Calculate the position of the first difference and add the info to the list
   void reportFirstDifferencePosition(QList<infoItem> &infoList) const;
 
@@ -91,7 +100,7 @@ private:
   {
     HEVC
   };
-  CodingOrder codingOrder {CodingOrder::HEVC};
+  CodingOrder codingOrder{CodingOrder::HEVC};
 
   // The two videos that the difference will be calculated from
   QPointer<frameHandler> inputVideo[2];
@@ -104,14 +113,16 @@ private:
                             int &         firstY,
                             int &         partIndex,
                             const QImage &diffImg) const;
-  bool hierarchicalPositionYUV(int                                  x,
-                               int                                  y,
-                               int                                  blockSize,
-                               int &                                firstX,
-                               int &                                firstY,
-                               int &                                partIndex,
-                               const QByteArray &                   diffYUV,
-                               const YUV_Internals::YUVPixelFormat &diffYUVFormat) const;
+  bool hierarchicalPositionYUV(int                        x,
+                               int                        y,
+                               int                        blockSize,
+                               int &                      firstX,
+                               int &                      firstY,
+                               int &                      partIndex,
+                               const QByteArray &         diffYUV,
+                               const yuv::YUVPixelFormat &diffYUVFormat) const;
 
   SafeUi<Ui::videoHandlerDifference> ui;
 };
+
+} // namespace video

@@ -69,7 +69,7 @@ public:
   static void getSupportedFileExtensions(QStringList &allExtensions, QStringList &filters);
 
   // Get the frame handler
-  virtual frameHandler *getFrameHandler() override { return &frame; }
+  virtual video::frameHandler *getFrameHandler() override { return &frame; }
 
   virtual bool canBeUsedInProcessing() const override { return true; }
 
@@ -89,7 +89,7 @@ private slots:
 
 private:
   // The frame handler that draws the frame
-  frameHandler frame;
+  video::frameHandler frame;
 
   // Watch the loaded file for modifications
   QFileSystemWatcher fileWatcher;

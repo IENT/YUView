@@ -120,7 +120,7 @@ private:
   void performanceTest();
 
   QPointer<QAction> recentFileActions[MAX_RECENT_FILES];
-  QScopedPointer<videoCache> cache;
+  QScopedPointer<video::videoCache> cache;
   bool saveWindowsStateOnExit;
   QScopedPointer<updateHandler> updater;
   ViewStateHandler stateHandler;

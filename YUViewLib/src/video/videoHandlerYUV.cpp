@@ -48,7 +48,10 @@
 #include "common/functionsGui.h"
 #include "videoHandlerYUVCustomFormatDialog.h"
 
-using namespace YUV_Internals;
+namespace video
+{
+
+using namespace yuv;
 
 // Activate this if you want to know when which buffer is loaded/converted to image and so on.
 #define VIDEOHANDLERYUV_DEBUG_LOADING 0
@@ -413,7 +416,7 @@ bool convertYUV420ToRGB(const QByteArray &   sourceBuffer,
                         const Size           size,
                         const YUVPixelFormat format)
 {
-  typedef typename std::conditional<bitDepth == 8, uint8_t*, uint16_t*>::type InValueType;
+  typedef typename std::conditional<bitDepth == 8, uint8_t *, uint16_t *>::type InValueType;
   static_assert(bitDepth == 8 || bitDepth == 10);
   constexpr auto rightShift = (bitDepth == 8) ? 0 : 2;
 
@@ -657,7 +660,10 @@ videoHandlerYUV::videoHandlerYUV() : videoHandler()
     presetList.append(e);
 }
 
-videoHandlerYUV::~videoHandlerYUV() { DEBUG_YUV("videoHandlerYUV destruction"); }
+videoHandlerYUV::~videoHandlerYUV()
+{
+  DEBUG_YUV("videoHandlerYUV destruction");
+}
 
 void videoHandlerYUV::loadValues(Size newFramesize, const QString &)
 {
@@ -1419,9 +1425,9 @@ void videoHandlerYUV::drawPixelValues(QPainter *    painter,
 }
 
 void videoHandlerYUV::setFormatFromSizeAndName(
-    Size size, int bitDepth, bool packed, int64_t fileSize, const QFileInfo &fileInfo)
+    Size size, int bitDepth, DataLayout dataLayout, int64_t fileSize, const QFileInfo &fileInfo)
 {
-  auto fmt = guessFormatFromSizeAndName(size, bitDepth, packed, fileSize, fileInfo);
+  auto fmt = guessFormatFromSizeAndName(size, bitDepth, dataLayout, fileSize, fileInfo);
 
   if (!fmt.isValid())
   {
@@ -1571,7 +1577,7 @@ bool videoHandlerYUV::setFormatFromString(QString format)
   if (!frameHandler::setFormatFromString(split[0] + ";" + split[1]))
     return false;
 
-  auto fmt = YUV_Internals::YUVPixelFormat(split[3].toStdString());
+  auto fmt = YUVPixelFormat(split[3].toStdString());
   if (!fmt.isValid())
     return false;
 
@@ -3748,10 +3754,6 @@ bool videoHandlerYUV::markDifferencesYUVPlanarToRGB(const QByteArray &    source
   return true;
 }
 
-YUV_Internals::YUVPixelFormat videoHandlerYUV::getDiffYUVFormat() const { return diffYUVFormat; }
-
-QByteArray videoHandlerYUV::getDiffYUV() const { return diffYUV; }
-
 QImage videoHandlerYUV::calculateDifference(frameHandler *   item2,
                                             const int        frameIdxItem0,
                                             const int        frameIdxItem1,
@@ -3759,7 +3761,7 @@ QImage videoHandlerYUV::calculateDifference(frameHandler *   item2,
                                             const int        amplificationFactor,
                                             const bool       markDifference)
 {
-  is_YUV_diff = false;
+  this->diffReady = false;
 
   videoHandlerYUV *yuvItem2 = dynamic_cast<videoHandlerYUV *>(item2);
   if (yuvItem2 == nullptr)
@@ -4033,7 +4035,7 @@ QImage videoHandlerYUV::calculateDifference(frameHandler *   item2,
   }
 
   // we have a yuv differance available
-  is_YUV_diff = true;
+  this->diffReady = true;
   return outputImage;
 }
 
@@ -4070,8 +4072,6 @@ void videoHandlerYUV::setYUVPixelFormat(const YUVPixelFormat &newFormat, bool em
     setSrcPixelFormat(newFormat, emitSignal);
   }
 }
-
-bool videoHandlerYUV::getIs_YUV_diff() const { return is_YUV_diff; }
 
 void videoHandlerYUV::setYUVColorConversion(ColorConversion conversion)
 {
@@ -4125,3 +4125,5 @@ void videoHandlerYUV::loadPlaylist(const YUViewDomElement &element)
   this->mathParameters[Component::Chroma].invert =
       (element.findChildValue("math.chroma.invert") == "True");
 }
+
+} // namespace video

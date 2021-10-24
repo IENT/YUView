@@ -34,9 +34,10 @@
 
 #include "common/EnumMapper.h"
 #include "common/typedef.h"
+#include "pixelFormat.h"
 #include <string>
 
-namespace RGB_Internals
+namespace video::rgb
 {
 
 enum class Channel
@@ -57,6 +58,13 @@ enum class ChannelOrder
   BGR
 };
 
+enum class AlphaMode
+{
+  None,
+  First,
+  Last
+};
+
 const auto ChannelOrderMapper = EnumMapper<ChannelOrder>({{ChannelOrder::RGB, "RGB"},
                                                           {ChannelOrder::RBG, "RBG"},
                                                           {ChannelOrder::GRB, "GRB"},
@@ -73,23 +81,22 @@ public:
   rgbPixelFormat() = default;
   rgbPixelFormat(const std::string &name);
   rgbPixelFormat(unsigned     bitsPerSample,
-                 bool         planar,
+                 DataLayout   dataLayout,
                  ChannelOrder channelOrder,
-                 bool         hasAlpha  = false,
-                 bool         alphaLast = false,
-                 bool         bigEndian = false);
+                 AlphaMode    alphaMode  = AlphaMode::None,
+                 Endianness   endianness = Endianness::Little);
 
-  bool     isValid() const;
-  unsigned nrChannels() const { return this->hasAlpha ? 4 : 3; }
-  bool     hasAlphaChannel() const { return this->hasAlpha; }
-  bool     isPlanar() const { return this->planar; }
+  bool        isValid() const;
+  unsigned    nrChannels() const;
+  bool        hasAlpha() const;
+  std::string getName() const;
 
-  std::string  getName() const;
-  ChannelOrder getChannelOrder() const { return this->channelOrder; }
   unsigned     getBitsPerSample() const { return this->bitsPerSample; }
+  DataLayout   getDataLayout() const { return this->dataLayout; }
+  ChannelOrder getChannelOrder() const { return this->channelOrder; }
 
   void setBitsPerSample(unsigned bitsPerSample) { this->bitsPerSample = bitsPerSample; }
-  void setPlanar(bool planar) { this->planar = planar; }
+  void setDataLayout(DataLayout dataLayout) { this->dataLayout = dataLayout; }
 
   std::size_t bytesPerFrame(Size frameSize) const;
   int         getComponentPosition(Channel channel) const;
@@ -100,14 +107,11 @@ public:
   bool operator!=(const std::string &a) const { return getName() != a; }
 
 private:
-  // The order of each component (E.g. for GBR this is posR=2,posG=0,posB=1)
+  unsigned     bitsPerSample{0};
+  DataLayout   dataLayout{DataLayout::Packed};
   ChannelOrder channelOrder{ChannelOrder::RGB};
-  bool         hasAlpha{};
-  bool         alphaLast{};
-
-  unsigned bitsPerSample{0};
-  bool     bigEndian{};
-  bool     planar{};
+  AlphaMode    alphaMode{AlphaMode::None};
+  Endianness   endianness{Endianness::Little};
 };
 
-} // namespace RGB_Internals
+} // namespace video::rgb

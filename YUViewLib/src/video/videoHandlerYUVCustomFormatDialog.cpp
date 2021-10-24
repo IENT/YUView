@@ -34,7 +34,8 @@
 
 #include "common/functions.h"
 
-using namespace YUV_Internals;
+namespace video::yuv
+{
 
 videoHandlerYUVCustomFormatDialog::videoHandlerYUVCustomFormatDialog(
     const YUVPixelFormat &yuvFormat)
@@ -44,7 +45,8 @@ videoHandlerYUVCustomFormatDialog::videoHandlerYUVCustomFormatDialog(
   // Fill the comboBoxes and set all values correctly from the given yuvFormat
 
   // Chroma subsampling
-  this->ui.comboBoxChromaSubsampling->addItems(functions::toQStringList(SubsamplingMapper.getNames()));
+  this->ui.comboBoxChromaSubsampling->addItems(
+      functions::toQStringList(SubsamplingMapper.getNames()));
   if (yuvFormat.getSubsampling() != Subsampling::UNKNOWN)
   {
     if (auto index = SubsamplingMapper.indexOf(yuvFormat.getSubsampling()))
@@ -83,7 +85,8 @@ videoHandlerYUVCustomFormatDialog::videoHandlerYUVCustomFormatDialog(
   {
     // Set the plane order
     this->ui.groupBoxPlanar->setChecked(true);
-    this->ui.comboBoxPlaneOrder->setCurrentIndex(int(PlaneOrderMapper.indexOf(yuvFormat.getPlaneOrder())));
+    this->ui.comboBoxPlaneOrder->setCurrentIndex(
+        int(PlaneOrderMapper.indexOf(yuvFormat.getPlaneOrder())));
     // Set UV(A) interleaved
     this->ui.checkBoxUVInterleaved->setChecked(yuvFormat.isUVInterleaved());
   }
@@ -106,7 +109,8 @@ void videoHandlerYUVCustomFormatDialog::on_comboBoxChromaSubsampling_currentInde
   auto packingTypes = getSupportedPackingFormats(subsampling);
   this->ui.comboBoxPackingOrder->clear();
   for (auto &packing : packingTypes)
-    this->ui.comboBoxPackingOrder->addItem(QString::fromStdString(PackingOrderMapper.getName(packing)));
+    this->ui.comboBoxPackingOrder->addItem(
+        QString::fromStdString(PackingOrderMapper.getName(packing)));
 
   bool packedSupported = (packingTypes.size() != 0);
   if (!packedSupported)
@@ -120,28 +124,28 @@ void videoHandlerYUVCustomFormatDialog::on_comboBoxChromaSubsampling_currentInde
   auto maxValsX = getMaxPossibleChromaOffsetValues(true, subsampling);
   if (maxValsX >= 1)
     this->ui.comboBoxChromaOffsetX->addItems(QStringList() << "0"
-                                                  << "1/2");
+                                                           << "1/2");
   if (maxValsX >= 3)
     this->ui.comboBoxChromaOffsetX->addItems(QStringList() << "1"
-                                                  << "3/2");
+                                                           << "3/2");
   if (maxValsX >= 7)
     this->ui.comboBoxChromaOffsetX->addItems(QStringList() << "2"
-                                                  << "5/2"
-                                                  << "3"
-                                                  << "7/2");
+                                                           << "5/2"
+                                                           << "3"
+                                                           << "7/2");
   this->ui.comboBoxChromaOffsetY->clear();
   int maxValsY = getMaxPossibleChromaOffsetValues(false, subsampling);
   if (maxValsY >= 1)
     this->ui.comboBoxChromaOffsetY->addItems(QStringList() << "0"
-                                                  << "1/2");
+                                                           << "1/2");
   if (maxValsY >= 3)
     this->ui.comboBoxChromaOffsetY->addItems(QStringList() << "1"
-                                                  << "3/2");
+                                                           << "3/2");
   if (maxValsY >= 7)
     this->ui.comboBoxChromaOffsetY->addItems(QStringList() << "2"
-                                                  << "5/2"
-                                                  << "3"
-                                                  << "7/2");
+                                                           << "5/2"
+                                                           << "3"
+                                                           << "7/2");
 
   // Disable the combo boxes if there are no chroma components
   bool chromaPresent = (subsampling != Subsampling::YUV_400);
@@ -180,8 +184,8 @@ YUVPixelFormat videoHandlerYUVCustomFormatDialog::getSelectedYUVFormat() const
   auto bigEndian = (this->ui.comboBoxEndianness->currentIndex() == 0);
 
   // Set the chroma offset
-  auto chromaOffset =
-      Offset({this->ui.comboBoxChromaOffsetX->currentIndex(), this->ui.comboBoxChromaOffsetY->currentIndex()});
+  auto chromaOffset = Offset({this->ui.comboBoxChromaOffsetX->currentIndex(),
+                              this->ui.comboBoxChromaOffsetY->currentIndex()});
 
   auto isPlanar = (this->ui.groupBoxPlanar->isChecked());
   if (isPlanar)
@@ -219,3 +223,5 @@ void videoHandlerYUVCustomFormatDialog::on_comboBoxBitDepth_currentIndexChanged(
   bool bitDepth8 = (idx == 0);
   this->ui.comboBoxEndianness->setEnabled(!bitDepth8);
 }
+
+} // namespace video::yuv

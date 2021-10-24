@@ -34,28 +34,30 @@
 
 #include "common/functions.h"
 
+namespace video
+{
+
 videoHandlerRGBCustomFormatDialog::videoHandlerRGBCustomFormatDialog(
-    const RGB_Internals::rgbPixelFormat &rgbFormat)
+    const rgb::rgbPixelFormat &rgbFormat)
 {
   this->ui.setupUi(this);
 
-  this->ui.rgbOrderComboBox->addItems(
-      functions::toQStringList(RGB_Internals::ChannelOrderMapper.getNames()));
+  this->ui.rgbOrderComboBox->addItems(functions::toQStringList(rgb::ChannelOrderMapper.getNames()));
 
   // Set the default (RGB no alpha)
   this->ui.rgbOrderComboBox->setCurrentIndex(0);
   this->ui.alphaChannelGroupBox->setChecked(false);
   this->ui.afterRGBRadioButton->setChecked(false);
 
-  if (rgbFormat.hasAlphaChannel())
+  if (rgbFormat.hasAlpha())
   {
     this->ui.alphaChannelGroupBox->setChecked(true);
-    auto alphaPosition = rgbFormat.getComponentPosition(RGB_Internals::Channel::Alpha);
+    auto alphaPosition = rgbFormat.getComponentPosition(rgb::Channel::Alpha);
     this->ui.beforeRGBRadioButton->setChecked(alphaPosition == 0);
     this->ui.afterRGBRadioButton->setChecked(alphaPosition == 3);
   }
 
-  if (auto index = RGB_Internals::ChannelOrderMapper.indexOf(rgbFormat.getChannelOrder()))
+  if (auto index = rgb::ChannelOrderMapper.indexOf(rgbFormat.getChannelOrder()))
   {
     this->ui.rgbOrderComboBox->setCurrentIndex(int(index));
   }
@@ -64,29 +66,43 @@ videoHandlerRGBCustomFormatDialog::videoHandlerRGBCustomFormatDialog(
   this->ui.bitDepthSpinBox->setValue(bitDepth);
   this->ui.comboBoxEndianness->setEnabled(bitDepth > 8);
 
-  this->ui.planarCheckBox->setChecked(rgbFormat.isPlanar());
+  this->ui.planarCheckBox->setChecked(rgbFormat.getDataLayout() == DataLayout::Planar);
 }
 
-RGB_Internals::rgbPixelFormat videoHandlerRGBCustomFormatDialog::getSelectedRGBFormat() const
+rgb::rgbPixelFormat videoHandlerRGBCustomFormatDialog::getSelectedRGBFormat() const
 {
   auto channelOrderIndex = this->ui.rgbOrderComboBox->currentIndex();
   if (channelOrderIndex < 0)
     return {};
-  auto channelOrder = RGB_Internals::ChannelOrderMapper.at(unsigned(channelOrderIndex));
+  auto channelOrder = rgb::ChannelOrderMapper.at(unsigned(channelOrderIndex));
   if (!channelOrder)
     return {};
 
-  auto bigEndian = (this->ui.comboBoxEndianness->currentIndex() == 1);
+  auto bitDepth = this->ui.bitDepthSpinBox->value();
 
-  return RGB_Internals::rgbPixelFormat(this->ui.bitDepthSpinBox->value(),
-                                       this->ui.planarCheckBox->checkState() == Qt::Checked,
-                                       *channelOrder,
-                                       this->ui.alphaChannelGroupBox->isChecked(),
-                                       this->ui.afterRGBRadioButton->isChecked(),
-                                       bigEndian);
+  auto dataLayout = DataLayout::Packed;
+  if (this->ui.planarCheckBox->checkState() == Qt::Checked)
+    dataLayout = DataLayout::Planar;
+
+  auto alphaMode = rgb::AlphaMode::None;
+  if (this->ui.alphaChannelGroupBox->isChecked())
+  {
+    if (this->ui.afterRGBRadioButton->isChecked())
+      alphaMode = rgb::AlphaMode::Last;
+    else
+      alphaMode = rgb::AlphaMode::First;
+  }
+
+  auto endianness = Endianness::Little;
+  if (this->ui.comboBoxEndianness->currentIndex() == 1)
+    endianness = Endianness::Big;
+
+  return rgb::rgbPixelFormat(bitDepth, dataLayout, *channelOrder, alphaMode, endianness);
 }
 
 void videoHandlerRGBCustomFormatDialog::on_bitDepthSpinBox_valueChanged(int value)
 {
   this->ui.comboBoxEndianness->setEnabled(value > 8);
 }
+
+} // namespace video

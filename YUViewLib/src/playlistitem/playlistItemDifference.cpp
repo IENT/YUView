@@ -62,7 +62,7 @@ playlistItemDifference::playlistItemDifference() : playlistItemContainer("Differ
   this->infoText       = DIFFERENCE_INFO_TEXT;
 
   connect(&difference,
-          &videoHandlerDifference::signalHandlerChanged,
+          &video::videoHandlerDifference::signalHandlerChanged,
           this,
           &playlistItemDifference::signalItemChanged);
 }
@@ -106,8 +106,8 @@ void playlistItemDifference::drawItem(QPainter *painter,
     updateChildList();
 
     // Update the items in the difference item
-    frameHandler *childVideo0 = nullptr;
-    frameHandler *childVideo1 = nullptr;
+    video::frameHandler *childVideo0 = nullptr;
+    video::frameHandler *childVideo1 = nullptr;
     if (childCount() >= 1)
       childVideo0 = getChildPlaylistItem(0)->getFrameHandler();
     if (childCount() >= 2)

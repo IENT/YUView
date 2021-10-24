@@ -52,9 +52,9 @@ public:
   drawItem(QPainter *painter, int frameIdx, double zoomFactor, bool drawRawValues) override;
 
   // All the functions that we have to overload if we are using a video handler
-  virtual QSize         getSize() const override;
-  virtual frameHandler *getFrameHandler() override { return video.get(); }
-  virtual void          activateDoubleBuffer() override
+  virtual QSize                getSize() const override;
+  virtual video::frameHandler *getFrameHandler() override { return this->video.get(); }
+  virtual void                 activateDoubleBuffer() override
   {
     if (video)
       video->activateDoubleBuffer();
@@ -112,31 +112,31 @@ private slots:
   void slotVideoHandlerChanged(bool redrawNeeded, recacheIndicator recache);
 
 protected:
-  // A pointer to the videHandler. In the derived class, don't foret to set this.
-  std::unique_ptr<videoHandler> video;
+  // A pointer to the videHandler. In the derived class, don't forget to set this.
+  std::unique_ptr<video::videoHandler> video;
 
   // The videoHandler can be a videoHandlerRGB or a videoHandlerYUV
-  YUView::RawFormat rawFormat {YUView::raw_Invalid};
+  video::RawFormat rawFormat{video::RawFormat::Invalid};
   // Get a raw pointer to either version of the videoHandler
-  videoHandlerYUV *getYUVVideo()
+  video::videoHandlerYUV *getYUVVideo()
   {
-    assert(rawFormat == YUView::raw_YUV);
-    return dynamic_cast<videoHandlerYUV *>(video.get());
+    assert(rawFormat == video::RawFormat::YUV);
+    return dynamic_cast<video::videoHandlerYUV *>(video.get());
   }
-  videoHandlerRGB *getRGBVideo()
+  video::videoHandlerRGB *getRGBVideo()
   {
-    assert(rawFormat == YUView::raw_RGB);
-    return dynamic_cast<videoHandlerRGB *>(video.get());
+    assert(rawFormat == video::RawFormat::RGB);
+    return dynamic_cast<video::videoHandlerRGB *>(video.get());
   }
-  const videoHandlerYUV *getYUVVideo() const
+  const video::videoHandlerYUV *getYUVVideo() const
   {
-    assert(rawFormat == YUView::raw_YUV);
-    return dynamic_cast<const videoHandlerYUV *>(video.get());
+    assert(rawFormat == video::RawFormat::YUV);
+    return dynamic_cast<const video::videoHandlerYUV *>(video.get());
   }
-  const videoHandlerRGB *getRGBVideo() const
+  const video::videoHandlerRGB *getRGBVideo() const
   {
-    assert(rawFormat == YUView::raw_RGB);
-    return dynamic_cast<const videoHandlerRGB *>(video.get());
+    assert(rawFormat == video::RawFormat::RGB);
+    return dynamic_cast<const video::videoHandlerRGB *>(video.get());
   }
 
   // Connect the basic signals from the video
@@ -145,11 +145,11 @@ protected:
   virtual void updateStartEndRange(){};
 
   // Is the loadFrame function currently loading?
-  bool isFrameLoading {};
-  bool isFrameLoadingDoubleBuffer {};
+  bool isFrameLoading{};
+  bool isFrameLoadingDoubleBuffer{};
 
   // Set if an unresolvable error occurred. In this case, we just draw an error text.
-  bool unresolvableError {};
+  bool unresolvableError{};
   bool setError(QString error)
   {
     unresolvableError = true;

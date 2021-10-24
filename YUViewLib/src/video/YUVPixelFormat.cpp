@@ -34,7 +34,7 @@
 
 #include <regex>
 
-namespace YUV_Internals
+namespace video::yuv
 {
 
 void getColorConversionCoefficients(ColorConversion colorConversion, int RGBConv[5])
@@ -608,4 +608,4 @@ bool YUVPixelFormat::isBytePacking() const
   return this->bytePacking;
 }
 
-} // namespace YUV_Internals
+} // namespace video::yuv

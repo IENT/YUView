@@ -2,7 +2,7 @@
 
 #include <video/rgbPixelFormat.h>
 
-using namespace RGB_Internals;
+using namespace video::rgb;
 
 class rgbPixelFormatTest : public QObject
 {
@@ -23,16 +23,16 @@ QList<rgbPixelFormat> getAllFormats()
 
   for (int bitsPerPixel = 8; bitsPerPixel <= 16; bitsPerPixel++)
   {
-    for (auto planar : {false, true})
+    for (auto dataLayout : {video::DataLayout::Packed, video::DataLayout::Planar})
     {
       // No alpha
       for (auto channelOrder : ChannelOrderMapper.getEnums())
-        allFormats.append(rgbPixelFormat(bitsPerPixel, planar, channelOrder));
+        allFormats.append(rgbPixelFormat(bitsPerPixel, dataLayout, channelOrder));
       // With alpha
       for (auto channelOrder : ChannelOrderMapper.getEnums())
       {
-        allFormats.append(rgbPixelFormat(bitsPerPixel, planar, channelOrder, true));
-        allFormats.append(rgbPixelFormat(bitsPerPixel, planar, channelOrder, true, true));
+        allFormats.append(rgbPixelFormat(bitsPerPixel, dataLayout, channelOrder, AlphaMode::First));
+        allFormats.append(rgbPixelFormat(bitsPerPixel, dataLayout, channelOrder, AlphaMode::Last));
       }
     }
   }
@@ -60,17 +60,18 @@ void rgbPixelFormatTest::testFormatFromToString()
         fmt.getComponentPosition(Channel::Green) != fmtNew.getComponentPosition(Channel::Green) ||
         fmt.getComponentPosition(Channel::Blue) != fmtNew.getComponentPosition(Channel::Blue) ||
         fmt.getComponentPosition(Channel::Alpha) != fmtNew.getComponentPosition(Channel::Alpha) ||
-        fmt.getBitsPerSample() != fmtNew.getBitsPerSample() || fmt.isPlanar() != fmtNew.isPlanar())
+        fmt.getBitsPerSample() != fmtNew.getBitsPerSample() ||
+        fmt.getDataLayout() != fmtNew.getDataLayout())
     {
       auto errorStr = "Comparison of parameters failed. Names: " + name;
       QFAIL(errorStr.c_str());
     }
-    if (fmt.hasAlphaChannel() && (fmt.nrChannels() != 4 || !fmt.hasAlphaChannel()))
+    if (fmt.hasAlpha() && (fmt.nrChannels() != 4 || !fmt.hasAlpha()))
     {
       auto errorStr = "Alpha channel indicated wrong - " + name;
       QFAIL(errorStr.c_str());
     }
-    if (!fmt.hasAlphaChannel() && (fmt.nrChannels() != 3 || fmt.hasAlphaChannel()))
+    if (!fmt.hasAlpha() && (fmt.nrChannels() != 3 || fmt.hasAlpha()))
     {
       auto errorStr = "Alpha channel indicated wrong - %1" + name;
       QFAIL(errorStr.c_str());
@@ -81,11 +82,11 @@ void rgbPixelFormatTest::testFormatFromToString()
 void rgbPixelFormatTest::testInvalidFormats()
 {
   QList<rgbPixelFormat> invalidFormats;
-  invalidFormats.append(rgbPixelFormat(0, false, ChannelOrder::RGB));
-  invalidFormats.append(rgbPixelFormat(1, false, ChannelOrder::RGB));
-  invalidFormats.append(rgbPixelFormat(7, false, ChannelOrder::RGB));
-  invalidFormats.append(rgbPixelFormat(17, false, ChannelOrder::RGB));
-  invalidFormats.append(rgbPixelFormat(200, false, ChannelOrder::RGB));
+  invalidFormats.append(rgbPixelFormat(0, video::DataLayout::Packed, ChannelOrder::RGB));
+  invalidFormats.append(rgbPixelFormat(1, video::DataLayout::Packed, ChannelOrder::RGB));
+  invalidFormats.append(rgbPixelFormat(7, video::DataLayout::Packed, ChannelOrder::RGB));
+  invalidFormats.append(rgbPixelFormat(17, video::DataLayout::Packed, ChannelOrder::RGB));
+  invalidFormats.append(rgbPixelFormat(200, video::DataLayout::Packed, ChannelOrder::RGB));
 
   for (auto fmt : invalidFormats)
     QVERIFY(!fmt.isValid());

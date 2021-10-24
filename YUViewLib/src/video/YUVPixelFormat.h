@@ -34,12 +34,13 @@
 
 #include "common/EnumMapper.h"
 #include "common/typedef.h"
+#include "pixelFormat.h"
 
 // The YUV_Internals namespace. We use this namespace because of the dialog. We want to be able to
 // pass a YUVPixelFormat to the dialog and keep the global namespace clean but we are not able to
 // use nested classes because of the Q_OBJECT macro. So the dialog and the YUVPixelFormat is inside
 // of this namespace.
-namespace YUV_Internals
+namespace video::yuv
 {
 
 enum class Component

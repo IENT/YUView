@@ -36,6 +36,9 @@
 #include "ui_videoHandlerRGB.h"
 #include "videoHandler.h"
 
+namespace video
+{
+
 enum class ComponentShow
 {
   RGBA,
@@ -103,8 +106,7 @@ public:
   }
   // Set the current raw format and update the control. Only emit a signalHandlerChanged signal
   // if emitSignal is true.
-  virtual void setRGBPixelFormat(const RGB_Internals::rgbPixelFormat &format,
-                                 bool                                 emitSignal = false)
+  virtual void setRGBPixelFormat(const rgb::rgbPixelFormat &format, bool emitSignal = false)
   {
     setSrcPixelFormat(format);
     if (emitSignal)
@@ -112,7 +114,7 @@ public:
   }
   virtual void setRGBPixelFormatByName(const QString &name, bool emitSignal = false)
   {
-    this->setRGBPixelFormat(RGB_Internals::rgbPixelFormat(name.toStdString()), emitSignal);
+    this->setRGBPixelFormat(rgb::rgbPixelFormat(name.toStdString()), emitSignal);
   }
 
   // If you know the frame size of the video, the file size (and optionally the bit depth) we can
@@ -120,7 +122,7 @@ public:
   // format can be one of: "RGB", "GBR" or "BGR"
   virtual void setFormatFromSizeAndName(const Size       size,
                                         int              bitDepth,
-                                        bool             packed,
+                                        DataLayout       dataLayout,
                                         int64_t          fileSize,
                                         const QFileInfo &fileInfo) override;
 
@@ -157,7 +159,7 @@ protected:
   ComponentShow componentDisplayMode{ComponentShow::RGBA};
 
   // A (static) convenience QList class that handles the preset rgbPixelFormats
-  class RGBFormatList : public QList<RGB_Internals::rgbPixelFormat>
+  class RGBFormatList : public QList<rgb::rgbPixelFormat>
   {
   public:
     // Default constructor. Fill the list with all the supported YUV formats.
@@ -165,12 +167,12 @@ protected:
     // Get all the YUV formats as a formatted list (for the drop-down control)
     std::vector<std::string> getFormattedNames() const;
     // Get the YUVPixelFormat with the given name
-    RGB_Internals::rgbPixelFormat getFromName(const std::string &name) const;
+    rgb::rgbPixelFormat getFromName(const std::string &name) const;
   };
   static RGBFormatList rgbPresetList;
 
   // The currently selected RGB format
-  RGB_Internals::rgbPixelFormat srcPixelFormat;
+  rgb::rgbPixelFormat srcPixelFormat;
 
   // Parameters for the RGBA transformation (like scaling, invert)
   int  componentScale[4]{1, 1, 1, 1};
@@ -198,7 +200,7 @@ private:
   void convertRGBToImage(const QByteArray &sourceBuffer, QImage &outputImage);
 
   // Set the new pixel format thread save (lock the mutex)
-  void setSrcPixelFormat(const RGB_Internals::rgbPixelFormat &newFormat);
+  void setSrcPixelFormat(const rgb::rgbPixelFormat &newFormat);
 
   // Convert one frame from the current pixel format to RGB888
   void       convertSourceToRGBA32Bit(const QByteArray &sourceBuffer,
@@ -219,3 +221,5 @@ private slots:
   // One of the controls for the RGB display settings changed.
   void slotDisplayOptionsChanged();
 };
+
+} // namespace video

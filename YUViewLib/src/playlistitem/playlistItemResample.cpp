@@ -58,7 +58,7 @@ playlistItemResample::playlistItemResample() : playlistItemContainer("Resample I
   this->infoText       = RESAMPLE_INFO_TEXT;
 
   this->connect(&this->video,
-                &frameHandler::signalHandlerChanged,
+                &video::frameHandler::signalHandlerChanged,
                 this,
                 &playlistItemResample::signalItemChanged);
 }
@@ -146,8 +146,8 @@ void playlistItemResample::drawItem(QPainter *painter,
 
         this->video.setScaledSize(this->scaledSize);
         auto interpolation = (this->interpolationIndex == 0)
-                                 ? videoHandlerResample::Interpolation::Bilinear
-                                 : videoHandlerResample::Interpolation::Fast;
+                                 ? video::videoHandlerResample::Interpolation::Bilinear
+                                 : video::videoHandlerResample::Interpolation::Fast;
         this->video.setInterpolation(interpolation);
         this->video.setCutAndSample(this->cutRange, this->sampling);
         auto nrFrames            = (this->cutRange.second - this->cutRange.first) / this->sampling;
@@ -348,8 +348,8 @@ void playlistItemResample::slotInterpolationModeChanged(int)
 {
   this->interpolationIndex = ui.comboBoxInterpolation->currentIndex();
   auto interpolation       = (this->interpolationIndex == 0)
-                                 ? videoHandlerResample::Interpolation::Bilinear
-                                 : videoHandlerResample::Interpolation::Fast;
+                                 ? video::videoHandlerResample::Interpolation::Bilinear
+                                 : video::videoHandlerResample::Interpolation::Fast;
   this->video.setInterpolation(interpolation);
 }
 

@@ -44,13 +44,11 @@
 #include "parser/Base.h"
 #include "video/videoHandlerYUV.h"
 
-using namespace YUV_Internals;
-
 namespace parser
 {
 
 using FrameIndexDisplayOrder = unsigned;
-using FrameIndexCodingOrder = unsigned;
+using FrameIndexCodingOrder  = unsigned;
 
 /* The (abstract) base class for the various types of AnnexB files (AVC, HEVC, VVC) that we can
  * parse.
@@ -97,9 +95,9 @@ public:
                                          std::shared_ptr<TreeItem> parent = nullptr) = 0;
 
   // Get some format properties
-  virtual double         getFramerate() const           = 0;
-  virtual Size           getSequenceSizeSamples() const = 0;
-  virtual YUVPixelFormat getPixelFormat() const         = 0;
+  virtual double                     getFramerate() const           = 0;
+  virtual Size                       getSequenceSizeSamples() const = 0;
+  virtual video::yuv::YUVPixelFormat getPixelFormat() const         = 0;
 
   // When we want to seek to a specific frame number, this function return the parameter sets that
   // you need to start decoding (without start codes). If file positions were set for the NAL units,

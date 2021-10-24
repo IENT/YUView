@@ -114,7 +114,7 @@ splitViewWidget::splitViewWidget(QWidget *parent) : MoveAndZoomableView(parent)
 
 void splitViewWidget::setPlaylistTreeWidget(PlaylistTreeWidget *p) { playlist = p; }
 void splitViewWidget::setPlaybackController(PlaybackController *p) { playback = p; }
-void splitViewWidget::setVideoCache(videoCache *p) { cache = p; }
+void splitViewWidget::setVideoCache(video::videoCache *p) { cache = p; }
 
 /** The common settings might have changed.
  * Reload all settings from the QSettings and set them.
@@ -287,8 +287,7 @@ void splitViewWidget::paintEvent(QPaintEvent *)
       if (pixelPosInItem[0])
       {
         // If the zoom box is active, draw a rectangle around the pixel currently under the cursor
-        frameHandler *vid = item[0]->getFrameHandler();
-        if (vid)
+        if (auto vid = item[0]->getFrameHandler())
         {
           painter.setPen(vid->isPixelDark(zoomBoxPixelUnderCursor[0]) ? Qt::white : Qt::black);
           painter.drawRect(zoomPixelRect[0]);
@@ -344,8 +343,7 @@ void splitViewWidget::paintEvent(QPaintEvent *)
       if (pixelPosInItem[1])
       {
         // If the zoom box is active, draw a rectangle around the pixel currently under the cursor
-        frameHandler *vid = item[1]->getFrameHandler();
-        if (vid)
+        if (auto vid = item[1]->getFrameHandler())
         {
           painter.setPen(vid->isPixelDark(zoomBoxPixelUnderCursor[1]) ? Qt::white : Qt::black);
           painter.drawRect(zoomPixelRect[1]);
@@ -410,8 +408,7 @@ void splitViewWidget::paintEvent(QPaintEvent *)
       if (pixelPosInItem[0])
       {
         // If the zoom box is active, draw a rectangle around the pixel currently under the cursor
-        frameHandler *vid = item[0]->getFrameHandler();
-        if (vid)
+        if (auto vid = item[0]->getFrameHandler())
         {
           painter.setPen(vid->isPixelDark(zoomBoxPixelUnderCursor[0]) ? Qt::white : Qt::black);
           painter.drawRect(zoomPixelRect[0]);

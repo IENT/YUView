@@ -38,6 +38,9 @@
 #include "decoder/decoderTarga.h"
 #include "playlistitem/playlistItem.h"
 
+namespace video
+{
+
 // Activate this if you want to know when which buffer is loaded/converted to image and so on.
 #define FRAMEHANDLER_DEBUG_LOADING 0
 #if FRAMEHANDLER_DEBUG_LOADING && !NDEBUG
@@ -107,7 +110,9 @@ QStringList frameHandler::frameSizePresetList::getFormattedNames() const
 
 frameHandler::frameSizePresetList frameHandler::presetFrameSizes;
 
-frameHandler::frameHandler() {}
+frameHandler::frameHandler()
+{
+}
 
 QLayout *frameHandler::createFrameHandlerControls(bool isSizeFixed)
 {
@@ -503,3 +508,5 @@ bool frameHandler::setFormatFromString(QString format)
   this->setFrameSize(Size(newWidth, newHeight));
   return true;
 }
+
+} // namespace video

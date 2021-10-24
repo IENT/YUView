@@ -32,19 +32,26 @@
 
 #pragma once
 
-#include "YUVPixelFormat.h"
-
-#include <QFileInfo>
-
-namespace video::yuv
+namespace video
 {
 
-// If you know the frame size of the video, the file size (and optionally the bit depth) we can
-// guess the remaining values. The rate value is set if a matching format could be found.
-YUVPixelFormat guessFormatFromSizeAndName(const Size       size,
-                                          unsigned         bitDepth,
-                                          DataLayout       dataLayout,
-                                          int64_t          fileSize,
-                                          const QFileInfo &fileInfo);
+enum class RawFormat
+{
+  Invalid,
+  YUV,
+  RGB
+};
 
-} // namespace video::yuv
+enum class Endianness
+{
+  Big,
+  Little
+};
+
+enum class DataLayout
+{
+  Planar,
+  Packed
+};
+
+} // namespace video
