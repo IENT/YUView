@@ -39,7 +39,7 @@
 #include <QThread>
 #include <algorithm>
 
-#include <common/functions.h>
+#include <common/Functions.h>
 #include <playlistitem/playlistItem.h>
 #include <ui/playbackController.h>
 

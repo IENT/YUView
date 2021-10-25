@@ -38,7 +38,7 @@
 #include "content_light_level_info.h"
 #include "mastering_display_colour_volume.h"
 #include "parser/common/SubByteReaderLoggingOptions.h"
-#include <parser/common/functions.h>
+#include <parser/common/Functions.h>
 #include "pic_timing.h"
 #include "user_data_unregistered.h"
 

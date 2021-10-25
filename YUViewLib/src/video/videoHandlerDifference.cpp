@@ -35,7 +35,7 @@
 #include <QPainter>
 #include <algorithm>
 
-#include <common/functions.h>
+#include <common/Functions.h>
 #include <video/videoHandlerYUV.h>
 
 namespace video

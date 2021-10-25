@@ -32,7 +32,7 @@
 
 #include "pic_parameter_set_rbsp.h"
 
-#include <parser/common/functions.h>
+#include <parser/common/Functions.h>
 
 namespace parser::hevc
 {

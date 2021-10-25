@@ -32,7 +32,7 @@
 
 #include "mastering_display_colour_volume.h"
 
-#include <parser/common/functions.h>
+#include <parser/common/Functions.h>
 
 namespace parser::hevc
 {

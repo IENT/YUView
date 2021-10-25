@@ -41,7 +41,7 @@
 
 #include "BitratePlotModel.h"
 
-#include <common/functions.h>
+#include <common/Functions.h>
 
 unsigned BitratePlotModel::getNrStreams() const
 {

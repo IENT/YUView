@@ -30,7 +30,7 @@
  *   along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "functions.h"
+#include "Functions.h"
 
 #ifdef Q_OS_MAC
 #include <sys/sysctl.h>

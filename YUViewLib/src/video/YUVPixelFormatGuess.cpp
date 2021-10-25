@@ -32,7 +32,7 @@
 
 #include "YUVPixelFormatGuess.h"
 
-#include <common/functions.h>
+#include <common/Functions.h>
 
 #include <QDir>
 #include <regex>

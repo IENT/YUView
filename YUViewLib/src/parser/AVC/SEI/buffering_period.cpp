@@ -35,7 +35,7 @@
 #include "../commonMaps.h"
 #include "../seq_parameter_set_rbsp.h"
 #include "../typedef.h"
-#include <parser/common/functions.h>
+#include <parser/common/Functions.h>
 
 namespace parser::avc
 

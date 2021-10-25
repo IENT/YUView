@@ -32,7 +32,7 @@
 
 #include "pps_range_extension.h"
 
-#include <parser/common/functions.h>
+#include <parser/common/Functions.h>
 
 namespace parser::hevc
 {

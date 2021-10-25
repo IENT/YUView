@@ -32,7 +32,7 @@
 
 #include "hrd_parameters.h"
 
-#include <parser/common/functions.h>
+#include <parser/common/Functions.h>
 
 namespace parser::hevc
 {

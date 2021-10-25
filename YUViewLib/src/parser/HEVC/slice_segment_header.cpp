@@ -33,7 +33,7 @@
 #include "slice_segment_header.h"
 
 #include "parser/common/CodingEnum.h"
-#include <parser/common/functions.h>
+#include <parser/common/Functions.h>
 #include "pic_parameter_set_rbsp.h"
 #include "seq_parameter_set_rbsp.h"
 #include "slice_segment_layer_rbsp.h"

@@ -43,7 +43,7 @@
 #include "../Subtitles/SubtitleDVB.h"
 #include "HVCC.h"
 #include "parser/common/SubByteReaderLogging.h"
-#include <parser/common/functions.h>
+#include <parser/common/Functions.h>
 
 #define PARSERAVCFORMAT_DEBUG_OUTPUT 0
 #if PARSERAVCFORMAT_DEBUG_OUTPUT && !NDEBUG

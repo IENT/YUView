@@ -32,7 +32,7 @@
 
 #include "MoveAndZoomableView.h"
 
-#include <common/functions.h>
+#include <common/Functions.h>
 
 #include <cmath>
 

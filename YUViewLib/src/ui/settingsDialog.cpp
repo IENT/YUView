@@ -38,7 +38,7 @@
 #include <QSettings>
 #include <QTextStream>
 
-#include <common/functions.h>
+#include <common/Functions.h>
 #include <common/typedef.h>
 #include <decoder/decoderDav1d.h>
 #include <decoder/decoderHM.h>

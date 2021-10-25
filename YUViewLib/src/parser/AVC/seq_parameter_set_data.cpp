@@ -32,7 +32,7 @@
 
 #include "seq_parameter_set_data.h"
 
-#include <parser/common/functions.h>
+#include <parser/common/Functions.h>
 #include "typedef.h"
 
 namespace parser::avc

@@ -32,7 +32,7 @@
 
 #include "sequence_header.h"
 
-#include <parser/common/functions.h>
+#include <parser/common/Functions.h>
 
 namespace parser::mpeg2
 {

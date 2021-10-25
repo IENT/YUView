@@ -32,7 +32,7 @@
 
 #include "pic_timing.h"
 #include "../seq_parameter_set_rbsp.h"
-#include <parser/common/functions.h>
+#include <parser/common/Functions.h>
 
 namespace parser::avc
 

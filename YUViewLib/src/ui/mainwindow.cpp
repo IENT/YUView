@@ -41,7 +41,7 @@
 #include <QTextBrowser>
 #include <QTextStream>
 
-#include <common/functions.h>
+#include <common/Functions.h>
 #include <common/functionsGui.h>
 #include <playlistitem/playlistItems.h>
 #include <ui/mainwindow_performanceTestDialog.h>

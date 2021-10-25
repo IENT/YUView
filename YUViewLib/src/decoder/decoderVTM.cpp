@@ -37,7 +37,7 @@
 #include <QSettings>
 #include <cstring>
 
-#include <common/functions.h>
+#include <common/Functions.h>
 #include <common/typedef.h>
 
 namespace decoder

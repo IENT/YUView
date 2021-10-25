@@ -36,7 +36,7 @@
 #include <QUrl>
 #include <QVBoxLayout>
 
-#include <common/functions.h>
+#include <common/Functions.h>
 #include <common/functionsGui.h>
 #include <handler/itemMemoryHandler.h>
 

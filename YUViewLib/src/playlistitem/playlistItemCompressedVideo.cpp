@@ -39,7 +39,7 @@
 #include <inttypes.h>
 
 #include <common/YUViewDomElement.h>
-#include <common/functions.h>
+#include <common/Functions.h>
 #include <common/functionsGui.h>
 #include <decoder/decoderDav1d.h>
 #include <decoder/decoderFFmpeg.h>

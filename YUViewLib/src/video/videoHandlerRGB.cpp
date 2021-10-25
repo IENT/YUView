@@ -34,7 +34,7 @@
 
 #include <common/EnumMapper.h>
 #include <common/FileInfo.h>
-#include <common/functions.h>
+#include <common/Functions.h>
 #include <common/functionsGui.h>
 #include <video/videoHandlerRGBCustomFormatDialog.h>
 
