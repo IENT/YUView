@@ -39,6 +39,7 @@
 #include <statistics/StatisticUIHandler.h>
 
 #include <QDir>
+#include <QObject>
 #include <QTreeWidgetItem>
 
 #include "ui_playlistItem.h"
