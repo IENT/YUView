@@ -32,7 +32,7 @@
 
 #include "videoHandlerRGBCustomFormatDialog.h"
 
-#include "common/functions.h"
+#include <common/functions.h>
 
 namespace video
 {
