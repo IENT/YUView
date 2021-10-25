@@ -133,7 +133,7 @@ videoHandlerRGB::~videoHandlerRGB()
 
 QStringPairList videoHandlerRGB::getPixelValues(const QPoint &pixelPos,
                                                 int           frameIdx,
-                                                frameHandler *item2,
+                                                FrameHandler *item2,
                                                 const int     frameIdx1)
 {
   QStringPairList values;
@@ -143,8 +143,8 @@ QStringPairList videoHandlerRGB::getPixelValues(const QPoint &pixelPos,
   {
     videoHandlerRGB *rgbItem2 = dynamic_cast<videoHandlerRGB *>(item2);
     if (rgbItem2 == nullptr)
-      // The second item is not a videoHandlerRGB. Get the values from the frameHandler.
-      return frameHandler::getPixelValues(pixelPos, frameIdx, item2, frameIdx1);
+      // The second item is not a videoHandlerRGB. Get the values from the FrameHandler.
+      return FrameHandler::getPixelValues(pixelPos, frameIdx, item2, frameIdx1);
 
     if (currentFrameRawData_frameIndex != frameIdx ||
         rgbItem2->currentFrameRawData_frameIndex != frameIdx1)
@@ -212,7 +212,7 @@ bool videoHandlerRGB::setFormatFromString(QString format)
   if (split.length() != 4 || split[2] != "RGB")
     return false;
 
-  if (!frameHandler::setFormatFromString(split[0] + ";" + split[1]))
+  if (!FrameHandler::setFormatFromString(split[0] + ";" + split[1]))
     return false;
 
   auto fmt = rgbPixelFormat(split[3].toStdString());
@@ -231,10 +231,10 @@ QLayout *videoHandlerRGB::createVideoHandlerControls(bool isSizeFixed)
   QVBoxLayout *newVBoxLayout = nullptr;
   if (!isSizeFixed)
   {
-    // Our parent (frameHandler) also has controls to add. Create a new vBoxLayout and append the
+    // Our parent (FrameHandler) also has controls to add. Create a new vBoxLayout and append the
     // parent controls and our controls into that layout, separated by a line. Return that layout
     newVBoxLayout = new QVBoxLayout;
-    newVBoxLayout->addLayout(frameHandler::createFrameHandlerControls(isSizeFixed));
+    newVBoxLayout->addLayout(FrameHandler::createFrameHandlerControls(isSizeFixed));
 
     QFrame *line = new QFrame;
     line->setObjectName(QStringLiteral("line"));
@@ -475,7 +475,7 @@ void videoHandlerRGB::loadFrame(int frameIndex, bool loadToDoubleBuffer)
 
 void videoHandlerRGB::savePlaylist(YUViewDomElement &element) const
 {
-  frameHandler::savePlaylist(element);
+  FrameHandler::savePlaylist(element);
   element.appendProperiteChild("pixelFormat", this->getRawRGBPixelFormatName());
 
   element.appendProperiteChild("componentShow",
@@ -496,7 +496,7 @@ void videoHandlerRGB::savePlaylist(YUViewDomElement &element) const
 
 void videoHandlerRGB::loadPlaylist(const YUViewDomElement &element)
 {
-  frameHandler::loadPlaylist(element);
+  FrameHandler::loadPlaylist(element);
   QString sourcePixelFormat = element.findChildValue("pixelFormat");
   this->setRGBPixelFormatByName(sourcePixelFormat);
 
@@ -1101,7 +1101,7 @@ void videoHandlerRGB::drawPixelValues(QPainter *    painter,
                                       const int     frameIdx,
                                       const QRect & videoRect,
                                       const double  zoomFactor,
-                                      frameHandler *item2,
+                                      FrameHandler *item2,
                                       const bool    markDifference,
                                       const int     frameIdxItem1)
 {
@@ -1127,7 +1127,7 @@ void videoHandlerRGB::drawPixelValues(QPainter *    painter,
   if (item2 != nullptr && rgbItem2 == nullptr)
   {
     // The second item is not a videoHandlerRGB item
-    frameHandler::drawPixelValues(
+    FrameHandler::drawPixelValues(
         painter, frameIdx, videoRect, zoomFactor, item2, markDifference, frameIdxItem1);
     return;
   }
@@ -1213,7 +1213,7 @@ void videoHandlerRGB::drawPixelValues(QPainter *    painter,
   }
 }
 
-QImage videoHandlerRGB::calculateDifference(frameHandler *   item2,
+QImage videoHandlerRGB::calculateDifference(FrameHandler *   item2,
                                             const int        frameIdxItem0,
                                             const int        frameIdxItem1,
                                             QList<InfoItem> &differenceInfoList,

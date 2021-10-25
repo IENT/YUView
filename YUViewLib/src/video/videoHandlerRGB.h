@@ -65,13 +65,13 @@ public:
   // The format is valid if the frame width/height/pixel format are set
   virtual bool isFormatValid() const override
   {
-    return (frameHandler::isFormatValid() && srcPixelFormat.isValid());
+    return (FrameHandler::isFormatValid() && srcPixelFormat.isValid());
   }
 
   // Return the RGB values for the given pixel
   virtual QStringPairList getPixelValues(const QPoint &pixelPos,
                                          int           frameIdx,
-                                         frameHandler *item2,
+                                         FrameHandler *item2,
                                          const int     frameIdx1 = 0) override;
 
   // Get the number of bytes for one RGB frame with the current format
@@ -87,7 +87,7 @@ public:
 
   virtual QString getFormatAsString() const override
   {
-    return frameHandler::getFormatAsString() + ";RGB;" +
+    return FrameHandler::getFormatAsString() + ";RGB;" +
            QString::fromStdString(this->srcPixelFormat.getName());
   }
   virtual bool setFormatFromString(QString format) override;
@@ -133,7 +133,7 @@ public:
                                const int     frameIdx,
                                const QRect & videoRect,
                                const double  zoomFactor,
-                               frameHandler *item2          = nullptr,
+                               FrameHandler *item2          = nullptr,
                                const bool    markDifference = false,
                                const int     frameIdxItem1  = 0) override;
 
@@ -141,7 +141,7 @@ public:
   // to another videoHandlerRGB. If item2 cannot be converted to a videoHandlerRGB,
   // we will use the videoHandler::calculateDifference function to calculate the difference
   // using the 8bit RGB values.
-  virtual QImage calculateDifference(frameHandler *   item2,
+  virtual QImage calculateDifference(FrameHandler *   item2,
                                      const int        frameIdxItem0,
                                      const int        frameIdxItem1,
                                      QList<InfoItem> &differenceInfoList,

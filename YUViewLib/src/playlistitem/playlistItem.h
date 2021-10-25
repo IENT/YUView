@@ -45,7 +45,7 @@
 
 namespace video
 {
-class frameHandler;
+class FrameHandler;
 }
 
 class playlistItem : public QObject, public QTreeWidgetItem
@@ -182,7 +182,7 @@ public:
   // If you want your item to be droppable onto a difference/resample object, return true here and
   // return a valid video handler.
   virtual bool                 canBeUsedInProcessing() const { return false; }
-  virtual video::frameHandler *getFrameHandler() { return nullptr; }
+  virtual video::FrameHandler *getFrameHandler() { return nullptr; }
 
   // If this item provides statistics, return them here so that they can be used correctly in an
   // overlay

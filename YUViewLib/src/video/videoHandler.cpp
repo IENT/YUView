@@ -80,7 +80,7 @@ void videoHandler::setFrameSize(Size size)
     this->rawData_frameIndex             = -1;
   }
 
-  frameHandler::setFrameSize(size);
+  FrameHandler::setFrameSize(size);
 }
 
 ItemLoadingState videoHandler::needsLoading(int frameIdx, bool loadRawValues)
@@ -221,7 +221,7 @@ void videoHandler::drawFrame(QPainter *painter, int frameIdx, double zoomFactor,
   }
 }
 
-QImage videoHandler::calculateDifference(frameHandler *   item2,
+QImage videoHandler::calculateDifference(FrameHandler *   item2,
                                          const int        frameIdxItem0,
                                          const int        frameIdxItem1,
                                          QList<InfoItem> &differenceInfoList,
@@ -235,8 +235,8 @@ QImage videoHandler::calculateDifference(frameHandler *   item2,
     // The item2 is not a videoItem but this one is.
     if (currentImageIndex != frameIdxItem0)
       loadFrame(frameIdxItem0);
-    // Call the frameHandler implementation to calculate the difference
-    return frameHandler::calculateDifference(item2,
+    // Call the FrameHandler implementation to calculate the difference
+    return FrameHandler::calculateDifference(item2,
                                              frameIdxItem0,
                                              frameIdxItem1,
                                              differenceInfoList,
@@ -250,7 +250,7 @@ QImage videoHandler::calculateDifference(frameHandler *   item2,
   if (videoItem2->currentImageIndex != frameIdxItem1)
     videoItem2->loadFrame(frameIdxItem1);
 
-  return frameHandler::calculateDifference(
+  return FrameHandler::calculateDifference(
       item2, frameIdxItem0, frameIdxItem1, differenceInfoList, amplificationFactor, markDifference);
 }
 

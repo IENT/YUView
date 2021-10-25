@@ -56,7 +56,7 @@ public:
 
   // We need to override these videoHandler functions in order to map the frameIndex
   void drawFrame(QPainter *painter, int frameIndex, double zoomFactor, bool drawRawValues) override;
-  QImage           calculateDifference(frameHandler *   item2,
+  QImage           calculateDifference(FrameHandler *   item2,
                                        const int        frameIndex0,
                                        const int        frameIndex1,
                                        QList<InfoItem> &differenceInfoList,
@@ -69,7 +69,7 @@ public:
 
   // Set the video input. This will also update the number frames, the controls and the frame size.
   // The signal signalHandlerChanged will be emitted if a redraw is required.
-  void setInputVideo(frameHandler *childVideo);
+  void setInputVideo(FrameHandler *childVideo);
 
   void setScaledSize(Size scaledSize);
   void setInterpolation(Interpolation interpolation);
@@ -87,7 +87,7 @@ private:
   int mapFrameIndex(int frameIndex);
 
   // The input video we will resample
-  QPointer<frameHandler> inputVideo;
+  QPointer<FrameHandler> inputVideo;
 
   Size          scaledSize{0, 0};
   Interpolation interpolation{Interpolation::Bilinear};

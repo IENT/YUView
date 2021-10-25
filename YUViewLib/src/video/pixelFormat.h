@@ -32,6 +32,8 @@
 
 #pragma once
 
+#include <QMetaType>
+
 namespace video
 {
 

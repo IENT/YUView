@@ -30,7 +30,7 @@
  *   along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "frameHandler.h"
+#include "FrameHandler.h"
 
 #include <QPainter>
 
@@ -49,7 +49,7 @@ namespace video
 #define DEBUG_FRAME(fmt, ...) ((void)0)
 #endif
 
-class frameHandler::frameSizePresetList
+class FrameHandler::frameSizePresetList
 {
 public:
   // Constructor. Fill the names and sizes lists
@@ -70,7 +70,7 @@ private:
   QList<Size>    sizes;
 };
 
-frameHandler::frameSizePresetList::frameSizePresetList()
+FrameHandler::frameSizePresetList::frameSizePresetList()
 {
   names << "Custom Size"
         << "QCIF"
@@ -94,7 +94,7 @@ frameHandler::frameSizePresetList::frameSizePresetList()
 /* Get all the names of the preset frame sizes in the form "Name (xxx,yyy)" in a QStringList.
  * This can be used to directly fill the combo box.
  */
-QStringList frameHandler::frameSizePresetList::getFormattedNames() const
+QStringList FrameHandler::frameSizePresetList::getFormattedNames() const
 {
   QStringList presetList;
   presetList.append("Custom Size");
@@ -108,13 +108,13 @@ QStringList frameHandler::frameSizePresetList::getFormattedNames() const
   return presetList;
 }
 
-frameHandler::frameSizePresetList frameHandler::presetFrameSizes;
+FrameHandler::frameSizePresetList FrameHandler::presetFrameSizes;
 
-frameHandler::frameHandler()
+FrameHandler::FrameHandler()
 {
 }
 
-QLayout *frameHandler::createFrameHandlerControls(bool isSizeFixed)
+QLayout *FrameHandler::createFrameHandlerControls(bool isSizeFixed)
 {
   // Absolutely always only call this function once!
   assert(!ui.created());
@@ -137,30 +137,30 @@ QLayout *frameHandler::createFrameHandlerControls(bool isSizeFixed)
   connect(ui.widthSpinBox,
           QOverload<int>::of(&QSpinBox::valueChanged),
           this,
-          &frameHandler::slotVideoControlChanged);
+          &FrameHandler::slotVideoControlChanged);
   connect(ui.heightSpinBox,
           QOverload<int>::of(&QSpinBox::valueChanged),
           this,
-          &frameHandler::slotVideoControlChanged);
+          &FrameHandler::slotVideoControlChanged);
   connect(ui.frameSizeComboBox,
           QOverload<int>::of(&QComboBox::currentIndexChanged),
           this,
-          &frameHandler::slotVideoControlChanged);
+          &FrameHandler::slotVideoControlChanged);
 
   return ui.frameHandlerLayout;
 }
 
-void frameHandler::setFrameSize(Size newSize)
+void FrameHandler::setFrameSize(Size newSize)
 {
   if (newSize != this->frameSize)
   {
     // Set the new size
-    DEBUG_FRAME("frameHandler::setFrameSize %dx%d", newSize.width(), newSize.height());
+    DEBUG_FRAME("FrameHandler::setFrameSize %dx%d", newSize.width(), newSize.height());
     this->frameSize = newSize;
   }
 }
 
-bool frameHandler::loadCurrentImageFromFile(const QString &filePath)
+bool FrameHandler::loadCurrentImageFromFile(const QString &filePath)
 {
   auto extension = QFileInfo(filePath).suffix().toLower();
   if (extension == "tga" || extension == "icb" || extension == "vda" || extension == "vst")
@@ -199,26 +199,26 @@ bool frameHandler::loadCurrentImageFromFile(const QString &filePath)
   return (!this->currentImage.isNull());
 }
 
-void frameHandler::savePlaylist(YUViewDomElement &element) const
+void FrameHandler::savePlaylist(YUViewDomElement &element) const
 {
   // Append the video handler properties
   element.appendProperiteChild("width", QString::number(this->frameSize.width));
   element.appendProperiteChild("height", QString::number(this->frameSize.height));
 }
 
-void frameHandler::loadPlaylist(const YUViewDomElement &root)
+void FrameHandler::loadPlaylist(const YUViewDomElement &root)
 {
   auto width  = unsigned(root.findChildValue("width").toInt());
   auto height = unsigned(root.findChildValue("height").toInt());
   this->setFrameSize(Size(width, height));
 }
 
-void frameHandler::slotVideoControlChanged()
+void FrameHandler::slotVideoControlChanged()
 {
   // Update the controls and get the new selected size
   auto newSize = getNewSizeFromControls();
   DEBUG_FRAME(
-      "frameHandler::slotVideoControlChanged new size %dx%d", newSize.width(), newSize.height());
+      "FrameHandler::slotVideoControlChanged new size %dx%d", newSize.width(), newSize.height());
 
   if (newSize != frameSize && newSize.isValid())
   {
@@ -229,7 +229,7 @@ void frameHandler::slotVideoControlChanged()
   }
 }
 
-Size frameHandler::getNewSizeFromControls()
+Size FrameHandler::getNewSizeFromControls()
 {
   // The control that caused the slot to be called
   auto sender = QObject::sender();
@@ -260,7 +260,7 @@ Size frameHandler::getNewSizeFromControls()
   return {};
 }
 
-void frameHandler::drawFrame(QPainter *painter, double zoomFactor, bool drawRawValues)
+void FrameHandler::drawFrame(QPainter *painter, double zoomFactor, bool drawRawValues)
 {
   // Create the video QRect with the size of the sequence and center it.
   QRect videoRect;
@@ -277,11 +277,11 @@ void frameHandler::drawFrame(QPainter *painter, double zoomFactor, bool drawRawV
   }
 }
 
-void frameHandler::drawPixelValues(QPainter *painter,
+void FrameHandler::drawPixelValues(QPainter *painter,
                                    const int,
                                    const QRect & videoRect,
                                    const double  zoomFactor,
-                                   frameHandler *item2,
+                                   FrameHandler *item2,
                                    const bool    markDifference,
                                    const int)
 {
@@ -369,7 +369,7 @@ void frameHandler::drawPixelValues(QPainter *painter,
   }
 }
 
-QImage frameHandler::calculateDifference(frameHandler *item2,
+QImage FrameHandler::calculateDifference(FrameHandler *item2,
                                          const int,
                                          const int,
                                          QList<InfoItem> &differenceInfoList,
@@ -439,14 +439,14 @@ QImage frameHandler::calculateDifference(frameHandler *item2,
   return diffImg;
 }
 
-bool frameHandler::isPixelDark(const QPoint &pixelPos)
+bool FrameHandler::isPixelDark(const QPoint &pixelPos)
 {
   auto pixVal = getPixelVal(pixelPos);
   return (qRed(pixVal) < 128 && qGreen(pixVal) < 128 && qBlue(pixVal) < 128);
 }
 
 QStringPairList
-frameHandler::getPixelValues(const QPoint &pixelPos, int, frameHandler *item2, const int)
+FrameHandler::getPixelValues(const QPoint &pixelPos, int, FrameHandler *item2, const int)
 {
   auto width  = (item2) ? std::min(frameSize.width, item2->frameSize.width) : frameSize.width;
   auto height = (item2) ? std::min(frameSize.height, item2->frameSize.height) : frameSize.height;
@@ -490,7 +490,7 @@ frameHandler::getPixelValues(const QPoint &pixelPos, int, frameHandler *item2, c
   return values;
 }
 
-bool frameHandler::setFormatFromString(QString format)
+bool FrameHandler::setFormatFromString(QString format)
 {
   auto split = format.split(";");
   if (split.length() != 2)

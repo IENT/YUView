@@ -58,7 +58,7 @@ playlistItemResample::playlistItemResample() : playlistItemContainer("Resample I
   this->infoText       = RESAMPLE_INFO_TEXT;
 
   this->connect(&this->video,
-                &video::frameHandler::signalHandlerChanged,
+                &video::FrameHandler::signalHandlerChanged,
                 this,
                 &playlistItemResample::signalItemChanged);
 }

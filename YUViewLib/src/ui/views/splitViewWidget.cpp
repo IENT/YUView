@@ -32,6 +32,11 @@
 
 #include "splitViewWidget.h"
 
+#include <playlistitem/playlistItem.h>
+#include <ui/playbackController.h>
+#include <video/FrameHandler.h>
+#include <video/videoCache.h>
+
 #include <QActionGroup>
 #include <QBackingStore>
 #include <QDockWidget>
@@ -44,11 +49,6 @@
 #include <QPainter>
 #include <QSettings>
 #include <QTextDocument>
-
-#include "playlistitem/playlistItem.h"
-#include "ui/playbackController.h"
-#include "video/frameHandler.h"
-#include "video/videoCache.h"
 
 // The splitter can be grabbed with a certain margin of pixels to the left and right. The margin
 // in pixels is calculated depending on the logical DPI of the user using:

@@ -106,8 +106,8 @@ void playlistItemDifference::drawItem(QPainter *painter,
     updateChildList();
 
     // Update the items in the difference item
-    video::frameHandler *childVideo0 = nullptr;
-    video::frameHandler *childVideo1 = nullptr;
+    video::FrameHandler *childVideo0 = nullptr;
+    video::FrameHandler *childVideo1 = nullptr;
     if (childCount() >= 1)
       childVideo0 = getChildPlaylistItem(0)->getFrameHandler();
     if (childCount() >= 2)

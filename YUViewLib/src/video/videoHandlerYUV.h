@@ -61,7 +61,7 @@ public:
   // The format is valid if the frame width/height/pixel format are set
   virtual bool isFormatValid() const override
   {
-    return (frameHandler::isFormatValid() && this->srcPixelFormat.canConvertToRGB(frameSize));
+    return (FrameHandler::isFormatValid() && this->srcPixelFormat.canConvertToRGB(frameSize));
   }
 
   // Certain settings for a YUV source are invalid. In this case we will draw an error message
@@ -71,18 +71,18 @@ public:
 
   // Return the YUV values for the given pixel
   // If a second item is provided, return the difference values to that item at the given position.
-  // If th second item cannot be cast to a videoHandlerYUV, we call the frameHandler::getPixelValues
+  // If th second item cannot be cast to a videoHandlerYUV, we call the FrameHandler::getPixelValues
   // function.
   virtual QStringPairList getPixelValues(const QPoint &pixelPos,
                                          int           frameIdx,
-                                         frameHandler *item2     = nullptr,
+                                         FrameHandler *item2     = nullptr,
                                          const int     frameIdx1 = 0) override;
 
   // Overload from playlistItemVideo. Calculate the difference of this playlistItemYuvSource
   // to another playlistItemVideo. If item2 cannot be converted to a playlistItemYuvSource,
   // we will use the playlistItemVideo::calculateDifference function to calculate the difference
   // using the RGB values.
-  virtual QImage calculateDifference(frameHandler *   item2,
+  virtual QImage calculateDifference(FrameHandler *   item2,
                                      const int        frameIdxItem0,
                                      const int        frameIdxItem1,
                                      QList<InfoItem> &differenceInfoList,
@@ -110,7 +110,7 @@ public:
 
   virtual QString getFormatAsString() const override
   {
-    return frameHandler::getFormatAsString() + ";YUV;" +
+    return FrameHandler::getFormatAsString() + ";YUV;" +
            QString::fromStdString(this->srcPixelFormat.getName());
   }
   virtual bool setFormatFromString(QString format) override;
@@ -145,7 +145,7 @@ public:
                                const int     frameIdx,
                                const QRect & videoRect,
                                const double  zoomFactor,
-                               frameHandler *item2          = nullptr,
+                               FrameHandler *item2          = nullptr,
                                const bool    markDifference = false,
                                const int     frameIdxItem1  = 0) override;
 

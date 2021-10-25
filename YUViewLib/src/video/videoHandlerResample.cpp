@@ -63,7 +63,7 @@ void videoHandlerResample::drawFrame(QPainter *painter,
   videoHandler::drawFrame(painter, mappedIndex, zoomFactor, drawRawValues);
 }
 
-QImage videoHandlerResample::calculateDifference(frameHandler *   item2,
+QImage videoHandlerResample::calculateDifference(FrameHandler *   item2,
                                                  const int        frameIndex0,
                                                  const int        frameIndex1,
                                                  QList<InfoItem> &differenceInfoList,
@@ -129,7 +129,7 @@ bool videoHandlerResample::inputValid() const
   return (!this->inputVideo.isNull() && this->inputVideo->isFormatValid());
 }
 
-void videoHandlerResample::setInputVideo(frameHandler *childVideo)
+void videoHandlerResample::setInputVideo(FrameHandler *childVideo)
 {
   if (this->inputVideo == childVideo)
     return;

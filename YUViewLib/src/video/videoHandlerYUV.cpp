@@ -859,7 +859,7 @@ QLayout *videoHandlerYUV::createVideoHandlerControls(bool isSizeFixed)
     // Our parent (videoHandler) also has controls to add. Create a new vBoxLayout and append the
     // parent controls and our controls into that layout, separated by a line. Return that layout
     newVBoxLayout = new QVBoxLayout;
-    newVBoxLayout->addLayout(frameHandler::createFrameHandlerControls(isSizeFixed));
+    newVBoxLayout->addLayout(FrameHandler::createFrameHandlerControls(isSizeFixed));
 
     QFrame *line = new QFrame;
     line->setObjectName(QStringLiteral("line"));
@@ -1109,7 +1109,7 @@ void videoHandlerYUV::slotYUVControlChanged()
  */
 QStringPairList videoHandlerYUV::getPixelValues(const QPoint &pixelPos,
                                                 int           frameIdx,
-                                                frameHandler *item2,
+                                                FrameHandler *item2,
                                                 const int     frameIdx1)
 {
   QStringPairList values;
@@ -1121,7 +1121,7 @@ QStringPairList videoHandlerYUV::getPixelValues(const QPoint &pixelPos,
     if (yuvItem2 == nullptr)
       // The given item is not a YUV source. We cannot compare YUV values to non YUV values.
       // Call the base class comparison function to compare the items using the RGB values.
-      return frameHandler::getPixelValues(pixelPos, frameIdx, item2, frameIdx1);
+      return FrameHandler::getPixelValues(pixelPos, frameIdx, item2, frameIdx1);
 
     // Do not get the pixel values if the buffer for the raw YUV values is out of date.
     if (currentFrameRawData_frameIndex != frameIdx ||
@@ -1230,7 +1230,7 @@ void videoHandlerYUV::drawPixelValues(QPainter *    painter,
                                       const int     frameIdx,
                                       const QRect & videoRect,
                                       const double  zoomFactor,
-                                      frameHandler *item2,
+                                      FrameHandler *item2,
                                       const bool    markDifference,
                                       const int     frameIdxItem1)
 {
@@ -1239,7 +1239,7 @@ void videoHandlerYUV::drawPixelValues(QPainter *    painter,
   if (item2 != nullptr && yuvItem2 == nullptr)
   {
     // The other item is not a yuv item
-    frameHandler::drawPixelValues(
+    FrameHandler::drawPixelValues(
         painter, frameIdx, videoRect, zoomFactor, item2, markDifference, frameIdxItem1);
     return;
   }
@@ -1574,7 +1574,7 @@ bool videoHandlerYUV::setFormatFromString(QString format)
   if (split.length() != 4 || split[2] != "YUV")
     return false;
 
-  if (!frameHandler::setFormatFromString(split[0] + ";" + split[1]))
+  if (!FrameHandler::setFormatFromString(split[0] + ";" + split[1]))
     return false;
 
   auto fmt = YUVPixelFormat(split[3].toStdString());
@@ -3752,7 +3752,7 @@ bool videoHandlerYUV::markDifferencesYUVPlanarToRGB(const QByteArray &    source
   return true;
 }
 
-QImage videoHandlerYUV::calculateDifference(frameHandler *   item2,
+QImage videoHandlerYUV::calculateDifference(FrameHandler *   item2,
                                             const int        frameIdxItem0,
                                             const int        frameIdxItem1,
                                             QList<InfoItem> &differenceInfoList,
@@ -4084,7 +4084,7 @@ void videoHandlerYUV::setYUVColorConversion(ColorConversion conversion)
 
 void videoHandlerYUV::savePlaylist(YUViewDomElement &element) const
 {
-  frameHandler::savePlaylist(element);
+  FrameHandler::savePlaylist(element);
   element.appendProperiteChild("pixelFormat", this->getRawYUVPixelFormatName());
 
   auto ml = this->mathParameters[Component::Luma];
@@ -4100,7 +4100,7 @@ void videoHandlerYUV::savePlaylist(YUViewDomElement &element) const
 
 void videoHandlerYUV::loadPlaylist(const YUViewDomElement &element)
 {
-  frameHandler::loadPlaylist(element);
+  FrameHandler::loadPlaylist(element);
 
   auto sourcePixelFormat = element.findChildValue("pixelFormat");
   this->setYUVPixelFormatByName(sourcePixelFormat);

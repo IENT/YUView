@@ -147,7 +147,7 @@ bool videoHandlerDifference::inputsValid() const
   return true;
 }
 
-void videoHandlerDifference::setInputVideos(frameHandler *childVideo0, frameHandler *childVideo1)
+void videoHandlerDifference::setInputVideos(FrameHandler *childVideo0, FrameHandler *childVideo1)
 {
   if (inputVideo[0] != childVideo0 || inputVideo[1] != childVideo1)
   {
@@ -174,7 +174,7 @@ void videoHandlerDifference::setInputVideos(frameHandler *childVideo0, frameHand
 
 QStringPairList videoHandlerDifference::getPixelValues(const QPoint &pixelPos,
                                                        int           frameIdx,
-                                                       frameHandler *,
+                                                       FrameHandler *,
                                                        const int frameIdx1)
 {
   if (!inputsValid())
@@ -320,7 +320,7 @@ void videoHandlerDifference::reportFirstDifferencePosition(QList<InfoItem> &info
 
 void videoHandlerDifference::savePlaylist(YUViewDomElement &element) const
 {
-  frameHandler::savePlaylist(element);
+  FrameHandler::savePlaylist(element);
 
   if (this->amplificationFactor != 1)
     element.appendProperiteChild("amplificationFactor", QString::number(this->amplificationFactor));
@@ -330,7 +330,7 @@ void videoHandlerDifference::savePlaylist(YUViewDomElement &element) const
 
 void videoHandlerDifference::loadPlaylist(const YUViewDomElement &element)
 {
-  frameHandler::loadPlaylist(element);
+  FrameHandler::loadPlaylist(element);
 
   auto amplification = element.findChildValue("amplificationFactor");
   if (!amplification.isEmpty())

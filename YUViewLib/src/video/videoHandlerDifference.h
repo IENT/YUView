@@ -64,14 +64,14 @@ public:
 
   // Set the two video inputs. This will also update the number frames, the controls and the frame
   // size. The signal signalHandlerChanged will be emitted if a redraw is required.
-  void setInputVideos(frameHandler *childVideo0, frameHandler *childVideo1);
+  void setInputVideos(FrameHandler *childVideo0, FrameHandler *childVideo1);
 
   QList<InfoItem> differenceInfoList;
 
   // The difference overloads this and returns the difference values (A-B)
   virtual QStringPairList getPixelValues(const QPoint &pixelPos,
                                          int           frameIdx,
-                                         frameHandler *item2     = nullptr,
+                                         FrameHandler *item2     = nullptr,
                                          const int     frameIdx1 = 0) override;
 
   virtual void setFormatFromSizeAndName(const Size       size,
@@ -103,7 +103,7 @@ private:
   CodingOrder codingOrder{CodingOrder::HEVC};
 
   // The two videos that the difference will be calculated from
-  QPointer<frameHandler> inputVideo[2];
+  QPointer<FrameHandler> inputVideo[2];
 
   // Recursively scan the LCU
   bool hierarchicalPosition(int           x,

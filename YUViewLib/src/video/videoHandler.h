@@ -32,17 +32,17 @@
 
 #pragma once
 
+#include "pixelFormat.h"
+#include "FrameHandler.h"
+
 #include <QBasicTimer>
 #include <QFileInfo>
 #include <QMutex>
 
-#include "pixelFormat.h"
-#include "video/frameHandler.h"
-
 namespace video
 {
 
-class videoHandler : public frameHandler
+class videoHandler : public FrameHandler
 {
   Q_OBJECT
 
@@ -73,9 +73,9 @@ public:
   // The Frame size is about to change. If this happens, our local buffers all need updating.
   virtual void setFrameSize(Size size) override;
 
-  // Same as the calculateDifference in frameHandler. For a video we have to make sure that the
+  // Same as the calculateDifference in FrameHandler. For a video we have to make sure that the
   // right frame is loaded first.
-  virtual QImage calculateDifference(frameHandler *   item2,
+  virtual QImage calculateDifference(FrameHandler *   item2,
                                      const int        frameIndex0,
                                      const int        frameIndex1,
                                      QList<InfoItem> &differenceInfoList,
@@ -161,12 +161,12 @@ signals:
   void signalRequestRawData(int frameIndex, bool caching);
 
 protected:
-  // --- Drawing: The current frame is kept in the frameHandler::currentImage. But if
+  // --- Drawing: The current frame is kept in the FrameHandler::currentImage. But if
   // currentImageIndex is not identical to the requested frame in the draw event, we will have to
   // update currentImage.
   int currentImageIndex{-1};
 
-  // As the frameHandler implementations, we get the pixel values from currentImage. For a video,
+  // As the FrameHandler implementations, we get the pixel values from currentImage. For a video,
   // however, we have to first check if currentImage contains the correct frame.
   virtual QRgb getPixelVal(int x, int y) override;
 

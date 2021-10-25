@@ -70,7 +70,7 @@ public:
   virtual ValuePairListSets getPixelValues(const QPoint &pixelPos, int frameIdx) override;
 
   // Return the frame handler pointer that draws the difference
-  virtual video::frameHandler *getFrameHandler() override { return &video; }
+  virtual video::FrameHandler *getFrameHandler() override { return &video; }
 
 protected slots:
   void childChanged(bool redraw, recacheIndicator recache) override;

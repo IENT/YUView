@@ -41,7 +41,7 @@
 #include <QObject>
 #include <QSettings>
 
-#include "ui_frameHandler.h"
+#include "ui_FrameHandler.h"
 
 namespace video
 {
@@ -52,14 +52,14 @@ namespace video
  * the basics of an image and the corresponding controls (frame size). It handles drawing of the
  * frame (drawFrame).
  */
-class frameHandler : public QObject
+class FrameHandler : public QObject
 {
   Q_OBJECT
 
 public:
-  // Create a new blank frameHandler. Don't forget to load an image from file
+  // Create a new blank FrameHandler. Don't forget to load an image from file
   // (loadCurrentImageFromFile).
-  frameHandler();
+  FrameHandler();
 
   // Get the size/bit depth of the (current) frame
   Size getFrameSize() const { return frameSize; }
@@ -75,12 +75,12 @@ public:
   // values to that item.
   virtual QStringPairList getPixelValues(const QPoint &pixelPos,
                                          int           frameIdx,
-                                         frameHandler *item2     = nullptr,
+                                         FrameHandler *item2     = nullptr,
                                          const int     frameIdx1 = 0);
   // Is the pixel under the cursor brighter or darker than the middle brightness level?
   virtual bool isPixelDark(const QPoint &pixelPos);
 
-  // Is the current format of the frameHandler valid? The default implementation will check if the
+  // Is the current format of the FrameHandler valid? The default implementation will check if the
   // frameSize is valid but more specialized implementations may also check other things: For
   // example the videoHandlerYUV also checks if a valid YUV format is set.
   virtual bool isFormatValid() const { return frameSize.width > 0 && frameSize.height > 0; }
@@ -91,10 +91,10 @@ public:
   }
   virtual bool setFormatFromString(QString format);
 
-  // Calculate the difference of this frameHandler to another frameHandler. This
+  // Calculate the difference of this FrameHandler to another FrameHandler. This
   // function can be overloaded by more specialized video items. For example the videoHandlerYUV
   // overloads this and calculates the difference directly on the YUV values (if possible).
-  virtual QImage calculateDifference(frameHandler *   item2,
+  virtual QImage calculateDifference(FrameHandler *   item2,
                                      const int        frameIdxItem0,
                                      const int        frameIdxItem1,
                                      QList<InfoItem> &differenceInfoList,
@@ -112,14 +112,14 @@ public:
   // Only draw values for the given range of pixels and frame index.
   // The playlistItemVideo implementation of this function will draw the RGB vales. However, if a
   // derived class knows other source values to show it can overload this function (like the
-  // playlistItemYUVSource). If a second frameHandler item is provided, the difference values will
+  // playlistItemYUVSource). If a second FrameHandler item is provided, the difference values will
   // be drawn. For the second item, a second frame index must be provided (set markDifference if you
   // want only differing values to be marked).
   virtual void drawPixelValues(QPainter *    painter,
                                const int     frameIdx,
                                const QRect & videoRect,
                                const double  zoomFactor,
-                               frameHandler *item2          = nullptr,
+                               FrameHandler *item2          = nullptr,
                                const bool    markDifference = false,
                                const int     frameIdxItem1  = 0);
 
@@ -156,7 +156,7 @@ private:
   // The (static) list of frame size presets (like CIF, QCIF, 4k ...)
   static frameSizePresetList presetFrameSizes;
 
-  SafeUi<Ui::frameHandler> ui;
+  SafeUi<Ui::FrameHandler> ui;
 
 protected slots:
 
