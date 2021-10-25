@@ -32,7 +32,7 @@
 
 #pragma once
 
-#include "typedef.h"
+#include <common/Typedef.h>
 
 namespace functions
 {

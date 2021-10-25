@@ -32,11 +32,11 @@
 
 #pragma once
 
-#include "common/typedef.h"
-#include "parser/HEVC/AnnexBHEVC.h"
-#include "parser/common/BitratePlotModel.h"
-#include "parser/common/SubByteReaderLogging.h"
-#include "parser/common/TreeItem.h"
+#include <common/Typedef.h>
+#include <parser/HEVC/AnnexBHEVC.h>
+#include <parser/common/BitratePlotModel.h>
+#include <parser/common/SubByteReaderLogging.h>
+#include <parser/common/TreeItem.h>
 
 namespace parser::avformat
 {

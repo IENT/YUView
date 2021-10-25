@@ -32,7 +32,7 @@
 
 #include "interpolation_filter.h"
 
-#include "typedef.h"
+#include <common/Typedef.h>
 
 namespace parser::av1
 {

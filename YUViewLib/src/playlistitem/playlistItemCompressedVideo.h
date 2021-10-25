@@ -32,14 +32,15 @@
 
 #pragma once
 
-#include "common/typedef.h"
-#include "decoder/decoderBase.h"
-#include "filesource/FileSourceFFmpegFile.h"
-#include "parser/AnnexB.h"
+#include <common/Typedef.h>
+#include <decoder/decoderBase.h>
+#include <filesource/FileSourceFFmpegFile.h>
+#include <parser/AnnexB.h>
+#include <statistics/StatisticUIHandler.h>
+#include <statistics/StatisticsData.h>
+#include <ui_playlistItemCompressedFile.h>
+
 #include "playlistItemWithVideo.h"
-#include "statistics/StatisticUIHandler.h"
-#include "statistics/StatisticsData.h"
-#include "ui_playlistItemCompressedFile.h"
 
 class videoHandler;
 

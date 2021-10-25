@@ -32,6 +32,8 @@
 
 #include "FileSource.h"
 
+#include <common/Typedef.h>
+
 #include <QDateTime>
 #include <QDir>
 #include <QRegularExpression>
@@ -40,8 +42,6 @@
 #ifdef Q_OS_WIN
 #include <windows.h>
 #endif
-
-#include "common/typedef.h"
 
 #define FILESOURCE_DEBUG_SIMULATESLOWLOADING 0
 #if FILESOURCE_DEBUG_SIMULATESLOWLOADING && !NDEBUG

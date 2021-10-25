@@ -32,17 +32,17 @@
 
 #pragma once
 
-#include "common/typedef.h"
-#include "parser/common/SubByteReaderLogging.h"
+#include <common/Typedef.h>
+#include <parser/common/SubByteReaderLogging.h>
 
 #include <optional>
 
 namespace parser::avc
 {
 
-template<size_t N>
+template <size_t N>
 static std::optional<bool> read_scaling_list(reader::SubByteReaderLogging &reader,
-                                             array<int, N> &            scalingList)
+                                             array<int, N> &               scalingList)
 {
   int                 lastScale = 8;
   int                 nextScale = 8;
@@ -62,4 +62,4 @@ static std::optional<bool> read_scaling_list(reader::SubByteReaderLogging &reade
   return useDefaultScalingMatrixFlag;
 }
 
-} // namespace parser::av1
+} // namespace parser::avc

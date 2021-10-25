@@ -31,7 +31,7 @@
  */
 #pragma once
 
-#include <QWidget>
+#include <common/Typedef.h>
 
 #include <QAction>
 #include <QMenu>
@@ -39,8 +39,7 @@
 #include <QPainter>
 #include <QPointer>
 #include <QWheelEvent>
-
-#include <common/typedef.h>
+#include <QWidget>
 
 class MoveAndZoomableView : public QWidget
 {

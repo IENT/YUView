@@ -32,9 +32,11 @@
 
 #pragma once
 
-#include "common/EnumMapper.h"
-#include "common/typedef.h"
+#include <common/EnumMapper.h>
+#include <common/Typedef.h>
+
 #include "pixelFormat.h"
+
 #include <string>
 
 namespace video::rgb

@@ -32,15 +32,14 @@
 
 #include "segmentation_params.h"
 
-#include "typedef.h"
+#include "Typedef.h"
 
 namespace parser::av1
 {
 
 using namespace reader;
 
-void segmentation_params::parse(reader::SubByteReaderLogging &       reader,
-                                unsigned                             primary_ref_frame)
+void segmentation_params::parse(reader::SubByteReaderLogging &reader, unsigned primary_ref_frame)
 {
   SubByteReaderLoggingSubLevel subLevel(reader, "segmentation_params()");
 

@@ -32,16 +32,15 @@
 
 #pragma once
 
+#include <common/Typedef.h>
+#include <parser/Base.h>
+#include <playlistitem/playlistItem.h>
+#include <playlistitem/playlistItemCompressedVideo.h>
+
 #include <QWidget>
 #include <QtConcurrent>
 
 #include "ui_bitstreamAnalysisWidget.h"
-
-#include "common/typedef.h"
-#include "parser/Base.h"
-#include "playlistitem/playlistItem.h"
-#include "playlistitem/playlistItemCompressedVideo.h"
-
 class BitstreamAnalysisWidget : public QWidget
 {
   Q_OBJECT

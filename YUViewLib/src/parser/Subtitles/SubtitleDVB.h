@@ -32,8 +32,8 @@
 
 #pragma once
 
-#include "common/typedef.h"
-#include "parser/common/TreeItem.h"
+#include <common/Typedef.h>
+#include <parser/common/TreeItem.h>
 
 namespace parser::subtitle::dvb
 {

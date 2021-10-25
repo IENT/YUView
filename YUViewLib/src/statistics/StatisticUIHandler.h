@@ -32,11 +32,11 @@
 
 #pragma once
 
-#include "common/saveUi.h"
-#include "common/typedef.h"
-#include "common/YUViewDomElement.h"
-#include "statistics/StatisticsType.h"
-#include "ui/statisticsstylecontrol.h"
+#include <common/SaveUi.h>
+#include <common/YUViewDomElement.h>
+#include <common/Typedef.h>
+#include <statistics/StatisticsType.h>
+#include <ui/statisticsstylecontrol.h>
 
 #include <QMutex>
 #include <QPointer>
@@ -96,7 +96,7 @@ private:
   // properties of the statistics item can be controlled from the properties panel of the overlay
   // item. The primary and secondary controls are linked and always show/control the same thing.
   SafeUi<Ui::StatisticUIHandler> ui2;
-  QPointer<QWidget>            secondaryControlsWidget;
+  QPointer<QWidget>              secondaryControlsWidget;
 
   StatisticsStyleControl statisticsStyleUI;
 
@@ -105,7 +105,7 @@ private:
   std::vector<QCheckBox *>   itemNameCheckBoxes[2];
   std::vector<QSlider *>     itemOpacitySliders[2];
   std::vector<QPushButton *> itemStyleButtons[2];
-  QSpacerItem *        spacerItems[2] {nullptr};
+  QSpacerItem *              spacerItems[2]{nullptr};
 
 private slots:
 

@@ -32,12 +32,12 @@
 
 #include "decoderVVDec.h"
 
+#include <common/Typedef.h>
+
 #include <QCoreApplication>
 #include <QDir>
 #include <QSettings>
 #include <cstring>
-
-#include "common/typedef.h"
 
 // Debug the decoder ( 0:off 1:interactive decoder only 2:caching decoder only 3:both)
 #define decoderVVDec_DEBUG_OUTPUT 0

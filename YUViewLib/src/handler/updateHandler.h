@@ -32,10 +32,10 @@
 
 #pragma once
 
+#include <common/Typedef.h>
+
 #include <QNetworkAccessManager>
 #include <QPointer>
-
-#include "common/typedef.h"
 
 #include "ui_updateDialog.h"
 

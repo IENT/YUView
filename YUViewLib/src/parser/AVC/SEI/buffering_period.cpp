@@ -32,10 +32,11 @@
 
 #include "buffering_period.h"
 
+#include <parser/common/Functions.h>
+
 #include "../commonMaps.h"
 #include "../seq_parameter_set_rbsp.h"
-#include "../typedef.h"
-#include <parser/common/Functions.h>
+#include "../Typedef.h"
 
 namespace parser::avc
 

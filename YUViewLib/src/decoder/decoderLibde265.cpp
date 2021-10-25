@@ -38,7 +38,7 @@
 #include <cstring>
 
 #include <common/Functions.h>
-#include <common/typedef.h>
+#include <common/Typedef.h>
 
 namespace decoder
 {
@@ -86,7 +86,7 @@ Subsampling convertFromInternalSubsampling(de265_chroma fmt)
   return Subsampling::UNKNOWN;
 }
 
-}
+} // namespace
 
 decoderLibde265::decoderLibde265(int signalID, bool cachingDecoder)
     : decoderBaseSingleLib(cachingDecoder)

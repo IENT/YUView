@@ -32,7 +32,7 @@
 
 #include "vui_parameters.h"
 
-#include "typedef.h"
+#include <common/Typedef.h>
 
 namespace parser::avc
 

@@ -32,8 +32,8 @@
 
 #include "quantization_params.h"
 
+#include "Typedef.h"
 #include "sequence_header_obu.h"
-#include "typedef.h"
 
 using namespace parser::reader;
 

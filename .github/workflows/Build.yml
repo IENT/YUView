@@ -185,7 +185,7 @@ jobs:
         cd ..
       shell: bash
     - name: Activate auto update
-      run: sed -i -- "s/#define UPDATE_FEATURE_ENABLE 0/#define UPDATE_FEATURE_ENABLE 1/g" YUViewLib/src/common/typedef.h
+      run: sed -i -- "s/#define UPDATE_FEATURE_ENABLE 0/#define UPDATE_FEATURE_ENABLE 1/g" YUViewLib/src/common/Typedef.h
       shell: bash
       if: matrix.auto_update == true
     - name: Build Windows

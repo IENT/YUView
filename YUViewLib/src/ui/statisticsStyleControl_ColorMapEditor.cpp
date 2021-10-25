@@ -32,12 +32,12 @@
 
 #include "statisticsStyleControl_ColorMapEditor.h"
 
+#include <common/FunctionsGui.h>
+#include <common/Typedef.h>
+
 #include <QColorDialog>
 #include <QKeyEvent>
 #include <QMessageBox>
-
-#include <common/FunctionsGui.h>
-#include <common/typedef.h>
 
 StatisticsStyleControl_ColorMapEditor::StatisticsStyleControl_ColorMapEditor(
     const std::map<int, Color> &colorMap, const Color &other, QWidget *parent)

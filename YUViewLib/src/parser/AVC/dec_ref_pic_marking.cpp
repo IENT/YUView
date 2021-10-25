@@ -32,7 +32,7 @@
 
 #include "dec_ref_pic_marking.h"
 
-#include "typedef.h"
+#include <common/Typedef.h>
 
 namespace parser::avc
 

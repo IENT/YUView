@@ -32,13 +32,13 @@
 
 #include "statisticsstylecontrol.h"
 
-#include <QColorDialog>
-#include <algorithm>
-
 #include <common/FunctionsGui.h>
-#include <common/typedef.h>
+#include <common/Typedef.h>
 #include <statistics/StatisticsType.h>
 #include <ui/statisticsStyleControl_ColorMapEditor.h>
+
+#include <QColorDialog>
+#include <algorithm>
 
 namespace
 {

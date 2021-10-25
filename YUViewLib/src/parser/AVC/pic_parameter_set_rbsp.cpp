@@ -33,8 +33,9 @@
 #include "pic_parameter_set_rbsp.h"
 
 #include <parser/common/Functions.h>
+
+#include "Typedef.h"
 #include "seq_parameter_set_rbsp.h"
-#include "typedef.h"
 
 #include <cmath>
 
@@ -121,8 +122,9 @@ void pic_parameter_set_rbsp::parse(reader::SubByteReaderLogging &reader, SPSMap 
     this->pic_scaling_matrix_present_flag = reader.readFlag("pic_scaling_matrix_present_flag");
     if (this->pic_scaling_matrix_present_flag)
     {
-      for (unsigned i = 0; i < 6 + ((refSPS->seqParameterSetData.chroma_format_idc != 3) ? 2u : 6u) *
-                                       (this->transform_8x8_mode_flag ? 1 : 0);
+      for (unsigned i = 0;
+           i < 6 + ((refSPS->seqParameterSetData.chroma_format_idc != 3) ? 2u : 6u) *
+                       (this->transform_8x8_mode_flag ? 1 : 0);
            i++)
       {
         this->pic_scaling_list_present_flag[i] =

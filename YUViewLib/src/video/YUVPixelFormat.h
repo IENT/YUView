@@ -32,8 +32,9 @@
 
 #pragma once
 
-#include "common/EnumMapper.h"
-#include "common/typedef.h"
+#include <common/EnumMapper.h>
+#include <common/Typedef.h>
+
 #include "pixelFormat.h"
 
 // The YUV_Internals namespace. We use this namespace because of the dialog. We want to be able to
@@ -249,4 +250,4 @@ private:
   bool         bytePacking{};
 };
 
-} // namespace YUV_Internals
+} // namespace video::yuv

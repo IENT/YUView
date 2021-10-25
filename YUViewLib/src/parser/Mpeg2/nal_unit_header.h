@@ -32,9 +32,9 @@
 
 #pragma once
 
-#include "common/typedef.h"
-#include "parser/common/SubByteReaderLogging.h"
-#include "parser/common/CodingEnum.h"
+#include <common/Typedef.h>
+#include <parser/common/CodingEnum.h>
+#include <parser/common/SubByteReaderLogging.h>
 
 namespace parser::mpeg2
 {
@@ -55,18 +55,19 @@ enum class NalType
   RESERVED
 };
 
-static parser::CodingEnum<NalType> nalTypeCoding({{0, NalType::UNSPECIFIED, "UNSPECIFIED"},
-                             {0, NalType::PICTURE, "PICTURE"},
-                             {1, NalType::SLICE, "SLICE"},
-                             {2, NalType::USER_DATA, "USER_DATA"},
-                             {3, NalType::SEQUENCE_HEADER, "SEQUENCE_HEADER"},
-                             {4, NalType::SEQUENCE_ERROR, "SEQUENCE_ERROR"},
-                             {5, NalType::EXTENSION_START, "EXTENSION_START"},
-                             {6, NalType::SEQUENCE_END, "SEQUENCE_END"},
-                             {7, NalType::GROUP_START, "GROUP_START"},
-                             {8, NalType::SYSTEM_START_CODE, "SYSTEM_START_CODE"},
-                             {9, NalType::RESERVED, "RESERVED"}},
-                            NalType::UNSPECIFIED);
+static parser::CodingEnum<NalType>
+    nalTypeCoding({{0, NalType::UNSPECIFIED, "UNSPECIFIED"},
+                   {0, NalType::PICTURE, "PICTURE"},
+                   {1, NalType::SLICE, "SLICE"},
+                   {2, NalType::USER_DATA, "USER_DATA"},
+                   {3, NalType::SEQUENCE_HEADER, "SEQUENCE_HEADER"},
+                   {4, NalType::SEQUENCE_ERROR, "SEQUENCE_ERROR"},
+                   {5, NalType::EXTENSION_START, "EXTENSION_START"},
+                   {6, NalType::SEQUENCE_END, "SEQUENCE_END"},
+                   {7, NalType::GROUP_START, "GROUP_START"},
+                   {8, NalType::SYSTEM_START_CODE, "SYSTEM_START_CODE"},
+                   {9, NalType::RESERVED, "RESERVED"}},
+                  NalType::UNSPECIFIED);
 
 /* The basic Mpeg2 NAL unit. Technically, there is no concept of NAL units in mpeg2 (h262) but there
  * are start codes for some units and there is a start code so we internally use the NAL concept.

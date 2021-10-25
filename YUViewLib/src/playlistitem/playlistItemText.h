@@ -32,7 +32,8 @@
 
 #pragma once
 
-#include "common/typedef.h"
+#include <common/Typedef.h>
+
 #include "playlistItem.h"
 #include "ui_playlistItemText.h"
 

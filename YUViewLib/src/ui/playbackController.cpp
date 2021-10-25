@@ -35,7 +35,7 @@
 #include <QSettings>
 
 #include <common/FunctionsGui.h>
-#include <common/typedef.h>
+#include <common/Typedef.h>
 #include <playlistitem/playlistItem.h>
 
 // Activate this if you want to know when which buffer is loaded/converted to image and so on.

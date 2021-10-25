@@ -32,11 +32,12 @@
 
 #pragma once
 
-#include "common/YUViewDomElement.h"
-#include "common/FileInfo.h"
-#include "common/saveUi.h"
-#include "common/typedef.h"
-#include "statistics/StatisticUIHandler.h"
+#include <common/FileInfo.h>
+#include <common/SaveUi.h>
+#include <common/Typedef.h>
+#include <common/YUViewDomElement.h>
+#include <statistics/StatisticUIHandler.h>
+
 #include <QDir>
 #include <QTreeWidgetItem>
 
@@ -44,7 +45,7 @@
 
 namespace video
 {
-  class frameHandler;
+class frameHandler;
 }
 
 class playlistItem : public QObject, public QTreeWidgetItem

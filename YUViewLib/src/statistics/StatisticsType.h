@@ -32,9 +32,10 @@
 
 #pragma once
 
+#include <common/Typedef.h>
+#include <common/YUViewDomElement.h>
+
 #include "ColorMapper.h"
-#include "common/YUViewDomElement.h"
-#include "common/typedef.h"
 
 namespace stats
 {

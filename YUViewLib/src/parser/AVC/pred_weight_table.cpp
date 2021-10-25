@@ -32,9 +32,9 @@
 
 #include "pred_weight_table.h"
 
-#include <parser/common/Functions.h>
-#include "typedef.h"
+#include <common/Typedef.h>
 
+#include <parser/common/Functions.h>
 
 namespace parser::avc
 

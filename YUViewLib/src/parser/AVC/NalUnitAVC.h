@@ -32,8 +32,9 @@
 
 #pragma once
 
+#include <common/Typedef.h>
+
 #include "nal_unit_header.h"
-#include "common/typedef.h"
 
 #include <memory>
 

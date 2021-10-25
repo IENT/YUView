@@ -32,8 +32,9 @@
 
 #pragma once
 
-#include "parser/common/SubByteReaderLogging.h"
-#include "typedef.h"
+#include <parser/common/SubByteReaderLogging.h>
+
+#include "Typedef.h"
 
 namespace parser::av1
 {

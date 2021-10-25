@@ -39,7 +39,7 @@
 #include <cstring>
 
 #include <common/Functions.h>
-#include <common/typedef.h>
+#include <common/Typedef.h>
 
 namespace decoder
 {
@@ -152,7 +152,10 @@ void decoderDav1d::resetDecoder()
   allocateNewDecoder();
 }
 
-bool decoderDav1d::isSignalDifference(int signalID) const { return signalID == 2 || signalID == 3; }
+bool decoderDav1d::isSignalDifference(int signalID) const
+{
+  return signalID == 2 || signalID == 3;
+}
 
 QStringList decoderDav1d::getSignalNames() const
 {

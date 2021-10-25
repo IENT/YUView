@@ -32,8 +32,8 @@
 
 #include "tile_info.h"
 
+#include "Typedef.h"
 #include "sequence_header_obu.h"
-#include "typedef.h"
 
 namespace
 {
@@ -119,10 +119,10 @@ void tile_info::parse(reader::SubByteReaderLogging &       reader,
     for (unsigned startSb = 0; startSb < sbCols;)
     {
       this->MiColStarts.push_back(startSb << sbShift);
-      auto maxWidth = std::min(sbCols - startSb, this->maxTileWidthSb);
+      auto maxWidth              = std::min(sbCols - startSb, this->maxTileWidthSb);
       this->width_in_sbs_minus_1 = reader.readNS("width_in_sbs_minus_1", maxWidth);
-      auto sizeSb   = this->width_in_sbs_minus_1 + 1;
-      this->widestTileSb = std::max(sizeSb, this->widestTileSb);
+      auto sizeSb                = this->width_in_sbs_minus_1 + 1;
+      this->widestTileSb         = std::max(sizeSb, this->widestTileSb);
       startSb += sizeSb;
       this->TileCols++;
     }
@@ -141,9 +141,9 @@ void tile_info::parse(reader::SubByteReaderLogging &       reader,
     for (unsigned startSb = 0; startSb < sbRows;)
     {
       MiRowStarts.push_back(startSb << sbShift);
-      auto maxHeight = std::min(sbRows - startSb, this->maxTileHeightSb);
+      auto maxHeight              = std::min(sbRows - startSb, this->maxTileHeightSb);
       this->height_in_sbs_minus_1 = reader.readNS("height_in_sbs_minus_1", maxHeight);
-      auto sizeSb = height_in_sbs_minus_1 + 1;
+      auto sizeSb                 = height_in_sbs_minus_1 + 1;
       startSb += sizeSb;
       this->TileRows++;
     }
@@ -152,9 +152,10 @@ void tile_info::parse(reader::SubByteReaderLogging &       reader,
   }
   if (this->TileColsLog2 > 0 || this->TileRowsLog2 > 0)
   {
-    this->context_update_tile_id = reader.readNS("context_update_tile_id", this->TileRowsLog2 + this->TileColsLog2);
+    this->context_update_tile_id =
+        reader.readNS("context_update_tile_id", this->TileRowsLog2 + this->TileColsLog2);
     this->tile_size_bytes_minus_1 = reader.readNS("tile_size_bytes_minus_1", 2);
-    this->TileSizeBytes = tile_size_bytes_minus_1 + 1;
+    this->TileSizeBytes           = tile_size_bytes_minus_1 + 1;
   }
   else
     this->context_update_tile_id = 0;

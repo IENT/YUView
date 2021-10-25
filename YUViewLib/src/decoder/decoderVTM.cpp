@@ -38,7 +38,7 @@
 #include <cstring>
 
 #include <common/Functions.h>
-#include <common/typedef.h>
+#include <common/Typedef.h>
 
 namespace decoder
 {

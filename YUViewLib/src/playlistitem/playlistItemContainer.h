@@ -32,9 +32,11 @@
 
 #pragma once
 
+#include <common/Typedef.h>
+
 #include <QVBoxLayout>
+
 #include "playlistItem.h"
-#include "common/typedef.h"
 
 class playlistItemContainer : public playlistItem
 {

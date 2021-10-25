@@ -33,6 +33,10 @@
 #ifndef SPLITVIEWWIDGET_H
 #define SPLITVIEWWIDGET_H
 
+#include <common/SaveUi.h>
+#include <common/Typedef.h>
+#include <ui/views/MoveAndZoomableView.h>
+
 #include <QAction>
 #include <QActionGroup>
 #include <QElapsedTimer>
@@ -41,10 +45,6 @@
 #include <QPointer>
 #include <QProgressDialog>
 #include <QTimer>
-
-#include "MoveAndZoomableView.h"
-#include "common/saveUi.h"
-#include "common/typedef.h"
 
 class QDockWidget;
 class PlaybackController;
@@ -262,7 +262,7 @@ protected:
   // Regular grid
   unsigned int regularGridSize{0}; //!< The size of each block in the regular grid in pixels
   void
-  setRegularGridSize(unsigned int size, bool setOtherViewIfLinked = true, bool callUpdate = false);
+         setRegularGridSize(unsigned int size, bool setOtherViewIfLinked = true, bool callUpdate = false);
   QColor regularGridColor;
   void   paintRegularGrid(QPainter *painter, playlistItem *item); //!< paint the grid
 

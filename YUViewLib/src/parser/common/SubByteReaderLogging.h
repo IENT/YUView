@@ -32,14 +32,15 @@
 
 #pragma once
 
-#include <map>
-#include <optional>
-#include <stack>
+#include <common/Typedef.h>
 
 #include "SubByteReader.h"
 #include "SubByteReaderLoggingOptions.h"
 #include "TreeItem.h"
-#include "common/typedef.h"
+
+#include <map>
+#include <optional>
+#include <stack>
 
 namespace parser::reader
 {

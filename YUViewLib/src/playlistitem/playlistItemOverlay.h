@@ -32,8 +32,9 @@
 
 #pragma once
 
+#include <common/Typedef.h>
+
 #include "playlistItemContainer.h"
-#include "common/typedef.h"
 #include "ui_playlistItemOverlay.h"
 
 #include <QGridLayout>

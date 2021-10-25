@@ -37,8 +37,8 @@
 #include <QDir>
 #include <QSettings>
 
-#include "common/typedef.h"
-#include "parser/common/SubByteReaderLogging.h"
+#include <common/Typedef.h>
+#include <parser/common/SubByteReaderLogging.h>
 
 #define FFmpegDecoderLibHandling_DEBUG_OUTPUT 0
 #if FFmpegDecoderLibHandling_DEBUG_OUTPUT && !NDEBUG

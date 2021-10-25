@@ -32,11 +32,12 @@
 
 #pragma once
 
+#include <common/Typedef.h>
+#include <filesource/FileSource.h>
+
 #include <QFuture>
 #include <QString>
 
-#include "common/typedef.h"
-#include "filesource/FileSource.h"
 #include "playlistItemWithVideo.h"
 
 class playlistItemRawFile : public playlistItemWithVideo

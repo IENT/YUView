@@ -32,14 +32,14 @@
 
 #pragma once
 
+#include <common/FileInfo.h>
+#include <common/SaveUi.h>
+#include <common/Typedef.h>
+#include <common/YUViewDomElement.h>
+
 #include <QImage>
 #include <QObject>
 #include <QSettings>
-
-#include "common/YUViewDomElement.h"
-#include "common/FileInfo.h"
-#include "common/saveUi.h"
-#include "common/typedef.h"
 
 #include "ui_frameHandler.h"
 

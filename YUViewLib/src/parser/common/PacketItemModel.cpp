@@ -34,7 +34,7 @@
 
 #include <common/Color.h>
 #include <common/FunctionsGui.h>
-#include <common/typedef.h>
+#include <common/Typedef.h>
 
 #include <QBrush>
 
@@ -64,9 +64,13 @@ auto streamIndexColors = std::vector<Color>({Color("#90caf9"),   // blue (200)
                                              Color("#6d4c41"),   // brown (600)
                                              Color("#7cb342")}); // light green (600)
 
-PacketItemModel::PacketItemModel(QObject *parent) : QAbstractItemModel(parent) {}
+PacketItemModel::PacketItemModel(QObject *parent) : QAbstractItemModel(parent)
+{
+}
 
-PacketItemModel::~PacketItemModel() {}
+PacketItemModel::~PacketItemModel()
+{
+}
 
 QVariant PacketItemModel::headerData(int section, Qt::Orientation orientation, int role) const
 {
@@ -167,7 +171,7 @@ int PacketItemModel::rowCount(const QModelIndex &parent) const
 }
 
 size_t PacketItemModel::getNumberFirstLevelChildren() const
-{ 
+{
   if (this->rootItem)
     return rootItem->getNrChildItems();
   return {};

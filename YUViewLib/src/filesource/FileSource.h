@@ -41,7 +41,7 @@
 
 #include <common/EnumMapper.h>
 #include <common/FileInfo.h>
-#include <common/typedef.h>
+#include <common/Typedef.h>
 
 enum class InputFormat
 {
