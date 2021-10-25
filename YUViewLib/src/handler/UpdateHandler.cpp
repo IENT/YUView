@@ -30,9 +30,9 @@
 *   along with this program. If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "updateHandler.h"
+#include "UpdateHandler.h"
 
-#include "updateHandlerFile.h"
+#include "UpdateHandlerFile.h"
 
 #include <QCheckBox>
 #include <QDir>

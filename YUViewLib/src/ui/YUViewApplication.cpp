@@ -33,7 +33,7 @@
 #include "YUViewApplication.h"
 
 #include <common/Typedef.h>
-#include <handler/singleInstanceHandler.h>
+#include <handler/SingleInstanceHandler.h>
 #include <ui/mainwindow.h>
 
 #include <QApplication>

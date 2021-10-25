@@ -38,7 +38,7 @@
 
 #include <common/Functions.h>
 #include <common/FunctionsGui.h>
-#include <handler/itemMemoryHandler.h>
+#include <handler/ItemMemoryHandler.h>
 
 // Activate this if you want to know when which buffer is loaded/converted to image and so on.
 #define PLAYLISTITEMRAWFILE_DEBUG_LOADING 0
