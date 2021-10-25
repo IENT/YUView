@@ -35,7 +35,7 @@
 #include <common/EnumMapper.h>
 #include <common/Typedef.h>
 
-#include "pixelFormat.h"
+#include "PixelFormat.h"
 
 #include <string>
 

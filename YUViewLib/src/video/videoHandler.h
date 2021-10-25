@@ -32,7 +32,7 @@
 
 #pragma once
 
-#include "pixelFormat.h"
+#include "PixelFormat.h"
 #include "FrameHandler.h"
 
 #include <QBasicTimer>
