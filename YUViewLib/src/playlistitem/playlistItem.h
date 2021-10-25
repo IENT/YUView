@@ -32,6 +32,8 @@
 
 #pragma once
 
+#include <QObject>
+
 #include <common/FileInfo.h>
 #include <common/SaveUi.h>
 #include <common/Typedef.h>
@@ -39,7 +41,6 @@
 #include <statistics/StatisticUIHandler.h>
 
 #include <QDir>
-#include <QObject>
 #include <QTreeWidgetItem>
 
 #include "ui_playlistItem.h"
