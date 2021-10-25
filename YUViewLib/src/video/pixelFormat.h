@@ -55,3 +55,5 @@ enum class DataLayout
 };
 
 } // namespace video
+
+Q_DECLARE_METATYPE(video::DataLayout);
