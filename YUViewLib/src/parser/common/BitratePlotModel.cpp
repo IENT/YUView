@@ -43,7 +43,10 @@
 
 #include <common/functions.h>
 
-unsigned BitratePlotModel::getNrStreams() const { return this->dataPerStream.size(); }
+unsigned BitratePlotModel::getNrStreams() const
+{
+  return this->dataPerStream.size();
+}
 
 PlotModel::StreamParameter BitratePlotModel::getStreamParameter(unsigned streamIndex) const
 {
@@ -104,7 +107,7 @@ BitratePlotModel::getPointInfo(unsigned streamIndex, unsigned plotIndex, unsigne
   QMutexLocker locker(&this->dataMutex);
 
   if (!this->dataPerStream.contains(streamIndex) ||
-      this->dataPerStream[streamIndex].size() <= pointIndex)
+      unsigned(this->dataPerStream[streamIndex].size()) <= pointIndex)
     return {};
 
   auto &     entry         = this->dataPerStream[streamIndex][pointIndex];

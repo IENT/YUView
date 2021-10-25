@@ -3432,9 +3432,7 @@ void videoHandlerYUV::convertYUVToImage(const QByteArray &    sourceBuffer,
          curFrameSize.width * curFrameSize.height * 4);
 #endif
 
-  bool convOK;
-
-  // Convert the source to RGB
+  auto convOK = false;
   if (yuvFormat.isPlanar())
   {
     if ((yuvFormat.getBitsPerSample() == 8 || yuvFormat.getBitsPerSample() == 10) &&
