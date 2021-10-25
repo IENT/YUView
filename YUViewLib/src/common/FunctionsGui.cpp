@@ -30,7 +30,7 @@
  *   along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "functionsGui.h"
+#include "FunctionsGui.h"
 
 #include <common/Functions.h>
 

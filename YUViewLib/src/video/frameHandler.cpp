@@ -34,9 +34,9 @@
 
 #include <QPainter>
 
-#include "common/functionsGui.h"
-#include "decoder/decoderTarga.h"
-#include "playlistitem/playlistItem.h"
+#include <common/FunctionsGui.h>
+#include <decoder/decoderTarga.h>
+#include <playlistitem/playlistItem.h>
 
 namespace video
 {

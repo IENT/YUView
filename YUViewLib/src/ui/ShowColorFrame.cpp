@@ -32,7 +32,7 @@
 
 #include "ShowColorFrame.h"
 
-#include "common/functionsGui.h"
+#include <common/FunctionsGui.h>
 
 #include <QPainter>
 
@@ -147,4 +147,7 @@ void ShowColorWidget::setPlainColor(const QColor &color)
   update();
 }
 
-void ShowColorWidget::mouseReleaseEvent(QMouseEvent *) { emit clicked(); }
+void ShowColorWidget::mouseReleaseEvent(QMouseEvent *)
+{
+  emit clicked();
+}

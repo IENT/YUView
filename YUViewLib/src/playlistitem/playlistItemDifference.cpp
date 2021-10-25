@@ -34,7 +34,7 @@
 
 #include <QPainter>
 
-#include "common/functionsGui.h"
+#include <common/FunctionsGui.h>
 
 // Activate this if you want to know when which difference is loaded
 #define PLAYLISTITEMDIFFERENCE_DEBUG_LOADING 0

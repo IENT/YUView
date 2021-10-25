@@ -37,7 +37,7 @@
 #include <QVBoxLayout>
 
 #include <common/Functions.h>
-#include <common/functionsGui.h>
+#include <common/FunctionsGui.h>
 #include <handler/itemMemoryHandler.h>
 
 // Activate this if you want to know when which buffer is loaded/converted to image and so on.

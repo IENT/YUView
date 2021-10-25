@@ -39,7 +39,7 @@
 #include <cmath>
 #include <limits>
 
-#include "common/functionsGui.h"
+#include <common/FunctionsGui.h>
 
 #define PLAYLISTITEMOVERLAY_DEBUG 0
 #if PLAYLISTITEMOVERLAY_DEBUG && !NDEBUG

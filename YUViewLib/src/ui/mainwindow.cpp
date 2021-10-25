@@ -42,7 +42,7 @@
 #include <QTextStream>
 
 #include <common/Functions.h>
-#include <common/functionsGui.h>
+#include <common/FunctionsGui.h>
 #include <playlistitem/playlistItems.h>
 #include <ui/mainwindow_performanceTestDialog.h>
 #include <ui/settingsDialog.h>

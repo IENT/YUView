@@ -35,10 +35,10 @@
 #include <QColorDialog>
 #include <algorithm>
 
-#include "common/functionsGui.h"
-#include "common/typedef.h"
-#include "statistics/StatisticsType.h"
-#include "statisticsStyleControl_ColorMapEditor.h"
+#include <common/FunctionsGui.h>
+#include <common/typedef.h>
+#include <statistics/StatisticsType.h>
+#include <ui/statisticsStyleControl_ColorMapEditor.h>
 
 namespace
 {
@@ -255,9 +255,9 @@ void StatisticsStyleControl::on_pushButtonEditColorMap_clicked()
   {
     // Convert the currently selected range to a map and let the user edit that
     auto lower  = std::min(this->currentItem->colorMapper.getMinVal(),
-                         this->currentItem->colorMapper.getMaxVal());
-    auto higher = std::max(this->currentItem->colorMapper.getMinVal(),
                           this->currentItem->colorMapper.getMaxVal());
+    auto higher = std::max(this->currentItem->colorMapper.getMinVal(),
+                           this->currentItem->colorMapper.getMaxVal());
     for (int i = lower; i <= higher; i++)
       colorMap[i] = this->currentItem->colorMapper.getColor(i);
   }

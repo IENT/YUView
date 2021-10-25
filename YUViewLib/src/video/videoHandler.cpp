@@ -34,7 +34,7 @@
 
 #include <QPainter>
 
-#include "common/functionsGui.h"
+#include <common/FunctionsGui.h>
 
 namespace video
 {

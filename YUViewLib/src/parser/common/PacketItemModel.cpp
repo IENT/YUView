@@ -32,9 +32,9 @@
 
 #include "PacketItemModel.h"
 
-#include "common/Color.h"
-#include "common/functionsGui.h"
-#include "common/typedef.h"
+#include <common/Color.h>
+#include <common/FunctionsGui.h>
+#include <common/typedef.h>
 
 #include <QBrush>
 

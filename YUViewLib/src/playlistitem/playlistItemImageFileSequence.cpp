@@ -36,8 +36,8 @@
 #include <QSettings>
 #include <QUrl>
 
-#include "common/functionsGui.h"
-#include "filesource/FileSource.h"
+#include <common/FunctionsGui.h>
+#include <filesource/FileSource.h>
 
 playlistItemImageFileSequence::playlistItemImageFileSequence(const QString &rawFilePath)
     : playlistItemWithVideo(rawFilePath)

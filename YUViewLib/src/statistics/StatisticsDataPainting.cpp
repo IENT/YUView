@@ -32,8 +32,8 @@
 
 #include "StatisticsDataPainting.h"
 
-#include "StatisticsType.h"
-#include "common/functionsGui.h"
+#include <common/FunctionsGui.h>
+#include <statistics/StatisticsType.h>
 
 #include <QPainter>
 #include <QPainterPath>

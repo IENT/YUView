@@ -35,7 +35,7 @@
 #include <common/EnumMapper.h>
 #include <common/FileInfo.h>
 #include <common/Functions.h>
-#include <common/functionsGui.h>
+#include <common/FunctionsGui.h>
 #include <video/videoHandlerRGBCustomFormatDialog.h>
 
 #include <QPainter>
@@ -1142,8 +1142,8 @@ void videoHandlerRGB::drawPixelValues(QPainter *    painter,
 
   // The center point of the pixel (0,0).
   auto centerPointZero = (QPoint(-(int(frameSize.width)), -(int(frameSize.height))) * zoomFactor +
-                            QPoint(zoomFactor, zoomFactor)) /
-                           2;
+                          QPoint(zoomFactor, zoomFactor)) /
+                         2;
   // This QRect has the size of one pixel and is moved on top of each pixel to draw the text
   QRect pixelRect;
   pixelRect.setSize(QSize(zoomFactor, zoomFactor));

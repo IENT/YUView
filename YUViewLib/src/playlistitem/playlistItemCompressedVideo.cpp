@@ -40,7 +40,7 @@
 
 #include <common/YUViewDomElement.h>
 #include <common/Functions.h>
-#include <common/functionsGui.h>
+#include <common/FunctionsGui.h>
 #include <decoder/decoderDav1d.h>
 #include <decoder/decoderFFmpeg.h>
 #include <decoder/decoderHM.h>

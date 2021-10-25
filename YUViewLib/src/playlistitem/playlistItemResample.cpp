@@ -34,7 +34,7 @@
 
 #include <QPainter>
 
-#include "common/functionsGui.h"
+#include <common/FunctionsGui.h>
 
 // Activate this if you want to know when which difference is loaded
 #define PLAYLISTITEMRESAMPLE_DEBUG_LOADING 0
@@ -348,8 +348,8 @@ void playlistItemResample::slotInterpolationModeChanged(int)
 {
   this->interpolationIndex = ui.comboBoxInterpolation->currentIndex();
   auto interpolation       = (this->interpolationIndex == 0)
-                                 ? video::videoHandlerResample::Interpolation::Bilinear
-                                 : video::videoHandlerResample::Interpolation::Fast;
+                           ? video::videoHandlerResample::Interpolation::Bilinear
+                           : video::videoHandlerResample::Interpolation::Fast;
   this->video.setInterpolation(interpolation);
 }
 

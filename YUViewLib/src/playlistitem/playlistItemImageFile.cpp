@@ -37,8 +37,8 @@
 #include <QSettings>
 #include <QUrl>
 
-#include "common/functionsGui.h"
-#include "filesource/FileSource.h"
+#include <common/FunctionsGui.h>
+#include <filesource/FileSource.h>
 
 #define IMAGEFILE_ERROR_TEXT "The given image file could not be loaded."
 
