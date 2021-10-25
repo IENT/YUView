@@ -130,7 +130,7 @@ public:
   virtual void setYUVPixelFormat(const yuv::YUVPixelFormat &fmt, bool emitSignal = false);
   virtual void setYUVPixelFormatByName(const QString &name, bool emitSignal = false)
   {
-    this->setYUVPixelFormat(yuv::YUVPixelFormat::YUVPixelFormat(name.toStdString()), emitSignal);
+    this->setYUVPixelFormat(yuv::YUVPixelFormat(name.toStdString()), emitSignal);
   }
   virtual void setYUVColorConversion(yuv::ColorConversion conversion);
 
