@@ -38,24 +38,24 @@
 
 #include <inttypes.h>
 
-#include "common/YUViewDomElement.h"
-#include "common/functions.h"
-#include "common/functionsGui.h"
-#include "decoder/decoderDav1d.h"
-#include "decoder/decoderFFmpeg.h"
-#include "decoder/decoderHM.h"
-#include "decoder/decoderLibde265.h"
-#include "decoder/decoderVTM.h"
-#include "decoder/decoderVVDec.h"
-#include "parser/AVC/AnnexBAVC.h"
-#include "parser/HEVC/AnnexBHEVC.h"
-#include "parser/VVC/AnnexBVVC.h"
-#include "parser/common/SubByteReaderLogging.h"
-#include "statistics/StatisticsDataPainting.h"
-#include "ui/mainwindow.h"
-#include "ui_playlistItemCompressedFile_logDialog.h"
-#include "video/videoHandlerRGB.h"
-#include "video/videoHandlerYUV.h"
+#include <common/YUViewDomElement.h>
+#include <common/functions.h>
+#include <common/functionsGui.h>
+#include <decoder/decoderDav1d.h>
+#include <decoder/decoderFFmpeg.h>
+#include <decoder/decoderHM.h>
+#include <decoder/decoderLibde265.h>
+#include <decoder/decoderVTM.h>
+#include <decoder/decoderVVDec.h>
+#include <parser/AVC/AnnexBAVC.h>
+#include <parser/HEVC/AnnexBHEVC.h>
+#include <parser/VVC/AnnexBVVC.h>
+#include <parser/common/SubByteReaderLogging.h>
+#include <statistics/StatisticsDataPainting.h>
+#include <ui/mainwindow.h>
+#include <ui_playlistItemCompressedFile_logDialog.h>
+#include <video/videoHandlerRGB.h>
+#include <video/videoHandlerYUV.h>
 
 using namespace functions;
 using namespace decoder;
@@ -461,56 +461,56 @@ playlistItemCompressedVideo::newPlaylistItemCompressedVideo(const YUViewDomEleme
   return newFile;
 }
 
-infoData playlistItemCompressedVideo::getInfo() const
+InfoData playlistItemCompressedVideo::getInfo() const
 {
-  infoData info("HEVC File Info");
+  InfoData info("HEVC File Info");
 
   // At first append the file information part (path, date created, file size...)
   // info.items.append(loadingDecoder->getFileInfoList());
 
   info.items.append(
-      infoItem("Reader", QString::fromStdString(InputFormatMapper.getName(this->inputFormat))));
+      InfoItem("Reader", QString::fromStdString(InputFormatMapper.getName(this->inputFormat))));
   if (inputFileFFmpegLoading)
   {
     auto l = inputFileFFmpegLoading->getLibraryPaths();
     if (l.length() % 3 == 0)
     {
       for (int i = 0; i < l.length() / 3; i++)
-        info.items.append(infoItem(l[i * 3], l[i * 3 + 1], l[i * 3 + 2]));
+        info.items.append(InfoItem(l[i * 3], l[i * 3 + 1], l[i * 3 + 2]));
     }
   }
   if (!unresolvableError)
   {
     auto videoSize = video->getFrameSize();
-    info.items.append(infoItem("Resolution",
+    info.items.append(InfoItem("Resolution",
                                QString("%1x%2").arg(videoSize.width).arg(videoSize.height),
                                "The video resolution in pixel (width x height)"));
     auto nrFrames =
         (this->properties().startEndRange.second - this->properties().startEndRange.first) + 1;
     info.items.append(
-        infoItem("Num POCs", QString::number(nrFrames), "The number of pictures in the stream."));
+        InfoItem("Num POCs", QString::number(nrFrames), "The number of pictures in the stream."));
     if (decodingEnabled)
     {
       auto l = loadingDecoder->getLibraryPaths();
       if (l.length() % 3 == 0)
       {
         for (int i = 0; i < l.length() / 3; i++)
-          info.items.append(infoItem(l[i * 3], l[i * 3 + 1], l[i * 3 + 2]));
+          info.items.append(InfoItem(l[i * 3], l[i * 3 + 1], l[i * 3 + 2]));
       }
-      info.items.append(infoItem("Decoder", loadingDecoder->getDecoderName()));
-      info.items.append(infoItem("Decoder", loadingDecoder->getCodecName()));
-      info.items.append(infoItem("Statistics",
+      info.items.append(InfoItem("Decoder", loadingDecoder->getDecoderName()));
+      info.items.append(InfoItem("Decoder", loadingDecoder->getCodecName()));
+      info.items.append(InfoItem("Statistics",
                                  loadingDecoder->statisticsSupported() ? "Yes" : "No",
                                  "Is the decoder able to provide internals (statistics)?"));
       info.items.append(
-          infoItem("Stat Parsing",
+          InfoItem("Stat Parsing",
                    loadingDecoder->statisticsEnabled() ? "Yes" : "No",
                    "Are the statistics of the sequence currently extracted from the stream?"));
     }
   }
   if (this->decoderEngine == DecoderEngine::FFMpeg)
     info.items.append(
-        infoItem("FFMpeg Log", "Show FFmpeg Log", "Show the log messages from FFmpeg.", true, 0));
+        InfoItem("FFMpeg Log", "Show FFmpeg Log", "Show the log messages from FFmpeg.", true, 0));
 
   return info;
 }

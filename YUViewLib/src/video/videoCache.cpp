@@ -39,9 +39,9 @@
 #include <QThread>
 #include <algorithm>
 
-#include "common/functions.h"
-#include "playlistitem/playlistItem.h"
-#include "ui/playbackController.h"
+#include <common/functions.h>
+#include <playlistitem/playlistItem.h>
+#include <ui/playbackController.h>
 
 namespace video
 {

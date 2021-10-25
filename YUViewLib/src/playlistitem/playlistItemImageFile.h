@@ -46,7 +46,7 @@ public:
 
   // ------ Overload from playlistItem
 
-  virtual infoData getInfo() const override;
+  virtual InfoData getInfo() const override;
 
   // Get the text size (using the current text, font/text size ...)
   virtual QSize getSize() const override;

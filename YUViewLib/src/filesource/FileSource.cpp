@@ -119,15 +119,15 @@ int64_t FileSource::readBytes(QByteArray &targetBuffer, int64_t startPos, int64_
   return srcFile.read(targetBuffer.data(), nrBytes);
 }
 
-QList<infoItem> FileSource::getFileInfoList() const
+QList<InfoItem> FileSource::getFileInfoList() const
 {
-  QList<infoItem> infoList;
+  QList<InfoItem> infoList;
 
   if (!isFileOpened)
     return infoList;
 
   // The full file path
-  infoList.append(infoItem("File Path", fileInfo.absoluteFilePath()));
+  infoList.append(InfoItem("File Path", fileInfo.absoluteFilePath()));
 
   // The file creation time
 #if QT_VERSION < QT_VERSION_CHECK(5, 10, 0)
@@ -135,15 +135,15 @@ QList<infoItem> FileSource::getFileInfoList() const
 #else
   QString createdtime = fileInfo.birthTime().toString("yyyy-MM-dd hh:mm:ss");
 #endif
-  infoList.append(infoItem("Time Created", createdtime));
+  infoList.append(InfoItem("Time Created", createdtime));
 
   // The last modification time
   QString modifiedtime = fileInfo.lastModified().toString("yyyy-MM-dd hh:mm:ss");
-  infoList.append(infoItem("Time Modified", modifiedtime));
+  infoList.append(InfoItem("Time Modified", modifiedtime));
 
   // The file size in bytes
   QString fileSize = QString("%1").arg(fileInfo.size());
-  infoList.append(infoItem("Nr Bytes", fileSize));
+  infoList.append(InfoItem("Nr Bytes", fileSize));
 
   return infoList;
 }

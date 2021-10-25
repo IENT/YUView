@@ -32,7 +32,7 @@
 
 #include "alternative_transfer_characteristics.h"
 
-#include "parser/common/functions.h"
+#include <parser/common/functions.h>
 
 namespace parser::hevc
 {

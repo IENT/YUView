@@ -32,7 +32,7 @@
 
 #include "functionsGui.h"
 
-#include "functions.h"
+#include <common/functions.h>
 
 #include <QSettings>
 

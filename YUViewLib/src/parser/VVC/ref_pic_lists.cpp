@@ -32,7 +32,7 @@
 
 #include "ref_pic_lists.h"
 
-#include "parser/common/functions.h"
+#include <parser/common/functions.h>
 #include "pic_parameter_set_rbsp.h"
 #include "seq_parameter_set_rbsp.h"
 

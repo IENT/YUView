@@ -36,7 +36,7 @@
 #include <QPixmap>
 #include <QWidget>
 
-#include "common/fileInfo.h"
+#include "common/FileInfo.h"
 
 // This is the text that will be shown in the dockWidgets title if no playlistitem is selected
 #define FILEINFOWIDGET_DEFAULT_WINDOW_TITLE "Info"
@@ -49,9 +49,9 @@ public:
   FileInfoWidget(QWidget *parent = 0);
 
   // Set the file info. The title of the dock widget will be set to fileInfoTitle and
-  // the given list of infoItems (Qpai<QString,QString>) will be added as labels into
+  // the given list of InfoItems (Qpai<QString,QString>) will be added as labels into
   // the QGridLayout infoLayout.
-  Q_SLOT void setInfo(const infoData &info1 = infoData(), const infoData &info2 = infoData());
+  Q_SLOT void setInfo(const InfoData &info1 = InfoData(), const InfoData &info2 = InfoData());
 
   // One at a given row of a given infoIndex (0 or 1) was clicked.
   // infoIndex 0 refers to info1 above, infoIndex 1 refers to info2 above
@@ -61,15 +61,15 @@ private:
   // Clear widgets starting at given row.
   void clear(int startRow);
 
-  // Add information at the given grid row, for a given infoData index (0 or 1).
-  int addInfo(const infoData &data, int row, int infoIndex);
+  // Add information at the given grid row, for a given InfoData index (0 or 1).
+  int addInfo(const InfoData &data, int row, int infoIndex);
 
   // One of the buttons in the info panel was clicked.
   void infoButtonClickedSlot();
 
-  // The grid layout that contains all the infoItems
+  // The grid layout that contains all the InfoItems
   QGridLayout grid;
     
-  // The warning icon. This is shown instead of a text if the name of the infoItem is "Warning"
+  // The warning icon. This is shown instead of a text if the name of the InfoItem is "Warning"
   QPixmap warningIcon;
 };

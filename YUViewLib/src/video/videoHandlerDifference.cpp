@@ -35,8 +35,8 @@
 #include <QPainter>
 #include <algorithm>
 
-#include "common/functions.h"
-#include "videoHandlerYUV.h"
+#include <common/functions.h>
+#include <video/videoHandlerYUV.h>
 
 namespace video
 {
@@ -250,7 +250,7 @@ void videoHandlerDifference::slotDifferenceControlChanged()
   }
 }
 
-void videoHandlerDifference::reportFirstDifferencePosition(QList<infoItem> &infoList) const
+void videoHandlerDifference::reportFirstDifferencePosition(QList<InfoItem> &infoList) const
 {
   if (!inputsValid())
     return;
@@ -291,10 +291,10 @@ void videoHandlerDifference::reportFirstDifferencePosition(QList<infoItem> &info
                                       videoYUV0->getDiffYUVFormat()))
           {
             // We found a difference in this block
-            infoList.append(infoItem("First Difference LCU", QString::number(y * widthLCU + x)));
-            infoList.append(infoItem("First Difference X", QString::number(firstX)));
-            infoList.append(infoItem("First Difference Y", QString::number(firstY)));
-            infoList.append(infoItem("First Difference partIndex", QString::number(partIndex)));
+            infoList.append(InfoItem("First Difference LCU", QString::number(y * widthLCU + x)));
+            infoList.append(InfoItem("First Difference X", QString::number(firstX)));
+            infoList.append(InfoItem("First Difference Y", QString::number(firstY)));
+            infoList.append(InfoItem("First Difference partIndex", QString::number(partIndex)));
             return;
           }
         }
@@ -303,10 +303,10 @@ void videoHandlerDifference::reportFirstDifferencePosition(QList<infoItem> &info
           if (hierarchicalPosition(x * 64, y * 64, 64, firstX, firstY, partIndex, currentImage))
           {
             // We found a difference in this block
-            infoList.append(infoItem("First Difference LCU", QString::number(y * widthLCU + x)));
-            infoList.append(infoItem("First Difference X", QString::number(firstX)));
-            infoList.append(infoItem("First Difference Y", QString::number(firstY)));
-            infoList.append(infoItem("First Difference partIndex", QString::number(partIndex)));
+            infoList.append(InfoItem("First Difference LCU", QString::number(y * widthLCU + x)));
+            infoList.append(InfoItem("First Difference X", QString::number(firstX)));
+            infoList.append(InfoItem("First Difference Y", QString::number(firstY)));
+            infoList.append(InfoItem("First Difference partIndex", QString::number(partIndex)));
             return;
           }
         }
@@ -315,7 +315,7 @@ void videoHandlerDifference::reportFirstDifferencePosition(QList<infoItem> &info
   }
 
   // No difference was found
-  infoList.append(infoItem("Difference", "Frames are identical"));
+  infoList.append(InfoItem("Difference", "Frames are identical"));
 }
 
 void videoHandlerDifference::savePlaylist(YUViewDomElement &element) const
@@ -325,7 +325,7 @@ void videoHandlerDifference::savePlaylist(YUViewDomElement &element) const
   if (this->amplificationFactor != 1)
     element.appendProperiteChild("amplificationFactor", QString::number(this->amplificationFactor));
   if (this->markDifference)
-    element.appendProperiteChild("markDifference", functions::booToString(this->markDifference));
+    element.appendProperiteChild("markDifference", functions::boolToString(this->markDifference));
 }
 
 void videoHandlerDifference::loadPlaylist(const YUViewDomElement &element)

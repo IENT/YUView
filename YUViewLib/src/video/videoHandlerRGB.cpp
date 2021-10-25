@@ -32,11 +32,12 @@
 
 #include "videoHandlerRGB.h"
 
-#include "common/EnumMapper.h"
-#include "common/fileInfo.h"
-#include "common/functions.h"
-#include "common/functionsGui.h"
-#include "videoHandlerRGBCustomFormatDialog.h"
+#include <common/EnumMapper.h>
+#include <common/FileInfo.h>
+#include <common/functions.h>
+#include <common/functionsGui.h>
+#include <video/videoHandlerRGBCustomFormatDialog.h>
+
 #include <QPainter>
 #include <QtGlobal>
 
@@ -485,12 +486,12 @@ void videoHandlerRGB::savePlaylist(YUViewDomElement &element) const
   element.appendProperiteChild("scale.B", QString::number(this->componentScale[2]));
   element.appendProperiteChild("scale.A", QString::number(this->componentScale[3]));
 
-  element.appendProperiteChild("invert.R", functions::booToString(this->componentInvert[0]));
-  element.appendProperiteChild("invert.G", functions::booToString(this->componentInvert[1]));
-  element.appendProperiteChild("invert.B", functions::booToString(this->componentInvert[2]));
-  element.appendProperiteChild("invert.A", functions::booToString(this->componentInvert[3]));
+  element.appendProperiteChild("invert.R", functions::boolToString(this->componentInvert[0]));
+  element.appendProperiteChild("invert.G", functions::boolToString(this->componentInvert[1]));
+  element.appendProperiteChild("invert.B", functions::boolToString(this->componentInvert[2]));
+  element.appendProperiteChild("invert.A", functions::boolToString(this->componentInvert[3]));
 
-  element.appendProperiteChild("limitedRange", functions::booToString(this->limitedRange));
+  element.appendProperiteChild("limitedRange", functions::boolToString(this->limitedRange));
 }
 
 void videoHandlerRGB::loadPlaylist(const YUViewDomElement &element)
@@ -688,11 +689,10 @@ void videoHandlerRGB::convertSourceToRGBA32Bit(const QByteArray &sourceBuffer,
     // Only convert one of the components to a gray-scale image.
     // Consider inversion and scale of that component
 
-    auto componentMap =
-        std::map<ComponentShow, Channel>({{ComponentShow::R, Channel::Red},
-                                               {ComponentShow::G, Channel::Green},
-                                               {ComponentShow::B, Channel::Blue},
-                                               {ComponentShow::A, Channel::Alpha}});
+    auto       componentMap = std::map<ComponentShow, Channel>({{ComponentShow::R, Channel::Red},
+                                                          {ComponentShow::G, Channel::Green},
+                                                          {ComponentShow::B, Channel::Blue},
+                                                          {ComponentShow::A, Channel::Alpha}});
     const auto displayComponentOffset =
         srcPixelFormat.getComponentPosition(componentMap[componentDisplayMode]);
 
@@ -1072,7 +1072,7 @@ void videoHandlerRGB::setFormatFromSizeAndName(const Size       size,
   for (auto bitDepth : testBitDepths)
   {
     // If testAlpha is set, we will test with and without alpha channel
-    unsigned int nrTests = testAlpha ? 2 : 1;
+    auto nrTests = testAlpha ? 2u : 1u;
     for (unsigned int i = 0; i < nrTests; i++)
     {
       // assume RGB if subFormat does not indicate anything else
@@ -1081,7 +1081,7 @@ void videoHandlerRGB::setFormatFromSizeAndName(const Size       size,
       cFormat.setDataLayout(dataLayout);
 
       // Check if the file size and the assumed format match
-      int bpf = cFormat.bytesPerFrame(size);
+      auto bpf = cFormat.bytesPerFrame(size);
       if (bpf != 0 && (fileSize % bpf) == 0)
       {
         // Bits per frame and file size match
@@ -1107,8 +1107,8 @@ void videoHandlerRGB::drawPixelValues(QPainter *    painter,
 {
   // First determine which pixels from this item are actually visible, because we only have to draw
   // the pixel values of the pixels that are actually visible
-  QRect      viewport       = painter->viewport();
-  QTransform worldTransform = painter->worldTransform();
+  auto viewport       = painter->viewport();
+  auto worldTransform = painter->worldTransform();
 
   int xMin = (videoRect.width() / 2 - worldTransform.dx()) / zoomFactor;
   int yMin = (videoRect.height() / 2 - worldTransform.dy()) / zoomFactor;
@@ -1123,7 +1123,7 @@ void videoHandlerRGB::drawPixelValues(QPainter *    painter,
   yMax = clip(yMax, 0, int(frameSize.height) - 1);
 
   // Get the other RGB item (if any)
-  videoHandlerRGB *rgbItem2 = (item2 == nullptr) ? nullptr : dynamic_cast<videoHandlerRGB *>(item2);
+  auto rgbItem2 = dynamic_cast<videoHandlerRGB *>(item2);
   if (item2 != nullptr && rgbItem2 == nullptr)
   {
     // The second item is not a videoHandlerRGB item
@@ -1141,13 +1141,13 @@ void videoHandlerRGB::drawPixelValues(QPainter *    painter,
     return;
 
   // The center point of the pixel (0,0).
-  QPoint centerPointZero = (QPoint(-(int(frameSize.width)), -(int(frameSize.height))) * zoomFactor +
+  auto centerPointZero = (QPoint(-(int(frameSize.width)), -(int(frameSize.height))) * zoomFactor +
                             QPoint(zoomFactor, zoomFactor)) /
                            2;
   // This QRect has the size of one pixel and is moved on top of each pixel to draw the text
   QRect pixelRect;
   pixelRect.setSize(QSize(zoomFactor, zoomFactor));
-  const unsigned int drawWhitLevel = 1 << (srcPixelFormat.getBitsPerSample() - 1);
+  const unsigned drawWhitLevel = 1 << (srcPixelFormat.getBitsPerSample() - 1);
   for (int x = xMin; x <= xMax; x++)
   {
     for (int y = yMin; y <= yMax; y++)
@@ -1216,7 +1216,7 @@ void videoHandlerRGB::drawPixelValues(QPainter *    painter,
 QImage videoHandlerRGB::calculateDifference(frameHandler *   item2,
                                             const int        frameIdxItem0,
                                             const int        frameIdxItem1,
-                                            QList<infoItem> &differenceInfoList,
+                                            QList<InfoItem> &differenceInfoList,
                                             const int        amplificationFactor,
                                             const bool       markDifference)
 {
@@ -1456,16 +1456,16 @@ QImage videoHandlerRGB::calculateDifference(frameHandler *   item2,
   }
 
   // Append the conversion information that will be returned
-  differenceInfoList.append(infoItem("Difference Type", QString("RGB %1bit").arg(bitDepth)));
+  differenceInfoList.append(InfoItem("Difference Type", QString("RGB %1bit").arg(bitDepth)));
   double mse[4];
   mse[0] = double(mseAdd[0]) / (width * height);
   mse[1] = double(mseAdd[1]) / (width * height);
   mse[2] = double(mseAdd[2]) / (width * height);
   mse[3] = mse[0] + mse[1] + mse[2];
-  differenceInfoList.append(infoItem("MSE R", QString("%1").arg(mse[0])));
-  differenceInfoList.append(infoItem("MSE G", QString("%1").arg(mse[1])));
-  differenceInfoList.append(infoItem("MSE B", QString("%1").arg(mse[2])));
-  differenceInfoList.append(infoItem("MSE All", QString("%1").arg(mse[3])));
+  differenceInfoList.append(InfoItem("MSE R", QString("%1").arg(mse[0])));
+  differenceInfoList.append(InfoItem("MSE G", QString("%1").arg(mse[1])));
+  differenceInfoList.append(InfoItem("MSE B", QString("%1").arg(mse[2])));
+  differenceInfoList.append(InfoItem("MSE All", QString("%1").arg(mse[3])));
 
   if (is_Q_OS_LINUX)
   {

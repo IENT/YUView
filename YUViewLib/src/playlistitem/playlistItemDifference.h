@@ -42,7 +42,7 @@ class playlistItemDifference : public playlistItemContainer
 public:
   playlistItemDifference();
 
-  virtual infoData getInfo() const override;
+  virtual InfoData getInfo() const override;
   virtual QSize    getSize() const override;
 
   // Overload from playlistItemVideo. We add some specific drawing functionality if the two children

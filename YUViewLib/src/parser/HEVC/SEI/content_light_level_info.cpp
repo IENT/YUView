@@ -32,7 +32,7 @@
 
 #include "content_light_level_info.h"
 
-#include "parser/common/functions.h"
+#include <parser/common/functions.h>
 
 namespace parser::hevc
 {

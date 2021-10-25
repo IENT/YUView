@@ -41,12 +41,12 @@
 #include <QTextBrowser>
 #include <QTextStream>
 
-#include "common/functions.h"
-#include "common/functionsGui.h"
-#include "mainwindow_performanceTestDialog.h"
-#include "playlistitem/playlistItems.h"
-#include "settingsDialog.h"
-#include "ui/widgets/PlaylistTreeWidget.h"
+#include <common/functions.h>
+#include <common/functionsGui.h>
+#include <playlistitem/playlistItems.h>
+#include <ui/mainwindow_performanceTestDialog.h>
+#include <ui/settingsDialog.h>
+#include <ui/widgets/PlaylistTreeWidget.h>
 
 MainWindow::MainWindow(bool useAlternativeSources, QWidget *parent) : QMainWindow(parent)
 {
@@ -90,8 +90,8 @@ MainWindow::MainWindow(bool useAlternativeSources, QWidget *parent) : QMainWindo
   // Connect the playlistWidget signals to some slots
   auto const fileInfoAdapter = [this] {
     auto items = ui.playlistTreeWidget->getSelectedItems();
-    ui.fileInfoWidget->setInfo(items[0] ? items[0]->getInfo() : infoData(),
-                               items[1] ? items[1]->getInfo() : infoData());
+    ui.fileInfoWidget->setInfo(items[0] ? items[0]->getInfo() : InfoData(),
+                               items[1] ? items[1]->getInfo() : InfoData());
   };
   connect(ui.playlistTreeWidget,
           &PlaylistTreeWidget::selectionRangeChanged,

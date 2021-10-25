@@ -47,21 +47,21 @@ StatisticsFileBase::StatisticsFileBase(const QString &filename)
 
 StatisticsFileBase::~StatisticsFileBase() { this->abortParsingDestroy = true; }
 
-infoData StatisticsFileBase::getInfo() const
+InfoData StatisticsFileBase::getInfo() const
 {
-  infoData info("Statistics File info");
+  InfoData info("Statistics File info");
 
   // Append the file information (path, date created, file size...)
   info.items.append(this->file.getFileInfoList());
-  info.items.append(infoItem("Sorted by POC", this->fileSortedByPOC ? "Yes" : "No"));
-  info.items.append(infoItem("Parsing:", QString("%1%...").arg(this->parsingProgress, 0, 'f', 2)));
+  info.items.append(InfoItem("Sorted by POC", this->fileSortedByPOC ? "Yes" : "No"));
+  info.items.append(InfoItem("Parsing:", QString("%1%...").arg(this->parsingProgress, 0, 'f', 2)));
   if (this->blockOutsideOfFramePOC != -1)
     info.items.append(
-        infoItem("Warning",
+        InfoItem("Warning",
                  QString("A block in frame %1 is outside of the given size of the statistics.")
                      .arg(this->blockOutsideOfFramePOC)));
   if (this->error)
-    info.items.append(infoItem("Parsing Error:", this->errorMessage));
+    info.items.append(InfoItem("Parsing Error:", this->errorMessage));
 
   return info;
 }

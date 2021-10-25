@@ -372,7 +372,7 @@ void frameHandler::drawPixelValues(QPainter *painter,
 QImage frameHandler::calculateDifference(frameHandler *item2,
                                          const int,
                                          const int,
-                                         QList<infoItem> &differenceInfoList,
+                                         QList<InfoItem> &differenceInfoList,
                                          const int        amplificationFactor,
                                          const bool       markDifference)
 {
@@ -424,17 +424,17 @@ QImage frameHandler::calculateDifference(frameHandler *item2,
     }
   }
 
-  differenceInfoList.append(infoItem("Difference Type", "RGB"));
+  differenceInfoList.append(InfoItem("Difference Type", "RGB"));
 
   double mse[4];
   mse[0] = double(mseAdd[0]) / (width * height);
   mse[1] = double(mseAdd[1]) / (width * height);
   mse[2] = double(mseAdd[2]) / (width * height);
   mse[3] = mse[0] + mse[1] + mse[2];
-  differenceInfoList.append(infoItem("MSE R", QString("%1").arg(mse[0])));
-  differenceInfoList.append(infoItem("MSE G", QString("%1").arg(mse[1])));
-  differenceInfoList.append(infoItem("MSE B", QString("%1").arg(mse[2])));
-  differenceInfoList.append(infoItem("MSE All", QString("%1").arg(mse[3])));
+  differenceInfoList.append(InfoItem("MSE R", QString("%1").arg(mse[0])));
+  differenceInfoList.append(InfoItem("MSE G", QString("%1").arg(mse[1])));
+  differenceInfoList.append(InfoItem("MSE B", QString("%1").arg(mse[2])));
+  differenceInfoList.append(InfoItem("MSE All", QString("%1").arg(mse[3])));
 
   return diffImg;
 }

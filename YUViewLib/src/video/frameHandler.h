@@ -37,7 +37,7 @@
 #include <QSettings>
 
 #include "common/YUViewDomElement.h"
-#include "common/fileInfo.h"
+#include "common/FileInfo.h"
 #include "common/saveUi.h"
 #include "common/typedef.h"
 
@@ -97,7 +97,7 @@ public:
   virtual QImage calculateDifference(frameHandler *   item2,
                                      const int        frameIdxItem0,
                                      const int        frameIdxItem1,
-                                     QList<infoItem> &differenceInfoList,
+                                     QList<InfoItem> &differenceInfoList,
                                      const int        amplificationFactor,
                                      const bool       markDifference);
 

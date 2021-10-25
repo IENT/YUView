@@ -48,7 +48,7 @@ public:
   playlistItemText(playlistItemText *cloneFromTxt);
   // ------ Overload from playlistItem
 
-  virtual infoData getInfo() const override { return infoData("Text Info"); }
+  virtual InfoData getInfo() const override { return InfoData("Text Info"); }
 
   // Get the text size (using the current text, font/text size ...)
   virtual QSize getSize() const override;

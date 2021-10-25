@@ -42,11 +42,11 @@
 #include <QDir>
 #include <QPainter>
 
-#include "YUVPixelFormatGuess.h"
-#include "common/fileInfo.h"
-#include "common/functions.h"
-#include "common/functionsGui.h"
-#include "videoHandlerYUVCustomFormatDialog.h"
+#include <video/YUVPixelFormatGuess.h>
+#include <common/FileInfo.h>
+#include <common/functions.h>
+#include <common/functionsGui.h>
+#include <video/videoHandlerYUVCustomFormatDialog.h>
 
 namespace video
 {
@@ -3755,7 +3755,7 @@ bool videoHandlerYUV::markDifferencesYUVPlanarToRGB(const QByteArray &    source
 QImage videoHandlerYUV::calculateDifference(frameHandler *   item2,
                                             const int        frameIdxItem0,
                                             const int        frameIdxItem1,
-                                            QList<infoItem> &differenceInfoList,
+                                            QList<InfoItem> &differenceInfoList,
                                             const int        amplificationFactor,
                                             const bool       markDifference)
 {
@@ -3794,7 +3794,7 @@ QImage videoHandlerYUV::calculateDifference(frameHandler *   item2,
   // Add a warning if the bit depths of the two inputs don't agree
   if (bitDepthScaling[0] || bitDepthScaling[1])
     differenceInfoList.append(
-        infoItem("Warning",
+        InfoItem("Warning",
                  "The bit depth of the two items differs.",
                  "The bit depth of the two input items is different. The lower bit depth will be "
                  "scaled up and the difference is calculated."));
@@ -3827,7 +3827,7 @@ QImage videoHandlerYUV::calculateDifference(frameHandler *   item2,
   // Append a warning if the frame sizes are different
   if (frameSize != yuvItem2->frameSize)
     differenceInfoList.append(
-        infoItem("Warning",
+        InfoItem("Warning",
                  "The size of the two items differs.",
                  "The size of the two input items is different. The difference of the top left "
                  "aligned part that overlaps will be calculated."));
@@ -4008,7 +4008,7 @@ QImage videoHandlerYUV::calculateDifference(frameHandler *   item2,
     convertYUVPlanarToRGB(diffYUV, outputImage.bits(), Size(w_out, h_out), tmpDiffYUVFormat);
 
   differenceInfoList.append(
-      infoItem("Difference Type",
+      InfoItem("Difference Type",
                QString("YUV %1").arg(QString::fromStdString(
                    SubsamplingMapper.getText(srcPixelFormat.getSubsampling())))));
 
@@ -4017,10 +4017,10 @@ QImage videoHandlerYUV::calculateDifference(frameHandler *   item2,
   mse[1] = double(mseAdd[1]) / (w_out * h_out);
   mse[2] = double(mseAdd[2]) / (w_out * h_out);
   mse[3] = mse[0] + mse[1] + mse[2];
-  differenceInfoList.append(infoItem("MSE Y", QString("%1").arg(mse[0])));
-  differenceInfoList.append(infoItem("MSE U", QString("%1").arg(mse[1])));
-  differenceInfoList.append(infoItem("MSE V", QString("%1").arg(mse[2])));
-  differenceInfoList.append(infoItem("MSE All", QString("%1").arg(mse[3])));
+  differenceInfoList.append(InfoItem("MSE Y", QString("%1").arg(mse[0])));
+  differenceInfoList.append(InfoItem("MSE U", QString("%1").arg(mse[1])));
+  differenceInfoList.append(InfoItem("MSE V", QString("%1").arg(mse[2])));
+  differenceInfoList.append(InfoItem("MSE All", QString("%1").arg(mse[3])));
 
   if (is_Q_OS_LINUX)
   {
@@ -4090,12 +4090,12 @@ void videoHandlerYUV::savePlaylist(YUViewDomElement &element) const
   auto ml = this->mathParameters[Component::Luma];
   element.appendProperiteChild("math.luma.scale", QString::number(ml.scale));
   element.appendProperiteChild("math.luma.offset", QString::number(ml.offset));
-  element.appendProperiteChild("math.luma.invert", functions::booToString(ml.invert));
+  element.appendProperiteChild("math.luma.invert", functions::boolToString(ml.invert));
 
   auto mc = this->mathParameters[Component::Chroma];
   element.appendProperiteChild("math.chroma.scale", QString::number(mc.scale));
   element.appendProperiteChild("math.chroma.offset", QString::number(mc.offset));
-  element.appendProperiteChild("math.chroma.invert", functions::booToString(mc.invert));
+  element.appendProperiteChild("math.chroma.invert", functions::boolToString(mc.invert));
 }
 
 void videoHandlerYUV::loadPlaylist(const YUViewDomElement &element)

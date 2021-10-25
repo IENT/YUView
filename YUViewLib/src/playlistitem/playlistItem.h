@@ -33,7 +33,7 @@
 #pragma once
 
 #include "common/YUViewDomElement.h"
-#include "common/fileInfo.h"
+#include "common/FileInfo.h"
 #include "common/saveUi.h"
 #include "common/typedef.h"
 #include "statistics/StatisticUIHandler.h"
@@ -136,7 +136,7 @@ public:
 
   // Return the info title and info list to be shown in the fileInfo groupBox.
   // The default implementations will return empty strings/list.
-  virtual infoData getInfo() const { return infoData(); }
+  virtual InfoData getInfo() const { return InfoData(); }
   // If the playlist item indicates to put a button into the fileInfo, this call back is called if
   // the user presses the button.
   virtual void infoListButtonPressed(int) {}

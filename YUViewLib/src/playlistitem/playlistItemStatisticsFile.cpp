@@ -90,13 +90,13 @@ playlistItemStatisticsFile::~playlistItemStatisticsFile()
   }
 }
 
-infoData playlistItemStatisticsFile::getInfo() const
+InfoData playlistItemStatisticsFile::getInfo() const
 {
   if (this->file)
     return this->file->getInfo();
 
-  infoData info("Statistics File info");
-  info.items.append(infoItem("File", "No file loaded"));
+  InfoData info("Statistics File info");
+  info.items.append(InfoItem("File", "No file loaded"));
   return info;
 }
 

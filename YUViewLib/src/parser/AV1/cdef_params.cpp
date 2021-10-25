@@ -34,7 +34,7 @@
 
 #include "sequence_header_obu.h"
 #include "typedef.h"
-#include "parser/common/functions.h"
+#include <parser/common/functions.h>
 
 namespace parser::av1
 {

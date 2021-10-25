@@ -33,7 +33,7 @@
 #include "AnnexBItuTT35.h"
 
 #include "Subtitle608.h"
-#include "parser/common/functions.h"
+#include <parser/common/functions.h>
 
 namespace
 {

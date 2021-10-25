@@ -66,7 +66,7 @@ void videoHandlerResample::drawFrame(QPainter *painter,
 QImage videoHandlerResample::calculateDifference(frameHandler *   item2,
                                                  const int        frameIndex0,
                                                  const int        frameIndex1,
-                                                 QList<infoItem> &differenceInfoList,
+                                                 QList<InfoItem> &differenceInfoList,
                                                  const int        amplificationFactor,
                                                  const bool       markDifference)
 {

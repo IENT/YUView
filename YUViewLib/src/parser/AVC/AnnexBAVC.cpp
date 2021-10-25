@@ -41,7 +41,7 @@
 #include "nal_unit_header.h"
 #include "parser/Subtitles/AnnexBItuTT35.h"
 #include "parser/common/SubByteReaderLogging.h"
-#include "parser/common/functions.h"
+#include <parser/common/functions.h>
 #include "pic_parameter_set_rbsp.h"
 #include "seq_parameter_set_rbsp.h"
 #include "slice_header.h"

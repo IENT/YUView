@@ -65,13 +65,13 @@ playlistItemResample::playlistItemResample() : playlistItemContainer("Resample I
 
 /* For a resample item, the info list is just the name of the child item
  */
-infoData playlistItemResample::getInfo() const
+InfoData playlistItemResample::getInfo() const
 {
-  infoData info("Resample Info");
+  InfoData info("Resample Info");
 
   if (this->childCount() >= 1)
     info.items.append(
-        infoItem(QString("File 1"), this->getChildPlaylistItem(0)->properties().name));
+        InfoItem(QString("File 1"), this->getChildPlaylistItem(0)->properties().name));
 
   return info;
 }

@@ -32,7 +32,7 @@
 
 #include "StatisticsType.h"
 
-#include "common/functions.h"
+#include <common/functions.h>
 
 namespace stats
 {

@@ -32,7 +32,7 @@
 
 #include "decoderFFmpeg.h"
 
-#include "common/functions.h"
+#include <common/functions.h>
 
 #define DECODERFFMPEG_DEBUG_OUTPUT 0
 #if DECODERFFMPEG_DEBUG_OUTPUT && !NDEBUG

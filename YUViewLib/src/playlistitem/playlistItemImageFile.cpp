@@ -181,24 +181,24 @@ ValuePairListSets playlistItemImageFile::getPixelValues(const QPoint &pixelPos, 
   return newSet;
 }
 
-infoData playlistItemImageFile::getInfo() const
+InfoData playlistItemImageFile::getInfo() const
 {
-  infoData info("Image Info");
+  InfoData info("Image Info");
 
-  info.items.append(infoItem("File", this->properties().name));
+  info.items.append(InfoItem("File", this->properties().name));
   if (frame.isFormatValid())
   {
     auto frameSize = frame.getFrameSize();
-    info.items.append(infoItem("Resolution",
+    info.items.append(InfoItem("Resolution",
                                QString("%1x%2").arg(frameSize.width).arg(frameSize.height),
                                "The video resolution in pixel (width x height)"));
-    info.items.append(infoItem(
+    info.items.append(InfoItem(
         "Bit depth", QString::number(frame.getImageBitDepth()), "The bit depth of the image."));
   }
   else if (isLoading())
-    info.items.append(infoItem("Status", "Loading...", "The image is being loaded. Please wait."));
+    info.items.append(InfoItem("Status", "Loading...", "The image is being loaded. Please wait."));
   else
-    info.items.append(infoItem("Status", "Error", "There was an error loading the image."));
+    info.items.append(InfoItem("Status", "Error", "There was an error loading the image."));
 
   return info;
 }

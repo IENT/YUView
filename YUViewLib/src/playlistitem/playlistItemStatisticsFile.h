@@ -60,7 +60,7 @@ public:
   virtual QSize getSize() const override;
 
   // Return the info title and info list to be shown in the fileInfo groupBox.
-  virtual infoData getInfo() const override;
+  virtual InfoData getInfo() const override;
 
   virtual void
   drawItem(QPainter *painter, int frameIdx, double zoomFactor, bool drawRawData) override;

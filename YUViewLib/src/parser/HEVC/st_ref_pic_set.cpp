@@ -32,7 +32,7 @@
 
 #include "st_ref_pic_set.h"
 
-#include "parser/common/functions.h"
+#include <parser/common/functions.h>
 #include "slice_segment_header.h"
 
 namespace parser::hevc

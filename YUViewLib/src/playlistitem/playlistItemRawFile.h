@@ -58,7 +58,7 @@ public:
 
   // Override from playlistItem. Return the info title and info list to be shown in the fileInfo
   // groupBox.
-  virtual infoData getInfo() const override;
+  virtual InfoData getInfo() const override;
 
   // Create a new playlistItemRawFile from the playlist file entry. Return nullptr if parsing
   // failed.

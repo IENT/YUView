@@ -62,7 +62,7 @@ QString formatDataSize(double size, bool isBits = false);
 QStringList toQStringList(const std::vector<std::string> &stringVec);
 std::string toLower(std::string str);
 
-inline std::string booToString(bool b) { return b ? "True" : "False"; }
+inline std::string boolToString(bool b) { return b ? "True" : "False"; }
 
 template<typename T>
 unsigned clipToUnsigned(T val)

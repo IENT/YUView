@@ -44,7 +44,7 @@ class playlistItemResample : public playlistItemContainer
 public:
   playlistItemResample();
 
-  virtual infoData getInfo() const override;
+  virtual InfoData getInfo() const override;
 
   // Overload from playlistItemVideo.
   virtual QSize getSize() const override;

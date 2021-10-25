@@ -32,7 +32,7 @@
 
 #include "pred_weight_table.h"
 
-#include "parser/common/functions.h"
+#include <parser/common/functions.h>
 #include "typedef.h"
 
 

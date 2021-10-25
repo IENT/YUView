@@ -32,7 +32,7 @@
 
 #include "uncompressed_header.h"
 
-#include "parser/common/functions.h"
+#include <parser/common/functions.h>
 #include "sequence_header_obu.h"
 #include "typedef.h"
 

@@ -32,7 +32,7 @@
 
 #include "film_grain_params.h"
 
-#include "parser/common/functions.h"
+#include <parser/common/functions.h>
 #include "sequence_header_obu.h"
 
 namespace parser::av1

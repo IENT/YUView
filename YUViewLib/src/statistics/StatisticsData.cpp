@@ -32,7 +32,7 @@
 
 #include "StatisticsData.h"
 
-#include "common/functions.h"
+#include <common/functions.h>
 
 // Activate this if you want to know when what is loaded.
 #define STATISTICS_DEBUG_LOADING 0

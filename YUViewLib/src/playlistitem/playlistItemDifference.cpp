@@ -70,14 +70,14 @@ playlistItemDifference::playlistItemDifference() : playlistItemContainer("Differ
 /* For a difference item, the info list is just a list of the names of the
  * child elements.
  */
-infoData playlistItemDifference::getInfo() const
+InfoData playlistItemDifference::getInfo() const
 {
-  infoData info("Difference Info");
+  InfoData info("Difference Info");
 
   if (childCount() >= 1)
-    info.items.append(infoItem(QString("File 1"), getChildPlaylistItem(0)->properties().name));
+    info.items.append(InfoItem(QString("File 1"), getChildPlaylistItem(0)->properties().name));
   if (childCount() >= 2)
-    info.items.append(infoItem(QString("File 2"), getChildPlaylistItem(1)->properties().name));
+    info.items.append(InfoItem(QString("File 2"), getChildPlaylistItem(1)->properties().name));
 
   // Report the position of the first difference in coding order
   difference.reportFirstDifferencePosition(info.items);
@@ -85,7 +85,7 @@ infoData playlistItemDifference::getInfo() const
   // Report MSE
   for (int i = 0; i < difference.differenceInfoList.length(); i++)
   {
-    infoItem p = difference.differenceInfoList[i];
+    InfoItem p = difference.differenceInfoList[i];
     info.items.append(p);
   }
 

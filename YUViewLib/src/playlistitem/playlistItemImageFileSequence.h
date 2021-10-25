@@ -49,7 +49,7 @@ public:
   virtual void savePlaylist(QDomElement &root, const QDir &playlistDir) const override;
 
   // Override from playlistItem. Return the info title and info list to be shown in the fileInfo groupBox.
-  virtual infoData getInfo() const override;
+  virtual InfoData getInfo() const override;
 
   // Create a new playlistItemImageFileSequence from the playlist file entry. Return nullptr if parsing failed.
   static playlistItemImageFileSequence *newplaylistItemImageFileSequence(const YUViewDomElement &root, const QString &playlistFilePath);

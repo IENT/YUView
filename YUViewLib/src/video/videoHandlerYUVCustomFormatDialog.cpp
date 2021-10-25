@@ -32,7 +32,7 @@
 
 #include "videoHandlerYUVCustomFormatDialog.h"
 
-#include "common/functions.h"
+#include <common/functions.h>
 
 namespace video::yuv
 {

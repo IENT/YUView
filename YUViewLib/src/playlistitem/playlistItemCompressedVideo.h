@@ -70,7 +70,7 @@ public:
   newPlaylistItemCompressedVideo(const YUViewDomElement &root, const QString &playlistFilePath);
 
   // Return the info title and info list to be shown in the fileInfo groupBox.
-  virtual infoData getInfo() const override;
+  virtual InfoData getInfo() const override;
   virtual void     infoListButtonPressed(int buttonID) override;
 
   // Draw the compressed item using the given painter and zoom factor.

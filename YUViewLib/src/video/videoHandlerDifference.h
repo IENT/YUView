@@ -34,7 +34,7 @@
 
 #include <QPointer>
 
-#include "common/fileInfo.h"
+#include "common/FileInfo.h"
 #include "videoHandler.h"
 #include "videoHandlerYUV.h"
 
@@ -66,7 +66,7 @@ public:
   // size. The signal signalHandlerChanged will be emitted if a redraw is required.
   void setInputVideos(frameHandler *childVideo0, frameHandler *childVideo1);
 
-  QList<infoItem> differenceInfoList;
+  QList<InfoItem> differenceInfoList;
 
   // The difference overloads this and returns the difference values (A-B)
   virtual QStringPairList getPixelValues(const QPoint &pixelPos,
@@ -81,7 +81,7 @@ public:
                                         const QFileInfo &fileInfo) override;
 
   // Calculate the position of the first difference and add the info to the list
-  void reportFirstDifferencePosition(QList<infoItem> &infoList) const;
+  void reportFirstDifferencePosition(QList<InfoItem> &infoList) const;
 
   virtual void savePlaylist(YUViewDomElement &root) const override;
   virtual void loadPlaylist(const YUViewDomElement &root) override;

@@ -35,7 +35,7 @@
 #include "NalUnitMpeg2.h"
 #include "group_of_pictures_header.h"
 #include "nal_extension.h"
-#include "parser/common/functions.h"
+#include <parser/common/functions.h>
 #include "picture_header.h"
 #include "sequence_extension.h"
 #include "sequence_header.h"

@@ -224,7 +224,7 @@ void videoHandler::drawFrame(QPainter *painter, int frameIdx, double zoomFactor,
 QImage videoHandler::calculateDifference(frameHandler *   item2,
                                          const int        frameIdxItem0,
                                          const int        frameIdxItem1,
-                                         QList<infoItem> &differenceInfoList,
+                                         QList<InfoItem> &differenceInfoList,
                                          const int        amplificationFactor,
                                          const bool       markDifference)
 {

@@ -36,9 +36,9 @@
 #include <QUrl>
 #include <QVBoxLayout>
 
-#include "common/functions.h"
-#include "common/functionsGui.h"
-#include "handler/itemMemoryHandler.h"
+#include <common/functions.h>
+#include <common/functionsGui.h>
+#include <handler/itemMemoryHandler.h>
 
 // Activate this if you want to know when which buffer is loaded/converted to image and so on.
 #define PLAYLISTITEMRAWFILE_DEBUG_LOADING 0
@@ -177,18 +177,18 @@ void playlistItemRawFile::updateStartEndRange()
   this->prop.startEndRange = indexRange(0, std::max(nrFrames - 1, 0));
 }
 
-infoData playlistItemRawFile::getInfo() const
+InfoData playlistItemRawFile::getInfo() const
 {
-  infoData info((rawFormat == video::RawFormat::YUV) ? "YUV File Info" : "RGB File Info");
+  InfoData info((rawFormat == video::RawFormat::YUV) ? "YUV File Info" : "RGB File Info");
 
   // At first append the file information part (path, date created, file size...)
   info.items.append(dataSource.getFileInfoList());
 
   auto nrFrames =
       (this->properties().startEndRange.second - this->properties().startEndRange.first + 1);
-  info.items.append(infoItem("Num Frames", QString::number(nrFrames)));
+  info.items.append(InfoItem("Num Frames", QString::number(nrFrames)));
   info.items.append(
-      infoItem("Bytes per Frame", QString("%1").arg(this->video->getBytesPerFrame())));
+      InfoItem("Bytes per Frame", QString("%1").arg(this->video->getBytesPerFrame())));
 
   if (dataSource.isOk() && video->isFormatValid() && !isY4MFile)
   {
@@ -200,7 +200,7 @@ infoData playlistItemRawFile::getInfo() const
     if ((dataSource.getFileSize() % bpf) != 0)
     {
       // Add a warning
-      info.items.append(infoItem(
+      info.items.append(InfoItem(
           "Warning", "The file size and the given video size and/or raw format do not match."));
     }
   }

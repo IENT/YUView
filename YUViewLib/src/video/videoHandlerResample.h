@@ -34,7 +34,7 @@
 
 #include <QPointer>
 
-#include "common/fileInfo.h"
+#include "common/FileInfo.h"
 #include "videoHandler.h"
 #include "videoHandlerYUV.h"
 
@@ -59,7 +59,7 @@ public:
   QImage           calculateDifference(frameHandler *   item2,
                                        const int        frameIndex0,
                                        const int        frameIndex1,
-                                       QList<infoItem> &differenceInfoList,
+                                       QList<InfoItem> &differenceInfoList,
                                        const int        amplificationFactor,
                                        const bool       markDifference) override;
   ItemLoadingState needsLoading(int frameIndex, bool loadRawValues) override;
@@ -81,7 +81,7 @@ public:
                                         int64_t          fileSize,
                                         const QFileInfo &fileInfo) override;
 
-  QList<infoItem> resampleInfoList;
+  QList<InfoItem> resampleInfoList;
 
 private:
   int mapFrameIndex(int frameIndex);

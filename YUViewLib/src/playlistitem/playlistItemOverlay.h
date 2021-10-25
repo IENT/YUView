@@ -45,7 +45,7 @@ class playlistItemOverlay : public playlistItemContainer
 public:
   playlistItemOverlay();
 
-  virtual infoData getInfo() const override;
+  virtual InfoData getInfo() const override;
 
   // Overload from playlistItemVideo.
   virtual QSize getSize() const override;

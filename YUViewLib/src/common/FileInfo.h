@@ -41,9 +41,9 @@
  * is to show a button. If the user clicks on it, the callback function infoListButtonPressed() for
  * the corresponding playlist item is called.
  */
-struct infoItem
+struct InfoItem
 {
-  infoItem(const QString &name,
+  InfoItem(const QString &name,
            const QString &text,
            const QString &toolTip  = QString(),
            bool           button   = false,
@@ -58,11 +58,11 @@ struct infoItem
   QString toolTip{};
 };
 
-struct infoData
+struct InfoData
 {
-  explicit infoData(const QString &title = QString()) : title(title) {}
+  explicit InfoData(const QString &title = QString()) : title(title) {}
   bool            isEmpty() const { return title.isEmpty() && items.isEmpty(); }
   QString         title{};
-  QList<infoItem> items{};
+  QList<InfoItem> items{};
 };
-Q_DECLARE_METATYPE(infoData)
+Q_DECLARE_METATYPE(InfoData)
