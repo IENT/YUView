@@ -76,13 +76,13 @@ const auto ChannelOrderMapper = EnumMapper<ChannelOrder>({{ChannelOrder::RGB, "R
 
 // This class defines a specific RGB format with all properties like order of R/G/B, bitsPerValue,
 // planarity...
-class rgbPixelFormat
+class PixelFormatRGB
 {
 public:
   // The default constructor (will create an "Unknown Pixel Format")
-  rgbPixelFormat() = default;
-  rgbPixelFormat(const std::string &name);
-  rgbPixelFormat(unsigned     bitsPerSample,
+  PixelFormatRGB() = default;
+  PixelFormatRGB(const std::string &name);
+  PixelFormatRGB(unsigned     bitsPerSample,
                  DataLayout   dataLayout,
                  ChannelOrder channelOrder,
                  AlphaMode    alphaMode  = AlphaMode::None,
@@ -103,8 +103,8 @@ public:
   std::size_t bytesPerFrame(Size frameSize) const;
   int         getComponentPosition(Channel channel) const;
 
-  bool operator==(const rgbPixelFormat &a) const { return getName() == a.getName(); }
-  bool operator!=(const rgbPixelFormat &a) const { return getName() != a.getName(); }
+  bool operator==(const PixelFormatRGB &a) const { return getName() == a.getName(); }
+  bool operator!=(const PixelFormatRGB &a) const { return getName() != a.getName(); }
   bool operator==(const std::string &a) const { return getName() == a; }
   bool operator!=(const std::string &a) const { return getName() != a; }
 

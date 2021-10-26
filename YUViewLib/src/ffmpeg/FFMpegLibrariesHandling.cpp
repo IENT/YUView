@@ -1698,7 +1698,7 @@ YUVPixelFormat AVPixFmtDescriptorWrapper::getYUVPixelFormat()
   return YUVPixelFormat(subsampling, bitsPerSample, planeOrder, bigEndian);
 }
 
-video::rgb::rgbPixelFormat AVPixFmtDescriptorWrapper::getRGBPixelFormat()
+video::rgb::PixelFormatRGB AVPixFmtDescriptorWrapper::getRGBPixelFormat()
 {
   if (this->getRawFormat() == video::RawFormat::YUV || !flagsSupported())
     return {};
@@ -1720,7 +1720,7 @@ video::rgb::rgbPixelFormat AVPixFmtDescriptorWrapper::getRGBPixelFormat()
       this->flagHasAlphaPlane() ? video::rgb::AlphaMode::Last : video::rgb::AlphaMode::None;
   auto endianness = this->flagIsBigEndian() ? video::Endianness::Big : video::Endianness::Little;
 
-  return video::rgb::rgbPixelFormat(
+  return video::rgb::PixelFormatRGB(
       bitsPerSample, dataLayout, video::rgb::ChannelOrder::RGB, alphaMode, endianness);
 }
 

@@ -30,7 +30,7 @@
  *   along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "rgbPixelFormat.h"
+#include "PixelFormatRGB.h"
 
 // Activate this if you want to know when which buffer is loaded/converted to image and so on.
 #define RGBPIXELFORMAT_DEBUG 0
@@ -44,7 +44,7 @@
 namespace video::rgb
 {
 
-rgbPixelFormat::rgbPixelFormat(unsigned     bitsPerSample,
+PixelFormatRGB::PixelFormatRGB(unsigned     bitsPerSample,
                                DataLayout   dataLayout,
                                ChannelOrder channelOrder,
                                AlphaMode    alphaMode,
@@ -54,7 +54,7 @@ rgbPixelFormat::rgbPixelFormat(unsigned     bitsPerSample,
 {
 }
 
-rgbPixelFormat::rgbPixelFormat(const std::string &name)
+PixelFormatRGB::PixelFormatRGB(const std::string &name)
 {
   if (name != "Unknown Pixel Format")
   {
@@ -83,22 +83,22 @@ rgbPixelFormat::rgbPixelFormat(const std::string &name)
   }
 }
 
-bool rgbPixelFormat::isValid() const
+bool PixelFormatRGB::isValid() const
 {
   return this->bitsPerSample >= 8 && this->bitsPerSample <= 16;
 }
 
-unsigned rgbPixelFormat::nrChannels() const
+unsigned PixelFormatRGB::nrChannels() const
 {
   return this->alphaMode != AlphaMode::None ? 4 : 3;
 }
 
-bool rgbPixelFormat::hasAlpha() const
+bool PixelFormatRGB::hasAlpha() const
 {
   return this->alphaMode != AlphaMode::None;
 }
 
-std::string rgbPixelFormat::getName() const
+std::string PixelFormatRGB::getName() const
 {
   if (!this->isValid())
     return "Unknown Pixel Format";
@@ -121,21 +121,21 @@ std::string rgbPixelFormat::getName() const
 
 /* Get the number of bytes for a frame with this RGB format and the given size
  */
-std::size_t rgbPixelFormat::bytesPerFrame(Size frameSize) const
+std::size_t PixelFormatRGB::bytesPerFrame(Size frameSize) const
 {
   if (this->bitsPerSample > 0 || !frameSize.isValid())
     return 0;
 
   auto numSamples = std::size_t(frameSize.height) * std::size_t(frameSize.width);
   auto nrBytes    = numSamples * this->nrChannels() * ((this->bitsPerSample + 7) / 8);
-  DEBUG_RGB_FORMAT("rgbPixelFormat::bytesPerFrame samples %d channels %d bytes %d",
+  DEBUG_RGB_FORMAT("PixelFormatRGB::bytesPerFrame samples %d channels %d bytes %d",
                    int(numSamples),
                    this->nrChannels(),
                    nrBytes);
   return nrBytes;
 }
 
-int rgbPixelFormat::getComponentPosition(Channel channel) const
+int PixelFormatRGB::getComponentPosition(Channel channel) const
 {
   if (channel == Channel::Alpha)
   {

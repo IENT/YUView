@@ -38,7 +38,7 @@
 
 #include <handler/UpdateHandler.h>
 #include <ui/separateWindow.h>
-#include <video/videoCache.h>
+#include <video/VideoCache.h>
 
 #include "ui_mainwindow.h"
 
@@ -158,7 +158,7 @@ private:
   void performanceTest();
 
   QPointer<QAction>                 recentFileActions[MAX_RECENT_FILES];
-  QScopedPointer<video::videoCache> cache;
+  QScopedPointer<video::VideoCache> cache;
   bool                              saveWindowsStateOnExit;
   QScopedPointer<updateHandler>     updater;
   ViewStateHandler                  stateHandler;

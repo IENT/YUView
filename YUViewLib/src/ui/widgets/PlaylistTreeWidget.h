@@ -140,7 +140,7 @@ signals:
   void removeFromCacheCurrentSelection(indexRange range);
 
   // Something about the playlist changed (an item was moved, a different item was selected,
-  // an item was deleted). This is used by the videoCache to rethink what to cache next.
+  // an item was deleted). This is used by the VideoCache to rethink what to cache next.
   void playlistChanged();
 
   void saveViewStatesToPlaylist(QDomElement &root);

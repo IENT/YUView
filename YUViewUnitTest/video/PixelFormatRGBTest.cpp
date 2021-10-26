@@ -1,25 +1,25 @@
 #include <QtTest>
 
-#include <video/rgbPixelFormat.h>
+#include <video/PixelFormatRGB.h>
 
 using namespace video::rgb;
 
-class rgbPixelFormatTest : public QObject
+class PixelFormatRGBTest : public QObject
 {
   Q_OBJECT
 
 public:
-  rgbPixelFormatTest(){};
-  ~rgbPixelFormatTest(){};
+  PixelFormatRGBTest(){};
+  ~PixelFormatRGBTest(){};
 
 private slots:
   void testFormatFromToString();
   void testInvalidFormats();
 };
 
-QList<rgbPixelFormat> getAllFormats()
+QList<PixelFormatRGB> getAllFormats()
 {
-  QList<rgbPixelFormat> allFormats;
+  QList<PixelFormatRGB> allFormats;
 
   for (int bitsPerPixel = 8; bitsPerPixel <= 16; bitsPerPixel++)
   {
@@ -27,12 +27,12 @@ QList<rgbPixelFormat> getAllFormats()
     {
       // No alpha
       for (auto channelOrder : ChannelOrderMapper.getEnums())
-        allFormats.append(rgbPixelFormat(bitsPerPixel, dataLayout, channelOrder));
+        allFormats.append(PixelFormatRGB(bitsPerPixel, dataLayout, channelOrder));
       // With alpha
       for (auto channelOrder : ChannelOrderMapper.getEnums())
       {
-        allFormats.append(rgbPixelFormat(bitsPerPixel, dataLayout, channelOrder, AlphaMode::First));
-        allFormats.append(rgbPixelFormat(bitsPerPixel, dataLayout, channelOrder, AlphaMode::Last));
+        allFormats.append(PixelFormatRGB(bitsPerPixel, dataLayout, channelOrder, AlphaMode::First));
+        allFormats.append(PixelFormatRGB(bitsPerPixel, dataLayout, channelOrder, AlphaMode::Last));
       }
     }
   }
@@ -40,7 +40,7 @@ QList<rgbPixelFormat> getAllFormats()
   return allFormats;
 }
 
-void rgbPixelFormatTest::testFormatFromToString()
+void PixelFormatRGBTest::testFormatFromToString()
 {
   for (auto fmt : getAllFormats())
   {
@@ -50,7 +50,7 @@ void rgbPixelFormatTest::testFormatFromToString()
     {
       QFAIL("Name empty");
     }
-    auto fmtNew = rgbPixelFormat(name);
+    auto fmtNew = PixelFormatRGB(name);
     if (fmt != fmtNew)
     {
       auto errorStr = "Comparison failed. Names: " + name;
@@ -79,19 +79,19 @@ void rgbPixelFormatTest::testFormatFromToString()
   }
 }
 
-void rgbPixelFormatTest::testInvalidFormats()
+void PixelFormatRGBTest::testInvalidFormats()
 {
-  QList<rgbPixelFormat> invalidFormats;
-  invalidFormats.append(rgbPixelFormat(0, video::DataLayout::Packed, ChannelOrder::RGB));
-  invalidFormats.append(rgbPixelFormat(1, video::DataLayout::Packed, ChannelOrder::RGB));
-  invalidFormats.append(rgbPixelFormat(7, video::DataLayout::Packed, ChannelOrder::RGB));
-  invalidFormats.append(rgbPixelFormat(17, video::DataLayout::Packed, ChannelOrder::RGB));
-  invalidFormats.append(rgbPixelFormat(200, video::DataLayout::Packed, ChannelOrder::RGB));
+  QList<PixelFormatRGB> invalidFormats;
+  invalidFormats.append(PixelFormatRGB(0, video::DataLayout::Packed, ChannelOrder::RGB));
+  invalidFormats.append(PixelFormatRGB(1, video::DataLayout::Packed, ChannelOrder::RGB));
+  invalidFormats.append(PixelFormatRGB(7, video::DataLayout::Packed, ChannelOrder::RGB));
+  invalidFormats.append(PixelFormatRGB(17, video::DataLayout::Packed, ChannelOrder::RGB));
+  invalidFormats.append(PixelFormatRGB(200, video::DataLayout::Packed, ChannelOrder::RGB));
 
   for (auto fmt : invalidFormats)
     QVERIFY(!fmt.isValid());
 }
 
-QTEST_MAIN(rgbPixelFormatTest)
+QTEST_MAIN(PixelFormatRGBTest)
 
-#include "rgbPixelFormatTest.moc"
+#include "PixelFormatRGBTest.moc"

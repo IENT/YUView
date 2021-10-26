@@ -35,7 +35,7 @@
 #include <QWidget>
 
 #include "PlaylistTreeWidget.h"
-#include "video/videoCache.h"
+#include <video/VideoCache.h>
 
 namespace VideoCacheStatusWidgetNamespace
 {
@@ -68,7 +68,7 @@ class VideoCacheInfoWidget : public QWidget
 public:
   VideoCacheInfoWidget(QWidget *parent = 0);
 
-  void setPlaylistAndCache(PlaylistTreeWidget *plist, video::videoCache *vCache)
+  void setPlaylistAndCache(PlaylistTreeWidget *plist, video::VideoCache *vCache)
   {
     playlist = plist;
     cache    = vCache;
@@ -85,7 +85,7 @@ private:
   QLabel *                                                 cachingInfoLabel{nullptr};
 
   PlaylistTreeWidget *playlist{nullptr};
-  video::videoCache * cache{nullptr};
+  video::VideoCache * cache{nullptr};
 
   unsigned int cacheRateInBytesPerMs{0};
 };

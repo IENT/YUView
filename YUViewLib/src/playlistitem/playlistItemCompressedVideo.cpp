@@ -135,7 +135,7 @@ playlistItemCompressedVideo::playlistItemCompressedVideo(const QString &compress
   // While opening the file, also determine which decoders we can use
   Size                       frameSize;
   video::yuv::YUVPixelFormat formatYuv;
-  video::rgb::rgbPixelFormat formatRgb;
+  video::rgb::PixelFormatRGB formatRgb;
   auto                       mainWindow = MainWindow::getMainWindow();
   Codec                      codec      = Codec::Other;
   if (isInputFormatTypeAnnexB(this->inputFormat))

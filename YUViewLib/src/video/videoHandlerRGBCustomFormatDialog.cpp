@@ -38,7 +38,7 @@ namespace video
 {
 
 videoHandlerRGBCustomFormatDialog::videoHandlerRGBCustomFormatDialog(
-    const rgb::rgbPixelFormat &rgbFormat)
+    const rgb::PixelFormatRGB &rgbFormat)
 {
   this->ui.setupUi(this);
 
@@ -69,7 +69,7 @@ videoHandlerRGBCustomFormatDialog::videoHandlerRGBCustomFormatDialog(
   this->ui.planarCheckBox->setChecked(rgbFormat.getDataLayout() == DataLayout::Planar);
 }
 
-rgb::rgbPixelFormat videoHandlerRGBCustomFormatDialog::getSelectedRGBFormat() const
+rgb::PixelFormatRGB videoHandlerRGBCustomFormatDialog::getSelectedRGBFormat() const
 {
   auto channelOrderIndex = this->ui.rgbOrderComboBox->currentIndex();
   if (channelOrderIndex < 0)
@@ -97,7 +97,7 @@ rgb::rgbPixelFormat videoHandlerRGBCustomFormatDialog::getSelectedRGBFormat() co
   if (this->ui.comboBoxEndianness->currentIndex() == 1)
     endianness = Endianness::Big;
 
-  return rgb::rgbPixelFormat(bitDepth, dataLayout, *channelOrder, alphaMode, endianness);
+  return rgb::PixelFormatRGB(bitDepth, dataLayout, *channelOrder, alphaMode, endianness);
 }
 
 void videoHandlerRGBCustomFormatDialog::on_bitDepthSpinBox_valueChanged(int value)

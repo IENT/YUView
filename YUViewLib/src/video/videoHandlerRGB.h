@@ -32,7 +32,7 @@
 
 #pragma once
 
-#include "rgbPixelFormat.h"
+#include "PixelFormatRGB.h"
 #include "ui_videoHandlerRGB.h"
 #include "videoHandler.h"
 
@@ -106,7 +106,7 @@ public:
   }
   // Set the current raw format and update the control. Only emit a signalHandlerChanged signal
   // if emitSignal is true.
-  virtual void setRGBPixelFormat(const rgb::rgbPixelFormat &format, bool emitSignal = false)
+  virtual void setRGBPixelFormat(const rgb::PixelFormatRGB &format, bool emitSignal = false)
   {
     setSrcPixelFormat(format);
     if (emitSignal)
@@ -114,7 +114,7 @@ public:
   }
   virtual void setRGBPixelFormatByName(const QString &name, bool emitSignal = false)
   {
-    this->setRGBPixelFormat(rgb::rgbPixelFormat(name.toStdString()), emitSignal);
+    this->setRGBPixelFormat(rgb::PixelFormatRGB(name.toStdString()), emitSignal);
   }
 
   // If you know the frame size of the video, the file size (and optionally the bit depth) we can
@@ -158,8 +158,8 @@ public:
 protected:
   ComponentShow componentDisplayMode{ComponentShow::RGBA};
 
-  // A (static) convenience QList class that handles the preset rgbPixelFormats
-  class RGBFormatList : public QList<rgb::rgbPixelFormat>
+  // A (static) convenience QList class that handles the preset PixelFormatRGBs
+  class RGBFormatList : public QList<rgb::PixelFormatRGB>
   {
   public:
     // Default constructor. Fill the list with all the supported YUV formats.
@@ -167,12 +167,12 @@ protected:
     // Get all the YUV formats as a formatted list (for the drop-down control)
     std::vector<std::string> getFormattedNames() const;
     // Get the YUVPixelFormat with the given name
-    rgb::rgbPixelFormat getFromName(const std::string &name) const;
+    rgb::PixelFormatRGB getFromName(const std::string &name) const;
   };
   static RGBFormatList rgbPresetList;
 
   // The currently selected RGB format
-  rgb::rgbPixelFormat srcPixelFormat;
+  rgb::PixelFormatRGB srcPixelFormat;
 
   // Parameters for the RGBA transformation (like scaling, invert)
   int  componentScale[4]{1, 1, 1, 1};
@@ -200,7 +200,7 @@ private:
   void convertRGBToImage(const QByteArray &sourceBuffer, QImage &outputImage);
 
   // Set the new pixel format thread save (lock the mutex)
-  void setSrcPixelFormat(const rgb::rgbPixelFormat &newFormat);
+  void setSrcPixelFormat(const rgb::PixelFormatRGB &newFormat);
 
   // Convert one frame from the current pixel format to RGB888
   void       convertSourceToRGBA32Bit(const QByteArray &sourceBuffer,

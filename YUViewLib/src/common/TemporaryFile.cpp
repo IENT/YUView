@@ -30,30 +30,22 @@
  *   along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#pragma once
+#include "TemporaryFile.h"
 
-#include "PixelFormatRGB.h"
+std::atomic_uint TemporaryFile::fileCounter{0};
 
-#include <QDialog>
-
-#include "ui_videoHandlerRGB_CustomFormatDialog.h"
-
-namespace video
+TemporaryFile::TemporaryFile(std::string extension)
 {
+  this->filename = "TmpFile" + std::to_string(this->fileCounter.load()) + "." + extension;
+  this->fileCounter++;
+}
 
-class videoHandlerRGBCustomFormatDialog : public QDialog
+TemporaryFile::~TemporaryFile()
 {
-  Q_OBJECT
+  std::remove(this->filename.c_str());
+}
 
-public:
-  videoHandlerRGBCustomFormatDialog(const rgb::PixelFormatRGB &rgbFormat);
-  rgb::PixelFormatRGB getSelectedRGBFormat() const;
-
-private slots:
-  void on_bitDepthSpinBox_valueChanged(int value);
-
-private:
-  Ui::CustomRGBFormatDialog ui;
-};
-
-} // namespace video
+std::string TemporaryFile::getFilename() const
+{
+  return this->filename;
+}

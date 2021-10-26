@@ -113,7 +113,7 @@ public:
   virtual QByteArray         getRawFrameData() = 0;
   video::RawFormat           getRawFormat() const { return this->rawFormat; }
   video::yuv::YUVPixelFormat getYUVPixelFormat() const { return this->formatYUV; }
-  video::rgb::rgbPixelFormat getRGBPixelFormat() const { return this->formatRGB; }
+  video::rgb::PixelFormatRGB getRGBPixelFormat() const { return this->formatRGB; }
   Size                       getFrameSize() const { return this->frameSize; }
   // Push data to the decoder (until no more data is needed)
   // In order to make the interface generic, the pushData function accepts data only without start
@@ -155,7 +155,7 @@ protected:
   // Some decoders are able to handel both YUV and RGB output
   video::RawFormat           rawFormat{};
   video::yuv::YUVPixelFormat formatYUV{};
-  video::rgb::rgbPixelFormat formatRGB{};
+  video::rgb::PixelFormatRGB formatRGB{};
 
   // Error handling
   void setError(const QString &reason)

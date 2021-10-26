@@ -87,12 +87,12 @@ const auto componentShowMapper = EnumMapper<ComponentShow>({{ComponentShow::RGBA
  */
 videoHandlerRGB::RGBFormatList::RGBFormatList()
 {
-  append(rgbPixelFormat(8, DataLayout::Packed, ChannelOrder::RGB));
-  append(rgbPixelFormat(10, DataLayout::Packed, ChannelOrder::RGB));
-  append(rgbPixelFormat(8, DataLayout::Packed, ChannelOrder::RGB, AlphaMode::First));
-  append(rgbPixelFormat(8, DataLayout::Packed, ChannelOrder::BRG));
-  append(rgbPixelFormat(10, DataLayout::Packed, ChannelOrder::BRG));
-  append(rgbPixelFormat(10, DataLayout::Planar, ChannelOrder::RGB));
+  append(PixelFormatRGB(8, DataLayout::Packed, ChannelOrder::RGB));
+  append(PixelFormatRGB(10, DataLayout::Packed, ChannelOrder::RGB));
+  append(PixelFormatRGB(8, DataLayout::Packed, ChannelOrder::RGB, AlphaMode::First));
+  append(PixelFormatRGB(8, DataLayout::Packed, ChannelOrder::BRG));
+  append(PixelFormatRGB(10, DataLayout::Packed, ChannelOrder::BRG));
+  append(PixelFormatRGB(10, DataLayout::Planar, ChannelOrder::RGB));
 }
 
 /* Put all the names of the RGB formats into a list and return it
@@ -105,7 +105,7 @@ std::vector<std::string> videoHandlerRGB::RGBFormatList::getFormattedNames() con
   return l;
 }
 
-rgbPixelFormat videoHandlerRGB::RGBFormatList::getFromName(const std::string &name) const
+PixelFormatRGB videoHandlerRGB::RGBFormatList::getFromName(const std::string &name) const
 {
   for (int i = 0; i < count(); i++)
     if (at(i).getName() == name)
@@ -121,7 +121,7 @@ videoHandlerRGB::RGBFormatList videoHandlerRGB::rgbPresetList;
 videoHandlerRGB::videoHandlerRGB() : videoHandler()
 {
   // preset internal values
-  this->setSrcPixelFormat(rgbPixelFormat(8, DataLayout::Packed, ChannelOrder::RGB));
+  this->setSrcPixelFormat(PixelFormatRGB(8, DataLayout::Packed, ChannelOrder::RGB));
 }
 
 videoHandlerRGB::~videoHandlerRGB()
@@ -215,7 +215,7 @@ bool videoHandlerRGB::setFormatFromString(QString format)
   if (!FrameHandler::setFormatFromString(split[0] + ";" + split[1]))
     return false;
 
-  auto fmt = rgbPixelFormat(split[3].toStdString());
+  auto fmt = PixelFormatRGB(split[3].toStdString());
   if (!fmt.isValid())
     return false;
 
@@ -650,7 +650,7 @@ void videoHandlerRGB::convertRGBToImage(const QByteArray &sourceBuffer, QImage &
   }
 }
 
-void videoHandlerRGB::setSrcPixelFormat(const rgbPixelFormat &newFormat)
+void videoHandlerRGB::setSrcPixelFormat(const PixelFormatRGB &newFormat)
 {
   this->rgbFormatMutex.lock();
   this->srcPixelFormat = newFormat;
@@ -1076,7 +1076,7 @@ void videoHandlerRGB::setFormatFromSizeAndName(const Size       size,
     for (unsigned int i = 0; i < nrTests; i++)
     {
       // assume RGB if subFormat does not indicate anything else
-      auto cFormat = rgbPixelFormat(i == 0 ? subFormat : subFormat + "a");
+      auto cFormat = PixelFormatRGB(i == 0 ? subFormat : subFormat + "a");
       cFormat.setBitsPerSample(bitDepth);
       cFormat.setDataLayout(dataLayout);
 
@@ -1094,7 +1094,7 @@ void videoHandlerRGB::setFormatFromSizeAndName(const Size       size,
 
   // Still no match. Set RGB 8 bit planar no alpha channel.
   // This will probably be wrong but we are out of options
-  this->setSrcPixelFormat(rgbPixelFormat(8, dataLayout, ChannelOrder::RGB));
+  this->setSrcPixelFormat(PixelFormatRGB(8, dataLayout, ChannelOrder::RGB));
 }
 
 void videoHandlerRGB::drawPixelValues(QPainter *    painter,

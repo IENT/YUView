@@ -35,7 +35,7 @@
 #include <playlistitem/playlistItem.h>
 #include <ui/playbackController.h>
 #include <video/FrameHandler.h>
-#include <video/videoCache.h>
+#include <video/VideoCache.h>
 
 #include <QActionGroup>
 #include <QBackingStore>
@@ -112,9 +112,18 @@ splitViewWidget::splitViewWidget(QWidget *parent) : MoveAndZoomableView(parent)
   this->createMenuActions();
 }
 
-void splitViewWidget::setPlaylistTreeWidget(PlaylistTreeWidget *p) { playlist = p; }
-void splitViewWidget::setPlaybackController(PlaybackController *p) { playback = p; }
-void splitViewWidget::setVideoCache(video::videoCache *p) { cache = p; }
+void splitViewWidget::setPlaylistTreeWidget(PlaylistTreeWidget *p)
+{
+  playlist = p;
+}
+void splitViewWidget::setPlaybackController(PlaybackController *p)
+{
+  playback = p;
+}
+void splitViewWidget::setVideoCache(video::VideoCache *p)
+{
+  cache = p;
+}
 
 /** The common settings might have changed.
  * Reload all settings from the QSettings and set them.
@@ -1193,7 +1202,10 @@ void splitViewWidget::gridSetCustom(bool)
   }
 }
 
-void splitViewWidget::toggleZoomBox(bool) { this->setDrawZoomBox(!this->drawZoomBox, true, true); }
+void splitViewWidget::toggleZoomBox(bool)
+{
+  this->setDrawZoomBox(!this->drawZoomBox, true, true);
+}
 
 void splitViewWidget::toggleSeparateWindow(bool checked)
 {
@@ -1205,7 +1217,10 @@ void splitViewWidget::toggleSeparateWindow(bool checked)
   emit signalShowSeparateWindow(checked);
 }
 
-void splitViewWidget::toggleFullScreen(bool) { emit this->signalToggleFullScreen(); }
+void splitViewWidget::toggleFullScreen(bool)
+{
+  emit this->signalToggleFullScreen();
+}
 
 void splitViewWidget::resetViewInternal()
 {
@@ -1607,13 +1622,25 @@ void splitViewWidget::setViewState(const QPointF &offset, double zoom, double sp
   update();
 }
 
-void splitViewWidget::onSwipeLeft() { playback->nextFrame(); }
+void splitViewWidget::onSwipeLeft()
+{
+  playback->nextFrame();
+}
 
-void splitViewWidget::onSwipeRight() { playback->previousFrame(); }
+void splitViewWidget::onSwipeRight()
+{
+  playback->previousFrame();
+}
 
-void splitViewWidget::onSwipeUp() { playlist->selectNextItem(); }
+void splitViewWidget::onSwipeUp()
+{
+  playlist->selectNextItem();
+}
 
-void splitViewWidget::onSwipeDown() { playlist->selectPreviousItem(); }
+void splitViewWidget::onSwipeDown()
+{
+  playlist->selectPreviousItem();
+}
 
 void splitViewWidget::createMenuActions()
 {
@@ -1627,8 +1654,7 @@ void splitViewWidget::createMenuActions()
                                          bool          checked,
                                          void (splitViewWidget::*func)(bool),
                                          const QKeySequence &shortcut  = {},
-                                         bool                isEnabled = true)
-  {
+                                         bool                isEnabled = true) {
     action.setParent(this);
     action.setCheckable(true);
     action.setChecked(checked);

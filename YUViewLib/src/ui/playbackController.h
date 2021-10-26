@@ -113,7 +113,7 @@ signals:
   void ControllerStartCachingCurrentSelection(indexRange range);
   void ControllerRemoveFromCache(indexRange range);
 
-  // This is connected to the videoCache and tells it to call itemCachingFinished when caching is
+  // This is connected to the VideoCache and tells it to call itemCachingFinished when caching is
   // finished.
   void waitForItemCaching(playlistItem *item);
 

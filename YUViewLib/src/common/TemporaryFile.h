@@ -32,20 +32,23 @@
 
 #pragma once
 
-#include <cstdio>
+#include <atomic>
 #include <string>
 
+/* Create a temporary file but don't open it. Once the class is deleted, the file is also deleted.
+ * This class only guarantees that there is not going to be another TemporaryFile with the same
+ * name.
+ */
 class TemporaryFile
 {
 public:
-  TemporaryFile(std::string extension)
-  {
-    this->filename = std::string(std::tmpnam(nullptr)) + "." + extension;
-  }
-  ~TemporaryFile() { std::remove(this->filename.c_str()); }
+  TemporaryFile(std::string extension);
+  ~TemporaryFile();
 
-  std::string getFilename() const { return this->filename; }
+  std::string getFilename() const;
 
 private:
   std::string filename;
+
+  static std::atomic_uint fileCounter;
 };

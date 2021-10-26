@@ -66,7 +66,7 @@ public:
   Size                       getSequenceSizeSamples() const { return frameSize; }
   video::RawFormat           getRawFormat() const { return rawFormat; }
   video::yuv::YUVPixelFormat getPixelFormatYUV() const { return pixelFormat_yuv; }
-  video::rgb::rgbPixelFormat getPixelFormatRGB() const { return pixelFormat_rgb; }
+  video::rgb::PixelFormatRGB getPixelFormatRGB() const { return pixelFormat_rgb; }
 
   /* Get data from the file source. You can either retrive full AVPackets or single units
    * from the bitstream using these functions. The important thing is to not mix calls to these
@@ -155,7 +155,7 @@ protected:
 
   video::RawFormat            rawFormat{video::RawFormat::Invalid};
   video::yuv::YUVPixelFormat  pixelFormat_yuv;
-  video::rgb::rgbPixelFormat  pixelFormat_rgb;
+  video::rgb::PixelFormatRGB  pixelFormat_rgb;
   video::yuv::ColorConversion colorConversionType{video::yuv::ColorConversion::BT709_LimitedRange};
 
   // Watch the opened file for modifications

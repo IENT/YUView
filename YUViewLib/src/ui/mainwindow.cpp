@@ -145,11 +145,11 @@ MainWindow::MainWindow(bool useAlternativeSources, QWidget *parent) : QMainWindo
 
   ui.displaySplitView->setAttribute(Qt::WA_AcceptTouchEvents);
 
-  // Create the videoCache object
-  cache.reset(new video::videoCache(
+  // Create the VideoCache object
+  cache.reset(new video::VideoCache(
       ui.playlistTreeWidget, ui.playbackController, ui.displaySplitView, this));
   connect(cache.data(),
-          &video::videoCache::updateCacheStatus,
+          &video::VideoCache::updateCacheStatus,
           ui.cachingInfoWidget,
           &VideoCacheInfoWidget::onUpdateCacheStatus);
 
