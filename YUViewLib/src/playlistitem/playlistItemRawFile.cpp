@@ -125,7 +125,7 @@ playlistItemRawFile::playlistItemRawFile(const QString &rawFilePath,
     // Just set the given values
     video->setFrameSize(frameSize);
     if (rawFormat == video::RawFormat::YUV)
-      getYUVVideo()->setYUVPixelFormatByName(sourcePixelFormat);
+      getYUVVideo()->setPixelFormatYUVByName(sourcePixelFormat);
     else if (rawFormat == video::RawFormat::RGB)
       getRGBVideo()->setRGBPixelFormatByName(sourcePixelFormat);
   }
@@ -225,7 +225,7 @@ bool playlistItemRawFile::parseY4MFile()
   unsigned width  = 0;
   unsigned height = 0;
   auto     format =
-      video::yuv::YUVPixelFormat(video::yuv::Subsampling::YUV_420, 8, video::yuv::PlaneOrder::YUV);
+      video::yuv::PixelFormatYUV(video::yuv::Subsampling::YUV_420, 8, video::yuv::PlaneOrder::YUV);
 
   while (rawData.at(offset++) == ' ')
   {
@@ -317,7 +317,7 @@ bool playlistItemRawFile::parseY4MFile()
         offset += 3;
       }
 
-      format = video::yuv::YUVPixelFormat(subsampling, bitsPerSample);
+      format = video::yuv::PixelFormatYUV(subsampling, bitsPerSample);
     }
 
     // If not already there, seek to the next space (a 0x0A ends the header).
@@ -391,7 +391,7 @@ bool playlistItemRawFile::parseY4MFile()
 
   // Success. Set the format and return true;
   video->setFrameSize(Size(width, height));
-  getYUVVideo()->setYUVPixelFormat(format);
+  getYUVVideo()->setPixelFormatYUV(format);
   return true;
 }
 

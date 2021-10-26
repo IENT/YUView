@@ -30,7 +30,7 @@
  *   along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "YUVPixelFormatGuess.h"
+#include "PixelFormatYUVGuess.h"
 
 #include <common/Functions.h>
 
@@ -98,13 +98,13 @@ std::vector<Subsampling> getDetectionSubsamplingList(Subsampling forceAsFirst, b
   return subsamplingList;
 }
 
-bool checkFormat(const YUVPixelFormat pixelFormat, const Size frameSize, const int64_t fileSize)
+bool checkFormat(const PixelFormatYUV pixelFormat, const Size frameSize, const int64_t fileSize)
 {
   int bpf = pixelFormat.bytesPerFrame(frameSize);
   return (bpf != 0 && (fileSize % bpf) == 0);
 }
 
-YUVPixelFormat testFormatFromSizeAndNamePlanar(std::string name,
+PixelFormatYUV testFormatFromSizeAndNamePlanar(std::string name,
                                                const Size  size,
                                                unsigned    bitDepth,
                                                Subsampling detectedSubsampling,
@@ -139,7 +139,7 @@ YUVPixelFormat testFormatFromSizeAndNamePlanar(std::string name,
               if (bitDepth > 8)
                 formatName += std::to_string(bitDepth) + endianness;
               formatName += interlacedString;
-              auto fmt = YUVPixelFormat(
+              auto fmt = PixelFormatYUV(
                   subsampling, bitDepth, entry.second, endianness == "be", {}, interlaced);
               if (name.find(formatName) != std::string::npos && checkFormat(fmt, size, fileSize))
                 return fmt;
@@ -152,7 +152,7 @@ YUVPixelFormat testFormatFromSizeAndNamePlanar(std::string name,
               if (bitDepth > 8)
                 formatName += std::to_string(bitDepth) + endianness;
               formatName += interlacedString;
-              auto fmt = YUVPixelFormat(
+              auto fmt = PixelFormatYUV(
                   subsampling, bitDepth, entry.second, endianness == "be", {}, interlaced);
               if (name.find(formatName) != std::string::npos && checkFormat(fmt, size, fileSize))
                 return fmt;
@@ -165,7 +165,7 @@ YUVPixelFormat testFormatFromSizeAndNamePlanar(std::string name,
   return {};
 }
 
-YUVPixelFormat testFormatFromSizeAndNamePacked(std::string name,
+PixelFormatYUV testFormatFromSizeAndNamePacked(std::string name,
                                                const Size  size,
                                                unsigned    bitDepth,
                                                Subsampling detectedSubsampling,
@@ -176,7 +176,7 @@ YUVPixelFormat testFormatFromSizeAndNamePacked(std::string name,
   std::smatch sm;
   if (std::regex_search(name, sm, strExpr))
   {
-    auto fmt = YUVPixelFormat(PredefinedPixelFormat::V210);
+    auto fmt = PixelFormatYUV(PredefinedPixelFormat::V210);
     if (checkFormat(fmt, size, fileSize))
       return fmt;
   }
@@ -202,7 +202,7 @@ YUVPixelFormat testFormatFromSizeAndNamePacked(std::string name,
             auto formatName       = packingNameLower + SubsamplingMapper.getName(subsampling);
             if (bitDepth > 8)
               formatName += std::to_string(bitDepth) + endianness;
-            auto fmt = YUVPixelFormat(subsampling, bitDepth, packing, false, endianness == "be");
+            auto fmt = PixelFormatYUV(subsampling, bitDepth, packing, false, endianness == "be");
             if (name.find(formatName) != std::string::npos && checkFormat(fmt, size, fileSize))
               return fmt;
           }
@@ -213,7 +213,7 @@ YUVPixelFormat testFormatFromSizeAndNamePacked(std::string name,
             auto formatName = functions::toLower(PackingOrderMapper.getName(packing));
             if (bitDepth > 8)
               formatName += std::to_string(bitDepth) + endianness;
-            auto fmt = YUVPixelFormat(subsampling, bitDepth, packing, false, endianness == "be");
+            auto fmt = PixelFormatYUV(subsampling, bitDepth, packing, false, endianness == "be");
             if (name.find(formatName) != std::string::npos && checkFormat(fmt, size, fileSize))
               return fmt;
           }
@@ -225,7 +225,7 @@ YUVPixelFormat testFormatFromSizeAndNamePacked(std::string name,
   return {};
 }
 
-YUVPixelFormat guessFormatFromSizeAndName(const Size       size,
+PixelFormatYUV guessFormatFromSizeAndName(const Size       size,
                                           unsigned         bitDepth,
                                           DataLayout       dataLayout,
                                           int64_t          fileSize,
@@ -248,13 +248,13 @@ YUVPixelFormat guessFormatFromSizeAndName(const Size       size,
   if (fileInfo.suffix().toLower() == "nv21")
   {
     // This should be a 8 bit planar yuv 4:2:0 file with interleaved UV components and YVU order
-    auto fmt = YUVPixelFormat(Subsampling::YUV_420, 8, PlaneOrder::YVU, false, {}, true);
+    auto fmt = PixelFormatYUV(Subsampling::YUV_420, 8, PlaneOrder::YVU, false, {}, true);
     if (checkFormat(fmt, size, fileSize))
       return fmt;
   }
   if (fileInfo.suffix().toLower() == "v210")
   {
-    auto fmt = YUVPixelFormat(PredefinedPixelFormat::V210);
+    auto fmt = PixelFormatYUV(PredefinedPixelFormat::V210);
     if (checkFormat(fmt, size, fileSize))
       return fmt;
   }
@@ -292,7 +292,7 @@ YUVPixelFormat guessFormatFromSizeAndName(const Size       size,
     if (name.find("ayuv64le") != std::string::npos)
     {
       // Check if the format and the file size match
-      auto fmt = YUVPixelFormat(Subsampling::YUV_444, 16, PackingOrder::AYUV, false, false);
+      auto fmt = PixelFormatYUV(Subsampling::YUV_444, 16, PackingOrder::AYUV, false, false);
       if (checkFormat(fmt, size, fileSize))
         return fmt;
     }
@@ -302,7 +302,7 @@ YUVPixelFormat guessFormatFromSizeAndName(const Size       size,
     {
       if (name.find("gray" + std::to_string(depth) + "le") != std::string::npos)
       {
-        auto fmt = YUVPixelFormat(Subsampling::YUV_400, depth);
+        auto fmt = PixelFormatYUV(Subsampling::YUV_400, depth);
         if (checkFormat(fmt, size, fileSize))
           return fmt;
       }
@@ -323,11 +323,11 @@ YUVPixelFormat guessFormatFromSizeAndName(const Size       size,
         // Try this subsampling with all bitDepths
         for (auto bd : bitDepths)
         {
-          YUVPixelFormat fmt;
+          PixelFormatYUV fmt;
           if (dataLayout == DataLayout::Packed)
-            fmt = YUVPixelFormat(subsamplingEntry.value, bd, PackingOrder::YUV);
+            fmt = PixelFormatYUV(subsamplingEntry.value, bd, PackingOrder::YUV);
           else
-            fmt = YUVPixelFormat(subsamplingEntry.value, bd, PlaneOrder::YUV);
+            fmt = PixelFormatYUV(subsamplingEntry.value, bd, PlaneOrder::YUV);
           if (checkFormat(fmt, size, fileSize))
             return fmt;
         }
@@ -352,7 +352,7 @@ YUVPixelFormat guessFormatFromSizeAndName(const Size       size,
   {
     for (auto bd : testBitDepths)
     {
-      auto fmt = YUVPixelFormat(subsampling, bd, PlaneOrder::YUV);
+      auto fmt = PixelFormatYUV(subsampling, bd, PlaneOrder::YUV);
       if (checkFormat(fmt, size, fileSize))
         return fmt;
     }

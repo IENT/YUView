@@ -963,10 +963,10 @@ public:
   {
     return flagIsRGB() ? video::RawFormat::RGB : video::RawFormat::YUV;
   }
-  video::yuv::YUVPixelFormat getYUVPixelFormat();
+  video::yuv::PixelFormatYUV getPixelFormatYUV();
   video::rgb::PixelFormatRGB getRGBPixelFormat();
 
-  bool setValuesFromYUVPixelFormat(video::yuv::YUVPixelFormat fmt);
+  bool setValuesFromPixelFormatYUV(video::yuv::PixelFormatYUV fmt);
 
   // AVPixFmtDescriptor
   QString name;
@@ -1077,7 +1077,7 @@ public:
   AVCodecIDWrapper          getCodecIDWrapper(AVCodecID id);
   AVCodecID                 getCodecIDFromWrapper(AVCodecIDWrapper &wrapper);
   AVPixFmtDescriptorWrapper getAvPixFmtDescriptionFromAvPixelFormat(AVPixelFormat pixFmt);
-  AVPixelFormat             getAVPixelFormatFromYUVPixelFormat(video::yuv::YUVPixelFormat pixFmt);
+  AVPixelFormat             getAVPixelFormatFromPixelFormatYUV(video::yuv::PixelFormatYUV pixFmt);
 
   bool configureDecoder(AVCodecContextWrapper &decCtx, AVCodecParametersWrapper &codecpar);
 
@@ -1130,7 +1130,7 @@ public:
   // All the function pointers of the ffmpeg library
   FFmpegLibraryFunctions lib;
 
-  static AVPixelFormat convertYUVAVPixelFormat(video::yuv::YUVPixelFormat fmt);
+  static AVPixelFormat convertYUVAVPixelFormat(video::yuv::PixelFormatYUV fmt);
   // Check if the given four files can be used to open FFmpeg.
   static bool checkLibraryFiles(QString      avCodecLib,
                                 QString      avFormatLib,

@@ -53,7 +53,7 @@
 #define LOG(x) log(__func__, x)
 #endif
 
-using YUVPixelFormat = video::yuv::YUVPixelFormat;
+using PixelFormatYUV = video::yuv::PixelFormatYUV;
 using Subsampling    = video::yuv::Subsampling;
 using PlaneOrder     = video::yuv::PlaneOrder;
 
@@ -1649,7 +1649,7 @@ FFmpegVersionHandler::getAvPixFmtDescriptionFromAvPixelFormat(AVPixelFormat pixF
   return AVPixFmtDescriptorWrapper(lib.av_pix_fmt_desc_get(pixFmt), libVersion);
 }
 
-YUVPixelFormat AVPixFmtDescriptorWrapper::getYUVPixelFormat()
+PixelFormatYUV AVPixFmtDescriptorWrapper::getPixelFormatYUV()
 {
   if (this->getRawFormat() == video::RawFormat::RGB || !flagsSupported())
     return {};
@@ -1695,7 +1695,7 @@ YUVPixelFormat AVPixFmtDescriptorWrapper::getYUVPixelFormat()
     // If you encounter a format that does not work because of this check please let us know.
     return {};
 
-  return YUVPixelFormat(subsampling, bitsPerSample, planeOrder, bigEndian);
+  return PixelFormatYUV(subsampling, bitsPerSample, planeOrder, bigEndian);
 }
 
 video::rgb::PixelFormatRGB AVPixFmtDescriptorWrapper::getRGBPixelFormat()
@@ -1724,7 +1724,7 @@ video::rgb::PixelFormatRGB AVPixFmtDescriptorWrapper::getRGBPixelFormat()
       bitsPerSample, dataLayout, video::rgb::ChannelOrder::RGB, alphaMode, endianness);
 }
 
-bool AVPixFmtDescriptorWrapper::setValuesFromYUVPixelFormat(YUVPixelFormat fmt)
+bool AVPixFmtDescriptorWrapper::setValuesFromPixelFormatYUV(PixelFormatYUV fmt)
 {
   if (fmt.getPlaneOrder() == PlaneOrder::YVU || fmt.getPlaneOrder() == PlaneOrder::YVUA)
     return false;
@@ -1828,10 +1828,10 @@ bool AVPixFmtDescriptorWrapper::operator==(const AVPixFmtDescriptorWrapper &othe
   return true;
 }
 
-AVPixelFormat FFmpegVersionHandler::getAVPixelFormatFromYUVPixelFormat(YUVPixelFormat pixFmt)
+AVPixelFormat FFmpegVersionHandler::getAVPixelFormatFromPixelFormatYUV(PixelFormatYUV pixFmt)
 {
   AVPixFmtDescriptorWrapper wrapper;
-  wrapper.setValuesFromYUVPixelFormat(pixFmt);
+  wrapper.setValuesFromPixelFormatYUV(pixFmt);
 
   // We will have to search through all pixel formats which the library knows and compare them to
   // the one we are looking for. Unfortunately there is no other more direct search function in

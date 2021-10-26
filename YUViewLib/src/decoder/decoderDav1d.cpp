@@ -323,7 +323,7 @@ bool decoderDav1d::decodeFrame()
     {
       // Set the values
       frameSize = s;
-      formatYUV = video::yuv::YUVPixelFormat(subsampling, bitDepth);
+      formatYUV = video::yuv::PixelFormatYUV(subsampling, bitDepth);
     }
     else
     {
@@ -421,7 +421,7 @@ bool decoderDav1d::pushData(QByteArray &data)
       subBlockSize = (seq.sb128 >= 1) ? 128 : 64;
 
       this->frameSize = s;
-      this->formatYUV = video::yuv::YUVPixelFormat(subsampling, bitDepth);
+      this->formatYUV = video::yuv::PixelFormatYUV(subsampling, bitDepth);
     }
     else
     {

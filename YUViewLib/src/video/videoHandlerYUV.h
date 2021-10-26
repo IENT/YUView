@@ -32,7 +32,7 @@
 
 #pragma once
 
-#include "YUVPixelFormat.h"
+#include "PixelFormatYUV.h"
 #include "videoHandler.h"
 
 #include "ui_videoHandlerYUV.h"
@@ -121,16 +121,16 @@ public:
   virtual QLayout *createVideoHandlerControls(bool isSizeFixed = false) override;
 
   // Get the name of the currently selected YUV pixel format
-  virtual QString getRawYUVPixelFormatName() const
+  virtual QString getRawPixelFormatYUVName() const
   {
     return QString::fromStdString(srcPixelFormat.getName());
   }
   // Set the current YUV format and update the control. Only emit a signalHandlerChanged signal
   // if emitSignal is true.
-  virtual void setYUVPixelFormat(const yuv::YUVPixelFormat &fmt, bool emitSignal = false);
-  virtual void setYUVPixelFormatByName(const QString &name, bool emitSignal = false)
+  virtual void setPixelFormatYUV(const yuv::PixelFormatYUV &fmt, bool emitSignal = false);
+  virtual void setPixelFormatYUVByName(const QString &name, bool emitSignal = false)
   {
-    this->setYUVPixelFormat(yuv::YUVPixelFormat(name.toStdString()), emitSignal);
+    this->setPixelFormatYUV(yuv::PixelFormatYUV(name.toStdString()), emitSignal);
   }
   virtual void setYUVColorConversion(yuv::ColorConversion conversion);
 
@@ -159,7 +159,7 @@ public:
   bool showPixelValuesAsDiff{false};
 
   QByteArray          getDiffYUV() const { return this->diffYUV; };
-  yuv::YUVPixelFormat getDiffYUVFormat() const { return this->diffYUVFormat; }
+  yuv::PixelFormatYUV getDiffYUVFormat() const { return this->diffYUVFormat; }
 
   bool isDiffReady() const { return this->diffReady; }
 
@@ -198,7 +198,7 @@ protected:
   QMap<yuv::Component, yuv::MathParameters> mathParameters;
 
   // The currently selected YUV format
-  yuv::YUVPixelFormat srcPixelFormat;
+  yuv::PixelFormatYUV srcPixelFormat;
 
   virtual yuv_t getPixelValue(const QPoint &pixelPos) const;
 
@@ -214,15 +214,15 @@ private:
   // Convert from YUV (which ever format is selected) to image (RGB-888)
   void convertYUVToImage(const QByteArray &         sourceBuffer,
                          QImage &                   outputImage,
-                         const yuv::YUVPixelFormat &yuvFormat,
+                         const yuv::PixelFormatYUV &yuvFormat,
                          const Size &               curFrameSize);
 
   // Set the new pixel format thread save (lock the mutex). We should also emit that something
   // changed (can be disabled).
-  void setSrcPixelFormat(yuv::YUVPixelFormat newFormat, bool emitChangedSignal = true);
+  void setSrcPixelFormat(yuv::PixelFormatYUV newFormat, bool emitChangedSignal = true);
   // Check the given format against the file size. Set the format if this is a match.
   bool
-  checkAndSetFormat(const yuv::YUVPixelFormat format, const Size frameSize, const int64_t fileSize);
+  checkAndSetFormat(const yuv::PixelFormatYUV format, const Size frameSize, const int64_t fileSize);
 
   bool setFormatFromSizeAndNamePlanar(
       QString name, const Size size, int bitDepth, yuv::Subsampling subsampling, int64_t fileSize);
@@ -232,11 +232,11 @@ private:
   bool convertYUVPlanarToRGB(const QByteArray &         sourceBuffer,
                              unsigned char *            targetBuffer,
                              const Size                 frameSize,
-                             const yuv::YUVPixelFormat &sourceBufferFormat) const;
+                             const yuv::PixelFormatYUV &sourceBufferFormat) const;
   bool markDifferencesYUVPlanarToRGB(const QByteArray &         sourceBuffer,
                                      unsigned char *            targetBuffer,
                                      const Size                 frameSize,
-                                     const yuv::YUVPixelFormat &sourceBufferFormat) const;
+                                     const yuv::PixelFormatYUV &sourceBufferFormat) const;
 
 #if SSE_CONVERSION_420_ALT
   void yuv420_to_argb8888(quint8 *yp,
@@ -254,9 +254,9 @@ private:
 
   bool                diffReady{};
   QByteArray          diffYUV;
-  yuv::YUVPixelFormat diffYUVFormat{};
+  yuv::PixelFormatYUV diffYUVFormat{};
 
-  QList<yuv::YUVPixelFormat> presetList;
+  QList<yuv::PixelFormatYUV> presetList;
 
 private slots:
 

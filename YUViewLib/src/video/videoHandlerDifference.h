@@ -121,7 +121,7 @@ private:
                                int &                      firstY,
                                int &                      partIndex,
                                const QByteArray &         diffYUV,
-                               const yuv::YUVPixelFormat &diffYUVFormat) const;
+                               const yuv::PixelFormatYUV &diffYUVFormat) const;
 
   SafeUi<Ui::videoHandlerDifference> ui;
 };

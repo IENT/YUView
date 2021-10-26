@@ -32,7 +32,7 @@
 
 #pragma once
 
-#include "YUVPixelFormat.h"
+#include "PixelFormatYUV.h"
 
 #include <QDialog>
 
@@ -47,8 +47,8 @@ class videoHandlerYUVCustomFormatDialog : public QDialog
 
 public:
   videoHandlerYUVCustomFormatDialog() = delete;
-  videoHandlerYUVCustomFormatDialog(const YUVPixelFormat &yuvFormat);
-  YUVPixelFormat getSelectedYUVFormat() const;
+  videoHandlerYUVCustomFormatDialog(const PixelFormatYUV &yuvFormat);
+  PixelFormatYUV getSelectedYUVFormat() const;
 
 private slots:
   void on_groupBoxPlanar_toggled(bool checked);

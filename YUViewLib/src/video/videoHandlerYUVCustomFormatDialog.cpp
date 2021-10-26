@@ -38,7 +38,7 @@ namespace video::yuv
 {
 
 videoHandlerYUVCustomFormatDialog::videoHandlerYUVCustomFormatDialog(
-    const YUVPixelFormat &yuvFormat)
+    const PixelFormatYUV &yuvFormat)
 {
   this->ui.setupUi(this);
 
@@ -164,7 +164,7 @@ void videoHandlerYUVCustomFormatDialog::on_groupBoxPlanar_toggled(bool checked)
     this->ui.groupBoxPacked->setChecked(!checked);
 }
 
-YUVPixelFormat videoHandlerYUVCustomFormatDialog::getSelectedYUVFormat() const
+PixelFormatYUV videoHandlerYUVCustomFormatDialog::getSelectedYUVFormat() const
 {
   // Subsampling
   auto idx = this->ui.comboBoxChromaSubsampling->currentIndex();
@@ -199,7 +199,7 @@ YUVPixelFormat videoHandlerYUVCustomFormatDialog::getSelectedYUVFormat() const
 
     auto uvInterleaved = this->ui.checkBoxUVInterleaved->isChecked();
 
-    return YUVPixelFormat(
+    return PixelFormatYUV(
         *subsampling, bitsPerSample, *planeOrder, bigEndian, chromaOffset, uvInterleaved);
   }
   else
@@ -212,7 +212,7 @@ YUVPixelFormat videoHandlerYUVCustomFormatDialog::getSelectedYUVFormat() const
     auto packingOrder = supportedPackingFormats.at(idx);
     auto bytePacking  = (this->ui.checkBoxBytePacking->isChecked());
 
-    return YUVPixelFormat(
+    return PixelFormatYUV(
         *subsampling, bitsPerSample, packingOrder, bytePacking, bigEndian, chromaOffset);
   }
 }

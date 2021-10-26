@@ -38,8 +38,8 @@
 #include "PixelFormat.h"
 
 // The YUV_Internals namespace. We use this namespace because of the dialog. We want to be able to
-// pass a YUVPixelFormat to the dialog and keep the global namespace clean but we are not able to
-// use nested classes because of the Q_OBJECT macro. So the dialog and the YUVPixelFormat is inside
+// pass a PixelFormatYUV to the dialog and keep the global namespace clean but we are not able to
+// use nested classes because of the Q_OBJECT macro. So the dialog and the PixelFormatYUV is inside
 // of this namespace.
 namespace video::yuv
 {
@@ -176,25 +176,25 @@ const auto BitDepthList = std::vector<unsigned>({8, 9, 10, 12, 14, 16});
 
 // This class defines a specific YUV format with all properties like pixels per sample, subsampling
 // of chroma components and so on.
-class YUVPixelFormat
+class PixelFormatYUV
 {
 public:
-  YUVPixelFormat() = default;
-  YUVPixelFormat(const std::string &name); // Set the pixel format by name. The name should have the
+  PixelFormatYUV() = default;
+  PixelFormatYUV(const std::string &name); // Set the pixel format by name. The name should have the
                                            // format that is returned by getName().
-  YUVPixelFormat(Subsampling subsampling,
+  PixelFormatYUV(Subsampling subsampling,
                  unsigned    bitsPerSample,
                  PlaneOrder  planeOrder    = PlaneOrder::YUV,
                  bool        bigEndian     = false,
                  Offset      chromaOffset  = {},
                  bool        uvInterleaved = false);
-  YUVPixelFormat(Subsampling  subsampling,
+  PixelFormatYUV(Subsampling  subsampling,
                  unsigned     bitsPerSample,
                  PackingOrder packingOrder,
                  bool         bytePacking  = false,
                  bool         bigEndian    = false,
                  Offset       chromaOffset = {});
-  YUVPixelFormat(PredefinedPixelFormat predefinedPixelFormat);
+  PixelFormatYUV(PredefinedPixelFormat predefinedPixelFormat);
 
   std::optional<PredefinedPixelFormat> getPredefinedFormat() const;
 
@@ -222,8 +222,8 @@ public:
   PackingOrder getPackingOrder() const { return this->packingOrder; }
   bool         isBytePacking() const;
 
-  bool operator==(const YUVPixelFormat &a) const { return getName() == a.getName(); }
-  bool operator!=(const YUVPixelFormat &a) const { return getName() != a.getName(); }
+  bool operator==(const PixelFormatYUV &a) const { return getName() == a.getName(); }
+  bool operator!=(const PixelFormatYUV &a) const { return getName() != a.getName(); }
   bool operator==(const std::string &a) const { return getName() == a; }
   bool operator!=(const std::string &a) const { return getName() != a; }
 

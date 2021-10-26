@@ -292,7 +292,7 @@ bool decoderHM::getNextFrameFromDecoder()
   {
     // Set the values
     frameSize = picSize;
-    formatYUV = video::yuv::YUVPixelFormat(subsampling, bitDepth);
+    formatYUV = video::yuv::PixelFormatYUV(subsampling, bitDepth);
   }
   else
   {

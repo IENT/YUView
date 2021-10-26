@@ -390,7 +390,7 @@ bool decoderVVDec::getNextFrameFromDecoder()
   {
     // Set the values
     this->frameSize = lumaSize;
-    this->formatYUV = video::yuv::YUVPixelFormat(subsampling, bitDepth);
+    this->formatYUV = video::yuv::PixelFormatYUV(subsampling, bitDepth);
   }
   else
   {

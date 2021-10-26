@@ -1,24 +1,24 @@
 #include <QtTest>
 
-#include <video/YUVPixelFormat.h>
+#include <video/PixelFormatYUV.h>
 
 using namespace video::yuv;
 
-class YUVPixelFormatTest : public QObject
+class PixelFormatYUVTest : public QObject
 {
   Q_OBJECT
 
 public:
-  YUVPixelFormatTest(){};
-  ~YUVPixelFormatTest(){};
+  PixelFormatYUVTest(){};
+  ~PixelFormatYUVTest(){};
 
 private slots:
   void testFormatFromToString();
 };
 
-std::vector<YUVPixelFormat> getAllFormats()
+std::vector<PixelFormatYUV> getAllFormats()
 {
-  std::vector<YUVPixelFormat> allFormats;
+  std::vector<PixelFormatYUV> allFormats;
 
   for (auto subsampling : SubsamplingMapper.getEnums())
   {
@@ -33,7 +33,7 @@ std::vector<YUVPixelFormat> getAllFormats()
         for (auto bigEndian : endianList)
         {
           auto pixelFormat =
-              YUVPixelFormat(subsampling, bitsPerSample, planeOrder, bigEndian);
+              PixelFormatYUV(subsampling, bitsPerSample, planeOrder, bigEndian);
           allFormats.push_back(pixelFormat);
         }
       }
@@ -44,7 +44,7 @@ std::vector<YUVPixelFormat> getAllFormats()
         {
           for (auto bigEndian : endianList)
           {
-            auto pixelFormat = YUVPixelFormat(
+            auto pixelFormat = PixelFormatYUV(
                 subsampling, bitsPerSample, packingOrder, bytePacking, bigEndian);
             allFormats.push_back(pixelFormat);
           }
@@ -54,12 +54,12 @@ std::vector<YUVPixelFormat> getAllFormats()
   }
 
   for (auto predefinedFormat : PredefinedPixelFormatMapper.getEnums())
-    allFormats.push_back(YUVPixelFormat(predefinedFormat));
+    allFormats.push_back(PixelFormatYUV(predefinedFormat));
 
   return allFormats;
 }
 
-void YUVPixelFormatTest::testFormatFromToString()
+void PixelFormatYUVTest::testFormatFromToString()
 {
   for (auto fmt : getAllFormats())
   {
@@ -69,7 +69,7 @@ void YUVPixelFormatTest::testFormatFromToString()
     {
       QFAIL("Name empty");
     }
-    auto fmtNew = YUVPixelFormat(name);
+    auto fmtNew = PixelFormatYUV(name);
     if (fmt != fmtNew)
     {
       auto errorStr = "Comparison failed. Names: " + name;
@@ -94,6 +94,6 @@ void YUVPixelFormatTest::testFormatFromToString()
   }
 }
 
-QTEST_MAIN(YUVPixelFormatTest)
+QTEST_MAIN(PixelFormatYUVTest)
 
-#include "YUVPixelFormatTest.moc"
+#include "PixelFormatYUVTest.moc"

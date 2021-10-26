@@ -512,7 +512,7 @@ void FileSourceFFmpegFile::openFileAndFindVideoStream(QString fileName)
       this->video_stream.getCodec().getPixelFormat());
   this->rawFormat = ffmpegPixFormat.getRawFormat();
   if (this->rawFormat == video::RawFormat::YUV)
-    this->pixelFormat_yuv = ffmpegPixFormat.getYUVPixelFormat();
+    this->pixelFormat_yuv = ffmpegPixFormat.getPixelFormatYUV();
   else if (this->rawFormat == video::RawFormat::RGB)
     this->pixelFormat_rgb = ffmpegPixFormat.getRGBPixelFormat();
 

@@ -370,7 +370,7 @@ bool decoderLibde265::decodeFrame()
     {
       // Set the values
       frameSize = s;
-      formatYUV = video::yuv::YUVPixelFormat(subsampling, bitDepth);
+      formatYUV = video::yuv::PixelFormatYUV(subsampling, bitDepth);
     }
     else
     {

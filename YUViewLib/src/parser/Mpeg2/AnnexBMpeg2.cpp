@@ -286,17 +286,17 @@ Size AnnexBMpeg2::getSequenceSizeSamples() const
   return Size(w, h);
 }
 
-video::yuv::YUVPixelFormat AnnexBMpeg2::getPixelFormat() const
+video::yuv::PixelFormatYUV AnnexBMpeg2::getPixelFormat() const
 {
   if (firstSequenceExtension)
   {
     int c = firstSequenceExtension->chroma_format;
     if (c == 1)
-      return video::yuv::YUVPixelFormat(video::yuv::Subsampling::YUV_420, 8);
+      return video::yuv::PixelFormatYUV(video::yuv::Subsampling::YUV_420, 8);
     if (c == 2)
-      return video::yuv::YUVPixelFormat(video::yuv::Subsampling::YUV_422, 8);
+      return video::yuv::PixelFormatYUV(video::yuv::Subsampling::YUV_422, 8);
     if (c == 3)
-      return video::yuv::YUVPixelFormat(video::yuv::Subsampling::YUV_444, 8);
+      return video::yuv::PixelFormatYUV(video::yuv::Subsampling::YUV_444, 8);
   }
   return {};
 }

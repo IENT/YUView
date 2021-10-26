@@ -48,7 +48,7 @@ namespace decoder
 decoderFFmpeg::decoderFFmpeg(AVCodecIDWrapper           codecID,
                              Size                       size,
                              QByteArray                 extradata,
-                             video::yuv::YUVPixelFormat fmt,
+                             video::yuv::PixelFormatYUV fmt,
                              IntPair                    profileLevel,
                              Ratio                      sampleAspectRatio,
                              bool                       cachingDecoder)
@@ -66,7 +66,7 @@ decoderFFmpeg::decoderFFmpeg(AVCodecIDWrapper           codecID,
   codecpar.setSize(size.width, size.height);
   codecpar.setExtradata(extradata);
 
-  AVPixelFormat f = this->ff.getAVPixelFormatFromYUVPixelFormat(fmt);
+  AVPixelFormat f = this->ff.getAVPixelFormatFromPixelFormatYUV(fmt);
   if (f == AV_PIX_FMT_NONE)
   {
     this->setError("Error determining the AVPixelFormat.");
@@ -185,7 +185,7 @@ void decoderFFmpeg::copyCurImageToBuffer()
   if (this->rawFormat == video::RawFormat::YUV)
   {
     // At first get how many bytes we are going to write
-    const auto pixFmt           = this->getYUVPixelFormat();
+    const auto pixFmt           = this->getPixelFormatYUV();
     const auto nrBytesPerSample = pixFmt.getBitsPerSample() <= 8 ? 1 : 2;
     const auto nrBytesY         = this->frameSize.width * this->frameSize.height * nrBytesPerSample;
     const auto nrBytesC         = this->frameSize.width / pixFmt.getSubsamplingHor() *
@@ -468,7 +468,7 @@ bool decoderFFmpeg::createDecoder(AVCodecIDWrapper codecID, AVCodecParametersWra
       this->ff.getAvPixFmtDescriptionFromAvPixelFormat(decCtx.getPixelFormat());
   this->rawFormat = ffmpegPixFormat.getRawFormat();
   if (this->rawFormat == video::RawFormat::YUV)
-    this->formatYUV = ffmpegPixFormat.getYUVPixelFormat();
+    this->formatYUV = ffmpegPixFormat.getPixelFormatYUV();
   else if (this->rawFormat == video::RawFormat::RGB)
     this->formatRGB = ffmpegPixFormat.getRGBPixelFormat();
 

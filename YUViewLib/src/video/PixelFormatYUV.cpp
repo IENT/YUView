@@ -30,7 +30,7 @@
  *   along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "YUVPixelFormat.h"
+#include "PixelFormatYUV.h"
 
 #include <regex>
 
@@ -100,7 +100,7 @@ bool isDefaultChromaFormat(int chromaOffset, bool offsetX, Subsampling subsampli
   return chromaOffset == 0;
 }
 
-YUVPixelFormat::YUVPixelFormat(const std::string &name)
+PixelFormatYUV::PixelFormatYUV(const std::string &name)
 {
   if (auto predefinedFormat = PredefinedPixelFormatMapper.getValue(name))
   {
@@ -118,7 +118,7 @@ YUVPixelFormat::YUVPixelFormat(const std::string &name)
 
   try
   {
-    YUVPixelFormat newFormat;
+    PixelFormatYUV newFormat;
 
     // Is this a packed format or not?
     auto packed      = sm.str(5);
@@ -203,7 +203,7 @@ YUVPixelFormat::YUVPixelFormat(const std::string &name)
   }
 }
 
-YUVPixelFormat::YUVPixelFormat(Subsampling subsampling,
+PixelFormatYUV::PixelFormatYUV(Subsampling subsampling,
                                unsigned    bitsPerSample,
                                PlaneOrder  planeOrder,
                                bool        bigEndian,
@@ -215,7 +215,7 @@ YUVPixelFormat::YUVPixelFormat(Subsampling subsampling,
   this->setDefaultChromaOffset();
 }
 
-YUVPixelFormat::YUVPixelFormat(Subsampling  subsampling,
+PixelFormatYUV::PixelFormatYUV(Subsampling  subsampling,
                                unsigned     bitsPerSample,
                                PackingOrder packingOrder,
                                bool         bytePacking,
@@ -228,17 +228,17 @@ YUVPixelFormat::YUVPixelFormat(Subsampling  subsampling,
   this->setDefaultChromaOffset();
 }
 
-YUVPixelFormat::YUVPixelFormat(PredefinedPixelFormat predefinedPixelFormat)
+PixelFormatYUV::PixelFormatYUV(PredefinedPixelFormat predefinedPixelFormat)
     : predefinedPixelFormat(predefinedPixelFormat)
 {
 }
 
-std::optional<PredefinedPixelFormat> YUVPixelFormat::getPredefinedFormat() const
+std::optional<PredefinedPixelFormat> PixelFormatYUV::getPredefinedFormat() const
 {
   return this->predefinedPixelFormat;
 }
 
-bool YUVPixelFormat::isValid() const
+bool PixelFormatYUV::isValid() const
 {
   if (this->predefinedPixelFormat.has_value())
     return true;
@@ -285,7 +285,7 @@ bool YUVPixelFormat::isValid() const
   return true;
 }
 
-bool YUVPixelFormat::canConvertToRGB(Size imageSize, std::string *whyNot) const
+bool PixelFormatYUV::canConvertToRGB(Size imageSize, std::string *whyNot) const
 {
   if (this->predefinedPixelFormat.has_value())
     return true;
@@ -349,7 +349,7 @@ bool YUVPixelFormat::canConvertToRGB(Size imageSize, std::string *whyNot) const
   return canConvert;
 }
 
-int64_t YUVPixelFormat::bytesPerFrame(const Size &frameSize) const
+int64_t PixelFormatYUV::bytesPerFrame(const Size &frameSize) const
 {
   if (this->predefinedPixelFormat)
   {
@@ -439,7 +439,7 @@ int64_t YUVPixelFormat::bytesPerFrame(const Size &frameSize) const
 }
 
 // Generate a unique name for the YUV format
-std::string YUVPixelFormat::getName() const
+std::string PixelFormatYUV::getName() const
 {
   if (!this->isValid())
     return "Invalid";
@@ -480,7 +480,7 @@ std::string YUVPixelFormat::getName() const
   return ss.str();
 }
 
-unsigned YUVPixelFormat::getNrPlanes() const
+unsigned PixelFormatYUV::getNrPlanes() const
 {
   if (this->predefinedPixelFormat)
   {
@@ -497,7 +497,7 @@ unsigned YUVPixelFormat::getNrPlanes() const
   return 3;
 }
 
-Subsampling YUVPixelFormat::getSubsampling() const
+Subsampling PixelFormatYUV::getSubsampling() const
 {
   if (this->predefinedPixelFormat)
   {
@@ -509,7 +509,7 @@ Subsampling YUVPixelFormat::getSubsampling() const
   return this->subsampling;
 }
 
-int YUVPixelFormat::getSubsamplingHor(Component component) const
+int PixelFormatYUV::getSubsamplingHor(Component component) const
 {
   auto sub = this->getSubsampling();
 
@@ -522,7 +522,7 @@ int YUVPixelFormat::getSubsamplingHor(Component component) const
   return 1;
 }
 
-int YUVPixelFormat::getSubsamplingVer(Component component) const
+int PixelFormatYUV::getSubsamplingVer(Component component) const
 {
   auto sub = this->getSubsampling();
 
@@ -535,20 +535,20 @@ int YUVPixelFormat::getSubsamplingVer(Component component) const
   return 1;
 }
 
-void YUVPixelFormat::setDefaultChromaOffset()
+void PixelFormatYUV::setDefaultChromaOffset()
 {
   this->chromaOffset = Offset({0, 0});
   if (this->getSubsampling() == Subsampling::YUV_420)
     this->chromaOffset.y = 1;
 }
 
-bool YUVPixelFormat::isChromaSubsampled() const
+bool PixelFormatYUV::isChromaSubsampled() const
 {
   auto sub = this->getSubsampling();
   return sub != Subsampling::YUV_444;
 }
 
-unsigned YUVPixelFormat::getBitsPerSample() const
+unsigned PixelFormatYUV::getBitsPerSample() const
 {
   if (this->predefinedPixelFormat)
   {
@@ -560,7 +560,7 @@ unsigned YUVPixelFormat::getBitsPerSample() const
   return this->bitsPerSample;
 }
 
-bool YUVPixelFormat::isBigEndian() const
+bool PixelFormatYUV::isBigEndian() const
 {
   if (this->predefinedPixelFormat)
   {
@@ -572,7 +572,7 @@ bool YUVPixelFormat::isBigEndian() const
   return this->bigEndian;
 }
 
-bool YUVPixelFormat::isPlanar() const
+bool PixelFormatYUV::isPlanar() const
 {
   if (this->predefinedPixelFormat)
   {
@@ -584,7 +584,7 @@ bool YUVPixelFormat::isPlanar() const
   return this->planar;
 }
 
-Offset YUVPixelFormat::getChromaOffset() const
+Offset PixelFormatYUV::getChromaOffset() const
 {
   if (this->predefinedPixelFormat)
   {
@@ -596,7 +596,7 @@ Offset YUVPixelFormat::getChromaOffset() const
   return this->chromaOffset;
 }
 
-bool YUVPixelFormat::isBytePacking() const
+bool PixelFormatYUV::isBytePacking() const
 {
   if (this->predefinedPixelFormat)
   {

@@ -65,7 +65,7 @@ public:
   double                     getFramerate() const { return frameRate; }
   Size                       getSequenceSizeSamples() const { return frameSize; }
   video::RawFormat           getRawFormat() const { return rawFormat; }
-  video::yuv::YUVPixelFormat getPixelFormatYUV() const { return pixelFormat_yuv; }
+  video::yuv::PixelFormatYUV getPixelFormatYUV() const { return pixelFormat_yuv; }
   video::rgb::PixelFormatRGB getPixelFormatRGB() const { return pixelFormat_rgb; }
 
   /* Get data from the file source. You can either retrive full AVPackets or single units
@@ -154,7 +154,7 @@ protected:
   streamIndices_t streamIndices;
 
   video::RawFormat            rawFormat{video::RawFormat::Invalid};
-  video::yuv::YUVPixelFormat  pixelFormat_yuv;
+  video::yuv::PixelFormatYUV  pixelFormat_yuv;
   video::rgb::PixelFormatRGB  pixelFormat_rgb;
   video::yuv::ColorConversion colorConversionType{video::yuv::ColorConversion::BT709_LimitedRange};
 

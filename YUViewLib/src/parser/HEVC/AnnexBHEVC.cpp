@@ -102,7 +102,7 @@ Size AnnexBHEVC::getSequenceSizeSamples() const
   return {};
 }
 
-video::yuv::YUVPixelFormat AnnexBHEVC::getPixelFormat() const
+video::yuv::PixelFormatYUV AnnexBHEVC::getPixelFormat() const
 {
   using Subsampling = video::yuv::Subsampling;
 
@@ -135,7 +135,7 @@ video::yuv::YUVPixelFormat AnnexBHEVC::getPixelFormat() const
         // Different luma and chroma bit depths currently not supported
         return {};
       }
-      return video::yuv::YUVPixelFormat(subsampling, bitDepthY);
+      return video::yuv::PixelFormatYUV(subsampling, bitDepthY);
     }
   }
 

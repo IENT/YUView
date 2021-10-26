@@ -166,7 +166,7 @@ protected:
     RGBFormatList();
     // Get all the YUV formats as a formatted list (for the drop-down control)
     std::vector<std::string> getFormattedNames() const;
-    // Get the YUVPixelFormat with the given name
+    // Get the PixelFormatYUV with the given name
     rgb::PixelFormatRGB getFromName(const std::string &name) const;
   };
   static RGBFormatList rgbPresetList;

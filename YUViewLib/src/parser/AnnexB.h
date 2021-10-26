@@ -97,7 +97,7 @@ public:
   // Get some format properties
   virtual double                     getFramerate() const           = 0;
   virtual Size                       getSequenceSizeSamples() const = 0;
-  virtual video::yuv::YUVPixelFormat getPixelFormat() const         = 0;
+  virtual video::yuv::PixelFormatYUV getPixelFormat() const         = 0;
 
   // When we want to seek to a specific frame number, this function return the parameter sets that
   // you need to start decoding (without start codes). If file positions were set for the NAL units,

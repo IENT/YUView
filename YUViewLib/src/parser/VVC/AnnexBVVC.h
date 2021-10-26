@@ -61,7 +61,7 @@ public:
   // Get some properties
   double                     getFramerate() const override;
   Size                       getSequenceSizeSamples() const override;
-  video::yuv::YUVPixelFormat getPixelFormat() const override;
+  video::yuv::PixelFormatYUV getPixelFormat() const override;
 
   virtual std::optional<SeekData> getSeekData(int iFrameNr) override;
   QByteArray                      getExtradata() override;

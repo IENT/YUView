@@ -444,7 +444,7 @@ bool videoHandlerDifference::hierarchicalPositionYUV(int                        
                                                      int &                      firstY,
                                                      int &                      partIndex,
                                                      const QByteArray &         diffYUV,
-                                                     const yuv::YUVPixelFormat &diffYUVFormat) const
+                                                     const yuv::PixelFormatYUV &diffYUVFormat) const
 {
   if (x >= int(frameSize.width) || y >= int(frameSize.height))
     // This block is entirely outside of the picture

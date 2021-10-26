@@ -134,7 +134,7 @@ playlistItemCompressedVideo::playlistItemCompressedVideo(const QString &compress
 
   // While opening the file, also determine which decoders we can use
   Size                       frameSize;
-  video::yuv::YUVPixelFormat formatYuv;
+  video::yuv::PixelFormatYUV formatYuv;
   video::rgb::PixelFormatRGB formatRgb;
   auto                       mainWindow = MainWindow::getMainWindow();
   Codec                      codec      = Codec::Other;
@@ -274,7 +274,7 @@ playlistItemCompressedVideo::playlistItemCompressedVideo(const QString &compress
     video.reset(new video::videoHandlerYUV());
     auto yuvVideo = getYUVVideo();
     yuvVideo->setFrameSize(frameSize);
-    yuvVideo->setYUVPixelFormat(formatYuv);
+    yuvVideo->setPixelFormatYUV(formatYuv);
   }
   else
   {
@@ -1028,7 +1028,7 @@ bool playlistItemCompressedVideo::allocateDecoder(int displayComponent)
       DEBUG_COMPRESSED("playlistItemCompressedVideo::allocateDecoder Initializing interactive "
                        "ffmpeg decoder from raw anexB stream. frameSize "
                        << frameSize.width << "x" << frameSize.height << " extradata length "
-                       << extradata.length() << " YUVPixelFormat "
+                       << extradata.length() << " PixelFormatYUV "
                        << QString::fromStdString(fmt.getName()) << " profile/level "
                        << profileLevel.first << "/" << profileLevel.second << ", aspect raio "
                        << ratio.num << "/" << ratio.den);

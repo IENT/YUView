@@ -1,31 +1,31 @@
 #include <QtTest>
 
-#include <video/YUVPixelFormatGuess.h>
+#include <video/PixelFormatYUVGuess.h>
 
 using namespace video;
 
-class YUVPixelFormatGuessTest : public QObject
+class PixelFormatYUVGuessTest : public QObject
 {
   Q_OBJECT
 
 public:
-  YUVPixelFormatGuessTest();
-  ~YUVPixelFormatGuessTest();
+  PixelFormatYUVGuessTest();
+  ~PixelFormatYUVGuessTest();
 
 private slots:
   void testFormatGuessFromFilename_data();
   void testFormatGuessFromFilename();
 };
 
-YUVPixelFormatGuessTest::YUVPixelFormatGuessTest()
+PixelFormatYUVGuessTest::PixelFormatYUVGuessTest()
 {
 }
 
-YUVPixelFormatGuessTest::~YUVPixelFormatGuessTest()
+PixelFormatYUVGuessTest::~PixelFormatYUVGuessTest()
 {
 }
 
-void YUVPixelFormatGuessTest::testFormatGuessFromFilename_data()
+void PixelFormatYUVGuessTest::testFormatGuessFromFilename_data()
 {
   QTest::addColumn<QString>("filename");
   QTest::addColumn<unsigned>("fileSize");
@@ -111,7 +111,7 @@ void YUVPixelFormatGuessTest::testFormatGuessFromFilename_data()
   // We need more tests here ... but I don't want to do this now :)
 }
 
-void YUVPixelFormatGuessTest::testFormatGuessFromFilename()
+void PixelFormatYUVGuessTest::testFormatGuessFromFilename()
 {
   QFETCH(QString, filename);
   QFETCH(unsigned, fileSize);
@@ -130,6 +130,6 @@ void YUVPixelFormatGuessTest::testFormatGuessFromFilename()
   QCOMPARE(fmtName, expectedFormatName.toStdString());
 }
 
-QTEST_MAIN(YUVPixelFormatGuessTest)
+QTEST_MAIN(PixelFormatYUVGuessTest)
 
-#include "YUVPixelFormatGuessTest.moc"
+#include "PixelFormatYUVGuessTest.moc"
