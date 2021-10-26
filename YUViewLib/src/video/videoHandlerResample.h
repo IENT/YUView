@@ -32,11 +32,12 @@
 
 #pragma once
 
-#include <QPointer>
+#include <common/FileInfo.h>
 
-#include "common/FileInfo.h"
 #include "videoHandler.h"
 #include "videoHandlerYUV.h"
+
+#include <QPointer>
 
 namespace video
 {
