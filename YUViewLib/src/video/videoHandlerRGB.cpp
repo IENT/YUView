@@ -714,11 +714,10 @@ void videoHandlerRGB::convertSourceToRGBA32Bit(const QByteArray &sourceBuffer,
         dst[0] = val;
         dst[1] = val;
         dst[2] = val;
-        if (hasAlpha)
-          dst[3] = 255;
+        dst[3] = 255;
 
         src += offsetToNextValue;
-        dst += hasAlpha ? 4 : 3;
+        dst += 4;
       }
     }
     else if (srcPixelFormat.bitsPerValue == 8)
@@ -743,11 +742,10 @@ void videoHandlerRGB::convertSourceToRGBA32Bit(const QByteArray &sourceBuffer,
         dst[0] = val;
         dst[1] = val;
         dst[2] = val;
-        if (hasAlpha)
-          dst[3] = 255;
+        dst[3] = 255;
 
         src += offsetToNextValue;
-        dst += hasAlpha ? 4 : 3;
+        dst += 4;
       }
     }
     else
@@ -841,9 +839,9 @@ void videoHandlerRGB::convertSourceToRGBA32Bit(const QByteArray &sourceBuffer,
         dst[0] = valB;
         dst[1] = valG;
         dst[2] = valR;
-        if (hasAlpha)
-          dst[3] = valA;
-        dst += hasAlpha ? 4 : 3;
+        dst[3] = valA;  
+        
+        dst += 4;
       }
     }
     else if (srcPixelFormat.bitsPerValue == 8)
@@ -921,9 +919,9 @@ void videoHandlerRGB::convertSourceToRGBA32Bit(const QByteArray &sourceBuffer,
         dst[0] = valB;
         dst[1] = valG;
         dst[2] = valR;
-        if (hasAlpha)
-          dst[3] = valA;
-        dst += hasAlpha ? 4 : 3;
+        dst[3] = valA;
+        
+        dst += 4;
       }
     }
     else
