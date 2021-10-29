@@ -374,7 +374,7 @@ QImage frameHandler::calculateDifference(frameHandler *item2,
   auto width  = std::min(frameSize.width, item2->frameSize.width);
   auto height = std::min(frameSize.height, item2->frameSize.height);
 
-  QImage diffImg(width, height, functionsGui::platformImageFormat());
+  QImage diffImg(width, height, functionsGui::platformImageFormat(false));
 
   // Also calculate the MSE while we're at it (R,G,B)
   int64_t mseAdd[3] = {0, 0, 0};

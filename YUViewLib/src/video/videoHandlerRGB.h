@@ -65,6 +65,8 @@ public:
     return (frameHandler::isFormatValid() && srcPixelFormat.isValid());
   }
 
+  unsigned getCachingFrameSize() const override;
+
   // Return the RGB values for the given pixel
   virtual QStringPairList getPixelValues(const QPoint &pixelPos,
                                          int           frameIdx,
@@ -203,7 +205,7 @@ private:
   // Convert one frame from the current pixel format to RGB888
   void       convertSourceToRGBA32Bit(const QByteArray &sourceBuffer,
                                       unsigned char *   targetBuffer,
-                                      bool              convertSourceToRGBA32Bit);
+                                      QImage::Format    imageFormat);
   QByteArray tmpBufferRawRGBDataCaching;
 
   // When a caching job is running in the background it will lock this mutex, so that
