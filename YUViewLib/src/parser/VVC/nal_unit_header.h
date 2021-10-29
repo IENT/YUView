@@ -110,7 +110,7 @@ const EnumMapper<NalType> NalTypeMapper({{NalType::TRAIL_NUT, "TRAIL_NUT"},
                                          {NalType::UNSPECIFIED, "UNSPECIFIED"}});
 
 // 3.1
-static bool isIRAP(NalType nal_unit_type)
+static inline bool isIRAP(NalType nal_unit_type)
 {
   return nal_unit_type == NalType::IDR_W_RADL || nal_unit_type == NalType::IDR_N_LP ||
          nal_unit_type == NalType::CRA_NUT;
