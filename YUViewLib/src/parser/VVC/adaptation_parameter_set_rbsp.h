@@ -38,10 +38,21 @@
 #include "parser/common/SubByteReaderLogging.h"
 #include "rbsp_trailing_bits.h"
 #include "scaling_list_data.h"
-
+#include <common/EnumMapper.h>
 
 namespace parser::vvc
 {
+
+enum class APSParamType
+{
+  ALF_APS,
+  LMCS_APS,
+  SCALING_APS
+};
+
+const EnumMapper<APSParamType> apsParamTypeMapper({{APSParamType::ALF_APS, "ALF_APS"},
+                                                   {APSParamType::LMCS_APS, "LMCS_APS"},
+                                                   {APSParamType::SCALING_APS, "SCALING_APS"}});
 
 class adaptation_parameter_set_rbsp : public NalRBSP
 {
@@ -49,13 +60,6 @@ public:
   adaptation_parameter_set_rbsp()  = default;
   ~adaptation_parameter_set_rbsp() = default;
   void parse(reader::SubByteReaderLogging &reader);
-
-  enum class APSParamType
-  {
-    ALF_APS,
-    LMCS_APS,
-    SCALING_APS
-  };
 
   APSParamType       aps_params_type{};
   unsigned           aps_adaptation_parameter_set_id{};

@@ -454,7 +454,8 @@ void picture_header_structure::calculatePictureOrderCount(
     NalType                                   nalType,
     SPSMap &                                  spsMap,
     PPSMap &                                  ppsMap,
-    std::shared_ptr<picture_header_structure> previousPicture)
+    std::shared_ptr<picture_header_structure> previousPicture,
+    bool                                      NoOutputBeforeRecoveryFlag)
 {
   if (ppsMap.count(this->ph_pic_parameter_set_id) == 0)
     throw std::logic_error("PPS with given ph_pic_parameter_set_id not found.");
@@ -468,12 +469,14 @@ void picture_header_structure::calculatePictureOrderCount(
   // If multiple layers, all layers mus have the same POC. Not implemented yet.
   auto ph_poc_msb_cycle_val_present =
       (sps->sps_poc_msb_cycle_flag && this->ph_poc_msb_cycle_present_flag);
-  // This is what the reference decoder does. In the standard it sounds like a CRA or GDR nal could
-  // also be a CLVSS. This is also not implemented yet.
-  auto isCLVSS = nalType == NalType::IDR_N_LP || nalType == NalType::IDR_W_RADL;
+
+  // 3.31
+  auto isCLVSSPicture =
+      NoOutputBeforeRecoveryFlag && (isIRAP(nalType) || nalType == NalType::GDR_NUT);
+
   if (ph_poc_msb_cycle_val_present)
     this->PicOrderCntMsb = ph_poc_msb_cycle_val * sps->MaxPicOrderCntLsb;
-  else if (isCLVSS)
+  else if (isCLVSSPicture)
     this->PicOrderCntMsb = 0;
   else
   {

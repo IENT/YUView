@@ -665,6 +665,13 @@ videoHandlerYUV::~videoHandlerYUV()
   DEBUG_YUV("videoHandlerYUV destruction");
 }
 
+unsigned videoHandlerYUV::getCachingFrameSize() const
+{
+  auto hasAlpha = this->srcPixelFormat.hasAlpha();
+  auto bytes    = functionsGui::bytesPerPixel(functionsGui::platformImageFormat(hasAlpha));
+  return this->frameSize.width * this->frameSize.height * bytes;
+}
+
 void videoHandlerYUV::loadValues(Size newFramesize, const QString &)
 {
   this->setFrameSize(newFramesize);
@@ -3411,14 +3418,15 @@ void videoHandlerYUV::convertYUVToImage(const QByteArray &    sourceBuffer,
   // (each 8 bit). Internally, this is how QImage allocates the number of bytes per line (with depth
   // = 32): const int bytes_per_line = ((width * depth + 31) >> 5) << 2; // bytes per scanline (must
   // be multiple of 4)
-  auto qFrameSize = QSize(int(curFrameSize.width), int(curFrameSize.height));
+  auto qFrameSize          = QSize(int(curFrameSize.width), int(curFrameSize.height));
+  auto platformImageFormat = functionsGui::platformImageFormat(yuvFormat.hasAlpha());
   if (is_Q_OS_WIN || is_Q_OS_MAC)
-    outputImage = QImage(qFrameSize, functionsGui::platformImageFormat());
+    outputImage = QImage(qFrameSize, platformImageFormat);
   else if (is_Q_OS_LINUX)
   {
-    QImage::Format f = functionsGui::platformImageFormat();
-    if (f == QImage::Format_ARGB32_Premultiplied || f == QImage::Format_ARGB32)
-      outputImage = QImage(qFrameSize, f);
+    if (platformImageFormat == QImage::Format_ARGB32_Premultiplied ||
+        platformImageFormat == QImage::Format_ARGB32)
+      outputImage = QImage(qFrameSize, platformImageFormat);
     else
       outputImage = QImage(qFrameSize, QImage::Format_RGB32);
   }
@@ -3483,10 +3491,10 @@ void videoHandlerYUV::convertYUVToImage(const QByteArray &    sourceBuffer,
   {
     // On linux, we may have to convert the image to the platform image format if it is not one of
     // the RGBA formats.
-    QImage::Format f = functionsGui::platformImageFormat();
-    if (f != QImage::Format_ARGB32_Premultiplied && f != QImage::Format_ARGB32 &&
-        f != QImage::Format_RGB32)
-      outputImage = outputImage.convertToFormat(f);
+    auto format = functionsGui::platformImageFormat(yuvFormat.hasAlpha());
+    if (format != QImage::Format_ARGB32_Premultiplied && format != QImage::Format_ARGB32 &&
+        format != QImage::Format_RGB32)
+      outputImage = outputImage.convertToFormat(format);
   }
 
   DEBUG_YUV("videoHandlerYUV::convertYUVToImage Done");
@@ -3990,10 +3998,10 @@ QImage videoHandlerYUV::calculateDifference(FrameHandler *   item2,
     outputImage = QImage(QSize(w_out, h_out), QImage::Format_RGB32);
   else if (is_Q_OS_LINUX)
   {
-    auto f = functionsGui::platformImageFormat();
-    if (f == QImage::Format_ARGB32_Premultiplied)
+    auto format = functionsGui::platformImageFormat(tmpDiffYUVFormat.hasAlpha());
+    if (format == QImage::Format_ARGB32_Premultiplied)
       outputImage = QImage(QSize(w_out, h_out), QImage::Format_ARGB32_Premultiplied);
-    if (f == QImage::Format_ARGB32)
+    if (format == QImage::Format_ARGB32)
       outputImage = QImage(QSize(w_out, h_out), QImage::Format_ARGB32);
     else
       outputImage = QImage(QSize(w_out, h_out), QImage::Format_RGB32);
@@ -4026,10 +4034,10 @@ QImage videoHandlerYUV::calculateDifference(FrameHandler *   item2,
   {
     // On linux, we may have to convert the image to the platform image format if it is not one of
     // the RGBA formats.
-    auto f = functionsGui::platformImageFormat();
-    if (f != QImage::Format_ARGB32_Premultiplied && f != QImage::Format_ARGB32 &&
-        f != QImage::Format_RGB32)
-      return outputImage.convertToFormat(f);
+    auto format = functionsGui::platformImageFormat(tmpDiffYUVFormat.hasAlpha());
+    if (format != QImage::Format_ARGB32_Premultiplied && format != QImage::Format_ARGB32 &&
+        format != QImage::Format_RGB32)
+      return outputImage.convertToFormat(format);
   }
 
   // we have a yuv differance available

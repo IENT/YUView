@@ -55,7 +55,145 @@ const auto componentShowMapper = EnumMapper<ComponentShow>({{ComponentShow::RGBA
                                                             {ComponentShow::B, "B", "Blue Only"},
                                                             {ComponentShow::A, "A", "Alpha Only"}});
 
+// Convert the input raw RGB(A) format to the output RGBA format. The bit depth is either
+template <int bitDepth>
+void convertInputRGBToRGBA(const QByteArray &    sourceBuffer,
+                           const PixelFormatRGB &srcPixelFormat,
+                           unsigned char *       targetBuffer,
+                           const Size            frameSize,
+                           const bool            componentInvert[4],
+                           const int             componentScale[4],
+                           const bool            limitedRange,
+                           const bool            hasAlpha,
+                           const bool            premultiplyAlpha)
+{
+  const int  rightShift = bitDepth == 8 ? 0 : (srcPixelFormat.getBitsPerSample() - 8);
+  const auto offsetToNextValue =
+      srcPixelFormat.getDataLayout() == DataLayout::Planar ? 1 : srcPixelFormat.nrChannels();
+
+  typedef typename std::conditional<bitDepth == 8, uint8_t *, uint16_t *>::type InValueType;
+
+  auto offsetR = srcPixelFormat.getComponentPosition(Channel::Red);
+  auto offsetG = srcPixelFormat.getComponentPosition(Channel::Green);
+  auto offsetB = srcPixelFormat.getComponentPosition(Channel::Blue);
+  auto offsetA = srcPixelFormat.getComponentPosition(Channel::Alpha);
+  if (srcPixelFormat.getDataLayout() == DataLayout::Planar)
+  {
+    offsetR *= frameSize.width * frameSize.height;
+    offsetG *= frameSize.width * frameSize.height;
+    offsetB *= frameSize.width * frameSize.height;
+    offsetA *= frameSize.width * frameSize.height;
+  }
+
+  auto srcR = ((InValueType)sourceBuffer.data()) + offsetR;
+  auto srcG = ((InValueType)sourceBuffer.data()) + offsetG;
+  auto srcB = ((InValueType)sourceBuffer.data()) + offsetB;
+  auto srcA = ((InValueType)sourceBuffer.data()) + offsetA;
+
+  // Now we just have to iterate over all values and always skip "offsetToNextValue" values in
+  // the sources and write 4 values in dst.
+  for (unsigned i = 0; i < frameSize.width * frameSize.height; i++)
+  {
+    int valR = (((int)srcR[0]) * componentScale[0]) >> rightShift;
+    valR     = clip(valR, 0, 255);
+    if (componentInvert[0])
+      valR = 255 - valR;
+
+    int valG = (((int)srcG[0]) * componentScale[1]) >> rightShift;
+    valG     = clip(valG, 0, 255);
+    if (componentInvert[1])
+      valG = 255 - valG;
+
+    int valB = (((int)srcB[0]) * componentScale[2]) >> rightShift;
+    valB     = clip(valB, 0, 255);
+    if (componentInvert[2])
+      valB = 255 - valB;
+
+    int valA = 255;
+    if (hasAlpha)
+    {
+      valA = (((int)srcA[0]) * componentScale[3]) >> rightShift;
+      valA = clip(valA, 0, 255);
+      if (componentInvert[3])
+        valA = 255 - valA;
+    }
+
+    if (limitedRange)
+    {
+      valR = videoHandler::convScaleLimitedRange(valR);
+      valG = videoHandler::convScaleLimitedRange(valG);
+      valB = videoHandler::convScaleLimitedRange(valB);
+      // No limited range for alpha
+    }
+
+    if (hasAlpha && premultiplyAlpha)
+    {
+      valR = ((valR * 255) * valA) / (255 * 255);
+      valG = ((valG * 255) * valA) / (255 * 255);
+      valB = ((valB * 255) * valA) / (255 * 255);
+    }
+
+    srcR += offsetToNextValue;
+    srcG += offsetToNextValue;
+    srcB += offsetToNextValue;
+    if (hasAlpha)
+      srcA += offsetToNextValue;
+
+    targetBuffer[0] = valB;
+    targetBuffer[1] = valG;
+    targetBuffer[2] = valR;
+    targetBuffer[3] = valA;
+
+    targetBuffer += 4;
+  }
 }
+
+// Convert the input raw RGB(A) format to the output RGBA format. The bit depth is either
+template <int bitDepth>
+void convertSinglePlaneRGBToGreyscaleRGBA(const QByteArray &    sourceBuffer,
+                                          const PixelFormatRGB &srcPixelFormat,
+                                          unsigned char *       targetBuffer,
+                                          const Size            frameSize,
+                                          const int             scale,
+                                          const bool            invert,
+                                          const int             displayComponentOffset,
+                                          const bool            limitedRange)
+{
+  // The source values have to be shifted left by this many bits to get 8 bit output
+  const auto rightShift = srcPixelFormat.getBitsPerSample() - 8;
+  const auto offsetToNextValue =
+      srcPixelFormat.getDataLayout() == DataLayout::Planar ? 1 : srcPixelFormat.nrChannels();
+
+  typedef typename std::conditional<bitDepth == 8, uint8_t *, uint16_t *>::type InValueType;
+
+  // First get the pointer to the first value that we will need.
+  auto src = (InValueType)sourceBuffer.data();
+  if (srcPixelFormat.getDataLayout() == DataLayout::Planar)
+    src += displayComponentOffset * frameSize.width * frameSize.height;
+  else
+    src += displayComponentOffset;
+
+  // Now we just have to iterate over all values and always skip "offsetToNextValue" values in
+  // src and write 4 values in dst.
+  for (unsigned i = 0; i < frameSize.width * frameSize.height; i++)
+  {
+    int val = (((int)src[0]) * scale) >> rightShift;
+    val     = clip(val, 0, 255);
+    if (invert)
+      val = 255 - val;
+    if (limitedRange)
+      val = videoHandler::convScaleLimitedRange(val);
+    targetBuffer[0] = val;
+    targetBuffer[1] = val;
+    targetBuffer[2] = val;
+    targetBuffer[3] = 255;
+
+    src += offsetToNextValue;
+    targetBuffer += 4;
+  }
+}
+
+} // namespace
 
 // Activate this if you want to know when which buffer is loaded/converted to image and so on.
 #define VIDEOHANDLERRGB_DEBUG_LOADING 0
@@ -129,6 +267,13 @@ videoHandlerRGB::~videoHandlerRGB()
   // This will cause a "QMutex: destroying locked mutex" warning by Qt.
   // However, here this is on purpose.
   rgbFormatMutex.lock();
+}
+
+unsigned videoHandlerRGB::getCachingFrameSize() const
+{
+  auto hasAlpha = this->srcPixelFormat.hasAlpha();
+  auto bytes    = functionsGui::bytesPerPixel(functionsGui::platformImageFormat(hasAlpha));
+  return this->frameSize.width * this->frameSize.height * bytes;
 }
 
 QStringPairList videoHandlerRGB::getPixelValues(const QPoint &pixelPos,
@@ -370,9 +515,10 @@ void videoHandlerRGB::updateControlsForNewPixelFormat()
 
     if (!hasAlpha && (this->componentDisplayMode == ComponentShow::A ||
                       this->componentDisplayMode == ComponentShow::RGBA))
-    {
       this->componentDisplayMode = ComponentShow::RGB;
-    }
+    if (hasAlpha && this->componentDisplayMode == ComponentShow::RGB)
+      this->componentDisplayMode = ComponentShow::RGBA;
+
     for (const auto &item : listItems)
       ui.colorComponentsComboBox->addItem(
           QString::fromStdString(componentShowMapper.getText(item)));
@@ -383,13 +529,10 @@ void videoHandlerRGB::updateControlsForNewPixelFormat()
 
 void videoHandlerRGB::slotRGBFormatControlChanged()
 {
-  // What is the current selection?
-  int idx = ui.rgbFormatComboBox->currentIndex();
+  auto selectionIdx     = ui.rgbFormatComboBox->currentIndex();
+  auto nrBytesOldFormat = getBytesPerFrame();
 
-  // The old format's number bytes per frame
-  int64_t nrBytesOldFormat = getBytesPerFrame();
-
-  if (idx == rgbPresetList.count())
+  if (selectionIdx == this->rgbPresetList.count())
   {
     DEBUG_RGB("videoHandlerRGB::slotRGBFormatControlChanged custom format");
 
@@ -399,16 +542,16 @@ void videoHandlerRGB::slotRGBFormatControlChanged()
       this->srcPixelFormat = dialog.getSelectedRGBFormat();
 
     // Check if the custom format it in the presets list. If not, add it
-    int idx = rgbPresetList.indexOf(srcPixelFormat);
-    if (idx == -1 && srcPixelFormat.isValid())
+    auto idx = this->rgbPresetList.indexOf(this->srcPixelFormat);
+    if (idx == -1 && this->srcPixelFormat.isValid())
     {
-      // Valid pixel format with is not in the list. Add it...
-      rgbPresetList.append(srcPixelFormat);
+      // Valid pixel format which is not in the list. Add it...
+      this->rgbPresetList.append(this->srcPixelFormat);
       int                  nrItems = ui.rgbFormatComboBox->count();
       const QSignalBlocker blocker(ui.rgbFormatComboBox);
       ui.rgbFormatComboBox->insertItem(nrItems - 1,
-                                       QString::fromStdString(srcPixelFormat.getName()));
-      idx = rgbPresetList.indexOf(srcPixelFormat);
+                                       QString::fromStdString(this->srcPixelFormat.getName()));
+      idx = this->rgbPresetList.indexOf(this->srcPixelFormat);
     }
 
     if (idx > 0)
@@ -417,23 +560,21 @@ void videoHandlerRGB::slotRGBFormatControlChanged()
       const QSignalBlocker blocker(ui.rgbFormatComboBox);
       ui.rgbFormatComboBox->setCurrentIndex(idx);
     }
+
+    selectionIdx = idx;
   }
-  else
-  {
-    // One of the preset formats was selected
-    DEBUG_RGB("videoHandlerRGB::slotRGBFormatControlChanged set preset format");
-    setSrcPixelFormat(rgbPresetList.at(idx));
-  }
+
+  this->setSrcPixelFormat(rgbPresetList.at(selectionIdx));
 
   // Set the current frame in the buffer to be invalid and clear the cache.
   // Emit that this item needs redraw and the cache needs updating.
-  currentImageIndex = -1;
+  this->currentImageIndex = -1;
   if (nrBytesOldFormat != getBytesPerFrame())
   {
     DEBUG_RGB("videoHandlerRGB::slotRGBFormatControlChanged nr bytes per frame changed");
-    invalidateAllBuffers();
+    this->invalidateAllBuffers();
   }
-  setCacheInvalid();
+  this->setCacheInvalid();
   emit signalHandlerChanged(true, RECACHE_CLEAR);
 }
 
@@ -599,34 +740,31 @@ bool videoHandlerRGB::loadRawRGBData(int frameIndex)
 void videoHandlerRGB::convertRGBToImage(const QByteArray &sourceBuffer, QImage &outputImage)
 {
   DEBUG_RGB("videoHandlerRGB::convertRGBToImage");
-  auto curFrameSize = QSize(frameSize.width, frameSize.height);
+  auto curFrameSize = QSize(this->frameSize.width, this->frameSize.height);
 
   // Create the output image in the right format.
   // Check if we have to premultiply alpha. The format of the raw buffer is: BGRA
   // (each 8 bit). Internally, this is how QImage allocates the number of bytes per line (with depth
   // = 32): const int bytes_per_line = ((width * depth + 31) >> 5) << 2; // bytes per scanline (must
   // be multiple of 4)
-  bool premultiplyAlpha = false;
-  if (is_Q_OS_WIN)
+  const auto hasAlpha = this->srcPixelFormat.hasAlpha();
+  const auto format   = functionsGui::platformImageFormat(hasAlpha);
+
+  if (format != QImage::Format_RGB32 && format != QImage::Format_ARGB32 &&
+      format != QImage::Format_ARGB32_Premultiplied)
   {
-    outputImage      = QImage(curFrameSize, QImage::Format_ARGB32_Premultiplied);
-    premultiplyAlpha = true;
+    DEBUG_RGB("Unsupported format. Can only convert to RGB32 formats.");
+    return;
   }
-  else if (is_Q_OS_MAC)
-    outputImage = QImage(curFrameSize, QImage::Format_RGB32);
-  else if (is_Q_OS_LINUX)
+
+  const auto bps = this->srcPixelFormat.getBitsPerSample();
+  if (bps < 8 || bps > 16)
   {
-    auto f = functionsGui::platformImageFormat();
-    if (f == QImage::Format_ARGB32_Premultiplied)
-    {
-      outputImage      = QImage(curFrameSize, QImage::Format_ARGB32_Premultiplied);
-      premultiplyAlpha = true;
-    }
-    if (f == QImage::Format_ARGB32)
-      outputImage = QImage(curFrameSize, QImage::Format_ARGB32);
-    else
-      outputImage = QImage(curFrameSize, QImage::Format_RGB32);
+    DEBUG_RGB("Unsupported bit depth. 8-16 bit are supported.");
+    return;
   }
+
+  outputImage = QImage(curFrameSize, format);
 
   // Check the image buffer size before we write to it
 #if QT_VERSION < QT_VERSION_CHECK(5, 10, 0)
@@ -637,17 +775,7 @@ void videoHandlerRGB::convertRGBToImage(const QByteArray &sourceBuffer, QImage &
          frameSize.width * frameSize.height * 4);
 #endif
 
-  this->convertSourceToRGBA32Bit(sourceBuffer, outputImage.bits(), premultiplyAlpha);
-
-  if (is_Q_OS_LINUX)
-  {
-    // On linux, we may have to convert the image to the platform image format if it is not one of
-    // the RGBA formats.
-    auto f = functionsGui::platformImageFormat();
-    if (f != QImage::Format_ARGB32_Premultiplied && f != QImage::Format_ARGB32 &&
-        f != QImage::Format_RGB32)
-      outputImage = outputImage.convertToFormat(f);
-  }
+  this->convertSourceToRGBA32Bit(sourceBuffer, outputImage.bits(), format);
 }
 
 void videoHandlerRGB::setSrcPixelFormat(const PixelFormatRGB &newFormat)
@@ -662,279 +790,83 @@ void videoHandlerRGB::setSrcPixelFormat(const PixelFormatRGB &newFormat)
 // apply the scaling factors, inversions and only convert the selected color components.
 void videoHandlerRGB::convertSourceToRGBA32Bit(const QByteArray &sourceBuffer,
                                                unsigned char *   targetBuffer,
-                                               bool              premultiplyAlpha)
+                                               QImage::Format    imageFormat)
 {
-  // Check if the source buffer is of the correct size
   Q_ASSERT_X(sourceBuffer.size() >= getBytesPerFrame(),
              Q_FUNC_INFO,
              "The source buffer does not hold enough data.");
 
-  // Get the raw data pointer to the output array
-  unsigned char *restrict dst = targetBuffer;
+  const auto outputSupportsAlpha =
+      imageFormat == QImage::Format_ARGB32 || imageFormat == QImage::Format_ARGB32_Premultiplied;
+  const auto premultiplyAlpha = imageFormat == QImage::Format_ARGB32_Premultiplied;
+  const auto inputHasAlpha    = srcPixelFormat.hasAlpha();
+  const auto bps              = this->srcPixelFormat.getBitsPerSample();
 
-  // How many values do we have to skip in src to get to the next input value?
-  // In case of 8 or less bits this is 1 byte per value, for 9 to 16 bits it is 2 bytes per value.
-  int offsetToNextValue = srcPixelFormat.nrChannels();
-  if (srcPixelFormat.getDataLayout() == DataLayout::Planar)
-    offsetToNextValue = 1;
-
-  const auto bitDepth = srcPixelFormat.getBitsPerSample();
-  const auto posR     = srcPixelFormat.getComponentPosition(Channel::Red);
-  const auto posG     = srcPixelFormat.getComponentPosition(Channel::Green);
-  const auto posB     = srcPixelFormat.getComponentPosition(Channel::Blue);
-  const auto posA     = srcPixelFormat.getComponentPosition(Channel::Alpha);
-
-  if (componentDisplayMode != ComponentShow::RGB && componentDisplayMode != ComponentShow::RGBA)
+  if (this->componentDisplayMode == ComponentShow::RGB ||
+      this->componentDisplayMode == ComponentShow::RGBA)
   {
-    // Only convert one of the components to a gray-scale image.
-    // Consider inversion and scale of that component
+    const auto renderAlpha =
+        this->componentDisplayMode == ComponentShow::RGBA && outputSupportsAlpha && inputHasAlpha;
 
-    auto       componentMap = std::map<ComponentShow, Channel>({{ComponentShow::R, Channel::Red},
-                                                          {ComponentShow::G, Channel::Green},
-                                                          {ComponentShow::B, Channel::Blue},
-                                                          {ComponentShow::A, Channel::Alpha}});
-    const auto displayComponentOffset =
-        srcPixelFormat.getComponentPosition(componentMap[componentDisplayMode]);
-
+    if (bps == 8)
+      convertInputRGBToRGBA<8>(sourceBuffer,
+                               this->srcPixelFormat,
+                               targetBuffer,
+                               this->frameSize,
+                               this->componentInvert,
+                               this->componentScale,
+                               this->limitedRange,
+                               renderAlpha,
+                               premultiplyAlpha);
+    else
+      convertInputRGBToRGBA<16>(sourceBuffer,
+                                this->srcPixelFormat,
+                                targetBuffer,
+                                this->frameSize,
+                                this->componentInvert,
+                                this->componentScale,
+                                this->limitedRange,
+                                renderAlpha,
+                                premultiplyAlpha);
+  }
+  else // Single component
+  {
     auto       displayIndexMap = std::map<ComponentShow, unsigned>({{ComponentShow::R, 0},
                                                               {ComponentShow::G, 1},
                                                               {ComponentShow::B, 2},
                                                               {ComponentShow::A, 3}});
-    const auto displayIndex    = displayIndexMap[componentDisplayMode];
-    const auto scale           = componentScale[displayIndex];
-    const auto invert          = componentInvert[displayIndex];
+    const auto displayIndex    = displayIndexMap[this->componentDisplayMode];
 
-    if (bitDepth > 8 && bitDepth <= 16)
-    {
-      // 9 to 16 bits per component. We assume two bytes per value.
+    const auto scale  = this->componentScale[displayIndex];
+    const auto invert = this->componentInvert[displayIndex];
 
-      // The source values have to be shifted left by this many bits to get 8 bit output
-      const auto rightShift = bitDepth - 8;
+    auto componentToChannel =
+        std::map<ComponentShow, rgb::Channel>({{ComponentShow::R, rgb::Channel::Red},
+                                               {ComponentShow::G, rgb::Channel::Green},
+                                               {ComponentShow::B, rgb::Channel::Blue},
+                                               {ComponentShow::A, rgb::Channel::Alpha}});
+    const auto displayComponentOffset =
+        this->srcPixelFormat.getComponentPosition(componentToChannel[this->componentDisplayMode]);
 
-      // First get the pointer to the first value that we will need.
-      unsigned short *src = (unsigned short *)sourceBuffer.data();
-      if (srcPixelFormat.getDataLayout() == DataLayout::Planar)
-        src += displayComponentOffset * frameSize.width * frameSize.height;
-      else
-        src += displayComponentOffset;
-
-      // Now we just have to iterate over all values and always skip "offsetToNextValue" values in
-      // src and write 3 values in dst.
-      for (unsigned i = 0; i < frameSize.width * frameSize.height; i++)
-      {
-        int val = (((int)src[0]) * scale) >> rightShift;
-        val     = clip(val, 0, 255);
-        if (invert)
-          val = 255 - val;
-        if (limitedRange)
-          val = videoHandler::convScaleLimitedRange(val);
-        dst[0] = val;
-        dst[1] = val;
-        dst[2] = val;
-        dst[3] = 255;
-
-        src += offsetToNextValue;
-        dst += 4;
-      }
-    }
-    else if (bitDepth == 8)
-    {
-      // First get the pointer to the first value that we will need.
-      unsigned char *src = (unsigned char *)sourceBuffer.data();
-      if (srcPixelFormat.getDataLayout() == DataLayout::Planar)
-        src += displayComponentOffset * frameSize.width * frameSize.height;
-      else
-        src += displayComponentOffset;
-
-      // Now we just have to iterate over all values and always skip "offsetToNextValue" values in
-      // src and write 3 values in dst.
-      for (unsigned i = 0; i < frameSize.width * frameSize.height; i++)
-      {
-        int val = ((int)src[0]) * scale;
-        val     = clip(val, 0, 255);
-        if (invert)
-          val = 255 - val;
-        if (limitedRange)
-          val = videoHandler::convScaleLimitedRange(val);
-        dst[0] = val;
-        dst[1] = val;
-        dst[2] = val;
-        dst[3] = 255;
-
-        src += offsetToNextValue;
-        dst += 4;
-      }
-    }
+    if (bps == 8)
+      convertSinglePlaneRGBToGreyscaleRGBA<8>(sourceBuffer,
+                                              this->srcPixelFormat,
+                                              targetBuffer,
+                                              this->frameSize,
+                                              scale,
+                                              invert,
+                                              displayComponentOffset,
+                                              this->limitedRange);
     else
-      Q_ASSERT_X(
-          false, Q_FUNC_INFO, "No RGB format with less than 8 or more than 16 bits supported yet.");
+      convertSinglePlaneRGBToGreyscaleRGBA<16>(sourceBuffer,
+                                               this->srcPixelFormat,
+                                               targetBuffer,
+                                               this->frameSize,
+                                               scale,
+                                               invert,
+                                               displayComponentOffset,
+                                               this->limitedRange);
   }
-  else if (componentDisplayMode == ComponentShow::RGB ||
-           componentDisplayMode == ComponentShow::RGBA)
-  {
-    // Convert all components from the source RGB format to an RGB 888 array
-
-    const auto renderAlpha =
-        componentDisplayMode == ComponentShow::RGBA && srcPixelFormat.hasAlpha();
-    if (bitDepth > 8 && bitDepth <= 16)
-    {
-      // 9 to 16 bits per component. We assume two bytes per value.
-
-      // The source values have to be shifted left by this many bits to get 8 bit output
-      const auto rightShift = bitDepth - 8;
-
-      // First get the pointer to the first value of each channel.
-      unsigned short *srcR, *srcG, *srcB, *srcA;
-      if (srcPixelFormat.getDataLayout() == DataLayout::Planar)
-      {
-        srcR = (unsigned short *)sourceBuffer.data() + (posR * frameSize.width * frameSize.height);
-        srcG = (unsigned short *)sourceBuffer.data() + (posG * frameSize.width * frameSize.height);
-        srcB = (unsigned short *)sourceBuffer.data() + (posB * frameSize.width * frameSize.height);
-        srcA = (unsigned short *)sourceBuffer.data() + (posA * frameSize.width * frameSize.height);
-      }
-      else
-      {
-        srcR = (unsigned short *)sourceBuffer.data() + posR;
-        srcG = (unsigned short *)sourceBuffer.data() + posG;
-        srcB = (unsigned short *)sourceBuffer.data() + posB;
-        srcA = (unsigned short *)sourceBuffer.data() + posA;
-      }
-
-      // Now we just have to iterate over all values and always skip "offsetToNextValue" values in
-      // the sources and write 3 values in dst.
-      for (unsigned i = 0; i < frameSize.width * frameSize.height; i++)
-      {
-        int valR = (((int)srcR[0]) * componentScale[0]) >> rightShift;
-        valR     = clip(valR, 0, 255);
-        if (componentInvert[0])
-          valR = 255 - valR;
-
-        int valG = (((int)srcG[0]) * componentScale[1]) >> rightShift;
-        valG     = clip(valG, 0, 255);
-        if (componentInvert[1])
-          valG = 255 - valG;
-
-        int valB = (((int)srcB[0]) * componentScale[2]) >> rightShift;
-        valB     = clip(valB, 0, 255);
-        if (componentInvert[2])
-          valB = 255 - valB;
-
-        int valA = 255;
-        if (renderAlpha)
-        {
-          valA = (((int)srcA[0]) * componentScale[3]) >> rightShift;
-          valA = clip(valA, 0, 255);
-          if (componentInvert[3])
-            valA = 255 - valA;
-        }
-
-        if (limitedRange)
-        {
-          valR = videoHandler::convScaleLimitedRange(valR);
-          valG = videoHandler::convScaleLimitedRange(valG);
-          valB = videoHandler::convScaleLimitedRange(valB);
-          // No limited range for alpha
-        }
-
-        if (renderAlpha && premultiplyAlpha)
-        {
-          valR = ((valR * 255) * valA) / (255 * 255);
-          valG = ((valG * 255) * valA) / (255 * 255);
-          valB = ((valB * 255) * valA) / (255 * 255);
-        }
-
-        srcR += offsetToNextValue;
-        srcG += offsetToNextValue;
-        srcB += offsetToNextValue;
-        srcA += offsetToNextValue;
-
-        dst[0] = valB;
-        dst[1] = valG;
-        dst[2] = valR;
-        dst[3] = valA;
-        dst += 4;
-      }
-    }
-    else if (bitDepth == 8)
-    {
-      // First get the pointer to the first value of each channel.
-      unsigned char *srcR, *srcG, *srcB, *srcA;
-      if (srcPixelFormat.getDataLayout() == DataLayout::Planar)
-      {
-        srcR = (unsigned char *)sourceBuffer.data() + (posR * frameSize.width * frameSize.height);
-        srcG = (unsigned char *)sourceBuffer.data() + (posG * frameSize.width * frameSize.height);
-        srcB = (unsigned char *)sourceBuffer.data() + (posB * frameSize.width * frameSize.height);
-        srcA = (unsigned char *)sourceBuffer.data() + (posA * frameSize.width * frameSize.height);
-      }
-      else
-      {
-        srcR = (unsigned char *)sourceBuffer.data() + posR;
-        srcG = (unsigned char *)sourceBuffer.data() + posG;
-        srcB = (unsigned char *)sourceBuffer.data() + posB;
-        srcA = (unsigned char *)sourceBuffer.data() + posA;
-      }
-
-      // Now we just have to iterate over all values and always skip "offsetToNextValue" values in
-      // the sources and write 3 values in dst.
-      for (unsigned i = 0; i < frameSize.width * frameSize.height; i++)
-      {
-        int valR = ((int)srcR[0]) * componentScale[0];
-        valR     = clip(valR, 0, 255);
-        if (componentInvert[0])
-          valR = 255 - valR;
-
-        int valG = ((int)srcG[0]) * componentScale[1];
-        valG     = clip(valG, 0, 255);
-        if (componentInvert[1])
-          valG = 255 - valG;
-
-        int valB = ((int)srcB[0]) * componentScale[2];
-        valB     = clip(valB, 0, 255);
-        if (componentInvert[2])
-          valB = 255 - valB;
-
-        int valA = 255;
-        if (renderAlpha)
-        {
-          valA = ((int)srcA[0]) * componentScale[3];
-          valA = clip(valA, 0, 255);
-          if (componentInvert[3])
-            valA = 255 - valA;
-        }
-
-        if (limitedRange)
-        {
-          valR = videoHandler::convScaleLimitedRange(valR);
-          valG = videoHandler::convScaleLimitedRange(valG);
-          valB = videoHandler::convScaleLimitedRange(valB);
-          // No limited range for alpha
-        }
-
-        if (renderAlpha && premultiplyAlpha)
-        {
-          valR = ((valR * 255) * valA) / (255 * 255);
-          valG = ((valG * 255) * valA) / (255 * 255);
-          valB = ((valB * 255) * valA) / (255 * 255);
-        }
-
-        srcR += offsetToNextValue;
-        srcG += offsetToNextValue;
-        srcB += offsetToNextValue;
-        srcA += offsetToNextValue;
-
-        dst[0] = valB;
-        dst[1] = valG;
-        dst[2] = valR;
-        dst[3] = valA;
-        dst += 4;
-      }
-    }
-    else
-      Q_ASSERT_X(
-          false, Q_FUNC_INFO, "No RGB format with less than 8 or more than 16 bits supported yet.");
-  }
-  else
-    Q_ASSERT_X(false, Q_FUNC_INFO, "Unsupported display mode.");
 }
 
 videoHandlerRGB::rgba_t videoHandlerRGB::getPixelValue(const QPoint &pixelPos) const
@@ -1258,22 +1190,9 @@ QImage videoHandlerRGB::calculateDifference(FrameHandler *   item2,
   // Create the output image in the right format
   // In both cases, we will set the alpha channel to 255. The format of the raw buffer is: BGRA
   // (each 8 bit).
-  QImage outputImage;
-  auto   qFrameSize = QSize(frameSize.width, frameSize.height);
-  if (is_Q_OS_WIN)
-    outputImage = QImage(qFrameSize, QImage::Format_ARGB32_Premultiplied);
-  else if (is_Q_OS_MAC)
-    outputImage = QImage(qFrameSize, QImage::Format_RGB32);
-  else if (is_Q_OS_LINUX)
-  {
-    auto f = functionsGui::platformImageFormat();
-    if (f == QImage::Format_ARGB32_Premultiplied)
-      outputImage = QImage(qFrameSize, QImage::Format_ARGB32_Premultiplied);
-    if (f == QImage::Format_ARGB32)
-      outputImage = QImage(qFrameSize, QImage::Format_ARGB32);
-    else
-      outputImage = QImage(qFrameSize, QImage::Format_RGB32);
-  }
+  auto qFrameSize = QSize(this->frameSize.width, this->frameSize.height);
+  auto outputImage =
+      QImage(qFrameSize, functionsGui::platformImageFormat(this->srcPixelFormat.hasAlpha()));
 
   // We directly write the difference values into the QImage buffer in the right format (ABGR).
   unsigned char *restrict dst = outputImage.bits();
@@ -1467,15 +1386,6 @@ QImage videoHandlerRGB::calculateDifference(FrameHandler *   item2,
   differenceInfoList.append(InfoItem("MSE B", QString("%1").arg(mse[2])));
   differenceInfoList.append(InfoItem("MSE All", QString("%1").arg(mse[3])));
 
-  if (is_Q_OS_LINUX)
-  {
-    // On linux, we may have to convert the image to the platform image format if it is not one of
-    // the RGBA formats.
-    auto f = functionsGui::platformImageFormat();
-    if (f != QImage::Format_ARGB32_Premultiplied && f != QImage::Format_ARGB32 &&
-        f != QImage::Format_RGB32)
-      return outputImage.convertToFormat(f);
-  }
   return outputImage;
 }
 

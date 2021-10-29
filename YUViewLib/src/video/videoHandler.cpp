@@ -293,10 +293,11 @@ void videoHandler::cacheFrame(int frameIdx, bool testMode)
     DEBUG_VIDEO("videoHandler::cacheFrame loading frame %i for caching failed", frameIdx);
 }
 
-unsigned int videoHandler::getCachingFrameSize() const
+unsigned videoHandler::getCachingFrameSize() const
 {
-  auto bytes = functionsGui::bytesPerPixel(functionsGui::platformImageFormat());
-  return frameSize.width * frameSize.height * bytes;
+  const auto hasAlpha = false;
+  auto       bytes    = functionsGui::bytesPerPixel(functionsGui::platformImageFormat(hasAlpha));
+  return this->frameSize.width * this->frameSize.height * bytes;
 }
 
 QList<int> videoHandler::getCachedFrames() const

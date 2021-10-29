@@ -57,14 +57,14 @@ public:
 
   // --- Caching ----
   // These methods are all thread-safe and can be invoked from any thread.
-  int          getNrFramesCached() const;
-  void         cacheFrame(int frameIndex, bool testMode);
-  unsigned int getCachingFrameSize() const; // How much bytes will be used when caching one frame?
-  QList<int>   getCachedFrames() const;
-  int          getNumberCachedFrames() const;
-  bool         isInCache(int idx) const;
-  virtual void removeFrameFromCache(int frameIndex);
-  virtual void removeAllFrameFromCache();
+  int              getNrFramesCached() const;
+  void             cacheFrame(int frameIndex, bool testMode);
+  virtual unsigned getCachingFrameSize() const;
+  QList<int>       getCachedFrames() const;
+  int              getNumberCachedFrames() const;
+  bool             isInCache(int idx) const;
+  virtual void     removeFrameFromCache(int frameIndex);
+  virtual void     removeAllFrameFromCache();
 
   // Get the number of bytes for one frame (RGB or YUV) with the current format (if this video
   // handler uses raw data)

@@ -49,11 +49,11 @@ class videoHandlerDifference : public videoHandler
   Q_OBJECT
 
 public:
+  explicit videoHandlerDifference();
+
   // Draw the frame with the given frame index and zoom factor. If onLoadShowLasFrame is set, show
   // the last frame if the frame with the current frame index is loaded in the background.
   void drawDifferenceFrame(QPainter *painter, int frameIdx, double zoomFactor, bool drawRawValues);
-
-  explicit videoHandlerDifference();
 
   void loadFrameDifference(int frameIndex, bool loadToDoubleBuffer = false);
 

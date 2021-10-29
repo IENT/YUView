@@ -505,6 +505,7 @@ bool AVFormat::parseAVPacket(unsigned packetID, unsigned streamPacketID, AVPacke
     }
     catch (const std::exception &e)
     {
+      (void)e;
       DEBUG_AVFORMAT("AVFormat::parseAVPacket Exception occured while parsing generic packet data: "
                      << e.what());
     }

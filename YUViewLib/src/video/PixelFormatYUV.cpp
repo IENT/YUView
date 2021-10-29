@@ -584,6 +584,22 @@ bool PixelFormatYUV::isPlanar() const
   return this->planar;
 }
 
+bool PixelFormatYUV::hasAlpha() const
+{
+  if (this->predefinedPixelFormat)
+  {
+    if (*this->predefinedPixelFormat == PredefinedPixelFormat::V210)
+      return false;
+    return false;
+  }
+
+  if (this->planar)
+    return this->planeOrder == PlaneOrder::YUVA || this->planeOrder == PlaneOrder::YVUA;
+  else
+    return this->packingOrder == PackingOrder::AYUV || this->packingOrder == PackingOrder::YUVA ||
+           this->packingOrder == PackingOrder::VUYA;
+}
+
 Offset PixelFormatYUV::getChromaOffset() const
 {
   if (this->predefinedPixelFormat)

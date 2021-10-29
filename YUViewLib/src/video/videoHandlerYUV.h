@@ -58,6 +58,8 @@ public:
   videoHandlerYUV();
   ~videoHandlerYUV();
 
+  unsigned getCachingFrameSize() const override;
+
   // The format is valid if the frame width/height/pixel format are set
   virtual bool isFormatValid() const override
   {

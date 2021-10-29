@@ -32,7 +32,6 @@
 
 #pragma once
 
-#include "parser/common/CodingEnum.h"
 #include "parser/common/SubByteReaderLogging.h"
 
 namespace parser::avc
