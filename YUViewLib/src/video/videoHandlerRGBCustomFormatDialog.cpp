@@ -65,6 +65,7 @@ videoHandlerRGBCustomFormatDialog::videoHandlerRGBCustomFormatDialog(
   auto bitDepth = rgbFormat.getBitsPerSample();
   this->ui.bitDepthSpinBox->setValue(bitDepth);
   this->ui.comboBoxEndianness->setEnabled(bitDepth > 8);
+  this->ui.comboBoxEndianness->setCurrentIndex(rgbFormat.getEndianess() == Endianness::Big ? 0 : 1);
 
   this->ui.planarCheckBox->setChecked(rgbFormat.getDataLayout() == DataLayout::Planar);
 }
@@ -94,7 +95,7 @@ rgb::PixelFormatRGB videoHandlerRGBCustomFormatDialog::getSelectedRGBFormat() co
   }
 
   auto endianness = Endianness::Little;
-  if (this->ui.comboBoxEndianness->currentIndex() == 1)
+  if (this->ui.comboBoxEndianness->currentIndex() == 0)
     endianness = Endianness::Big;
 
   return rgb::PixelFormatRGB(bitDepth, dataLayout, *channelOrder, alphaMode, endianness);

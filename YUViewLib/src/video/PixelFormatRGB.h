@@ -96,6 +96,7 @@ public:
   unsigned     getBitsPerSample() const { return this->bitsPerSample; }
   DataLayout   getDataLayout() const { return this->dataLayout; }
   ChannelOrder getChannelOrder() const { return this->channelOrder; }
+  Endianness   getEndianess() const { return this->endianness; }
 
   void setBitsPerSample(unsigned bitsPerSample) { this->bitsPerSample = bitsPerSample; }
   void setDataLayout(DataLayout dataLayout) { this->dataLayout = dataLayout; }

@@ -55,6 +55,10 @@ const auto componentShowMapper = EnumMapper<ComponentShow>({{ComponentShow::RGBA
                                                             {ComponentShow::B, "B", "Blue Only"},
                                                             {ComponentShow::A, "A", "Alpha Only"}});
 
+const auto swapLowestBytes = [](const int &val) {
+  return ((val & 0xff) << 8) + ((val & 0xff00) >> 8);
+};
+
 // Convert the input raw RGB(A) format to the output RGBA format. The bit depth is either
 template <int bitDepth>
 void convertInputRGBToRGBA(const QByteArray &    sourceBuffer,
@@ -94,29 +98,43 @@ void convertInputRGBToRGBA(const QByteArray &    sourceBuffer,
   // the sources and write 4 values in dst.
   for (unsigned i = 0; i < frameSize.width * frameSize.height; i++)
   {
-    int valR = (((int)srcR[0]) * componentScale[0]) >> rightShift;
-    valR     = clip(valR, 0, 255);
+    int valR = (int)srcR[0];
+    int valG = (int)srcG[0];
+    int valB = (int)srcB[0];
+    int valA = (int)srcA[0];
+
+    if (bitDepth > 8 && srcPixelFormat.getEndianess() == Endianness::Big)
+    {
+      valR = swapLowestBytes(valR);
+      valG = swapLowestBytes(valG);
+      valB = swapLowestBytes(valB);
+      valA = swapLowestBytes(valA);
+    }
+
+    valR = (valR * componentScale[0]) >> rightShift;
+    valR = clip(valR, 0, 255);
     if (componentInvert[0])
       valR = 255 - valR;
 
-    int valG = (((int)srcG[0]) * componentScale[1]) >> rightShift;
-    valG     = clip(valG, 0, 255);
+    valG = (valG * componentScale[1]) >> rightShift;
+    valG = clip(valG, 0, 255);
     if (componentInvert[1])
       valG = 255 - valG;
 
-    int valB = (((int)srcB[0]) * componentScale[2]) >> rightShift;
-    valB     = clip(valB, 0, 255);
+    valB = (valB * componentScale[2]) >> rightShift;
+    valB = clip(valB, 0, 255);
     if (componentInvert[2])
       valB = 255 - valB;
 
-    int valA = 255;
     if (hasAlpha)
     {
-      valA = (((int)srcA[0]) * componentScale[3]) >> rightShift;
+      valA = (valA * componentScale[3]) >> rightShift;
       valA = clip(valA, 0, 255);
       if (componentInvert[3])
         valA = 255 - valA;
     }
+    else
+      valA = 255;
 
     if (limitedRange)
     {
@@ -177,8 +195,11 @@ void convertSinglePlaneRGBToGreyscaleRGBA(const QByteArray &    sourceBuffer,
   // src and write 4 values in dst.
   for (unsigned i = 0; i < frameSize.width * frameSize.height; i++)
   {
-    int val = (((int)src[0]) * scale) >> rightShift;
-    val     = clip(val, 0, 255);
+    auto val = (int)src[0];
+    if (bitDepth > 8 && srcPixelFormat.getEndianess() == Endianness::Big)
+      val = swapLowestBytes(val);
+    val = (val * scale) >> rightShift;
+    val = clip(val, 0, 255);
     if (invert)
       val = 255 - val;
     if (limitedRange)
