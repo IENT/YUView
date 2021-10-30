@@ -22,20 +22,11 @@ QList<PixelFormatRGB> getAllFormats()
   QList<PixelFormatRGB> allFormats;
 
   for (int bitsPerPixel = 8; bitsPerPixel <= 16; bitsPerPixel++)
-  {
     for (auto dataLayout : {video::DataLayout::Packed, video::DataLayout::Planar})
-    {
-      // No alpha
       for (auto channelOrder : ChannelOrderMapper.getEnums())
-        allFormats.append(PixelFormatRGB(bitsPerPixel, dataLayout, channelOrder));
-      // With alpha
-      for (auto channelOrder : ChannelOrderMapper.getEnums())
-      {
-        allFormats.append(PixelFormatRGB(bitsPerPixel, dataLayout, channelOrder, AlphaMode::First));
-        allFormats.append(PixelFormatRGB(bitsPerPixel, dataLayout, channelOrder, AlphaMode::Last));
-      }
-    }
-  }
+        for (auto alphaMode : {AlphaMode::None, AlphaMode::First, AlphaMode::Last})
+          for (auto endianness : {Endianness::Little, Endianness::Big})
+            allFormats.append(PixelFormatRGB(bitsPerPixel, dataLayout, channelOrder, alphaMode));
 
   return allFormats;
 }
