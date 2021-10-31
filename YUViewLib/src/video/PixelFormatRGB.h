@@ -50,6 +50,25 @@ enum class Channel
   Alpha
 };
 
+struct rgba_t
+{
+  unsigned R{0}, G{0}, B{0}, A{0};
+
+  unsigned &operator[](Channel channel)
+  {
+    if (channel == Channel::Red)
+      return this->R;
+    if (channel == Channel::Green)
+      return this->G;
+    if (channel == Channel::Blue)
+      return this->B;
+    if (channel == Channel::Alpha)
+      return this->A;
+
+    throw std::out_of_range("Unsupported channel for value access");
+  }
+};
+
 enum class ChannelOrder
 {
   RGB,

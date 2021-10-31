@@ -55,7 +55,8 @@ const auto componentShowMapper = EnumMapper<ComponentShow>({{ComponentShow::RGBA
                                                             {ComponentShow::B, "B", "Blue Only"},
                                                             {ComponentShow::A, "A", "Alpha Only"}});
 
-const auto swapLowestBytes = [](const int &val) {
+template <typename T> T swapLowestBytes(const T &val)
+{
   return ((val & 0xff) << 8) + ((val & 0xff00) >> 8);
 };
 
@@ -214,6 +215,40 @@ void convertSinglePlaneRGBToGreyscaleRGBA(const QByteArray &    sourceBuffer,
   }
 }
 
+template <int bitDepth>
+rgba_t getPixelValueFromBuffer(const QByteArray &    sourceBuffer,
+                               const PixelFormatRGB &srcPixelFormat,
+                               const Size            frameSize,
+                               const QPoint &        pixelPos)
+{
+  const auto offsetToNextValue =
+      srcPixelFormat.getDataLayout() == DataLayout::Planar ? 1 : srcPixelFormat.nrChannels();
+  const unsigned offsetCoordinate = frameSize.width * pixelPos.y() + pixelPos.x();
+
+  typedef typename std::conditional<bitDepth == 8, uint8_t *, uint16_t *>::type InValueType;
+
+  if (pixelPos.x() == 1 && pixelPos.y() == 0)
+  {
+    int debugSotp = 2344;
+    (void)debugSotp;
+  }
+
+  rgba_t value;
+  for (auto channel : {Channel::Red, Channel::Green, Channel::Blue, Channel::Alpha})
+  {
+    auto offset = srcPixelFormat.getComponentPosition(channel);
+    if (srcPixelFormat.getDataLayout() == DataLayout::Planar)
+      offset *= frameSize.width * frameSize.height;
+    auto src = ((InValueType)sourceBuffer.data()) + offset + offsetCoordinate * 4;
+    auto val = (unsigned)src[0];
+    if (bitDepth > 8 && srcPixelFormat.getEndianess() == Endianness::Big)
+      val = swapLowestBytes(val);
+    value[channel] = val;
+  }
+
+  return value;
+}
+
 } // namespace
 
 // Activate this if you want to know when which buffer is loaded/converted to image and so on.
@@ -307,21 +342,21 @@ QStringPairList videoHandlerRGB::getPixelValues(const QPoint &pixelPos,
   const int formatBase = settings.value("ShowPixelValuesHex").toBool() ? 16 : 10;
   if (item2 != nullptr)
   {
-    videoHandlerRGB *rgbItem2 = dynamic_cast<videoHandlerRGB *>(item2);
+    auto rgbItem2 = dynamic_cast<videoHandlerRGB *>(item2);
     if (rgbItem2 == nullptr)
       // The second item is not a videoHandlerRGB. Get the values from the FrameHandler.
       return FrameHandler::getPixelValues(pixelPos, frameIdx, item2, frameIdx1);
 
     if (currentFrameRawData_frameIndex != frameIdx ||
         rgbItem2->currentFrameRawData_frameIndex != frameIdx1)
-      return QStringPairList();
+      return {};
 
     auto width  = std::min(frameSize.width, rgbItem2->frameSize.width);
     auto height = std::min(frameSize.height, rgbItem2->frameSize.height);
 
     if (pixelPos.x() < 0 || pixelPos.x() >= int(width) || pixelPos.y() < 0 ||
         pixelPos.y() >= int(height))
-      return QStringPairList();
+      return {};
 
     rgba_t valueThis  = getPixelValue(pixelPos);
     rgba_t valueOther = rgbItem2->getPixelValue(pixelPos);
@@ -890,91 +925,17 @@ void videoHandlerRGB::convertSourceToRGBA32Bit(const QByteArray &sourceBuffer,
   }
 }
 
-videoHandlerRGB::rgba_t videoHandlerRGB::getPixelValue(const QPoint &pixelPos) const
+rgba_t videoHandlerRGB::getPixelValue(const QPoint &pixelPos) const
 {
-  const unsigned int offsetCoordinate = frameSize.width * pixelPos.y() + pixelPos.x();
+  const auto bps = this->srcPixelFormat.getBitsPerSample();
+  if (bps == 8)
+    return getPixelValueFromBuffer<8>(
+        this->currentFrameRawData, this->srcPixelFormat, this->frameSize, pixelPos);
+  else if (bps > 8 && bps <= 16)
+    return getPixelValueFromBuffer<16>(
+        this->currentFrameRawData, this->srcPixelFormat, this->frameSize, pixelPos);
 
-  // How many values do we have to skip in src to get to the next input value?
-  // In case of 8 or less bits this is 1 byte per value, for 9 to 16 bits it is 2 bytes per value.
-  int offsetToNextValue = srcPixelFormat.nrChannels();
-  if (srcPixelFormat.getDataLayout() == DataLayout::Planar)
-    offsetToNextValue = 1;
-
-  rgba_t value{0, 0, 0, 0};
-
-  const auto bitDept = srcPixelFormat.getBitsPerSample();
-  const auto posR    = srcPixelFormat.getComponentPosition(Channel::Red);
-  const auto posG    = srcPixelFormat.getComponentPosition(Channel::Green);
-  const auto posB    = srcPixelFormat.getComponentPosition(Channel::Blue);
-  const auto posA    = srcPixelFormat.getComponentPosition(Channel::Alpha);
-
-  if (bitDept > 8 && bitDept <= 16)
-  {
-    // First get the pointer to the first value of each channel.
-    unsigned short *srcR = nullptr, *srcG = nullptr, *srcB = nullptr, *srcA = nullptr;
-    if (srcPixelFormat.getDataLayout() == DataLayout::Planar)
-    {
-      srcR = (unsigned short *)currentFrameRawData.data() +
-             (posR * frameSize.width * frameSize.height);
-      srcG = (unsigned short *)currentFrameRawData.data() +
-             (posG * frameSize.width * frameSize.height);
-      srcB = (unsigned short *)currentFrameRawData.data() +
-             (posB * frameSize.width * frameSize.height);
-      if (srcPixelFormat.hasAlpha())
-        srcA = (unsigned short *)currentFrameRawData.data() +
-               (posA * frameSize.width * frameSize.height);
-    }
-    else
-    {
-      srcR = (unsigned short *)currentFrameRawData.data() + posR;
-      srcG = (unsigned short *)currentFrameRawData.data() + posG;
-      srcB = (unsigned short *)currentFrameRawData.data() + posB;
-      if (srcPixelFormat.hasAlpha())
-        srcA = (unsigned short *)currentFrameRawData.data() + posA;
-    }
-
-    value.R = (unsigned int)(*(srcR + offsetToNextValue * offsetCoordinate));
-    value.G = (unsigned int)(*(srcG + offsetToNextValue * offsetCoordinate));
-    value.B = (unsigned int)(*(srcB + offsetToNextValue * offsetCoordinate));
-    if (srcPixelFormat.hasAlpha())
-      value.A = (unsigned int)(*(srcA + offsetToNextValue * offsetCoordinate));
-  }
-  else if (bitDept == 8)
-  {
-    // First get the pointer to the first value of each channel.
-    unsigned char *srcR = nullptr, *srcG = nullptr, *srcB = nullptr, *srcA = nullptr;
-    if (srcPixelFormat.getDataLayout() == DataLayout::Planar)
-    {
-      srcR =
-          (unsigned char *)currentFrameRawData.data() + (posR * frameSize.width * frameSize.height);
-      srcG =
-          (unsigned char *)currentFrameRawData.data() + (posG * frameSize.width * frameSize.height);
-      srcB =
-          (unsigned char *)currentFrameRawData.data() + (posB * frameSize.width * frameSize.height);
-      if (srcPixelFormat.hasAlpha())
-        srcA = (unsigned char *)currentFrameRawData.data() +
-               (posA * frameSize.width * frameSize.height);
-    }
-    else
-    {
-      srcR = (unsigned char *)currentFrameRawData.data() + posR;
-      srcG = (unsigned char *)currentFrameRawData.data() + posG;
-      srcB = (unsigned char *)currentFrameRawData.data() + posB;
-      if (srcPixelFormat.hasAlpha())
-        srcA = (unsigned char *)currentFrameRawData.data() + posA;
-    }
-
-    value.R = (unsigned int)(*(srcR + offsetToNextValue * offsetCoordinate));
-    value.G = (unsigned int)(*(srcG + offsetToNextValue * offsetCoordinate));
-    value.B = (unsigned int)(*(srcB + offsetToNextValue * offsetCoordinate));
-    if (srcPixelFormat.hasAlpha())
-      value.A = (unsigned int)(*(srcA + offsetToNextValue * offsetCoordinate));
-  }
-  else
-    Q_ASSERT_X(
-        false, Q_FUNC_INFO, "No RGB format with less than 8 or more than 16 bits supported yet.");
-
-  return value;
+  return {0, 0, 0, 0};
 }
 
 void videoHandlerRGB::setFormatFromSizeAndName(const Size       size,

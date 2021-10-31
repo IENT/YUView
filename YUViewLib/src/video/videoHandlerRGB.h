@@ -182,11 +182,7 @@ protected:
   bool limitedRange{};
 
   // Get the RGB values for the given pixel.
-  struct rgba_t
-  {
-    unsigned int R, G, B, A;
-  };
-  virtual rgba_t getPixelValue(const QPoint &pixelPos) const;
+  virtual rgb::rgba_t getPixelValue(const QPoint &pixelPos) const;
 
   // Load the given frame and return it for caching. The current buffers (currentFrameRawRGBData and
   // currentFrame) will not be modified.
