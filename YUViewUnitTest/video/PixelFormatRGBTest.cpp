@@ -2,6 +2,7 @@
 
 #include <video/PixelFormatRGB.h>
 
+using namespace video;
 using namespace video::rgb;
 
 class PixelFormatRGBTest : public QObject
@@ -26,7 +27,8 @@ QList<PixelFormatRGB> getAllFormats()
       for (auto channelOrder : ChannelOrderMapper.getEnums())
         for (auto alphaMode : {AlphaMode::None, AlphaMode::First, AlphaMode::Last})
           for (auto endianness : {Endianness::Little, Endianness::Big})
-            allFormats.append(PixelFormatRGB(bitsPerPixel, dataLayout, channelOrder, alphaMode));
+            allFormats.append(
+                PixelFormatRGB(bitsPerPixel, dataLayout, channelOrder, alphaMode, endianness));
 
   return allFormats;
 }

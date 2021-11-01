@@ -36,6 +36,9 @@
 
 #include <QDir>
 #include <regex>
+#include <string>
+
+using namespace std::string_literals;
 
 namespace video::rgb
 {
@@ -49,9 +52,13 @@ std::optional<PixelFormatRGB> findPixelFormatIndicatorInName(const std::string &
   {
     for (auto alphaMode : {AlphaMode::None, AlphaMode::First, AlphaMode::Last})
     {
-      for (auto bitDepth : {8, 10, 12, 16})
+      for (auto [bitDepth, bitDepthString] :
+           {std::pair<unsigned, std::string>{8, ""}, {8, "8"}, {10, "10"}, {12, "12"}, {16, "16"}})
       {
-        for (auto endiannessName : {"", "le", "be"})
+        for (auto [endianness, endiannessName] :
+             {std::pair<Endianness, std::string>{Endianness::Little, ""},
+              {Endianness::Little, "le"},
+              {Endianness::Big, "be"}})
         {
           std::string name;
           if (alphaMode == AlphaMode::First)
@@ -59,8 +66,7 @@ std::optional<PixelFormatRGB> findPixelFormatIndicatorInName(const std::string &
           name += functions::toLower(ChannelOrderMapper.getName(channelOrder));
           if (alphaMode == AlphaMode::Last)
             name += "a";
-          name += std::to_string(bitDepth) + endiannessName;
-          auto endianness = endiannessName == "be" ? Endianness::Big : Endianness::Little;
+          name += bitDepthString + endiannessName;
           stringToMatchingFormat[name] =
               PixelFormatRGB(bitDepth, DataLayout::Packed, channelOrder, alphaMode, endianness);
           matcher += name + "|";
@@ -130,19 +136,22 @@ guessFormatFromSizeAndName(const QFileInfo &fileInfo, Size frameSize, int64_t fi
     for (auto format :
          {findPixelFormatIndicatorInName(name), findPixelFormatFromFileExtension(ext)})
     {
-      // Check if the file size and the assumed format match
-      auto bpf = format->bytesPerFrame(frameSize);
-      if (bpf != 0 && (fileSize % bpf) == 0)
+      if (format)
       {
-        auto dataLayout = findDataLayoutInName(name);
-        format->setDataLayout(dataLayout);
-        return *format;
+        // Check if the file size and the assumed format match
+        auto bpf = format->bytesPerFrame(frameSize);
+        if (bpf != 0 && (fileSize % bpf) == 0)
+        {
+          auto dataLayout = findDataLayoutInName(name);
+          format->setDataLayout(dataLayout);
+          return *format;
+        }
       }
     }
   }
 
   // Guessing failed
-  return {};
+  return PixelFormatRGB(8, DataLayout::Packed, ChannelOrder::RGB);
 }
 
 } // namespace video::rgb
