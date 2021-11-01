@@ -32,7 +32,7 @@
 
 #include "seq_parameter_set_rbsp.h"
 
-#include "typedef.h"
+#include <common/Typedef.h>
 
 namespace parser::avc
 
@@ -47,4 +47,4 @@ void seq_parameter_set_rbsp::parse(reader::SubByteReaderLogging &reader)
   this->rbspTrailingBits.parse(reader);
 }
 
-} // namespace parser::av1
+} // namespace parser::avc

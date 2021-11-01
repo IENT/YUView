@@ -32,7 +32,7 @@
 
 #include "ref_pic_list_struct.h"
 
-#include "parser/common/functions.h"
+#include <parser/common/Functions.h>
 #include "seq_parameter_set_rbsp.h"
 
 namespace parser::vvc

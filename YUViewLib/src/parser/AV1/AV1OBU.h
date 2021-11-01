@@ -37,8 +37,6 @@
 #include "sequence_header_obu.h"
 #include "video/videoHandlerYUV.h"
 
-using namespace YUV_Internals;
-
 namespace parser
 {
 

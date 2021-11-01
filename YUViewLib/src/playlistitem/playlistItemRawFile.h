@@ -32,11 +32,12 @@
 
 #pragma once
 
+#include <common/Typedef.h>
+#include <filesource/FileSource.h>
+
 #include <QFuture>
 #include <QString>
 
-#include "common/typedef.h"
-#include "filesource/FileSource.h"
 #include "playlistItemWithVideo.h"
 
 class playlistItemRawFile : public playlistItemWithVideo
@@ -58,7 +59,7 @@ public:
 
   // Override from playlistItem. Return the info title and info list to be shown in the fileInfo
   // groupBox.
-  virtual infoData getInfo() const override;
+  virtual InfoData getInfo() const override;
 
   // Create a new playlistItemRawFile from the playlist file entry. Return nullptr if parsing
   // failed.

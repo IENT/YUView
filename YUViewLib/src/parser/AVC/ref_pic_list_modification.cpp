@@ -32,7 +32,7 @@
 
 #include "ref_pic_list_modification.h"
 
-#include "typedef.h"
+#include <common/Typedef.h>
 
 namespace parser::avc
 

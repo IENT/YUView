@@ -32,8 +32,9 @@
 
 #pragma once
 
+#include <common/Typedef.h>
+
 #include "playlistItemContainer.h"
-#include "common/typedef.h"
 #include "ui_playlistItemOverlay.h"
 
 #include <QGridLayout>
@@ -45,7 +46,7 @@ class playlistItemOverlay : public playlistItemContainer
 public:
   playlistItemOverlay();
 
-  virtual infoData getInfo() const override;
+  virtual InfoData getInfo() const override;
 
   // Overload from playlistItemVideo.
   virtual QSize getSize() const override;

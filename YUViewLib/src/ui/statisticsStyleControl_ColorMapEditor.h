@@ -32,8 +32,8 @@
 
 #pragma once
 
-#include "common/functions.h"
-#include "common/Color.h"
+#include <common/Functions.h>
+#include <common/Color.h>
 
 #include <QDialog>
 

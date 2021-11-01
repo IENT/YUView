@@ -153,9 +153,6 @@ private:
   bool               decodeFrame();
   const de265_image *curImage{nullptr};
 
-  // Convert from libde265 types to YUView types
-  YUV_Internals::Subsampling convertFromInternalSubsampling(de265_chroma fmt);
-
   // Statistics caching
   void cacheStatistics(const de265_image *img);
 

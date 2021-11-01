@@ -32,12 +32,11 @@
 
 #pragma once
 
-#include "common/EventSubsampler.h"
-#include "common/typedef.h"
+#include <common/EventSubsampler.h>
+#include <common/Typedef.h>
 
 #include <QObject>
 #include <QTimer>
-
 #include <optional>
 
 enum class Axis
@@ -98,7 +97,7 @@ public:
   virtual Point
   getPlotPoint(unsigned streamIndex, unsigned plotIndex, unsigned pointIndex) const = 0;
   virtual QString
-  getPointInfo(unsigned streamIndex, unsigned plotIndex, unsigned pointIndex) const   = 0;
+                                  getPointInfo(unsigned streamIndex, unsigned plotIndex, unsigned pointIndex) const = 0;
   virtual std::optional<unsigned> getReasonabelRangeToShowOnXAxisPer100Pixels() const = 0;
   virtual QString                 formatValue(Axis axis, double value) const          = 0;
   virtual Range<double>           getYRange() const                                   = 0;

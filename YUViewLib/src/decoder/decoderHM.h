@@ -34,11 +34,11 @@
 
 #include <QLibrary>
 
-#include "common/fileInfo.h"
-#include "decoderBase.h"
-#include "externalHeader/libHMDecoder.h"
-#include "video/videoHandlerYUV.h"
+#include <common/FileInfo.h>
+#include <decoder/decoderBase.h>
+#include <video/videoHandlerYUV.h>
 
+#include "externalHeader/libHMDecoder.h"
 namespace decoder
 {
 
@@ -137,9 +137,6 @@ private:
   void cacheStatistics(libHMDec_picture *pic);
 
   int nrSignals{0};
-
-  // Convert from libde265 types to YUView types
-  YUV_Internals::Subsampling convertFromInternalSubsampling(libHMDec_ChromaFormat fmt);
 
   // Add the statistics supported by the HM decoder
   void fillStatisticList(stats::StatisticsData &statisticsData) const override;

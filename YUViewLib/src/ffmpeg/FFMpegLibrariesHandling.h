@@ -959,11 +959,14 @@ public:
   AVPixFmtDescriptorWrapper(){};
   AVPixFmtDescriptorWrapper(AVPixFmtDescriptor *sideData, FFmpegLibraryVersion libVer);
 
-  YUView::RawFormat getRawFormat() { return flagIsRGB() ? YUView::raw_RGB : YUView::raw_YUV; }
-  YUV_Internals::YUVPixelFormat getYUVPixelFormat();
-  RGB_Internals::rgbPixelFormat getRGBPixelFormat();
+  video::RawFormat getRawFormat()
+  {
+    return flagIsRGB() ? video::RawFormat::RGB : video::RawFormat::YUV;
+  }
+  video::yuv::PixelFormatYUV getPixelFormatYUV();
+  video::rgb::PixelFormatRGB getRGBPixelFormat();
 
-  bool setValuesFromYUVPixelFormat(YUV_Internals::YUVPixelFormat fmt);
+  bool setValuesFromPixelFormatYUV(video::yuv::PixelFormatYUV fmt);
 
   // AVPixFmtDescriptor
   QString name;
@@ -1074,7 +1077,7 @@ public:
   AVCodecIDWrapper          getCodecIDWrapper(AVCodecID id);
   AVCodecID                 getCodecIDFromWrapper(AVCodecIDWrapper &wrapper);
   AVPixFmtDescriptorWrapper getAvPixFmtDescriptionFromAvPixelFormat(AVPixelFormat pixFmt);
-  AVPixelFormat getAVPixelFormatFromYUVPixelFormat(YUV_Internals::YUVPixelFormat pixFmt);
+  AVPixelFormat             getAVPixelFormatFromPixelFormatYUV(video::yuv::PixelFormatYUV pixFmt);
 
   bool configureDecoder(AVCodecContextWrapper &decCtx, AVCodecParametersWrapper &codecpar);
 
@@ -1127,7 +1130,7 @@ public:
   // All the function pointers of the ffmpeg library
   FFmpegLibraryFunctions lib;
 
-  static AVPixelFormat convertYUVAVPixelFormat(YUV_Internals::YUVPixelFormat fmt);
+  static AVPixelFormat convertYUVAVPixelFormat(video::yuv::PixelFormatYUV fmt);
   // Check if the given four files can be used to open FFmpeg.
   static bool checkLibraryFiles(QString      avCodecLib,
                                 QString      avFormatLib,

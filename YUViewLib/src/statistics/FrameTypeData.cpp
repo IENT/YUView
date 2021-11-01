@@ -38,7 +38,7 @@ namespace stats
 void FrameTypeData::addBlockValue(
     unsigned short x, unsigned short y, unsigned short w, unsigned short h, int val)
 {
-  statisticsItem_Value value;
+  StatsItemValue value;
   value.pos[0]  = x;
   value.pos[1]  = y;
   value.size[0] = w;
@@ -56,7 +56,7 @@ void FrameTypeData::addBlockValue(
 void FrameTypeData::addBlockVector(
     unsigned short x, unsigned short y, unsigned short w, unsigned short h, int vecX, int vecY)
 {
-  statisticsItem_Vector vec;
+  StatsItemVector vec;
   vec.pos[0]   = x;
   vec.pos[1]   = y;
   vec.size[0]  = w;
@@ -77,7 +77,7 @@ void FrameTypeData::addBlockAffineTF(unsigned short x,
                                      int            vecX2,
                                      int            vecY2)
 {
-  statisticsItem_AffineTF affineTF;
+  StatsItemAffineTF affineTF;
   affineTF.pos[0]   = x;
   affineTF.pos[1]   = y;
   affineTF.size[0]  = w;
@@ -97,7 +97,7 @@ void FrameTypeData::addLine(unsigned short x,
                             int            x2,
                             int            y2)
 {
-  statisticsItem_Vector vec;
+  StatsItemVector vec;
   vec.pos[0]   = x;
   vec.pos[1]   = y;
   vec.size[0]  = w;
@@ -110,7 +110,7 @@ void FrameTypeData::addLine(unsigned short x,
 
 void FrameTypeData::addPolygonValue(const Polygon &points, int val)
 {
-  statisticsItemPolygon_Value value;
+  StatsItemPolygonValue value;
   value.corners = points;
   value.value   = val;
 
@@ -125,7 +125,7 @@ void FrameTypeData::addPolygonValue(const Polygon &points, int val)
 
 void FrameTypeData::addPolygonVector(const Polygon &points, int vecX, int vecY)
 {
-  statisticsItemPolygon_Vector vec;
+  StatsItemPolygonVector vec;
   vec.corners = points;
   vec.point   = Point(vecX, vecY);
   polygonVectorData.push_back(vec);

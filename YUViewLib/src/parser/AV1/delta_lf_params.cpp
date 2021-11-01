@@ -32,7 +32,7 @@
 
 #include "delta_lf_params.h"
 
-#include "typedef.h"
+#include "Typedef.h"
 
 namespace parser::av1
 {

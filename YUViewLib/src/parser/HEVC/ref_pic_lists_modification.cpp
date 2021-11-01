@@ -32,7 +32,7 @@
 
 #include "ref_pic_lists_modification.h"
 
-#include "parser/common/functions.h"
+#include <parser/common/Functions.h>
 #include "slice_segment_header.h"
 
 #include <cmath>

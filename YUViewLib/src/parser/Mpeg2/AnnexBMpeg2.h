@@ -54,9 +54,9 @@ public:
   ~AnnexBMpeg2(){};
 
   // Get properties
-  double         getFramerate() const override;
-  Size           getSequenceSizeSamples() const override;
-  YUVPixelFormat getPixelFormat() const override;
+  double                     getFramerate() const override;
+  Size                       getSequenceSizeSamples() const override;
+  video::yuv::PixelFormatYUV getPixelFormat() const override;
 
   ParseResult parseAndAddNALUnit(int                                           nalID,
                                  const ByteVector &                            data,

@@ -67,7 +67,7 @@ public:
   bool isFileChanged() { return this->file.isFileChanged(); }
   void updateSettings() { this->file.updateFileWatchSetting(); }
 
-  infoData getInfo() const;
+  InfoData getInfo() const;
 
 signals:
   // When readFrameAndTypePositionsFromFile is running it will emit whenever new data for this POC

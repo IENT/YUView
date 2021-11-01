@@ -32,13 +32,17 @@
 
 #pragma once
 
-#include <QPointer>
+#include <common/FileInfo.h>
 
-#include "common/fileInfo.h"
 #include "videoHandler.h"
 #include "videoHandlerYUV.h"
 
+#include <QPointer>
+
 #include "ui_videoHandlerDifference.h"
+
+namespace video
+{
 
 class videoHandlerDifference : public videoHandler
 {
@@ -61,18 +65,24 @@ public:
 
   // Set the two video inputs. This will also update the number frames, the controls and the frame
   // size. The signal signalHandlerChanged will be emitted if a redraw is required.
-  void setInputVideos(frameHandler *childVideo0, frameHandler *childVideo1);
+  void setInputVideos(FrameHandler *childVideo0, FrameHandler *childVideo1);
 
-  QList<infoItem> differenceInfoList;
+  QList<InfoItem> differenceInfoList;
 
   // The difference overloads this and returns the difference values (A-B)
   virtual QStringPairList getPixelValues(const QPoint &pixelPos,
                                          int           frameIdx,
-                                         frameHandler *item2     = nullptr,
+                                         FrameHandler *item2     = nullptr,
                                          const int     frameIdx1 = 0) override;
 
+  virtual void setFormatFromSizeAndName(const Size       frameSize,
+                                        int              bitDepth,
+                                        DataLayout       dataLayout,
+                                        int64_t          fileSize,
+                                        const QFileInfo &fileInfo) override;
+
   // Calculate the position of the first difference and add the info to the list
-  void reportFirstDifferencePosition(QList<infoItem> &infoList) const;
+  void reportFirstDifferencePosition(QList<InfoItem> &infoList) const;
 
   virtual void savePlaylist(YUViewDomElement &root) const override;
   virtual void loadPlaylist(const YUViewDomElement &root) override;
@@ -91,10 +101,10 @@ private:
   {
     HEVC
   };
-  CodingOrder codingOrder {CodingOrder::HEVC};
+  CodingOrder codingOrder{CodingOrder::HEVC};
 
   // The two videos that the difference will be calculated from
-  QPointer<frameHandler> inputVideo[2];
+  QPointer<FrameHandler> inputVideo[2];
 
   // Recursively scan the LCU
   bool hierarchicalPosition(int           x,
@@ -104,14 +114,16 @@ private:
                             int &         firstY,
                             int &         partIndex,
                             const QImage &diffImg) const;
-  bool hierarchicalPositionYUV(int                                  x,
-                               int                                  y,
-                               int                                  blockSize,
-                               int &                                firstX,
-                               int &                                firstY,
-                               int &                                partIndex,
-                               const QByteArray &                   diffYUV,
-                               const YUV_Internals::YUVPixelFormat &diffYUVFormat) const;
+  bool hierarchicalPositionYUV(int                        x,
+                               int                        y,
+                               int                        blockSize,
+                               int &                      firstX,
+                               int &                      firstY,
+                               int &                      partIndex,
+                               const QByteArray &         diffYUV,
+                               const yuv::PixelFormatYUV &diffYUVFormat) const;
 
   SafeUi<Ui::videoHandlerDifference> ui;
 };
+
+} // namespace video

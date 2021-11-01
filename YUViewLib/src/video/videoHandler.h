@@ -32,15 +32,17 @@
 
 #pragma once
 
+#include "PixelFormat.h"
+#include "FrameHandler.h"
+
 #include <QBasicTimer>
 #include <QFileInfo>
 #include <QMutex>
 
-#include "video/frameHandler.h"
+namespace video
+{
 
-/* TODO
- */
-class videoHandler : public frameHandler
+class videoHandler : public FrameHandler
 {
   Q_OBJECT
 
@@ -71,12 +73,12 @@ public:
   // The Frame size is about to change. If this happens, our local buffers all need updating.
   virtual void setFrameSize(Size size) override;
 
-  // Same as the calculateDifference in frameHandler. For a video we have to make sure that the
+  // Same as the calculateDifference in FrameHandler. For a video we have to make sure that the
   // right frame is loaded first.
-  virtual QImage calculateDifference(frameHandler *   item2,
+  virtual QImage calculateDifference(FrameHandler *   item2,
                                      const int        frameIndex0,
                                      const int        frameIndex1,
-                                     QList<infoItem> &differenceInfoList,
+                                     QList<InfoItem> &differenceInfoList,
                                      const int        amplificationFactor,
                                      const bool       markDifference) override;
 
@@ -91,8 +93,11 @@ public:
   // If you know the frame size and the bit depth and the file size then we can try to guess
   // the format from that. You can override this for a specific raw format. The default
   // implementation does nothing.
-  virtual void setFormatFromSizeAndName(
-      const Size size, int bitDepth, bool packed, int64_t fileSize, const QFileInfo &fileInfo);
+  virtual void setFormatFromSizeAndName(const Size       frameSize,
+                                        int              bitDepth,
+                                        DataLayout       dataLayout,
+                                        int64_t          fileSize,
+                                        const QFileInfo &fileInfo) = 0;
 
   // The input frame buffer. After the signal signalRequestFrame(int) is emitted, the corresponding
   // frame should be in here and requestedFrame_idx should be set.
@@ -156,12 +161,12 @@ signals:
   void signalRequestRawData(int frameIndex, bool caching);
 
 protected:
-  // --- Drawing: The current frame is kept in the frameHandler::currentImage. But if
+  // --- Drawing: The current frame is kept in the FrameHandler::currentImage. But if
   // currentImageIndex is not identical to the requested frame in the draw event, we will have to
   // update currentImage.
   int currentImageIndex{-1};
 
-  // As the frameHandler implementations, we get the pixel values from currentImage. For a video,
+  // As the FrameHandler implementations, we get the pixel values from currentImage. For a video,
   // however, we have to first check if currentImage contains the correct frame.
   virtual QRgb getPixelVal(int x, int y) override;
 
@@ -210,3 +215,5 @@ private slots:
   // have changed.
   void slotVideoControlChanged() override;
 };
+
+} // namespace video

@@ -32,9 +32,10 @@
 
 #include "uncompressed_header.h"
 
-#include "parser/common/functions.h"
+#include <common/Typedef.h>
+#include <parser/common/Functions.h>
+
 #include "sequence_header_obu.h"
-#include "typedef.h"
 
 namespace parser::av1
 {

@@ -32,17 +32,22 @@
 
 #pragma once
 
-#include "common/YUViewDomElement.h"
-#include "common/fileInfo.h"
-#include "common/saveUi.h"
-#include "common/typedef.h"
-#include "statistics/StatisticUIHandler.h"
+#include <common/FileInfo.h>
+#include <common/SaveUi.h>
+#include <common/Typedef.h>
+#include <common/YUViewDomElement.h>
+#include <statistics/StatisticUIHandler.h>
+
 #include <QDir>
+#include <QObject>
 #include <QTreeWidgetItem>
 
 #include "ui_playlistItem.h"
 
-class frameHandler;
+namespace video
+{
+class FrameHandler;
+}
 
 class playlistItem : public QObject, public QTreeWidgetItem
 {
@@ -133,7 +138,7 @@ public:
 
   // Return the info title and info list to be shown in the fileInfo groupBox.
   // The default implementations will return empty strings/list.
-  virtual infoData getInfo() const { return infoData(); }
+  virtual InfoData getInfo() const { return InfoData(); }
   // If the playlist item indicates to put a button into the fileInfo, this call back is called if
   // the user presses the button.
   virtual void infoListButtonPressed(int) {}
@@ -177,8 +182,8 @@ public:
 
   // If you want your item to be droppable onto a difference/resample object, return true here and
   // return a valid video handler.
-  virtual bool          canBeUsedInProcessing() const { return false; }
-  virtual frameHandler *getFrameHandler() { return nullptr; }
+  virtual bool                 canBeUsedInProcessing() const { return false; }
+  virtual video::FrameHandler *getFrameHandler() { return nullptr; }
 
   // If this item provides statistics, return them here so that they can be used correctly in an
   // overlay

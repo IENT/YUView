@@ -32,20 +32,20 @@
 
 #include "settingsDialog.h"
 
+#include <common/Functions.h>
+#include <common/Typedef.h>
+#include <decoder/decoderDav1d.h>
+#include <decoder/decoderHM.h>
+#include <decoder/decoderLibde265.h>
+#include <decoder/decoderVTM.h>
+#include <decoder/decoderVVDec.h>
+#include <ffmpeg/FFMpegLibrariesHandling.h>
+
 #include <QColorDialog>
 #include <QFileDialog>
 #include <QMessageBox>
 #include <QSettings>
 #include <QTextStream>
-
-#include "common/functions.h"
-#include "common/typedef.h"
-#include "decoder/decoderDav1d.h"
-#include "decoder/decoderHM.h"
-#include "decoder/decoderLibde265.h"
-#include "decoder/decoderVTM.h"
-#include "decoder/decoderVVDec.h"
-#include "ffmpeg/FFMpegLibrariesHandling.h"
 
 #define MIN_CACHE_SIZE_IN_MB (20u)
 

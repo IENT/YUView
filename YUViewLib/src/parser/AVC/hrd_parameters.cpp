@@ -32,8 +32,8 @@
 
 #include "hrd_parameters.h"
 
-#include "parser/common/functions.h"
-#include "typedef.h"
+#include <common/Typedef.h>
+#include <parser/common/Functions.h>
 
 namespace parser::avc
 

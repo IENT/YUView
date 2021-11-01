@@ -35,7 +35,7 @@
 #include "NalUnitMpeg2.h"
 #include "group_of_pictures_header.h"
 #include "nal_extension.h"
-#include "parser/common/functions.h"
+#include <parser/common/Functions.h>
 #include "picture_header.h"
 #include "sequence_extension.h"
 #include "sequence_header.h"
@@ -61,7 +61,7 @@ AnnexBMpeg2::parseAndAddNALUnit(int                                           na
                                 const ByteVector &                            data,
                                 std::optional<BitratePlotModel::BitrateEntry> bitrateEntry,
                                 std::optional<pairUint64>                     nalStartEndPosFile,
-                                std::shared_ptr<TreeItem>                                    parent)
+                                std::shared_ptr<TreeItem>                     parent)
 {
   AnnexB::ParseResult parseResult;
 
@@ -86,7 +86,7 @@ AnnexBMpeg2::parseAndAddNALUnit(int                                           na
   // Use the given tree item. If it is not set, use the nalUnitMode (if active).
   // We don't set data (a name) for this item yet.
   // We want to parse the item and then set a good description.
-  std::string specificDescription;
+  std::string               specificDescription;
   std::shared_ptr<TreeItem> nalRoot;
   if (parent)
     nalRoot = parent->createChildItem();
@@ -286,19 +286,19 @@ Size AnnexBMpeg2::getSequenceSizeSamples() const
   return Size(w, h);
 }
 
-YUVPixelFormat AnnexBMpeg2::getPixelFormat() const
+video::yuv::PixelFormatYUV AnnexBMpeg2::getPixelFormat() const
 {
   if (firstSequenceExtension)
   {
     int c = firstSequenceExtension->chroma_format;
     if (c == 1)
-      return YUVPixelFormat(Subsampling::YUV_420, 8);
+      return video::yuv::PixelFormatYUV(video::yuv::Subsampling::YUV_420, 8);
     if (c == 2)
-      return YUVPixelFormat(Subsampling::YUV_422, 8);
+      return video::yuv::PixelFormatYUV(video::yuv::Subsampling::YUV_422, 8);
     if (c == 3)
-      return YUVPixelFormat(Subsampling::YUV_444, 8);
+      return video::yuv::PixelFormatYUV(video::yuv::Subsampling::YUV_444, 8);
   }
-  return YUVPixelFormat();
+  return {};
 }
 
 Ratio AnnexBMpeg2::getSampleAspectRatio()

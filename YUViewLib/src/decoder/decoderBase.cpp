@@ -35,8 +35,6 @@
 #include <QDir>
 #include <QSettings>
 
-using namespace YUView;
-
 namespace decoder
 {
 
@@ -78,7 +76,7 @@ void decoderBase::resetDecoder()
   decoderState = DecoderState::NeedsMoreData;
   frameSize    = {};
   formatYUV    = {};
-  rawFormat    = raw_Invalid;
+  rawFormat    = video::RawFormat::Invalid;
 }
 
 bool decoderBase::isSignalDifference(int signalID) const

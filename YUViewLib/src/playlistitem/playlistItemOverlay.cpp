@@ -39,7 +39,7 @@
 #include <cmath>
 #include <limits>
 
-#include "common/functionsGui.h"
+#include <common/FunctionsGui.h>
 
 #define PLAYLISTITEMOVERLAY_DEBUG 0
 #if PLAYLISTITEMOVERLAY_DEBUG && !NDEBUG
@@ -67,13 +67,13 @@ playlistItemOverlay::playlistItemOverlay() : playlistItemContainer("Overlay Item
 /* For an overlay item, the info list is just a list of the names of the
  * child elements.
  */
-infoData playlistItemOverlay::getInfo() const
+InfoData playlistItemOverlay::getInfo() const
 {
-  infoData info("Overlay Info");
+  InfoData info("Overlay Info");
 
   // Add the size of this playlistItemOverlay
   info.items.append(
-      infoItem("Overlay Size", QString("(%1,%2)").arg(getSize().width()).arg(getSize().height())));
+      InfoItem("Overlay Size", QString("(%1,%2)").arg(getSize().width()).arg(getSize().height())));
 
   // Add the sizes of all child items
   for (int i = 0; i < childCount(); i++)
@@ -83,7 +83,7 @@ infoData playlistItemOverlay::getInfo() const
     {
       QSize childSize = childItem->getSize();
       info.items.append(
-          infoItem(QString("Item %1 size").arg(i),
+          InfoItem(QString("Item %1 size").arg(i),
                    QString("(%1,%2)").arg(childSize.width()).arg(childSize.height())));
     }
   }

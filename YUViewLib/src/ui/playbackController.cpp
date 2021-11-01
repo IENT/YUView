@@ -34,9 +34,9 @@
 
 #include <QSettings>
 
-#include "common/functionsGui.h"
-#include "common/typedef.h"
-#include "playlistitem/playlistItem.h"
+#include <common/FunctionsGui.h>
+#include <common/Typedef.h>
+#include <playlistitem/playlistItem.h>
 
 // Activate this if you want to know when which buffer is loaded/converted to image and so on.
 #define PLAYBACKCONTROLLER_DEBUG 0

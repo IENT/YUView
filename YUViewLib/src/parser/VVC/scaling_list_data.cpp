@@ -32,8 +32,9 @@
 
 #include "scaling_list_data.h"
 
+#include <common/Typedef.h>
+
 #include "adaptation_parameter_set_rbsp.h"
-#include "common/typedef.h"
 
 namespace parser::vvc
 {

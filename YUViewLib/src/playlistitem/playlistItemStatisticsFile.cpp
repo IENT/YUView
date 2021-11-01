@@ -39,11 +39,11 @@
 #include <cassert>
 #include <iostream>
 
-#include "common/YUViewDomElement.h"
-#include "common/functionsGui.h"
-#include "statistics/StatisticsDataPainting.h"
-#include "statistics/StatisticsFileCSV.h"
-#include "statistics/StatisticsFileVTMBMS.h"
+#include <common/YUViewDomElement.h>
+#include <common/FunctionsGui.h>
+#include <statistics/StatisticsDataPainting.h>
+#include <statistics/StatisticsFileCSV.h>
+#include <statistics/StatisticsFileVTMBMS.h>
 
 #define PLAYLISTITEMSTATISTICS_DEBUG 0
 #if PLAYLISTITEMSTATISTICS_DEBUG && !NDEBUG
@@ -90,13 +90,13 @@ playlistItemStatisticsFile::~playlistItemStatisticsFile()
   }
 }
 
-infoData playlistItemStatisticsFile::getInfo() const
+InfoData playlistItemStatisticsFile::getInfo() const
 {
   if (this->file)
     return this->file->getInfo();
 
-  infoData info("Statistics File info");
-  info.items.append(infoItem("File", "No file loaded"));
+  InfoData info("Statistics File info");
+  info.items.append(InfoItem("File", "No file loaded"));
   return info;
 }
 

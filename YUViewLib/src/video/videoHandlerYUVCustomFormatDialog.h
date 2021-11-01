@@ -32,22 +32,32 @@
 
 #pragma once
 
-#include "YUVPixelFormat.h"
+#include "PixelFormatYUV.h"
+
+#include <QDialog>
 
 #include "ui_videoHandlerYUV_CustomFormatDialog.h"
 
-class videoHandlerYUVCustomFormatDialog : public QDialog, public Ui::CustomYUVFormatDialog
+namespace video::yuv
+{
+
+class videoHandlerYUVCustomFormatDialog : public QDialog
 {
   Q_OBJECT
 
 public:
   videoHandlerYUVCustomFormatDialog() = delete;
-  videoHandlerYUVCustomFormatDialog(const YUV_Internals::YUVPixelFormat &yuvFormat);
-  YUV_Internals::YUVPixelFormat getSelectedYUVFormat() const;
+  videoHandlerYUVCustomFormatDialog(const PixelFormatYUV &yuvFormat);
+  PixelFormatYUV getSelectedYUVFormat() const;
 
 private slots:
   void on_groupBoxPlanar_toggled(bool checked);
-  void on_groupBoxPacked_toggled(bool checked) { groupBoxPlanar->setChecked(!checked); }
+  void on_groupBoxPacked_toggled(bool checked) { this->ui.groupBoxPlanar->setChecked(!checked); }
   void on_comboBoxChromaSubsampling_currentIndexChanged(int idx);
   void on_comboBoxBitDepth_currentIndexChanged(int idx);
+
+private:
+  Ui::CustomYUVFormatDialog ui;
 };
+
+} // namespace video::yuv

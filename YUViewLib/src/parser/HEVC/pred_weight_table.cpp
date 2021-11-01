@@ -32,7 +32,7 @@
 
 #include "pred_weight_table.h"
 
-#include "parser/common/functions.h"
+#include <parser/common/Functions.h>
 #include "seq_parameter_set_rbsp.h"
 #include "slice_segment_header.h"
 

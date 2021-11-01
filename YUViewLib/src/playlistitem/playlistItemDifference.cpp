@@ -34,7 +34,7 @@
 
 #include <QPainter>
 
-#include "common/functionsGui.h"
+#include <common/FunctionsGui.h>
 
 // Activate this if you want to know when which difference is loaded
 #define PLAYLISTITEMDIFFERENCE_DEBUG_LOADING 0
@@ -62,7 +62,7 @@ playlistItemDifference::playlistItemDifference() : playlistItemContainer("Differ
   this->infoText       = DIFFERENCE_INFO_TEXT;
 
   connect(&difference,
-          &videoHandlerDifference::signalHandlerChanged,
+          &video::videoHandlerDifference::signalHandlerChanged,
           this,
           &playlistItemDifference::signalItemChanged);
 }
@@ -70,14 +70,14 @@ playlistItemDifference::playlistItemDifference() : playlistItemContainer("Differ
 /* For a difference item, the info list is just a list of the names of the
  * child elements.
  */
-infoData playlistItemDifference::getInfo() const
+InfoData playlistItemDifference::getInfo() const
 {
-  infoData info("Difference Info");
+  InfoData info("Difference Info");
 
   if (childCount() >= 1)
-    info.items.append(infoItem(QString("File 1"), getChildPlaylistItem(0)->properties().name));
+    info.items.append(InfoItem(QString("File 1"), getChildPlaylistItem(0)->properties().name));
   if (childCount() >= 2)
-    info.items.append(infoItem(QString("File 2"), getChildPlaylistItem(1)->properties().name));
+    info.items.append(InfoItem(QString("File 2"), getChildPlaylistItem(1)->properties().name));
 
   // Report the position of the first difference in coding order
   difference.reportFirstDifferencePosition(info.items);
@@ -85,7 +85,7 @@ infoData playlistItemDifference::getInfo() const
   // Report MSE
   for (int i = 0; i < difference.differenceInfoList.length(); i++)
   {
-    infoItem p = difference.differenceInfoList[i];
+    InfoItem p = difference.differenceInfoList[i];
     info.items.append(p);
   }
 
@@ -106,8 +106,8 @@ void playlistItemDifference::drawItem(QPainter *painter,
     updateChildList();
 
     // Update the items in the difference item
-    frameHandler *childVideo0 = nullptr;
-    frameHandler *childVideo1 = nullptr;
+    video::FrameHandler *childVideo0 = nullptr;
+    video::FrameHandler *childVideo1 = nullptr;
     if (childCount() >= 1)
       childVideo0 = getChildPlaylistItem(0)->getFrameHandler();
     if (childCount() >= 2)

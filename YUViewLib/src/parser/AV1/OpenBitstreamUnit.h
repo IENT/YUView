@@ -32,9 +32,11 @@
 
 #pragma once
 
-#include "common/typedef.h"
-#include "obu_header.h"
+#include <common/Typedef.h>
+
 #include <optional>
+
+#include "obu_header.h"
 
 namespace parser::av1
 {
@@ -49,8 +51,7 @@ public:
 class OpenBitstreamUnit
 {
 public:
-  OpenBitstreamUnit(int obu_idx, std::optional<pairUint64> filePosStartEnd)
-      : obu_idx(obu_idx)
+  OpenBitstreamUnit(int obu_idx, std::optional<pairUint64> filePosStartEnd) : obu_idx(obu_idx)
   {
     if (filePosStartEnd)
       this->filePosStartEnd = *filePosStartEnd;

@@ -32,7 +32,7 @@
 
 #pragma once
 
-#include "common/typedef.h"
+#include <common/Typedef.h>
 
 #include <functional>
 #include <memory>
@@ -69,14 +69,14 @@ struct Options
   [[nodiscard]] Options &&withMeaningMap(const MeaningMap &meaningMap);
   [[nodiscard]] Options &&withMeaningVector(const std::vector<std::string> &meaningVector);
   [[nodiscard]] Options &&
-  withMeaningFunction(const std::function<std::string(int64_t)> &meaningFunction);
+                          withMeaningFunction(const std::function<std::string(int64_t)> &meaningFunction);
   [[nodiscard]] Options &&withCheckEqualTo(int64_t value, const std::string &errorIfFail = {});
   [[nodiscard]] Options &&
   withCheckGreater(int64_t value, bool inclusive = true, const std::string &errorIfFail = {});
   [[nodiscard]] Options &&
   withCheckSmaller(int64_t value, bool inclusive = true, const std::string &errorIfFail = {});
   [[nodiscard]] Options &&
-  withCheckRange(Range<int64_t> range, bool inclusive = true, const std::string &errorIfFail = {});
+                          withCheckRange(Range<int64_t> range, bool inclusive = true, const std::string &errorIfFail = {});
   [[nodiscard]] Options &&withLoggingDisabled();
 
   std::string                         meaningString;

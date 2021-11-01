@@ -32,8 +32,9 @@
 
 #include "frame_obu.h"
 
+#include <common/Typedef.h>
+
 #include "sequence_header_obu.h"
-#include "typedef.h"
 
 namespace parser::av1
 {

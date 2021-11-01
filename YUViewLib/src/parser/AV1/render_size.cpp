@@ -32,7 +32,7 @@
 
 #include "render_size.h"
 
-#include "typedef.h"
+#include <common/Typedef.h>
 
 namespace parser::av1
 {

@@ -32,8 +32,8 @@
 
 #include <QCoreApplication>
 
-#include "common/typedef.h"
-#include "ui/YUViewApplication.h"
+#include <common/Typedef.h>
+#include <ui/YUViewApplication.h>
 
 int main(int argc, char *argv[])
 {

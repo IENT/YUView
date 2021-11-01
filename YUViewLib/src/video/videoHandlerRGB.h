@@ -32,9 +32,12 @@
 
 #pragma once
 
-#include "rgbPixelFormat.h"
+#include "PixelFormatRGB.h"
 #include "ui_videoHandlerRGB.h"
 #include "videoHandler.h"
+
+namespace video
+{
 
 enum class ComponentShow
 {
@@ -62,7 +65,7 @@ public:
   // The format is valid if the frame width/height/pixel format are set
   virtual bool isFormatValid() const override
   {
-    return (frameHandler::isFormatValid() && srcPixelFormat.isValid());
+    return (FrameHandler::isFormatValid() && srcPixelFormat.isValid());
   }
 
   unsigned getCachingFrameSize() const override;
@@ -70,7 +73,7 @@ public:
   // Return the RGB values for the given pixel
   virtual QStringPairList getPixelValues(const QPoint &pixelPos,
                                          int           frameIdx,
-                                         frameHandler *item2,
+                                         FrameHandler *item2,
                                          const int     frameIdx1 = 0) override;
 
   // Get the number of bytes for one RGB frame with the current format
@@ -86,7 +89,7 @@ public:
 
   virtual QString getFormatAsString() const override
   {
-    return frameHandler::getFormatAsString() + ";RGB;" +
+    return FrameHandler::getFormatAsString() + ";RGB;" +
            QString::fromStdString(this->srcPixelFormat.getName());
   }
   virtual bool setFormatFromString(QString format) override;
@@ -105,8 +108,7 @@ public:
   }
   // Set the current raw format and update the control. Only emit a signalHandlerChanged signal
   // if emitSignal is true.
-  virtual void setRGBPixelFormat(const RGB_Internals::rgbPixelFormat &format,
-                                 bool                                 emitSignal = false)
+  virtual void setRGBPixelFormat(const rgb::PixelFormatRGB &format, bool emitSignal = false)
   {
     setSrcPixelFormat(format);
     if (emitSignal)
@@ -114,15 +116,15 @@ public:
   }
   virtual void setRGBPixelFormatByName(const QString &name, bool emitSignal = false)
   {
-    this->setRGBPixelFormat(RGB_Internals::rgbPixelFormat(name.toStdString()), emitSignal);
+    this->setRGBPixelFormat(rgb::PixelFormatRGB(name.toStdString()), emitSignal);
   }
 
   // If you know the frame size of the video, the file size (and optionally the bit depth) we can
   // guess the remaining values. The rate value is set if a matching format could be found. The sub
   // format can be one of: "RGB", "GBR" or "BGR"
-  virtual void setFormatFromSizeAndName(const Size       size,
+  virtual void setFormatFromSizeAndName(const Size       frameSize,
                                         int              bitDepth,
-                                        bool             packed,
+                                        DataLayout       dataLayout,
                                         int64_t          fileSize,
                                         const QFileInfo &fileInfo) override;
 
@@ -133,7 +135,7 @@ public:
                                const int     frameIdx,
                                const QRect & videoRect,
                                const double  zoomFactor,
-                               frameHandler *item2          = nullptr,
+                               FrameHandler *item2          = nullptr,
                                const bool    markDifference = false,
                                const int     frameIdxItem1  = 0) override;
 
@@ -141,10 +143,10 @@ public:
   // to another videoHandlerRGB. If item2 cannot be converted to a videoHandlerRGB,
   // we will use the videoHandler::calculateDifference function to calculate the difference
   // using the 8bit RGB values.
-  virtual QImage calculateDifference(frameHandler *   item2,
+  virtual QImage calculateDifference(FrameHandler *   item2,
                                      const int        frameIdxItem0,
                                      const int        frameIdxItem1,
-                                     QList<infoItem> &differenceInfoList,
+                                     QList<InfoItem> &differenceInfoList,
                                      const int        amplificationFactor,
                                      const bool       markDifference) override;
 
@@ -158,21 +160,21 @@ public:
 protected:
   ComponentShow componentDisplayMode{ComponentShow::RGBA};
 
-  // A (static) convenience QList class that handles the preset rgbPixelFormats
-  class RGBFormatList : public QList<RGB_Internals::rgbPixelFormat>
+  // A (static) convenience QList class that handles the preset PixelFormatRGBs
+  class RGBFormatList : public QList<rgb::PixelFormatRGB>
   {
   public:
     // Default constructor. Fill the list with all the supported YUV formats.
     RGBFormatList();
     // Get all the YUV formats as a formatted list (for the drop-down control)
     std::vector<std::string> getFormattedNames() const;
-    // Get the YUVPixelFormat with the given name
-    RGB_Internals::rgbPixelFormat getFromName(const std::string &name) const;
+    // Get the PixelFormatYUV with the given name
+    rgb::PixelFormatRGB getFromName(const std::string &name) const;
   };
   static RGBFormatList rgbPresetList;
 
   // The currently selected RGB format
-  RGB_Internals::rgbPixelFormat srcPixelFormat;
+  rgb::PixelFormatRGB srcPixelFormat;
 
   // Parameters for the RGBA transformation (like scaling, invert)
   int  componentScale[4]{1, 1, 1, 1};
@@ -180,11 +182,7 @@ protected:
   bool limitedRange{};
 
   // Get the RGB values for the given pixel.
-  struct rgba_t
-  {
-    unsigned int R, G, B, A;
-  };
-  virtual rgba_t getPixelValue(const QPoint &pixelPos) const;
+  virtual rgb::rgba_t getPixelValue(const QPoint &pixelPos) const;
 
   // Load the given frame and return it for caching. The current buffers (currentFrameRawRGBData and
   // currentFrame) will not be modified.
@@ -200,7 +198,7 @@ private:
   void convertRGBToImage(const QByteArray &sourceBuffer, QImage &outputImage);
 
   // Set the new pixel format thread save (lock the mutex)
-  void setSrcPixelFormat(const RGB_Internals::rgbPixelFormat &newFormat);
+  void setSrcPixelFormat(const rgb::PixelFormatRGB &newFormat);
 
   // Convert one frame from the current pixel format to RGB888
   void       convertSourceToRGBA32Bit(const QByteArray &sourceBuffer,
@@ -221,3 +219,5 @@ private slots:
   // One of the controls for the RGB display settings changed.
   void slotDisplayOptionsChanged();
 };
+
+} // namespace video

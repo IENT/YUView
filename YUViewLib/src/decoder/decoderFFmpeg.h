@@ -41,13 +41,13 @@ namespace decoder
 class decoderFFmpeg : public decoderBase
 {
 public:
-  decoderFFmpeg(AVCodecIDWrapper              codec,
-                Size                          frameSize,
-                QByteArray                    extradata,
-                YUV_Internals::YUVPixelFormat fmt,
-                IntPair                       profileLevel,
-                Ratio                         sampleAspectRatio,
-                bool                          cachingDecoder = false);
+  decoderFFmpeg(AVCodecIDWrapper           codec,
+                Size                       frameSize,
+                QByteArray                 extradata,
+                video::yuv::PixelFormatYUV fmt,
+                IntPair                    profileLevel,
+                Ratio                      sampleAspectRatio,
+                bool                       cachingDecoder = false);
   decoderFFmpeg(AVCodecParametersWrapper codecpar, bool cachingDecoder = false);
   ~decoderFFmpeg();
 
@@ -103,7 +103,7 @@ protected:
   // An array of AV_INPUT_BUFFER_PADDING_SIZE zeros to be added as padding in pushData
   QByteArray avPacketPaddingData;
 
-  QString codecName {};
+  QString codecName{};
 };
 
 } // namespace decoder

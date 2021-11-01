@@ -32,10 +32,11 @@
 
 #pragma once
 
-#include "common/typedef.h"
+#include <common/Typedef.h>
+#include <parser/common/SubByteReaderLogging.h>
+
 #include "commonMaps.h"
 #include "nal_unit_header.h"
-#include "parser/common/SubByteReaderLogging.h"
 #include "pred_weight_table.h"
 #include "ref_pic_lists_modification.h"
 #include "st_ref_pic_set.h"

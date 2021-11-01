@@ -37,8 +37,11 @@
 #include <QSettings>
 #include <cstring>
 
-#include "common/functions.h"
-#include "common/typedef.h"
+#include <common/Functions.h>
+#include <common/Typedef.h>
+
+namespace decoder
+{
 
 // Debug the decoder ( 0:off 1:interactive decoder only 2:caching decoder only 3:both)
 #define DECODERVTM_DEBUG_OUTPUT 0
@@ -80,8 +83,26 @@
 #endif
 #endif
 
-namespace decoder
+using Subsampling = video::yuv::Subsampling;
+
+namespace
 {
+
+Subsampling convertFromInternalSubsampling(libVTMDec_ChromaFormat fmt)
+{
+  if (fmt == LIBVTMDEC_CHROMA_400)
+    return Subsampling::YUV_400;
+  if (fmt == LIBVTMDEC_CHROMA_420)
+    return Subsampling::YUV_420;
+  if (fmt == LIBVTMDEC_CHROMA_422)
+    return Subsampling::YUV_422;
+  if (fmt == LIBVTMDEC_CHROMA_444)
+    return Subsampling::YUV_444;
+
+  return Subsampling::UNKNOWN;
+}
+
+} // namespace
 
 decoderVTM::decoderVTM(int, bool cachingDecoder) : decoderBaseSingleLib(cachingDecoder)
 {
@@ -250,11 +271,12 @@ bool decoderVTM::getNextFrameFromDecoder()
                       this->lib.libVTMDec_get_picture_height(currentVTMPic, LIBVTMDEC_LUMA));
   if (!picSize.isValid())
     DEBUG_DECVTM("decoderVTM::getNextFrameFromDecoder got invalid size");
-  auto subsampling = convertFromInternalSubsampling(this->lib.libVTMDec_get_chroma_format(currentVTMPic));
-  if (subsampling == YUV_Internals::Subsampling::UNKNOWN)
+  auto subsampling =
+      convertFromInternalSubsampling(this->lib.libVTMDec_get_chroma_format(currentVTMPic));
+  if (subsampling == Subsampling::UNKNOWN)
     DEBUG_DECVTM("decoderVTM::getNextFrameFromDecoder got invalid chroma format");
-  auto bitDepth =
-      functions::clipToUnsigned(this->lib.libVTMDec_get_internal_bit_depth(currentVTMPic, LIBVTMDEC_LUMA));
+  auto bitDepth = functions::clipToUnsigned(
+      this->lib.libVTMDec_get_internal_bit_depth(currentVTMPic, LIBVTMDEC_LUMA));
   if (bitDepth < 8 || bitDepth > 16)
     DEBUG_DECVTM("decoderVTM::getNextFrameFromDecoder got invalid bit depth");
 
@@ -262,7 +284,7 @@ bool decoderVTM::getNextFrameFromDecoder()
   {
     // Set the values
     frameSize = picSize;
-    formatYUV = YUV_Internals::YUVPixelFormat(subsampling, bitDepth);
+    formatYUV = video::yuv::PixelFormatYUV(subsampling, bitDepth);
   }
   else
   {
@@ -295,8 +317,8 @@ bool decoderVTM::pushData(QByteArray &data)
 
   // Push the data of the NAL unit. The function libVTMDec_push_nal_unit can handle data
   // with a start code and without.
-  bool            checkOutputPictures = false;
-  bool            bNewPicture         = false;
+  bool checkOutputPictures = false;
+  bool bNewPicture         = false;
   auto err                 = this->lib.libVTMDec_push_nal_unit(
       decoder, data, data.length(), endOfFile, bNewPicture, checkOutputPictures);
   if (err != LIBVTMDEC_OK)
@@ -352,7 +374,7 @@ void decoderVTM::copyImgToByteArray(libVTMDec_picture *src, QByteArray &dst)
 {
   // How many image planes are there?
   auto fmt      = this->lib.libVTMDec_get_chroma_format(src);
-  int                    nrPlanes = (fmt == LIBVTMDEC_CHROMA_400) ? 1 : 3;
+  int  nrPlanes = (fmt == LIBVTMDEC_CHROMA_400) ? 1 : 3;
 
   // VTM always uses 16 bit as the return array
   bool outputTwoByte = (this->lib.libVTMDec_get_internal_bit_depth(src, LIBVTMDEC_LUMA) > 8);
@@ -360,12 +382,14 @@ void decoderVTM::copyImgToByteArray(libVTMDec_picture *src, QByteArray &dst)
   // How many samples are in each component?
   int outSizeY = this->lib.libVTMDec_get_picture_width(src, LIBVTMDEC_LUMA) *
                  this->lib.libVTMDec_get_picture_height(src, LIBVTMDEC_LUMA);
-  int outSizeCb = (nrPlanes == 1) ? 0
-                                  : (this->lib.libVTMDec_get_picture_width(src, LIBVTMDEC_CHROMA_U) *
-                                     this->lib.libVTMDec_get_picture_height(src, LIBVTMDEC_CHROMA_U));
-  int outSizeCr = (nrPlanes == 1) ? 0
-                                  : (this->lib.libVTMDec_get_picture_width(src, LIBVTMDEC_CHROMA_V) *
-                                     this->lib.libVTMDec_get_picture_height(src, LIBVTMDEC_CHROMA_V));
+  int outSizeCb = (nrPlanes == 1)
+                      ? 0
+                      : (this->lib.libVTMDec_get_picture_width(src, LIBVTMDEC_CHROMA_U) *
+                         this->lib.libVTMDec_get_picture_height(src, LIBVTMDEC_CHROMA_U));
+  int outSizeCr = (nrPlanes == 1)
+                      ? 0
+                      : (this->lib.libVTMDec_get_picture_width(src, LIBVTMDEC_CHROMA_V) *
+                         this->lib.libVTMDec_get_picture_height(src, LIBVTMDEC_CHROMA_V));
   // How many bytes do we need in the output buffer?
   int nrBytesOutput = (outSizeY + outSizeCb + outSizeCr) * (outputTwoByte ? 2 : 1);
   DEBUG_DECVTM("decoderVTM::copyImgToByteArray nrBytesOutput %d", nrBytesOutput);
@@ -378,9 +402,7 @@ void decoderVTM::copyImgToByteArray(libVTMDec_picture *src, QByteArray &dst)
   // we have to cast it right.
   for (int c = 0; c < nrPlanes; c++)
   {
-    auto component = (c == 0)   ? LIBVTMDEC_LUMA
-                                         : (c == 1) ? LIBVTMDEC_CHROMA_U
-                                                    : LIBVTMDEC_CHROMA_V;
+    auto component = (c == 0) ? LIBVTMDEC_LUMA : (c == 1) ? LIBVTMDEC_CHROMA_U : LIBVTMDEC_CHROMA_V;
 
     const short *img_c  = this->lib.libVTMDec_get_image_plane(src, component);
     int          stride = this->lib.libVTMDec_get_picture_stride(src, component);
@@ -608,20 +630,6 @@ bool decoderVTM::checkLibraryFile(QString libFilePath, QString &error)
   testDecoder.resolveLibraryFunctionPointers();
   error = testDecoder.decoderErrorString();
   return testDecoder.state() != DecoderState::Error;
-}
-
-YUV_Internals::Subsampling decoderVTM::convertFromInternalSubsampling(libVTMDec_ChromaFormat fmt)
-{
-  if (fmt == LIBVTMDEC_CHROMA_400)
-    return YUV_Internals::Subsampling::YUV_400;
-  if (fmt == LIBVTMDEC_CHROMA_420)
-    return YUV_Internals::Subsampling::YUV_420;
-  if (fmt == LIBVTMDEC_CHROMA_422)
-    return YUV_Internals::Subsampling::YUV_422;
-  if (fmt == LIBVTMDEC_CHROMA_444)
-    return YUV_Internals::Subsampling::YUV_444;
-
-  return YUV_Internals::Subsampling::UNKNOWN;
 }
 
 } // namespace decoder

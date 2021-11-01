@@ -1,34 +1,34 @@
 /*  This file is part of YUView - The YUV player with advanced analytics toolset
-*   <https://github.com/IENT/YUView>
-*   Copyright (C) 2015  Institut für Nachrichtentechnik, RWTH Aachen University, GERMANY
-*
-*   This program is free software; you can redistribute it and/or modify
-*   it under the terms of the GNU General Public License as published by
-*   the Free Software Foundation; either version 3 of the License, or
-*   (at your option) any later version.
-*
-*   In addition, as a special exception, the copyright holders give
-*   permission to link the code of portions of this program with the
-*   OpenSSL library under certain conditions as described in each
-*   individual source file, and distribute linked combinations including
-*   the two.
-*   
-*   You must obey the GNU General Public License in all respects for all
-*   of the code used other than OpenSSL. If you modify file(s) with this
-*   exception, you may extend this exception to your version of the
-*   file(s), but you are not obligated to do so. If you do not wish to do
-*   so, delete this exception statement from your version. If you delete
-*   this exception statement from all source files in the program, then
-*   also delete it here.
-*
-*   This program is distributed in the hope that it will be useful,
-*   but WITHOUT ANY WARRANTY; without even the implied warranty of
-*   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-*   GNU General Public License for more details.
-*
-*   You should have received a copy of the GNU General Public License
-*   along with this program. If not, see <http://www.gnu.org/licenses/>.
-*/
+ *   <https://github.com/IENT/YUView>
+ *   Copyright (C) 2015  Institut für Nachrichtentechnik, RWTH Aachen University, GERMANY
+ *
+ *   This program is free software; you can redistribute it and/or modify
+ *   it under the terms of the GNU General Public License as published by
+ *   the Free Software Foundation; either version 3 of the License, or
+ *   (at your option) any later version.
+ *
+ *   In addition, as a special exception, the copyright holders give
+ *   permission to link the code of portions of this program with the
+ *   OpenSSL library under certain conditions as described in each
+ *   individual source file, and distribute linked combinations including
+ *   the two.
+ *
+ *   You must obey the GNU General Public License in all respects for all
+ *   of the code used other than OpenSSL. If you modify file(s) with this
+ *   exception, you may extend this exception to your version of the
+ *   file(s), but you are not obligated to do so. If you do not wish to do
+ *   so, delete this exception statement from your version. If you delete
+ *   this exception statement from all source files in the program, then
+ *   also delete it here.
+ *
+ *   This program is distributed in the hope that it will be useful,
+ *   but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ *   GNU General Public License for more details.
+ *
+ *   You should have received a copy of the GNU General Public License
+ *   along with this program. If not, see <http://www.gnu.org/licenses/>.
+ */
 
 #include "playlistItemText.h"
 
@@ -37,18 +37,18 @@
 #include <QPainter>
 #include <QRegularExpression>
 
-#include "common/functionsGui.h"
+#include <common/FunctionsGui.h>
 
 // Activate this if you want to know when which buffer is loaded/converted to image and so on.
 #define PLAYLISTITEMTEXT_DEBUG 0
 #if PLAYLISTITEMTEXT_DEBUG && !NDEBUG
 #define DEBUG_TEXT qDebug
 #else
-#define DEBUG_TEXT(fmt,...) ((void)0)
+#define DEBUG_TEXT(fmt, ...) ((void)0)
 #endif
 
 playlistItemText::playlistItemText(const QString &initialText)
-  : playlistItem(QString("Text: \"%1\"").arg(initialText), Type::Static)
+    : playlistItem(QString("Text: \"%1\"").arg(initialText), Type::Static)
 {
   setIcon(0, functionsGui::convertIcon(":img_text.png"));
   setFlags(flags() & ~Qt::ItemIsDropEnabled);
@@ -60,16 +60,16 @@ playlistItemText::playlistItemText(const QString &initialText)
 
 // The copy constructor. Copy all the setting from the other text item.
 playlistItemText::playlistItemText(playlistItemText *cloneFromTxt)
-  : playlistItem(cloneFromTxt->properties().name, Type::Static)
+    : playlistItem(cloneFromTxt->properties().name, Type::Static)
 {
   this->setIcon(0, QIcon(":img_text.png"));
   this->setFlags(flags() & ~Qt::ItemIsDropEnabled);
 
   this->prop.propertiesWidgetTitle = "Text Properties";
-  
+
   this->color = cloneFromTxt->color;
-  this->text = cloneFromTxt->text;
-  this->font = cloneFromTxt->font;
+  this->text  = cloneFromTxt->text;
+  this->font  = cloneFromTxt->font;
 
   this->prop.duration = cloneFromTxt->properties().duration;
 }
@@ -77,7 +77,7 @@ playlistItemText::playlistItemText(playlistItemText *cloneFromTxt)
 void playlistItemText::createPropertiesWidget()
 {
   Q_ASSERT_X(!this->propertiesWidget, "createPropertiesWidget", "Properties widget already exists");
-  
+
   this->preparePropertiesWidget(QStringLiteral("playlistItemText"));
 
   QVBoxLayout *vAllLaout = new QVBoxLayout(this->propertiesWidget.data());
@@ -99,17 +99,26 @@ QLayout *playlistItemText::createTextController()
   Q_ASSERT_X(!this->ui.created(), "createTextController", "UI already exists");
 
   this->ui.setupUi();
-  
+
   // Set the text
   this->ui.textEdit->setPlainText(text);
-  
+
   QSignalBlocker blocker(this);
   this->on_textEdit_textChanged();
 
   // Connect signals
-  connect(this->ui.selectFontButton, &QPushButton::clicked, this,  &playlistItemText::on_selectFontButton_clicked);
-  connect(this->ui.selectColorButton, &QPushButton::clicked, this, &playlistItemText::on_selectColorButton_clicked);
-  connect(this->ui.textEdit, &QPlainTextEdit::textChanged, this, &playlistItemText::on_textEdit_textChanged);
+  connect(this->ui.selectFontButton,
+          &QPushButton::clicked,
+          this,
+          &playlistItemText::on_selectFontButton_clicked);
+  connect(this->ui.selectColorButton,
+          &QPushButton::clicked,
+          this,
+          &playlistItemText::on_selectColorButton_clicked);
+  connect(this->ui.textEdit,
+          &QPlainTextEdit::textChanged,
+          this,
+          &playlistItemText::on_textEdit_textChanged);
 
   return this->ui.topVBoxLayout;
 }
@@ -127,7 +136,8 @@ void playlistItemText::on_selectFontButton_clicked()
 
 void playlistItemText::on_selectColorButton_clicked()
 {
-  auto newColor = QColorDialog::getColor(color, nullptr, tr("Select font color"), QColorDialog::ShowAlphaChannel);
+  auto newColor = QColorDialog::getColor(
+      color, nullptr, tr("Select font color"), QColorDialog::ShowAlphaChannel);
   if (newColor != color)
   {
     this->color = newColor;
@@ -137,7 +147,7 @@ void playlistItemText::on_selectColorButton_clicked()
 
 void playlistItemText::on_textEdit_textChanged()
 {
-  auto t = ui.textEdit->toPlainText();
+  auto t     = ui.textEdit->toPlainText();
   this->text = t;
 
   // Only show the first 50 characters in the name
@@ -172,24 +182,24 @@ void playlistItemText::savePlaylist(QDomElement &root, const QDir &) const
   d.appendProperiteChild("fontName", this->font.family());
   d.appendProperiteChild("fontSize", QString::number(this->font.pointSize()));
   d.appendProperiteChild("text", this->text);
-      
+
   root.appendChild(d);
 }
 
 playlistItemText *playlistItemText::newplaylistItemText(const YUViewDomElement &root)
 {
   // Get the text and create a new playlistItemText
-  auto text = root.findChildValue("text");
+  auto text    = root.findChildValue("text");
   auto newText = new playlistItemText(text);
 
   playlistItem::loadPropertiesFromPlaylist(root, newText);
-  
+
   // Get and set all the values from the playlist file
-  auto fontName = root.findChildValue("fontName");
-  int fontSize = root.findChildValue("fontSize").toInt();
-  newText->font = QFont(fontName, fontSize);
+  auto fontName  = root.findChildValue("fontName");
+  int  fontSize  = root.findChildValue("fontSize").toInt();
+  newText->font  = QFont(fontName, fontSize);
   newText->color = QColor(root.findChildValue("color"));
-    
+
   return newText;
 }
 
@@ -207,7 +217,7 @@ void playlistItemText::drawItem(QPainter *painter, int, double zoomFactor, bool)
 
   QRect textRect;
   textRect.setSize(td.size().toSize());
-  textRect.moveCenter(QPoint(0,0));
+  textRect.moveCenter(QPoint(0, 0));
 
   painter->translate(textRect.topLeft());
   td.documentLayout()->draw(painter, ctx);

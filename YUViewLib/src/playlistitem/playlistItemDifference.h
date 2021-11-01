@@ -42,7 +42,7 @@ class playlistItemDifference : public playlistItemContainer
 public:
   playlistItemDifference();
 
-  virtual infoData getInfo() const override;
+  virtual InfoData getInfo() const override;
   virtual QSize    getSize() const override;
 
   // Overload from playlistItemVideo. We add some specific drawing functionality if the two children
@@ -70,7 +70,7 @@ public:
   virtual ValuePairListSets getPixelValues(const QPoint &pixelPos, int frameIdx) override;
 
   // Return the frame handler pointer that draws the difference
-  virtual frameHandler *getFrameHandler() override { return &difference; }
+  virtual video::FrameHandler *getFrameHandler() override { return &difference; }
 
 protected slots:
   virtual void childChanged(bool redraw, recacheIndicator recache) override;
@@ -80,7 +80,7 @@ private:
   // and set propertiesWidget to point to it.
   virtual void createPropertiesWidget() override;
 
-  videoHandlerDifference difference;
+  video::videoHandlerDifference difference;
 
   bool isDifferenceLoading{};
   bool isDifferenceLoadingToDoubleBuffer{};

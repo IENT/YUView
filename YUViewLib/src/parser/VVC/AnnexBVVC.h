@@ -39,8 +39,6 @@
 
 #include <memory>
 
-using namespace YUV_Internals;
-
 namespace parser
 {
 
@@ -61,9 +59,9 @@ public:
   ~AnnexBVVC() = default;
 
   // Get some properties
-  double         getFramerate() const override;
-  Size           getSequenceSizeSamples() const override;
-  YUVPixelFormat getPixelFormat() const override;
+  double                     getFramerate() const override;
+  Size                       getSequenceSizeSamples() const override;
+  video::yuv::PixelFormatYUV getPixelFormat() const override;
 
   virtual std::optional<SeekData> getSeekData(int iFrameNr) override;
   QByteArray                      getExtradata() override;

@@ -32,6 +32,11 @@
 
 #include "splitViewWidget.h"
 
+#include <playlistitem/playlistItem.h>
+#include <ui/playbackController.h>
+#include <video/FrameHandler.h>
+#include <video/VideoCache.h>
+
 #include <QActionGroup>
 #include <QBackingStore>
 #include <QDockWidget>
@@ -44,11 +49,6 @@
 #include <QPainter>
 #include <QSettings>
 #include <QTextDocument>
-
-#include "playlistitem/playlistItem.h"
-#include "ui/playbackController.h"
-#include "video/frameHandler.h"
-#include "video/videoCache.h"
 
 // The splitter can be grabbed with a certain margin of pixels to the left and right. The margin
 // in pixels is calculated depending on the logical DPI of the user using:
@@ -112,9 +112,18 @@ splitViewWidget::splitViewWidget(QWidget *parent) : MoveAndZoomableView(parent)
   this->createMenuActions();
 }
 
-void splitViewWidget::setPlaylistTreeWidget(PlaylistTreeWidget *p) { playlist = p; }
-void splitViewWidget::setPlaybackController(PlaybackController *p) { playback = p; }
-void splitViewWidget::setVideoCache(videoCache *p) { cache = p; }
+void splitViewWidget::setPlaylistTreeWidget(PlaylistTreeWidget *p)
+{
+  playlist = p;
+}
+void splitViewWidget::setPlaybackController(PlaybackController *p)
+{
+  playback = p;
+}
+void splitViewWidget::setVideoCache(video::VideoCache *p)
+{
+  cache = p;
+}
 
 /** The common settings might have changed.
  * Reload all settings from the QSettings and set them.
@@ -287,8 +296,7 @@ void splitViewWidget::paintEvent(QPaintEvent *)
       if (pixelPosInItem[0])
       {
         // If the zoom box is active, draw a rectangle around the pixel currently under the cursor
-        frameHandler *vid = item[0]->getFrameHandler();
-        if (vid)
+        if (auto vid = item[0]->getFrameHandler())
         {
           painter.setPen(vid->isPixelDark(zoomBoxPixelUnderCursor[0]) ? Qt::white : Qt::black);
           painter.drawRect(zoomPixelRect[0]);
@@ -344,8 +352,7 @@ void splitViewWidget::paintEvent(QPaintEvent *)
       if (pixelPosInItem[1])
       {
         // If the zoom box is active, draw a rectangle around the pixel currently under the cursor
-        frameHandler *vid = item[1]->getFrameHandler();
-        if (vid)
+        if (auto vid = item[1]->getFrameHandler())
         {
           painter.setPen(vid->isPixelDark(zoomBoxPixelUnderCursor[1]) ? Qt::white : Qt::black);
           painter.drawRect(zoomPixelRect[1]);
@@ -410,8 +417,7 @@ void splitViewWidget::paintEvent(QPaintEvent *)
       if (pixelPosInItem[0])
       {
         // If the zoom box is active, draw a rectangle around the pixel currently under the cursor
-        frameHandler *vid = item[0]->getFrameHandler();
-        if (vid)
+        if (auto vid = item[0]->getFrameHandler())
         {
           painter.setPen(vid->isPixelDark(zoomBoxPixelUnderCursor[0]) ? Qt::white : Qt::black);
           painter.drawRect(zoomPixelRect[0]);
@@ -1196,7 +1202,10 @@ void splitViewWidget::gridSetCustom(bool)
   }
 }
 
-void splitViewWidget::toggleZoomBox(bool) { this->setDrawZoomBox(!this->drawZoomBox, true, true); }
+void splitViewWidget::toggleZoomBox(bool)
+{
+  this->setDrawZoomBox(!this->drawZoomBox, true, true);
+}
 
 void splitViewWidget::toggleSeparateWindow(bool checked)
 {
@@ -1208,7 +1217,10 @@ void splitViewWidget::toggleSeparateWindow(bool checked)
   emit signalShowSeparateWindow(checked);
 }
 
-void splitViewWidget::toggleFullScreen(bool) { emit this->signalToggleFullScreen(); }
+void splitViewWidget::toggleFullScreen(bool)
+{
+  emit this->signalToggleFullScreen();
+}
 
 void splitViewWidget::resetViewInternal()
 {
@@ -1610,13 +1622,25 @@ void splitViewWidget::setViewState(const QPointF &offset, double zoom, double sp
   update();
 }
 
-void splitViewWidget::onSwipeLeft() { playback->nextFrame(); }
+void splitViewWidget::onSwipeLeft()
+{
+  playback->nextFrame();
+}
 
-void splitViewWidget::onSwipeRight() { playback->previousFrame(); }
+void splitViewWidget::onSwipeRight()
+{
+  playback->previousFrame();
+}
 
-void splitViewWidget::onSwipeUp() { playlist->selectNextItem(); }
+void splitViewWidget::onSwipeUp()
+{
+  playlist->selectNextItem();
+}
 
-void splitViewWidget::onSwipeDown() { playlist->selectPreviousItem(); }
+void splitViewWidget::onSwipeDown()
+{
+  playlist->selectPreviousItem();
+}
 
 void splitViewWidget::createMenuActions()
 {
@@ -1630,8 +1654,7 @@ void splitViewWidget::createMenuActions()
                                          bool          checked,
                                          void (splitViewWidget::*func)(bool),
                                          const QKeySequence &shortcut  = {},
-                                         bool                isEnabled = true)
-  {
+                                         bool                isEnabled = true) {
     action.setParent(this);
     action.setCheckable(true);
     action.setChecked(checked);

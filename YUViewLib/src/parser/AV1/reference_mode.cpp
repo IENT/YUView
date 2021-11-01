@@ -32,7 +32,7 @@
 
 #include "reference_mode.h"
 
-#include "typedef.h"
+#include <common/Typedef.h>
 
 namespace parser::av1
 {

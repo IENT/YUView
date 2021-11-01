@@ -33,7 +33,9 @@
 #pragma once
 
 #include "playlistItem.h"
-#include "video/frameHandler.h"
+
+#include <video/FrameHandler.h>
+
 #include <QFileSystemWatcher>
 #include <QFuture>
 
@@ -46,7 +48,7 @@ public:
 
   // ------ Overload from playlistItem
 
-  virtual infoData getInfo() const override;
+  virtual InfoData getInfo() const override;
 
   // Get the text size (using the current text, font/text size ...)
   virtual QSize getSize() const override;
@@ -69,7 +71,7 @@ public:
   static void getSupportedFileExtensions(QStringList &allExtensions, QStringList &filters);
 
   // Get the frame handler
-  virtual frameHandler *getFrameHandler() override { return &frame; }
+  virtual video::FrameHandler *getFrameHandler() override { return &frame; }
 
   virtual bool canBeUsedInProcessing() const override { return true; }
 
@@ -89,7 +91,7 @@ private slots:
 
 private:
   // The frame handler that draws the frame
-  frameHandler frame;
+  video::FrameHandler frame;
 
   // Watch the loaded file for modifications
   QFileSystemWatcher fileWatcher;

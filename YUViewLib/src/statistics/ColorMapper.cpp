@@ -32,7 +32,7 @@
 
 #include "ColorMapper.h"
 
-#include "common/typedef.h"
+#include <common/Typedef.h>
 
 #include <QStringList>
 #include <random>

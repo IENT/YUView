@@ -32,7 +32,7 @@
 
 #include "scaling_list_data.h"
 
-#include "parser/common/functions.h"
+#include <parser/common/Functions.h>
 
 namespace parser::hevc
 {

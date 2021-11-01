@@ -35,7 +35,7 @@ struct CheckPolygonVectorItem
   unsigned y[5];
 };
 
-void checkVectorList(const std::vector<stats::statisticsItem_Vector> &vectors,
+void checkVectorList(const std::vector<stats::StatsItemVector> &vectors,
                      const std::vector<CheckStatsItem> &              checkItems)
 {
   QCOMPARE(vectors.size(), checkItems.size());
@@ -52,7 +52,7 @@ void checkVectorList(const std::vector<stats::statisticsItem_Vector> &vectors,
   }
 }
 
-void checkAffineTFVectorList(const std::vector<stats::statisticsItem_AffineTF> &affineTFvectors,
+void checkAffineTFVectorList(const std::vector<stats::StatsItemAffineTF> &affineTFvectors,
                              const std::vector<CheckAffineTFItem> &             checkItems)
 {
   QCOMPARE(affineTFvectors.size(), checkItems.size());
@@ -73,7 +73,7 @@ void checkAffineTFVectorList(const std::vector<stats::statisticsItem_AffineTF> &
   }
 }
 
-void checkLineList(const std::vector<stats::statisticsItem_Vector> &lines,
+void checkLineList(const std::vector<stats::StatsItemVector> &lines,
                    const std::vector<CheckLineItem> &               checkItems)
 {
   QCOMPARE(lines.size(), checkItems.size());
@@ -92,7 +92,7 @@ void checkLineList(const std::vector<stats::statisticsItem_Vector> &lines,
   }
 }
 
-void checkPolygonvectorList(const std::vector<stats::statisticsItemPolygon_Vector> &polygonList,
+void checkPolygonvectorList(const std::vector<stats::StatsItemPolygonVector> &polygonList,
                             const std::vector<CheckPolygonVectorItem> &             checkItems)
 {
   QCOMPARE(polygonList.size(), checkItems.size());
@@ -111,7 +111,7 @@ void checkPolygonvectorList(const std::vector<stats::statisticsItemPolygon_Vecto
   }
 }
 
-void checkValueList(const std::vector<stats::statisticsItem_Value> &values,
+void checkValueList(const std::vector<stats::StatsItemValue> &values,
                     const std::vector<CheckStatsItem> &             checkItems)
 {
   QCOMPARE(values.size(), checkItems.size());

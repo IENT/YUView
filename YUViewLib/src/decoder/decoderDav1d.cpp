@@ -38,14 +38,13 @@
 #include <cassert>
 #include <cstring>
 
-#include "common/functions.h"
-#include "common/typedef.h"
+#include <common/Functions.h>
+#include <common/Typedef.h>
 
 namespace decoder
 {
 
-using namespace YUView;
-using namespace YUV_Internals;
+using Subsampling = video::yuv::Subsampling;
 
 // Debug the decoder (0:off 1:interactive decoder only 2:caching decoder only 3:both)
 #define DECODERDAV1D_DEBUG_OUTPUT 0
@@ -90,7 +89,7 @@ Subsampling convertFromInternalSubsampling(Dav1dPixelLayout layout)
 
 } // namespace
 
-YUV_Internals::Subsampling Dav1dPictureWrapper::getSubsampling() const
+Subsampling Dav1dPictureWrapper::getSubsampling() const
 {
   return convertFromInternalSubsampling(curPicture.p.layout);
 }
@@ -114,7 +113,7 @@ decoderDav1d::decoderDav1d(int signalID, bool cachingDecoder) : decoderBaseSingl
   currentOutputBuffer.clear();
 
   // Libde265 can only decoder HEVC in YUV format
-  rawFormat = raw_YUV;
+  this->rawFormat = video::RawFormat::YUV;
 
   QSettings settings;
   settings.beginGroup("Decoders");
@@ -153,7 +152,10 @@ void decoderDav1d::resetDecoder()
   allocateNewDecoder();
 }
 
-bool decoderDav1d::isSignalDifference(int signalID) const { return signalID == 2 || signalID == 3; }
+bool decoderDav1d::isSignalDifference(int signalID) const
+{
+  return signalID == 2 || signalID == 3;
+}
 
 QStringList decoderDav1d::getSignalNames() const
 {
@@ -321,7 +323,7 @@ bool decoderDav1d::decodeFrame()
     {
       // Set the values
       frameSize = s;
-      formatYUV = YUVPixelFormat(subsampling, bitDepth);
+      formatYUV = video::yuv::PixelFormatYUV(subsampling, bitDepth);
     }
     else
     {
@@ -419,7 +421,7 @@ bool decoderDav1d::pushData(QByteArray &data)
       subBlockSize = (seq.sb128 >= 1) ? 128 : 64;
 
       this->frameSize = s;
-      this->formatYUV = YUVPixelFormat(subsampling, bitDepth);
+      this->formatYUV = video::yuv::PixelFormatYUV(subsampling, bitDepth);
     }
     else
     {

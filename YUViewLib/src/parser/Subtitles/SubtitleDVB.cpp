@@ -33,7 +33,7 @@
 #include "SubtitleDVB.h"
 
 #include "parser/common/SubByteReaderLogging.h"
-#include "parser/common/functions.h"
+#include <parser/common/Functions.h>
 
 #include <stdexcept>
 

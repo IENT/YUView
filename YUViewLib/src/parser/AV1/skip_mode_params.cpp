@@ -32,9 +32,10 @@
 
 #include "skip_mode_params.h"
 
+#include <common/Typedef.h>
+
 #include "reference_mode.h"
 #include "sequence_header_obu.h"
-#include "typedef.h"
 
 namespace parser::av1
 {

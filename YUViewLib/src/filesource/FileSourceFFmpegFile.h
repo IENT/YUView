@@ -62,11 +62,11 @@ public:
   QStringList getLibraryPaths() const { return ff.getLibPaths(); }
 
   // Get properties of the bitstream
-  double                        getFramerate() const { return frameRate; }
-  Size                          getSequenceSizeSamples() const { return frameSize; }
-  YUView::RawFormat             getRawFormat() const { return rawFormat; }
-  YUV_Internals::YUVPixelFormat getPixelFormatYUV() const { return pixelFormat_yuv; }
-  RGB_Internals::rgbPixelFormat getPixelFormatRGB() const { return pixelFormat_rgb; }
+  double                     getFramerate() const { return frameRate; }
+  Size                       getSequenceSizeSamples() const { return frameSize; }
+  video::RawFormat           getRawFormat() const { return rawFormat; }
+  video::yuv::PixelFormatYUV getPixelFormatYUV() const { return pixelFormat_yuv; }
+  video::rgb::PixelFormatRGB getPixelFormatRGB() const { return pixelFormat_rgb; }
 
   /* Get data from the file source. You can either retrive full AVPackets or single units
    * from the bitstream using these functions. The important thing is to not mix calls to these
@@ -153,11 +153,10 @@ protected:
   };
   streamIndices_t streamIndices;
 
-  YUView::RawFormat              rawFormat{YUView::raw_Invalid};
-  YUV_Internals::YUVPixelFormat  pixelFormat_yuv;
-  RGB_Internals::rgbPixelFormat  pixelFormat_rgb;
-  YUV_Internals::ColorConversion colorConversionType{
-      YUV_Internals::ColorConversion::BT709_LimitedRange};
+  video::RawFormat            rawFormat{video::RawFormat::Invalid};
+  video::yuv::PixelFormatYUV  pixelFormat_yuv;
+  video::rgb::PixelFormatRGB  pixelFormat_rgb;
+  video::yuv::ColorConversion colorConversionType{video::yuv::ColorConversion::BT709_LimitedRange};
 
   // Watch the opened file for modifications
   QFileSystemWatcher fileWatcher;

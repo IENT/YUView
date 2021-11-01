@@ -32,7 +32,7 @@
 
 #include "delta_q_params.h"
 
-#include "typedef.h"
+#include <common/Typedef.h>
 
 namespace parser::av1
 {

@@ -98,7 +98,7 @@ template <typename W> static W * widgetAt(QGridLayout *grid, int row, int column
   return widget;
 }
 
-int FileInfoWidget::addInfo(const infoData &data, int row, int infoIndex)
+int FileInfoWidget::addInfo(const InfoData &data, int row, int infoIndex)
 {
   for (auto &info : data.items)
   {
@@ -129,7 +129,7 @@ int FileInfoWidget::addInfo(const infoData &data, int row, int infoIndex)
   return row;
 }
 
-void FileInfoWidget::setInfo(const infoData &info1, const infoData &info2)
+void FileInfoWidget::setInfo(const InfoData &info1, const InfoData &info2)
 {
   QString topTitle = FILEINFOWIDGET_DEFAULT_WINDOW_TITLE;
   int row = 0;

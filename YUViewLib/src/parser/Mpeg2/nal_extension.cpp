@@ -34,7 +34,7 @@
 
 #include "parser/common/CodingEnum.h"
 #include "parser/common/SubByteReaderLogging.h"
-#include "parser/common/functions.h"
+#include <parser/common/Functions.h>
 #include "picture_coding_extension.h"
 #include "sequence_extension.h"
 

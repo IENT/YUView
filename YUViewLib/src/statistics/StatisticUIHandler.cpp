@@ -40,9 +40,9 @@
 #endif
 #include <QtMath>
 
-#include "statistics/StatisticsData.h"
-#include "statistics/StatisticsType.h"
-#include "common/functionsGui.h"
+#include <statistics/StatisticsData.h>
+#include <statistics/StatisticsType.h>
+#include <common/FunctionsGui.h>
 
 namespace stats
 {

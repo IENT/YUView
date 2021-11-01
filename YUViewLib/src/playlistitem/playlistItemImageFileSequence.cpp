@@ -36,8 +36,8 @@
 #include <QSettings>
 #include <QUrl>
 
-#include "common/functionsGui.h"
-#include "filesource/FileSource.h"
+#include <common/FunctionsGui.h>
+#include <filesource/FileSource.h>
 
 playlistItemImageFileSequence::playlistItemImageFileSequence(const QString &rawFilePath)
     : playlistItemWithVideo(rawFilePath)
@@ -53,14 +53,14 @@ playlistItemImageFileSequence::playlistItemImageFileSequence(const QString &rawF
   isFrameLoading           = false;
 
   // Create the video handler
-  video.reset(new videoHandler());
+  video.reset();
 
   // Connect the basic signals from the video
   playlistItemWithVideo::connectVideo();
 
   // Connect the video signalRequestFrame to this::loadFrame
   connect(video.get(),
-          &videoHandler::signalRequestFrame,
+          &video::videoHandler::signalRequestFrame,
           this,
           &playlistItemImageFileSequence::slotFrameRequest);
 
@@ -164,25 +164,25 @@ void playlistItemImageFileSequence::createPropertiesWidget()
   vAllLaout->insertStretch(-1, 1); // Push controls up
 }
 
-infoData playlistItemImageFileSequence::getInfo() const
+InfoData playlistItemImageFileSequence::getInfo() const
 {
-  infoData info("Image Sequence Info");
+  InfoData info("Image Sequence Info");
 
   if (this->video->isFormatValid())
   {
     auto videoSize = this->video->getFrameSize();
     auto  nrFrames  = this->imageFiles.size();
-    info.items.append(infoItem("Num Frames", QString::number(nrFrames)));
-    info.items.append(infoItem("Resolution",
+    info.items.append(InfoItem("Num Frames", QString::number(nrFrames)));
+    info.items.append(InfoItem("Resolution",
                                QString("%1x%2").arg(videoSize.width).arg(videoSize.height),
                                "The video resolution in pixels (width x height)"));
   }
   else
-    info.items.append(infoItem("Status", "Error", "There was an error loading the image."));
+    info.items.append(InfoItem("Status", "Error", "There was an error loading the image."));
 
   if (loadPlaylistFrameMissing)
     info.items.append(
-        infoItem("Warning",
+        InfoItem("Warning",
                  "Frames missing",
                  "At least one frame could not be found when loading from playlist."));
 

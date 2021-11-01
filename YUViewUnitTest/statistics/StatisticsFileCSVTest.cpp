@@ -16,7 +16,7 @@ struct CheckStatsItem
   int      v0{}, v1{};
 };
 
-void checkVectorList(const std::vector<stats::statisticsItem_Vector> &vectors,
+void checkVectorList(const std::vector<stats::StatsItemVector> &vectors,
                      const std::vector<CheckStatsItem> &              checkItems)
 {
   QCOMPARE(vectors.size(), checkItems.size());
@@ -33,7 +33,7 @@ void checkVectorList(const std::vector<stats::statisticsItem_Vector> &vectors,
   }
 }
 
-void checkValueList(const std::vector<stats::statisticsItem_Value> &values,
+void checkValueList(const std::vector<stats::StatsItemValue> &values,
                     const std::vector<CheckStatsItem> &             checkItems)
 {
   QCOMPARE(values.size(), checkItems.size());

@@ -33,6 +33,10 @@
 #ifndef SPLITVIEWWIDGET_H
 #define SPLITVIEWWIDGET_H
 
+#include <common/SaveUi.h>
+#include <common/Typedef.h>
+#include <ui/views/MoveAndZoomableView.h>
+
 #include <QAction>
 #include <QActionGroup>
 #include <QElapsedTimer>
@@ -42,15 +46,14 @@
 #include <QProgressDialog>
 #include <QTimer>
 
-#include "MoveAndZoomableView.h"
-#include "common/saveUi.h"
-#include "common/typedef.h"
-
 class QDockWidget;
 class PlaybackController;
 class playlistItem;
 class PlaylistTreeWidget;
-class videoCache;
+namespace video
+{
+class VideoCache;
+}
 
 class splitViewWidget : public MoveAndZoomableView
 {
@@ -62,7 +65,7 @@ public:
   // Set pointers to the playlist tree, the playback controller and the cache.
   void setPlaylistTreeWidget(PlaylistTreeWidget *p);
   void setPlaybackController(PlaybackController *p);
-  void setVideoCache(videoCache *p);
+  void setVideoCache(video::VideoCache *p);
 
   // Set the minimum size hint. This will only be valid until the next showEvent. This is used when
   // adding the widget as a new central widget. Then this size guarantees that the splitVie will
@@ -259,14 +262,14 @@ protected:
   // Regular grid
   unsigned int regularGridSize{0}; //!< The size of each block in the regular grid in pixels
   void
-  setRegularGridSize(unsigned int size, bool setOtherViewIfLinked = true, bool callUpdate = false);
+         setRegularGridSize(unsigned int size, bool setOtherViewIfLinked = true, bool callUpdate = false);
   QColor regularGridColor;
   void   paintRegularGrid(QPainter *painter, playlistItem *item); //!< paint the grid
 
-  // Pointers to the playlist tree widget, the playback controller and the videoCache
+  // Pointers to the playlist tree widget, the playback controller and the VideoCache
   QPointer<PlaylistTreeWidget> playlist;
   QPointer<PlaybackController> playback;
-  QPointer<videoCache>         cache;
+  QPointer<video::VideoCache>  cache;
 
   // Freezing of the view
   bool isViewFrozen{false}; //!< Is the view frozen?

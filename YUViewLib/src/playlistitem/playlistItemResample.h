@@ -44,7 +44,7 @@ class playlistItemResample : public playlistItemContainer
 public:
   playlistItemResample();
 
-  virtual infoData getInfo() const override;
+  virtual InfoData getInfo() const override;
 
   // Overload from playlistItemVideo.
   virtual QSize getSize() const override;
@@ -70,7 +70,7 @@ public:
   virtual ValuePairListSets getPixelValues(const QPoint &pixelPos, int frameIdx) override;
 
   // Return the frame handler pointer that draws the difference
-  virtual frameHandler *getFrameHandler() override { return &video; }
+  virtual video::FrameHandler *getFrameHandler() override { return &video; }
 
 protected slots:
   void childChanged(bool redraw, recacheIndicator recache) override;
@@ -88,7 +88,7 @@ private:
   // and set propertiesWidget to point to it.
   virtual void createPropertiesWidget() override;
 
-  videoHandlerResample video;
+  video::videoHandlerResample video;
 
   Size scaledSize {0, 0};
   int interpolationIndex {0};

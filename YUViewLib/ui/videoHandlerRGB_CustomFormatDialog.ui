@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>231</width>
-    <height>188</height>
+    <width>260</width>
+    <height>276</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -17,7 +17,7 @@
    <item>
     <layout class="QFormLayout" name="formLayout">
      <item row="0" column="0">
-      <widget class="QLabel" name="label">
+      <widget class="QLabel" name="labelRGBOrder">
        <property name="toolTip">
         <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;What is the byte order of the &lt;span style=&quot; font-weight:600;&quot;&gt;R&lt;/span&gt;ed, &lt;span style=&quot; font-weight:600;&quot;&gt;G&lt;/span&gt;reen and &lt;span style=&quot; font-weight:600;&quot;&gt;B&lt;/span&gt;lue components?&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
        </property>
@@ -31,40 +31,10 @@
        <property name="toolTip">
         <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;What is the byte order of the &lt;span style=&quot; font-weight:600;&quot;&gt;R&lt;/span&gt;ed, &lt;span style=&quot; font-weight:600;&quot;&gt;G&lt;/span&gt;reen and &lt;span style=&quot; font-weight:600;&quot;&gt;B&lt;/span&gt;lue components?&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
        </property>
-       <item>
-        <property name="text">
-         <string>RGB</string>
-        </property>
-       </item>
-       <item>
-        <property name="text">
-         <string>RBG</string>
-        </property>
-       </item>
-       <item>
-        <property name="text">
-         <string>GRB</string>
-        </property>
-       </item>
-       <item>
-        <property name="text">
-         <string>GBR</string>
-        </property>
-       </item>
-       <item>
-        <property name="text">
-         <string>BRG</string>
-        </property>
-       </item>
-       <item>
-        <property name="text">
-         <string>BGR</string>
-        </property>
-       </item>
       </widget>
      </item>
      <item row="1" column="0">
-      <widget class="QLabel" name="label_2">
+      <widget class="QLabel" name="labelBitDepth">
        <property name="toolTip">
         <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;How many bits per color component are there? &lt;/p&gt;&lt;p&gt;If the bit depth is greater than 8, we will assume multiple bytes per component.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
        </property>
@@ -84,6 +54,27 @@
        <property name="value">
         <number>8</number>
        </property>
+      </widget>
+     </item>
+     <item row="2" column="0">
+      <widget class="QLabel" name="labelEndianess">
+       <property name="text">
+        <string>Endianness</string>
+       </property>
+      </widget>
+     </item>
+     <item row="2" column="1">
+      <widget class="QComboBox" name="comboBoxEndianness">
+       <item>
+        <property name="text">
+         <string>Big Endian</string>
+        </property>
+       </item>
+       <item>
+        <property name="text">
+         <string>Little Endian</string>
+        </property>
+       </item>
       </widget>
      </item>
     </layout>

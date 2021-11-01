@@ -42,7 +42,7 @@
 #include "HRDPlotModel.h"
 
 #include <QTime>
-#include <common/functions.h>
+#include <common/Functions.h>
 
 PlotModel::StreamParameter HRDPlotModel::getStreamParameter(unsigned streamIndex) const
 {

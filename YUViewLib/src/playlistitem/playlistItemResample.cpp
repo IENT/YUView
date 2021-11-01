@@ -34,7 +34,7 @@
 
 #include <QPainter>
 
-#include "common/functionsGui.h"
+#include <common/FunctionsGui.h>
 
 // Activate this if you want to know when which difference is loaded
 #define PLAYLISTITEMRESAMPLE_DEBUG_LOADING 0
@@ -58,20 +58,20 @@ playlistItemResample::playlistItemResample() : playlistItemContainer("Resample I
   this->infoText       = RESAMPLE_INFO_TEXT;
 
   this->connect(&this->video,
-                &frameHandler::signalHandlerChanged,
+                &video::FrameHandler::signalHandlerChanged,
                 this,
                 &playlistItemResample::signalItemChanged);
 }
 
 /* For a resample item, the info list is just the name of the child item
  */
-infoData playlistItemResample::getInfo() const
+InfoData playlistItemResample::getInfo() const
 {
-  infoData info("Resample Info");
+  InfoData info("Resample Info");
 
   if (this->childCount() >= 1)
     info.items.append(
-        infoItem(QString("File 1"), this->getChildPlaylistItem(0)->properties().name));
+        InfoItem(QString("File 1"), this->getChildPlaylistItem(0)->properties().name));
 
   return info;
 }
@@ -146,8 +146,8 @@ void playlistItemResample::drawItem(QPainter *painter,
 
         this->video.setScaledSize(this->scaledSize);
         auto interpolation = (this->interpolationIndex == 0)
-                                 ? videoHandlerResample::Interpolation::Bilinear
-                                 : videoHandlerResample::Interpolation::Fast;
+                                 ? video::videoHandlerResample::Interpolation::Bilinear
+                                 : video::videoHandlerResample::Interpolation::Fast;
         this->video.setInterpolation(interpolation);
         this->video.setCutAndSample(this->cutRange, this->sampling);
         auto nrFrames            = (this->cutRange.second - this->cutRange.first) / this->sampling;
@@ -348,8 +348,8 @@ void playlistItemResample::slotInterpolationModeChanged(int)
 {
   this->interpolationIndex = ui.comboBoxInterpolation->currentIndex();
   auto interpolation       = (this->interpolationIndex == 0)
-                                 ? videoHandlerResample::Interpolation::Bilinear
-                                 : videoHandlerResample::Interpolation::Fast;
+                           ? video::videoHandlerResample::Interpolation::Bilinear
+                           : video::videoHandlerResample::Interpolation::Fast;
   this->video.setInterpolation(interpolation);
 }
 

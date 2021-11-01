@@ -33,7 +33,7 @@
 #include "picture_coding_extension.h"
 
 #include "parser/common/SubByteReaderLogging.h"
-#include "parser/common/functions.h"
+#include <parser/common/Functions.h>
 
 namespace parser::mpeg2
 {

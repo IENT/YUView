@@ -44,8 +44,6 @@
 #include <queue>
 #include <vector>
 
-using namespace YUV_Internals;
-
 namespace parser
 {
 
@@ -71,15 +69,15 @@ public:
   ~AnnexBAVC(){};
 
   // Get properties
-  double         getFramerate() const override;
-  Size           getSequenceSizeSamples() const override;
-  YUVPixelFormat getPixelFormat() const override;
+  double                     getFramerate() const override;
+  Size                       getSequenceSizeSamples() const override;
+  video::yuv::PixelFormatYUV getPixelFormat() const override;
 
   ParseResult parseAndAddNALUnit(int                                           nalID,
                                  const ByteVector &                            data,
                                  std::optional<BitratePlotModel::BitrateEntry> bitrateEntry,
                                  std::optional<pairUint64> nalStartEndPosFile = {},
-                                 std::shared_ptr<TreeItem>                parent             = nullptr) override;
+                                 std::shared_ptr<TreeItem> parent             = nullptr) override;
 
   std::optional<SeekData> getSeekData(int iFrameNr) override;
   QByteArray              getExtradata() override;

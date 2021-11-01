@@ -32,10 +32,10 @@
 
 #include "loop_filter_params.h"
 
-#include "parser/common/functions.h"
-#include "sequence_header_obu.h"
-#include "typedef.h"
+#include <parser/common/Functions.h>
 
+#include "Typedef.h"
+#include "sequence_header_obu.h"
 
 namespace parser::av1
 {

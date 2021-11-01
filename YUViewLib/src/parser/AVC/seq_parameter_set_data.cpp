@@ -32,8 +32,9 @@
 
 #include "seq_parameter_set_data.h"
 
-#include "parser/common/functions.h"
-#include "typedef.h"
+#include <parser/common/Functions.h>
+
+#include "Typedef.h"
 
 namespace parser::avc
 
@@ -264,4 +265,4 @@ void seq_parameter_set_data::parse(reader::SubByteReaderLogging &reader)
   reader.logCalculatedValue("MaxFrameNum", this->MaxFrameNum);
 }
 
-} // namespace parser::av1
+} // namespace parser::avc

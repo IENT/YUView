@@ -40,8 +40,8 @@
 #include <QString>
 
 #include <common/EnumMapper.h>
-#include <common/fileInfo.h>
-#include <common/typedef.h>
+#include <common/FileInfo.h>
+#include <common/Typedef.h>
 
 enum class InputFormat
 {
@@ -73,7 +73,7 @@ public:
   virtual bool openFile(const QString &filePath);
 
   // Return information on this file (like path, date created file Size ...)
-  virtual QList<infoItem> getFileInfoList() const;
+  virtual QList<InfoItem> getFileInfoList() const;
 
   QString absoluteFilePath() const
   {

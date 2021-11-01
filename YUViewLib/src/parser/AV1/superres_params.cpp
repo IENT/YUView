@@ -32,8 +32,8 @@
 
 #include "superres_params.h"
 
+#include "Typedef.h"
 #include "sequence_header_obu.h"
-#include "typedef.h"
 
 namespace parser::av1
 {

@@ -32,12 +32,12 @@
 
 #include "decoderVVDec.h"
 
+#include <common/Typedef.h>
+
 #include <QCoreApplication>
 #include <QDir>
 #include <QSettings>
 #include <cstring>
-
-#include "common/typedef.h"
 
 // Debug the decoder ( 0:off 1:interactive decoder only 2:caching decoder only 3:both)
 #define decoderVVDec_DEBUG_OUTPUT 0
@@ -82,6 +82,8 @@
 namespace decoder
 {
 
+using Subsampling = video::yuv::Subsampling;
+
 namespace
 {
 
@@ -95,23 +97,23 @@ void loggingCallback(void *ptr, int level, const char *msg, va_list list)
   (void)list;
 #if decoderVVDec_DEBUG_OUTPUT && !NDEBUG
   char buf[200];
-  vsnprintf( buf, 200, msg, list );
+  vsnprintf(buf, 200, msg, list);
   qDebug() << "decoderVVDec::decoderVVDec vvdeclog(" << level << "): " << buf;
 #endif
 }
 
-YUV_Internals::Subsampling convertFromInternalSubsampling(vvdecColorFormat fmt)
+Subsampling convertFromInternalSubsampling(vvdecColorFormat fmt)
 {
   if (fmt == VVDEC_CF_YUV400_PLANAR)
-    return YUV_Internals::Subsampling::YUV_400;
+    return Subsampling::YUV_400;
   if (fmt == VVDEC_CF_YUV420_PLANAR)
-    return YUV_Internals::Subsampling::YUV_420;
+    return Subsampling::YUV_420;
   if (fmt == VVDEC_CF_YUV422_PLANAR)
-    return YUV_Internals::Subsampling::YUV_422;
+    return Subsampling::YUV_422;
   if (fmt == VVDEC_CF_YUV444_PLANAR)
-    return YUV_Internals::Subsampling::YUV_444;
+    return Subsampling::YUV_444;
 
-  return YUV_Internals::Subsampling::UNKNOWN;
+  return Subsampling::UNKNOWN;
 }
 
 Size calculateChromaSize(Size lumaSize, vvdecColorFormat fmt)
@@ -135,7 +137,7 @@ decoderVVDec::decoderVVDec(int signalID, bool cachingDecoder) : decoderBaseSingl
   // For now we don't support different signals (like prediction, residual)
   (void)signalID;
 
-  this->rawFormat = YUView::raw_YUV;
+  this->rawFormat = video::RawFormat::YUV;
 
   // Try to load the decoder library (.dll on Windows, .so on Linux, .dylib on Mac)
   QSettings settings;
@@ -277,9 +279,9 @@ void decoderVVDec::allocateNewDecoder()
 
   this->flushing = false;
   this->currentOutputBuffer.clear();
-  this->decoderState = DecoderState::NeedsMoreData;
+  this->decoderState                  = DecoderState::NeedsMoreData;
   this->currentFrameReadyForRetrieval = false;
-  this->currentFrame = nullptr;
+  this->currentFrame                  = nullptr;
 
   auto ret = this->lib.vvdec_set_logging_callback(this->decoder, loggingCallback);
   if (ret != VVDEC_OK)
@@ -368,7 +370,7 @@ bool decoderVVDec::getNextFrameFromDecoder()
   if (!lumaSize.isValid())
     DEBUG_vvdec("decoderVVDec::getNextFrameFromDecoder got invalid size");
   auto subsampling = convertFromInternalSubsampling(this->currentFrame->colorFormat);
-  if (subsampling == YUV_Internals::Subsampling::UNKNOWN)
+  if (subsampling == Subsampling::UNKNOWN)
     DEBUG_vvdec("decoderVVDec::getNextFrameFromDecoder got invalid chroma format");
   auto bitDepth = this->currentFrame->bitDepth;
   if (bitDepth < 8 || bitDepth > 16)
@@ -378,8 +380,8 @@ bool decoderVVDec::getNextFrameFromDecoder()
 
   for (unsigned i = 1; i < this->currentFrame->numPlanes; i++)
   {
-    const auto &plane = this->currentFrame->planes[i];
-    auto expectedSize = calculateChromaSize(lumaSize, this->currentFrame->colorFormat);
+    const auto &plane        = this->currentFrame->planes[i];
+    auto        expectedSize = calculateChromaSize(lumaSize, this->currentFrame->colorFormat);
     if (expectedSize.width != plane.width || expectedSize.height != plane.height)
       DEBUG_vvdec("decoderVVDec::getNextFrameFromDecoder plane has different size then expected");
   }
@@ -388,7 +390,7 @@ bool decoderVVDec::getNextFrameFromDecoder()
   {
     // Set the values
     this->frameSize = lumaSize;
-    this->formatYUV = YUV_Internals::YUVPixelFormat(subsampling, bitDepth);
+    this->formatYUV = video::yuv::PixelFormatYUV(subsampling, bitDepth);
   }
   else
   {
@@ -422,7 +424,7 @@ bool decoderVVDec::pushData(QByteArray &data)
   if (endOfFile)
   {
     DEBUG_vvdec("decoderVVDec::pushData: Setting flushing mode");
-    this->flushing = true;
+    this->flushing     = true;
     this->decoderState = DecoderState::RetrieveFrames;
     this->currentOutputBuffer.clear();
     return true;
@@ -488,10 +490,10 @@ void decoderVVDec::copyImgToByteArray(QByteArray &dst)
     DEBUG_vvdec("decoderVVDec::copyImgToByteArray picture format is unknown");
     return;
   }
-  const auto nrPlanes      = this->currentFrame->numPlanes;
+  const auto nrPlanes       = this->currentFrame->numPlanes;
   const auto bytesPerSample = this->currentFrame->bitDepth > 8 ? 2 : 1;
-  const auto lumaSize      = Size({this->currentFrame->width, this->currentFrame->height});
-  const auto chromaSize    = calculateChromaSize(lumaSize, fmt);
+  const auto lumaSize       = Size({this->currentFrame->width, this->currentFrame->height});
+  const auto chromaSize     = calculateChromaSize(lumaSize, fmt);
 
   auto outSizeLumaBytes   = lumaSize.width * lumaSize.height * bytesPerSample;
   auto outSizeChromaBytes = chromaSize.width * chromaSize.height * bytesPerSample;
@@ -508,7 +510,7 @@ void decoderVVDec::copyImgToByteArray(QByteArray &dst)
     auto &component = this->currentFrame->planes[c];
 
     auto widthBytes = component.width * bytesPerSample;
-    auto plane = component.ptr;
+    auto plane      = component.ptr;
 
     if (component.ptr == nullptr)
     {
@@ -555,4 +557,4 @@ bool decoderVVDec::checkLibraryFile(QString libFilePath, QString &error)
   return testDecoder.state() != DecoderState::Error;
 }
 
-}
+} // namespace decoder

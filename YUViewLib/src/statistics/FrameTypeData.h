@@ -32,7 +32,7 @@
 
 #pragma once
 
-#include "common/typedef.h"
+#include <common/Typedef.h>
 
 namespace stats
 {
@@ -66,7 +66,7 @@ struct Line
 
 using Polygon = std::vector<Point>;
 
-struct statisticsItem_Value
+struct StatsItemValue
 {
   // The position and size of the item. (max 65535)
   unsigned short pos[2];
@@ -76,17 +76,17 @@ struct statisticsItem_Value
   int value;
 };
 
-struct statisticsItem_Vector
+struct StatsItemVector
 {
   // The position and size of the item. (max 65535)
   unsigned short pos[2];
   unsigned short size[2];
 
-  bool    isLine; // the vector is specified by two points
+  bool  isLine; // the vector is specified by two points
   Point point[2];
 };
 
-struct statisticsItem_AffineTF
+struct StatsItemAffineTF
 {
   // The position and size of the item. (max 65535)
   unsigned short pos[2];
@@ -96,7 +96,7 @@ struct statisticsItem_AffineTF
   Point point[3];
 };
 
-struct statisticsItemPolygon_Value
+struct StatsItemPolygonValue
 {
   // The position and size of the item.
   Polygon corners;
@@ -105,7 +105,7 @@ struct statisticsItemPolygon_Value
   int value;
 };
 
-struct statisticsItemPolygon_Vector
+struct StatsItemPolygonVector
 {
   // The position and size of the item.
   Polygon corners;
@@ -120,7 +120,7 @@ class FrameTypeData
 public:
   FrameTypeData() { maxBlockSize = 0; }
   void
-  addBlockValue(unsigned short x, unsigned short y, unsigned short w, unsigned short h, int val);
+       addBlockValue(unsigned short x, unsigned short y, unsigned short w, unsigned short h, int val);
   void addBlockVector(
       unsigned short x, unsigned short y, unsigned short w, unsigned short h, int vecX, int vecY);
   void addBlockAffineTF(unsigned short x,
@@ -144,11 +144,11 @@ public:
   void addPolygonVector(const Polygon &points, int vecX, int vecY);
   void addPolygonValue(const Polygon &points, int val);
 
-  std::vector<statisticsItem_Value>         valueData;
-  std::vector<statisticsItem_Vector>        vectorData;
-  std::vector<statisticsItem_AffineTF>      affineTFData;
-  std::vector<statisticsItemPolygon_Value>  polygonValueData;
-  std::vector<statisticsItemPolygon_Vector> polygonVectorData;
+  std::vector<StatsItemValue>         valueData;
+  std::vector<StatsItemVector>        vectorData;
+  std::vector<StatsItemAffineTF>      affineTFData;
+  std::vector<StatsItemPolygonValue>  polygonValueData;
+  std::vector<StatsItemPolygonVector> polygonVectorData;
 
   // What is the size (area) of the biggest block)? This is needed for scaling the blocks according
   // to their size.

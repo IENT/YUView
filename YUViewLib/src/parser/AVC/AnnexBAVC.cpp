@@ -41,7 +41,7 @@
 #include "nal_unit_header.h"
 #include "parser/Subtitles/AnnexBItuTT35.h"
 #include "parser/common/SubByteReaderLogging.h"
-#include "parser/common/functions.h"
+#include <parser/common/Functions.h>
 #include "pic_parameter_set_rbsp.h"
 #include "seq_parameter_set_rbsp.h"
 #include "slice_header.h"
@@ -104,8 +104,10 @@ Size AnnexBAVC::getSequenceSizeSamples() const
   return {};
 }
 
-YUVPixelFormat AnnexBAVC::getPixelFormat() const
+video::yuv::PixelFormatYUV AnnexBAVC::getPixelFormat() const
 {
+  using Subsampling = video::yuv::Subsampling;
+
   // Get the subsampling and bit-depth from the sps
   int  bitDepthY   = -1;
   int  bitDepthC   = -1;
@@ -136,7 +138,7 @@ YUVPixelFormat AnnexBAVC::getPixelFormat() const
         // Different luma and chroma bit depths currently not supported
         return {};
       }
-      return YUVPixelFormat(subsampling, bitDepthY);
+      return video::yuv::PixelFormatYUV(subsampling, bitDepthY);
     }
   }
 
@@ -148,7 +150,7 @@ AnnexBAVC::parseAndAddNALUnit(int                                           nalI
                               const ByteVector &                            data,
                               std::optional<BitratePlotModel::BitrateEntry> bitrateEntry,
                               std::optional<pairUint64>                     nalStartEndPosFile,
-                              std::shared_ptr<TreeItem>                                    parent)
+                              std::shared_ptr<TreeItem>                     parent)
 {
   AnnexB::ParseResult parseResult;
 
@@ -161,7 +163,8 @@ AnnexBAVC::parseAndAddNALUnit(int                                           nalI
               this->curFramePOC, this->curFrameFileStartEndPos, this->curFrameIsRandomAccess))
       {
         if (parent)
-          parent->createChildItem("Error - POC " + std::to_string(this->curFramePOC) + "alread in the POC list.");
+          parent->createChildItem("Error - POC " + std::to_string(this->curFramePOC) +
+                                  "alread in the POC list.");
         return parseResult;
       }
       if (this->curFrameFileStartEndPos)

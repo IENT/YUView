@@ -32,12 +32,12 @@
 
 #include "statisticsStyleControl_ColorMapEditor.h"
 
+#include <common/FunctionsGui.h>
+#include <common/Typedef.h>
+
 #include <QColorDialog>
 #include <QKeyEvent>
 #include <QMessageBox>
-
-#include "common/functionsGui.h"
-#include "common/typedef.h"
 
 StatisticsStyleControl_ColorMapEditor::StatisticsStyleControl_ColorMapEditor(
     const std::map<int, Color> &colorMap, const Color &other, QWidget *parent)
@@ -109,7 +109,7 @@ std::map<int, Color> StatisticsStyleControl_ColorMapEditor::getColorMap()
 Color StatisticsStyleControl_ColorMapEditor::getOtherColor()
 {
   // This should be the last entry in the list
-  int row = ui.colorMapTable->rowCount() - 1;
+  int  row         = ui.colorMapTable->rowCount() - 1;
   auto otherQColor = ui.colorMapTable->item(row, 1)->background().color();
   return functionsGui::toColor(otherQColor);
 }
