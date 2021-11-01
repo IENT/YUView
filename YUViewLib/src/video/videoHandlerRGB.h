@@ -122,7 +122,7 @@ public:
   // If you know the frame size of the video, the file size (and optionally the bit depth) we can
   // guess the remaining values. The rate value is set if a matching format could be found. The sub
   // format can be one of: "RGB", "GBR" or "BGR"
-  virtual void setFormatFromSizeAndName(const Size       size,
+  virtual void setFormatFromSizeAndName(const Size       frameSize,
                                         int              bitDepth,
                                         DataLayout       dataLayout,
                                         int64_t          fileSize,

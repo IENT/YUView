@@ -93,7 +93,7 @@ public:
   // If you know the frame size and the bit depth and the file size then we can try to guess
   // the format from that. You can override this for a specific raw format. The default
   // implementation does nothing.
-  virtual void setFormatFromSizeAndName(const Size       size,
+  virtual void setFormatFromSizeAndName(const Size       frameSize,
                                         int              bitDepth,
                                         DataLayout       dataLayout,
                                         int64_t          fileSize,
