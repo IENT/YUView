@@ -240,7 +240,7 @@ rgba_t getPixelValueFromBuffer(const QByteArray &    sourceBuffer,
     auto offset = srcPixelFormat.getComponentPosition(channel);
     if (srcPixelFormat.getDataLayout() == DataLayout::Planar)
       offset *= frameSize.width * frameSize.height;
-    auto src = ((InValueType)sourceBuffer.data()) + offset + offsetCoordinate * 4;
+    auto src = ((InValueType)sourceBuffer.data()) + offset + offsetCoordinate * offsetToNextValue;
     auto val = (unsigned)src[0];
     if (bitDepth > 8 && srcPixelFormat.getEndianess() == Endianness::Big)
       val = swapLowestBytes(val);

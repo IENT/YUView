@@ -83,12 +83,12 @@ playlistItemRawFile::playlistItemRawFile(const QString &rawFilePath,
   ext           = ext.toLower();
   if (ext == "yuv" || ext == "nv21" || fmt.toLower() == "yuv" || ext == "y4m")
   {
-    this->video = std::make_unique<video::videoHandlerYUV>();
+    this->video     = std::make_unique<video::videoHandlerYUV>();
     this->rawFormat = video::RawFormat::YUV;
   }
   else if (ext == "rgb" || ext == "gbr" || ext == "bgr" || ext == "brg" || fmt.toLower() == "rgb")
   {
-    this->video = std::make_unique<video::videoHandlerRGB>();
+    this->video     = std::make_unique<video::videoHandlerRGB>();
     this->rawFormat = video::RawFormat::RGB;
   }
   else
@@ -221,7 +221,7 @@ bool playlistItemRawFile::parseY4MFile()
 
   // Next, there can be any number of parameters. Each paramter starts with a space.
   // The only requirement is, that width, height and framerate are specified.
-  size_t   offset = 9;
+  int      offset = 9;
   unsigned width  = 0;
   unsigned height = 0;
   auto     format =
