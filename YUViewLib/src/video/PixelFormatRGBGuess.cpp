@@ -52,8 +52,13 @@ std::optional<PixelFormatRGB> findPixelFormatIndicatorInName(const std::string &
   {
     for (auto alphaMode : {AlphaMode::None, AlphaMode::First, AlphaMode::Last})
     {
-      for (auto [bitDepth, bitDepthString] :
-           {std::pair<unsigned, std::string>{8, ""}, {8, "8"}, {10, "10"}, {12, "12"}, {16, "16"}})
+      for (auto [bitDepth, bitDepthString] : {std::pair<unsigned, std::string>{8, ""},
+                                              {8, "8"},
+                                              {10, "10"},
+                                              {12, "12"},
+                                              {16, "16"},
+                                              {16, "64"},
+                                              {16, "48"}})
       {
         for (auto [endianness, endiannessName] :
              {std::pair<Endianness, std::string>{Endianness::Little, ""},

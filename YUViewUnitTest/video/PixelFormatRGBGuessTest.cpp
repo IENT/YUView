@@ -93,6 +93,10 @@ void PixelFormatRGBGuessTest::testFormatGuessFromFilename_data()
       << "something_1920x1080_rgb12.yuv" << BytesNoAlpha << 1920u << 1080u << "RGB 12bit";
   QTest::newRow("testFormatsBitDepth16")
       << "something_1920x1080_rgb16.yuv" << BytesNoAlpha << 1920u << 1080u << "RGB 16bit";
+  QTest::newRow("testFormatsBitDepth48")
+      << "something_1920x1080_rgb48.yuv" << BytesNoAlpha << 1920u << 1080u << "RGB 16bit";
+  QTest::newRow("testFormatsBitDepth64")
+      << "something_1920x1080_rgb64.yuv" << BytesNoAlpha << 1920u << 1080u << "RGB 16bit";
   QTest::newRow("testFormatsBitDepth11ShouldFail")
       << "something_1920x1080_rgb11.yuv" << BytesNoAlpha << 1920u << 1080u << "RGB 8bit";
 

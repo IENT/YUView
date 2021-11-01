@@ -324,7 +324,7 @@ bool playlistItemRawFile::parseY4MFile()
     while (rawData.at(offset) != ' ' && rawData.at(offset) != 10)
     {
       offset++;
-      if (offset >= functions::clipToUnsigned(rawData.count()))
+      if (offset >= rawData.count())
         // End of bufer
         break;
     }
@@ -385,7 +385,7 @@ bool playlistItemRawFile::parseY4MFile()
     y4mFrameIndices.append(offset);
 
     offset += stride;
-    if (offset >= size_t(dataSource.getFileSize()))
+    if (offset >= dataSource.getFileSize())
       break;
   }
 
