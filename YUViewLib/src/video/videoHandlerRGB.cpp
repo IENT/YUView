@@ -36,6 +36,7 @@
 #include <common/FileInfo.h>
 #include <common/Functions.h>
 #include <common/FunctionsGui.h>
+#include <video/PixelFormatRGBGuess.h>
 #include <video/videoHandlerRGBCustomFormatDialog.h>
 
 #include <QPainter>
@@ -938,77 +939,10 @@ rgba_t videoHandlerRGB::getPixelValue(const QPoint &pixelPos) const
   return {0, 0, 0, 0};
 }
 
-void videoHandlerRGB::setFormatFromSizeAndName(const Size       size,
-                                               int              bitDepth,
-                                               DataLayout       dataLayout,
-                                               int64_t          fileSize,
-                                               const QFileInfo &fileInfo)
+void videoHandlerRGB::setFormatFromSizeAndName(
+    const Size frameSize, int, DataLayout, int64_t fileSize, const QFileInfo &fileInfo)
 {
-  // Get the file extension
-  auto        ext       = fileInfo.suffix().toLower().toStdString();
-  std::string subFormat = "rgb";
-  bool        testAlpha = true;
-  if (ext == "bgr" || ext == "gbr" || ext == "brg" || ext == "grb" || ext == "rbg")
-  {
-    subFormat = ext;
-    testAlpha = false;
-  }
-  else
-  {
-    // Check if there is a format indicator in the file name
-    auto f               = fileInfo.fileName().toLower().toStdString();
-    auto rgbCombinations = std::vector<std::string>({"rgb", "rgb", "gbr", "grb", "brg", "bgr"});
-    std::vector<std::string> rgbaCombinations;
-    for (auto i : rgbCombinations)
-    {
-      rgbaCombinations.push_back("a" + i);
-      rgbaCombinations.push_back(i + "a");
-      rgbaCombinations.push_back(i);
-    }
-    for (auto i : rgbaCombinations)
-    {
-      if (f.find("_" + i) != std::string::npos || f.find(" " + i) != std::string::npos)
-      {
-        subFormat = i;
-        testAlpha = false;
-        break;
-      }
-    }
-  }
-
-  // If the bit depth could not be determined, check 8 and 10 bit
-  std::vector<int> testBitDepths;
-  if (bitDepth > 0)
-    testBitDepths.push_back(bitDepth);
-  else
-    testBitDepths = {8, 10};
-
-  for (auto bitDepth : testBitDepths)
-  {
-    // If testAlpha is set, we will test with and without alpha channel
-    auto nrTests = testAlpha ? 2u : 1u;
-    for (unsigned int i = 0; i < nrTests; i++)
-    {
-      // assume RGB if subFormat does not indicate anything else
-      auto cFormat = PixelFormatRGB(i == 0 ? subFormat : subFormat + "a");
-      cFormat.setBitsPerSample(bitDepth);
-      cFormat.setDataLayout(dataLayout);
-
-      // Check if the file size and the assumed format match
-      auto bpf = cFormat.bytesPerFrame(size);
-      if (bpf != 0 && (fileSize % bpf) == 0)
-      {
-        // Bits per frame and file size match
-        this->setFrameSize(size);
-        this->setSrcPixelFormat(cFormat);
-        return;
-      }
-    }
-  }
-
-  // Still no match. Set RGB 8 bit planar no alpha channel.
-  // This will probably be wrong but we are out of options
-  this->setSrcPixelFormat(PixelFormatRGB(8, dataLayout, ChannelOrder::RGB));
+  this->setSrcPixelFormat(guessFormatFromSizeAndName(fileInfo, frameSize, fileSize));
 }
 
 void videoHandlerRGB::drawPixelValues(QPainter *    painter,

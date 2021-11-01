@@ -76,7 +76,7 @@ public:
   void setInterpolation(Interpolation interpolation);
   void setCutAndSample(indexRange startEnd, int sampling);
 
-  virtual void setFormatFromSizeAndName(const Size       size,
+  virtual void setFormatFromSizeAndName(const Size       frameSize,
                                         int              bitDepth,
                                         DataLayout       dataLayout,
                                         int64_t          fileSize,

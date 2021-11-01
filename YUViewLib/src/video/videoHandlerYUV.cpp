@@ -135,14 +135,14 @@ std::pair<bool, PixelFormatYUV> convertYUVPackedToPlanar(const QByteArray &    s
 
     // What are the offsets withing the 4 samples for the components?
     const int oY = (packing == PackingOrder::YUYV || packing == PackingOrder::YVYU) ? 0 : 1;
-    const int oU =
-        (packing == PackingOrder::UYVY)
-            ? 0
-            : (packing == PackingOrder::YUYV) ? 1 : (packing == PackingOrder::VYUY) ? 2 : 3;
-    const int oV =
-        (packing == PackingOrder::VYUY)
-            ? 0
-            : (packing == PackingOrder::YVYU) ? 1 : (packing == PackingOrder::UYVY) ? 2 : 3;
+    const int oU = (packing == PackingOrder::UYVY)   ? 0
+                   : (packing == PackingOrder::YUYV) ? 1
+                   : (packing == PackingOrder::VYUY) ? 2
+                                                     : 3;
+    const int oV = (packing == PackingOrder::VYUY)   ? 0
+                   : (packing == PackingOrder::YVYU) ? 1
+                   : (packing == PackingOrder::UYVY) ? 2
+                                                     : 3;
 
     if (format.getBitsPerSample() == 10 && format.isBytePacking())
     {
@@ -222,10 +222,10 @@ std::pair<bool, PixelFormatYUV> convertYUVPackedToPlanar(const QByteArray &    s
                     packing == PackingOrder::VUYA)
                        ? 1
                        : 2;
-    const int oV =
-        (packing == PackingOrder::YVU)
-            ? 1
-            : (packing == PackingOrder::AYUV) ? 3 : (packing == PackingOrder::VUYA) ? 0 : 2;
+    const int oV = (packing == PackingOrder::YVU)    ? 1
+                   : (packing == PackingOrder::AYUV) ? 3
+                   : (packing == PackingOrder::VUYA) ? 0
+                                                     : 2;
 
     // How many samples to the next sample?
     const int offsetNext = (packing == PackingOrder::YUV || packing == PackingOrder::YVU ? 3 : 4);
@@ -1431,10 +1431,13 @@ void videoHandlerYUV::drawPixelValues(QPainter *    painter,
   painter->setPen(backupPen);
 }
 
-void videoHandlerYUV::setFormatFromSizeAndName(
-    Size size, int bitDepth, DataLayout dataLayout, int64_t fileSize, const QFileInfo &fileInfo)
+void videoHandlerYUV::setFormatFromSizeAndName(Size             frameSize,
+                                               int              bitDepth,
+                                               DataLayout       dataLayout,
+                                               int64_t          fileSize,
+                                               const QFileInfo &fileInfo)
 {
-  auto fmt = guessFormatFromSizeAndName(size, bitDepth, dataLayout, fileSize, fileInfo);
+  auto fmt = guessFormatFromSizeAndName(frameSize, bitDepth, dataLayout, fileSize, fileInfo);
 
   if (!fmt.isValid())
   {
@@ -2123,12 +2126,12 @@ inline void UVPlaneResamplingChromaOffset(const PixelFormatYUV          format,
   // Which of these position is needed depends on the chromaOffset and the subsampling.
   const int possibleValsX = getMaxPossibleChromaOffsetValues(true, format.getSubsampling());
   const int possibleValsY = getMaxPossibleChromaOffsetValues(false, format.getSubsampling());
-  const int offsetX8      = (possibleValsX == 1) ? format.getChromaOffset().x * 4
-                                            : (possibleValsX == 3) ? format.getChromaOffset().x * 2
-                                                                   : format.getChromaOffset().x;
-  const int offsetY8 = (possibleValsY == 1) ? format.getChromaOffset().y * 4
-                                            : (possibleValsY == 3) ? format.getChromaOffset().y * 2
-                                                                   : format.getChromaOffset().y;
+  const int offsetX8      = (possibleValsX == 1)   ? format.getChromaOffset().x * 4
+                            : (possibleValsX == 3) ? format.getChromaOffset().x * 2
+                                                   : format.getChromaOffset().x;
+  const int offsetY8      = (possibleValsY == 1)   ? format.getChromaOffset().y * 4
+                            : (possibleValsY == 3) ? format.getChromaOffset().y * 2
+                                                   : format.getChromaOffset().y;
 
   // The format to use for input/output
   const bool bigEndian = format.isBigEndian();
@@ -3586,14 +3589,14 @@ yuv_t videoHandlerYUV::getPixelValue(const QPoint &pixelPos) const
       // The data is arranged in blocks of 4 samples. How many of these are there?
       // What are the offsets withing the 4 samples for the components?
       const int oY = (packing == PackingOrder::YUYV || packing == PackingOrder::YVYU) ? 0 : 1;
-      const int oU =
-          (packing == PackingOrder::UYVY)
-              ? 0
-              : (packing == PackingOrder::YUYV) ? 1 : (packing == PackingOrder::VYUY) ? 2 : 3;
-      const int oV =
-          (packing == PackingOrder::VYUY)
-              ? 0
-              : (packing == PackingOrder::YVYU) ? 1 : (packing == PackingOrder::UYVY) ? 2 : 3;
+      const int oU = (packing == PackingOrder::UYVY)   ? 0
+                     : (packing == PackingOrder::YUYV) ? 1
+                     : (packing == PackingOrder::VYUY) ? 2
+                                                       : 3;
+      const int oV = (packing == PackingOrder::VYUY)   ? 0
+                     : (packing == PackingOrder::YVYU) ? 1
+                     : (packing == PackingOrder::UYVY) ? 2
+                                                       : 3;
 
       if (format.isBytePacking() && format.getBitsPerSample() == 10)
       {
@@ -3640,10 +3643,10 @@ yuv_t videoHandlerYUV::getPixelValue(const QPoint &pixelPos) const
                       packing == PackingOrder::VUYA)
                          ? 1
                          : 2;
-      const int oV =
-          (packing == PackingOrder::YVU)
-              ? 1
-              : (packing == PackingOrder::AYUV) ? 3 : (packing == PackingOrder::VUYA) ? 0 : 2;
+      const int oV = (packing == PackingOrder::YVU)    ? 1
+                     : (packing == PackingOrder::AYUV) ? 3
+                     : (packing == PackingOrder::VUYA) ? 0
+                                                       : 2;
 
       // How many bytes to the next sample?
       const int offsetNext =

@@ -75,7 +75,7 @@ public:
                                          FrameHandler *item2     = nullptr,
                                          const int     frameIdx1 = 0) override;
 
-  virtual void setFormatFromSizeAndName(const Size       size,
+  virtual void setFormatFromSizeAndName(const Size       frameSize,
                                         int              bitDepth,
                                         DataLayout       dataLayout,
                                         int64_t          fileSize,

@@ -42,15 +42,14 @@ namespace video::yuv
 
 Subsampling findSubsamplingTypeIndicatorInName(std::string name)
 {
-  std::string subsamplingMatcher;
+  std::string matcher = "(?:_|\\.|-)(";
   for (auto subsampling : SubsamplingMapper.getNames())
-    subsamplingMatcher += subsampling + "|";
-  subsamplingMatcher.pop_back();
-  subsamplingMatcher = "(?:_|\\.|-)(" + subsamplingMatcher + ")(?:_|\\.|-)";
-
-  std::regex strExpr(subsamplingMatcher);
+    matcher += subsampling + "|";
+  matcher.pop_back(); // Remove last |
+  matcher += ")(?:_|\\.|-)";
 
   std::smatch sm;
+  std::regex strExpr(matcher);
   if (!std::regex_search(name, sm, strExpr))
     return Subsampling::UNKNOWN;
 
@@ -233,17 +232,15 @@ PixelFormatYUV guessFormatFromSizeAndName(const Size       size,
 {
   // We are going to check two strings (one after the other) for indicators on the YUV format.
   // 1: The file name, 2: The folder name that the file is contained in.
-  std::vector<std::string> checkStrings;
 
   // The full name of the file
   auto fileName = fileInfo.baseName().toLower().toStdString();
   if (fileName.empty())
     return {};
-  checkStrings.push_back(fileName + ".");
+  fileName += ".";
 
   // The name of the folder that the file is in
   auto dirName = fileInfo.absoluteDir().dirName().toLower().toStdString();
-  checkStrings.push_back(dirName);
 
   if (fileInfo.suffix().toLower() == "nv21")
   {
@@ -259,7 +256,7 @@ PixelFormatYUV guessFormatFromSizeAndName(const Size       size,
       return fmt;
   }
 
-  for (const auto &name : checkStrings)
+  for (const auto &name : {fileName, dirName})
   {
     auto subsampling = findSubsamplingTypeIndicatorInName(name);
 
