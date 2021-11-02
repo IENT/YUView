@@ -44,7 +44,7 @@ public:
   decoderFFmpeg(AVCodecIDWrapper           codec,
                 Size                       frameSize,
                 QByteArray                 extradata,
-                video::yuv::PixelFormatYUV fmt,
+                video::yuv::PixelFormatYUV pixelFormatYUV,
                 IntPair                    profileLevel,
                 Ratio                      sampleAspectRatio,
                 bool                       cachingDecoder = false);
