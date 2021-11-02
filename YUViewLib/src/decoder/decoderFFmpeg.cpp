@@ -304,7 +304,8 @@ bool decoderFFmpeg::pushData(QByteArray &data)
   {
     // Push an empty packet to indicate that the file has ended
     DEBUG_FFMPEG("decoderFFmpeg::pushData: Pushing an empty packet");
-    return this->pushAVPacket(AVPacketWrapper());
+    AVPacketWrapper emptyPacket;
+    return this->pushAVPacket(emptyPacket);
   }
   else
     DEBUG_FFMPEG("decoderFFmpeg::pushData: Pushing data length " << data.length());
