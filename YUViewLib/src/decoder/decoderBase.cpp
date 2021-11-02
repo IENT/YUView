@@ -73,10 +73,7 @@ decoderBase::decoderBase(bool cachingDecoder)
 void decoderBase::resetDecoder()
 {
   DEBUG_DECODERBASE("decoderBase::resetDecoder");
-  decoderState = DecoderState::NeedsMoreData;
-  frameSize    = {};
-  formatYUV    = {};
-  rawFormat    = video::RawFormat::Invalid;
+  this->decoderState = DecoderState::NeedsMoreData;
 }
 
 bool decoderBase::isSignalDifference(int signalID) const
@@ -109,9 +106,9 @@ void decoderBaseSingleLib::loadDecoderLibrary(QString specificLibrary)
   bool libLoaded = false;
 
   // Try the specific library first
-  library.setFileName(specificLibrary);
-  libraryPath = specificLibrary;
-  libLoaded   = library.load();
+  this->library.setFileName(specificLibrary);
+  this->libraryPath = specificLibrary;
+  libLoaded         = this->library.load();
 
   if (!libLoaded)
   {
@@ -125,30 +122,30 @@ void decoderBaseSingleLib::loadDecoderLibrary(QString specificLibrary)
     // Get the additional search path from the settings
     QSettings settings;
     settings.beginGroup("Decoders");
-    QString searchPath = settings.value("SearchPath", "").toString();
+    auto searchPath = settings.value("SearchPath", "").toString();
     if (!searchPath.endsWith("/"))
       searchPath.append("/");
     searchPath.append("%1");
     settings.endGroup();
 
-    QStringList const libPaths =
-        QStringList() << searchPath << QDir::currentPath() + "/%1"
-                      << QDir::currentPath() + "/decoder/%1"
-                      << QDir::currentPath() +
-                             "/libde265/%1" // for legacy installations before the decoders were
-                                            // moved to the "decoders" folder
-                      << QCoreApplication::applicationDirPath() + "/%1"
-                      << QCoreApplication::applicationDirPath() + "/decoder/%1"
-                      << QCoreApplication::applicationDirPath() + "/libde265/%1"
-                      << "%1"; // Try the system directories.
+    auto const libPaths = QStringList()
+                          << searchPath << QDir::currentPath() + "/%1"
+                          << QDir::currentPath() + "/decoder/%1"
+                          << QDir::currentPath() +
+                                 "/libde265/%1" // for legacy installations before the decoders were
+                                                // moved to the "decoders" folder
+                          << QCoreApplication::applicationDirPath() + "/%1"
+                          << QCoreApplication::applicationDirPath() + "/decoder/%1"
+                          << QCoreApplication::applicationDirPath() + "/libde265/%1"
+                          << "%1"; // Try the system directories.
 
     for (auto &libName : libNames)
     {
       for (auto &libPath : libPaths)
       {
-        library.setFileName(libPath.arg(libName));
-        libraryPath = libPath.arg(libName);
-        libLoaded   = library.load();
+        this->library.setFileName(libPath.arg(libName));
+        this->libraryPath = libPath.arg(libName);
+        libLoaded         = library.load();
         if (libLoaded)
           break;
       }
@@ -159,10 +156,10 @@ void decoderBaseSingleLib::loadDecoderLibrary(QString specificLibrary)
 
   if (!libLoaded)
   {
-    libraryPath.clear();
-    QString error = "Error loading library: " + library.errorString() + "\n";
+    this->libraryPath.clear();
+    auto error = "Error loading library: " + this->library.errorString() + "\n";
     error += "We could not load one of the supported decoder library (";
-    auto libNames = getLibraryNames();
+    auto libNames = this->getLibraryNames();
     for (int i = 0; i < libNames.count(); i++)
     {
       if (i == 0)
@@ -174,10 +171,10 @@ void decoderBaseSingleLib::loadDecoderLibrary(QString specificLibrary)
     error += "\n";
     error += "We do not ship all of the decoder libraries.\n";
     error += "You can find download links in Help->Downloads.";
-    return setError(error);
+    return this->setError(error);
   }
 
-  resolveLibraryFunctionPointers();
+  this->resolveLibraryFunctionPointers();
 }
 
 } // namespace decoder
