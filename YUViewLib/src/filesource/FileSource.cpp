@@ -50,9 +50,6 @@
 
 FileSource::FileSource()
 {
-  fileChanged  = false;
-  isFileOpened = false;
-
   connect(&fileWatcher,
           &QFileSystemWatcher::fileChanged,
           this,
@@ -62,25 +59,25 @@ FileSource::FileSource()
 bool FileSource::openFile(const QString &filePath)
 {
   // Check if the file exists
-  fileInfo.setFile(filePath);
-  if (!fileInfo.exists() || !fileInfo.isFile())
+  this->fileInfo.setFile(filePath);
+  if (!this->fileInfo.exists() || !this->fileInfo.isFile())
     return false;
 
-  if (isFileOpened && srcFile.isOpen())
-    srcFile.close();
+  if (this->isFileOpened && this->srcFile.isOpen())
+    this->srcFile.close();
 
   // open file for reading
-  srcFile.setFileName(filePath);
-  isFileOpened = srcFile.open(QIODevice::ReadOnly);
-  if (!isFileOpened)
+  this->srcFile.setFileName(filePath);
+  this->isFileOpened = this->srcFile.open(QIODevice::ReadOnly);
+  if (!this->isFileOpened)
     return false;
 
   // Save the full file path
-  fullFilePath = filePath;
+  this->fullFilePath = filePath;
 
   // Install a watcher for the file (if file watching is active)
-  updateFileWatchSetting();
-  fileChanged = false;
+  this->updateFileWatchSetting();
+  this->fileChanged = false;
 
   return true;
 }
@@ -103,7 +100,7 @@ void FileSource::readBytes(byteArrayAligned &targetBuffer, int64_t startPos, int
 // Resize the target array if necessary and read the given number of bytes to the data array
 int64_t FileSource::readBytes(QByteArray &targetBuffer, int64_t startPos, int64_t nrBytes)
 {
-  if (!isOk())
+  if (!this->isOk())
     return 0;
 
   if (targetBuffer.size() < nrBytes)
@@ -114,52 +111,48 @@ int64_t FileSource::readBytes(QByteArray &targetBuffer, int64_t startPos, int64_
 #endif
 
   // lock the seek and read function
-  QMutexLocker locker(&readMutex);
-  srcFile.seek(startPos);
-  return srcFile.read(targetBuffer.data(), nrBytes);
+  QMutexLocker locker(&this->readMutex);
+  this->srcFile.seek(startPos);
+  return this->srcFile.read(targetBuffer.data(), nrBytes);
 }
 
 QList<InfoItem> FileSource::getFileInfoList() const
 {
   QList<InfoItem> infoList;
 
-  if (!isFileOpened)
+  if (!this->isFileOpened)
     return infoList;
 
-  // The full file path
-  infoList.append(InfoItem("File Path", fileInfo.absoluteFilePath()));
-
-  // The file creation time
+  infoList.append(InfoItem("File Path", this->fileInfo.absoluteFilePath()));
 #if QT_VERSION < QT_VERSION_CHECK(5, 10, 0)
-  QString createdtime = fileInfo.created().toString("yyyy-MM-dd hh:mm:ss");
+  auto createdtime = this->fileInfo.created().toString("yyyy-MM-dd hh:mm:ss");
 #else
-  QString createdtime = fileInfo.birthTime().toString("yyyy-MM-dd hh:mm:ss");
+  auto createdtime = this->fileInfo.birthTime().toString("yyyy-MM-dd hh:mm:ss");
 #endif
   infoList.append(InfoItem("Time Created", createdtime));
-
-  // The last modification time
-  QString modifiedtime = fileInfo.lastModified().toString("yyyy-MM-dd hh:mm:ss");
-  infoList.append(InfoItem("Time Modified", modifiedtime));
-
-  // The file size in bytes
-  QString fileSize = QString("%1").arg(fileInfo.size());
-  infoList.append(InfoItem("Nr Bytes", fileSize));
+  infoList.append(
+      InfoItem("Time Modified", this->fileInfo.lastModified().toString("yyyy-MM-dd hh:mm:ss")));
+  infoList.append(InfoItem("Nr Bytes", QString("%1").arg(this->fileInfo.size())));
 
   return infoList;
 }
 
-FileSource::fileFormat_t FileSource::formatFromFilename(QFileInfo fileInfo)
+QString FileSource::getAbsoluteFilePath() const
+{
+  return this->isFileOpened ? this->fileInfo.absoluteFilePath() : QString();
+}
+
+FileSource::fileFormat_t FileSource::guessFormatFromFilename() const
 {
   FileSource::fileFormat_t format;
 
   // We are going to check two strings (one after the other) for indicators on the frames size, fps
   // and bit depth. 1: The file name, 2: The folder name that the file is contained in.
 
-  auto fileName = fileInfo.fileName();
+  auto dirName  = this->fileInfo.absoluteDir().dirName();
+  auto fileName = this->fileInfo.fileName();
   if (fileName.isEmpty())
     return format;
-
-  auto dirName = fileInfo.absoluteDir().dirName();
 
   for (auto const &name : {fileName, dirName})
   {
@@ -180,7 +173,7 @@ FileSource::fileFormat_t FileSource::formatFromFilename(QFileInfo fileInfo)
           << "([0-9]+)(?:x|X|\\*)([0-9]+)[\\._]";                // Something_2160x1440_more.yuv or
                                                                  // Something_2160x1440.yuv
 
-      for (QString regExpStr : regExprList)
+      for (auto regExpStr : regExprList)
       {
         QRegularExpression exp(regExpStr);
         auto               match = exp.match(name);
@@ -332,35 +325,43 @@ QString FileSource::getAbsPathFromAbsAndRel(const QString &currentPath,
   return {};
 }
 
+bool FileSource::getAndResetFileChangedFlag()
+{
+  bool b            = this->fileChanged;
+  this->fileChanged = false;
+  return b;
+}
+
 void FileSource::updateFileWatchSetting()
 {
   // Install a file watcher if file watching is active in the settings.
   // The addPath/removePath functions will do nothing if called twice for the same file.
   QSettings settings;
   if (settings.value("WatchFiles", true).toBool())
-    fileWatcher.addPath(fullFilePath);
+    fileWatcher.addPath(this->fullFilePath);
   else
-    fileWatcher.removePath(fullFilePath);
+    fileWatcher.removePath(this->fullFilePath);
 }
 
 void FileSource::clearFileCache()
 {
-  if (!isFileOpened)
+  if (!this->isFileOpened)
     return;
 
 #ifdef Q_OS_WIN
+  // Currently, we only support this on windows. But this is only used in performance testing.
   // We will close the QFile, open it using the FILE_FLAG_NO_BUFFERING flags, close it and reopen
   // the QFile. Suggested:
   // http://stackoverflow.com/questions/478340/clear-file-cache-to-repeat-performance-testing
-  QMutexLocker locker(&readMutex);
-  srcFile.close();
+  QMutexLocker locker(&this->readMutex);
+  this->srcFile.close();
 
-  LPCWSTR file = (const wchar_t *)fullFilePath.utf16();
+  LPCWSTR file = (const wchar_t *)this->fullFilePath.utf16();
   HANDLE  hFile =
       CreateFile(file, GENERIC_READ, 0, NULL, OPEN_EXISTING, FILE_FLAG_NO_BUFFERING, NULL);
   CloseHandle(hFile);
 
-  srcFile.setFileName(fullFilePath);
-  srcFile.open(QIODevice::ReadOnly);
+  this->srcFile.setFileName(this->fullFilePath);
+  this->srcFile.open(QIODevice::ReadOnly);
 #endif
 }

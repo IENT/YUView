@@ -421,7 +421,7 @@ void PlaylistTreeWidget::appendNewItem(playlistItem *item, bool emitplaylistChan
     return;
 
   insertTopLevelItem(topLevelItemCount(), item);
-  connect(item, &playlistItem::signalItemChanged, this, &PlaylistTreeWidget::slotItemChanged);
+  connect(item, &playlistItem::SignalItemChanged, this, &PlaylistTreeWidget::slotItemChanged);
   connect(item,
           &playlistItem::signalItemDoubleBufferLoaded,
           this,
@@ -965,27 +965,25 @@ bool PlaylistTreeWidget::loadPlaylistFromByteArray(QByteArray data, QString file
 void PlaylistTreeWidget::checkAndUpdateItems()
 {
   // Append all the playlist items to the output
-  QList<playlistItem *> changedItems;
+  std::vector<playlistItem *> changedItems;
   for (int i = 0; i < topLevelItemCount(); ++i)
   {
-    QTreeWidgetItem *item   = topLevelItem(i);
-    playlistItem *   plItem = dynamic_cast<playlistItem *>(item);
+    auto plItem = dynamic_cast<playlistItem *>(this->topLevelItem(i));
 
     // Check (and reset) the flag if the source was changed.
     if (plItem->isSourceChanged())
-      changedItems.append(plItem);
+      changedItems.push_back(plItem);
   }
 
   if (!changedItems.empty())
   {
-    // One of the two items was changed. Does the user want to reload it?
-    int ret = QMessageBox::question(parentWidget(),
-                                    "Item changed",
-                                    "The source of one or more currently loaded items has changed. "
-                                    "Do you want to reload the item(s)?");
+    auto ret =
+        QMessageBox::question(parentWidget(),
+                              "Item changed",
+                              "The source of one or more currently loaded items has changed. "
+                              "Do you want to reload the item(s)?");
     if (ret != QMessageBox::Yes)
     {
-      // The user pressed no (or the x). This can not be recommended.
       ret = QMessageBox::question(
           parentWidget(),
           "Item changed",
@@ -994,23 +992,19 @@ void PlaylistTreeWidget::checkAndUpdateItems()
           "anymore. For the shown values, there is no indication if they are old or new. Parsing "
           "of statistics files may fail. So again:  Do you want to reload the item(s)?");
       if (ret != QMessageBox::Yes)
-        // Really no
-        return;
+        return; // Really no
     }
 
-    // Reload all items
-    for (playlistItem *plItem : changedItems)
+    for (auto plItem : changedItems)
       plItem->reloadItemSource();
   }
 }
 
 void PlaylistTreeWidget::updateSettings()
 {
-  for (int i = 0; i < topLevelItemCount(); ++i)
+  for (int i = 0; i < this->topLevelItemCount(); ++i)
   {
-    QTreeWidgetItem *item   = topLevelItem(i);
-    playlistItem *   plItem = dynamic_cast<playlistItem *>(item);
-
+    auto plItem = dynamic_cast<playlistItem *>(this->topLevelItem(i));
     plItem->updateSettings();
   }
 }

@@ -130,7 +130,7 @@ void playlistItemText::on_selectFontButton_clicked()
   if (ok)
   {
     this->font = newFont;
-    emit signalItemChanged(true, RECACHE_NONE);
+    emit SignalItemChanged(true, RECACHE_NONE);
   }
 }
 
@@ -141,7 +141,7 @@ void playlistItemText::on_selectColorButton_clicked()
   if (newColor != color)
   {
     this->color = newColor;
-    emit signalItemChanged(true, RECACHE_NONE);
+    emit SignalItemChanged(true, RECACHE_NONE);
   }
 }
 
@@ -168,7 +168,7 @@ void playlistItemText::on_textEdit_textChanged()
   this->setName(QString("Text: \"%1\"").arg(t));
   DEBUG_TEXT("playlistItemText::on_textEdit_textChanged New test length %d", text.length());
 
-  emit signalItemChanged(true, RECACHE_NONE);
+  emit SignalItemChanged(true, RECACHE_NONE);
 }
 
 void playlistItemText::savePlaylist(QDomElement &root, const QDir &) const

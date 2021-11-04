@@ -64,7 +64,7 @@ public:
 
   int getMaxPoc() const { return this->maxPOC; }
 
-  bool isFileChanged() { return this->file.isFileChanged(); }
+  bool isFileChanged() { return this->file.getAndResetFileChangedFlag(); }
   void updateSettings() { this->file.updateFileWatchSetting(); }
 
   InfoData getInfo() const;

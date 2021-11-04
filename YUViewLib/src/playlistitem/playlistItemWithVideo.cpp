@@ -64,7 +64,7 @@ QSize playlistItemWithVideo::getSize() const
 void playlistItemWithVideo::slotVideoHandlerChanged(bool redrawNeeded, recacheIndicator recache)
 {
   this->updateStartEndRange();
-  emit signalItemChanged(redrawNeeded, recache);
+  emit SignalItemChanged(redrawNeeded, recache);
 }
 
 void playlistItemWithVideo::connectVideo()
@@ -110,7 +110,7 @@ void playlistItemWithVideo::loadFrame(int  frameIdx,
     video->loadFrame(frameIdx);
     isFrameLoading = false;
     if (emitSignals)
-      emit signalItemChanged(true, RECACHE_NONE);
+      emit SignalItemChanged(true, RECACHE_NONE);
   }
 
   if (playing && (state == ItemLoadingState::LoadingNeeded ||

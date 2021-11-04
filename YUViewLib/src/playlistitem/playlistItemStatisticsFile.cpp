@@ -76,7 +76,7 @@ playlistItemStatisticsFile::playlistItemStatisticsFile(const QString &itemNameOr
   this->statisticsUIHandler.setStatisticsData(&this->statisticsData);
 
   connect(&this->statisticsUIHandler, &stats::StatisticUIHandler::updateItem, [this](bool redraw) {
-    emit signalItemChanged(redraw, RECACHE_NONE);
+    emit SignalItemChanged(redraw, RECACHE_NONE);
   });
 }
 
@@ -193,7 +193,7 @@ void playlistItemStatisticsFile::loadFrame(int frameIdx, bool, bool, bool emitSi
     }
     this->isStatisticsLoading = false;
     if (emitSignals)
-      emit signalItemChanged(true, RECACHE_NONE);
+      emit SignalItemChanged(true, RECACHE_NONE);
   }
 }
 
@@ -229,14 +229,14 @@ void playlistItemStatisticsFile::onPOCTypeParsed(int poc, int typeID)
   if (poc == this->currentDrawnFrameIdx && this->statisticsData.hasDataForTypeID(typeID))
   {
     this->statisticsData.eraseDataForTypeID(typeID);
-    emit signalItemChanged(true, RECACHE_NONE);
+    emit SignalItemChanged(true, RECACHE_NONE);
   }
 }
 
 void playlistItemStatisticsFile::onPOCParsed(int poc)
 {
   if (poc == this->currentDrawnFrameIdx)
-    emit signalItemChanged(true, RECACHE_NONE);
+    emit SignalItemChanged(true, RECACHE_NONE);
 
   this->statisticsData.setFrameIndex(-1);
 }
@@ -319,5 +319,5 @@ void playlistItemStatisticsFile::timerEvent(QTimerEvent *event)
 
   if (this->file)
     this->prop.startEndRange = indexRange(0, this->file->getMaxPoc());
-  emit signalItemChanged(false, RECACHE_NONE);
+  emit SignalItemChanged(false, RECACHE_NONE);
 }

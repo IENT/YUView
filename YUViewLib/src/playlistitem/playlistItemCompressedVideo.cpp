@@ -1249,7 +1249,7 @@ void playlistItemCompressedVideo::loadFrame(int  frameIdx,
 
     isFrameLoading = false;
     if (emitSignals)
-      emit signalItemChanged(true, RECACHE_NONE);
+      emit SignalItemChanged(true, RECACHE_NONE);
   }
 
   if (playing && (stateYUV == ItemLoadingState::LoadingNeeded ||
@@ -1295,7 +1295,7 @@ void playlistItemCompressedVideo::displaySignalComboBoxChanged(int idx)
     yuvVideo->showPixelValuesAsDiff = loadingDecoder->isSignalDifference(idx);
     yuvVideo->invalidateAllBuffers();
 
-    emit signalItemChanged(true, RECACHE_CLEAR);
+    emit SignalItemChanged(true, RECACHE_CLEAR);
   }
 }
 
@@ -1336,6 +1336,6 @@ void playlistItemCompressedVideo::decoderComboxBoxChanged(int idx)
     this->fillStatisticList();
     this->statisticsUIHandler.updateStatisticsHandlerControls();
 
-    emit signalItemChanged(true, RECACHE_CLEAR);
+    emit SignalItemChanged(true, RECACHE_CLEAR);
   }
 }

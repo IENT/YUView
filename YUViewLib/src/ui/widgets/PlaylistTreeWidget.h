@@ -172,7 +172,7 @@ protected slots:
   // slotSelectionChanged is called, the list of selected items is correct.
   void slotSelectionChanged();
 
-  // All item's signals signalItemChanged are connected here. Check if the item which sent the
+  // All item's signals SignalItemChanged are connected here. Check if the item which sent the
   // signal is currently selected. If yes, emit the signal selectionInfoChanged(). If 'recache' is
   // set, pass this to the video cache.
   void slotItemChanged(bool redraw, recacheIndicator recache);

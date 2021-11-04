@@ -74,9 +74,9 @@ public:
   static void getSupportedFileExtensions(QStringList &allExtensions, QStringList &filters);
 
   // ----- Detection of source/file change events -----
-  virtual bool isSourceChanged() override { return dataSource.isFileChanged(); }
+  virtual bool isSourceChanged() override { return this->dataSource.getAndResetFileChangedFlag(); }
   virtual void reloadItemSource() override;
-  virtual void updateSettings() override { dataSource.updateFileWatchSetting(); }
+  virtual void updateSettings() override { this->dataSource.updateFileWatchSetting(); }
 
   // Cache the given frame
   virtual void cacheFrame(int idx, bool testMode) override
@@ -113,7 +113,7 @@ private:
   // and start indicators for every frame. This file will parse the header and save all the byte
   // offsets for each raw YUV frame.
   bool            parseY4MFile();
-  bool            isY4MFile;
+  bool            isY4MFile{};
   QList<uint64_t> y4mFrameIndices;
 
   QString pixelFormatAfterLoading{};

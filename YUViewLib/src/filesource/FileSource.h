@@ -69,31 +69,23 @@ class FileSource : public QObject
 public:
   FileSource();
 
-  // Try to open the given file and install a watcher for the file.
   virtual bool openFile(const QString &filePath);
 
-  // Return information on this file (like path, date created file Size ...)
   virtual QList<InfoItem> getFileInfoList() const;
-
-  QString absoluteFilePath() const
-  {
-    return isFileOpened ? fileInfo.absoluteFilePath() : QString();
-  }
-  QFileInfo getFileInfo() const { return fileInfo; }
+  int64_t                 getFileSize() const { return !isFileOpened ? -1 : fileInfo.size(); }
+  QString                 getAbsoluteFilePath() const;
+  QFileInfo               getFileInfo() const { return this->fileInfo; }
+  QFile *                 getQFile() { return &this->srcFile; }
+  bool                    getAndResetFileChangedFlag();
 
   // Return true if the file could be opened and is ready for use.
-  bool isOk() const { return isFileOpened; }
+  bool isOk() const { return this->isFileOpened; }
 
-  QFile *getQFile() { return &srcFile; }
+  virtual bool atEnd() const { return !this->isFileOpened ? true : this->srcFile.atEnd(); }
+  QByteArray   readLine() { return !this->isFileOpened ? QByteArray() : this->srcFile.readLine(); }
+  virtual bool seek(int64_t pos) { return !this->isFileOpened ? false : this->srcFile.seek(pos); }
+  int64_t      pos() { return !this->isFileOpened ? 0 : this->srcFile.pos(); }
 
-  // Pass on to srcFile
-  virtual bool atEnd() const { return !isFileOpened ? true : srcFile.atEnd(); }
-  QByteArray   readLine() { return !isFileOpened ? QByteArray() : srcFile.readLine(); }
-  virtual bool seek(int64_t pos) { return !isFileOpened ? false : srcFile.seek(pos); }
-  int64_t      pos() { return !isFileOpened ? 0 : srcFile.pos(); }
-
-  // Guess the format (width, height, framerate, packed/planar) from the file name.
-  // Certain patterns are recognized. E.g: "something_352x288_24.yuv"
   struct fileFormat_t
   {
     Size     frameSize;
@@ -101,10 +93,9 @@ public:
     unsigned bitDepth{};
     bool     packed{false};
   };
-  static fileFormat_t formatFromFilename(QFileInfo fileInfo);
+  fileFormat_t guessFormatFromFilename() const;
 
   // Get the file size in bytes
-  int64_t getFileSize() const { return !isFileOpened ? -1 : fileInfo.size(); }
 
   // Read the given number of bytes starting at startPos into the QByteArray out
   // Resize the QByteArray if necessary. Return how many bytes were read.
@@ -113,44 +104,25 @@ public:
   void readBytes(byteArrayAligned &data, int64_t startPos, int64_t nrBytes);
 #endif
 
-  QString getAbsoluteFilePath() const { return fileInfo.absoluteFilePath(); }
-
-  // Get the absolute path to the file (from absolute or relative path)
   static QString getAbsPathFromAbsAndRel(const QString &currentPath,
                                          const QString &absolutePath,
                                          const QString &relativePath);
 
-  // Was the file changed by some other application?
-  bool isFileChanged()
-  {
-    bool b      = fileChanged;
-    fileChanged = false;
-    return b;
-  }
-  // Check if we are supposed to watch the file for changes. If no, remove the file watcher. If yes,
-  // install one.
   void updateFileWatchSetting();
-
-  // Clear the cache of the file in the system. Currently only windows supported.
   void clearFileCache();
 
 private slots:
   void fileSystemWatcherFileChanged(const QString &) { fileChanged = true; }
 
 protected:
-  // Info on the source file.
   QString   fullFilePath{};
   QFileInfo fileInfo;
-
-  // This file might not be open if the opening has failed.
-  QFile srcFile;
-  bool  isFileOpened;
+  QFile     srcFile;
+  bool      isFileOpened{};
 
 private:
-  // Watch the opened file for modifications
-  QFileSystemWatcher fileWatcher;
-  bool               fileChanged;
+  QFileSystemWatcher fileWatcher{};
+  bool               fileChanged{};
 
-  // protect the read function with a mutex
   QMutex readMutex;
 };

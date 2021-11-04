@@ -142,7 +142,7 @@ void playlistItem::slotVideoControlChanged()
     this->prop.frameRate = ui.rateSpinBox->value();
     // The current frame in the buffer is not invalid, but emit that something has changed.
     // Also no frame in the cache is invalid.
-    emit signalItemChanged(false, RECACHE_NONE);
+    emit SignalItemChanged(false, RECACHE_NONE);
   }
 }
 

@@ -73,7 +73,7 @@ void playlistItemImageFile::loadFrame(int, bool, bool, bool emitSignals)
   this->needToLoadImage = false;
 
   if (emitSignals)
-    emit signalItemChanged(true, RECACHE_NONE);
+    emit SignalItemChanged(true, RECACHE_NONE);
 }
 
 void playlistItemImageFile::savePlaylist(QDomElement &root, const QDir &playlistDir) const
@@ -223,6 +223,6 @@ void playlistItemImageFile::updateSettings()
 void playlistItemImageFile::fileSystemWatcherFileChanged(const QString &)
 {
   this->needToLoadImage = true;
-  emit signalItemChanged(true, RECACHE_CLEAR);
+  emit SignalItemChanged(true, RECACHE_CLEAR);
   this->updateSettings();
 }
