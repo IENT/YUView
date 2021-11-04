@@ -398,7 +398,7 @@ bool playlistItemRawFile::parseY4MFile()
 void playlistItemRawFile::setFormatFromFileName()
 {
   // Try to extract info on the width/height/rate/bitDepth from the file name
-  auto fileFormat = FileSource::formatFromFilename(dataSource.getFileInfo());
+  auto fileFormat = this->dataSource.guessFormatFromFilename();
 
   if (fileFormat.frameSize.isValid())
   {

@@ -78,7 +78,7 @@ void StatisticsFileCSV::readFrameAndTypePositionsFromFile(std::atomic_bool &brea
     // Open the file (again). Since this is a background process, we open the file again to
     // not disturb any reading from not background code.
     FileSource inputFile;
-    if (!inputFile.openFile(this->file.absoluteFilePath()))
+    if (!inputFile.openFile(this->file.getAbsoluteFilePath()))
       return;
 
     // We perform reading using an input buffer
