@@ -64,7 +64,7 @@ playlistItemDifference::playlistItemDifference() : playlistItemContainer("Differ
   connect(&difference,
           &video::videoHandlerDifference::signalHandlerChanged,
           this,
-          &playlistItemDifference::signalItemChanged);
+          &playlistItemDifference::SignalItemChanged);
 }
 
 /* For a difference item, the info list is just a list of the names of the
@@ -235,7 +235,7 @@ void playlistItemDifference::loadFrame(int  frameIdx,
     difference.loadFrameDifference(frameIdx);
     isDifferenceLoading = false;
     if (emitSignals)
-      emit signalItemChanged(true, RECACHE_NONE);
+      emit SignalItemChanged(true, RECACHE_NONE);
   }
 
   if (playing && (state == ItemLoadingState::LoadingNeeded ||

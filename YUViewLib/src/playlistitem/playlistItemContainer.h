@@ -49,8 +49,8 @@ public:
   virtual bool acceptDrops(playlistItem *draggingItem) const override;
 
   // The children of this item might have changed. If yes, update the properties of this item
-  // and emit the signalItemChanged(true).
-  void updateChildItems() { childLlistUpdateRequired = true; emit signalItemChanged(true, RECACHE_NONE); }
+  // and emit the SignalItemChanged(true).
+  void updateChildItems() { childLlistUpdateRequired = true; emit SignalItemChanged(true, RECACHE_NONE); }
 
   // An item will be deleted. Disconnect the signals/slots of this item and remove it from the QTreeWidgetItem (takeItem)
   virtual void itemAboutToBeDeleted(playlistItem *item) override;

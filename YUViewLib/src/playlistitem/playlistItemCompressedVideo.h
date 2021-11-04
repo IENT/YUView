@@ -98,7 +98,7 @@ public:
 
   // Do we need to load the given frame first?
   virtual ItemLoadingState needsLoading(int frameIdx, bool loadRawData) override;
-  // Load the frame in the video item. Emit signalItemChanged(true,false) when done.
+  // Load the frame in the video item. Emit SignalItemChanged(true,false) when done.
   virtual void
   loadFrame(int frameIdx, bool playing, bool loadRawData, bool emitSignals = true) override;
   // Is an image currently being loaded?
@@ -199,7 +199,7 @@ private slots:
   // videoHandler if the frame that is requested to be drawn has not been loaded yet.
   virtual void loadRawData(int frameIdx, bool forceDecodingNow);
 
-  void updateStatSource(bool bRedraw) { emit signalItemChanged(bRedraw, RECACHE_NONE); }
+  void updateStatSource(bool bRedraw) { emit SignalItemChanged(bRedraw, RECACHE_NONE); }
   void displaySignalComboBoxChanged(int idx);
   void decoderComboxBoxChanged(int idx);
 };

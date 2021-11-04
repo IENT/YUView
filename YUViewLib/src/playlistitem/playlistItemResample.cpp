@@ -60,7 +60,7 @@ playlistItemResample::playlistItemResample() : playlistItemContainer("Resample I
   this->connect(&this->video,
                 &video::FrameHandler::signalHandlerChanged,
                 this,
-                &playlistItemResample::signalItemChanged);
+                &playlistItemResample::SignalItemChanged);
 }
 
 /* For a resample item, the info list is just the name of the child item
@@ -303,7 +303,7 @@ void playlistItemResample::loadFrame(int frameIdx, bool playing, bool loadRawDat
     this->video.loadResampledFrame(frameIdx);
     this->isFrameLoading = false;
     if (emitSignals)
-      emit signalItemChanged(true, RECACHE_NONE);
+      emit SignalItemChanged(true, RECACHE_NONE);
   }
 
   if (playing && (state == ItemLoadingState::LoadingNeeded ||

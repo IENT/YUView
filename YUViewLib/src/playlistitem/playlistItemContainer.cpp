@@ -50,7 +50,7 @@ bool playlistItemContainer::acceptDrops(playlistItem *) const
 
 void playlistItemContainer::updateChildList()
 {
-  // Disconnect all signalItemChanged events from the children to the "childChanged" function from
+  // Disconnect all SignalItemChanged events from the children to the "childChanged" function from
   // this container. All the original connections from the items to the playlistTreeWidget will be
   // retained. The user can still select the child items individually so the individual connections
   // must also be there.
@@ -60,7 +60,7 @@ void playlistItemContainer::updateChildList()
     if (item)
     {
       disconnect(
-          item, &playlistItem::signalItemChanged, this, &playlistItemContainer::childChanged);
+          item, &playlistItem::SignalItemChanged, this, &playlistItemContainer::childChanged);
       if (item->properties().providesStatistics)
         item->getStatisticsUIHandler()->deleteSecondaryStatisticsHandlerControls();
     }
@@ -72,7 +72,7 @@ void playlistItemContainer::updateChildList()
     auto childItem = this->getChildPlaylistItem(i);
     if (childItem)
       this->connect(
-          childItem, &playlistItem::signalItemChanged, this, &playlistItemContainer::childChanged);
+          childItem, &playlistItem::SignalItemChanged, this, &playlistItemContainer::childChanged);
   }
 
   // Remove all widgets (the lines and spacer) that are still in the layout
@@ -101,7 +101,7 @@ void playlistItemContainer::updateChildList()
 
   // Finally, we have to update the start/end Frame
   childChanged(false, RECACHE_NONE);
-  emit signalItemChanged(true, RECACHE_NONE);
+  emit SignalItemChanged(true, RECACHE_NONE);
 
   childLlistUpdateRequired = false;
 }
@@ -117,7 +117,7 @@ void playlistItemContainer::itemAboutToBeDeleted(playlistItem *item)
     if (listItem && listItem == item)
     {
       disconnect(
-          listItem, &playlistItem::signalItemChanged, this, &playlistItemContainer::childChanged);
+          listItem, &playlistItem::SignalItemChanged, this, &playlistItemContainer::childChanged);
       if (listItem->properties().providesStatistics)
         listItem->getStatisticsUIHandler()->deleteSecondaryStatisticsHandlerControls();
       takeChild(i);
@@ -194,7 +194,7 @@ void playlistItemContainer::childChanged(bool redraw, recacheIndicator recache)
   if (redraw || (recache != RECACHE_NONE))
     // A child item changed and it needs redrawing, so we need to re-layout everything and also
     // redraw
-    emit signalItemChanged(redraw, recache);
+    emit SignalItemChanged(redraw, recache);
 }
 
 bool playlistItemContainer::isSourceChanged()

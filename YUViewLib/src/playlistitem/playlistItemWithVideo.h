@@ -99,7 +99,7 @@ public:
     return !unresolvableError && playlistItem::isCachable() && video->isFormatValid();
   }
 
-  // Load the frame in the video item. Emit signalItemChanged(true,false) when done. Always called
+  // Load the frame in the video item. Emit SignalItemChanged(true,false) when done. Always called
   // from a thread.
   virtual void
   loadFrame(int frameIdx, bool playing, bool loadRawData, bool emitSignals = true) override;

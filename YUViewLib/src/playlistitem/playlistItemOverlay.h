@@ -57,7 +57,7 @@ public:
 
   // The overlay item itself does not need to load anything. We just pass all of these to the child items.
   virtual ItemLoadingState needsLoading(int frameIdx, bool loadRawData) override;
-  // Load the frame in the video item. Emit signalItemChanged(true,false) when done. Always called from a thread.
+  // Load the frame in the video item. Emit SignalItemChanged(true,false) when done. Always called from a thread.
   virtual void loadFrame(int frameIdx, bool playing, bool loadRawData, bool emitSignals=true) override;
   
   // Is an image currently being loaded?

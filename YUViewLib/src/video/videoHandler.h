@@ -204,7 +204,7 @@ protected:
   // Is the cache valid? The cache can be ivalid in the following scenario:
   // Somethign about how an item is shown changes (e.g. the resolution) but caching of the item is
   // currently performed. If we just cleared the cache, the wrong (currently being cached) frames
-  // would still end up in the cache. So we emit signalItemChanged with 'recache' set to true. The
+  // would still end up in the cache. So we emit SignalItemChanged with 'recache' set to true. The
   // video cache will stop, clear the cache of this item and recache everything. Until then,
   // however, the items that are in the cache (or are being put into the cache by the still running
   // threads) are invalid.

@@ -78,7 +78,7 @@ public:
   virtual void reloadItemSource() override { needToLoadImage = false; }
   virtual void updateSettings() override;
 
-  // Load the frame. Emit signalItemChanged(true,false) when done. Always called from a thread.
+  // Load the frame. Emit SignalItemChanged(true,false) when done. Always called from a thread.
   virtual void
   loadFrame(int frameIdx, bool playing, bool loadRawdata, bool emitSignals = true) override;
 

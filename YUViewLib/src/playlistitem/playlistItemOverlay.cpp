@@ -577,7 +577,7 @@ void playlistItemOverlay::slotControlChanged()
   // No new item was added but update the layout of the items
   updateLayout(false);
 
-  emit signalItemChanged(true, RECACHE_NONE);
+  emit SignalItemChanged(true, RECACHE_NONE);
 }
 
 void playlistItemOverlay::childChanged(bool redraw, recacheIndicator recache)
@@ -654,7 +654,7 @@ void playlistItemOverlay::loadFrame(int frameIdx, bool playing, bool loadRawData
   }
 
   if (emitSignals && itemLoaded)
-    emit signalItemChanged(true, RECACHE_NONE);
+    emit SignalItemChanged(true, RECACHE_NONE);
   if (emitSignals && itemLoadedDoubleBuffer)
     emit signalItemDoubleBufferLoaded();
 }

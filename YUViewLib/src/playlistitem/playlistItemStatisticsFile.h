@@ -77,7 +77,7 @@ public:
   // Do we need to load the statistics first?
   virtual ItemLoadingState needsLoading(int frameIdx, bool loadRawdata) override;
 
-  // Load the statistics for the given frame. Emit signalItemChanged(true,false) when done. Always
+  // Load the statistics for the given frame. Emit SignalItemChanged(true,false) when done. Always
   // called from a thread.
   virtual void
   loadFrame(int frameIdx, bool playback, bool loadRawdata, bool emitSignals = true) override;
