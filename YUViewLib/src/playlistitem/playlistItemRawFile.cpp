@@ -77,12 +77,12 @@ playlistItemRawFile::playlistItemRawFile(const QString &rawFilePath,
   ext           = ext.toLower();
   if (ext == "yuv" || ext == "nv21" || fmt.toLower() == "yuv" || ext == "y4m")
   {
-    this->video     = std::make_unique<video::videoHandlerYUV>();
+    this->video     = std::make_unique<video::yuv::videoHandlerYUV>();
     this->rawFormat = video::RawFormat::YUV;
   }
   else if (ext == "rgb" || ext == "gbr" || ext == "bgr" || ext == "brg" || fmt.toLower() == "rgb")
   {
-    this->video     = std::make_unique<video::videoHandlerRGB>();
+    this->video     = std::make_unique<video::rgb::videoHandlerRGB>();
     this->rawFormat = video::RawFormat::RGB;
   }
   else

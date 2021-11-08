@@ -276,7 +276,7 @@ void videoHandlerDifference::reportFirstDifferencePosition(QList<InfoItem> &info
         // Now take the tree approach
         int firstX, firstY, partIndex = 0;
 
-        auto videoYUV0 = dynamic_cast<videoHandlerYUV *>(inputVideo[0].data());
+        auto videoYUV0 = dynamic_cast<yuv::videoHandlerYUV *>(inputVideo[0].data());
         if (videoYUV0 != NULL && videoYUV0->isDiffReady())
         {
           // find first difference using YUV instead of QImage. The latter does not work for 10bit

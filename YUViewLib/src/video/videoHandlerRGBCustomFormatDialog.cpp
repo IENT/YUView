@@ -34,15 +34,15 @@
 
 #include <common/Functions.h>
 
-namespace video
+namespace video::rgb
 {
 
 videoHandlerRGBCustomFormatDialog::videoHandlerRGBCustomFormatDialog(
-    const rgb::PixelFormatRGB &rgbFormat)
+    const PixelFormatRGB &rgbFormat)
 {
   this->ui.setupUi(this);
 
-  this->ui.rgbOrderComboBox->addItems(functions::toQStringList(rgb::ChannelOrderMapper.getNames()));
+  this->ui.rgbOrderComboBox->addItems(functions::toQStringList(ChannelOrderMapper.getNames()));
 
   // Set the default (RGB no alpha)
   this->ui.rgbOrderComboBox->setCurrentIndex(0);
@@ -52,12 +52,12 @@ videoHandlerRGBCustomFormatDialog::videoHandlerRGBCustomFormatDialog(
   if (rgbFormat.hasAlpha())
   {
     this->ui.alphaChannelGroupBox->setChecked(true);
-    auto alphaPosition = rgbFormat.getComponentPosition(rgb::Channel::Alpha);
+    auto alphaPosition = rgbFormat.getComponentPosition(Channel::Alpha);
     this->ui.beforeRGBRadioButton->setChecked(alphaPosition == 0);
     this->ui.afterRGBRadioButton->setChecked(alphaPosition == 3);
   }
 
-  if (auto index = rgb::ChannelOrderMapper.indexOf(rgbFormat.getChannelOrder()))
+  if (auto index = ChannelOrderMapper.indexOf(rgbFormat.getChannelOrder()))
   {
     this->ui.rgbOrderComboBox->setCurrentIndex(int(index));
   }
@@ -70,12 +70,12 @@ videoHandlerRGBCustomFormatDialog::videoHandlerRGBCustomFormatDialog(
   this->ui.planarCheckBox->setChecked(rgbFormat.getDataLayout() == DataLayout::Planar);
 }
 
-rgb::PixelFormatRGB videoHandlerRGBCustomFormatDialog::getSelectedRGBFormat() const
+PixelFormatRGB videoHandlerRGBCustomFormatDialog::getSelectedRGBFormat() const
 {
   auto channelOrderIndex = this->ui.rgbOrderComboBox->currentIndex();
   if (channelOrderIndex < 0)
     return {};
-  auto channelOrder = rgb::ChannelOrderMapper.at(unsigned(channelOrderIndex));
+  auto channelOrder = ChannelOrderMapper.at(unsigned(channelOrderIndex));
   if (!channelOrder)
     return {};
 
@@ -85,20 +85,20 @@ rgb::PixelFormatRGB videoHandlerRGBCustomFormatDialog::getSelectedRGBFormat() co
   if (this->ui.planarCheckBox->checkState() == Qt::Checked)
     dataLayout = DataLayout::Planar;
 
-  auto alphaMode = rgb::AlphaMode::None;
+  auto alphaMode = AlphaMode::None;
   if (this->ui.alphaChannelGroupBox->isChecked())
   {
     if (this->ui.afterRGBRadioButton->isChecked())
-      alphaMode = rgb::AlphaMode::Last;
+      alphaMode = AlphaMode::Last;
     else
-      alphaMode = rgb::AlphaMode::First;
+      alphaMode = AlphaMode::First;
   }
 
   auto endianness = Endianness::Little;
   if (this->ui.comboBoxEndianness->currentIndex() == 0)
     endianness = Endianness::Big;
 
-  return rgb::PixelFormatRGB(bitDepth, dataLayout, *channelOrder, alphaMode, endianness);
+  return PixelFormatRGB(bitDepth, dataLayout, *channelOrder, alphaMode, endianness);
 }
 
 void videoHandlerRGBCustomFormatDialog::on_bitDepthSpinBox_valueChanged(int value)
@@ -106,4 +106,4 @@ void videoHandlerRGBCustomFormatDialog::on_bitDepthSpinBox_valueChanged(int valu
   this->ui.comboBoxEndianness->setEnabled(value > 8);
 }
 
-} // namespace video
+} // namespace video::rgb

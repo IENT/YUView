@@ -48,10 +48,8 @@
 #include <video/PixelFormatYUVGuess.h>
 #include <video/videoHandlerYUVCustomFormatDialog.h>
 
-namespace video
+namespace video::yuv
 {
-
-using namespace yuv;
 
 // Activate this if you want to know when which buffer is loaded/converted to image and so on.
 #define VIDEOHANDLERYUV_DEBUG_LOADING 0
@@ -109,6 +107,13 @@ template <typename T> double computeMSE(T ptr, T ptr2, int numPixels)
   }
 
   return (double)sad / numPixels;
+}
+
+bool isFullRange(const ColorConversion colorConversion)
+{
+  return colorConversion == ColorConversion::BT709_FullRange ||
+         colorConversion == ColorConversion::BT601_FullRange ||
+         colorConversion == ColorConversion::BT2020_FullRange;
 }
 
 std::pair<bool, PixelFormatYUV> convertYUVPackedToPlanar(const QByteArray &    sourceBuffer,
@@ -411,10 +416,11 @@ yuv_t getPixelValueV210(const QByteArray &sourceBuffer,
 // yuvMath is supported.
 // TODO: Correct the chroma subsampling offset.
 template <int bitDepth>
-bool convertYUV420ToRGB(const QByteArray &   sourceBuffer,
-                        unsigned char *      targetBuffer,
-                        const Size           size,
-                        const PixelFormatYUV format)
+bool convertYUV420ToRGB(const QByteArray &        sourceBuffer,
+                        unsigned char *           targetBuffer,
+                        const Size &              size,
+                        const PixelFormatYUV &    format,
+                        const ConversionSettings &conversionSettings)
 {
   typedef typename std::conditional<bitDepth == 8, uint8_t *, uint16_t *>::type InValueType;
   static_assert(bitDepth == 8 || bitDepth == 10);
@@ -535,14 +541,11 @@ bool convertYUV420ToRGB(const QByteArray &   sourceBuffer,
   unsigned char *restrict dst = targetBuffer;
 
   // Get/set the parameters used for YUV -> RGB conversion
-  auto       yuvColorConversionType = ColorConversion::BT709_LimitedRange;
-  const bool fullRange              = (yuvColorConversionType == ColorConversion::BT709_FullRange ||
-                          yuvColorConversionType == ColorConversion::BT601_FullRange ||
-                          yuvColorConversionType == ColorConversion::BT2020_FullRange);
-  const int  yOffset                = (fullRange ? 0 : 16);
-  const int  cZero                  = 128;
+  const bool fullRange = isFullRange(conversionSettings.colorConversion);
+  const int  yOffset   = (fullRange ? 0 : 16);
+  const int  cZero     = 128;
   int        RGBConv[5];
-  getColorConversionCoefficients(yuvColorConversionType, RGBConv);
+  getColorConversionCoefficients(conversionSettings.colorConversion, RGBConv);
 
   // Get pointers to the source and the output array
   const bool uPplaneFirst =
@@ -633,1052 +636,6 @@ bool convertYUV420ToRGB(const QByteArray &   sourceBuffer,
     }
   }
 
-  return true;
-}
-
-} // namespace
-
-videoHandlerYUV::videoHandlerYUV() : videoHandler()
-{
-  // preset internal values
-  chromaInterpolation    = ChromaInterpolation::NearestNeighbor;
-  componentDisplayMode   = DisplayAll;
-  yuvColorConversionType = ColorConversion::BT709_LimitedRange;
-
-  // Set the default YUV transformation parameters.
-  mathParameters[Component::Luma]   = MathParameters(1, 125, false);
-  mathParameters[Component::Chroma] = MathParameters(1, 128, false);
-
-  // If we know nothing about the YUV format, assume YUV 4:2:0 8 bit planar by default.
-  srcPixelFormat = PixelFormatYUV(Subsampling::YUV_420, 8, PlaneOrder::YUV);
-
-  presetList.append(PixelFormatYUV(Subsampling::YUV_420, 8, PlaneOrder::YUV));  // YUV 4:2:0
-  presetList.append(PixelFormatYUV(Subsampling::YUV_420, 10, PlaneOrder::YUV)); // YUV 4:2:0 10 bit
-  presetList.append(PixelFormatYUV(Subsampling::YUV_422, 8, PlaneOrder::YUV));  // YUV 4:2:2
-  presetList.append(PixelFormatYUV(Subsampling::YUV_444, 8, PlaneOrder::YUV));  // YUV 4:4:4
-  for (auto e : PredefinedPixelFormatMapper.getEnums())
-    presetList.append(e);
-}
-
-videoHandlerYUV::~videoHandlerYUV()
-{
-  DEBUG_YUV("videoHandlerYUV destruction");
-}
-
-unsigned videoHandlerYUV::getCachingFrameSize() const
-{
-  auto hasAlpha = this->srcPixelFormat.hasAlpha();
-  auto bytes    = functionsGui::bytesPerPixel(functionsGui::platformImageFormat(hasAlpha));
-  return this->frameSize.width * this->frameSize.height * bytes;
-}
-
-void videoHandlerYUV::loadValues(Size newFramesize, const QString &)
-{
-  this->setFrameSize(newFramesize);
-}
-
-void videoHandlerYUV::drawFrame(QPainter *painter,
-                                int       frameIdx,
-                                double    zoomFactor,
-                                bool      drawRawData)
-{
-  std::string msg;
-  if (!srcPixelFormat.canConvertToRGB(frameSize, &msg))
-  {
-    // The conversion to RGB can not be performed. Draw a text about this
-    msg = "With the given settings, the YUV data can not be converted to RGB:\n" + msg;
-    // Get the size of the text and create a QRect of that size which is centered at (0,0)
-    QFont displayFont = painter->font();
-    displayFont.setPointSizeF(painter->font().pointSizeF() * zoomFactor);
-    painter->setFont(displayFont);
-    QSize textSize = painter->fontMetrics().size(0, QString::fromStdString(msg));
-    QRect textRect;
-    textRect.setSize(textSize);
-    textRect.moveCenter(QPoint(0, 0));
-
-    // Draw the text
-    painter->drawText(textRect, QString::fromStdString(msg));
-  }
-  else
-    videoHandler::drawFrame(painter, frameIdx, zoomFactor, drawRawData);
-}
-
-/// --- Convert from the current YUV input format to YUV 444
-
-#if SSE_CONVERSION_420_ALT
-void videoHandlerYUV::yuv420_to_argb8888(quint8 *yp,
-                                         quint8 *up,
-                                         quint8 *vp,
-                                         quint32 sy,
-                                         quint32 suv,
-                                         int     width,
-                                         int     height,
-                                         quint8 *rgb,
-                                         quint32 srgb)
-{
-  __m128i  y0r0, y0r1, u0, v0;
-  __m128i  y00r0, y01r0, y00r1, y01r1;
-  __m128i  u00, u01, v00, v01;
-  __m128i  rv00, rv01, gu00, gu01, gv00, gv01, bu00, bu01;
-  __m128i  r00, r01, g00, g01, b00, b01;
-  __m128i  rgb0123, rgb4567, rgb89ab, rgbcdef;
-  __m128i  gbgb;
-  __m128i  ysub, uvsub;
-  __m128i  zero, facy, facrv, facgu, facgv, facbu;
-  __m128i *srcy128r0, *srcy128r1;
-  __m128i *dstrgb128r0, *dstrgb128r1;
-  __m64 *  srcu64, *srcv64;
-
-  //    Implement the following conversion:
-  //    B = 1.164(Y - 16)                   + 2.018(U - 128)
-  //    G = 1.164(Y - 16) - 0.813(V - 128)  - 0.391(U - 128)
-  //    R = 1.164(Y - 16) + 1.596(V - 128)
-
-  int x, y;
-  // constants
-  ysub  = _mm_set1_epi32(0x00100010); // value 16 for subtraction
-  uvsub = _mm_set1_epi32(0x00800080); // value 128
-
-  // multiplication factors bit shifted by 6
-  facy  = _mm_set1_epi32(0x004a004a);
-  facrv = _mm_set1_epi32(0x00660066);
-  facgu = _mm_set1_epi32(0x00190019);
-  facgv = _mm_set1_epi32(0x00340034);
-  facbu = _mm_set1_epi32(0x00810081);
-
-  zero = _mm_set1_epi32(0x00000000);
-
-  for (y = 0; y < height; y += 2)
-  {
-    srcy128r0 = (__m128i *)(yp + sy * y);
-    srcy128r1 = (__m128i *)(yp + sy * y + sy);
-    srcu64    = (__m64 *)(up + suv * (y / 2));
-    srcv64    = (__m64 *)(vp + suv * (y / 2));
-
-    // dst row 0 and row 1
-    dstrgb128r0 = (__m128i *)(rgb + srgb * y);
-    dstrgb128r1 = (__m128i *)(rgb + srgb * y + srgb);
-
-    for (x = 0; x < width; x += 16)
-    {
-      u0 = _mm_loadl_epi64((__m128i *)srcu64);
-      srcu64++;
-      v0 = _mm_loadl_epi64((__m128i *)srcv64);
-      srcv64++;
-
-      y0r0 = _mm_load_si128(srcy128r0++);
-      y0r1 = _mm_load_si128(srcy128r1++);
-
-      // expand to 16 bit, subtract and multiply constant y factors
-      y00r0 = _mm_mullo_epi16(_mm_sub_epi16(_mm_unpacklo_epi8(y0r0, zero), ysub), facy);
-      y01r0 = _mm_mullo_epi16(_mm_sub_epi16(_mm_unpackhi_epi8(y0r0, zero), ysub), facy);
-      y00r1 = _mm_mullo_epi16(_mm_sub_epi16(_mm_unpacklo_epi8(y0r1, zero), ysub), facy);
-      y01r1 = _mm_mullo_epi16(_mm_sub_epi16(_mm_unpackhi_epi8(y0r1, zero), ysub), facy);
-
-      // expand u and v so they're aligned with y values
-      u0  = _mm_unpacklo_epi8(u0, zero);
-      u00 = _mm_sub_epi16(_mm_unpacklo_epi16(u0, u0), uvsub);
-      u01 = _mm_sub_epi16(_mm_unpackhi_epi16(u0, u0), uvsub);
-
-      v0  = _mm_unpacklo_epi8(v0, zero);
-      v00 = _mm_sub_epi16(_mm_unpacklo_epi16(v0, v0), uvsub);
-      v01 = _mm_sub_epi16(_mm_unpackhi_epi16(v0, v0), uvsub);
-
-      // common factors on both rows.
-      rv00 = _mm_mullo_epi16(facrv, v00);
-      rv01 = _mm_mullo_epi16(facrv, v01);
-      gu00 = _mm_mullo_epi16(facgu, u00);
-      gu01 = _mm_mullo_epi16(facgu, u01);
-      gv00 = _mm_mullo_epi16(facgv, v00);
-      gv01 = _mm_mullo_epi16(facgv, v01);
-      bu00 = _mm_mullo_epi16(facbu, u00);
-      bu01 = _mm_mullo_epi16(facbu, u01);
-
-      // add together and bit shift to the right
-      r00 = _mm_srai_epi16(_mm_add_epi16(y00r0, rv00), 6);
-      r01 = _mm_srai_epi16(_mm_add_epi16(y01r0, rv01), 6);
-      g00 = _mm_srai_epi16(_mm_sub_epi16(_mm_sub_epi16(y00r0, gu00), gv00), 6);
-      g01 = _mm_srai_epi16(_mm_sub_epi16(_mm_sub_epi16(y01r0, gu01), gv01), 6);
-      b00 = _mm_srai_epi16(_mm_add_epi16(y00r0, bu00), 6);
-      b01 = _mm_srai_epi16(_mm_add_epi16(y01r0, bu01), 6);
-
-      r00 = _mm_packus_epi16(r00, r01);
-      g00 = _mm_packus_epi16(g00, g01);
-      b00 = _mm_packus_epi16(b00, b01);
-
-      // shuffle back together to lower 0rgb0rgb...
-      r01     = _mm_unpacklo_epi8(r00, zero);  // 0r0r...
-      gbgb    = _mm_unpacklo_epi8(b00, g00);   // gbgb...
-      rgb0123 = _mm_unpacklo_epi16(gbgb, r01); // lower 0rgb0rgb...
-      rgb4567 = _mm_unpackhi_epi16(gbgb, r01); // upper 0rgb0rgb...
-
-      // shuffle back together to upper 0rgb0rgb...
-      r01     = _mm_unpackhi_epi8(r00, zero);
-      gbgb    = _mm_unpackhi_epi8(b00, g00);
-      rgb89ab = _mm_unpacklo_epi16(gbgb, r01);
-      rgbcdef = _mm_unpackhi_epi16(gbgb, r01);
-
-      // write to dst
-      _mm_store_si128(dstrgb128r0++, rgb0123);
-      _mm_store_si128(dstrgb128r0++, rgb4567);
-      _mm_store_si128(dstrgb128r0++, rgb89ab);
-      _mm_store_si128(dstrgb128r0++, rgbcdef);
-
-      // row 1
-      r00 = _mm_srai_epi16(_mm_add_epi16(y00r1, rv00), 6);
-      r01 = _mm_srai_epi16(_mm_add_epi16(y01r1, rv01), 6);
-      g00 = _mm_srai_epi16(_mm_sub_epi16(_mm_sub_epi16(y00r1, gu00), gv00), 6);
-      g01 = _mm_srai_epi16(_mm_sub_epi16(_mm_sub_epi16(y01r1, gu01), gv01), 6);
-      b00 = _mm_srai_epi16(_mm_add_epi16(y00r1, bu00), 6);
-      b01 = _mm_srai_epi16(_mm_add_epi16(y01r1, bu01), 6);
-
-      r00 = _mm_packus_epi16(r00, r01);
-      g00 = _mm_packus_epi16(g00, g01);
-      b00 = _mm_packus_epi16(b00, b01);
-
-      r01     = _mm_unpacklo_epi8(r00, zero);
-      gbgb    = _mm_unpacklo_epi8(b00, g00);
-      rgb0123 = _mm_unpacklo_epi16(gbgb, r01);
-      rgb4567 = _mm_unpackhi_epi16(gbgb, r01);
-
-      r01     = _mm_unpackhi_epi8(r00, zero);
-      gbgb    = _mm_unpackhi_epi8(b00, g00);
-      rgb89ab = _mm_unpacklo_epi16(gbgb, r01);
-      rgbcdef = _mm_unpackhi_epi16(gbgb, r01);
-
-      _mm_store_si128(dstrgb128r1++, rgb0123);
-      _mm_store_si128(dstrgb128r1++, rgb4567);
-      _mm_store_si128(dstrgb128r1++, rgb89ab);
-      _mm_store_si128(dstrgb128r1++, rgbcdef);
-    }
-  }
-}
-#endif
-
-QLayout *videoHandlerYUV::createVideoHandlerControls(bool isSizeFixed)
-{
-  // Absolutely always only call this function once!
-  assert(!ui.created());
-
-  QVBoxLayout *newVBoxLayout = nullptr;
-  if (!isSizeFixed)
-  {
-    // Our parent (videoHandler) also has controls to add. Create a new vBoxLayout and append the
-    // parent controls and our controls into that layout, separated by a line. Return that layout
-    newVBoxLayout = new QVBoxLayout;
-    newVBoxLayout->addLayout(FrameHandler::createFrameHandlerControls(isSizeFixed));
-
-    QFrame *line = new QFrame;
-    line->setObjectName(QStringLiteral("line"));
-    line->setFrameShape(QFrame::HLine);
-    line->setFrameShadow(QFrame::Sunken);
-    newVBoxLayout->addWidget(line);
-  }
-
-  // Create the UI and setup all the controls
-  ui.setupUi();
-
-  // Add the preset YUV formats. If the current format is in the list, add it and select it.
-  for (auto format : presetList)
-    ui.yuvFormatComboBox->addItem(QString::fromStdString(format.getName()));
-
-  int idx = presetList.indexOf(srcPixelFormat);
-  if (idx == -1 && srcPixelFormat.isValid())
-  {
-    // The currently set pixel format is not in the presets list. Add and select it.
-    ui.yuvFormatComboBox->addItem(QString::fromStdString(srcPixelFormat.getName()));
-    presetList.append(srcPixelFormat);
-    idx = presetList.indexOf(srcPixelFormat);
-  }
-  ui.yuvFormatComboBox->setCurrentIndex(idx);
-  // Add the custom... entry that allows the user to add custom formats
-  ui.yuvFormatComboBox->addItem("Custom...");
-  ui.yuvFormatComboBox->setEnabled(!isSizeFixed);
-
-  // Set all the values of the properties widget to the values of this class
-  ui.colorComponentsComboBox->addItems(QStringList() << "Y'CbCr"
-                                                     << "Luma (Y) Only"
-                                                     << "Cb only"
-                                                     << "Cr only");
-  ui.colorComponentsComboBox->setCurrentIndex((int)componentDisplayMode);
-  ui.chromaInterpolationComboBox->addItems(
-      functions::toQStringList(ChromaInterpolationMapper.getNames()));
-  ui.chromaInterpolationComboBox->setCurrentIndex(
-      int(ChromaInterpolationMapper.indexOf(chromaInterpolation)));
-  ui.chromaInterpolationComboBox->setEnabled(srcPixelFormat.isChromaSubsampled());
-  ui.colorConversionComboBox->addItems(functions::toQStringList(ColorConversionMapper.getNames()));
-  ui.colorConversionComboBox->setCurrentIndex((int)yuvColorConversionType);
-  ui.lumaScaleSpinBox->setValue(mathParameters[Component::Luma].scale);
-  ui.lumaOffsetSpinBox->setMaximum(1000);
-  ui.lumaOffsetSpinBox->setValue(mathParameters[Component::Luma].offset);
-  ui.lumaInvertCheckBox->setChecked(mathParameters[Component::Luma].invert);
-  ui.chromaScaleSpinBox->setValue(mathParameters[Component::Chroma].scale);
-  ui.chromaOffsetSpinBox->setMaximum(1000);
-  ui.chromaOffsetSpinBox->setValue(mathParameters[Component::Chroma].offset);
-  ui.chromaInvertCheckBox->setChecked(mathParameters[Component::Chroma].invert);
-
-  // Connect all the change signals from the controls to "connectWidgetSignals()"
-  connect(ui.yuvFormatComboBox,
-          QOverload<int>::of(&QComboBox::currentIndexChanged),
-          this,
-          &videoHandlerYUV::slotYUVFormatControlChanged);
-  connect(ui.colorComponentsComboBox,
-          QOverload<int>::of(&QComboBox::currentIndexChanged),
-          this,
-          &videoHandlerYUV::slotYUVControlChanged);
-  connect(ui.chromaInterpolationComboBox,
-          QOverload<int>::of(&QComboBox::currentIndexChanged),
-          this,
-          &videoHandlerYUV::slotYUVControlChanged);
-  connect(ui.colorConversionComboBox,
-          QOverload<int>::of(&QComboBox::currentIndexChanged),
-          this,
-          &videoHandlerYUV::slotYUVControlChanged);
-  connect(ui.lumaScaleSpinBox,
-          QOverload<int>::of(&QSpinBox::valueChanged),
-          this,
-          &videoHandlerYUV::slotYUVControlChanged);
-  connect(ui.lumaOffsetSpinBox,
-          QOverload<int>::of(&QSpinBox::valueChanged),
-          this,
-          &videoHandlerYUV::slotYUVControlChanged);
-  connect(ui.lumaInvertCheckBox,
-          &QCheckBox::stateChanged,
-          this,
-          &videoHandlerYUV::slotYUVControlChanged);
-  connect(ui.chromaScaleSpinBox,
-          QOverload<int>::of(&QSpinBox::valueChanged),
-          this,
-          &videoHandlerYUV::slotYUVControlChanged);
-  connect(ui.chromaOffsetSpinBox,
-          QOverload<int>::of(&QSpinBox::valueChanged),
-          this,
-          &videoHandlerYUV::slotYUVControlChanged);
-  connect(ui.chromaInvertCheckBox,
-          &QCheckBox::stateChanged,
-          this,
-          &videoHandlerYUV::slotYUVControlChanged);
-
-  if (!isSizeFixed && newVBoxLayout)
-    newVBoxLayout->addLayout(ui.topVBoxLayout);
-
-  return (isSizeFixed) ? ui.topVBoxLayout : newVBoxLayout;
-}
-
-void videoHandlerYUV::slotYUVFormatControlChanged(int idx)
-{
-  PixelFormatYUV newFormat;
-
-  if (idx == presetList.count())
-  {
-    // The user selected the "custom format..." option
-    videoHandlerYUVCustomFormatDialog dialog(srcPixelFormat);
-    if (dialog.exec() == QDialog::Accepted && dialog.getSelectedYUVFormat().isValid())
-    {
-      // Set the custom format
-      // Check if the user specified a new format
-      newFormat = dialog.getSelectedYUVFormat();
-
-      // Check if the custom format it in the presets list. If not, add it
-      int idx = presetList.indexOf(newFormat);
-      if (idx == -1 && newFormat.isValid())
-      {
-        // Valid pixel format with is not in the list. Add it...
-        presetList.append(newFormat);
-        int                  nrItems = ui.yuvFormatComboBox->count();
-        const QSignalBlocker blocker(ui.yuvFormatComboBox);
-        ui.yuvFormatComboBox->insertItem(nrItems - 1, QString::fromStdString(newFormat.getName()));
-        // Select the added format
-        idx = presetList.indexOf(newFormat);
-        ui.yuvFormatComboBox->setCurrentIndex(idx);
-      }
-      else
-      {
-        // The format is already in the list. Select it without invoking another signal.
-        const QSignalBlocker blocker(ui.yuvFormatComboBox);
-        ui.yuvFormatComboBox->setCurrentIndex(idx);
-      }
-    }
-    else
-    {
-      // The user pressed cancel. Go back to the old format
-      int idx = presetList.indexOf(srcPixelFormat);
-      Q_ASSERT(idx != -1); // The previously selected format should always be in the list
-      const QSignalBlocker blocker(ui.yuvFormatComboBox);
-      ui.yuvFormatComboBox->setCurrentIndex(idx);
-    }
-  }
-  else
-    // One of the preset formats was selected
-    newFormat = presetList.at(idx);
-
-  // Set the new format (if new) and emit a signal that a new format was selected.
-  if (srcPixelFormat != newFormat && newFormat.isValid())
-    setSrcPixelFormat(newFormat);
-}
-
-void videoHandlerYUV::setSrcPixelFormat(PixelFormatYUV format, bool emitSignal)
-{
-  // Store the number bytes per frame of the old pixel format
-  int64_t oldFormatBytesPerFrame = srcPixelFormat.bytesPerFrame(frameSize);
-
-  // Set the new pixel format. Lock the mutex, so that no background process is running wile the
-  // format changes.
-  srcPixelFormat = format;
-
-  // Update the math parameter offset (the default offset depends on the bit depth and the range)
-  int        shift     = format.getBitsPerSample() - 8;
-  const bool fullRange = (yuvColorConversionType == ColorConversion::BT709_FullRange ||
-                          yuvColorConversionType == ColorConversion::BT601_FullRange ||
-                          yuvColorConversionType == ColorConversion::BT2020_FullRange);
-  mathParameters[Component::Luma].offset   = (fullRange ? 128 : 125) << shift;
-  mathParameters[Component::Chroma].offset = 128 << shift;
-
-  if (ui.created())
-  {
-    // Every time the pixel format changed, see if the interpolation combo box is enabled/disabled
-    QSignalBlocker blocker1(ui.chromaInterpolationComboBox);
-    QSignalBlocker blocker2(ui.lumaOffsetSpinBox);
-    QSignalBlocker blocker3(ui.chromaOffsetSpinBox);
-    ui.chromaInterpolationComboBox->setEnabled(format.isChromaSubsampled());
-    ui.lumaOffsetSpinBox->setValue(mathParameters[Component::Luma].offset);
-    ui.chromaOffsetSpinBox->setValue(mathParameters[Component::Chroma].offset);
-  }
-
-  if (emitSignal)
-  {
-    // Set the current buffers to be invalid and emit the signal that this item needs to be redrawn.
-    currentImageIndex       = -1;
-    currentImage_frameIndex = -1;
-
-    // Set the cache to invalid until it is cleared an recached
-    this->setCacheInvalid();
-
-    if (srcPixelFormat.bytesPerFrame(frameSize) != oldFormatBytesPerFrame)
-      // The number of bytes per frame changed. The raw YUV data buffer is also out of date
-      currentFrameRawData_frameIndex = -1;
-
-    emit signalHandlerChanged(true, RECACHE_CLEAR);
-  }
-}
-
-void videoHandlerYUV::slotYUVControlChanged()
-{
-  // The control that caused the slot to be called
-  QObject *sender = QObject::sender();
-
-  if (sender == ui.colorComponentsComboBox || sender == ui.chromaInterpolationComboBox ||
-      sender == ui.colorConversionComboBox || sender == ui.lumaScaleSpinBox ||
-      sender == ui.lumaOffsetSpinBox || sender == ui.lumaInvertCheckBox ||
-      sender == ui.chromaScaleSpinBox || sender == ui.chromaOffsetSpinBox ||
-      sender == ui.chromaInvertCheckBox)
-  {
-    componentDisplayMode = (ComponentDisplayMode)ui.colorComponentsComboBox->currentIndex();
-    if (auto interpolation =
-            ChromaInterpolationMapper.at(unsigned(ui.chromaInterpolationComboBox->currentIndex())))
-      chromaInterpolation = *interpolation;
-    yuvColorConversionType = (ColorConversion)ui.colorConversionComboBox->currentIndex();
-    mathParameters[Component::Luma].scale    = ui.lumaScaleSpinBox->value();
-    mathParameters[Component::Luma].offset   = ui.lumaOffsetSpinBox->value();
-    mathParameters[Component::Luma].invert   = ui.lumaInvertCheckBox->isChecked();
-    mathParameters[Component::Chroma].scale  = ui.chromaScaleSpinBox->value();
-    mathParameters[Component::Chroma].offset = ui.chromaOffsetSpinBox->value();
-    mathParameters[Component::Chroma].invert = ui.chromaInvertCheckBox->isChecked();
-
-    // Set the current frame in the buffer to be invalid and clear the cache.
-    // Emit that this item needs redraw and the cache needs updating.
-    currentImageIndex       = -1;
-    currentImage_frameIndex = -1;
-    setCacheInvalid();
-    emit signalHandlerChanged(true, RECACHE_CLEAR);
-  }
-  else if (sender == ui.yuvFormatComboBox)
-  {
-    int64_t oldFormatBytesPerFrame = srcPixelFormat.bytesPerFrame(frameSize);
-
-    // Set the new YUV format
-    // setSrcPixelFormat(yuvFormatList.getFromName(ui.yuvFormatComboBox->currentText()));
-
-    // Set the current frame in the buffer to be invalid and clear the cache.
-    // Emit that this item needs redraw and the cache needs updating.
-    currentImageIndex       = -1;
-    currentImage_frameIndex = -1;
-    if (srcPixelFormat.bytesPerFrame(frameSize) != oldFormatBytesPerFrame)
-      // The number of bytes per frame changed. The raw YUV data buffer also has to be updated.
-      currentFrameRawData_frameIndex = -1;
-    setCacheInvalid();
-    emit signalHandlerChanged(true, RECACHE_CLEAR);
-  }
-}
-
-/* Get the pixels values so we can show them in the info part of the zoom box.
- * If a second frame handler is provided, the difference values from that item will be returned.
- */
-QStringPairList videoHandlerYUV::getPixelValues(const QPoint &pixelPos,
-                                                int           frameIdx,
-                                                FrameHandler *item2,
-                                                const int     frameIdx1)
-{
-  QStringPairList values;
-
-  const int formatBase = settings.value("ShowPixelValuesHex").toBool() ? 16 : 10;
-  if (item2 != nullptr)
-  {
-    videoHandlerYUV *yuvItem2 = dynamic_cast<videoHandlerYUV *>(item2);
-    if (yuvItem2 == nullptr)
-      // The given item is not a YUV source. We cannot compare YUV values to non YUV values.
-      // Call the base class comparison function to compare the items using the RGB values.
-      return FrameHandler::getPixelValues(pixelPos, frameIdx, item2, frameIdx1);
-
-    // Do not get the pixel values if the buffer for the raw YUV values is out of date.
-    if (currentFrameRawData_frameIndex != frameIdx ||
-        yuvItem2->currentFrameRawData_frameIndex != frameIdx1)
-      return QStringPairList();
-
-    int width  = std::min(frameSize.width, yuvItem2->frameSize.width);
-    int height = std::min(frameSize.height, yuvItem2->frameSize.height);
-
-    if (pixelPos.x() < 0 || pixelPos.x() >= width || pixelPos.y() < 0 || pixelPos.y() >= height)
-      return QStringPairList();
-
-    yuv_t thisValue  = getPixelValue(pixelPos);
-    yuv_t otherValue = yuvItem2->getPixelValue(pixelPos);
-
-    // For difference items, we support difference bit depths for the two items.
-    // If the bit depth is different, we scale to value with the lower bit depth to the higher bit
-    // depth and calculate the difference there. These values are only needed for difference values
-    const unsigned bps_in[2] = {srcPixelFormat.getBitsPerSample(),
-                                yuvItem2->srcPixelFormat.getBitsPerSample()};
-    const auto     bps_out   = std::max(bps_in[0], bps_in[1]);
-    // Which of the two input values has to be scaled up? Only one of these (or neither) can be set.
-    const bool bitDepthScaling[2] = {bps_in[0] != bps_out, bps_in[1] != bps_out};
-    // Scale the input up by this many bits
-    const auto depthScale = bps_out - (bitDepthScaling[0] ? bps_in[0] : bps_in[1]);
-
-    if (bitDepthScaling[0])
-    {
-      thisValue.Y = thisValue.Y << depthScale;
-      thisValue.U = thisValue.U << depthScale;
-      thisValue.V = thisValue.V << depthScale;
-    }
-    else if (bitDepthScaling[1])
-    {
-      otherValue.Y = otherValue.Y << depthScale;
-      otherValue.U = otherValue.U << depthScale;
-      otherValue.V = otherValue.V << depthScale;
-    }
-
-    const int     Y       = int(thisValue.Y) - int(otherValue.Y);
-    const QString YString = ((Y < 0) ? "-" : "") + QString::number(std::abs(Y), formatBase);
-    values.append(QStringPair("Y", YString));
-
-    if (srcPixelFormat.getSubsampling() != Subsampling::YUV_400)
-    {
-      const int     U       = int(thisValue.U) - int(otherValue.U);
-      const int     V       = int(thisValue.V) - int(otherValue.V);
-      const QString UString = ((U < 0) ? "-" : "") + QString::number(std::abs(U), formatBase);
-      const QString VString = ((V < 0) ? "-" : "") + QString::number(std::abs(V), formatBase);
-      values.append(QStringPair("U", UString));
-      values.append(QStringPair("V", VString));
-    }
-  }
-  else
-  {
-    int width  = frameSize.width;
-    int height = frameSize.height;
-
-    // Do not get the pixel values if the buffer for the raw YUV values is out of date.
-    if (currentFrameRawData_frameIndex != frameIdx)
-      return QStringPairList();
-
-    if (pixelPos.x() < 0 || pixelPos.x() >= width || pixelPos.y() < 0 || pixelPos.y() >= height)
-      return QStringPairList();
-
-    const yuv_t value = getPixelValue(pixelPos);
-
-    if (showPixelValuesAsDiff)
-    {
-      // If 'showPixelValuesAsDiff' is set, this is the zero value
-      const int differenceZeroValue = 1 << (srcPixelFormat.getBitsPerSample() - 1);
-
-      const int     Y       = int(value.Y) - differenceZeroValue;
-      const QString YString = ((Y < 0) ? "-" : "") + QString::number(std::abs(Y), formatBase);
-      values.append(QStringPair("Y", YString));
-
-      if (srcPixelFormat.getSubsampling() != Subsampling::YUV_400)
-      {
-        const int     U       = int(value.U) - differenceZeroValue;
-        const int     V       = int(value.V) - differenceZeroValue;
-        const QString UString = ((U < 0) ? "-" : "") + QString::number(std::abs(U), formatBase);
-        const QString VString = ((V < 0) ? "-" : "") + QString::number(std::abs(V), formatBase);
-        values.append(QStringPair("U", UString));
-        values.append(QStringPair("V", VString));
-      }
-    }
-    else
-    {
-      values.append(QStringPair("Y", QString::number(value.Y, formatBase)));
-      if (srcPixelFormat.getSubsampling() != Subsampling::YUV_400)
-      {
-        values.append(QStringPair("U", QString::number(value.U, formatBase)));
-        values.append(QStringPair("V", QString::number(value.V, formatBase)));
-      }
-    }
-  }
-
-  return values;
-}
-
-/* Draw the YUV values of the pixels over the actual pixels when zoomed in. The values are drawn at
- * the position where they are assumed. So also chroma shifts and subsampling modes are drawn
- * correctly.
- */
-void videoHandlerYUV::drawPixelValues(QPainter *    painter,
-                                      const int     frameIdx,
-                                      const QRect & videoRect,
-                                      const double  zoomFactor,
-                                      FrameHandler *item2,
-                                      const bool    markDifference,
-                                      const int     frameIdxItem1)
-{
-  // Get the other YUV item (if any)
-  auto yuvItem2 = (item2 == nullptr) ? nullptr : dynamic_cast<videoHandlerYUV *>(item2);
-  if (item2 != nullptr && yuvItem2 == nullptr)
-  {
-    // The other item is not a yuv item
-    FrameHandler::drawPixelValues(
-        painter, frameIdx, videoRect, zoomFactor, item2, markDifference, frameIdxItem1);
-    return;
-  }
-
-  auto       size          = frameSize;
-  const bool useDiffValues = (yuvItem2 != nullptr);
-  if (useDiffValues)
-    // If the two items are not of equal size, use the minimum possible size.
-    size = Size(std::min(frameSize.width, yuvItem2->frameSize.width),
-                std::min(frameSize.height, yuvItem2->frameSize.height));
-
-  // Check if the raw YUV values are up to date. If not, do not draw them. Do not trigger loading of
-  // data here. The needsLoadingRawValues function will return that loading is needed. The caching
-  // in the background should then trigger loading of them.
-  if (currentFrameRawData_frameIndex != frameIdx)
-    return;
-  if (yuvItem2 && yuvItem2->currentFrameRawData_frameIndex != frameIdxItem1)
-    return;
-
-  // For difference items, we support difference bit depths for the two items.
-  // If the bit depth is different, we scale to value with the lower bit depth to the higher bit
-  // depth and calculate the difference there. These values are only needed for difference values
-  const unsigned bps_in[2] = {srcPixelFormat.getBitsPerSample(),
-                              (useDiffValues) ? yuvItem2->srcPixelFormat.getBitsPerSample() : 0};
-  const auto     bps_out   = std::max(bps_in[0], bps_in[1]);
-  // Which of the two input values has to be scaled up? Only one of these (or neither) can be set.
-  const bool bitDepthScaling[2] = {bps_in[0] != bps_out, bps_in[1] != bps_out};
-  // Scale the input up by this many bits
-  const auto depthScale = bps_out - (bitDepthScaling[0] ? bps_in[0] : bps_in[1]);
-  // What are the maximum and middle value for the output bit depth
-  // const int diffZero = 128 << (bps_out-8);
-
-  // First determine which pixels from this item are actually visible, because we only have to draw
-  // the pixel values of the pixels that are actually visible
-  auto viewport       = painter->viewport();
-  auto worldTransform = painter->worldTransform();
-
-  int xMin_tmp = (videoRect.width() / 2 - worldTransform.dx()) / zoomFactor;
-  int yMin_tmp = (videoRect.height() / 2 - worldTransform.dy()) / zoomFactor;
-  int xMax_tmp = (videoRect.width() / 2 - (worldTransform.dx() - viewport.width())) / zoomFactor;
-  int yMax_tmp = (videoRect.height() / 2 - (worldTransform.dy() - viewport.height())) / zoomFactor;
-
-  // Clip the min/max visible pixel values to the size of the item (no pixels outside of the
-  // item have to be labeled)
-  const int xMin = clip(xMin_tmp, 0, int(size.width) - 1);
-  const int yMin = clip(yMin_tmp, 0, int(size.height) - 1);
-  const int xMax = clip(xMax_tmp, 0, int(size.width) - 1);
-  const int yMax = clip(yMax_tmp, 0, int(size.height) - 1);
-
-  // The center point of the pixel (0,0).
-  const auto centerPointZero = (QPoint(-(int(size.width)), -(int(size.height))) * zoomFactor +
-                                QPoint(zoomFactor, zoomFactor)) /
-                               2;
-  // This QRect has the size of one pixel and is moved on top of each pixel to draw the text
-  QRect pixelRect;
-  pixelRect.setSize(QSize(zoomFactor, zoomFactor));
-
-  // We might change the pen doing this so backup the current pen and reset it later
-  auto backupPen = painter->pen();
-
-  // If the Y is below this value, use white text, otherwise black text
-  // If there is a second item, a difference will be drawn. A difference of 0 is displayed as gray.
-  const int whiteLimit = (yuvItem2) ? 0 : 1 << (srcPixelFormat.getBitsPerSample() - 1);
-
-  // Are there chroma components?
-  const bool chromaPresent = (srcPixelFormat.getSubsampling() != Subsampling::YUV_400);
-  // The chroma offset in full luma pixels. This can range from 0 to 3.
-  const int chromaOffsetFullX = srcPixelFormat.getChromaOffset().x / 2;
-  const int chromaOffsetFullY = srcPixelFormat.getChromaOffset().y / 2;
-  // Is the chroma offset by another half luma pixel?
-  const bool chromaOffsetHalfX = (srcPixelFormat.getChromaOffset().x % 2 != 0);
-  const bool chromaOffsetHalfY = (srcPixelFormat.getChromaOffset().y % 2 != 0);
-  // By what factor is X and Y subsampled?
-  const int subsamplingX = srcPixelFormat.getSubsamplingHor();
-  const int subsamplingY = srcPixelFormat.getSubsamplingVer();
-
-  // If 'showPixelValuesAsDiff' is set, this is the zero value
-  const int differenceZeroValue = 1 << (srcPixelFormat.getBitsPerSample() - 1);
-
-  for (int x = xMin; x <= xMax; x++)
-  {
-    for (int y = yMin; y <= yMax; y++)
-    {
-      // Calculate the center point of the pixel. (Each pixel is of size (zoomFactor,zoomFactor))
-      // and move the pixelRect to that point.
-      auto pixCenter = centerPointZero + QPoint(x * zoomFactor, y * zoomFactor);
-      pixelRect.moveCenter(pixCenter);
-
-      // Get the YUV values to show
-      int  Y, U, V;
-      bool drawWhite;
-      if (useDiffValues)
-      {
-        auto thisValue  = getPixelValue(QPoint(x, y));
-        auto otherValue = yuvItem2->getPixelValue(QPoint(x, y));
-
-        // Do we have to scale one of the values (bit depth different)
-        if (bitDepthScaling[0])
-        {
-          thisValue.Y = thisValue.Y << depthScale;
-          thisValue.U = thisValue.U << depthScale;
-          thisValue.V = thisValue.V << depthScale;
-        }
-        else if (bitDepthScaling[1])
-        {
-          otherValue.Y = otherValue.Y << depthScale;
-          otherValue.U = otherValue.U << depthScale;
-          otherValue.V = otherValue.V << depthScale;
-        }
-
-        Y = int(thisValue.Y) - int(otherValue.Y);
-        U = int(thisValue.U) - int(otherValue.U);
-        V = int(thisValue.V) - int(otherValue.V);
-
-        if (markDifference)
-          drawWhite = (Y == 0);
-        else
-          drawWhite =
-              (mathParameters[Component::Luma].invert) ? (Y > whiteLimit) : (Y < whiteLimit);
-      }
-      else if (showPixelValuesAsDiff)
-      {
-        yuv_t value = getPixelValue(QPoint(x, y));
-        Y           = value.Y - differenceZeroValue;
-        U           = value.U - differenceZeroValue;
-        V           = value.V - differenceZeroValue;
-
-        drawWhite = (mathParameters[Component::Luma].invert) ? (Y > 0) : (Y < 0);
-      }
-      else
-      {
-        yuv_t value = getPixelValue(QPoint(x, y));
-        Y           = int(value.Y);
-        U           = int(value.U);
-        V           = int(value.V);
-        drawWhite = (mathParameters[Component::Luma].invert) ? (Y > whiteLimit) : (Y < whiteLimit);
-      }
-
-      const int     formatBase = settings.value("ShowPixelValuesHex").toBool() ? 16 : 10;
-      const QString YString    = ((Y < 0) ? "-" : "") + QString::number(std::abs(Y), formatBase);
-      const QString UString    = ((U < 0) ? "-" : "") + QString::number(std::abs(U), formatBase);
-      const QString VString    = ((V < 0) ? "-" : "") + QString::number(std::abs(V), formatBase);
-
-      painter->setPen(drawWhite ? Qt::white : Qt::black);
-
-      if (chromaPresent && (x - chromaOffsetFullX) % subsamplingX == 0 &&
-          (y - chromaOffsetFullY) % subsamplingY == 0)
-      {
-        QString valText;
-        if (chromaOffsetHalfX || chromaOffsetHalfY)
-          // We will only draw the Y value at the center of this pixel
-          valText = QString("Y%1").arg(YString);
-        else
-          // We also draw the U and V value at this position
-          valText = QString("Y%1\nU%2\nV%3").arg(YString, UString, VString);
-        painter->drawText(pixelRect, Qt::AlignCenter, valText);
-
-        if (chromaOffsetHalfX || chromaOffsetHalfY)
-        {
-          // Draw the U and V values shifted half a pixel right and/or down
-          valText = QString("U%1\nV%2").arg(UString, VString);
-
-          // Move the QRect by half a pixel
-          if (chromaOffsetHalfX)
-            pixelRect.translate(zoomFactor / 2, 0);
-          if (chromaOffsetHalfY)
-            pixelRect.translate(0, zoomFactor / 2);
-
-          painter->drawText(pixelRect, Qt::AlignCenter, valText);
-        }
-      }
-      else
-      {
-        // We only draw the luma value for this pixel
-        QString valText = QString("Y%1").arg(YString);
-        painter->drawText(pixelRect, Qt::AlignCenter, valText);
-      }
-    }
-  }
-
-  // Reset pen
-  painter->setPen(backupPen);
-}
-
-void videoHandlerYUV::setFormatFromSizeAndName(Size             frameSize,
-                                               int              bitDepth,
-                                               DataLayout       dataLayout,
-                                               int64_t          fileSize,
-                                               const QFileInfo &fileInfo)
-{
-  auto fmt = guessFormatFromSizeAndName(frameSize, bitDepth, dataLayout, fileSize, fileInfo);
-
-  if (!fmt.isValid())
-  {
-    // Guessing failed. Set YUV 4:2:0 8 bit so that we can show something.
-    // This will probably be wrong but we are out of options
-    fmt = PixelFormatYUV(Subsampling::YUV_420, 8, PlaneOrder::YUV);
-  }
-
-  setSrcPixelFormat(fmt, false);
-}
-
-/** Try to guess the format of the raw YUV data. A list of candidates is tried (candidateModes) and
- * it is checked if the file size matches and if the correlation of the first two frames is below a
- * threshold. radData must contain at least two frames of the video sequence. Only formats that two
- * frames of could fit into rawData are tested. E.g. the biggest format that is tested here is 1080p
- * YUV 4:2:2 8 bit which is 4147200 bytes per frame. So make sure rawData contains 8294400 bytes so
- * that all formats are tested. If a file size is given, we test if the candidates frame size is a
- * multiple of the fileSize. If fileSize is -1, this test is skipped.
- */
-void videoHandlerYUV::setFormatFromCorrelation(const QByteArray &rawYUVData, int64_t fileSize)
-{
-  if (rawYUVData.size() < 1)
-    return;
-
-  class testFormatAndSize
-  {
-  public:
-    testFormatAndSize(const Size &size, PixelFormatYUV format) : size(size), format(format)
-    {
-      interesting = false;
-      mse         = 0;
-    }
-    Size           size;
-    PixelFormatYUV format;
-    bool           interesting;
-    double         mse;
-  };
-
-  // The candidates for the size
-  const auto testSizes = std::vector<Size>({Size(176, 144),
-                                            Size(352, 240),
-                                            Size(352, 288),
-                                            Size(480, 480),
-                                            Size(480, 576),
-                                            Size(704, 480),
-                                            Size(720, 480),
-                                            Size(704, 576),
-                                            Size(720, 576),
-                                            Size(1024, 768),
-                                            Size(1280, 720),
-                                            Size(1280, 960),
-                                            Size(1920, 1072),
-                                            Size(1920, 1080)});
-
-  // Test bit depths 8, 10 and 16
-  std::vector<testFormatAndSize> formatList;
-  for (int b = 0; b < 3; b++)
-  {
-    int bits = (b == 0) ? 8 : (b == 1) ? 10 : 16;
-    // Test all subsampling modes
-    for (const auto &subsampling : SubsamplingMapper.getEnums())
-      for (const auto &size : testSizes)
-        formatList.push_back(
-            testFormatAndSize(size, PixelFormatYUV(subsampling, bits, PlaneOrder::YUV)));
-  }
-
-  if (fileSize > 0)
-  {
-    // if any candidate exceeds file size for two frames, discard
-    // if any candidate does not represent a multiple of file size, discard
-    bool fileSizeMatchFound = false;
-
-    for (testFormatAndSize &testFormat : formatList)
-    {
-      auto picSize = testFormat.format.bytesPerFrame(testFormat.size);
-
-      const bool atLeastTwoPictureInInput = fileSize >= (picSize * 2);
-      if (atLeastTwoPictureInInput)
-      {
-        if ((fileSize % picSize) == 0) // important: file size must be multiple of the picture size
-        {
-          testFormat.interesting = true;
-          fileSizeMatchFound     = true;
-        }
-      }
-    }
-
-    if (!fileSizeMatchFound)
-      return;
-  }
-
-  // calculate max. correlation for first two frames, use max. candidate frame size
-  for (testFormatAndSize &testFormat : formatList)
-  {
-    if (testFormat.interesting)
-    {
-      auto picSize     = testFormat.format.bytesPerFrame(testFormat.size);
-      int  lumaSamples = testFormat.size.width * testFormat.size.height;
-
-      // Calculate the MSE for 2 frames
-      if (testFormat.format.getBitsPerSample() == 8)
-      {
-        auto ptr       = (unsigned char *)rawYUVData.data();
-        testFormat.mse = computeMSE(ptr, ptr + picSize, lumaSamples);
-      }
-      else if (testFormat.format.getBitsPerSample() > 8 &&
-               testFormat.format.getBitsPerSample() <= 16)
-      {
-        auto ptr       = (unsigned short *)rawYUVData.data();
-        testFormat.mse = computeMSE(ptr, ptr + picSize / 2, lumaSamples);
-      }
-      else
-        continue;
-    }
-  }
-
-  // step3: select best candidate
-  double         leastMSE = std::numeric_limits<double>::max();
-  PixelFormatYUV bestFormat;
-  Size           bestSize;
-  for (const testFormatAndSize &testFormat : formatList)
-  {
-    if (testFormat.interesting && testFormat.mse < leastMSE)
-    {
-      bestFormat = testFormat.format;
-      bestSize   = testFormat.size;
-      leastMSE   = testFormat.mse;
-    }
-  }
-
-  const double mseThreshold = 400;
-  if (leastMSE < mseThreshold)
-  {
-    setSrcPixelFormat(bestFormat, false);
-    setFrameSize(bestSize);
-  }
-}
-
-bool videoHandlerYUV::setFormatFromString(QString format)
-{
-  DEBUG_YUV("videoHandlerYUV::setFormatFromString " << format << "\n");
-
-  auto split = format.split(";");
-  if (split.length() != 4 || split[2] != "YUV")
-    return false;
-
-  if (!FrameHandler::setFormatFromString(split[0] + ";" + split[1]))
-    return false;
-
-  auto fmt = PixelFormatYUV(split[3].toStdString());
-  if (!fmt.isValid())
-    return false;
-
-  setSrcPixelFormat(fmt, false);
-  return true;
-}
-
-void videoHandlerYUV::loadFrame(int frameIndex, bool loadToDoubleBuffer)
-{
-  DEBUG_YUV("videoHandlerYUV::loadFrame " << frameIndex);
-
-  if (!isFormatValid())
-    // We cannot load a frame if the format is not known
-    return;
-
-  // Does the data in currentFrameRawData need to be updated?
-  if (!loadRawYUVData(frameIndex))
-    // Loading failed or it is still being performed in the background
-    return;
-
-  // The data in currentFrameRawData is now up to date. If necessary
-  // convert the data to RGB.
-  if (loadToDoubleBuffer)
-  {
-    QImage newImage;
-    convertYUVToImage(currentFrameRawData, newImage, srcPixelFormat, frameSize);
-    doubleBufferImage           = newImage;
-    doubleBufferImageFrameIndex = frameIndex;
-  }
-  else if (currentImageIndex != frameIndex)
-  {
-    QImage newImage;
-    convertYUVToImage(currentFrameRawData, newImage, srcPixelFormat, frameSize);
-    QMutexLocker setLock(&currentImageSetMutex);
-    currentImage      = newImage;
-    currentImageIndex = frameIndex;
-  }
-}
-
-void videoHandlerYUV::loadFrameForCaching(int frameIndex, QImage &frameToCache)
-{
-  DEBUG_YUV("videoHandlerYUV::loadFrameForCaching " << frameIndex);
-
-  // Get the YUV format and the size here, so that the caching process does not crash if this
-  // changes.
-  const auto yuvFormat    = srcPixelFormat;
-  const auto curFrameSize = frameSize;
-
-  requestDataMutex.lock();
-  emit       signalRequestRawData(frameIndex, true);
-  QByteArray tmpBufferRawYUVDataCaching = rawData;
-  requestDataMutex.unlock();
-
-  if (frameIndex != rawData_frameIndex)
-  {
-    // Loading failed
-    DEBUG_YUV("videoHandlerYUV::loadFrameForCaching Loading failed");
-    return;
-  }
-
-  // Convert YUV to image. This can then be cached.
-  convertYUVToImage(tmpBufferRawYUVDataCaching, frameToCache, yuvFormat, curFrameSize);
-}
-
-// Load the raw YUV data for the given frame index into currentFrameRawData.
-bool videoHandlerYUV::loadRawYUVData(int frameIndex)
-{
-  if (currentFrameRawData_frameIndex == frameIndex && cacheValid)
-    // Buffer already up to date
-    return true;
-
-  DEBUG_YUV("videoHandlerYUV::loadRawYUVData " << frameIndex);
-
-  // The function loadFrameForCaching also uses the signalRequesRawYUVData to request raw data.
-  // However, only one thread can use this at a time.
-  requestDataMutex.lock();
-  emit signalRequestRawData(frameIndex, false);
-
-  if (frameIndex != rawData_frameIndex || rawData.isEmpty())
-  {
-    // Loading failed
-    DEBUG_YUV("videoHandlerYUV::loadRawYUVData Loading failed");
-    requestDataMutex.unlock();
-    return false;
-  }
-
-  currentFrameRawData            = rawData;
-  currentFrameRawData_frameIndex = frameIndex;
-  requestDataMutex.unlock();
-
-  DEBUG_YUV("videoHandlerYUV::loadRawYUVData " << frameIndex << " Done");
   return true;
 }
 
@@ -3014,30 +1971,29 @@ inline void YUVPlaneToRGB_411(const int                     w,
   }
 }
 
-bool videoHandlerYUV::convertYUVPlanarToRGB(const QByteArray &    sourceBuffer,
-                                            uchar *               targetBuffer,
-                                            const Size            curFrameSize,
-                                            const PixelFormatYUV &sourceBufferFormat) const
+bool convertYUVPlanarToRGB(const QByteArray &        sourceBuffer,
+                           uchar *                   targetBuffer,
+                           const Size                curFrameSize,
+                           const PixelFormatYUV &    sourceBufferFormat,
+                           const ConversionSettings &conversionSettings)
 {
   // These are constant for the runtime of this function. This way, the compiler can optimize the
   // hell out of this function.
   const auto format        = sourceBufferFormat;
-  const auto interpolation = chromaInterpolation;
-  const auto component     = componentDisplayMode;
-  const auto conversion    = yuvColorConversionType;
+  const auto interpolation = conversionSettings.chromaInterpolation;
+  const auto component     = conversionSettings.componentDisplayMode;
+  const auto conversion    = conversionSettings.colorConversion;
   const auto w             = curFrameSize.width;
   const auto h             = curFrameSize.height;
 
   // Do we have to apply YUV math?
-  const auto mathY = mathParameters[Component::Luma];
-  const auto mathC = mathParameters[Component::Chroma];
+  const auto mathY = conversionSettings.mathParameters.at(Component::Luma);
+  const auto mathC = conversionSettings.mathParameters.at(Component::Chroma);
   // const auto applyMathLuma   = mathY.mathRequired();
   // const auto applyMathChroma = mathC.mathRequired();
 
   const auto bps       = format.getBitsPerSample();
-  const bool fullRange = (conversion == ColorConversion::BT709_FullRange ||
-                          conversion == ColorConversion::BT601_FullRange ||
-                          conversion == ColorConversion::BT2020_FullRange);
+  const bool fullRange = isFullRange(conversionSettings.colorConversion);
   // const auto yOffset = 16<<(bps-8);
   // const auto cZero = 128<<(bps-8);
   const auto inputMax = (1 << bps) - 1;
@@ -3064,10 +2020,12 @@ bool videoHandlerYUV::convertYUVPlanarToRGB(const QByteArray &    sourceBuffer,
   // A pointer to the output
   unsigned char *restrict dst = targetBuffer;
 
-  if (component != DisplayAll || format.getSubsampling() == Subsampling::YUV_400)
+  if (component != ComponentDisplayMode::DisplayAll ||
+      format.getSubsampling() == Subsampling::YUV_400)
   {
     // We only display (or there is only) one of the color components (possibly with YUV math)
-    if (component == DisplayY || format.getSubsampling() == Subsampling::YUV_400)
+    if (component == ComponentDisplayMode::DisplayY ||
+        format.getSubsampling() == Subsampling::YUV_400)
     {
       // Luma only. The chroma subsampling does not matter.
       const unsigned char *restrict srcY = (unsigned char *)sourceBuffer.data();
@@ -3079,10 +2037,10 @@ bool videoHandlerYUV::convertYUVPlanarToRGB(const QByteArray &    sourceBuffer,
       // Display only the U or V component
       bool firstComponent = (((format.getPlaneOrder() == PlaneOrder::YUV ||
                                format.getPlaneOrder() == PlaneOrder::YUVA) &&
-                              component == DisplayCb) ||
+                              component == ComponentDisplayMode::DisplayCb) ||
                              ((format.getPlaneOrder() == PlaneOrder::YVU ||
                                format.getPlaneOrder() == PlaneOrder::YVUA) &&
-                              component == DisplayCr));
+                              component == ComponentDisplayMode::DisplayCr));
 
       int srcOffset = nrBytesLumaPlane;
       if (!firstComponent)
@@ -3151,13 +2109,13 @@ bool videoHandlerYUV::convertYUVPlanarToRGB(const QByteArray &    sourceBuffer,
 
     // Get/set the parameters used for YUV -> RGB conversion
     int RGBConv[5];
-    getColorConversionCoefficients(yuvColorConversionType, RGBConv);
+    getColorConversionCoefficients(conversion, RGBConv);
 
     // We are displaying all components, so we have to perform conversion to RGB (possibly including
     // interpolation and YUV math)
     if (format.getSubsampling() != Subsampling::YUV_400 &&
         (format.getChromaOffset().x != 0 || format.getChromaOffset().y != 0) &&
-        chromaInterpolation != ChromaInterpolation::NearestNeighbor)
+        interpolation != ChromaInterpolation::NearestNeighbor)
     {
       // If there is a chroma offset, we must resample the chroma components before we convert them
       // to RGB. If so, the resampled chroma values are saved in these arrays. We only ignore the
@@ -3403,10 +2361,11 @@ bool videoHandlerYUV::convertYUVPlanarToRGB(const QByteArray &    sourceBuffer,
 
 // Convert the given raw YUV data in sourceBuffer (using srcPixelFormat) to image (RGB-888), using
 // the buffer tmpRGBBuffer for intermediate RGB values.
-void videoHandlerYUV::convertYUVToImage(const QByteArray &    sourceBuffer,
-                                        QImage &              outputImage,
-                                        const PixelFormatYUV &yuvFormat,
-                                        const Size &          curFrameSize)
+void convertYUVToImage(const QByteArray &        sourceBuffer,
+                       QImage &                  outputImage,
+                       const PixelFormatYUV &    yuvFormat,
+                       const Size &              curFrameSize,
+                       const ConversionSettings &conversionSettings)
 {
   if (!yuvFormat.canConvertToRGB(curFrameSize) || sourceBuffer.isEmpty())
   {
@@ -3448,21 +2407,25 @@ void videoHandlerYUV::convertYUVToImage(const QByteArray &    sourceBuffer,
   {
     if ((yuvFormat.getBitsPerSample() == 8 || yuvFormat.getBitsPerSample() == 10) &&
         yuvFormat.getSubsampling() == Subsampling::YUV_420 &&
-        chromaInterpolation == ChromaInterpolation::NearestNeighbor &&
+        conversionSettings.chromaInterpolation == ChromaInterpolation::NearestNeighbor &&
         yuvFormat.getChromaOffset().x == 0 && yuvFormat.getChromaOffset().y == 1 &&
-        componentDisplayMode == DisplayAll && !yuvFormat.isUVInterleaved() &&
-        !mathParameters[Component::Luma].mathRequired() &&
-        !mathParameters[Component::Chroma].mathRequired())
+        conversionSettings.componentDisplayMode == ComponentDisplayMode::DisplayAll &&
+        !yuvFormat.isUVInterleaved() &&
+        !conversionSettings.mathParameters.at(Component::Luma).mathRequired() &&
+        !conversionSettings.mathParameters.at(Component::Chroma).mathRequired())
     // 8/10 bit 4:2:0, nearest neighbor, chroma offset (0,1) (the default for 4:2:0), all components
     // displayed and no yuv math. We can use a specialized function for this.
     {
       if (yuvFormat.getBitsPerSample() == 8)
-        convOK = convertYUV420ToRGB<8>(sourceBuffer, outputImage.bits(), curFrameSize, yuvFormat);
+        convOK = convertYUV420ToRGB<8>(
+            sourceBuffer, outputImage.bits(), curFrameSize, yuvFormat, conversionSettings);
       else if (yuvFormat.getBitsPerSample() == 10)
-        convOK = convertYUV420ToRGB<10>(sourceBuffer, outputImage.bits(), curFrameSize, yuvFormat);
+        convOK = convertYUV420ToRGB<10>(
+            sourceBuffer, outputImage.bits(), curFrameSize, yuvFormat, conversionSettings);
     }
     else
-      convOK = convertYUVPlanarToRGB(sourceBuffer, outputImage.bits(), curFrameSize, yuvFormat);
+      convOK = convertYUVPlanarToRGB(
+          sourceBuffer, outputImage.bits(), curFrameSize, yuvFormat, conversionSettings);
   }
   else
   {
@@ -3485,7 +2448,7 @@ void videoHandlerYUV::convertYUVToImage(const QByteArray &    sourceBuffer,
 
     if (convOK)
       convOK &= convertYUVPlanarToRGB(
-          tmpPlanarYUVSource, outputImage.bits(), curFrameSize, newPixelFormat);
+          tmpPlanarYUVSource, outputImage.bits(), curFrameSize, newPixelFormat, conversionSettings);
   }
 
   assert(convOK);
@@ -3501,6 +2464,1070 @@ void videoHandlerYUV::convertYUVToImage(const QByteArray &    sourceBuffer,
   }
 
   DEBUG_YUV("videoHandlerYUV::convertYUVToImage Done");
+}
+
+} // namespace
+
+videoHandlerYUV::videoHandlerYUV() : videoHandler()
+{
+  // Set the default YUV transformation parameters.
+  this->conversionSettings.mathParameters[Component::Luma]   = MathParameters(1, 125, false);
+  this->conversionSettings.mathParameters[Component::Chroma] = MathParameters(1, 128, false);
+
+  // If we know nothing about the YUV format, assume YUV 4:2:0 8 bit planar by default.
+  this->srcPixelFormat = PixelFormatYUV(Subsampling::YUV_420, 8, PlaneOrder::YUV);
+
+  this->presetList.append(PixelFormatYUV(Subsampling::YUV_420, 8, PlaneOrder::YUV)); // YUV 4:2:0
+  this->presetList.append(
+      PixelFormatYUV(Subsampling::YUV_420, 10, PlaneOrder::YUV)); // YUV 4:2:0 10 bit
+  this->presetList.append(PixelFormatYUV(Subsampling::YUV_422, 8, PlaneOrder::YUV)); // YUV 4:2:2
+  this->presetList.append(PixelFormatYUV(Subsampling::YUV_444, 8, PlaneOrder::YUV)); // YUV 4:4:4
+  for (auto e : PredefinedPixelFormatMapper.getEnums())
+    this->presetList.append(e);
+}
+
+videoHandlerYUV::~videoHandlerYUV()
+{
+  DEBUG_YUV("videoHandlerYUV destruction");
+}
+
+unsigned videoHandlerYUV::getCachingFrameSize() const
+{
+  auto hasAlpha = this->srcPixelFormat.hasAlpha();
+  auto bytes    = functionsGui::bytesPerPixel(functionsGui::platformImageFormat(hasAlpha));
+  return this->frameSize.width * this->frameSize.height * bytes;
+}
+
+void videoHandlerYUV::loadValues(Size newFramesize, const QString &)
+{
+  this->setFrameSize(newFramesize);
+}
+
+void videoHandlerYUV::drawFrame(QPainter *painter,
+                                int       frameIdx,
+                                double    zoomFactor,
+                                bool      drawRawData)
+{
+  std::string msg;
+  if (!srcPixelFormat.canConvertToRGB(frameSize, &msg))
+  {
+    // The conversion to RGB can not be performed. Draw a text about this
+    msg = "With the given settings, the YUV data can not be converted to RGB:\n" + msg;
+    // Get the size of the text and create a QRect of that size which is centered at (0,0)
+    QFont displayFont = painter->font();
+    displayFont.setPointSizeF(painter->font().pointSizeF() * zoomFactor);
+    painter->setFont(displayFont);
+    QSize textSize = painter->fontMetrics().size(0, QString::fromStdString(msg));
+    QRect textRect;
+    textRect.setSize(textSize);
+    textRect.moveCenter(QPoint(0, 0));
+
+    // Draw the text
+    painter->drawText(textRect, QString::fromStdString(msg));
+  }
+  else
+    videoHandler::drawFrame(painter, frameIdx, zoomFactor, drawRawData);
+}
+
+/// --- Convert from the current YUV input format to YUV 444
+
+#if SSE_CONVERSION_420_ALT
+void videoHandlerYUV::yuv420_to_argb8888(quint8 *yp,
+                                         quint8 *up,
+                                         quint8 *vp,
+                                         quint32 sy,
+                                         quint32 suv,
+                                         int     width,
+                                         int     height,
+                                         quint8 *rgb,
+                                         quint32 srgb)
+{
+  __m128i  y0r0, y0r1, u0, v0;
+  __m128i  y00r0, y01r0, y00r1, y01r1;
+  __m128i  u00, u01, v00, v01;
+  __m128i  rv00, rv01, gu00, gu01, gv00, gv01, bu00, bu01;
+  __m128i  r00, r01, g00, g01, b00, b01;
+  __m128i  rgb0123, rgb4567, rgb89ab, rgbcdef;
+  __m128i  gbgb;
+  __m128i  ysub, uvsub;
+  __m128i  zero, facy, facrv, facgu, facgv, facbu;
+  __m128i *srcy128r0, *srcy128r1;
+  __m128i *dstrgb128r0, *dstrgb128r1;
+  __m64 *  srcu64, *srcv64;
+
+  //    Implement the following conversion:
+  //    B = 1.164(Y - 16)                   + 2.018(U - 128)
+  //    G = 1.164(Y - 16) - 0.813(V - 128)  - 0.391(U - 128)
+  //    R = 1.164(Y - 16) + 1.596(V - 128)
+
+  int x, y;
+  // constants
+  ysub  = _mm_set1_epi32(0x00100010); // value 16 for subtraction
+  uvsub = _mm_set1_epi32(0x00800080); // value 128
+
+  // multiplication factors bit shifted by 6
+  facy  = _mm_set1_epi32(0x004a004a);
+  facrv = _mm_set1_epi32(0x00660066);
+  facgu = _mm_set1_epi32(0x00190019);
+  facgv = _mm_set1_epi32(0x00340034);
+  facbu = _mm_set1_epi32(0x00810081);
+
+  zero = _mm_set1_epi32(0x00000000);
+
+  for (y = 0; y < height; y += 2)
+  {
+    srcy128r0 = (__m128i *)(yp + sy * y);
+    srcy128r1 = (__m128i *)(yp + sy * y + sy);
+    srcu64    = (__m64 *)(up + suv * (y / 2));
+    srcv64    = (__m64 *)(vp + suv * (y / 2));
+
+    // dst row 0 and row 1
+    dstrgb128r0 = (__m128i *)(rgb + srgb * y);
+    dstrgb128r1 = (__m128i *)(rgb + srgb * y + srgb);
+
+    for (x = 0; x < width; x += 16)
+    {
+      u0 = _mm_loadl_epi64((__m128i *)srcu64);
+      srcu64++;
+      v0 = _mm_loadl_epi64((__m128i *)srcv64);
+      srcv64++;
+
+      y0r0 = _mm_load_si128(srcy128r0++);
+      y0r1 = _mm_load_si128(srcy128r1++);
+
+      // expand to 16 bit, subtract and multiply constant y factors
+      y00r0 = _mm_mullo_epi16(_mm_sub_epi16(_mm_unpacklo_epi8(y0r0, zero), ysub), facy);
+      y01r0 = _mm_mullo_epi16(_mm_sub_epi16(_mm_unpackhi_epi8(y0r0, zero), ysub), facy);
+      y00r1 = _mm_mullo_epi16(_mm_sub_epi16(_mm_unpacklo_epi8(y0r1, zero), ysub), facy);
+      y01r1 = _mm_mullo_epi16(_mm_sub_epi16(_mm_unpackhi_epi8(y0r1, zero), ysub), facy);
+
+      // expand u and v so they're aligned with y values
+      u0  = _mm_unpacklo_epi8(u0, zero);
+      u00 = _mm_sub_epi16(_mm_unpacklo_epi16(u0, u0), uvsub);
+      u01 = _mm_sub_epi16(_mm_unpackhi_epi16(u0, u0), uvsub);
+
+      v0  = _mm_unpacklo_epi8(v0, zero);
+      v00 = _mm_sub_epi16(_mm_unpacklo_epi16(v0, v0), uvsub);
+      v01 = _mm_sub_epi16(_mm_unpackhi_epi16(v0, v0), uvsub);
+
+      // common factors on both rows.
+      rv00 = _mm_mullo_epi16(facrv, v00);
+      rv01 = _mm_mullo_epi16(facrv, v01);
+      gu00 = _mm_mullo_epi16(facgu, u00);
+      gu01 = _mm_mullo_epi16(facgu, u01);
+      gv00 = _mm_mullo_epi16(facgv, v00);
+      gv01 = _mm_mullo_epi16(facgv, v01);
+      bu00 = _mm_mullo_epi16(facbu, u00);
+      bu01 = _mm_mullo_epi16(facbu, u01);
+
+      // add together and bit shift to the right
+      r00 = _mm_srai_epi16(_mm_add_epi16(y00r0, rv00), 6);
+      r01 = _mm_srai_epi16(_mm_add_epi16(y01r0, rv01), 6);
+      g00 = _mm_srai_epi16(_mm_sub_epi16(_mm_sub_epi16(y00r0, gu00), gv00), 6);
+      g01 = _mm_srai_epi16(_mm_sub_epi16(_mm_sub_epi16(y01r0, gu01), gv01), 6);
+      b00 = _mm_srai_epi16(_mm_add_epi16(y00r0, bu00), 6);
+      b01 = _mm_srai_epi16(_mm_add_epi16(y01r0, bu01), 6);
+
+      r00 = _mm_packus_epi16(r00, r01);
+      g00 = _mm_packus_epi16(g00, g01);
+      b00 = _mm_packus_epi16(b00, b01);
+
+      // shuffle back together to lower 0rgb0rgb...
+      r01     = _mm_unpacklo_epi8(r00, zero);  // 0r0r...
+      gbgb    = _mm_unpacklo_epi8(b00, g00);   // gbgb...
+      rgb0123 = _mm_unpacklo_epi16(gbgb, r01); // lower 0rgb0rgb...
+      rgb4567 = _mm_unpackhi_epi16(gbgb, r01); // upper 0rgb0rgb...
+
+      // shuffle back together to upper 0rgb0rgb...
+      r01     = _mm_unpackhi_epi8(r00, zero);
+      gbgb    = _mm_unpackhi_epi8(b00, g00);
+      rgb89ab = _mm_unpacklo_epi16(gbgb, r01);
+      rgbcdef = _mm_unpackhi_epi16(gbgb, r01);
+
+      // write to dst
+      _mm_store_si128(dstrgb128r0++, rgb0123);
+      _mm_store_si128(dstrgb128r0++, rgb4567);
+      _mm_store_si128(dstrgb128r0++, rgb89ab);
+      _mm_store_si128(dstrgb128r0++, rgbcdef);
+
+      // row 1
+      r00 = _mm_srai_epi16(_mm_add_epi16(y00r1, rv00), 6);
+      r01 = _mm_srai_epi16(_mm_add_epi16(y01r1, rv01), 6);
+      g00 = _mm_srai_epi16(_mm_sub_epi16(_mm_sub_epi16(y00r1, gu00), gv00), 6);
+      g01 = _mm_srai_epi16(_mm_sub_epi16(_mm_sub_epi16(y01r1, gu01), gv01), 6);
+      b00 = _mm_srai_epi16(_mm_add_epi16(y00r1, bu00), 6);
+      b01 = _mm_srai_epi16(_mm_add_epi16(y01r1, bu01), 6);
+
+      r00 = _mm_packus_epi16(r00, r01);
+      g00 = _mm_packus_epi16(g00, g01);
+      b00 = _mm_packus_epi16(b00, b01);
+
+      r01     = _mm_unpacklo_epi8(r00, zero);
+      gbgb    = _mm_unpacklo_epi8(b00, g00);
+      rgb0123 = _mm_unpacklo_epi16(gbgb, r01);
+      rgb4567 = _mm_unpackhi_epi16(gbgb, r01);
+
+      r01     = _mm_unpackhi_epi8(r00, zero);
+      gbgb    = _mm_unpackhi_epi8(b00, g00);
+      rgb89ab = _mm_unpacklo_epi16(gbgb, r01);
+      rgbcdef = _mm_unpackhi_epi16(gbgb, r01);
+
+      _mm_store_si128(dstrgb128r1++, rgb0123);
+      _mm_store_si128(dstrgb128r1++, rgb4567);
+      _mm_store_si128(dstrgb128r1++, rgb89ab);
+      _mm_store_si128(dstrgb128r1++, rgbcdef);
+    }
+  }
+}
+#endif
+
+QLayout *videoHandlerYUV::createVideoHandlerControls(bool isSizeFixed)
+{
+  // Absolutely always only call this function once!
+  assert(!ui.created());
+
+  QVBoxLayout *newVBoxLayout = nullptr;
+  if (!isSizeFixed)
+  {
+    // Our parent (videoHandler) also has controls to add. Create a new vBoxLayout and append the
+    // parent controls and our controls into that layout, separated by a line. Return that layout
+    newVBoxLayout = new QVBoxLayout;
+    newVBoxLayout->addLayout(FrameHandler::createFrameHandlerControls(isSizeFixed));
+
+    QFrame *line = new QFrame;
+    line->setObjectName(QStringLiteral("line"));
+    line->setFrameShape(QFrame::HLine);
+    line->setFrameShadow(QFrame::Sunken);
+    newVBoxLayout->addWidget(line);
+  }
+
+  // Create the UI and setup all the controls
+  ui.setupUi();
+
+  // Add the preset YUV formats. If the current format is in the list, add it and select it.
+  for (auto format : presetList)
+    ui.yuvFormatComboBox->addItem(QString::fromStdString(format.getName()));
+
+  int idx = presetList.indexOf(srcPixelFormat);
+  if (idx == -1 && srcPixelFormat.isValid())
+  {
+    // The currently set pixel format is not in the presets list. Add and select it.
+    ui.yuvFormatComboBox->addItem(QString::fromStdString(srcPixelFormat.getName()));
+    presetList.append(srcPixelFormat);
+    idx = presetList.indexOf(srcPixelFormat);
+  }
+  ui.yuvFormatComboBox->setCurrentIndex(idx);
+  // Add the custom... entry that allows the user to add custom formats
+  ui.yuvFormatComboBox->addItem("Custom...");
+  ui.yuvFormatComboBox->setEnabled(!isSizeFixed);
+
+  // Set all the values of the properties widget to the values of this class
+  ui.colorComponentsComboBox->addItems(
+      functions::toQStringList(ComponentDisplayModeMapper.getNames()));
+  ui.colorComponentsComboBox->setCurrentIndex(
+      int(ComponentDisplayModeMapper.indexOf(this->conversionSettings.componentDisplayMode)));
+  ui.chromaInterpolationComboBox->addItems(
+      functions::toQStringList(ChromaInterpolationMapper.getNames()));
+  ui.chromaInterpolationComboBox->setCurrentIndex(
+      int(ChromaInterpolationMapper.indexOf(this->conversionSettings.chromaInterpolation)));
+  ui.chromaInterpolationComboBox->setEnabled(srcPixelFormat.isChromaSubsampled());
+  ui.colorConversionComboBox->addItems(functions::toQStringList(ColorConversionMapper.getNames()));
+  ui.colorConversionComboBox->setCurrentIndex(
+      int(ColorConversionMapper.indexOf(this->conversionSettings.colorConversion)));
+  ui.lumaScaleSpinBox->setValue(this->conversionSettings.mathParameters[Component::Luma].scale);
+  ui.lumaOffsetSpinBox->setMaximum(1000);
+  ui.lumaOffsetSpinBox->setValue(this->conversionSettings.mathParameters[Component::Luma].offset);
+  ui.lumaInvertCheckBox->setChecked(
+      this->conversionSettings.mathParameters[Component::Luma].invert);
+  ui.chromaScaleSpinBox->setValue(this->conversionSettings.mathParameters[Component::Chroma].scale);
+  ui.chromaOffsetSpinBox->setMaximum(1000);
+  ui.chromaOffsetSpinBox->setValue(
+      this->conversionSettings.mathParameters[Component::Chroma].offset);
+  ui.chromaInvertCheckBox->setChecked(
+      this->conversionSettings.mathParameters[Component::Chroma].invert);
+
+  // Connect all the change signals from the controls to "connectWidgetSignals()"
+  connect(ui.yuvFormatComboBox,
+          QOverload<int>::of(&QComboBox::currentIndexChanged),
+          this,
+          &videoHandlerYUV::slotYUVFormatControlChanged);
+  connect(ui.colorComponentsComboBox,
+          QOverload<int>::of(&QComboBox::currentIndexChanged),
+          this,
+          &videoHandlerYUV::slotYUVControlChanged);
+  connect(ui.chromaInterpolationComboBox,
+          QOverload<int>::of(&QComboBox::currentIndexChanged),
+          this,
+          &videoHandlerYUV::slotYUVControlChanged);
+  connect(ui.colorConversionComboBox,
+          QOverload<int>::of(&QComboBox::currentIndexChanged),
+          this,
+          &videoHandlerYUV::slotYUVControlChanged);
+  connect(ui.lumaScaleSpinBox,
+          QOverload<int>::of(&QSpinBox::valueChanged),
+          this,
+          &videoHandlerYUV::slotYUVControlChanged);
+  connect(ui.lumaOffsetSpinBox,
+          QOverload<int>::of(&QSpinBox::valueChanged),
+          this,
+          &videoHandlerYUV::slotYUVControlChanged);
+  connect(ui.lumaInvertCheckBox,
+          &QCheckBox::stateChanged,
+          this,
+          &videoHandlerYUV::slotYUVControlChanged);
+  connect(ui.chromaScaleSpinBox,
+          QOverload<int>::of(&QSpinBox::valueChanged),
+          this,
+          &videoHandlerYUV::slotYUVControlChanged);
+  connect(ui.chromaOffsetSpinBox,
+          QOverload<int>::of(&QSpinBox::valueChanged),
+          this,
+          &videoHandlerYUV::slotYUVControlChanged);
+  connect(ui.chromaInvertCheckBox,
+          &QCheckBox::stateChanged,
+          this,
+          &videoHandlerYUV::slotYUVControlChanged);
+
+  if (!isSizeFixed && newVBoxLayout)
+    newVBoxLayout->addLayout(ui.topVBoxLayout);
+
+  return (isSizeFixed) ? ui.topVBoxLayout : newVBoxLayout;
+}
+
+void videoHandlerYUV::slotYUVFormatControlChanged(int idx)
+{
+  PixelFormatYUV newFormat;
+
+  if (idx == presetList.count())
+  {
+    // The user selected the "custom format..." option
+    videoHandlerYUVCustomFormatDialog dialog(srcPixelFormat);
+    if (dialog.exec() == QDialog::Accepted && dialog.getSelectedYUVFormat().isValid())
+    {
+      // Set the custom format
+      // Check if the user specified a new format
+      newFormat = dialog.getSelectedYUVFormat();
+
+      // Check if the custom format it in the presets list. If not, add it
+      int idx = presetList.indexOf(newFormat);
+      if (idx == -1 && newFormat.isValid())
+      {
+        // Valid pixel format with is not in the list. Add it...
+        presetList.append(newFormat);
+        int                  nrItems = ui.yuvFormatComboBox->count();
+        const QSignalBlocker blocker(ui.yuvFormatComboBox);
+        ui.yuvFormatComboBox->insertItem(nrItems - 1, QString::fromStdString(newFormat.getName()));
+        // Select the added format
+        idx = presetList.indexOf(newFormat);
+        ui.yuvFormatComboBox->setCurrentIndex(idx);
+      }
+      else
+      {
+        // The format is already in the list. Select it without invoking another signal.
+        const QSignalBlocker blocker(ui.yuvFormatComboBox);
+        ui.yuvFormatComboBox->setCurrentIndex(idx);
+      }
+    }
+    else
+    {
+      // The user pressed cancel. Go back to the old format
+      int idx = presetList.indexOf(srcPixelFormat);
+      Q_ASSERT(idx != -1); // The previously selected format should always be in the list
+      const QSignalBlocker blocker(ui.yuvFormatComboBox);
+      ui.yuvFormatComboBox->setCurrentIndex(idx);
+    }
+  }
+  else
+    // One of the preset formats was selected
+    newFormat = presetList.at(idx);
+
+  // Set the new format (if new) and emit a signal that a new format was selected.
+  if (srcPixelFormat != newFormat && newFormat.isValid())
+    setSrcPixelFormat(newFormat);
+}
+
+void videoHandlerYUV::setSrcPixelFormat(PixelFormatYUV format, bool emitSignal)
+{
+  // Store the number bytes per frame of the old pixel format
+  auto oldFormatBytesPerFrame = srcPixelFormat.bytesPerFrame(frameSize);
+
+  // Set the new pixel format. Lock the mutex, so that no background process is running wile the
+  // format changes.
+  srcPixelFormat = format;
+
+  // Update the math parameter offset (the default offset depends on the bit depth and the range)
+  int        shift     = format.getBitsPerSample() - 8;
+  const bool fullRange = isFullRange(this->conversionSettings.colorConversion);
+  this->conversionSettings.mathParameters[Component::Luma].offset = (fullRange ? 128 : 125)
+                                                                    << shift;
+  this->conversionSettings.mathParameters[Component::Chroma].offset = 128 << shift;
+
+  if (ui.created())
+  {
+    // Every time the pixel format changed, see if the interpolation combo box is enabled/disabled
+    QSignalBlocker blocker1(ui.chromaInterpolationComboBox);
+    QSignalBlocker blocker2(ui.lumaOffsetSpinBox);
+    QSignalBlocker blocker3(ui.chromaOffsetSpinBox);
+    ui.chromaInterpolationComboBox->setEnabled(format.isChromaSubsampled());
+    ui.lumaOffsetSpinBox->setValue(this->conversionSettings.mathParameters[Component::Luma].offset);
+    ui.chromaOffsetSpinBox->setValue(
+        this->conversionSettings.mathParameters[Component::Chroma].offset);
+  }
+
+  if (emitSignal)
+  {
+    // Set the current buffers to be invalid and emit the signal that this item needs to be redrawn.
+    this->currentImageIndex       = -1;
+    this->currentImage_frameIndex = -1;
+
+    // Set the cache to invalid until it is cleared an recached
+    this->setCacheInvalid();
+
+    if (srcPixelFormat.bytesPerFrame(frameSize) != oldFormatBytesPerFrame)
+      // The number of bytes per frame changed. The raw YUV data buffer is also out of date
+      this->currentFrameRawData_frameIndex = -1;
+
+    emit signalHandlerChanged(true, RECACHE_CLEAR);
+  }
+}
+
+void videoHandlerYUV::slotYUVControlChanged()
+{
+  // The control that caused the slot to be called
+  auto sender = QObject::sender();
+
+  if (sender == ui.colorComponentsComboBox || sender == ui.chromaInterpolationComboBox ||
+      sender == ui.colorConversionComboBox || sender == ui.lumaScaleSpinBox ||
+      sender == ui.lumaOffsetSpinBox || sender == ui.lumaInvertCheckBox ||
+      sender == ui.chromaScaleSpinBox || sender == ui.chromaOffsetSpinBox ||
+      sender == ui.chromaInvertCheckBox)
+  {
+    this->conversionSettings.chromaInterpolation =
+        *ChromaInterpolationMapper.at(ui.colorComponentsComboBox->currentIndex());
+    this->conversionSettings.componentDisplayMode =
+        *ComponentDisplayModeMapper.at(ui.chromaInterpolationComboBox->currentIndex());
+    this->conversionSettings.colorConversion =
+        *ColorConversionMapper.at(ui.colorConversionComboBox->currentIndex());
+
+    this->conversionSettings.mathParameters[Component::Luma].scale  = ui.lumaScaleSpinBox->value();
+    this->conversionSettings.mathParameters[Component::Luma].offset = ui.lumaOffsetSpinBox->value();
+    this->conversionSettings.mathParameters[Component::Luma].invert =
+        ui.lumaInvertCheckBox->isChecked();
+    this->conversionSettings.mathParameters[Component::Chroma].scale =
+        ui.chromaScaleSpinBox->value();
+    this->conversionSettings.mathParameters[Component::Chroma].offset =
+        ui.chromaOffsetSpinBox->value();
+    this->conversionSettings.mathParameters[Component::Chroma].invert =
+        ui.chromaInvertCheckBox->isChecked();
+
+    // Set the current frame in the buffer to be invalid and clear the cache.
+    // Emit that this item needs redraw and the cache needs updating.
+    this->currentImageIndex       = -1;
+    this->currentImage_frameIndex = -1;
+    this->setCacheInvalid();
+    emit signalHandlerChanged(true, RECACHE_CLEAR);
+  }
+  else if (sender == ui.yuvFormatComboBox)
+  {
+    auto oldFormatBytesPerFrame = this->srcPixelFormat.bytesPerFrame(frameSize);
+
+    // Set the new YUV format
+    // setSrcPixelFormat(yuvFormatList.getFromName(ui.yuvFormatComboBox->currentText()));
+
+    // Set the current frame in the buffer to be invalid and clear the cache.
+    // Emit that this item needs redraw and the cache needs updating.
+    this->currentImageIndex       = -1;
+    this->currentImage_frameIndex = -1;
+    if (this->srcPixelFormat.bytesPerFrame(frameSize) != oldFormatBytesPerFrame)
+      // The number of bytes per frame changed. The raw YUV data buffer also has to be updated.
+      this->currentFrameRawData_frameIndex = -1;
+    this->setCacheInvalid();
+    emit signalHandlerChanged(true, RECACHE_CLEAR);
+  }
+}
+
+/* Get the pixels values so we can show them in the info part of the zoom box.
+ * If a second frame handler is provided, the difference values from that item will be returned.
+ */
+QStringPairList videoHandlerYUV::getPixelValues(const QPoint &pixelPos,
+                                                int           frameIdx,
+                                                FrameHandler *item2,
+                                                const int     frameIdx1)
+{
+  QStringPairList values;
+
+  const int formatBase = settings.value("ShowPixelValuesHex").toBool() ? 16 : 10;
+  if (item2 != nullptr)
+  {
+    videoHandlerYUV *yuvItem2 = dynamic_cast<videoHandlerYUV *>(item2);
+    if (yuvItem2 == nullptr)
+      // The given item is not a YUV source. We cannot compare YUV values to non YUV values.
+      // Call the base class comparison function to compare the items using the RGB values.
+      return FrameHandler::getPixelValues(pixelPos, frameIdx, item2, frameIdx1);
+
+    // Do not get the pixel values if the buffer for the raw YUV values is out of date.
+    if (currentFrameRawData_frameIndex != frameIdx ||
+        yuvItem2->currentFrameRawData_frameIndex != frameIdx1)
+      return QStringPairList();
+
+    int width  = std::min(frameSize.width, yuvItem2->frameSize.width);
+    int height = std::min(frameSize.height, yuvItem2->frameSize.height);
+
+    if (pixelPos.x() < 0 || pixelPos.x() >= width || pixelPos.y() < 0 || pixelPos.y() >= height)
+      return QStringPairList();
+
+    yuv_t thisValue  = getPixelValue(pixelPos);
+    yuv_t otherValue = yuvItem2->getPixelValue(pixelPos);
+
+    // For difference items, we support difference bit depths for the two items.
+    // If the bit depth is different, we scale to value with the lower bit depth to the higher bit
+    // depth and calculate the difference there. These values are only needed for difference values
+    const unsigned bps_in[2] = {srcPixelFormat.getBitsPerSample(),
+                                yuvItem2->srcPixelFormat.getBitsPerSample()};
+    const auto     bps_out   = std::max(bps_in[0], bps_in[1]);
+    // Which of the two input values has to be scaled up? Only one of these (or neither) can be set.
+    const bool bitDepthScaling[2] = {bps_in[0] != bps_out, bps_in[1] != bps_out};
+    // Scale the input up by this many bits
+    const auto depthScale = bps_out - (bitDepthScaling[0] ? bps_in[0] : bps_in[1]);
+
+    if (bitDepthScaling[0])
+    {
+      thisValue.Y = thisValue.Y << depthScale;
+      thisValue.U = thisValue.U << depthScale;
+      thisValue.V = thisValue.V << depthScale;
+    }
+    else if (bitDepthScaling[1])
+    {
+      otherValue.Y = otherValue.Y << depthScale;
+      otherValue.U = otherValue.U << depthScale;
+      otherValue.V = otherValue.V << depthScale;
+    }
+
+    const int     Y       = int(thisValue.Y) - int(otherValue.Y);
+    const QString YString = ((Y < 0) ? "-" : "") + QString::number(std::abs(Y), formatBase);
+    values.append(QStringPair("Y", YString));
+
+    if (srcPixelFormat.getSubsampling() != Subsampling::YUV_400)
+    {
+      const int     U       = int(thisValue.U) - int(otherValue.U);
+      const int     V       = int(thisValue.V) - int(otherValue.V);
+      const QString UString = ((U < 0) ? "-" : "") + QString::number(std::abs(U), formatBase);
+      const QString VString = ((V < 0) ? "-" : "") + QString::number(std::abs(V), formatBase);
+      values.append(QStringPair("U", UString));
+      values.append(QStringPair("V", VString));
+    }
+  }
+  else
+  {
+    int width  = frameSize.width;
+    int height = frameSize.height;
+
+    // Do not get the pixel values if the buffer for the raw YUV values is out of date.
+    if (currentFrameRawData_frameIndex != frameIdx)
+      return QStringPairList();
+
+    if (pixelPos.x() < 0 || pixelPos.x() >= width || pixelPos.y() < 0 || pixelPos.y() >= height)
+      return QStringPairList();
+
+    const yuv_t value = getPixelValue(pixelPos);
+
+    if (showPixelValuesAsDiff)
+    {
+      // If 'showPixelValuesAsDiff' is set, this is the zero value
+      const int differenceZeroValue = 1 << (srcPixelFormat.getBitsPerSample() - 1);
+
+      const int     Y       = int(value.Y) - differenceZeroValue;
+      const QString YString = ((Y < 0) ? "-" : "") + QString::number(std::abs(Y), formatBase);
+      values.append(QStringPair("Y", YString));
+
+      if (srcPixelFormat.getSubsampling() != Subsampling::YUV_400)
+      {
+        const int     U       = int(value.U) - differenceZeroValue;
+        const int     V       = int(value.V) - differenceZeroValue;
+        const QString UString = ((U < 0) ? "-" : "") + QString::number(std::abs(U), formatBase);
+        const QString VString = ((V < 0) ? "-" : "") + QString::number(std::abs(V), formatBase);
+        values.append(QStringPair("U", UString));
+        values.append(QStringPair("V", VString));
+      }
+    }
+    else
+    {
+      values.append(QStringPair("Y", QString::number(value.Y, formatBase)));
+      if (srcPixelFormat.getSubsampling() != Subsampling::YUV_400)
+      {
+        values.append(QStringPair("U", QString::number(value.U, formatBase)));
+        values.append(QStringPair("V", QString::number(value.V, formatBase)));
+      }
+    }
+  }
+
+  return values;
+}
+
+/* Draw the YUV values of the pixels over the actual pixels when zoomed in. The values are drawn at
+ * the position where they are assumed. So also chroma shifts and subsampling modes are drawn
+ * correctly.
+ */
+void videoHandlerYUV::drawPixelValues(QPainter *    painter,
+                                      const int     frameIdx,
+                                      const QRect & videoRect,
+                                      const double  zoomFactor,
+                                      FrameHandler *item2,
+                                      const bool    markDifference,
+                                      const int     frameIdxItem1)
+{
+  // Get the other YUV item (if any)
+  auto yuvItem2 = (item2 == nullptr) ? nullptr : dynamic_cast<videoHandlerYUV *>(item2);
+  if (item2 != nullptr && yuvItem2 == nullptr)
+  {
+    // The other item is not a yuv item
+    FrameHandler::drawPixelValues(
+        painter, frameIdx, videoRect, zoomFactor, item2, markDifference, frameIdxItem1);
+    return;
+  }
+
+  auto       size          = frameSize;
+  const bool useDiffValues = (yuvItem2 != nullptr);
+  if (useDiffValues)
+    // If the two items are not of equal size, use the minimum possible size.
+    size = Size(std::min(frameSize.width, yuvItem2->frameSize.width),
+                std::min(frameSize.height, yuvItem2->frameSize.height));
+
+  // Check if the raw YUV values are up to date. If not, do not draw them. Do not trigger loading of
+  // data here. The needsLoadingRawValues function will return that loading is needed. The caching
+  // in the background should then trigger loading of them.
+  if (currentFrameRawData_frameIndex != frameIdx)
+    return;
+  if (yuvItem2 && yuvItem2->currentFrameRawData_frameIndex != frameIdxItem1)
+    return;
+
+  // For difference items, we support difference bit depths for the two items.
+  // If the bit depth is different, we scale to value with the lower bit depth to the higher bit
+  // depth and calculate the difference there. These values are only needed for difference values
+  const unsigned bps_in[2] = {srcPixelFormat.getBitsPerSample(),
+                              (useDiffValues) ? yuvItem2->srcPixelFormat.getBitsPerSample() : 0};
+  const auto     bps_out   = std::max(bps_in[0], bps_in[1]);
+  // Which of the two input values has to be scaled up? Only one of these (or neither) can be set.
+  const bool bitDepthScaling[2] = {bps_in[0] != bps_out, bps_in[1] != bps_out};
+  // Scale the input up by this many bits
+  const auto depthScale = bps_out - (bitDepthScaling[0] ? bps_in[0] : bps_in[1]);
+  // What are the maximum and middle value for the output bit depth
+  // const int diffZero = 128 << (bps_out-8);
+
+  // First determine which pixels from this item are actually visible, because we only have to draw
+  // the pixel values of the pixels that are actually visible
+  auto viewport       = painter->viewport();
+  auto worldTransform = painter->worldTransform();
+
+  int xMin_tmp = (videoRect.width() / 2 - worldTransform.dx()) / zoomFactor;
+  int yMin_tmp = (videoRect.height() / 2 - worldTransform.dy()) / zoomFactor;
+  int xMax_tmp = (videoRect.width() / 2 - (worldTransform.dx() - viewport.width())) / zoomFactor;
+  int yMax_tmp = (videoRect.height() / 2 - (worldTransform.dy() - viewport.height())) / zoomFactor;
+
+  // Clip the min/max visible pixel values to the size of the item (no pixels outside of the
+  // item have to be labeled)
+  const int xMin = clip(xMin_tmp, 0, int(size.width) - 1);
+  const int yMin = clip(yMin_tmp, 0, int(size.height) - 1);
+  const int xMax = clip(xMax_tmp, 0, int(size.width) - 1);
+  const int yMax = clip(yMax_tmp, 0, int(size.height) - 1);
+
+  // The center point of the pixel (0,0).
+  const auto centerPointZero = (QPoint(-(int(size.width)), -(int(size.height))) * zoomFactor +
+                                QPoint(zoomFactor, zoomFactor)) /
+                               2;
+  // This QRect has the size of one pixel and is moved on top of each pixel to draw the text
+  QRect pixelRect;
+  pixelRect.setSize(QSize(zoomFactor, zoomFactor));
+
+  // We might change the pen doing this so backup the current pen and reset it later
+  auto backupPen = painter->pen();
+
+  // If the Y is below this value, use white text, otherwise black text
+  // If there is a second item, a difference will be drawn. A difference of 0 is displayed as gray.
+  const int whiteLimit = (yuvItem2) ? 0 : 1 << (srcPixelFormat.getBitsPerSample() - 1);
+
+  // Are there chroma components?
+  const bool chromaPresent = (srcPixelFormat.getSubsampling() != Subsampling::YUV_400);
+  // The chroma offset in full luma pixels. This can range from 0 to 3.
+  const int chromaOffsetFullX = srcPixelFormat.getChromaOffset().x / 2;
+  const int chromaOffsetFullY = srcPixelFormat.getChromaOffset().y / 2;
+  // Is the chroma offset by another half luma pixel?
+  const bool chromaOffsetHalfX = (srcPixelFormat.getChromaOffset().x % 2 != 0);
+  const bool chromaOffsetHalfY = (srcPixelFormat.getChromaOffset().y % 2 != 0);
+  // By what factor is X and Y subsampled?
+  const int subsamplingX = srcPixelFormat.getSubsamplingHor();
+  const int subsamplingY = srcPixelFormat.getSubsamplingVer();
+
+  // If 'showPixelValuesAsDiff' is set, this is the zero value
+  const int differenceZeroValue = 1 << (srcPixelFormat.getBitsPerSample() - 1);
+
+  const auto mathParameters = this->conversionSettings.mathParameters;
+
+  for (int x = xMin; x <= xMax; x++)
+  {
+    for (int y = yMin; y <= yMax; y++)
+    {
+      // Calculate the center point of the pixel. (Each pixel is of size (zoomFactor,zoomFactor))
+      // and move the pixelRect to that point.
+      auto pixCenter = centerPointZero + QPoint(x * zoomFactor, y * zoomFactor);
+      pixelRect.moveCenter(pixCenter);
+
+      // Get the YUV values to show
+      int  Y, U, V;
+      bool drawWhite;
+      if (useDiffValues)
+      {
+        auto thisValue  = getPixelValue(QPoint(x, y));
+        auto otherValue = yuvItem2->getPixelValue(QPoint(x, y));
+
+        // Do we have to scale one of the values (bit depth different)
+        if (bitDepthScaling[0])
+        {
+          thisValue.Y = thisValue.Y << depthScale;
+          thisValue.U = thisValue.U << depthScale;
+          thisValue.V = thisValue.V << depthScale;
+        }
+        else if (bitDepthScaling[1])
+        {
+          otherValue.Y = otherValue.Y << depthScale;
+          otherValue.U = otherValue.U << depthScale;
+          otherValue.V = otherValue.V << depthScale;
+        }
+
+        Y = int(thisValue.Y) - int(otherValue.Y);
+        U = int(thisValue.U) - int(otherValue.U);
+        V = int(thisValue.V) - int(otherValue.V);
+
+        if (markDifference)
+          drawWhite = (Y == 0);
+        else
+          drawWhite =
+              (mathParameters.at(Component::Luma).invert) ? (Y > whiteLimit) : (Y < whiteLimit);
+      }
+      else if (showPixelValuesAsDiff)
+      {
+        yuv_t value = getPixelValue(QPoint(x, y));
+        Y           = value.Y - differenceZeroValue;
+        U           = value.U - differenceZeroValue;
+        V           = value.V - differenceZeroValue;
+
+        drawWhite = (mathParameters.at(Component::Luma).invert) ? (Y > 0) : (Y < 0);
+      }
+      else
+      {
+        yuv_t value = getPixelValue(QPoint(x, y));
+        Y           = int(value.Y);
+        U           = int(value.U);
+        V           = int(value.V);
+        drawWhite =
+            (mathParameters.at(Component::Luma).invert) ? (Y > whiteLimit) : (Y < whiteLimit);
+      }
+
+      const int     formatBase = settings.value("ShowPixelValuesHex").toBool() ? 16 : 10;
+      const QString YString    = ((Y < 0) ? "-" : "") + QString::number(std::abs(Y), formatBase);
+      const QString UString    = ((U < 0) ? "-" : "") + QString::number(std::abs(U), formatBase);
+      const QString VString    = ((V < 0) ? "-" : "") + QString::number(std::abs(V), formatBase);
+
+      painter->setPen(drawWhite ? Qt::white : Qt::black);
+
+      if (chromaPresent && (x - chromaOffsetFullX) % subsamplingX == 0 &&
+          (y - chromaOffsetFullY) % subsamplingY == 0)
+      {
+        QString valText;
+        if (chromaOffsetHalfX || chromaOffsetHalfY)
+          // We will only draw the Y value at the center of this pixel
+          valText = QString("Y%1").arg(YString);
+        else
+          // We also draw the U and V value at this position
+          valText = QString("Y%1\nU%2\nV%3").arg(YString, UString, VString);
+        painter->drawText(pixelRect, Qt::AlignCenter, valText);
+
+        if (chromaOffsetHalfX || chromaOffsetHalfY)
+        {
+          // Draw the U and V values shifted half a pixel right and/or down
+          valText = QString("U%1\nV%2").arg(UString, VString);
+
+          // Move the QRect by half a pixel
+          if (chromaOffsetHalfX)
+            pixelRect.translate(zoomFactor / 2, 0);
+          if (chromaOffsetHalfY)
+            pixelRect.translate(0, zoomFactor / 2);
+
+          painter->drawText(pixelRect, Qt::AlignCenter, valText);
+        }
+      }
+      else
+      {
+        // We only draw the luma value for this pixel
+        QString valText = QString("Y%1").arg(YString);
+        painter->drawText(pixelRect, Qt::AlignCenter, valText);
+      }
+    }
+  }
+
+  // Reset pen
+  painter->setPen(backupPen);
+}
+
+void videoHandlerYUV::setFormatFromSizeAndName(Size             frameSize,
+                                               int              bitDepth,
+                                               DataLayout       dataLayout,
+                                               int64_t          fileSize,
+                                               const QFileInfo &fileInfo)
+{
+  auto fmt = guessFormatFromSizeAndName(frameSize, bitDepth, dataLayout, fileSize, fileInfo);
+
+  if (!fmt.isValid())
+  {
+    // Guessing failed. Set YUV 4:2:0 8 bit so that we can show something.
+    // This will probably be wrong but we are out of options
+    fmt = PixelFormatYUV(Subsampling::YUV_420, 8, PlaneOrder::YUV);
+  }
+
+  setSrcPixelFormat(fmt, false);
+}
+
+/** Try to guess the format of the raw YUV data. A list of candidates is tried (candidateModes) and
+ * it is checked if the file size matches and if the correlation of the first two frames is below a
+ * threshold. radData must contain at least two frames of the video sequence. Only formats that two
+ * frames of could fit into rawData are tested. E.g. the biggest format that is tested here is 1080p
+ * YUV 4:2:2 8 bit which is 4147200 bytes per frame. So make sure rawData contains 8294400 bytes so
+ * that all formats are tested. If a file size is given, we test if the candidates frame size is a
+ * multiple of the fileSize. If fileSize is -1, this test is skipped.
+ */
+void videoHandlerYUV::setFormatFromCorrelation(const QByteArray &rawYUVData, int64_t fileSize)
+{
+  if (rawYUVData.size() < 1)
+    return;
+
+  class testFormatAndSize
+  {
+  public:
+    testFormatAndSize(const Size &size, PixelFormatYUV format) : size(size), format(format)
+    {
+      interesting = false;
+      mse         = 0;
+    }
+    Size           size;
+    PixelFormatYUV format;
+    bool           interesting;
+    double         mse;
+  };
+
+  // The candidates for the size
+  const auto testSizes = std::vector<Size>({Size(176, 144),
+                                            Size(352, 240),
+                                            Size(352, 288),
+                                            Size(480, 480),
+                                            Size(480, 576),
+                                            Size(704, 480),
+                                            Size(720, 480),
+                                            Size(704, 576),
+                                            Size(720, 576),
+                                            Size(1024, 768),
+                                            Size(1280, 720),
+                                            Size(1280, 960),
+                                            Size(1920, 1072),
+                                            Size(1920, 1080)});
+
+  // Test bit depths 8, 10 and 16
+  std::vector<testFormatAndSize> formatList;
+  for (int b = 0; b < 3; b++)
+  {
+    int bits = (b == 0) ? 8 : (b == 1) ? 10 : 16;
+    // Test all subsampling modes
+    for (const auto &subsampling : SubsamplingMapper.getEnums())
+      for (const auto &size : testSizes)
+        formatList.push_back(
+            testFormatAndSize(size, PixelFormatYUV(subsampling, bits, PlaneOrder::YUV)));
+  }
+
+  if (fileSize > 0)
+  {
+    // if any candidate exceeds file size for two frames, discard
+    // if any candidate does not represent a multiple of file size, discard
+    bool fileSizeMatchFound = false;
+
+    for (testFormatAndSize &testFormat : formatList)
+    {
+      auto picSize = testFormat.format.bytesPerFrame(testFormat.size);
+
+      const bool atLeastTwoPictureInInput = fileSize >= (picSize * 2);
+      if (atLeastTwoPictureInInput)
+      {
+        if ((fileSize % picSize) == 0) // important: file size must be multiple of the picture size
+        {
+          testFormat.interesting = true;
+          fileSizeMatchFound     = true;
+        }
+      }
+    }
+
+    if (!fileSizeMatchFound)
+      return;
+  }
+
+  // calculate max. correlation for first two frames, use max. candidate frame size
+  for (testFormatAndSize &testFormat : formatList)
+  {
+    if (testFormat.interesting)
+    {
+      auto picSize     = testFormat.format.bytesPerFrame(testFormat.size);
+      int  lumaSamples = testFormat.size.width * testFormat.size.height;
+
+      // Calculate the MSE for 2 frames
+      if (testFormat.format.getBitsPerSample() == 8)
+      {
+        auto ptr       = (unsigned char *)rawYUVData.data();
+        testFormat.mse = computeMSE(ptr, ptr + picSize, lumaSamples);
+      }
+      else if (testFormat.format.getBitsPerSample() > 8 &&
+               testFormat.format.getBitsPerSample() <= 16)
+      {
+        auto ptr       = (unsigned short *)rawYUVData.data();
+        testFormat.mse = computeMSE(ptr, ptr + picSize / 2, lumaSamples);
+      }
+      else
+        continue;
+    }
+  }
+
+  // step3: select best candidate
+  double         leastMSE = std::numeric_limits<double>::max();
+  PixelFormatYUV bestFormat;
+  Size           bestSize;
+  for (const testFormatAndSize &testFormat : formatList)
+  {
+    if (testFormat.interesting && testFormat.mse < leastMSE)
+    {
+      bestFormat = testFormat.format;
+      bestSize   = testFormat.size;
+      leastMSE   = testFormat.mse;
+    }
+  }
+
+  const double mseThreshold = 400;
+  if (leastMSE < mseThreshold)
+  {
+    setSrcPixelFormat(bestFormat, false);
+    setFrameSize(bestSize);
+  }
+}
+
+bool videoHandlerYUV::setFormatFromString(QString format)
+{
+  DEBUG_YUV("videoHandlerYUV::setFormatFromString " << format << "\n");
+
+  auto split = format.split(";");
+  if (split.length() != 4 || split[2] != "YUV")
+    return false;
+
+  if (!FrameHandler::setFormatFromString(split[0] + ";" + split[1]))
+    return false;
+
+  auto fmt = PixelFormatYUV(split[3].toStdString());
+  if (!fmt.isValid())
+    return false;
+
+  setSrcPixelFormat(fmt, false);
+  return true;
+}
+
+void videoHandlerYUV::loadFrame(int frameIndex, bool loadToDoubleBuffer)
+{
+  DEBUG_YUV("videoHandlerYUV::loadFrame " << frameIndex);
+
+  if (!isFormatValid())
+    // We cannot load a frame if the format is not known
+    return;
+
+  // Does the data in currentFrameRawData need to be updated?
+  if (!loadRawYUVData(frameIndex))
+    // Loading failed or it is still being performed in the background
+    return;
+
+  // The data in currentFrameRawData is now up to date. If necessary
+  // convert the data to RGB.
+  if (loadToDoubleBuffer)
+  {
+    QImage newImage;
+    convertYUVToImage(this->currentFrameRawData,
+                      newImage,
+                      this->srcPixelFormat,
+                      this->frameSize,
+                      this->conversionSettings);
+    doubleBufferImage           = newImage;
+    doubleBufferImageFrameIndex = frameIndex;
+  }
+  else if (currentImageIndex != frameIndex)
+  {
+    QImage newImage;
+    convertYUVToImage(this->currentFrameRawData,
+                      newImage,
+                      this->srcPixelFormat,
+                      this->frameSize,
+                      this->conversionSettings);
+    QMutexLocker setLock(&currentImageSetMutex);
+    currentImage      = newImage;
+    currentImageIndex = frameIndex;
+  }
+}
+
+void videoHandlerYUV::loadFrameForCaching(int frameIndex, QImage &frameToCache)
+{
+  DEBUG_YUV("videoHandlerYUV::loadFrameForCaching " << frameIndex);
+
+  // Get the YUV format and the size here, so that the caching process does not crash if this
+  // changes.
+  const auto yuvFormat          = this->srcPixelFormat;
+  const auto curFrameSize       = this->frameSize;
+  const auto conversionSettings = this->conversionSettings;
+
+  requestDataMutex.lock();
+  emit       signalRequestRawData(frameIndex, true);
+  QByteArray tmpBufferRawYUVDataCaching = rawData;
+  requestDataMutex.unlock();
+
+  if (frameIndex != rawData_frameIndex)
+  {
+    // Loading failed
+    DEBUG_YUV("videoHandlerYUV::loadFrameForCaching Loading failed");
+    return;
+  }
+
+  // Convert YUV to image. This can then be cached.
+  convertYUVToImage(
+      tmpBufferRawYUVDataCaching, frameToCache, yuvFormat, curFrameSize, conversionSettings);
+}
+
+// Load the raw YUV data for the given frame index into currentFrameRawData.
+bool videoHandlerYUV::loadRawYUVData(int frameIndex)
+{
+  if (currentFrameRawData_frameIndex == frameIndex && cacheValid)
+    // Buffer already up to date
+    return true;
+
+  DEBUG_YUV("videoHandlerYUV::loadRawYUVData " << frameIndex);
+
+  // The function loadFrameForCaching also uses the signalRequesRawYUVData to request raw data.
+  // However, only one thread can use this at a time.
+  requestDataMutex.lock();
+  emit signalRequestRawData(frameIndex, false);
+
+  if (frameIndex != rawData_frameIndex || rawData.isEmpty())
+  {
+    // Loading failed
+    DEBUG_YUV("videoHandlerYUV::loadRawYUVData Loading failed");
+    requestDataMutex.unlock();
+    return false;
+  }
+
+  currentFrameRawData            = rawData;
+  currentFrameRawData_frameIndex = frameIndex;
+  requestDataMutex.unlock();
+
+  DEBUG_YUV("videoHandlerYUV::loadRawYUVData " << frameIndex << " Done");
+  return true;
 }
 
 yuv_t videoHandlerYUV::getPixelValue(const QPoint &pixelPos) const
@@ -4015,8 +4042,14 @@ QImage videoHandlerYUV::calculateDifference(FrameHandler *   item2,
     markDifferencesYUVPlanarToRGB(
         diffYUV, outputImage.bits(), Size(w_out, h_out), tmpDiffYUVFormat);
   else
+  {
     // Get the format of the tmpDiffYUV buffer and convert it to RGB
-    convertYUVPlanarToRGB(diffYUV, outputImage.bits(), Size(w_out, h_out), tmpDiffYUVFormat);
+    ConversionSettings conversionSettings;
+    conversionSettings.mathParameters[Component::Luma]   = MathParameters(1, 125, false);
+    conversionSettings.mathParameters[Component::Chroma] = MathParameters(1, 128, false);
+    convertYUVPlanarToRGB(
+        diffYUV, outputImage.bits(), Size(w_out, h_out), tmpDiffYUVFormat, conversionSettings);
+  }
 
   differenceInfoList.append(
       InfoItem("Difference Type",
@@ -4084,12 +4117,13 @@ void videoHandlerYUV::setPixelFormatYUV(const PixelFormatYUV &newFormat, bool em
 
 void videoHandlerYUV::setYUVColorConversion(ColorConversion conversion)
 {
-  if (conversion != yuvColorConversionType)
+  if (conversion != this->conversionSettings.colorConversion)
   {
-    yuvColorConversionType = conversion;
+    this->conversionSettings.colorConversion = conversion;
 
     if (ui.created())
-      ui.colorConversionComboBox->setCurrentIndex(int(yuvColorConversionType));
+      ui.colorConversionComboBox->setCurrentIndex(
+          int(ColorConversionMapper.indexOf(this->conversionSettings.colorConversion)));
   }
 }
 
@@ -4098,12 +4132,12 @@ void videoHandlerYUV::savePlaylist(YUViewDomElement &element) const
   FrameHandler::savePlaylist(element);
   element.appendProperiteChild("pixelFormat", this->getRawPixelFormatYUVName());
 
-  auto ml = this->mathParameters[Component::Luma];
+  auto ml = this->conversionSettings.mathParameters.at(Component::Luma);
   element.appendProperiteChild("math.luma.scale", QString::number(ml.scale));
   element.appendProperiteChild("math.luma.offset", QString::number(ml.offset));
   element.appendProperiteChild("math.luma.invert", functions::boolToString(ml.invert));
 
-  auto mc = this->mathParameters[Component::Chroma];
+  auto mc = this->conversionSettings.mathParameters.at(Component::Chroma);
   element.appendProperiteChild("math.chroma.scale", QString::number(mc.scale));
   element.appendProperiteChild("math.chroma.offset", QString::number(mc.offset));
   element.appendProperiteChild("math.chroma.invert", functions::boolToString(mc.invert));
@@ -4118,21 +4152,21 @@ void videoHandlerYUV::loadPlaylist(const YUViewDomElement &element)
 
   auto lumaScale = element.findChildValue("math.luma.scale");
   if (!lumaScale.isEmpty())
-    this->mathParameters[Component::Luma].scale = lumaScale.toInt();
+    this->conversionSettings.mathParameters[Component::Luma].scale = lumaScale.toInt();
   auto lumaOffset = element.findChildValue("math.luma.offset");
   if (!lumaOffset.isEmpty())
-    this->mathParameters[Component::Luma].offset = lumaOffset.toInt();
-  this->mathParameters[Component::Luma].invert =
+    this->conversionSettings.mathParameters[Component::Luma].offset = lumaOffset.toInt();
+  this->conversionSettings.mathParameters[Component::Luma].invert =
       (element.findChildValue("math.luma.invert") == "True");
 
   auto chromaScale = element.findChildValue("math.chroma.scale");
   if (!chromaScale.isEmpty())
-    this->mathParameters[Component::Chroma].scale = chromaScale.toInt();
+    this->conversionSettings.mathParameters[Component::Chroma].scale = chromaScale.toInt();
   auto chromaOffset = element.findChildValue("math.chroma.offset");
   if (!chromaOffset.isEmpty())
-    this->mathParameters[Component::Chroma].offset = chromaOffset.toInt();
-  this->mathParameters[Component::Chroma].invert =
+    this->conversionSettings.mathParameters[Component::Chroma].offset = chromaOffset.toInt();
+  this->conversionSettings.mathParameters[Component::Chroma].invert =
       (element.findChildValue("math.chroma.invert") == "True");
 }
 
-} // namespace video
+} // namespace video::yuv

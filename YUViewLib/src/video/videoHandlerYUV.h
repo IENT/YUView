@@ -37,12 +37,38 @@
 
 #include "ui_videoHandlerYUV.h"
 
-namespace video
+#include <map>
+
+namespace video::yuv
 {
 
 struct yuv_t
 {
   unsigned int Y, U, V;
+};
+
+enum class ComponentDisplayMode
+{
+  DisplayAll,
+  DisplayY,
+  DisplayCb,
+  DisplayCr
+};
+
+const auto ComponentDisplayModeMapper =
+    EnumMapper<ComponentDisplayMode>({{ComponentDisplayMode::DisplayAll, "Y'CbCr"},
+                                      {ComponentDisplayMode::DisplayAll, "Luma (Y) Only"},
+                                      {ComponentDisplayMode::DisplayAll, "Cb only"},
+                                      {ComponentDisplayMode::DisplayAll, "Cr only"}});
+
+struct ConversionSettings
+{
+  ChromaInterpolation  chromaInterpolation{ChromaInterpolation::NearestNeighbor};
+  ComponentDisplayMode componentDisplayMode{ComponentDisplayMode::DisplayAll};
+  ColorConversion      colorConversion{ColorConversion::BT709_LimitedRange};
+  // Parameters for the YUV transformation (like scaling, invert, offset). For Luma ([0]) and
+  // chroma([1]).
+  std::map<Component, MathParameters> mathParameters;
 };
 
 /** The videoHandlerYUV can be used in any playlistItem to read/display YUV data. A playlistItem
@@ -129,12 +155,12 @@ public:
   }
   // Set the current YUV format and update the control. Only emit a signalHandlerChanged signal
   // if emitSignal is true.
-  virtual void setPixelFormatYUV(const yuv::PixelFormatYUV &fmt, bool emitSignal = false);
+  virtual void setPixelFormatYUV(const PixelFormatYUV &fmt, bool emitSignal = false);
   virtual void setPixelFormatYUVByName(const QString &name, bool emitSignal = false)
   {
-    this->setPixelFormatYUV(yuv::PixelFormatYUV(name.toStdString()), emitSignal);
+    this->setPixelFormatYUV(PixelFormatYUV(name.toStdString()), emitSignal);
   }
-  virtual void setYUVColorConversion(yuv::ColorConversion conversion);
+  virtual void setYUVColorConversion(ColorConversion conversion);
 
   // When loading a videoHandlerYUV from playlist file, this can be used to set all the parameters
   // at once
@@ -160,8 +186,8 @@ public:
   // -1.
   bool showPixelValuesAsDiff{false};
 
-  QByteArray          getDiffYUV() const { return this->diffYUV; };
-  yuv::PixelFormatYUV getDiffYUVFormat() const { return this->diffYUVFormat; }
+  QByteArray     getDiffYUV() const { return this->diffYUV; };
+  PixelFormatYUV getDiffYUVFormat() const { return this->diffYUVFormat; }
 
   bool isDiffReady() const { return this->diffReady; }
 
@@ -169,38 +195,10 @@ public:
   virtual void loadPlaylist(const YUViewDomElement &root) override;
 
 protected:
-  // How do we perform interpolation for the subsampled YUV formats?
-  yuv::ChromaInterpolation chromaInterpolation{yuv::ChromaInterpolation::NearestNeighbor};
-
-  // Which components should we display
-  typedef enum
-  {
-    DisplayAll,
-    DisplayY,
-    DisplayCb,
-    DisplayCr
-  } ComponentDisplayMode;
-  ComponentDisplayMode componentDisplayMode;
-
-  // How to convert from YUV to RGB
-  // How to convert from YUV to RGB
-  /*
-  kr/kg/kb matrix (Rec. ITU-T H.264 03/2010, p. 379):
-  R = Y                  + V*(1-Kr)
-  G = Y - U*(1-Kb)*Kb/Kg - V*(1-Kr)*Kr/Kg
-  B = Y + U*(1-Kb)
-  To respect value range of Y in [16:235] and U/V in [16:240], the matrix entries need to be scaled
-  by 255/219 for Y and 255/112 for U/V In this software color conversion is performed with 16bit
-  precision. Thus, further scaling with 2^16 is performed to get all factors as integers.
-  */
-  yuv::ColorConversion yuvColorConversionType;
-
-  // Parameters for the YUV transformation (like scaling, invert, offset). For Luma ([0]) and
-  // chroma([1]).
-  QMap<yuv::Component, yuv::MathParameters> mathParameters;
+  ConversionSettings conversionSettings{};
 
   // The currently selected YUV format
-  yuv::PixelFormatYUV srcPixelFormat;
+  PixelFormatYUV srcPixelFormat;
 
   virtual yuv_t getPixelValue(const QPoint &pixelPos) const;
 
@@ -213,32 +211,21 @@ private:
   // Return false is loading failed.
   bool loadRawYUVData(int frameIndex);
 
-  // Convert from YUV (which ever format is selected) to image (RGB-888)
-  void convertYUVToImage(const QByteArray &         sourceBuffer,
-                         QImage &                   outputImage,
-                         const yuv::PixelFormatYUV &yuvFormat,
-                         const Size &               curFrameSize);
-
   // Set the new pixel format thread save (lock the mutex). We should also emit that something
   // changed (can be disabled).
-  void setSrcPixelFormat(yuv::PixelFormatYUV newFormat, bool emitChangedSignal = true);
+  void setSrcPixelFormat(PixelFormatYUV newFormat, bool emitChangedSignal = true);
   // Check the given format against the file size. Set the format if this is a match.
-  bool
-  checkAndSetFormat(const yuv::PixelFormatYUV format, const Size frameSize, const int64_t fileSize);
+  bool checkAndSetFormat(const PixelFormatYUV format, const Size frameSize, const int64_t fileSize);
 
   bool setFormatFromSizeAndNamePlanar(
-      QString name, const Size size, int bitDepth, yuv::Subsampling subsampling, int64_t fileSize);
+      QString name, const Size size, int bitDepth, Subsampling subsampling, int64_t fileSize);
   bool setFormatFromSizeAndNamePacked(
-      QString name, const Size size, int bitDepth, yuv::Subsampling subsampling, int64_t fileSize);
+      QString name, const Size size, int bitDepth, Subsampling subsampling, int64_t fileSize);
 
-  bool convertYUVPlanarToRGB(const QByteArray &         sourceBuffer,
-                             unsigned char *            targetBuffer,
-                             const Size                 frameSize,
-                             const yuv::PixelFormatYUV &sourceBufferFormat) const;
-  bool markDifferencesYUVPlanarToRGB(const QByteArray &         sourceBuffer,
-                                     unsigned char *            targetBuffer,
-                                     const Size                 frameSize,
-                                     const yuv::PixelFormatYUV &sourceBufferFormat) const;
+  bool markDifferencesYUVPlanarToRGB(const QByteArray &    sourceBuffer,
+                                     unsigned char *       targetBuffer,
+                                     const Size            frameSize,
+                                     const PixelFormatYUV &sourceBufferFormat) const;
 
 #if SSE_CONVERSION_420_ALT
   void yuv420_to_argb8888(quint8 *yp,
@@ -254,11 +241,11 @@ private:
 
   SafeUi<Ui::videoHandlerYUV> ui;
 
-  bool                diffReady{};
-  QByteArray          diffYUV;
-  yuv::PixelFormatYUV diffYUVFormat{};
+  bool           diffReady{};
+  QByteArray     diffYUV;
+  PixelFormatYUV diffYUVFormat{};
 
-  QList<yuv::PixelFormatYUV> presetList;
+  QList<PixelFormatYUV> presetList;
 
 private slots:
 
@@ -268,4 +255,4 @@ private slots:
   void slotYUVFormatControlChanged(int idx);
 };
 
-} // namespace video
+} // namespace video::yuv
