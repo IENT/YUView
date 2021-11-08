@@ -36,10 +36,10 @@
 #include "ui_videoHandlerRGB.h"
 #include "videoHandler.h"
 
-namespace video
+namespace video::rgb
 {
 
-enum class ComponentShow
+enum class ComponentDisplayMode
 {
   RGBA,
   RGB,
@@ -158,7 +158,7 @@ public:
   virtual void loadPlaylist(const YUViewDomElement &root) override;
 
 protected:
-  ComponentShow componentDisplayMode{ComponentShow::RGBA};
+  ComponentDisplayMode componentDisplayMode{ComponentDisplayMode::RGBA};
 
   // A (static) convenience QList class that handles the preset PixelFormatRGBs
   class RGBFormatList : public QList<rgb::PixelFormatRGB>

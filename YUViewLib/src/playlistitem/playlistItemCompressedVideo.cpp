@@ -271,14 +271,14 @@ playlistItemCompressedVideo::playlistItemCompressedVideo(const QString &compress
   // Allocate the videoHander (RGB or YUV)
   if (rawFormat == video::RawFormat::YUV)
   {
-    video.reset(new video::videoHandlerYUV());
+    video.reset(new video::yuv::videoHandlerYUV());
     auto yuvVideo = getYUVVideo();
     yuvVideo->setFrameSize(frameSize);
     yuvVideo->setPixelFormatYUV(formatYuv);
   }
   else
   {
-    video.reset(new video::videoHandlerRGB());
+    video.reset(new video::rgb::videoHandlerRGB());
     auto rgbVideo = getRGBVideo();
     rgbVideo->setFrameSize(frameSize);
     rgbVideo->setRGBPixelFormat(formatRgb);
@@ -1291,7 +1291,7 @@ void playlistItemCompressedVideo::displaySignalComboBoxChanged(int idx)
 
     // A different display signal was chosen. Invalidate the cache and signal that we will need a
     // redraw.
-    auto yuvVideo                   = dynamic_cast<video::videoHandlerYUV *>(video.get());
+    auto yuvVideo                   = dynamic_cast<video::yuv::videoHandlerYUV *>(video.get());
     yuvVideo->showPixelValuesAsDiff = loadingDecoder->isSignalDifference(idx);
     yuvVideo->invalidateAllBuffers();
 
@@ -1310,7 +1310,7 @@ void playlistItemCompressedVideo::decoderComboxBoxChanged(int idx)
 
     // A different display signal was chosen. Invalidate the cache and signal that we will need a
     // redraw.
-    auto yuvVideo = dynamic_cast<video::videoHandlerYUV *>(video.get());
+    auto yuvVideo = dynamic_cast<video::yuv::videoHandlerYUV *>(video.get());
     if (loadingDecoder)
       yuvVideo->showPixelValuesAsDiff = loadingDecoder->isSignalDifference(idx);
     yuvVideo->invalidateAllBuffers();

@@ -38,7 +38,7 @@
 
 #include "ui_videoHandlerRGB_CustomFormatDialog.h"
 
-namespace video
+namespace video::rgb
 {
 
 class videoHandlerRGBCustomFormatDialog : public QDialog
@@ -46,8 +46,8 @@ class videoHandlerRGBCustomFormatDialog : public QDialog
   Q_OBJECT
 
 public:
-  videoHandlerRGBCustomFormatDialog(const rgb::PixelFormatRGB &rgbFormat);
-  rgb::PixelFormatRGB getSelectedRGBFormat() const;
+  videoHandlerRGBCustomFormatDialog(const PixelFormatRGB &rgbFormat);
+  PixelFormatRGB getSelectedRGBFormat() const;
 
 private slots:
   void on_bitDepthSpinBox_valueChanged(int value);

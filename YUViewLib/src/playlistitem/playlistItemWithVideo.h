@@ -118,25 +118,25 @@ protected:
   // The videoHandler can be a videoHandlerRGB or a videoHandlerYUV
   video::RawFormat rawFormat{video::RawFormat::Invalid};
   // Get a raw pointer to either version of the videoHandler
-  video::videoHandlerYUV *getYUVVideo()
+  video::yuv::videoHandlerYUV *getYUVVideo()
   {
     assert(rawFormat == video::RawFormat::YUV);
-    return dynamic_cast<video::videoHandlerYUV *>(video.get());
+    return dynamic_cast<video::yuv::videoHandlerYUV *>(video.get());
   }
-  video::videoHandlerRGB *getRGBVideo()
+  video::rgb::videoHandlerRGB *getRGBVideo()
   {
     assert(rawFormat == video::RawFormat::RGB);
-    return dynamic_cast<video::videoHandlerRGB *>(video.get());
+    return dynamic_cast<video::rgb::videoHandlerRGB *>(video.get());
   }
-  const video::videoHandlerYUV *getYUVVideo() const
+  const video::yuv::videoHandlerYUV *getYUVVideo() const
   {
     assert(rawFormat == video::RawFormat::YUV);
-    return dynamic_cast<const video::videoHandlerYUV *>(video.get());
+    return dynamic_cast<const video::yuv::videoHandlerYUV *>(video.get());
   }
-  const video::videoHandlerRGB *getRGBVideo() const
+  const video::rgb::videoHandlerRGB *getRGBVideo() const
   {
     assert(rawFormat == video::RawFormat::RGB);
-    return dynamic_cast<const video::videoHandlerRGB *>(video.get());
+    return dynamic_cast<const video::rgb::videoHandlerRGB *>(video.get());
   }
 
   // Connect the basic signals from the video
