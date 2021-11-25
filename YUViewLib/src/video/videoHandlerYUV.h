@@ -57,9 +57,9 @@ enum class ComponentDisplayMode
 
 const auto ComponentDisplayModeMapper =
     EnumMapper<ComponentDisplayMode>({{ComponentDisplayMode::DisplayAll, "Y'CbCr"},
-                                      {ComponentDisplayMode::DisplayAll, "Luma (Y) Only"},
-                                      {ComponentDisplayMode::DisplayAll, "Cb only"},
-                                      {ComponentDisplayMode::DisplayAll, "Cr only"}});
+                                      {ComponentDisplayMode::DisplayY, "Luma (Y) Only"},
+                                      {ComponentDisplayMode::DisplayCb, "Cb only"},
+                                      {ComponentDisplayMode::DisplayCr, "Cr only"}});
 
 struct ConversionSettings
 {
