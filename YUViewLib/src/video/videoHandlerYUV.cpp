@@ -2903,9 +2903,9 @@ void videoHandlerYUV::slotYUVControlChanged()
       sender == ui.chromaInvertCheckBox)
   {
     this->conversionSettings.chromaInterpolation =
-        *ChromaInterpolationMapper.at(ui.colorComponentsComboBox->currentIndex());
+        *ChromaInterpolationMapper.at(ui.chromaInterpolationComboBox->currentIndex());
     this->conversionSettings.componentDisplayMode =
-        *ComponentDisplayModeMapper.at(ui.chromaInterpolationComboBox->currentIndex());
+        *ComponentDisplayModeMapper.at(ui.colorComponentsComboBox->currentIndex());
     this->conversionSettings.colorConversion =
         *ColorConversionMapper.at(ui.colorConversionComboBox->currentIndex());
 
