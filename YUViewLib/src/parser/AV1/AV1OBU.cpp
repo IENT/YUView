@@ -76,8 +76,9 @@ std::pair<size_t, std::string> ParserAV1OBU::parseAndAddOBU(int                 
     if (obu.header.obu_type == ObuType::OBU_TEMPORAL_DELIMITER)
     {
       decValues.SeenFrameHeader = false;
+      obuTypeName = "Temporal Delimiter";
     }
-    if (obu.header.obu_type == ObuType::OBU_SEQUENCE_HEADER)
+    else if (obu.header.obu_type == ObuType::OBU_SEQUENCE_HEADER)
     {
       auto new_sequence_header = std::make_shared<sequence_header_obu>();
       new_sequence_header->parse(reader);
@@ -104,6 +105,7 @@ std::pair<size_t, std::string> ParserAV1OBU::parseAndAddOBU(int                 
   catch (const std::exception &e)
   {
     errorText = " ERROR " + std::string(e.what());
+    obuTypeName = "Error";
   }
 
   if (obuRoot)

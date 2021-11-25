@@ -327,8 +327,9 @@ bool AVFormat::parseAVPacket(unsigned packetID, unsigned streamPacketID, AVPacke
     auto dataLength  = packet.getDataSize();
     avpacketData.assign(dataPointer, dataPointer + dataLength);
   }
+  bool addBitrateEntryForPacket = true;
 
-  AVRational timeBase = timeBaseAllStreams[packet.getStreamIndex()];
+  auto timeBase = timeBaseAllStreams[packet.getStreamIndex()];
 
   auto formatTimestamp = [](int64_t timestamp, AVRational timebase) -> std::string {
     std::ostringstream ss;
@@ -390,6 +391,8 @@ bool AVFormat::parseAVPacket(unsigned packetID, unsigned streamPacketID, AVPacke
         specificDescription = " - "; // In mpeg2 there is no concept of NAL units
       else
         specificDescription = " - NALs:";
+
+      addBitrateEntryForPacket = false;
     }
     else if (this->obuParser)
     {
@@ -407,14 +410,14 @@ bool AVFormat::parseAVPacket(unsigned packetID, unsigned streamPacketID, AVPacke
           DEBUG_AVFORMAT(
               "AVFormat::parseAVPacket parsed OBU %d header %d bytes", obuID, nrBytesRead);
 
+          if (!obuTypeName.empty())
+            unitNames[obuTypeName]++;
+
           constexpr auto minOBUSize = 3u;
           auto           remaining  = std::distance(posInData, avpacketData.end());
           if (remaining < 0 || nrBytesRead + minOBUSize >= size_t(std::abs(remaining)))
             break;
           posInData += nrBytesRead;
-
-          if (!obuTypeName.empty())
-            unitNames[obuTypeName]++;
         }
         catch (...)
         {
@@ -509,13 +512,17 @@ bool AVFormat::parseAVPacket(unsigned packetID, unsigned streamPacketID, AVPacke
       DEBUG_AVFORMAT("AVFormat::parseAVPacket Exception occured while parsing generic packet data: "
                      << e.what());
     }
+  }
 
+  if (addBitrateEntryForPacket)
+  {
     BitratePlotModel::BitrateEntry entry;
-    entry.pts      = packet.getPTS();
-    entry.dts      = packet.getDTS();
-    entry.bitrate  = packet.getDataSize();
-    entry.keyframe = packet.getFlagKeyframe();
-    entry.duration = packet.getDuration();
+    entry.pts       = packet.getPTS();
+    entry.dts       = packet.getDTS();
+    entry.bitrate   = packet.getDataSize();
+    entry.keyframe  = packet.getFlagKeyframe();
+    entry.frameType = entry.keyframe ? "Keyframe" : "Frame";
+    entry.duration  = packet.getDuration();
     if (entry.duration == 0)
     {
       // Unknown. We have to guess.
@@ -524,8 +531,11 @@ bool AVFormat::parseAVPacket(unsigned packetID, unsigned streamPacketID, AVPacke
           this->videoStreamIndex < this->timeBaseAllStreams.size())
       {
         auto videoTimeBase = this->timeBaseAllStreams[this->videoStreamIndex];
-        auto duration      = 1.0 / this->framerate * videoTimeBase.den / videoTimeBase.num;
-        entry.duration     = int(std::round(duration));
+        if (videoTimeBase.num > 0)
+        {
+          auto duration  = 1.0 / this->framerate * videoTimeBase.den / videoTimeBase.num;
+          entry.duration = int(std::round(duration));
+        }
       }
     }
 

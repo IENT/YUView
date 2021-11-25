@@ -110,7 +110,7 @@ BitratePlotModel::getPointInfo(unsigned streamIndex, unsigned plotIndex, unsigne
       unsigned(this->dataPerStream[streamIndex].size()) <= pointIndex)
     return {};
 
-  auto &     entry         = this->dataPerStream[streamIndex][pointIndex];
+  auto       entry         = this->dataPerStream[streamIndex][pointIndex];
   const auto isAveragePlot = (plotIndex == 1);
 
   if (isAveragePlot)
