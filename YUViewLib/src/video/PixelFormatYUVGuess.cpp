@@ -296,6 +296,24 @@ PixelFormatYUV guessFormatFromSizeAndName(const Size       size,
         return fmt;
     }
 
+    // Check if the filename contains NV24
+    if (name.find("nv24") != std::string::npos)
+    {
+      // This should be a 8 bit semi-planar yuv 4:4:4 file with interleaved UV components and YYYYUVUV order
+      auto fmt = PixelFormatYUV(Subsampling::YUV_444, 8, PlaneOrder::YUV, false, {}, true);
+      if (checkFormat(fmt, size, fileSize))
+        return fmt;
+    }
+
+    // Check if the filename contains NV42
+    if (name.find("nv42") != std::string::npos)
+    {
+      // This should be a 8 bit semi-planar yuv 4:4:4 file with interleaved UV components and YYYYVUVU order
+      auto fmt = PixelFormatYUV(Subsampling::YUV_444, 8, PlaneOrder::YVU, false, {}, true);
+      if (checkFormat(fmt, size, fileSize))
+        return fmt;
+    }
+
     // One more FFMpeg format description that does not match the pattern above is: "ayuv64le"
     if (name.find("ayuv64le") != std::string::npos)
     {
