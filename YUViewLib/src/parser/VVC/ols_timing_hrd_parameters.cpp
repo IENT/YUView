@@ -39,7 +39,7 @@ namespace parser::vvc
 
 using namespace parser::reader;
 
-void ols_timing_hrd_parameters::parse(SubByteReaderLogging &              reader,
+void ols_timing_hrd_parameters::parse(SubByteReaderLogging &         reader,
                                       unsigned                       firstSubLayer,
                                       unsigned                       MaxSubLayersVal,
                                       general_timing_hrd_parameters *general_hrd)
@@ -49,21 +49,24 @@ void ols_timing_hrd_parameters::parse(SubByteReaderLogging &              reader
 
   for (unsigned i = firstSubLayer; i <= MaxSubLayersVal; i++)
   {
-    this->fixed_pic_rate_general_flag.push_back(reader.readFlag("fixed_pic_rate_general_flag"));
-    if (!this->fixed_pic_rate_general_flag[i])
+    this->fixed_pic_rate_general_flag[i] = reader.readFlag("fixed_pic_rate_general_flag");
+    if (this->fixed_pic_rate_general_flag.at(i))
     {
-      this->fixed_pic_rate_within_cvs_flag.push_back(
-          reader.readFlag("fixed_pic_rate_within_cvs_flag"));
+      this->fixed_pic_rate_within_cvs_flag[i] = true;
     }
-    if (this->fixed_pic_rate_within_cvs_flag[i])
+    else
     {
-      this->elemental_duration_in_tc_minus1.push_back(
-          reader.readUEV("elemental_duration_in_tc_minus1"));
+      this->fixed_pic_rate_within_cvs_flag[i] = reader.readFlag("fixed_pic_rate_within_cvs_flag");
     }
-    else if ((general_hrd->general_nal_hrd_params_present_flag || general_hrd->general_vcl_hrd_params_present_flag) &&
+    if (this->fixed_pic_rate_within_cvs_flag.at(i))
+    {
+      this->elemental_duration_in_tc_minus1[i] = reader.readUEV("elemental_duration_in_tc_minus1");
+    }
+    else if ((general_hrd->general_nal_hrd_params_present_flag ||
+              general_hrd->general_vcl_hrd_params_present_flag) &&
              general_hrd->hrd_cpb_cnt_minus1 == 0)
     {
-      this->low_delay_hrd_flag.push_back(reader.readFlag("low_delay_hrd_flag"));
+      this->low_delay_hrd_flag[i] = reader.readFlag("low_delay_hrd_flag");
     }
     if (general_hrd->general_nal_hrd_params_present_flag)
     {
