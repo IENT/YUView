@@ -40,11 +40,11 @@
 #include "SEI/sei_rbsp.h"
 #include "parser/Subtitles/AnnexBItuTT35.h"
 #include "parser/common/SubByteReaderLogging.h"
-#include <parser/common/Functions.h>
 #include "pic_parameter_set_rbsp.h"
 #include "seq_parameter_set_rbsp.h"
 #include "slice_segment_layer_rbsp.h"
 #include "video_parameter_set_rbsp.h"
+#include <parser/common/Functions.h>
 
 #define PARSER_HEVC_DEBUG_OUTPUT 0
 #if PARSER_HEVC_DEBUG_OUTPUT && !NDEBUG
@@ -327,7 +327,7 @@ AnnexBHEVC::parseAndAddNALUnit(int                                           nal
 
     if (nalHEVC->header.nal_unit_type == NalType::VPS_NUT)
     {
-      auto newVPS         = std::make_shared<video_parameter_set_rbsp>();
+      auto newVPS = std::make_shared<video_parameter_set_rbsp>();
       newVPS->parse(reader);
 
       this->activeParameterSets.vpsMap[newVPS->vps_video_parameter_set_id] = newVPS;
@@ -343,7 +343,7 @@ AnnexBHEVC::parseAndAddNALUnit(int                                           nal
     }
     else if (nalHEVC->header.nal_unit_type == hevc::NalType::SPS_NUT)
     {
-      auto newSPS         = std::make_shared<seq_parameter_set_rbsp>();
+      auto newSPS = std::make_shared<seq_parameter_set_rbsp>();
       newSPS->parse(reader);
 
       this->activeParameterSets.spsMap[newSPS->sps_seq_parameter_set_id] = newSPS;
@@ -360,7 +360,7 @@ AnnexBHEVC::parseAndAddNALUnit(int                                           nal
     }
     else if (nalHEVC->header.nal_unit_type == hevc::NalType::PPS_NUT)
     {
-      auto newPPS         = std::make_shared<pic_parameter_set_rbsp>();
+      auto newPPS = std::make_shared<pic_parameter_set_rbsp>();
       newPPS->parse(reader);
 
       this->activeParameterSets.ppsMap[newPPS->pps_pic_parameter_set_id] = newPPS;
@@ -389,16 +389,16 @@ AnnexBHEVC::parseAndAddNALUnit(int                                           nal
 
       // Add the POC of the slice
       if (nalHEVC->header.isIRAP() && newSlice->sliceSegmentHeader.NoRaslOutputFlag &&
-          maxPOCCount > 0)
+          this->maxPOCCount > 0)
       {
-        pocCounterOffset = maxPOCCount + 1;
-        maxPOCCount      = -1;
+        this->pocCounterOffset = maxPOCCount + 1;
+        this->maxPOCCount      = -1;
       }
-      auto POC = pocCounterOffset + newSlice->sliceSegmentHeader.PicOrderCntVal;
-      if (POC > maxPOCCount &&
+      auto poc = this->pocCounterOffset + newSlice->sliceSegmentHeader.PicOrderCntVal;
+      if (poc > this->maxPOCCount &&
           !(nalHEVC->header.isIRAP() && newSlice->sliceSegmentHeader.NoRaslOutputFlag))
-        maxPOCCount = POC;
-      newSlice->sliceSegmentHeader.globalPOC = POC;
+        this->maxPOCCount = poc;
+      newSlice->sliceSegmentHeader.globalPOC = poc;
 
       first_slice_segment_in_pic_flag =
           newSlice->sliceSegmentHeader.first_slice_segment_in_pic_flag;
@@ -492,19 +492,18 @@ AnnexBHEVC::parseAndAddNALUnit(int                                           nal
       }
       currentSliceType = to_string(newSlice->sliceSegmentHeader.slice_type);
 
-      specificDescription += " (POC " +
-                            std::to_string(POC) + ")";
-      parseResult.nalTypeName = "Slice(POC " + std::to_string(POC) + ")";
+      specificDescription += " (POC " + std::to_string(poc) + ")";
+      parseResult.nalTypeName = "Slice(POC " + std::to_string(poc) + ")";
 
       DEBUG_HEVC("AnnexBHEVC::parseAndAddNALUnit Slice POC "
-                 << POC << " - pocCounterOffset " << pocCounterOffset << " maxPOCCount "
-                 << maxPOCCount << (nalHEVC->header.isIRAP() ? " - IRAP" : "")
+                 << POC << " - pocCounterOffset " << this->pocCounterOffset << " maxPOCCount "
+                 << this->maxPOCCount << (nalHEVC->header.isIRAP() ? " - IRAP" : "")
                  << (newSlice->sliceSegmentHeader.NoRaslOutputFlag ? "" : " - RASL"));
     }
     else if (nalHEVC->header.nal_unit_type == NalType::PREFIX_SEI_NUT ||
              nalHEVC->header.nal_unit_type == NalType::SUFFIX_SEI_NUT)
     {
-      auto newSEI         = std::make_shared<sei_rbsp>();
+      auto newSEI = std::make_shared<sei_rbsp>();
       newSEI->parse(reader,
                     nalHEVC->header.nal_unit_type,
                     this->activeParameterSets.vpsMap,
