@@ -152,7 +152,7 @@ std::optional<AnnexB::SeekData> AnnexBVVC::getSeekData(int iFrameNr)
         continue;
       }
 
-      if (seekPOC >= 0 && picHeader->PicOrderCntVal == unsigned(seekPOC))
+      if (seekPOC >= 0 && picHeader->globalPOC == unsigned(seekPOC))
       {
         // Seek here
         AnnexB::SeekData seekData;
@@ -197,7 +197,10 @@ std::optional<AnnexB::SeekData> AnnexBVVC::getSeekData(int iFrameNr)
   return {};
 }
 
-QByteArray AnnexBVVC::getExtradata() { return {}; }
+QByteArray AnnexBVVC::getExtradata()
+{
+  return {};
+}
 
 IntPair AnnexBVVC::getProfileLevel()
 {
@@ -292,7 +295,7 @@ AnnexBVVC::parseAndAddNALUnit(int                                           nalI
 
     if (nalVVC->header.nal_unit_type == NalType::VPS_NUT)
     {
-      auto newVPS         = std::make_shared<video_parameter_set_rbsp>();
+      auto newVPS = std::make_shared<video_parameter_set_rbsp>();
       newVPS->parse(reader);
 
       this->activeParameterSets.vpsMap[newVPS->vps_video_parameter_set_id] = newVPS;
@@ -305,7 +308,7 @@ AnnexBVVC::parseAndAddNALUnit(int                                           nalI
     }
     else if (nalVVC->header.nal_unit_type == NalType::SPS_NUT)
     {
-      auto newSPS         = std::make_shared<seq_parameter_set_rbsp>();
+      auto newSPS = std::make_shared<seq_parameter_set_rbsp>();
       newSPS->parse(reader);
 
       this->activeParameterSets.spsMap[newSPS->sps_seq_parameter_set_id] = newSPS;
@@ -318,7 +321,7 @@ AnnexBVVC::parseAndAddNALUnit(int                                           nalI
     }
     else if (nalVVC->header.nal_unit_type == NalType::PPS_NUT)
     {
-      auto newPPS         = std::make_shared<pic_parameter_set_rbsp>();
+      auto newPPS = std::make_shared<pic_parameter_set_rbsp>();
       newPPS->parse(reader, this->activeParameterSets.spsMap);
 
       this->activeParameterSets.ppsMap[newPPS->pps_pic_parameter_set_id] = newPPS;
@@ -332,7 +335,7 @@ AnnexBVVC::parseAndAddNALUnit(int                                           nalI
     else if (nalVVC->header.nal_unit_type == NalType::PREFIX_APS_NUT ||
              nalVVC->header.nal_unit_type == NalType::SUFFIX_APS_NUT)
     {
-      auto newAPS         = std::make_shared<adaptation_parameter_set_rbsp>();
+      auto newAPS = std::make_shared<adaptation_parameter_set_rbsp>();
       newAPS->parse(reader);
 
       auto apsType = apsParamTypeMapper.indexOf(newAPS->aps_params_type);
@@ -362,10 +365,17 @@ AnnexBVVC::parseAndAddNALUnit(int                                           nalI
 
       this->parsingState.NoOutputBeforeRecoveryFlag = false;
 
+      newPictureHeader->picture_header_structure_instance->globalPOC = calculateAndUpdateGlobalPOC(
+          isIRAP(nalVVC->header.nal_unit_type),
+          newPictureHeader->picture_header_structure_instance->PicOrderCntVal);
+
       if (updatedParsingState.currentPictureHeaderStructure)
         updatedParsingState.lastFramePOC =
-            int(updatedParsingState.currentPictureHeaderStructure->PicOrderCntVal);
+            int(updatedParsingState.currentPictureHeaderStructure->globalPOC);
 
+      if (updatedParsingState.currentPictureHeaderStructure)
+        updatedParsingState.lastFramePOC =
+            updatedParsingState.currentPictureHeaderStructure->globalPOC;
       updatedParsingState.currentPictureHeaderStructure =
           newPictureHeader->picture_header_structure_instance;
 
@@ -378,7 +388,7 @@ AnnexBVVC::parseAndAddNALUnit(int                                           nalI
     else if (nalVVC->header.isSlice())
     {
       specificDescription += " (Slice Header)";
-      auto newSliceLayer  = std::make_shared<slice_layer_rbsp>();
+      auto newSliceLayer = std::make_shared<slice_layer_rbsp>();
       newSliceLayer->parse(reader,
                            nalVVC->header.nal_unit_type,
                            this->activeParameterSets.vpsMap,
@@ -396,13 +406,19 @@ AnnexBVVC::parseAndAddNALUnit(int                                           nalI
                                          this->activeParameterSets.ppsMap,
                                          updatedParsingState.currentPictureHeaderStructure,
                                          this->parsingState.NoOutputBeforeRecoveryFlag);
-        
+
         this->parsingState.NoOutputBeforeRecoveryFlag = false;
 
+        newSliceLayer->slice_header_instance.picture_header_structure_instance->globalPOC =
+            calculateAndUpdateGlobalPOC(isIRAP(nalVVC->header.nal_unit_type),
+                                        newSliceLayer->slice_header_instance
+                                            .picture_header_structure_instance->PicOrderCntVal);
+
+        if (updatedParsingState.currentPictureHeaderStructure)
+          updatedParsingState.lastFramePOC =
+              updatedParsingState.currentPictureHeaderStructure->globalPOC;
         updatedParsingState.currentPictureHeaderStructure =
             newSliceLayer->slice_header_instance.picture_header_structure_instance;
-        updatedParsingState.lastFramePOC =
-            (updatedParsingState.currentPictureHeaderStructure->PicOrderCntVal);
       }
       else
       {
@@ -413,8 +429,7 @@ AnnexBVVC::parseAndAddNALUnit(int                                           nalI
       }
 
       specificDescription +=
-          " POC " +
-          std::to_string(updatedParsingState.currentPictureHeaderStructure->PicOrderCntVal);
+          " POC " + std::to_string(updatedParsingState.currentPictureHeaderStructure->globalPOC);
       specificDescription +=
           " " + to_string(newSliceLayer->slice_header_instance.sh_slice_type) + "-Slice";
 
@@ -422,42 +437,42 @@ AnnexBVVC::parseAndAddNALUnit(int                                           nalI
     }
     else if (nalVVC->header.nal_unit_type == NalType::AUD_NUT)
     {
-      auto newAUD         = std::make_shared<access_unit_delimiter_rbsp>();
+      auto newAUD = std::make_shared<access_unit_delimiter_rbsp>();
       newAUD->parse(reader);
       nalVVC->rbsp = newAUD;
     }
     else if (nalVVC->header.nal_unit_type == NalType::DCI_NUT)
     {
-      auto newDCI         = std::make_shared<decoding_capability_information_rbsp>();
+      auto newDCI = std::make_shared<decoding_capability_information_rbsp>();
       newDCI->parse(reader);
       nalVVC->rbsp = newDCI;
     }
     else if (nalVVC->header.nal_unit_type == NalType::EOB_NUT)
     {
-      auto newEOB         = std::make_shared<end_of_bitstream_rbsp>();
-      nalVVC->rbsp        = newEOB;
+      auto newEOB  = std::make_shared<end_of_bitstream_rbsp>();
+      nalVVC->rbsp = newEOB;
     }
     else if (nalVVC->header.nal_unit_type == NalType::EOS_NUT)
     {
-      auto newEOS         = std::make_shared<end_of_seq_rbsp>();
-      nalVVC->rbsp        = newEOS;
+      auto newEOS  = std::make_shared<end_of_seq_rbsp>();
+      nalVVC->rbsp = newEOS;
     }
     else if (nalVVC->header.nal_unit_type == NalType::FD_NUT)
     {
-      auto newFillerData  = std::make_shared<filler_data_rbsp>();
+      auto newFillerData = std::make_shared<filler_data_rbsp>();
       newFillerData->parse(reader);
       nalVVC->rbsp = newFillerData;
     }
     else if (nalVVC->header.nal_unit_type == NalType::OPI_NUT)
     {
-      auto newOPI         = std::make_shared<operating_point_information_rbsp>();
+      auto newOPI = std::make_shared<operating_point_information_rbsp>();
       newOPI->parse(reader);
       nalVVC->rbsp = newOPI;
     }
     else if (nalVVC->header.nal_unit_type == NalType::SUFFIX_SEI_NUT ||
              nalVVC->header.nal_unit_type == NalType::PREFIX_APS_NUT)
     {
-      auto newSEI         = std::make_shared<sei_message>();
+      auto newSEI = std::make_shared<sei_message>();
       newSEI->parse(reader,
                     nalVVC->header.nal_unit_type,
                     nalVVC->header.nuh_temporal_id_plus1 - 1,
@@ -516,49 +531,17 @@ AnnexBVVC::parseAndAddNALUnit(int                                           nalI
   return parseResult;
 }
 
-// 7.4.2.4.3
-bool AnnexBVVC::auDelimiterDetector_t::isStartOfNewAU(
-    std::shared_ptr<vvc::NalUnitVVC> nal, std::shared_ptr<vvc::picture_header_structure> ph)
+int AnnexBVVC::calculateAndUpdateGlobalPOC(bool isIRAP, unsigned PicOrderCntVal)
 {
-  if (!nal || !ph)
-    return false;
-
-  auto nalType = nal->header.nal_unit_type;
-
-  if (this->lastNalWasVcl &&
-      (nalType == NalType::AUD_NUT || nalType == NalType::OPI_NUT || nalType == NalType::DCI_NUT ||
-       nalType == NalType::VPS_NUT || nalType == NalType::SPS_NUT || nalType == NalType::PPS_NUT ||
-       nalType == NalType::PREFIX_APS_NUT || nalType == NalType::PH_NUT ||
-       nalType == NalType::PREFIX_SEI_NUT || nalType == NalType::RSV_NVCL_26 ||
-       nalType == NalType::UNSPEC_28 || nalType == NalType::UNSPEC_29))
+  if (isIRAP && this->maxPOCCount > 0)
   {
-    this->lastNalWasVcl = false;
-    return true;
+    this->pocCounterOffset = this->maxPOCCount + 1;
+    this->maxPOCCount      = -1;
   }
-
-  auto isSlice = (nalType == NalType::TRAIL_NUT || nalType == NalType::STSA_NUT ||
-                  nalType == NalType::RADL_NUT || nalType == NalType::RASL_NUT ||
-                  nalType == NalType::IDR_W_RADL || nalType == NalType::IDR_N_LP ||
-                  nalType == NalType::CRA_NUT || nalType == NalType::GDR_NUT);
-
-  auto isVcl = (isSlice || nalType == NalType::RSV_VCL_4 || nalType == NalType::RSV_VCL_5 ||
-                nalType == NalType::RSV_VCL_6 || nalType == NalType::RSV_IRAP_11);
-
-  if (isVcl && this->lastNalWasVcl)
-  {
-    if (nal->header.nuh_layer_id != this->lastVcl_nuh_layer_id ||
-        ph->ph_pic_order_cnt_lsb != this->lastVcl_ph_pic_order_cnt_lsb ||
-        ph->PicOrderCntVal != this->lastVcl_PicOrderCntVal)
-    {
-      this->lastVcl_nuh_layer_id         = nal->header.nuh_layer_id;
-      this->lastVcl_ph_pic_order_cnt_lsb = ph->ph_pic_order_cnt_lsb;
-      this->lastVcl_PicOrderCntVal       = ph->PicOrderCntVal;
-      return true;
-    }
-  }
-
-  this->lastNalWasVcl = isVcl;
-  return false;
+  auto poc = this->pocCounterOffset + PicOrderCntVal;
+  if (int(poc) > this->maxPOCCount && !isIRAP)
+    this->maxPOCCount = poc;
+  return poc;
 }
 
 bool AnnexBVVC::handleNewAU(ParsingState &                                updatedParsingState,
@@ -607,6 +590,51 @@ bool AnnexBVVC::handleNewAU(ParsingState &                                update
   updatedParsingState.counterAU++;
 
   return true;
+}
+
+// 7.4.2.4.3
+bool AnnexBVVC::auDelimiterDetector_t::isStartOfNewAU(
+    std::shared_ptr<vvc::NalUnitVVC> nal, std::shared_ptr<vvc::picture_header_structure> ph)
+{
+  if (!nal || !ph)
+    return false;
+
+  auto nalType = nal->header.nal_unit_type;
+
+  if (this->lastNalWasVcl &&
+      (nalType == NalType::AUD_NUT || nalType == NalType::OPI_NUT || nalType == NalType::DCI_NUT ||
+       nalType == NalType::VPS_NUT || nalType == NalType::SPS_NUT || nalType == NalType::PPS_NUT ||
+       nalType == NalType::PREFIX_APS_NUT || nalType == NalType::PH_NUT ||
+       nalType == NalType::PREFIX_SEI_NUT || nalType == NalType::RSV_NVCL_26 ||
+       nalType == NalType::UNSPEC_28 || nalType == NalType::UNSPEC_29))
+  {
+    this->lastNalWasVcl = false;
+    return true;
+  }
+
+  auto isSlice = (nalType == NalType::TRAIL_NUT || nalType == NalType::STSA_NUT ||
+                  nalType == NalType::RADL_NUT || nalType == NalType::RASL_NUT ||
+                  nalType == NalType::IDR_W_RADL || nalType == NalType::IDR_N_LP ||
+                  nalType == NalType::CRA_NUT || nalType == NalType::GDR_NUT);
+
+  auto isVcl = (isSlice || nalType == NalType::RSV_VCL_4 || nalType == NalType::RSV_VCL_5 ||
+                nalType == NalType::RSV_VCL_6 || nalType == NalType::RSV_IRAP_11);
+
+  if (isVcl && this->lastNalWasVcl)
+  {
+    if (nal->header.nuh_layer_id != this->lastVcl_nuh_layer_id ||
+        ph->ph_pic_order_cnt_lsb != this->lastVcl_ph_pic_order_cnt_lsb ||
+        ph->PicOrderCntVal != this->lastVcl_PicOrderCntVal)
+    {
+      this->lastVcl_nuh_layer_id         = nal->header.nuh_layer_id;
+      this->lastVcl_ph_pic_order_cnt_lsb = ph->ph_pic_order_cnt_lsb;
+      this->lastVcl_PicOrderCntVal       = ph->PicOrderCntVal;
+      return true;
+    }
+  }
+
+  this->lastNalWasVcl = isVcl;
+  return false;
 }
 
 } // namespace parser

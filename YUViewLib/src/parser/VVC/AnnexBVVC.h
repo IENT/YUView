@@ -75,6 +75,12 @@ public:
                                  std::shared_ptr<TreeItem> parent             = {}) override;
 
 protected:
+  // The PicOrderCntMsb may be reset to zero for IDR frames. In order to count the global POC, we
+  // store the maximum POC.
+  int      maxPOCCount{-1};
+  uint64_t pocCounterOffset{0};
+  int      calculateAndUpdateGlobalPOC(bool isIRAP, unsigned PicOrderCntVal);
+
   struct ActiveParameterSets
   {
     vvc::VPSMap vpsMap;
