@@ -242,13 +242,6 @@ PixelFormatYUV guessFormatFromSizeAndName(const Size       size,
   // The name of the folder that the file is in
   auto dirName = fileInfo.absoluteDir().dirName().toLower().toStdString();
 
-  if (fileInfo.suffix().toLower() == "nv21")
-  {
-    // This should be a 8 bit planar yuv 4:2:0 file with interleaved UV components and YVU order
-    auto fmt = PixelFormatYUV(Subsampling::YUV_420, 8, PlaneOrder::YVU, false, {}, true);
-    if (checkFormat(fmt, size, fileSize))
-      return fmt;
-  }
   if (fileInfo.suffix().toLower() == "v210")
   {
     auto fmt = PixelFormatYUV(PredefinedPixelFormat::V210);
@@ -282,6 +275,24 @@ PixelFormatYUV guessFormatFromSizeAndName(const Size       size,
         return fmt;
       fmt = testFormatFromSizeAndNamePacked(name, size, bitDepth, subsampling, fileSize);
       if (fmt.isValid())
+        return fmt;
+    }
+
+    // Check if the filename contains NV12
+    if (name.find("nv12") != std::string::npos)
+    {
+      // This should be a 8 bit semi-planar yuv 4:2:0 file with interleaved UV components and YYYYUV order
+      auto fmt = PixelFormatYUV(Subsampling::YUV_420, 8, PlaneOrder::YUV, false, {}, true);
+      if (checkFormat(fmt, size, fileSize))
+        return fmt;
+    }
+
+    // Check if the filename contains NV21
+    if (name.find("nv21") != std::string::npos)
+    {
+      // This should be a 8 bit semi-planar yuv 4:2:0 file with interleaved UV components and YYYYVU order
+      auto fmt = PixelFormatYUV(Subsampling::YUV_420, 8, PlaneOrder::YVU, false, {}, true);
+      if (checkFormat(fmt, size, fileSize))
         return fmt;
     }
 
