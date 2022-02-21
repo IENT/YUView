@@ -549,9 +549,9 @@ bool AnnexBVVC::handleNewAU(ParsingState &                                update
                             std::optional<BitratePlotModel::BitrateEntry> bitrateEntry,
                             std::optional<pairUint64>                     nalStartEndPosFile)
 {
-  DEBUG_VVC("Start of new AU. Adding bitrate " << this->parsingState.sizeCurrentAU << " POC "
-                                               << this->parsingState.lastFramePOC << " AU "
-                                               << this->parsingState.counterAU);
+  DEBUG_VVC("Start of new AU. Adding bitrate " << updatedParsingState.sizeCurrentAU << " POC "
+                                               << updatedParsingState.lastFramePOC << " AU "
+                                               << updatedParsingState.counterAU);
 
   BitratePlotModel::BitrateEntry entry;
   if (bitrateEntry)
@@ -562,25 +562,25 @@ bool AnnexBVVC::handleNewAU(ParsingState &                                update
   }
   else
   {
-    entry.pts      = this->parsingState.lastFramePOC;
-    entry.dts      = int(this->parsingState.counterAU);
+    entry.pts      = updatedParsingState.lastFramePOC;
+    entry.dts      = int(updatedParsingState.counterAU);
     entry.duration = 1;
   }
-  entry.bitrate            = unsigned(this->parsingState.sizeCurrentAU);
+  entry.bitrate            = unsigned(updatedParsingState.sizeCurrentAU);
   entry.keyframe           = this->parsingState.lastFrameIsKeyframe;
   parseResult.bitrateEntry = entry;
 
-  if (!addFrameToList(this->parsingState.lastFramePOC,
-                      this->parsingState.curFrameFileStartEndPos,
-                      this->parsingState.lastFrameIsKeyframe))
+  if (!addFrameToList(updatedParsingState.lastFramePOC,
+                      nalStartEndPosFile,
+                      updatedParsingState.lastFrameIsKeyframe))
   {
     return false;
   }
   if (this->parsingState.curFrameFileStartEndPos)
-    DEBUG_VVC("Adding start/end " << this->parsingState.curFrameFileStartEndPos->first << "/"
-                                  << this->parsingState.curFrameFileStartEndPos->second << " - AU "
-                                  << this->parsingState.counterAU
-                                  << (this->parsingState.lastFrameIsKeyframe ? " - ra" : ""));
+    DEBUG_VVC("Adding start/end " << updatedParsingState.curFrameFileStartEndPos->first << "/"
+                                  << updatedParsingState.curFrameFileStartEndPos->second << " - AU "
+                                  << updatedParsingState.counterAU
+                                  << (updatedParsingState.lastFrameIsKeyframe ? " - ra" : ""));
   else
     DEBUG_VVC("Adding start/end %d/%d - POC NA/NA"
               << (this->parsingState.lastFrameIsKeyframe ? " - ra" : ""));
