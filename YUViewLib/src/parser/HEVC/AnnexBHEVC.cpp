@@ -428,8 +428,8 @@ AnnexBHEVC::parseAndAddNALUnit(int                                           nal
                 nalHEVC->header.nal_unit_type == NalType::RASL_N))
         isRandomAccessSkip = true;
 
-      if (nalHEVC->header.nuh_temporal_id_plus1 - 1 == 0 && !nalHEVC->header.isRASL() &&
-          !nalHEVC->header.isRADL())
+      auto TemporalId = nalHEVC->header.nuh_temporal_id_plus1 - 1;
+      if (TemporalId == 0 && !nalHEVC->header.isRASL() && !nalHEVC->header.isRADL())
       {
         // Let prevTid0Pic be the previous picture in decoding order that has TemporalId
         // equal to 0 and that is not a RASL picture, a RADL picture or an SLNR picture.
