@@ -62,7 +62,34 @@
 namespace parser
 {
 
-using namespace vvc;
+using namespace parser::vvc;
+
+namespace
+{
+
+BitratePlotModel::BitrateEntry
+createBitrateEntryForAU(ParsingState &                                parsingState,
+                        std::optional<BitratePlotModel::BitrateEntry> bitrateEntry)
+{
+  BitratePlotModel::BitrateEntry entry;
+  if (bitrateEntry)
+  {
+    entry.pts      = bitrateEntry->pts;
+    entry.dts      = bitrateEntry->dts;
+    entry.duration = bitrateEntry->duration;
+  }
+  else
+  {
+    entry.pts      = parsingState.currentAU.poc;
+    entry.dts      = int(parsingState.currentAU.counter);
+    entry.duration = 1;
+  }
+  entry.bitrate  = unsigned(parsingState.currentAU.sizeBytes);
+  entry.keyframe = parsingState.currentAU.isKeyframe;
+  return entry;
+}
+
+} // namespace
 
 double AnnexBVVC::getFramerate() const
 {
@@ -251,9 +278,10 @@ AnnexBVVC::parseAndAddNALUnit(int                                           nalI
 
   if (nalID == -1 && data.empty())
   {
-    if (this->parsingState.lastFramePOC != -1)
+    if (this->parsingState.currentAU.poc != -1)
     {
-      if (!this->handleNewAU(this->parsingState, parseResult, bitrateEntry, nalStartEndPosFile))
+      parseResult.bitrateEntry = createBitrateEntryForAU(this->parsingState, bitrateEntry);
+      if (!this->handleNewAU(this->parsingState))
       {
         DEBUG_VVC("Error handling last AU");
         parseResult.success = false;
@@ -284,14 +312,16 @@ AnnexBVVC::parseAndAddNALUnit(int                                           nalI
 
   reader::SubByteReaderLogging reader(data, nalRoot, "", readOffset);
 
-  ParsingState updatedParsingState = this->parsingState;
-
   std::string specificDescription;
-  auto        nalVVC = std::make_shared<vvc::NalUnitVVC>(nalID, nalStartEndPosFile);
+  auto        nalVVC              = std::make_shared<vvc::NalUnitVVC>(nalID, nalStartEndPosFile);
+  auto        updatedParsingState = this->parsingState;
   try
   {
     nalVVC->header.parse(reader);
     specificDescription = " " + NalTypeMapper.getName(nalVVC->header.nal_unit_type);
+
+    if (updatedParsingState.NoOutputBeforeRecoveryFlag.count(nalVVC->header.nuh_layer_id) == 0)
+      updatedParsingState.NoOutputBeforeRecoveryFlag[nalVVC->header.nuh_layer_id] = true;
 
     if (nalVVC->header.nal_unit_type == NalType::VPS_NUT)
     {
@@ -360,24 +390,28 @@ AnnexBVVC::parseAndAddNALUnit(int                                           nalI
           nalVVC->header.nal_unit_type,
           this->activeParameterSets.spsMap,
           this->activeParameterSets.ppsMap,
-          updatedParsingState.currentPictureHeaderStructure,
-          this->parsingState.NoOutputBeforeRecoveryFlag);
+          updatedParsingState.prevTid0Pic[nalVVC->header.nuh_layer_id],
+          updatedParsingState.NoOutputBeforeRecoveryFlag[nalVVC->header.nuh_layer_id]);
 
-      this->parsingState.NoOutputBeforeRecoveryFlag = false;
+      updatedParsingState.NoOutputBeforeRecoveryFlag[nalVVC->header.nuh_layer_id] = false;
 
       newPictureHeader->picture_header_structure_instance->globalPOC = calculateAndUpdateGlobalPOC(
           isIRAP(nalVVC->header.nal_unit_type),
           newPictureHeader->picture_header_structure_instance->PicOrderCntVal);
 
-      if (updatedParsingState.currentPictureHeaderStructure)
-        updatedParsingState.lastFramePOC =
-            int(updatedParsingState.currentPictureHeaderStructure->globalPOC);
-
-      if (updatedParsingState.currentPictureHeaderStructure)
-        updatedParsingState.lastFramePOC =
-            updatedParsingState.currentPictureHeaderStructure->globalPOC;
       updatedParsingState.currentPictureHeaderStructure =
           newPictureHeader->picture_header_structure_instance;
+      updatedParsingState.currentAU.poc =
+          updatedParsingState.currentPictureHeaderStructure->globalPOC;
+
+      // 8.3.1
+      auto TemporalId = nalVVC->header.nuh_temporal_id_plus1 - 1;
+      if (TemporalId == 0 &&
+          !newPictureHeader->picture_header_structure_instance->ph_non_ref_pic_flag &&
+          nalVVC->header.nal_unit_type != NalType::RASL_NUT &&
+          nalVVC->header.nal_unit_type != NalType::RADL_NUT)
+        updatedParsingState.prevTid0Pic[nalVVC->header.nuh_layer_id] =
+            newPictureHeader->picture_header_structure_instance;
 
       specificDescription +=
           " POC " +
@@ -400,25 +434,35 @@ AnnexBVVC::parseAndAddNALUnit(int                                           nalI
       if (newSliceLayer->slice_header_instance.picture_header_structure_instance)
       {
         newSliceLayer->slice_header_instance.picture_header_structure_instance
-            ->calculatePictureOrderCount(reader,
-                                         nalVVC->header.nal_unit_type,
-                                         this->activeParameterSets.spsMap,
-                                         this->activeParameterSets.ppsMap,
-                                         updatedParsingState.currentPictureHeaderStructure,
-                                         this->parsingState.NoOutputBeforeRecoveryFlag);
+            ->calculatePictureOrderCount(
+                reader,
+                nalVVC->header.nal_unit_type,
+                this->activeParameterSets.spsMap,
+                this->activeParameterSets.ppsMap,
+                updatedParsingState.prevTid0Pic[nalVVC->header.nuh_layer_id],
+                updatedParsingState.NoOutputBeforeRecoveryFlag[nalVVC->header.nuh_layer_id]);
 
-        this->parsingState.NoOutputBeforeRecoveryFlag = false;
+        updatedParsingState.NoOutputBeforeRecoveryFlag[nalVVC->header.nuh_layer_id] = false;
 
         newSliceLayer->slice_header_instance.picture_header_structure_instance->globalPOC =
             calculateAndUpdateGlobalPOC(isIRAP(nalVVC->header.nal_unit_type),
                                         newSliceLayer->slice_header_instance
                                             .picture_header_structure_instance->PicOrderCntVal);
 
-        if (updatedParsingState.currentPictureHeaderStructure)
-          updatedParsingState.lastFramePOC =
-              updatedParsingState.currentPictureHeaderStructure->globalPOC;
         updatedParsingState.currentPictureHeaderStructure =
             newSliceLayer->slice_header_instance.picture_header_structure_instance;
+        updatedParsingState.currentAU.poc =
+            updatedParsingState.currentPictureHeaderStructure->globalPOC;
+
+        // 8.3.1
+        auto TemporalId = nalVVC->header.nuh_temporal_id_plus1 - 1;
+        if (TemporalId == 0 &&
+            !newSliceLayer->slice_header_instance.picture_header_structure_instance
+                 ->ph_non_ref_pic_flag &&
+            nalVVC->header.nal_unit_type != NalType::RASL_NUT &&
+            nalVVC->header.nal_unit_type != NalType::RADL_NUT)
+          updatedParsingState.prevTid0Pic[nalVVC->header.nuh_layer_id] =
+              newSliceLayer->slice_header_instance.picture_header_structure_instance;
       }
       else
       {
@@ -434,6 +478,16 @@ AnnexBVVC::parseAndAddNALUnit(int                                           nalI
           " " + to_string(newSliceLayer->slice_header_instance.sh_slice_type) + "-Slice";
 
       nalVVC->rbsp = newSliceLayer;
+
+      updatedParsingState.currentAU.isKeyframe =
+          (nalVVC->header.nal_unit_type == NalType::IDR_W_RADL ||
+           nalVVC->header.nal_unit_type == NalType::IDR_N_LP ||
+           nalVVC->header.nal_unit_type == NalType::CRA_NUT);
+      if (updatedParsingState.currentAU.isKeyframe)
+      {
+        nalVVC->rawData = data;
+        this->nalUnitsForSeeking.push_back(nalVVC);
+      }
     }
     else if (nalVVC->header.nal_unit_type == NalType::AUD_NUT)
     {
@@ -496,30 +550,33 @@ AnnexBVVC::parseAndAddNALUnit(int                                           nalI
 
   DEBUG_VVC("AnnexBVVC::parseAndAddNALUnit NAL " + QString::fromStdString(specificDescription));
 
-  updatedParsingState.lastFrameIsKeyframe = (nalVVC->header.nal_unit_type == NalType::IDR_W_RADL ||
-                                             nalVVC->header.nal_unit_type == NalType::IDR_N_LP ||
-                                             nalVVC->header.nal_unit_type == NalType::CRA_NUT);
-  if (updatedParsingState.lastFrameIsKeyframe)
-  {
-    nalVVC->rawData = data;
-    this->nalUnitsForSeeking.push_back(nalVVC);
-  }
-
   if (this->auDelimiterDetector.isStartOfNewAU(nalVVC,
                                                updatedParsingState.currentPictureHeaderStructure))
   {
-    if (!this->handleNewAU(updatedParsingState, parseResult, bitrateEntry, nalStartEndPosFile))
+    auto &parsingStatePreviousAU = this->parsingState;
+    parseResult.bitrateEntry     = createBitrateEntryForAU(parsingStatePreviousAU, bitrateEntry);
+    if (!this->handleNewAU(parsingStatePreviousAU))
     {
-      specificDescription +=
-          " ERROR Adding POC " + std::to_string(this->parsingState.lastFramePOC) + " to frame list";
+      specificDescription += " ERROR Adding POC " +
+                             std::to_string(parsingStatePreviousAU.currentAU.poc) +
+                             " to frame list";
       parseResult.success = false;
     }
+
+    updatedParsingState.currentAU.fileStartEndPos = nalStartEndPosFile;
+    updatedParsingState.currentAU.sizeBytes       = 0;
+    updatedParsingState.currentAU.counter++;
   }
-  else if (this->parsingState.curFrameFileStartEndPos && nalStartEndPosFile)
-    updatedParsingState.curFrameFileStartEndPos->second = nalStartEndPosFile->second;
+  else if (nalStartEndPosFile)
+  {
+    if (updatedParsingState.currentAU.fileStartEndPos)
+      updatedParsingState.currentAU.fileStartEndPos->second = nalStartEndPosFile->second;
+    else
+      updatedParsingState.currentAU.fileStartEndPos = nalStartEndPosFile;
+  }
 
   this->parsingState = updatedParsingState;
-  this->parsingState.sizeCurrentAU += data.size();
+  this->parsingState.currentAU.sizeBytes += data.size();
 
   if (nalRoot)
   {
@@ -533,61 +590,36 @@ AnnexBVVC::parseAndAddNALUnit(int                                           nalI
 
 int AnnexBVVC::calculateAndUpdateGlobalPOC(bool isIRAP, unsigned PicOrderCntVal)
 {
-  if (isIRAP && this->maxPOCCount > 0)
+  if (isIRAP && this->maxPOCCount > 0 && PicOrderCntVal == 0)
   {
     this->pocCounterOffset = this->maxPOCCount + 1;
-    this->maxPOCCount      = -1;
+    this->maxPOCCount      = 0;
   }
   auto poc = this->pocCounterOffset + PicOrderCntVal;
-  if (int(poc) > this->maxPOCCount && !isIRAP)
+  if (poc > this->maxPOCCount && !isIRAP)
     this->maxPOCCount = poc;
   return poc;
 }
 
-bool AnnexBVVC::handleNewAU(ParsingState &                                updatedParsingState,
-                            AnnexB::ParseResult &                         parseResult,
-                            std::optional<BitratePlotModel::BitrateEntry> bitrateEntry,
-                            std::optional<pairUint64>                     nalStartEndPosFile)
+bool AnnexBVVC::handleNewAU(ParsingState &parsingState)
 {
-  DEBUG_VVC("Start of new AU. Adding bitrate " << updatedParsingState.sizeCurrentAU << " POC "
-                                               << updatedParsingState.lastFramePOC << " AU "
-                                               << updatedParsingState.counterAU);
+  DEBUG_VVC("Start of new AU. Adding bitrate " << parsingState.currentAU.sizeBytes << " POC "
+                                               << parsingState.currentAU.poc << " AU "
+                                               << parsingState.currentAU.counter);
 
-  BitratePlotModel::BitrateEntry entry;
-  if (bitrateEntry)
-  {
-    entry.pts      = bitrateEntry->pts;
-    entry.dts      = bitrateEntry->dts;
-    entry.duration = bitrateEntry->duration;
-  }
-  else
-  {
-    entry.pts      = updatedParsingState.lastFramePOC;
-    entry.dts      = int(updatedParsingState.counterAU);
-    entry.duration = 1;
-  }
-  entry.bitrate            = unsigned(updatedParsingState.sizeCurrentAU);
-  entry.keyframe           = this->parsingState.lastFrameIsKeyframe;
-  parseResult.bitrateEntry = entry;
-
-  if (!addFrameToList(updatedParsingState.lastFramePOC,
-                      nalStartEndPosFile,
-                      updatedParsingState.lastFrameIsKeyframe))
-  {
+  if (!this->addFrameToList(parsingState.currentAU.poc,
+                            parsingState.currentAU.fileStartEndPos,
+                            parsingState.currentAU.isKeyframe))
     return false;
-  }
-  if (this->parsingState.curFrameFileStartEndPos)
-    DEBUG_VVC("Adding start/end " << updatedParsingState.curFrameFileStartEndPos->first << "/"
-                                  << updatedParsingState.curFrameFileStartEndPos->second << " - AU "
-                                  << updatedParsingState.counterAU
-                                  << (updatedParsingState.lastFrameIsKeyframe ? " - ra" : ""));
-  else
-    DEBUG_VVC("Adding start/end %d/%d - POC NA/NA"
-              << (this->parsingState.lastFrameIsKeyframe ? " - ra" : ""));
 
-  updatedParsingState.curFrameFileStartEndPos = nalStartEndPosFile;
-  updatedParsingState.sizeCurrentAU           = 0;
-  updatedParsingState.counterAU++;
+  if (this->parsingState.currentAU.fileStartEndPos)
+    DEBUG_VVC("Adding start/end " << parsingState.currentAU.fileStartEndPos->first << "/"
+                                  << parsingState.currentAU.fileStartEndPos->second << " - AU "
+                                  << parsingState.currentAU.counter
+                                  << (parsingState.currentAU.isKeyframe ? " - ra" : ""));
+  else
+    DEBUG_VVC("Adding start/end NA/NA - AU " << parsingState.currentAU.counter
+                                             << (parsingState.currentAU.isKeyframe ? " - ra" : ""));
 
   return true;
 }
