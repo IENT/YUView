@@ -37,6 +37,14 @@
 #include "slice_layer_rbsp.h"
 #include "video_parameter_set_rbsp.h"
 
+#define PARSER_VVC_PICTURE_HEADER_DEBUG_OUTPUT 0
+#if PARSER_VVC_PICTURE_HEADER_DEBUG_OUTPUT && !NDEBUG
+#include <QDebug>
+#define DEBUG_PICHEADER(msg) qDebug() << msg
+#else
+#define DEBUG_PICHEADER(msg) ((void)0)
+#endif
+
 namespace parser::vvc
 {
 
@@ -454,7 +462,7 @@ void picture_header_structure::calculatePictureOrderCount(
     NalType                                   nalType,
     SPSMap &                                  spsMap,
     PPSMap &                                  ppsMap,
-    std::shared_ptr<picture_header_structure> previousPicture,
+    std::shared_ptr<picture_header_structure> prevTid0Pic,
     bool                                      NoOutputBeforeRecoveryFlag)
 {
   if (ppsMap.count(this->ph_pic_parameter_set_id) == 0)
@@ -480,11 +488,12 @@ void picture_header_structure::calculatePictureOrderCount(
     this->PicOrderCntMsb = 0;
   else
   {
-    if (!previousPicture)
-      throw std::logic_error("Error when calculating POC. Previous picture not found.");
+    if (!prevTid0Pic)
+      throw std::logic_error(
+          "Error when calculating POC. Previous picture (prevTid0Pic) not found.");
 
-    auto prevPicOrderCntLsb = previousPicture->ph_pic_order_cnt_lsb;
-    auto prevPicOrderCntMsb = previousPicture->PicOrderCntMsb;
+    auto prevPicOrderCntLsb = prevTid0Pic->ph_pic_order_cnt_lsb;
+    auto prevPicOrderCntMsb = prevTid0Pic->PicOrderCntMsb;
 
     // (196)
     if ((this->ph_pic_order_cnt_lsb < prevPicOrderCntLsb) &&
@@ -499,6 +508,12 @@ void picture_header_structure::calculatePictureOrderCount(
 
   // (197)
   this->PicOrderCntVal = this->PicOrderCntMsb + this->ph_pic_order_cnt_lsb;
+
+  DEBUG_PICHEADER("calculatePictureOrderCount PicOrderCntVal "
+                  << this->PicOrderCntVal << " ph_pic_order_cnt_lsb " << this->ph_pic_order_cnt_lsb
+                  << " PicOrderCntMsb " << this->PicOrderCntMsb << " NAL "
+                  << QString::fromStdString(NalTypeMapper.getName(nalType))
+                  << (isCLVSSPicture ? " CLVS" : ""));
 
   reader.logCalculatedValue("PicOrderCntMsb", int64_t(this->PicOrderCntMsb));
   reader.logCalculatedValue("PicOrderCntVal", int64_t(this->PicOrderCntVal));
