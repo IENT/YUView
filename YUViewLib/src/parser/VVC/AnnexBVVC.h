@@ -44,9 +44,35 @@ namespace parser
 
 namespace vvc
 {
+
 class slice_layer_rbsp;
 class picture_header_structure;
 class buffering_period;
+
+struct ParsingState
+{
+  using sharedPictureHeader = std::shared_ptr<vvc::picture_header_structure>;
+  sharedPictureHeader currentPictureHeaderStructure;
+  using Nuh_Layer_Id = unsigned;
+  std::map<Nuh_Layer_Id, sharedPictureHeader> prevTid0Pic;
+
+  std::shared_ptr<vvc::slice_layer_rbsp> currentSlice;
+  std::shared_ptr<vvc::buffering_period> lastBufferingPeriod;
+
+  struct CurrentAU
+  {
+    size_t                    counter{};
+    size_t                    sizeBytes{};
+    int                       poc{-1};
+    bool                      isKeyframe{};
+    std::optional<pairUint64> fileStartEndPos;
+  };
+  CurrentAU currentAU{};
+
+  using LayerID = unsigned;
+  std::map<LayerID, bool> NoOutputBeforeRecoveryFlag;
+};
+
 } // namespace vvc
 
 // This class knows how to parse the bitrstream of VVC annexB files
@@ -75,6 +101,12 @@ public:
                                  std::shared_ptr<TreeItem> parent             = {}) override;
 
 protected:
+  // The PicOrderCntMsb may be reset to zero for IDR frames. In order to count the global POC, we
+  // store the maximum POC.
+  uint64_t maxPOCCount{0};
+  uint64_t pocCounterOffset{0};
+  int      calculateAndUpdateGlobalPOC(bool isIRAP, unsigned PicOrderCntVal);
+
   struct ActiveParameterSets
   {
     vvc::VPSMap vpsMap;
@@ -86,25 +118,8 @@ protected:
 
   std::vector<std::shared_ptr<vvc::NalUnitVVC>> nalUnitsForSeeking;
 
-  struct ParsingState
-  {
-    std::shared_ptr<vvc::picture_header_structure> currentPictureHeaderStructure;
-    std::shared_ptr<vvc::slice_layer_rbsp>         currentSlice;
-    std::shared_ptr<vvc::buffering_period>         lastBufferingPeriod;
-
-    size_t                    counterAU{};
-    size_t                    sizeCurrentAU{};
-    int                       lastFramePOC{-1};
-    bool                      lastFrameIsKeyframe{};
-    std::optional<pairUint64> curFrameFileStartEndPos;
-    bool                      NoOutputBeforeRecoveryFlag{true};
-  };
-  ParsingState parsingState;
-
-  bool handleNewAU(ParsingState &                                updatedParsingState,
-                   AnnexB::ParseResult &                         parseResult,
-                   std::optional<BitratePlotModel::BitrateEntry> bitrateEntry,
-                   std::optional<pairUint64>                     nalStartEndPosFile);
+  vvc::ParsingState parsingState;
+  bool              handleNewAU(vvc::ParsingState &updatedParsingState);
 
   struct auDelimiterDetector_t
   {

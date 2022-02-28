@@ -60,8 +60,8 @@ public:
 
   unsigned NumLtrpEntries;
 
-  umap_1d<bool> AbsDeltaPocSt;
-  umap_1d<int>  DeltaPocValSt;
+  umap_1d<unsigned> AbsDeltaPocSt;
+  umap_1d<int>      DeltaPocValSt;
 
 private:
   bool getStRefPicFlag(unsigned i);

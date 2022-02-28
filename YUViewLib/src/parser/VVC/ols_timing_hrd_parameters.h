@@ -52,10 +52,10 @@ public:
              unsigned                       MaxSubLayersVal,
              general_timing_hrd_parameters *general_hrd);
 
-  vector<bool>            fixed_pic_rate_general_flag{};
-  vector<bool>            fixed_pic_rate_within_cvs_flag{};
-  vector<unsigned>        elemental_duration_in_tc_minus1{};
-  vector<bool>            low_delay_hrd_flag{};
+  umap_1d<bool> fixed_pic_rate_general_flag{};
+  umap_1d<bool>            fixed_pic_rate_within_cvs_flag{};
+  umap_1d<unsigned>        elemental_duration_in_tc_minus1{};
+  umap_1d<bool>            low_delay_hrd_flag{};
   sublayer_hrd_parameters sublayer_hrd_parameters_nal;
   sublayer_hrd_parameters sublayer_hrd_parameters_vcl;
 };
