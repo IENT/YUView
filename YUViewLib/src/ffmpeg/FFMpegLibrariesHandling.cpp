@@ -1698,7 +1698,7 @@ PixelFormatYUV AVPixFmtDescriptorWrapper::getPixelFormatYUV()
   return PixelFormatYUV(subsampling, bitsPerSample, planeOrder, bigEndian);
 }
 
-video::rgb::PixelFormatRGB AVPixFmtDescriptorWrapper::getRGBPixelFormat()
+video::rgb::PixelFormatRGB AVPixFmtDescriptorWrapper::getPixelFormatRGB()
 {
   if (this->getRawFormat() == video::RawFormat::YUV || !flagsSupported())
     return {};

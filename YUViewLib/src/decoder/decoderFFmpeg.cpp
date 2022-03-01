@@ -221,7 +221,7 @@ void decoderFFmpeg::copyCurImageToBuffer()
   }
   else if (this->rawFormat == video::RawFormat::RGB)
   {
-    const auto pixFmt           = this->getRGBPixelFormat();
+    const auto pixFmt           = this->getPixelFormatRGB();
     const auto nrBytesPerSample = pixFmt.getBitsPerSample() <= 8 ? 1 : 2;
     const auto nrBytesPerComponent =
         this->frameSize.width * this->frameSize.height * nrBytesPerSample;
@@ -460,7 +460,7 @@ bool decoderFFmpeg::createDecoder(AVCodecIDWrapper codecID, AVCodecParametersWra
   if (this->rawFormat == video::RawFormat::YUV)
     this->formatYUV = ffmpegPixFormat.getPixelFormatYUV();
   else if (this->rawFormat == video::RawFormat::RGB)
-    this->formatRGB = ffmpegPixFormat.getRGBPixelFormat();
+    this->formatRGB = ffmpegPixFormat.getPixelFormatRGB();
 
   // Ask the decoder to provide motion vectors (if possible)
   AVDictionaryWrapper opts;

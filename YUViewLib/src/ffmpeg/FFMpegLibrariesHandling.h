@@ -964,7 +964,7 @@ public:
     return flagIsRGB() ? video::RawFormat::RGB : video::RawFormat::YUV;
   }
   video::yuv::PixelFormatYUV getPixelFormatYUV();
-  video::rgb::PixelFormatRGB getRGBPixelFormat();
+  video::rgb::PixelFormatRGB getPixelFormatRGB();
 
   bool setValuesFromPixelFormatYUV(video::yuv::PixelFormatYUV fmt);
 
