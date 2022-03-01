@@ -44,6 +44,7 @@
 
 namespace FFmpeg
 {
+  
   // Some structs/enums which actual definition does not interest us.
   struct AVFormatContext;
   struct AVClass;
@@ -171,7 +172,20 @@ namespace FFmpeg
     AV_FRAME_DATA_AUDIO_SERVICE_TYPE,
     // The ones below are new in avutil 55
     AV_FRAME_DATA_MASTERING_DISPLAY_METADATA,
-    AV_FRAME_DATA_GOP_TIMECODE
+    AV_FRAME_DATA_GOP_TIMECODE,
+    // These are new in FFmpeg 5
+    AV_FRAME_DATA_SPHERICAL,
+    AV_FRAME_DATA_CONTENT_LIGHT_LEVEL,
+    AV_FRAME_DATA_ICC_PROFILE,
+    AV_FRAME_DATA_S12M_TIMECODE,
+    AV_FRAME_DATA_DYNAMIC_HDR_PLUS,
+    AV_FRAME_DATA_REGIONS_OF_INTEREST,
+    AV_FRAME_DATA_VIDEO_ENC_PARAMS,
+    AV_FRAME_DATA_SEI_UNREGISTERED,
+    AV_FRAME_DATA_FILM_GRAIN_PARAMS,
+    AV_FRAME_DATA_DETECTION_BBOXES,
+    AV_FRAME_DATA_DOVI_RPU_BUFFER,
+    AV_FRAME_DATA_DOVI_METADATA
   };
 
   enum AVPixelFormat
@@ -181,6 +195,9 @@ namespace FFmpeg
 
   /* The order / numbering of the values in this enum changes depending on the libavcodec version number 
    * or even how the library was compiled. The id for AV_CODEC_ID_NONE is always 0.
+   * Update
+   * In ffmpeg 5, this was changed so that the AVCodecID list is fixed per version and does not change
+   * depending on compilation.
    */
   enum AVCodecID
   {
@@ -200,14 +217,15 @@ namespace FFmpeg
     AVCOL_PRI_SMPTE240M   = 7,  ///< functionally identical to above
     AVCOL_PRI_FILM        = 8,  ///< colour filters using Illuminant C
     AVCOL_PRI_BT2020      = 9,  ///< ITU-R BT2020
-    AVCOL_PRI_SMPTEST428_1 = 10, ///< SMPTE ST 428-1 (CIE 1931 XYZ)
+    AVCOL_PRI_SMPTE428    = 10, ///< SMPTE ST 428-1 (CIE 1931 XYZ)
+    AVCOL_PRI_SMPTEST428_1 = AVCOL_PRI_SMPTE428,
     AVCOL_PRI_SMPTE431    = 11, ///< SMPTE ST 431-2 (2011)
     AVCOL_PRI_SMPTE432    = 12, ///< SMPTE ST 432-1 D65 (2010)
-    AVCOL_PRI_NB                ///< Not part of ABI
+    AVCOL_PRI_EBU3213     = 22, ///< EBU Tech. 3213-E (nothing there) / one of JEDEC P22 group phosphors
+    AVCOL_PRI_JEDEC_P22   = AVCOL_PRI_EBU3213
   };
 
-  enum AVColorTransferCharacteristic 
-  {
+  enum AVColorTransferCharacteristic {
     AVCOL_TRC_RESERVED0    = 0,
     AVCOL_TRC_BT709        = 1,  ///< also ITU-R BT1361
     AVCOL_TRC_UNSPECIFIED  = 2,
@@ -224,10 +242,11 @@ namespace FFmpeg
     AVCOL_TRC_IEC61966_2_1 = 13, ///< IEC 61966-2-1 (sRGB or sYCC)
     AVCOL_TRC_BT2020_10    = 14, ///< ITU-R BT2020 for 10-bit system
     AVCOL_TRC_BT2020_12    = 15, ///< ITU-R BT2020 for 12-bit system
-    AVCOL_TRC_SMPTEST2084  = 16, ///< SMPTE ST 2084 for 10-, 12-, 14- and 16-bit systems
-    AVCOL_TRC_SMPTEST428_1 = 17, ///< SMPTE ST 428-1
-    AVCOL_TRC_ARIB_STD_B67 = 18, ///< ARIB STD-B67, known as "Hybrid log-gamma"
-    AVCOL_TRC_NB                 ///< Not part of ABI
+    AVCOL_TRC_SMPTE2084    = 16, ///< SMPTE ST 2084 for 10-, 12-, 14- and 16-bit systems
+    AVCOL_TRC_SMPTEST2084  = AVCOL_TRC_SMPTE2084,
+    AVCOL_TRC_SMPTE428     = 17, ///< SMPTE ST 428-1
+    AVCOL_TRC_SMPTEST428_1 = AVCOL_TRC_SMPTE428,
+    AVCOL_TRC_ARIB_STD_B67 = 18  ///< ARIB STD-B67, known as "Hybrid log-gamma"
   };
 
   enum AVColorRange 
@@ -235,7 +254,6 @@ namespace FFmpeg
     AVCOL_RANGE_UNSPECIFIED = 0,
     AVCOL_RANGE_MPEG        = 1, ///< the normal 219*2^(n-8) "MPEG" YUV ranges
     AVCOL_RANGE_JPEG        = 2, ///< the normal     2^n-1   "JPEG" YUV ranges
-    AVCOL_RANGE_NB               ///< Not part of ABI
   };
 
   /**
@@ -261,8 +279,7 @@ namespace FFmpeg
     AVCHROMA_LOC_TOPLEFT     = 3, ///< ITU-R 601, SMPTE 274M 296M S314M(DV 4:1:1), mpeg2 4:2:2
     AVCHROMA_LOC_TOP         = 4,
     AVCHROMA_LOC_BOTTOMLEFT  = 5,
-    AVCHROMA_LOC_BOTTOM      = 6,
-    AVCHROMA_LOC_NB               ///< Not part of ABI
+    AVCHROMA_LOC_BOTTOM      = 6
   };
 
   enum AVColorSpace 
@@ -279,7 +296,9 @@ namespace FFmpeg
     AVCOL_SPC_BT2020_NCL  = 9,  ///< ITU-R BT2020 non-constant luminance system
     AVCOL_SPC_BT2020_CL   = 10, ///< ITU-R BT2020 constant luminance system
     AVCOL_SPC_SMPTE2085   = 11, ///< SMPTE 2085, Y'D'zD'x
-    AVCOL_SPC_NB                ///< Not part of ABI
+    AVCOL_SPC_CHROMA_DERIVED_NCL = 12, ///< Chromaticity-derived non-constant luminance system
+    AVCOL_SPC_CHROMA_DERIVED_CL = 13, ///< Chromaticity-derived constant luminance system
+    AVCOL_SPC_ICTCP       = 14, ///< ITU-R BT.2100-0, ICtCp
   };
 
   enum AVDiscard
@@ -295,16 +314,16 @@ namespace FFmpeg
     AVDISCARD_ALL     = 48, ///< discard all
   };
 
-  enum AVStreamParseType 
+  enum AVStreamParseType
   {
     AVSTREAM_PARSE_NONE,
     AVSTREAM_PARSE_FULL,       /**< full parsing and repack */
     AVSTREAM_PARSE_HEADERS,    /**< Only parse headers, do not repack. */
     AVSTREAM_PARSE_TIMESTAMPS, /**< full parsing and interpolation of timestamps for frames not starting on a packet boundary */
     AVSTREAM_PARSE_FULL_ONCE,  /**< full parsing and repack of the first frame only, only implemented for H.264 currently */
-    AVSTREAM_PARSE_FULL_RAW=MKTAG(0,'R','A','W'),       /**< full parsing and repack with timestamp and position generation by parser for raw
-                                                        this assumes that each packet in the file contains no demuxer level headers and
-                                                        just codec level data, otherwise position generation would fail */
+    AVSTREAM_PARSE_FULL_RAW,   /**< full parsing and repack with timestamp and position generation by parser for raw
+                                    this assumes that each packet in the file contains no demuxer level headers and
+                                    just codec level data, otherwise position generation would fail */
   };
 
   enum AVFieldOrder 
@@ -336,7 +355,5 @@ namespace FFmpeg
     AV_SAMPLE_FMT_DBLP,        ///< double, planar
     AV_SAMPLE_FMT_S64,         ///< signed 64 bits
     AV_SAMPLE_FMT_S64P,        ///< signed 64 bits, planar
-
-    AV_SAMPLE_FMT_NB           ///< Number of sample formats. DO NOT USE if linking dynamically
   };
 }
