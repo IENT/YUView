@@ -30,27 +30,36 @@
  *   along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
+#pragma once
+
+#include "AVMotionVectorWrapper.h"
 #include "FFMpegLibrariesTypes.h"
 
 namespace FFmpeg
 {
 
-QString timestampToString(int64_t timestamp, AVRational timebase)
+class AVFrameSideDataWrapper
 {
-  auto d_seconds = (double)timestamp * timebase.num / timebase.den;
-  auto hours     = (int)(d_seconds / 60 / 60);
-  d_seconds -= hours * 60 * 60;
-  auto minutes = (int)(d_seconds / 60);
-  d_seconds -= minutes * 60;
-  auto seconds = (int)d_seconds;
-  d_seconds -= seconds;
-  auto milliseconds = (int)(d_seconds * 1000);
+public:
+  AVFrameSideDataWrapper() = default;
+  AVFrameSideDataWrapper(AVFrameSideData *sideData, LibraryVersion libVer);
 
-  return QString("%1:%2:%3.%4")
-      .arg(hours, 2, 10, QChar('0'))
-      .arg(minutes, 2, 10, QChar('0'))
-      .arg(seconds, 2, 10, QChar('0'))
-      .arg(milliseconds, 3, 10, QChar('0'));
-}
+  size_t                getNumberMotionVectors();
+  AVMotionVectorWrapper getMotionVector(unsigned idx);
+
+  explicit operator bool() const { return sideData != nullptr; }
+
+private:
+  void update();
+
+  enum AVFrameSideDataType type;
+  uint8_t *                data{nullptr};
+  int                      size;
+  AVDictionary *           metadata;
+  AVBufferRef *            buf;
+
+  AVFrameSideData *sideData;
+  LibraryVersion   libVer;
+};
 
 } // namespace FFmpeg

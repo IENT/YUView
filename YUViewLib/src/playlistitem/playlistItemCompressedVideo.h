@@ -145,8 +145,8 @@ protected:
   int readAnnexBFrameCounterCodingOrder{-1};
 
   // Which type is the input?
-  InputFormat      inputFormat;
-  AVCodecIDWrapper ffmpegCodec;
+  InputFormat              inputFormat;
+  FFmpeg::AVCodecIDWrapper ffmpegCodec;
 
   // For FFMpeg files we don't need a reader to parse them. But if the container contains a
   // supported format, we can read the NAL units from the compressed file.

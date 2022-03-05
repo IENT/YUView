@@ -30,27 +30,54 @@
  *   along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
+#pragma once
+
 #include "FFMpegLibrariesTypes.h"
+#include <QList>
 
 namespace FFmpeg
 {
 
-QString timestampToString(int64_t timestamp, AVRational timebase)
+class AVCodecWrapper
 {
-  auto d_seconds = (double)timestamp * timebase.num / timebase.den;
-  auto hours     = (int)(d_seconds / 60 / 60);
-  d_seconds -= hours * 60 * 60;
-  auto minutes = (int)(d_seconds / 60);
-  d_seconds -= minutes * 60;
-  auto seconds = (int)d_seconds;
-  d_seconds -= seconds;
-  auto milliseconds = (int)(d_seconds * 1000);
+public:
+  AVCodecWrapper() {}
+  AVCodecWrapper(AVCodec *codec, LibraryVersion libVer) : codec(codec), libVer(libVer) {}
+  explicit  operator bool() const { return this->codec != nullptr; }
+  AVCodec * getAVCodec() { return this->codec; }
+  AVCodecID getCodecID()
+  {
+    update();
+    return this->id;
+  }
+  QString getName()
+  {
+    update();
+    return this->name;
+  }
+  QString getLongName()
+  {
+    update();
+    return this->long_name;
+  }
 
-  return QString("%1:%2:%3.%4")
-      .arg(hours, 2, 10, QChar('0'))
-      .arg(minutes, 2, 10, QChar('0'))
-      .arg(seconds, 2, 10, QChar('0'))
-      .arg(milliseconds, 3, 10, QChar('0'));
+private:
+  void update();
+
+  QString               name{};
+  QString               long_name{};
+  AVMediaType           type;
+  AVCodecID             id{AV_CODEC_ID_NONE};
+  int                   capabilities{0};       ///< see AV_CODEC_CAP_
+  QList<AVRational>     supported_framerates;  ///< terminated by {0,0}
+  QList<AVPixelFormat>  pix_fmts;              ///< array is terminated by -1
+  QList<int>            supported_samplerates; ///< array is terminated by 0
+  QList<AVSampleFormat> sample_fmts;           ///< array is terminated by -1
+  QList<uint64_t>       channel_layouts;       ///< array is terminated by 0
+  uint8_t               max_lowres{0}; ///< maximum value for lowres supported by the decoder
+
+  AVCodec *            codec{nullptr};
+  LibraryVersion libVer;
+};
+
 }
-
-} // namespace FFmpeg

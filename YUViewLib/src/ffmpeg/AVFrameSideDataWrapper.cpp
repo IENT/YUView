@@ -30,27 +30,65 @@
  *   along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "FFMpegLibrariesTypes.h"
+#include "AVFrameSideDataWrapper.h"
+#include <stdexcept>
 
 namespace FFmpeg
 {
 
-QString timestampToString(int64_t timestamp, AVRational timebase)
+namespace
 {
-  auto d_seconds = (double)timestamp * timebase.num / timebase.den;
-  auto hours     = (int)(d_seconds / 60 / 60);
-  d_seconds -= hours * 60 * 60;
-  auto minutes = (int)(d_seconds / 60);
-  d_seconds -= minutes * 60;
-  auto seconds = (int)d_seconds;
-  d_seconds -= seconds;
-  auto milliseconds = (int)(d_seconds * 1000);
 
-  return QString("%1:%2:%3.%4")
-      .arg(hours, 2, 10, QChar('0'))
-      .arg(minutes, 2, 10, QChar('0'))
-      .arg(seconds, 2, 10, QChar('0'))
-      .arg(milliseconds, 3, 10, QChar('0'));
+typedef struct AVFrameSideData_54_55_56
+{
+  enum AVFrameSideDataType type;
+  uint8_t *                data;
+  int                      size;
+  AVDictionary *           metadata;
+  AVBufferRef *            buf;
+} AVFrameSideData_54_55_56;
+
+} // namespace
+
+AVFrameSideDataWrapper::AVFrameSideDataWrapper(AVFrameSideData *sideData, LibraryVersion libVer)
+    : sideData(sideData), libVer(libVer)
+{
+  this->update();
+}
+
+size_t AVFrameSideDataWrapper::getNumberMotionVectors()
+{
+  this->update();
+
+  if (this->type != AV_FRAME_DATA_MOTION_VECTORS)
+    return 0;
+
+  return AVMotionVectorWrapper::getNumberOfMotionVectors(this->libVer, this->size);
+}
+
+AVMotionVectorWrapper AVFrameSideDataWrapper::getMotionVector(unsigned idx)
+{
+  this->update();
+  return AVMotionVectorWrapper(this->libVer, this->data, idx);
+}
+
+void AVFrameSideDataWrapper::update()
+{
+  if (this->sideData == nullptr)
+    return;
+
+  if (this->libVer.avutil.major == 54 || this->libVer.avutil.major == 55 ||
+      this->libVer.avutil.major == 56)
+  {
+    auto p         = reinterpret_cast<AVFrameSideData_54_55_56 *>(sideData);
+    this->type     = p->type;
+    this->data     = p->data;
+    this->size     = p->size;
+    this->metadata = p->metadata;
+    this->buf      = p->buf;
+  }
+  else
+    throw std::runtime_error("Invalid library version");
 }
 
 } // namespace FFmpeg

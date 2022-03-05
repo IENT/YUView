@@ -39,7 +39,7 @@
 #include <decoder/decoderLibde265.h>
 #include <decoder/decoderVTM.h>
 #include <decoder/decoderVVDec.h>
-#include <ffmpeg/FFMpegLibrariesHandling.h>
+#include <ffmpeg/FFmpegVersionHandler.h>
 
 #include <QColorDialog>
 #include <QFileDialog>
@@ -385,7 +385,7 @@ void SettingsDialog::on_pushButtonFFMpegSelectFile_clicked()
 
   // Try to open ffmpeg using the four libraries
   QStringList logList;
-  if (!FFmpegVersionHandler::checkLibraryFiles(
+  if (!FFmpeg::FFmpegVersionHandler::checkLibraryFiles(
           avCodecLib, avFormatLib, avUtilLib, swResampleLib, logList))
   {
     QMessageBox::StandardButton b = QMessageBox::question(

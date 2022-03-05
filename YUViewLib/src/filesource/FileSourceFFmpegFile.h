@@ -33,8 +33,12 @@
 #pragma once
 
 #include "FileSource.h"
-#include "ffmpeg/FFMpegLibrariesHandling.h"
-#include "video/videoHandlerYUV.h"
+#include <ffmpeg/AVCodecIDWrapper.h>
+#include <ffmpeg/AVCodecParametersWrapper.h>
+#include <ffmpeg/AVPacketWrapper.h>
+#include <ffmpeg/FFmpegVersionHandler.h>
+#include <video/videoHandlerYUV.h>
+#include <video/videoHandlerRGB.h>
 
 /* This class can use the ffmpeg libraries (libavcodec) to read from any packetized file.
  */
@@ -76,7 +80,7 @@ public:
   QByteArray getNextUnit(bool getLastDataAgain = false, int64_t *pts = nullptr);
   // Return the next packet (unless getLastPackage is set in which case we return the current
   // packet)
-  AVPacketWrapper getNextPacket(bool getLastPackage = false, bool videoPacket = true);
+  FFmpeg::AVPacketWrapper getNextPacket(bool getLastPackage = false, bool videoPacket = true);
   // Return the raw extradata/metadata (in avformat format containing the parameter sets)
 
   QByteArray    getExtradata();
@@ -100,18 +104,18 @@ public:
   // Get information on the video stream
   indexRange getDecodableFrameLimits() const;
 
-  AVCodecIDWrapper getVideoStreamCodecID()
+  FFmpeg::AVCodecIDWrapper getVideoStreamCodecID()
   {
     return ff.getCodecIDWrapper(video_stream.getCodecID());
   }
-  AVCodecParametersWrapper getVideoCodecPar() { return video_stream.getCodecpar(); }
+  FFmpeg::AVCodecParametersWrapper getVideoCodecPar() { return video_stream.getCodecpar(); }
 
   // Get more general information about the streams
   unsigned int getNumberOfStreams() { return this->formatCtx ? this->formatCtx.getNbStreams() : 0; }
   int          getVideoStreamIndex() { return video_stream.getIndex(); }
-  QList<QStringPairList> getFileInfoForAllStreams();
-  QList<AVRational>      getTimeBaseAllStreams();
-  QList<QString>         getShortStreamDescriptionAllStreams();
+  QList<QStringPairList>    getFileInfoForAllStreams();
+  QList<FFmpeg::AVRational> getTimeBaseAllStreams();
+  QList<QString>            getShortStreamDescriptionAllStreams();
 
   // Look through the keyframes and find the closest one before (or equal)
   // the given frameIdx where we can start decoding
@@ -124,19 +128,20 @@ private slots:
   void fileSystemWatcherFileChanged(const QString &) { fileChanged = true; }
 
 protected:
-  FFmpegVersionHandler   ff; //< Access to the libraries independent of their version
-  AVFormatContextWrapper formatCtx;
-  void                   openFileAndFindVideoStream(QString fileName);
-  bool                   goToNextPacket(bool videoPacketsOnly = false);
-  AVPacketWrapper        currentPacket;    //< A place for the curren (frame) input buffer
-  bool                   endOfFile{false}; //< Are we at the end of file (draining mode)?
+  FFmpeg::FFmpegVersionHandler   ff; //< Access to the libraries independent of their version
+  FFmpeg::AVFormatContextWrapper formatCtx;
+  void                           openFileAndFindVideoStream(QString fileName);
+  bool                           goToNextPacket(bool videoPacketsOnly = false);
+  FFmpeg::AVPacketWrapper        currentPacket;    //< A place for the curren (frame) input buffer
+  bool                           endOfFile{false}; //< Are we at the end of file (draining mode)?
+
   // Seek the stream to the given pts value, flush the decoder and load the first packet so
   // that we are ready to start decoding from this pts.
-  int64_t         duration{-1}; //< duration / AV_TIME_BASE is the duration in seconds
-  AVRational      timeBase{0, 0};
-  AVStreamWrapper video_stream;
-  double          frameRate{-1};
-  Size            frameSize;
+  int64_t                 duration{-1}; //< duration / AV_TIME_BASE is the duration in seconds
+  FFmpeg::AVRational      timeBase{0, 0};
+  FFmpeg::AVStreamWrapper video_stream;
+  double                  frameRate{-1};
+  Size                    frameSize;
 
   struct streamIndices_t
   {
@@ -182,7 +187,7 @@ protected:
     int64_t dts;
   };
 
-  PacketDataFormat packetDataFormat{PacketDataFormat::Unknown};
+  FFmpeg::PacketDataFormat packetDataFormat{FFmpeg::PacketDataFormat::Unknown};
 
   // These are filled after opening a file (after scanBitstream was called)
   QList<pictureIdx> keyFrameList; //< A list of pairs (frameNr, PTS) that we can seek to.

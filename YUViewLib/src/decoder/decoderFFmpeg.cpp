@@ -45,7 +45,7 @@
 namespace decoder
 {
 
-decoderFFmpeg::decoderFFmpeg(AVCodecIDWrapper           codecID,
+decoderFFmpeg::decoderFFmpeg(FFmpeg::AVCodecIDWrapper   codecID,
                              Size                       size,
                              QByteArray                 extradata,
                              video::yuv::PixelFormatYUV pixelFormatYUV,
@@ -56,18 +56,19 @@ decoderFFmpeg::decoderFFmpeg(AVCodecIDWrapper           codecID,
 {
   // The libraries are only loaded on demand. This way a FFmpegLibraries instance can exist without
   // loading the libraries which is slow and uses a lot of memory.
-  if (!this->ff.loadFFmpegLibraries())
+  this->ff.loadFFmpegLibraries();
+  if (!this->ff.loadingSuccessfull())
     return;
 
   // Create the cofiguration parameters
   auto codecpar = this->ff.allocCodecParameters();
-  codecpar.setAVMediaType(AVMEDIA_TYPE_VIDEO);
+  codecpar.setAVMediaType(FFmpeg::AVMEDIA_TYPE_VIDEO);
   codecpar.setAVCodecID(this->ff.getCodecIDFromWrapper(codecID));
-  codecpar.setSize(size.width, size.height);
+  codecpar.setSize(size);
   codecpar.setExtradata(extradata);
 
   auto avPixelFormat = this->ff.getAVPixelFormatFromPixelFormatYUV(pixelFormatYUV);
-  if (avPixelFormat == AV_PIX_FMT_NONE)
+  if (avPixelFormat == FFmpeg::AV_PIX_FMT_NONE)
   {
     this->setError("Error determining the AVPixelFormat.");
     return;
@@ -93,12 +94,13 @@ decoderFFmpeg::decoderFFmpeg(AVCodecIDWrapper           codecID,
                << this->getCodecName() << (cachingDecoder ? " - caching" : ""));
 }
 
-decoderFFmpeg::decoderFFmpeg(AVCodecParametersWrapper codecpar, bool cachingDecoder)
+decoderFFmpeg::decoderFFmpeg(FFmpeg::AVCodecParametersWrapper codecpar, bool cachingDecoder)
     : decoderBase(cachingDecoder)
 {
   // The libraries are only loaded on demand. This way a FFmpegLibraries instance can exist without
   // loading the libraries which is slow and uses a lot of memory.
-  if (!this->ff.loadFFmpegLibraries())
+  this->ff.loadFFmpegLibraries();
+  if (!this->ff.loadingSuccessfull())
     return;
 
   auto codecID    = this->ff.getCodecIDWrapper(codecpar.getCodecID());
@@ -119,9 +121,9 @@ decoderFFmpeg::decoderFFmpeg(AVCodecParametersWrapper codecpar, bool cachingDeco
 decoderFFmpeg::~decoderFFmpeg()
 {
   if (this->frame)
-    this->frame.freeFrame(this->ff);
+    this->ff.freeFrame(this->frame);
   if (this->raw_pkt)
-    this->raw_pkt.freePacket(this->ff);
+    this->ff.freePacket(this->raw_pkt);
 }
 
 void decoderFFmpeg::resetDecoder()
@@ -274,7 +276,7 @@ void decoderFFmpeg::cacheCurStatistics()
   DEBUG_FFMPEG("decoderFFmpeg::cacheCurStatistics");
 
   // Try to get the motion information
-  auto sideData = this->ff.getSideData(frame, AV_FRAME_DATA_MOTION_VECTORS);
+  auto sideData = this->ff.getSideData(frame, FFmpeg::AV_FRAME_DATA_MOTION_VECTORS);
   if (sideData)
   {
     const auto nrMVs = sideData.getNumberMotionVectors();
@@ -299,12 +301,12 @@ void decoderFFmpeg::cacheCurStatistics()
 bool decoderFFmpeg::pushData(QByteArray &data)
 {
   if (!this->raw_pkt)
-    this->raw_pkt.allocatePaket(ff);
+    this->raw_pkt = this->ff.allocatePaket();
   if (data.length() == 0)
   {
     // Push an empty packet to indicate that the file has ended
     DEBUG_FFMPEG("decoderFFmpeg::pushData: Pushing an empty packet");
-    AVPacketWrapper emptyPacket;
+    FFmpeg::AVPacketWrapper emptyPacket;
     return this->pushAVPacket(emptyPacket);
   }
   else
@@ -320,7 +322,7 @@ bool decoderFFmpeg::pushData(QByteArray &data)
   return this->pushAVPacket(this->raw_pkt);
 }
 
-bool decoderFFmpeg::pushAVPacket(AVPacketWrapper &pkt)
+bool decoderFFmpeg::pushAVPacket(FFmpeg::AVPacketWrapper &pkt)
 {
   if (this->decoderState != DecoderState::NeedsMoreData)
   {
@@ -432,7 +434,8 @@ void decoderFFmpeg::fillStatisticList(stats::StatisticsData &statisticsData) con
   statisticsData.addStatType(stats::StatisticsType(3, "Motion Vector +", 4));
 }
 
-bool decoderFFmpeg::createDecoder(AVCodecIDWrapper codecID, AVCodecParametersWrapper codecpar)
+bool decoderFFmpeg::createDecoder(FFmpeg::AVCodecIDWrapper         codecID,
+                                  FFmpeg::AVCodecParametersWrapper codecpar)
 {
   // Allocate the decoder context
   if (this->videoCodec)
@@ -463,8 +466,8 @@ bool decoderFFmpeg::createDecoder(AVCodecIDWrapper codecID, AVCodecParametersWra
     this->formatRGB = ffmpegPixFormat.getRGBPixelFormat();
 
   // Ask the decoder to provide motion vectors (if possible)
-  AVDictionaryWrapper opts;
-  int                 ret = this->ff.dictSet(opts, "flags2", "+export_mvs", 0);
+  FFmpeg::AVDictionaryWrapper opts;
+  int                         ret = this->ff.dictSet(opts, "flags2", "+export_mvs", 0);
   if (ret < 0)
     return this->setErrorB(
         QStringLiteral("Could not request motion vector retrieval. Return code %1").arg(ret));
@@ -475,7 +478,7 @@ bool decoderFFmpeg::createDecoder(AVCodecIDWrapper codecID, AVCodecParametersWra
     return this->setErrorB(
         QStringLiteral("Could not open the video codec (avcodec_open2). Return code %1.").arg(ret));
 
-  this->frame.allocateFrame(ff);
+  this->frame = ff.allocateFrame();
   if (!frame)
     return this->setErrorB(QStringLiteral("Could not allocate frame (av_frame_alloc)."));
 

@@ -30,27 +30,43 @@
  *   along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
+#pragma once
+
 #include "FFMpegLibrariesTypes.h"
 
 namespace FFmpeg
 {
 
-QString timestampToString(int64_t timestamp, AVRational timebase)
+class AVCodecIDWrapper
 {
-  auto d_seconds = (double)timestamp * timebase.num / timebase.den;
-  auto hours     = (int)(d_seconds / 60 / 60);
-  d_seconds -= hours * 60 * 60;
-  auto minutes = (int)(d_seconds / 60);
-  d_seconds -= minutes * 60;
-  auto seconds = (int)d_seconds;
-  d_seconds -= seconds;
-  auto milliseconds = (int)(d_seconds * 1000);
+public:
+  AVCodecIDWrapper() {}
+  AVCodecIDWrapper(AVCodecID codecID, QString codecName) : codecID(codecID), codecName(codecName) {}
 
-  return QString("%1:%2:%3.%4")
-      .arg(hours, 2, 10, QChar('0'))
-      .arg(minutes, 2, 10, QChar('0'))
-      .arg(seconds, 2, 10, QChar('0'))
-      .arg(milliseconds, 3, 10, QChar('0'));
-}
+  QString   getCodecName() const { return this->codecName; }
+  AVCodecID getCodecID() const { return this->codecID; }
+
+  void setCodecID(AVCodecID id) { this->codecID = id; }
+
+  void setTypeHEVC() { this->codecName = "hevc"; }
+  void setTypeAVC() { this->codecName = "h264"; }
+
+  bool isHEVC() const { return this->codecName == "hevc"; }
+  bool isAVC() const { return this->codecName == "h264"; }
+  bool isMpeg2() const { return this->codecName == "mpeg2video"; }
+  bool isAV1() const { return this->codecName == "av1"; }
+
+  bool isNone() const
+  {
+    return this->codecName.isEmpty() || this->codecName == "unknown_codec" ||
+           this->codecName == "none";
+  }
+
+  bool operator==(const AVCodecIDWrapper &a) const { return codecID == a.codecID; }
+
+private:
+  AVCodecID codecID{AV_CODEC_ID_NONE};
+  QString   codecName;
+};
 
 } // namespace FFmpeg

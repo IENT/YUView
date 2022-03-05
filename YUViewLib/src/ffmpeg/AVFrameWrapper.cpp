@@ -1,0 +1,209 @@
+/*  This file is part of YUView - The YUV player with advanced analytics toolset
+ *   <https://github.com/IENT/YUView>
+ *   Copyright (C) 2015  Institut für Nachrichtentechnik, RWTH Aachen University, GERMANY
+ *
+ *   This program is free software; you can redistribute it and/or modify
+ *   it under the terms of the GNU General Public License as published by
+ *   the Free Software Foundation; either version 3 of the License, or
+ *   (at your option) any later version.
+ *
+ *   In addition, as a special exception, the copyright holders give
+ *   permission to link the code of portions of this program with the
+ *   OpenSSL library under certain conditions as described in each
+ *   individual source file, and distribute linked combinations including
+ *   the two.
+ *
+ *   You must obey the GNU General Public License in all respects for all
+ *   of the code used other than OpenSSL. If you modify file(s) with this
+ *   exception, you may extend this exception to your version of the
+ *   file(s), but you are not obligated to do so. If you do not wish to do
+ *   so, delete this exception statement from your version. If you delete
+ *   this exception statement from all source files in the program, then
+ *   also delete it here.
+ *
+ *   This program is distributed in the hope that it will be useful,
+ *   but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ *   GNU General Public License for more details.
+ *
+ *   You should have received a copy of the GNU General Public License
+ *   along with this program. If not, see <http://www.gnu.org/licenses/>.
+ */
+
+#include "AVFrameWrapper.h"
+#include <stdexcept>
+
+namespace FFmpeg
+{
+
+namespace
+{
+
+// AVFrames is part of AVUtil
+typedef struct AVFrame_54
+{
+  uint8_t *     data[AV_NUM_DATA_POINTERS];
+  int           linesize[AV_NUM_DATA_POINTERS];
+  uint8_t **    extended_data;
+  int           width, height;
+  int           nb_samples;
+  int           format;
+  int           key_frame;
+  AVPictureType pict_type;
+  uint8_t *     base[AV_NUM_DATA_POINTERS];
+  AVRational    sample_aspect_ratio;
+  int64_t       pts;
+  int64_t       pkt_pts;
+  int64_t       pkt_dts;
+  int           coded_picture_number;
+  int           display_picture_number;
+  int           quality;
+  // Actually, there is more here, but the variables above are the only we need.
+} AVFrame_54;
+
+typedef struct AVFrame_55_56
+{
+  uint8_t *     data[AV_NUM_DATA_POINTERS];
+  int           linesize[AV_NUM_DATA_POINTERS];
+  uint8_t **    extended_data;
+  int           width, height;
+  int           nb_samples;
+  int           format;
+  int           key_frame;
+  AVPictureType pict_type;
+  AVRational    sample_aspect_ratio;
+  int64_t       pts;
+  int64_t       pkt_pts;
+  int64_t       pkt_dts;
+  int           coded_picture_number;
+  int           display_picture_number;
+  int           quality;
+  // Actually, there is more here, but the variables above are the only we need.
+} AVFrame_55_56;
+
+} // namespace
+
+AVFrameWrapper::AVFrameWrapper(LibraryVersion libVersion, AVFrame *frame)
+{
+  this->libVer = libVersion;
+  this->frame  = frame;
+}
+
+AVFrameWrapper::~AVFrameWrapper()
+{
+  assert(this->frame == nullptr);
+}
+
+void AVFrameWrapper::clear()
+{
+  this->frame = nullptr;
+  this->libVer = {};
+}
+
+uint8_t *AVFrameWrapper::getData(int component)
+{
+  this->update();
+  return this->data[component];
+}
+
+int AVFrameWrapper::getLineSize(int component)
+{
+  this->update();
+  return this->linesize[component];
+}
+
+AVFrame *AVFrameWrapper::getFrame() const
+{
+  return this->frame;
+}
+
+int AVFrameWrapper::getWidth()
+{
+  this->update();
+  return this->width;
+}
+
+int AVFrameWrapper::getHeight()
+{
+  this->update();
+  return this->height;
+}
+
+Size AVFrameWrapper::getSize()
+{
+  this->update();
+  return Size(width, height);
+}
+
+int AVFrameWrapper::getPTS()
+{
+  this->update();
+  return this->pts;
+}
+
+AVPictureType AVFrameWrapper::getPictType()
+{
+  this->update();
+  return this->pict_type;
+}
+
+int AVFrameWrapper::getKeyFrame()
+{
+  this->update();
+  return this->key_frame;
+}
+
+void AVFrameWrapper::update()
+{
+  if (this->frame == nullptr)
+    return;
+
+  if (this->libVer.avutil.major == 54)
+  {
+    auto p = reinterpret_cast<AVFrame_54 *>(this->frame);
+    for (unsigned i = 0; i < AV_NUM_DATA_POINTERS; i++)
+    {
+      this->data[i]     = p->data[i];
+      this->linesize[i] = p->linesize[i];
+    }
+    this->width                  = p->width;
+    this->height                 = p->height;
+    this->nb_samples             = p->nb_samples;
+    this->format                 = p->format;
+    this->key_frame              = p->key_frame;
+    this->pict_type              = p->pict_type;
+    this->sample_aspect_ratio    = p->sample_aspect_ratio;
+    this->pts                    = p->pts;
+    this->pkt_pts                = p->pkt_pts;
+    this->pkt_dts                = p->pkt_dts;
+    this->coded_picture_number   = p->coded_picture_number;
+    this->display_picture_number = p->display_picture_number;
+    this->quality                = p->quality;
+  }
+  else if (this->libVer.avutil.major == 55 || this->libVer.avutil.major == 56)
+  {
+    auto p = reinterpret_cast<AVFrame_55_56 *>(this->frame);
+    for (unsigned i = 0; i < AV_NUM_DATA_POINTERS; i++)
+    {
+      this->data[i]     = p->data[i];
+      this->linesize[i] = p->linesize[i];
+    }
+    this->width                  = p->width;
+    this->height                 = p->height;
+    this->nb_samples             = p->nb_samples;
+    this->format                 = p->format;
+    this->key_frame              = p->key_frame;
+    this->pict_type              = p->pict_type;
+    this->sample_aspect_ratio    = p->sample_aspect_ratio;
+    this->pts                    = p->pts;
+    this->pkt_pts                = p->pkt_pts;
+    this->pkt_dts                = p->pkt_dts;
+    this->coded_picture_number   = p->coded_picture_number;
+    this->display_picture_number = p->display_picture_number;
+    this->quality                = p->quality;
+  }
+  else
+    throw std::runtime_error("Invalid library version");
+}
+
+} // namespace FFmpeg
