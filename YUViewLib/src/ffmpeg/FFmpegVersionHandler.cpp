@@ -509,7 +509,7 @@ bool FFmpegVersionHandler::loadFFmpegLibraryInPath(QString path)
                     .arg(version.avcodec.major)
                     .arg(version.avformat.major));
 
-      if (success = checkVersionWithLib(this->lib, version, this->logList))
+      if ((success = checkVersionWithLib(this->lib, version, this->logList)))
       {
         this->libVersion = addMinorAndMicroVersion(this->lib, version);
         this->log("checking the library versions was successful.");
@@ -545,7 +545,7 @@ bool FFmpegVersionHandler::loadFFMpegLibrarySpecific(QString avFormatLib,
       this->log(QString("avcodec: %1.xx.xx").arg(version.avcodec.major));
       this->log(QString("avformat: %1.xx.xx").arg(version.avformat.major));
 
-      if (success = checkVersionWithLib(this->lib, version, this->logList))
+      if ((success = checkVersionWithLib(this->lib, version, this->logList)))
       {
         this->libVersion = addMinorAndMicroVersion(this->lib, version);
         this->log("checking the library versions was successful.");
