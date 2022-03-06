@@ -32,6 +32,7 @@
 
 #include "FFmpegVersionHandler.h"
 #include <QDir>
+#include <QDateTime>
 
 namespace FFmpeg
 {

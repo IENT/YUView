@@ -34,6 +34,7 @@
 
 #include <QString>
 #include <errno.h>
+#include <optional>
 #include <stdint.h>
 
 /* This file defines all FFmpeg specific defines like structs, enums and some common things like

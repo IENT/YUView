@@ -280,7 +280,7 @@ void decoderFFmpeg::cacheCurStatistics()
   if (sideData)
   {
     const auto nrMVs = sideData.getNumberMotionVectors();
-    for (int i = 0; i < nrMVs; i++)
+    for (size_t i = 0; i < nrMVs; i++)
     {
       auto mvs = sideData.getMotionVector(i);
 

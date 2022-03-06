@@ -30,8 +30,6 @@
  *   along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#pragma once
-
 #include "AVPacketWrapper.h"
 #include <parser/common/SubByteReaderLogging.h>
 #include <stdexcept>
@@ -57,8 +55,8 @@ bool checkForMp4Format(QByteArray &data)
 {
   // Check the ISO mp4 format: Parse the whole data and check if the size bytes per Unit are
   // correct.
-  qsizetype posInData = 0;
-  while (posInData + 4 <= data.length())
+  uint64_t posInData = 0;
+  while (posInData + 4 <= uint64_t(data.length()))
   {
     auto firstBytes = data.mid(posInData, 4);
 
@@ -68,11 +66,10 @@ bool checkForMp4Format(QByteArray &data)
     size += (unsigned char)firstBytes.at(0) << 24;
     posInData += 4;
 
-    if (size < 0)
-      // The int did overflow. This means that the NAL unit is > 2GB in size. This is probably an
-      // error
+    if (size > 1'000'000'000)
+      // A Nal with more then 1GB? This is probably an error.
       return false;
-    if (posInData + size > data.length())
+    if (posInData + size > uint64_t(data.length()))
       // Not enough data in the input array to read NAL unit.
       return false;
     posInData += size;
