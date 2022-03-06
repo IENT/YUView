@@ -86,7 +86,7 @@ typedef struct AVStream_57
   AVRational        sample_aspect_ratio;
   AVDictionary *    metadata;
   AVRational        avg_frame_rate;
-  AVPacket_57_58_59 attached_pic;
+  AVPacket_57_58    attached_pic;
   AVPacketSideData *side_data;
   int               nb_side_data;
   int               event_flags;
@@ -171,7 +171,7 @@ typedef struct AVStream_58
   AVRational         sample_aspect_ratio;
   AVDictionary *     metadata;
   AVRational         avg_frame_rate;
-  AVPacket_57_58_59  attached_pic;
+  AVPacket_57_58     attached_pic;
   AVPacketSideData * side_data;
   int                nb_side_data;
   int                event_flags;

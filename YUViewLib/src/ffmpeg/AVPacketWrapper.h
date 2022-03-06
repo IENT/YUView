@@ -60,6 +60,8 @@ enum class PacketType
 
 // AVPacket is part of avcodec. The definition is different for different major versions of avcodec.
 // These are the version independent functions to retrive data from AVPacket.
+// The size of this struct is part of the public API and must be correct
+// since its size is used in other structures (e.g. AVStream).
 typedef struct AVPacket_56
 {
   AVBufferRef *     buf;
@@ -77,7 +79,7 @@ typedef struct AVPacket_56
   int64_t pos;
 } AVPacket_56;
 
-typedef struct AVPacket_57_58_59
+typedef struct AVPacket_57_58
 {
   AVBufferRef *     buf;
   int64_t           pts;
@@ -90,8 +92,26 @@ typedef struct AVPacket_57_58_59
   int               side_data_elems;
   int64_t           duration;
   int64_t           pos;
-  // Some values after this differ but we don't need them
-} AVPacket_57_58_59;
+  int64_t           convergence_duration;
+} AVPacket_57_58;
+
+typedef struct AVPacket_59
+{
+  AVBufferRef *     buf;
+  int64_t           pts;
+  int64_t           dts;
+  uint8_t *         data;
+  int               size;
+  int               stream_index;
+  int               flags;
+  AVPacketSideData *side_data;
+  int               side_data_elems;
+  int64_t           duration;
+  int64_t           pos; ///< byte position in stream, -1 if unknown
+  void *            opaque;
+  AVBufferRef *     opaque_ref;
+  AVRational        time_base;
+} AVPacket_59;
 
 // A wrapper around the different versions of the AVPacket versions.
 // It also adds some functions like automatic deletion when it goes out of scope.

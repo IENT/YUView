@@ -283,7 +283,7 @@ bool FFmpegLibraryFunctions::loadFFMpegLibrarySpecific(QString avFormatLib,
   libAvcodec.unload();
   libAvformat.unload();
 
-  return true;
+  return false;
 }
 
 void FFmpegLibraryFunctions::addLibNamesToList(QString         libName,

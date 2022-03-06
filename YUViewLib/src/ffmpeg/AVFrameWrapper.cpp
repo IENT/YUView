@@ -89,11 +89,6 @@ AVFrameWrapper::AVFrameWrapper(LibraryVersion libVersion, AVFrame *frame)
   this->frame  = frame;
 }
 
-AVFrameWrapper::~AVFrameWrapper()
-{
-  assert(this->frame == nullptr);
-}
-
 void AVFrameWrapper::clear()
 {
   this->frame = nullptr;

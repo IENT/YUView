@@ -43,7 +43,7 @@ class AVFrameWrapper
 public:
   AVFrameWrapper() = default;
   AVFrameWrapper(LibraryVersion libVersion, AVFrame *frame);
-  ~AVFrameWrapper();
+  ~AVFrameWrapper() = default;
 
   void clear();
 

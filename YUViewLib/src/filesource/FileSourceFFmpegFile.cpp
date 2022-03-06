@@ -434,7 +434,7 @@ bool FileSourceFFmpegFile::scanBitstream(QWidget *mainWindow)
                  this->nrFrames,
                  (int)this->currentPacket.getPTS(),
                  (int)this->currentPacket.getDTS(),
-                 pkt.getFlagKeyframe() ? " - keyframe" : "");
+                 this->currentPacket.getFlagKeyframe() ? " - keyframe" : "");
 
     if (this->currentPacket.getFlagKeyframe())
       this->keyFrameList.append(pictureIdx(this->nrFrames, this->currentPacket.getDTS()));
