@@ -479,7 +479,7 @@ bool decoderFFmpeg::createDecoder(FFmpeg::AVCodecIDWrapper         codecID,
         QStringLiteral("Could not open the video codec (avcodec_open2). Return code %1.").arg(ret));
 
   this->frame = ff.allocateFrame();
-  if (!frame)
+  if (!this->frame)
     return this->setErrorB(QStringLiteral("Could not allocate frame (av_frame_alloc)."));
 
   return true;
