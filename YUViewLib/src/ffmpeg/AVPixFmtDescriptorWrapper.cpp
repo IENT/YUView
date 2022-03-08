@@ -100,6 +100,26 @@ typedef struct AVPixFmtDescriptor_56
   const char *                alias;
 } AVPixFmtDescriptor_56;
 
+typedef struct AVComponentDescriptor_57
+{
+  int plane;
+  int step;
+  int offset;
+  int shift;
+  int depth;
+} AVComponentDescriptor_57;
+
+typedef struct AVPixFmtDescriptor_57
+{
+  const char *             name;
+  uint8_t                  nb_components;
+  uint8_t                  log2_chroma_w;
+  uint8_t                  log2_chroma_h;
+  uint64_t                 flags;
+  AVComponentDescriptor_57 comp[4];
+  const char *             alias;
+} AVPixFmtDescriptor_57;
+
 AVPixFmtDescriptorWrapper::Flags parseFlags(uint8_t flagsValue)
 {
   AVPixFmtDescriptorWrapper::Flags flags;
@@ -180,6 +200,26 @@ AVPixFmtDescriptorWrapper::AVPixFmtDescriptorWrapper(AVPixFmtDescriptor *descrip
   else if (libVer.avutil.major == 56)
   {
     auto p              = reinterpret_cast<AVPixFmtDescriptor_56 *>(descriptor);
+    this->name          = QString(p->name);
+    this->nb_components = p->nb_components;
+    this->log2_chroma_w = p->log2_chroma_w;
+    this->log2_chroma_h = p->log2_chroma_h;
+    this->flags         = parseFlags(p->flags);
+
+    for (unsigned i = 0; i < 4; i++)
+    {
+      this->comp[i].plane  = p->comp[i].plane;
+      this->comp[i].step   = p->comp[i].step;
+      this->comp[i].offset = p->comp[i].offset;
+      this->comp[i].shift  = p->comp[i].shift;
+      this->comp[i].depth  = p->comp[i].depth;
+    }
+
+    aliases = QString(p->alias);
+  }
+  else if (libVer.avutil.major == 57)
+  {
+    auto p              = reinterpret_cast<AVPixFmtDescriptor_57 *>(descriptor);
     this->name          = QString(p->name);
     this->nb_components = p->nb_components;
     this->log2_chroma_w = p->log2_chroma_w;
@@ -335,7 +375,8 @@ bool AVPixFmtDescriptorWrapper::setValuesFromPixelFormatYUV(PixelFormatYUV fmt)
   return true;
 }
 
-bool AVPixFmtDescriptorWrapper::Flags::operator==(const AVPixFmtDescriptorWrapper::Flags &other) const
+bool AVPixFmtDescriptorWrapper::Flags::operator==(
+    const AVPixFmtDescriptorWrapper::Flags &other) const
 {
   return this->bigEndian == other.bigEndian && this->pallette == other.pallette &&
          this->bitwisePacked == other.bitwisePacked && this->hwAccelerated == other.hwAccelerated &&

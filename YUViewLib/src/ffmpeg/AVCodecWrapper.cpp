@@ -41,28 +41,52 @@ namespace
 
 typedef struct AVCodec_56_57_58
 {
-  const char *      name;
-  const char *      long_name;
-  enum AVMediaType  type;
-  enum AVCodecID    id;
-  int               capabilities;
-  const AVRational *supported_framerates; ///< array of supported framerates, or NULL if any, array
-                                          ///< is terminated by {0,0}
-  const enum AVPixelFormat *
-      pix_fmts; ///< array of supported pixel formats, or NULL if unknown, array is terminated by -1
-  const int *supported_samplerates; ///< array of supported audio samplerates, or NULL if unknown,
-                                    ///< array is terminated by 0
-  const enum AVSampleFormat *sample_fmts; ///< array of supported sample formats, or NULL if
-                                          ///< unknown, array is terminated by -1
-  const uint64_t *channel_layouts; ///< array of support channel layouts, or NULL if unknown. array
-                                   ///< is terminated by 0
-  uint8_t        max_lowres;       ///< maximum value for lowres supported by the decoder
-  const AVClass *priv_class;       ///< AVClass for the private context
-  // const AVProfile *profiles;            ///< array of recognized profiles, or NULL if unknown,
-  // array is terminated by {FF_PROFILE_UNKNOWN}
+  const char *               name;
+  const char *               long_name;
+  enum AVMediaType           type;
+  enum AVCodecID             id;
+  int                        capabilities;
+  const AVRational *         supported_framerates;
+  const enum AVPixelFormat * pix_fmts;
+  const int *                supported_samplerates;
+  const enum AVSampleFormat *sample_fmts;
+  const uint64_t *           channel_layouts;
+  uint8_t                    max_lowres;
+  const AVClass *            priv_class;
 
   // Actually, there is more here, but nothing more of the public API
 } AVCodec_56_57_58;
+
+typedef struct AVCodec_59
+{
+  const char *               name;
+  const char *               long_name;
+  enum AVMediaType           type;
+  enum AVCodecID             id;
+  int                        capabilities;
+  uint8_t                    max_lowres;
+  const AVRational *         supported_framerates;
+  const enum AVPixelFormat * pix_fmts;
+  const int *                supported_samplerates;
+  const enum AVSampleFormat *sample_fmts;
+  const uint64_t *           channel_layouts;
+  const AVClass *            priv_class;
+
+  // Actually, there is more here, but nothing more of the public API
+} AVCodec_59;
+
+template <typename T> std::vector<T> convertRawListToVec(const T *rawValues, T terminationValue)
+{
+  std::vector<T> values;
+  int            i   = 0;
+  auto           val = rawValues[i++];
+  while (val != terminationValue)
+  {
+    values.push_back(val);
+    val = rawValues[i++];
+  }
+  return values;
+}
 
 } // namespace
 
@@ -73,65 +97,33 @@ void AVCodecWrapper::update()
 
   if (libVer.avcodec.major == 56 || libVer.avcodec.major == 57 || libVer.avcodec.major == 58)
   {
-    auto p       = reinterpret_cast<AVCodec_56_57_58 *>(codec);
-    name         = QString(p->name);
-    long_name    = QString(p->long_name);
-    type         = p->type;
-    id           = p->id;
-    capabilities = p->capabilities;
-    if (p->supported_framerates)
-    {
-      int        i = 0;
-      AVRational r = p->supported_framerates[i++];
-      while (r.den != 0 && r.num != 0)
-      {
-        // Add and get the next one
-        supported_framerates.append(r);
-        r = p->supported_framerates[i++];
-      }
-    }
-    if (p->pix_fmts)
-    {
-      int           i = 0;
-      AVPixelFormat f = p->pix_fmts[i++];
-      while (f != -1)
-      {
-        // Add and get the next one
-        pix_fmts.append(f);
-        f = p->pix_fmts[i++];
-      }
-    }
-    if (p->supported_samplerates)
-    {
-      int i    = 0;
-      int rate = p->supported_samplerates[i++];
-      while (rate != 0)
-      {
-        supported_samplerates.append(rate);
-        rate = p->supported_samplerates[i++];
-      }
-    }
-    if (p->sample_fmts)
-    {
-      int            i = 0;
-      AVSampleFormat f = p->sample_fmts[i++];
-      while (f != -1)
-      {
-        sample_fmts.append(f);
-        f = p->sample_fmts[i++];
-      }
-    }
-    if (p->channel_layouts)
-    {
-      int      i = 0;
-      uint64_t l = p->channel_layouts[i++];
-      while (l != 0)
-      {
-        channel_layouts.append(l);
-        l = p->channel_layouts[i++];
-      }
-    }
-    max_lowres = p->max_lowres;
+    auto p                      = reinterpret_cast<AVCodec_56_57_58 *>(codec);
+    this->name                  = QString(p->name);
+    this->long_name             = QString(p->long_name);
+    this->type                  = p->type;
+    this->id                    = p->id;
+    this->capabilities          = p->capabilities;
+    this->supported_framerates  = convertRawListToVec(p->supported_framerates, AVRational({0, 0}));
+    this->pix_fmts              = convertRawListToVec(p->pix_fmts, AVPixelFormat(-1));
+    this->supported_samplerates = convertRawListToVec(p->supported_samplerates, 0);
+    this->sample_fmts           = convertRawListToVec(p->sample_fmts, AVSampleFormat(-1));
+    this->channel_layouts       = convertRawListToVec(p->channel_layouts, uint64_t(0));
+    this->max_lowres            = p->max_lowres;
+  }
+  else if (libVer.avcodec.major == 59)
+  {
+    auto p                      = reinterpret_cast<AVCodec_59 *>(codec);
+    this->name                  = QString(p->name);
+    this->long_name             = QString(p->long_name);
+    this->type                  = p->type;
+    this->id                    = p->id;
+    this->capabilities          = p->capabilities;
+    this->supported_framerates  = convertRawListToVec(p->supported_framerates, AVRational({0, 0}));
+    this->pix_fmts              = convertRawListToVec(p->pix_fmts, AVPixelFormat(-1));
+    this->supported_samplerates = convertRawListToVec(p->supported_samplerates, 0);
+    this->sample_fmts           = convertRawListToVec(p->sample_fmts, AVSampleFormat(-1));
+    this->channel_layouts       = convertRawListToVec(p->channel_layouts, uint64_t(0));
+    this->max_lowres            = p->max_lowres;
   }
   else
     throw std::runtime_error("Invalid library version");

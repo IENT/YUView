@@ -282,7 +282,7 @@ void decoderFFmpeg::cacheCurStatistics()
     const auto nrMVs = sideData.getNumberMotionVectors();
     for (size_t i = 0; i < nrMVs; i++)
     {
-      auto mvs = sideData.getMotionVector(i);
+      auto mvs = sideData.getMotionVector(unsigned(i));
 
       // dst marks the center of the current block so the block position is:
       const int     blockX = mvs.dst_x - mvs.w / 2;

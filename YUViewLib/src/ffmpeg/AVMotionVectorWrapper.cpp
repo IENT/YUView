@@ -48,7 +48,7 @@ typedef struct AVMotionVector_54
   uint64_t flags;
 } AVMotionVector_54;
 
-typedef struct AVMotionVector_55_56
+typedef struct AVMotionVector_55_56_57
 {
   int32_t  source;
   uint8_t  w, h;
@@ -57,7 +57,7 @@ typedef struct AVMotionVector_55_56
   uint64_t flags;
   int32_t  motion_x, motion_y;
   uint16_t motion_scale;
-} AVMotionVector_55_56;
+} AVMotionVector_55_56_57;
 
 } // namespace
 
@@ -78,9 +78,11 @@ AVMotionVectorWrapper::AVMotionVectorWrapper(LibraryVersion &libVer, uint8_t *da
     this->motion_y     = -1;
     this->motion_scale = -1;
   }
-  else if (libVer.avutil.major == 55 || libVer.avutil.major == 56)
+  else if (libVer.avutil.major == 55 || //
+           libVer.avutil.major == 56 || //
+           libVer.avutil.major == 57)
   {
-    auto p             = reinterpret_cast<AVMotionVector_55_56 *>(data) + idx;
+    auto p             = reinterpret_cast<AVMotionVector_55_56_57 *>(data) + idx;
     this->source       = p->source;
     this->w            = p->w;
     this->h            = p->h;
@@ -101,8 +103,8 @@ size_t AVMotionVectorWrapper::getNumberOfMotionVectors(LibraryVersion &libVer, u
 {
   if (libVer.avutil.major == 54)
     return dataSize / sizeof(AVMotionVector_54);
-  else if (libVer.avutil.major == 55 || libVer.avutil.major == 56)
-    return dataSize / sizeof(AVMotionVector_55_56);
+  else if (libVer.avutil.major == 55 || libVer.avutil.major == 56 || libVer.avutil.major == 57)
+    return dataSize / sizeof(AVMotionVector_55_56_57);
   else
     return 0;
 }

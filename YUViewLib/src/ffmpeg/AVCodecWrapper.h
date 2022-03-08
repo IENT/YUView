@@ -64,20 +64,20 @@ public:
 private:
   void update();
 
-  QString               name{};
-  QString               long_name{};
-  AVMediaType           type;
-  AVCodecID             id{AV_CODEC_ID_NONE};
-  int                   capabilities{0};       ///< see AV_CODEC_CAP_
-  QList<AVRational>     supported_framerates;  ///< terminated by {0,0}
-  QList<AVPixelFormat>  pix_fmts;              ///< array is terminated by -1
-  QList<int>            supported_samplerates; ///< array is terminated by 0
-  QList<AVSampleFormat> sample_fmts;           ///< array is terminated by -1
-  QList<uint64_t>       channel_layouts;       ///< array is terminated by 0
-  uint8_t               max_lowres{0}; ///< maximum value for lowres supported by the decoder
+  QString                     name{};
+  QString                     long_name{};
+  AVMediaType                 type;
+  AVCodecID                   id{AV_CODEC_ID_NONE};
+  int                         capabilities{0};
+  std::vector<AVRational>     supported_framerates;
+  std::vector<AVPixelFormat>  pix_fmts;
+  std::vector<int>            supported_samplerates;
+  std::vector<AVSampleFormat> sample_fmts;
+  std::vector<uint64_t>       channel_layouts;
+  uint8_t                     max_lowres{0};
 
-  AVCodec *            codec{nullptr};
+  AVCodec *      codec{nullptr};
   LibraryVersion libVer;
 };
 
-}
+} // namespace FFmpeg

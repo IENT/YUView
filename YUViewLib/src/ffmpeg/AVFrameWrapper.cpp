@@ -81,6 +81,25 @@ typedef struct AVFrame_55_56
   // Actually, there is more here, but the variables above are the only we need.
 } AVFrame_55_56;
 
+typedef struct AVFrame_57
+{
+  uint8_t *     data[AV_NUM_DATA_POINTERS];
+  int           linesize[AV_NUM_DATA_POINTERS];
+  uint8_t **    extended_data;
+  int           width, height;
+  int           nb_samples;
+  int           format;
+  int           key_frame;
+  AVPictureType pict_type;
+  AVRational    sample_aspect_ratio;
+  int64_t       pts;
+  int64_t       pkt_dts;
+  AVRational    time_base;
+  int           coded_picture_number;
+  int           display_picture_number;
+  int           quality;
+} AVFrame_57;
+
 } // namespace
 
 AVFrameWrapper::AVFrameWrapper(LibraryVersion libVersion, AVFrame *frame)
@@ -91,7 +110,7 @@ AVFrameWrapper::AVFrameWrapper(LibraryVersion libVersion, AVFrame *frame)
 
 void AVFrameWrapper::clear()
 {
-  this->frame = nullptr;
+  this->frame  = nullptr;
   this->libVer = {};
 }
 
@@ -175,7 +194,8 @@ void AVFrameWrapper::update()
     this->display_picture_number = p->display_picture_number;
     this->quality                = p->quality;
   }
-  else if (this->libVer.avutil.major == 55 || this->libVer.avutil.major == 56)
+  else if (this->libVer.avutil.major == 55 || //
+           this->libVer.avutil.major == 56)
   {
     auto p = reinterpret_cast<AVFrame_55_56 *>(this->frame);
     for (unsigned i = 0; i < AV_NUM_DATA_POINTERS; i++)
@@ -192,6 +212,28 @@ void AVFrameWrapper::update()
     this->sample_aspect_ratio    = p->sample_aspect_ratio;
     this->pts                    = p->pts;
     this->pkt_pts                = p->pkt_pts;
+    this->pkt_dts                = p->pkt_dts;
+    this->coded_picture_number   = p->coded_picture_number;
+    this->display_picture_number = p->display_picture_number;
+    this->quality                = p->quality;
+  }
+  else if (this->libVer.avutil.major == 57)
+  {
+    auto p = reinterpret_cast<AVFrame_57 *>(this->frame);
+    for (unsigned i = 0; i < AV_NUM_DATA_POINTERS; i++)
+    {
+      this->data[i]     = p->data[i];
+      this->linesize[i] = p->linesize[i];
+    }
+    this->width                  = p->width;
+    this->height                 = p->height;
+    this->nb_samples             = p->nb_samples;
+    this->format                 = p->format;
+    this->key_frame              = p->key_frame;
+    this->pict_type              = p->pict_type;
+    this->sample_aspect_ratio    = p->sample_aspect_ratio;
+    this->pts                    = p->pts;
+    this->pkt_pts                = -1;
     this->pkt_dts                = p->pkt_dts;
     this->coded_picture_number   = p->coded_picture_number;
     this->display_picture_number = p->display_picture_number;

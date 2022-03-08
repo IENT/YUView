@@ -124,6 +124,13 @@ struct AVPixFmtDescriptor;
 
 struct AVRational
 {
+  bool operator!=(const AVRational &second) const
+  {
+    const auto a = int64_t(this->num) * int64_t(second.den);
+    const auto b = int64_t(this->den) * int64_t(second.num);
+    return a != b;
+  }
+
   int num; ///< Numerator
   int den; ///< Denominator
 };

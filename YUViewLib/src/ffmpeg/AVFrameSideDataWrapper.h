@@ -52,13 +52,13 @@ public:
 private:
   void update();
 
-  enum AVFrameSideDataType type;
-  uint8_t *                data{nullptr};
-  int                      size;
-  AVDictionary *           metadata;
-  AVBufferRef *            buf;
+  AVFrameSideDataType type{};
+  uint8_t *           data{nullptr};
+  size_t              size{};
+  AVDictionary *      metadata{};
+  AVBufferRef *       buf{};
 
-  AVFrameSideData *sideData;
+  AVFrameSideData *sideData{};
   LibraryVersion   libVer;
 };
 

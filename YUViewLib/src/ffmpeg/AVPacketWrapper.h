@@ -107,7 +107,7 @@ typedef struct AVPacket_59
   AVPacketSideData *side_data;
   int               side_data_elems;
   int64_t           duration;
-  int64_t           pos; ///< byte position in stream, -1 if unknown
+  int64_t           pos;
   void *            opaque;
   AVBufferRef *     opaque_ref;
   AVRational        time_base;
