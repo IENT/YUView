@@ -91,53 +91,50 @@ Subsampling convertFromInternalSubsampling(de265_chroma fmt)
 decoderLibde265::decoderLibde265(int signalID, bool cachingDecoder)
     : decoderBaseSingleLib(cachingDecoder)
 {
-  currentOutputBuffer.clear();
+  this->currentOutputBuffer.clear();
 
   // Libde265 can only decoder HEVC in YUV format
-  rawFormat = video::RawFormat::YUV;
+  this->rawFormat = video::RawFormat::YUV;
 
   QSettings settings;
   settings.beginGroup("Decoders");
-  loadDecoderLibrary(settings.value("libde265File", "").toString());
+  this->loadDecoderLibrary(settings.value("libde265File", "").toString());
   settings.endGroup();
 
   bool resetDecoder;
-  setDecodeSignal(signalID, resetDecoder);
-  allocateNewDecoder();
+  this->setDecodeSignal(signalID, resetDecoder);
+  this->allocateNewDecoder();
 }
 
 decoderLibde265::~decoderLibde265()
 {
-  if (decoder != nullptr)
-    // Free the decoder
-    this->lib.de265_free_decoder(decoder);
+  if (this->decoder != nullptr)
+    this->lib.de265_free_decoder(this->decoder);
 }
 
 void decoderLibde265::resetDecoder()
 {
-  if (!decoder)
+  if (!this->decoder)
     return;
 
-  // Delete decoder
-  de265_error err = this->lib.de265_free_decoder(decoder);
+  de265_error err = this->lib.de265_free_decoder(this->decoder);
   if (err != DE265_OK)
     return setError("Reset: Freeing the decoder failed.");
 
   decoderBase::resetDecoder();
-  decoder             = nullptr;
-  decodedFrameWaiting = false;
+  this->decoder             = nullptr;
+  this->decodedFrameWaiting = false;
 
-  // Create new decoder
-  allocateNewDecoder();
+  this->allocateNewDecoder();
 }
 
 void decoderLibde265::setDecodeSignal(int signalID, bool &decoderResetNeeded)
 {
   decoderResetNeeded = false;
-  if (signalID == decodeSignal)
+  if (signalID == this->decodeSignal)
     return;
   if (signalID >= 0 && signalID < nrSignalsSupported())
-    decodeSignal = signalID;
+    this->decodeSignal = signalID;
   decoderResetNeeded = true;
 }
 
@@ -249,41 +246,42 @@ template <typename T> T decoderLibde265::resolve(T &fun, const char *symbol, boo
 
 void decoderLibde265::allocateNewDecoder()
 {
-  if (decoder != nullptr)
+  if (this->decoder != nullptr)
     return;
-  if (decoderState == DecoderState::Error)
+  if (this->decoderState == DecoderState::Error)
     return;
 
-  DEBUG_LIBDE265("decoderLibde265::allocateNewDecoder - decodeSignal %d", decodeSignal);
+  DEBUG_LIBDE265("decoderLibde265::allocateNewDecoder - decodeSignal %d", this->decodeSignal);
 
   // Create new decoder object
-  decoder = this->lib.de265_new_decoder();
-  if (!decoder)
+  this->decoder = this->lib.de265_new_decoder();
+  if (!this->decoder)
   {
-    decoderState = DecoderState::Error;
+    this->decoderState = DecoderState::Error;
     setError("Error allocating decoder (de265_new_decoder)");
     return;
   }
 
   // Set some decoder parameters
-  this->lib.de265_set_parameter_bool(decoder, DE265_DECODER_PARAM_BOOL_SEI_CHECK_HASH, false);
-  this->lib.de265_set_parameter_bool(decoder, DE265_DECODER_PARAM_SUPPRESS_FAULTY_PICTURES, false);
+  this->lib.de265_set_parameter_bool(this->decoder, DE265_DECODER_PARAM_BOOL_SEI_CHECK_HASH, false);
+  this->lib.de265_set_parameter_bool(
+      this->decoder, DE265_DECODER_PARAM_SUPPRESS_FAULTY_PICTURES, false);
 
-  this->lib.de265_set_parameter_bool(decoder, DE265_DECODER_PARAM_DISABLE_DEBLOCKING, false);
-  this->lib.de265_set_parameter_bool(decoder, DE265_DECODER_PARAM_DISABLE_SAO, false);
+  this->lib.de265_set_parameter_bool(this->decoder, DE265_DECODER_PARAM_DISABLE_DEBLOCKING, false);
+  this->lib.de265_set_parameter_bool(this->decoder, DE265_DECODER_PARAM_DISABLE_SAO, false);
 
   // Set retrieval of the right component
-  if (nrSignals > 0)
+  if (this->nrSignals > 0)
   {
-    if (decodeSignal == 1)
+    if (this->decodeSignal == 1)
       this->lib.de265_internals_set_parameter_bool(
-          decoder, DE265_INTERNALS_DECODER_PARAM_SAVE_PREDICTION, true);
+          this->decoder, DE265_INTERNALS_DECODER_PARAM_SAVE_PREDICTION, true);
     else if (decodeSignal == 2)
       this->lib.de265_internals_set_parameter_bool(
-          decoder, DE265_INTERNALS_DECODER_PARAM_SAVE_RESIDUAL, true);
+          this->decoder, DE265_INTERNALS_DECODER_PARAM_SAVE_RESIDUAL, true);
     else if (decodeSignal == 3)
       this->lib.de265_internals_set_parameter_bool(
-          decoder, DE265_INTERNALS_DECODER_PARAM_SAVE_TR_COEFF, true);
+          this->decoder, DE265_INTERNALS_DECODER_PARAM_SAVE_TR_COEFF, true);
   }
 
   // You could disable SSE acceleration ... not really recommended
@@ -294,35 +292,35 @@ void decoderLibde265::allocateNewDecoder()
   // Verbosity level (0...3(highest))
   this->lib.de265_set_verbosity(0);
   // The highest temporal ID to decode. Set this to very high (all) by default.
-  this->lib.de265_set_limit_TID(decoder, 100);
+  this->lib.de265_set_limit_TID(this->decoder, 100);
 
   // Set the number of decoder threads. Libde265 can use wavefronts to utilize these.
   // TODO: We should add a setting for this maybe?
-  auto err = this->lib.de265_start_worker_threads(decoder, 8);
+  auto err = this->lib.de265_start_worker_threads(this->decoder, 8);
   if (err != DE265_OK)
     return setError("Error starting libde265 worker threads (de265_start_worker_threads)");
 
   // The decoder is ready to receive data
   decoderBase::resetDecoder();
-  currentOutputBuffer.clear();
-  decodedFrameWaiting = false;
-  flushing            = false;
+  this->currentOutputBuffer.clear();
+  this->decodedFrameWaiting = false;
+  this->flushing            = false;
 }
 
 bool decoderLibde265::decodeNextFrame()
 {
-  if (decoderState != DecoderState::RetrieveFrames)
+  if (this->decoderState != DecoderState::RetrieveFrames)
   {
     DEBUG_LIBDE265("decoderLibde265::decodeNextFrame: Wrong decoder state.");
     return false;
   }
-  if (decodedFrameWaiting)
+  if (this->decodedFrameWaiting)
   {
-    decodedFrameWaiting = false;
+    this->decodedFrameWaiting = false;
     return true;
   }
 
-  return decodeFrame();
+  return this->decodeFrame();
 }
 
 bool decoderLibde265::decodeFrame()
@@ -332,23 +330,23 @@ bool decoderLibde265::decodeFrame()
   while (more && curImage == nullptr)
   {
     more     = 0;
-    auto err = this->lib.de265_decode(decoder, &more);
+    auto err = this->lib.de265_decode(this->decoder, &more);
 
     if (err == DE265_ERROR_WAITING_FOR_INPUT_DATA)
     {
-      decoderState = DecoderState::NeedsMoreData;
+      this->decoderState = DecoderState::NeedsMoreData;
       return false;
     }
     else if (err != DE265_OK)
       return setErrorB("Error decoding (de265_decode)");
 
-    curImage = this->lib.de265_get_next_picture(decoder);
+    this->curImage = this->lib.de265_get_next_picture(this->decoder);
   }
 
   if (more == 0 && curImage == nullptr)
   {
     // Decoding ended
-    decoderState = DecoderState::EndOfBitstream;
+    this->decoderState = DecoderState::EndOfBitstream;
     return false;
   }
 
@@ -366,26 +364,26 @@ bool decoderLibde265::decodeFrame()
     if (bitDepth < 8 || bitDepth > 16)
       DEBUG_LIBDE265("decoderLibde265::decodeFrame got invalid bit depth");
 
-    if (!frameSize.isValid() && !formatYUV.isValid())
+    if (!this->frameSize.isValid() && !this->formatYUV.isValid())
     {
       // Set the values
-      frameSize = s;
-      formatYUV = video::yuv::PixelFormatYUV(subsampling, bitDepth);
+      this->frameSize = s;
+      this->formatYUV = video::yuv::PixelFormatYUV(subsampling, bitDepth);
     }
     else
     {
       // Check the values against the previously set values
-      if (frameSize != s)
+      if (this->frameSize != s)
         return setErrorB("Received a frame of different size");
-      if (formatYUV.getSubsampling() != subsampling)
+      if (this->formatYUV.getSubsampling() != subsampling)
         return setErrorB("Received a frame with different subsampling");
-      if (formatYUV.getBitsPerSample() != bitDepth)
+      if (this->formatYUV.getBitsPerSample() != bitDepth)
         return setErrorB("Received a frame with different bit depth");
     }
     DEBUG_LIBDE265("decoderLibde265::decodeFrame Picture decoded");
 
-    decoderState = DecoderState::RetrieveFrames;
-    currentOutputBuffer.clear();
+    this->decoderState = DecoderState::RetrieveFrames;
+    this->currentOutputBuffer.clear();
     return true;
   }
   return false;
@@ -393,36 +391,34 @@ bool decoderLibde265::decodeFrame()
 
 QByteArray decoderLibde265::getRawFrameData()
 {
-  if (curImage == nullptr)
-    return QByteArray();
-  if (decoderState != DecoderState::RetrieveFrames)
+  if (this->curImage == nullptr)
+    return {};
+  if (this->decoderState != DecoderState::RetrieveFrames)
   {
     DEBUG_LIBDE265("decoderLibde265::getRawFrameData: Wrong decoder state.");
-    return QByteArray();
+    return {};
   }
 
-  if (currentOutputBuffer.isEmpty())
+  if (this->currentOutputBuffer.isEmpty())
   {
-    // Put image data into buffer
-    copyImgToByteArray(curImage, currentOutputBuffer);
+    this->copyImgToByteArray(this->curImage, this->currentOutputBuffer);
     DEBUG_LIBDE265("decoderLibde265::getRawFrameData copied frame to buffer");
 
     if (this->statisticsEnabled())
-      // Get the statistics from the image and put them into the statistics cache
-      cacheStatistics(curImage);
+      this->cacheStatistics(this->curImage);
   }
 
-  return currentOutputBuffer;
+  return this->currentOutputBuffer;
 }
 
 bool decoderLibde265::pushData(QByteArray &data)
 {
-  if (decoderState != DecoderState::NeedsMoreData)
+  if (this->decoderState != DecoderState::NeedsMoreData)
   {
     DEBUG_LIBDE265("decoderLibde265::pushData: Wrong decoder state.");
     return false;
   }
-  if (flushing)
+  if (this->flushing)
   {
     DEBUG_LIBDE265("decoderLibde265::pushData: Do not push data when flushing!");
     return false;
@@ -441,8 +437,8 @@ bool decoderLibde265::pushData(QByteArray &data)
         offset = 4;
     }
     // de265_push_NAL will return either DE265_OK or DE265_ERROR_OUT_OF_MEMORY
-    auto err =
-        this->lib.de265_push_NAL(decoder, data.data() + offset, data.size() - offset, 0, nullptr);
+    auto err = this->lib.de265_push_NAL(
+        this->decoder, data.data() + offset, data.size() - offset, 0, nullptr);
     DEBUG_LIBDE265("decoderLibde265::pushData push data %d bytes%s%s",
                    data.size(),
                    err != DE265_OK ? " - err " : "",
@@ -458,12 +454,12 @@ bool decoderLibde265::pushData(QByteArray &data)
     auto err = this->lib.de265_flush_data(decoder);
     if (err != DE265_OK)
       return setErrorB("Error switching to flushing mode.");
-    flushing = true;
+    this->flushing = true;
   }
 
   // Check for an available frame
-  if (decodeFrame())
-    decodedFrameWaiting = true;
+  if (this->decodeFrame())
+    this->decodedFrameWaiting = true;
 
   return true;
 }
@@ -533,7 +529,7 @@ void decoderLibde265::copyImgToByteArray(const de265_image *src, QByteArray &dst
 
 void decoderLibde265::cacheStatistics(const de265_image *img)
 {
-  if (!internalsSupported)
+  if (!this->internalsSupported)
     return;
 
   DEBUG_LIBDE265("decoderLibde265::cacheStatistics");
