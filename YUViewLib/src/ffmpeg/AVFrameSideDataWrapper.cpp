@@ -98,7 +98,7 @@ void AVFrameSideDataWrapper::update()
     this->metadata = p->metadata;
     this->buf      = p->buf;
   }
-  else if (this->libVer.avutil.major == 59)
+  else if (this->libVer.avutil.major == 57)
   {
     auto p         = reinterpret_cast<AVFrameSideData_59 *>(sideData);
     this->type     = p->type;

@@ -53,7 +53,7 @@ bool resolveFunction(QLibrary &        lib,
     return false;
   }
 
-  function = reinterpret_cast<T*>(ptr);;
+  function = reinterpret_cast<T *>(ptr);
   return true;
 }
 
@@ -61,10 +61,14 @@ bool bindLibraryFunctions(QLibrary &                                 lib,
                           FFmpegLibraryFunctions::AvFormatFunctions &functions,
                           QStringList *                              log)
 {
-  if (!resolveFunction(lib, functions.av_register_all, "av_register_all", log))
+  if (!resolveFunction(lib, functions.avformat_version, "avformat_version", log))
     return false;
-  if (!resolveFunction(lib, functions.av_register_all, "av_register_all", log))
-    return false;
+
+  auto versionRaw = functions.avformat_version();
+  if (AV_VERSION_MAJOR(versionRaw) < 59)
+    if (!resolveFunction(lib, functions.av_register_all, "av_register_all", log))
+      return false;
+
   if (!resolveFunction(lib, functions.avformat_open_input, "avformat_open_input", log))
     return false;
   if (!resolveFunction(lib, functions.avformat_close_input, "avformat_close_input", log))
@@ -130,13 +134,16 @@ bool bindLibraryFunctions(QLibrary &                               lib,
                           FFmpegLibraryFunctions::AvUtilFunctions &functions,
                           QStringList *                            log)
 {
+  if (!resolveFunction(lib, functions.avutil_version, "avutil_version", log))
+    return false;
+
+  auto versionRaw = functions.avutil_version();
+
   if (!resolveFunction(lib, functions.av_frame_alloc, "av_frame_alloc", log))
     return false;
   if (!resolveFunction(lib, functions.av_frame_free, "av_frame_free", log))
     return false;
   if (!resolveFunction(lib, functions.av_mallocz, "av_mallocz", log))
-    return false;
-  if (!resolveFunction(lib, functions.avutil_version, "avutil_version", log))
     return false;
   if (!resolveFunction(lib, functions.av_dict_set, "av_dict_set", log))
     return false;
@@ -144,8 +151,9 @@ bool bindLibraryFunctions(QLibrary &                               lib,
     return false;
   if (!resolveFunction(lib, functions.av_frame_get_side_data, "av_frame_get_side_data", log))
     return false;
-  if (!resolveFunction(lib, functions.av_frame_get_metadata, "av_frame_get_metadata", log))
-    return false;
+  if (AV_VERSION_MAJOR(versionRaw) < 57)
+    if (!resolveFunction(lib, functions.av_frame_get_metadata, "av_frame_get_metadata", log))
+      return false;
   if (!resolveFunction(lib, functions.av_log_set_callback, "av_log_set_callback", log))
     return false;
   if (!resolveFunction(lib, functions.av_log_set_level, "av_log_set_level", log))
@@ -169,15 +177,9 @@ bool bindLibraryFunctions(QLibrary &                                  lib,
 
 } // namespace
 
-bool FFmpegLibraryFunctions::bindFunctionsFromLibraries()
+FFmpegLibraryFunctions::~FFmpegLibraryFunctions()
 {
-  auto success = (bindLibraryFunctions(this->libAvformat, this->avformat, this->logList) &&
-                  bindLibraryFunctions(this->libAvcodec, this->avcodec, this->logList) &&
-                  bindLibraryFunctions(this->libAvutil, this->avutil, this->logList) &&
-                  bindLibraryFunctions(this->libSwresample, this->swresample, this->logList));
-
-  this->log(QString("Binding functions ") + (success ? "successfull" : "failed"));
-  return success;
+  this->unloadAllLibraries();
 }
 
 bool FFmpegLibraryFunctions::loadFFmpegLibraryInPath(QString path, LibraryVersion &libraryVersion)
@@ -208,11 +210,7 @@ bool FFmpegLibraryFunctions::loadFFmpegLibraryInPath(QString path, LibraryVersio
   bool     success = false;
   for (unsigned i = 0; i < nrNames; i++)
   {
-    // Clear the error state if one was set.
-    this->libAvutil.unload();
-    this->libSwresample.unload();
-    this->libAvcodec.unload();
-    this->libAvformat.unload();
+    this->unloadAllLibraries();
 
     // This is how we the library name is constructed per platform
     QString constructLibName;
@@ -247,9 +245,18 @@ bool FFmpegLibraryFunctions::loadFFmpegLibraryInPath(QString path, LibraryVersio
   }
 
   if (!success)
+  {
+    this->unloadAllLibraries();
     return false;
+  }
 
-  return this->bindFunctionsFromLibraries();
+  success = (bindLibraryFunctions(this->libAvformat, this->avformat, this->logList) &&
+             bindLibraryFunctions(this->libAvcodec, this->avcodec, this->logList) &&
+             bindLibraryFunctions(this->libAvutil, this->avutil, this->logList) &&
+             bindLibraryFunctions(this->libSwresample, this->swresample, this->logList));
+  this->log(QString("Binding functions ") + (success ? "successfull" : "failed"));
+
+  return success;
 }
 
 bool FFmpegLibraryFunctions::loadFFMpegLibrarySpecific(QString avFormatLib,
@@ -257,10 +264,7 @@ bool FFmpegLibraryFunctions::loadFFMpegLibrarySpecific(QString avFormatLib,
                                                        QString avUtilLib,
                                                        QString swResampleLib)
 {
-  this->libAvutil.unload();
-  this->libSwresample.unload();
-  this->libAvcodec.unload();
-  this->libAvformat.unload();
+  this->unloadAllLibraries();
 
   auto loadLibrary = [this](QLibrary &lib, QString libPath) {
     lib.setFileName(libPath);
@@ -274,16 +278,19 @@ bool FFmpegLibraryFunctions::loadFFMpegLibrarySpecific(QString avFormatLib,
                   loadLibrary(this->libAvcodec, avCodecLib) &&       //
                   loadLibrary(this->libAvformat, avFormatLib));
 
-  if (success)
-    return this->bindFunctionsFromLibraries();
+  if (!success)
+  {
+    this->unloadAllLibraries();
+    return false;
+  }
 
-  this->log("Unloading already loaded libraries");
-  libAvutil.unload();
-  libSwresample.unload();
-  libAvcodec.unload();
-  libAvformat.unload();
+  success = (bindLibraryFunctions(this->libAvformat, this->avformat, this->logList) &&
+             bindLibraryFunctions(this->libAvcodec, this->avcodec, this->logList) &&
+             bindLibraryFunctions(this->libAvutil, this->avutil, this->logList) &&
+             bindLibraryFunctions(this->libSwresample, this->swresample, this->logList));
+  this->log(QString("Binding functions ") + (success ? "successfull" : "failed"));
 
-  return false;
+  return success;
 }
 
 void FFmpegLibraryFunctions::addLibNamesToList(QString         libName,
@@ -301,6 +308,15 @@ void FFmpegLibraryFunctions::addLibNamesToList(QString         libName,
     l.append("None");
     l.append("None");
   }
+}
+
+void FFmpegLibraryFunctions::unloadAllLibraries()
+{
+  this->log("Unloading all loaded libraries");
+  this->libAvutil.unload();
+  this->libSwresample.unload();
+  this->libAvcodec.unload();
+  this->libAvformat.unload();
 }
 
 QStringList FFmpegLibraryFunctions::getLibPaths() const

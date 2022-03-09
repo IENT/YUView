@@ -56,6 +56,7 @@ public:
   int           getPTS();
   AVPictureType getPictType();
   int           getKeyFrame();
+  AVDictionary *getMetadata();
 
   explicit operator bool() const { return this->frame != nullptr; }
 
@@ -78,6 +79,7 @@ private:
   int           coded_picture_number{};
   int           display_picture_number{};
   int           quality{};
+  AVDictionary *metadata{};
 
   AVFrame *      frame{};
   LibraryVersion libVer{};

@@ -146,17 +146,7 @@ bool decoderFFmpeg::decodeNextFrame()
   }
 
   DEBUG_FFMPEG("decoderFFmpeg::decodeNextFrame");
-
-  if (!this->decodeFrame())
-    return false;
-
-  this->copyCurImageToBuffer();
-
-  if (this->statisticsEnabled())
-    // Get the statistics from the image and put them into the statistics cache
-    this->cacheCurStatistics();
-
-  return true;
+  return this->decodeFrame();
 }
 
 QByteArray decoderFFmpeg::getRawFrameData()
@@ -170,7 +160,14 @@ QByteArray decoderFFmpeg::getRawFrameData()
   DEBUG_FFMPEG("decoderFFmpeg::getYUVFrameData Copy frame");
 
   if (this->currentOutputBuffer.isEmpty())
-    DEBUG_FFMPEG("decoderFFmpeg::loadYUVFrameData empty buffer");
+  {
+    DEBUG_FFMPEG("decoderFFmpeg::decodeNextFrame: Copy frame data to buffer");
+    this->copyCurImageToBuffer();
+
+    if (this->statisticsEnabled())
+      // Get the statistics from the image and put them into the statistics cache
+      this->cacheCurStatistics();
+  }
 
   return this->currentOutputBuffer;
 }
@@ -401,6 +398,7 @@ bool decoderFFmpeg::decodeFrame()
     // Checkt the size of the retrieved image
     if (this->frameSize != this->frame.getSize())
       return this->setErrorB("Received a frame of different size");
+    this->currentOutputBuffer.clear();
     return true;
   }
   else if (retRecieve < 0 && retRecieve != AVERROR(EAGAIN) && retRecieve != -35)

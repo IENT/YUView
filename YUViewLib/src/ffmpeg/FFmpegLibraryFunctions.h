@@ -42,6 +42,9 @@ namespace FFmpeg
 class FFmpegLibraryFunctions
 {
 public:
+  FFmpegLibraryFunctions() = default;
+  ~FFmpegLibraryFunctions();
+
   // Load the FFmpeg libraries from the given path.
   bool loadFFmpegLibraryInPath(QString path, LibraryVersion &libraryVersion);
   // Try to load the 4 given specific libraries
@@ -90,9 +93,6 @@ public:
     std::function<int(AVCodecContext *codec, const AVCodecParameters *par)>
                           avcodec_parameters_to_context;
     std::function<void()> avcodec_decode_video2;
-    std::function<int(
-        AVCodecContext *avctx, AVFrame *picture, int *got_picture_ptr, const AVPacket *avpkt)>
-        av_register_all;
   };
   AvCodecFunctions avcodec{};
 
@@ -127,10 +127,8 @@ public:
   void setLogList(QStringList *l) { logList = l; }
 
 private:
-  // bind all functions from the loaded QLibraries.
-  bool bindFunctionsFromLibraries();
-
   void addLibNamesToList(QString libName, QStringList &l, const QLibrary &lib) const;
+  void unloadAllLibraries();
 
   QStringList *logList{};
   void         log(QString message);

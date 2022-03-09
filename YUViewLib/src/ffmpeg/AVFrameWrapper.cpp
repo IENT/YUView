@@ -83,21 +83,45 @@ typedef struct AVFrame_55_56
 
 typedef struct AVFrame_57
 {
-  uint8_t *     data[AV_NUM_DATA_POINTERS];
-  int           linesize[AV_NUM_DATA_POINTERS];
-  uint8_t **    extended_data;
-  int           width, height;
-  int           nb_samples;
-  int           format;
-  int           key_frame;
-  AVPictureType pict_type;
-  AVRational    sample_aspect_ratio;
-  int64_t       pts;
-  int64_t       pkt_dts;
-  AVRational    time_base;
-  int           coded_picture_number;
-  int           display_picture_number;
-  int           quality;
+  uint8_t *                          data[AV_NUM_DATA_POINTERS];
+  int                                linesize[AV_NUM_DATA_POINTERS];
+  uint8_t **                         extended_data;
+  int                                width, height;
+  int                                nb_samples;
+  int                                format;
+  int                                key_frame;
+  AVPictureType                      pict_type;
+  AVRational                         sample_aspect_ratio;
+  int64_t                            pts;
+  int64_t                            pkt_dts;
+  AVRational                         time_base;
+  int                                coded_picture_number;
+  int                                display_picture_number;
+  int                                quality;
+  void *                             opaque;
+  int                                repeat_pict;
+  int                                interlaced_frame;
+  int                                top_field_first;
+  int                                palette_has_changed;
+  int64_t                            reordered_opaque;
+  int                                sample_rate;
+  uint64_t                           channel_layout;
+  AVBufferRef *                      buf[AV_NUM_DATA_POINTERS];
+  AVBufferRef **                     extended_buf;
+  int                                nb_extended_buf;
+  AVFrameSideData **                 side_data;
+  int                                nb_side_data;
+  int                                flags;
+  enum AVColorRange                  color_range;
+  enum AVColorPrimaries              color_primaries;
+  enum AVColorTransferCharacteristic color_trc;
+  enum AVColorSpace                  colorspace;
+  enum AVChromaLocation              chroma_location;
+  int64_t                            best_effort_timestamp;
+  int64_t                            pkt_pos;
+  int64_t                            pkt_duration;
+  AVDictionary *                     metadata;
+  // Actually, there is more here, but the variables above are the only we need.
 } AVFrame_57;
 
 } // namespace
@@ -165,6 +189,13 @@ int AVFrameWrapper::getKeyFrame()
 {
   this->update();
   return this->key_frame;
+}
+
+AVDictionary *AVFrameWrapper::getMetadata()
+{
+  assert(this->libVer.avutil.major >= 57);
+  this->update();
+  return this->metadata;
 }
 
 void AVFrameWrapper::update()
@@ -238,6 +269,7 @@ void AVFrameWrapper::update()
     this->coded_picture_number   = p->coded_picture_number;
     this->display_picture_number = p->display_picture_number;
     this->quality                = p->quality;
+    this->metadata               = p->metadata;
   }
   else
     throw std::runtime_error("Invalid library version");

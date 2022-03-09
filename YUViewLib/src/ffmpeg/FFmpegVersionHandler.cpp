@@ -31,8 +31,8 @@
  */
 
 #include "FFmpegVersionHandler.h"
-#include <QDir>
 #include <QDateTime>
+#include <QDir>
 
 namespace FFmpeg
 {
@@ -101,8 +101,10 @@ LibraryVersion addMinorAndMicroVersion(FFmpegLibraryFunctions &lib, LibraryVersi
 // These FFmpeg versions are supported. The numbers indicate the major version of
 // the following libraries in this order: Util, codec, format, swresample
 // The versions are sorted from newest to oldest, so that we try to open the newest ones first.
-auto SupportedLibraryVersionCombinations = {
-    LibraryVersion(56, 58, 58, 3), LibraryVersion(55, 57, 57, 2), LibraryVersion(54, 56, 56, 1)};
+auto SupportedLibraryVersionCombinations = {LibraryVersion(57, 59, 59, 4),
+                                            LibraryVersion(56, 58, 58, 3),
+                                            LibraryVersion(55, 57, 57, 2),
+                                            LibraryVersion(54, 56, 56, 1)};
 
 } // namespace
 
@@ -477,7 +479,11 @@ AVFrameSideDataWrapper FFmpegVersionHandler::getSideData(AVFrameWrapper &    fra
 
 AVDictionaryWrapper FFmpegVersionHandler::getMetadata(AVFrameWrapper &frame)
 {
-  auto dict = this->lib.avutil.av_frame_get_metadata(frame.getFrame());
+  AVDictionary *dict;
+  if (this->libVersion.avutil.major < 57)
+    dict = this->lib.avutil.av_frame_get_metadata(frame.getFrame());
+  else
+    dict = frame.getMetadata();
   return AVDictionaryWrapper(dict);
 }
 
@@ -518,7 +524,7 @@ bool FFmpegVersionHandler::loadFFmpegLibraryInPath(QString path)
     }
   }
 
-  if (success)
+  if (success && this->libVersion.avformat.major < 59)
     this->lib.avformat.av_register_all();
 
   return success;
@@ -554,7 +560,7 @@ bool FFmpegVersionHandler::loadFFMpegLibrarySpecific(QString avFormatLib,
     }
   }
 
-  if (success)
+  if (success && this->libVersion.avformat.major < 59)
     this->lib.avformat.av_register_all();
 
   return success;
