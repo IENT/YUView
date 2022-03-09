@@ -30,27 +30,63 @@
  *   along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
+#pragma once
+
+#include "AVCodecContextWrapper.h"
+#include "AVCodecIDWrapper.h"
+#include "AVCodecParametersWrapper.h"
 #include "FFMpegLibrariesTypes.h"
+#include <common/Typedef.h>
 
 namespace FFmpeg
 {
 
-QString timestampToString(int64_t timestamp, AVRational timebase)
+class AVStreamWrapper
 {
-  auto d_seconds = (double)timestamp * timebase.num / timebase.den;
-  auto hours     = (int)(d_seconds / 60 / 60);
-  d_seconds -= hours * 60 * 60;
-  auto minutes = (int)(d_seconds / 60);
-  d_seconds -= minutes * 60;
-  auto seconds = (int)d_seconds;
-  d_seconds -= seconds;
-  auto milliseconds = (int)(d_seconds * 1000);
+public:
+  AVStreamWrapper() {}
+  AVStreamWrapper(AVStream *src_str, LibraryVersion v);
 
-  return QString("%1:%2:%3.%4")
-      .arg(hours, 2, 10, QChar('0'))
-      .arg(minutes, 2, 10, QChar('0'))
-      .arg(seconds, 2, 10, QChar('0'))
-      .arg(milliseconds, 3, 10, QChar('0'));
-}
+  explicit        operator bool() const { return this->stream != nullptr; };
+  QStringPairList getInfoText(AVCodecIDWrapper &codecIdWrapper);
+
+  AVMediaType              getCodecType();
+  QString                  getCodecTypeName();
+  AVCodecID                getCodecID();
+  AVCodecContextWrapper &  getCodec();
+  AVRational               getAvgFrameRate();
+  AVRational               getTimeBase();
+  int                      getFrameWidth();
+  int                      getFrameHeight();
+  AVColorSpace             getColorspace();
+  int                      getIndex();
+  AVCodecParametersWrapper getCodecpar();
+
+private:
+  void update();
+
+  // These are private. Use "update" to update them from the AVFormatContext
+  int                   index{};
+  int                   id{};
+  AVCodecContextWrapper codec{};
+  AVRational            time_base{};
+  int64_t               start_time{};
+  int64_t               duration{};
+  int64_t               nb_frames{};
+  int                   disposition{};
+  enum AVDiscard        discard
+  {
+  };
+  AVRational sample_aspect_ratio{};
+  AVRational avg_frame_rate{};
+  int        nb_side_data{};
+  int        event_flags{};
+
+  // The AVCodecParameters are present from avformat major version 57 and up.
+  AVCodecParametersWrapper codecpar{};
+
+  AVStream *     stream{};
+  LibraryVersion libVer{};
+};
 
 } // namespace FFmpeg

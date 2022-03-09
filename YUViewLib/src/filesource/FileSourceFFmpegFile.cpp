@@ -35,8 +35,9 @@
 #include <QProgressDialog>
 #include <QSettings>
 
-#include "parser/AV1/obu_header.h"
-#include "parser/common/SubByteReaderLogging.h"
+#include <ffmpeg/AVCodecContextWrapper.h>
+#include <parser/AV1/obu_header.h>
+#include <parser/common/SubByteReaderLogging.h>
 
 #define FILESOURCEFFMPEGFILE_DEBUG_OUTPUT 0
 #if FILESOURCEFFMPEGFILE_DEBUG_OUTPUT && !NDEBUG
@@ -47,6 +48,7 @@
 #endif
 
 using SubByteReaderLogging = parser::reader::SubByteReaderLogging;
+using namespace FFmpeg;
 
 namespace
 {
@@ -207,7 +209,7 @@ QByteArray FileSourceFFmpegFile::getExtradata()
   // Get the video stream
   if (!video_stream)
     return QByteArray();
-  AVCodecContextWrapper codec = video_stream.getCodec();
+  FFmpeg::AVCodecContextWrapper codec = video_stream.getCodec();
   if (!codec)
     return QByteArray();
   return codec.getExtradata();
@@ -323,7 +325,7 @@ QList<QByteArray> FileSourceFFmpegFile::getParameterSets()
 FileSourceFFmpegFile::~FileSourceFFmpegFile()
 {
   if (this->currentPacket)
-    this->currentPacket.freePacket(this->ff);
+    this->ff.freePacket(this->currentPacket);
 }
 
 bool FileSourceFFmpegFile::openFile(const QString &       filePath,
@@ -432,7 +434,7 @@ bool FileSourceFFmpegFile::scanBitstream(QWidget *mainWindow)
                  this->nrFrames,
                  (int)this->currentPacket.getPTS(),
                  (int)this->currentPacket.getDTS(),
-                 pkt.getFlagKeyframe() ? " - keyframe" : "");
+                 this->currentPacket.getFlagKeyframe() ? " - keyframe" : "");
 
     if (this->currentPacket.getFlagKeyframe())
       this->keyFrameList.append(pictureIdx(this->nrFrames, this->currentPacket.getDTS()));
@@ -463,7 +465,8 @@ void FileSourceFFmpegFile::openFileAndFindVideoStream(QString fileName)
 {
   this->isFileOpened = false;
 
-  if (!this->ff.loadFFmpegLibraries())
+  this->ff.loadFFmpegLibraries();
+  if (!this->ff.loadingSuccessfull())
     return;
 
   // Open the input file
@@ -499,7 +502,7 @@ void FileSourceFFmpegFile::openFileAndFindVideoStream(QString fileName)
     return;
 
   // Initialize an empty packet
-  this->currentPacket.allocatePaket(this->ff);
+  this->currentPacket = this->ff.allocatePaket();
 
   // Get the frame rate, picture size and color conversion mode
   auto avgFrameRate = this->video_stream.getAvgFrameRate();
@@ -543,10 +546,15 @@ bool FileSourceFFmpegFile::goToNextPacket(bool videoPacketsOnly)
     auto &pkt = this->currentPacket;
 
     if (this->currentPacket)
-      // Unref the packet
-      pkt.unrefPacket(this->ff);
+      this->ff.unrefPacket(this->currentPacket);
 
-    ret = this->formatCtx.readFrame(this->ff, pkt);
+    {
+      auto ctx = this->formatCtx.getFormatCtx();
+      if (!ctx || !pkt)
+        ret = -1;
+      else
+        ret = ff.lib.avformat.av_read_frame(ctx, pkt.getPacket());
+    }
 
     if (pkt.getStreamIndex() == this->streamIndices.video)
       pkt.setPacketType(PacketType::VIDEO);

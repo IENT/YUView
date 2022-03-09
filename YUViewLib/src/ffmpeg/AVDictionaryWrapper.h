@@ -30,27 +30,25 @@
  *   along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
+#pragma once
+
 #include "FFMpegLibrariesTypes.h"
 
 namespace FFmpeg
 {
 
-QString timestampToString(int64_t timestamp, AVRational timebase)
+class AVDictionaryWrapper
 {
-  auto d_seconds = (double)timestamp * timebase.num / timebase.den;
-  auto hours     = (int)(d_seconds / 60 / 60);
-  d_seconds -= hours * 60 * 60;
-  auto minutes = (int)(d_seconds / 60);
-  d_seconds -= minutes * 60;
-  auto seconds = (int)d_seconds;
-  d_seconds -= seconds;
-  auto milliseconds = (int)(d_seconds * 1000);
+public:
+  AVDictionaryWrapper() = default;
+  AVDictionaryWrapper(AVDictionary *dict) : dict(dict) {}
 
-  return QString("%1:%2:%3.%4")
-      .arg(hours, 2, 10, QChar('0'))
-      .arg(minutes, 2, 10, QChar('0'))
-      .arg(seconds, 2, 10, QChar('0'))
-      .arg(milliseconds, 3, 10, QChar('0'));
-}
+  void          setDictionary(AVDictionary *d) { this->dict = d; }
+  explicit      operator bool() const { return this->dict != nullptr; }
+  AVDictionary *getDictionary() const { return this->dict; }
+
+private:
+  AVDictionary *dict{};
+};
 
 } // namespace FFmpeg

@@ -30,27 +30,58 @@
  *   along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "FFMpegLibrariesTypes.h"
+#include "AVInputFormatWrapper.h"
 
 namespace FFmpeg
 {
 
-QString timestampToString(int64_t timestamp, AVRational timebase)
+namespace
 {
-  auto d_seconds = (double)timestamp * timebase.num / timebase.den;
-  auto hours     = (int)(d_seconds / 60 / 60);
-  d_seconds -= hours * 60 * 60;
-  auto minutes = (int)(d_seconds / 60);
-  d_seconds -= minutes * 60;
-  auto seconds = (int)d_seconds;
-  d_seconds -= seconds;
-  auto milliseconds = (int)(d_seconds * 1000);
 
-  return QString("%1:%2:%3.%4")
-      .arg(hours, 2, 10, QChar('0'))
-      .arg(minutes, 2, 10, QChar('0'))
-      .arg(seconds, 2, 10, QChar('0'))
-      .arg(milliseconds, 3, 10, QChar('0'));
+typedef struct AVInputFormat_56_57_58_59
+{
+  const char *                    name;
+  const char *                    long_name;
+  int                             flags;
+  const char *                    extensions;
+  const struct AVCodecTag *const *codec_tag;
+  const AVClass *                 priv_class;
+  const char *                    mime_type;
+
+  // There is more but it is not part of the public ABI
+} AVInputFormat_56_57_58_59;
+
+} // namespace
+
+AVInputFormatWrapper::AVInputFormatWrapper()
+{
+  this->fmt = nullptr;
+}
+
+AVInputFormatWrapper::AVInputFormatWrapper(AVInputFormat *f, LibraryVersion v)
+{
+  this->fmt    = f;
+  this->libVer = v;
+  this->update();
+}
+
+void AVInputFormatWrapper::update()
+{
+  if (this->fmt == nullptr)
+    return;
+
+  if (this->libVer.avformat.major == 56 || //
+      this->libVer.avformat.major == 57 || //
+      this->libVer.avformat.major == 58 || //
+      this->libVer.avformat.major == 59)
+  {
+    auto p           = reinterpret_cast<AVInputFormat_56_57_58_59 *>(this->fmt);
+    this->name       = QString(p->name);
+    this->long_name  = QString(p->long_name);
+    this->flags      = p->flags;
+    this->extensions = QString(p->extensions);
+    this->mime_type  = QString(p->mime_type);
+  }
 }
 
 } // namespace FFmpeg

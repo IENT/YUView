@@ -30,27 +30,35 @@
  *   along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
+#pragma once
+
 #include "FFMpegLibrariesTypes.h"
 
 namespace FFmpeg
 {
 
-QString timestampToString(int64_t timestamp, AVRational timebase)
+class AVMotionVectorWrapper
 {
-  auto d_seconds = (double)timestamp * timebase.num / timebase.den;
-  auto hours     = (int)(d_seconds / 60 / 60);
-  d_seconds -= hours * 60 * 60;
-  auto minutes = (int)(d_seconds / 60);
-  d_seconds -= minutes * 60;
-  auto seconds = (int)d_seconds;
-  d_seconds -= seconds;
-  auto milliseconds = (int)(d_seconds * 1000);
+public:
+  AVMotionVectorWrapper() = delete;
+  AVMotionVectorWrapper(LibraryVersion &libVer, uint8_t *data, unsigned idx);
 
-  return QString("%1:%2:%3.%4")
-      .arg(hours, 2, 10, QChar('0'))
-      .arg(minutes, 2, 10, QChar('0'))
-      .arg(seconds, 2, 10, QChar('0'))
-      .arg(milliseconds, 3, 10, QChar('0'));
-}
+  static size_t getNumberOfMotionVectors(LibraryVersion &libVer, unsigned dataSize);
+
+  // For performance reasons, these are public here. Since update is called at construction, these
+  // should be valid.
+  int32_t  source{};
+  uint8_t  w{};
+  uint8_t  h{};
+  int16_t  src_x{};
+  int16_t  src_y{};
+  int16_t  dst_x{};
+  int16_t  dst_y{};
+  uint64_t flags{};
+  // The following may be invalid (-1) in older ffmpeg versions)
+  int32_t  motion_x{};
+  int32_t  motion_y{};
+  uint16_t motion_scale{};
+};
 
 } // namespace FFmpeg
