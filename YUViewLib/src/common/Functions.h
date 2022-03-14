@@ -73,4 +73,6 @@ unsigned clipToUnsigned(T val)
   return unsigned(val);
 }
 
+std::optional<unsigned long> toUnsigned(const std::string &text);
+
 } // namespace functions
