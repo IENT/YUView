@@ -183,7 +183,6 @@ jobs:
         curl -L https://github.com/ChristianFeldmann/YUViewQt/releases/download/openSSL1.1.1g/openSSL_1_1_1g_win.zip -o openSSL.zip
         7z x openSSL.zip
         cd ..
-      shell: bash
     - name: Activate auto update
       run: sed -i -- "s/#define UPDATE_FEATURE_ENABLE 0/#define UPDATE_FEATURE_ENABLE 1/g" YUViewLib/src/common/Typedef.h
       shell: bash
@@ -216,7 +215,6 @@ jobs:
         python deployment/versioning.py -d deploy -o deploy/versioninfo.txt
         mkdir artifacts
         7z a artifacts/YUView-Win.zip ./deploy/*
-      shell: cmd
     - name: Wix Windows
       run: |
         cd $GITHUB_WORKSPACE/deployment/wix
