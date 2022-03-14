@@ -158,24 +158,20 @@ jobs:
         curl -L https://github.com/ChristianFeldmann/YUViewQt/releases/download/QtBase-5.15.1/qtBase_5.15.1_win.zip -o Qt.zip
         7z x  Qt.zip
         echo "$GITHUB_WORKSPACE/../../YUViewQt/YUViewQt/Qt/bin" >> $GITHUB_PATH
-      shell: bash
     - name: Install Qt deploy tools
       run: |
         cd $GITHUB_WORKSPACE/../../YUViewQt/YUViewQt
         curl -L https://github.com/ChristianFeldmann/YUViewQt/releases/download/QtDeployTools-5.15.1/qtTools_5.15.1_win.zip -o deployQt.zip
         7z x deployQt.zip
-      shell: bash
     - name: Install libde265
       run: |
         curl -L https://github.com/ChristianFeldmann/libde265/releases/download/v1.1/libde265.dll -o libde265.dll
         curl -L https://raw.githubusercontent.com/ChristianFeldmann/libde265/master/COPYING -o libde265License.txt
-      shell: bash
     - name: Install jom
       run: |
         cd $GITHUB_WORKSPACE
         curl -L https://github.com/ChristianFeldmann/jom/releases/download/v1.1.3-build/jom.exe -o jom.exe
         cp jom.exe $GITHUB_WORKSPACE/../../YUViewQt/YUViewQt/Qt/bin/
-      shell: bash
     - name: Install openSSL
       run: |
         mkdir openSSL
@@ -225,7 +221,6 @@ jobs:
         "${WIX}\bin\Light.exe" -b ../../deploy -out bin/Release/YUViewSetup.msi -pdbout bin/Release/YUViewSetup.wixpdb -cultures:null -ext "${WIX}\bin\WixUIExtension.dll" -contentsfile obj/Release/YUViewSetup.wixproj.BindContentsFileListnull.txt -outputsfile obj/Release/YUViewSetup.wixproj.BindOutputsFileListnull.txt -builtoutputsfile obj/Release/YUViewSetup.wixproj.BindBuiltOutputsFileListnull.txt obj/Release/YUView.wixobj obj/Release/harvestedDirectory.wixobj
         cd $GITHUB_WORKSPACE
         cp deployment/wix/bin/Release/YUViewSetup.msi ./
-      shell: bash
       if: matrix.auto_update == true
     - name: Upload Artifact
       uses: actions/upload-artifact@v2
