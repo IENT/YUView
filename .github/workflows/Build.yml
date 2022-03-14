@@ -157,6 +157,7 @@ jobs:
         cd YUViewQt/YUViewQt
         curl -L https://github.com/ChristianFeldmann/YUViewQt/releases/download/QtBase-5.15.1/qtBase_5.15.1_win.zip -o Qt.zip
         7z x  Qt.zip
+        echo "$GITHUB_WORKSPACE"
         echo "$GITHUB_WORKSPACE\..\..\YUViewQt\YUViewQt\Qt\bin" >> $GITHUB_PATH
         echo "$GITHUB_WORKSPACE\..\..\YUViewQt\YUViewQt\Qt\bin"
         dir "$GITHUB_WORKSPACE\..\..\YUViewQt\YUViewQt\Qt\bin"
