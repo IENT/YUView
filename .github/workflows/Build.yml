@@ -190,20 +190,15 @@ jobs:
       if: matrix.auto_update == true
     - name: Set up Visual Studio shell
       uses: egor-tensin/vs-shell@v2
-    - name: Build Windows
+    - name: Build
       run: |
         mkdir build
         cd build
         d:\a\YUViewQt\YUViewQt\Qt\bin\qmake CONFIG+=UNITTESTS ..
         jom
-        echo "errorlevel"
-        echo %errorlevel%
+    - name: Run tests
         nmake check
-        echo "errorlevel"
-        echo %errorlevel%
         cd ..
-        echo "errorlevel"
-        echo %errorlevel%
     - name: WindeployQT
       run: |
         mkdir deploy
