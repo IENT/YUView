@@ -198,6 +198,7 @@ jobs:
         jom
     - name: Run tests
       run: |
+        cd build
         nmake check
         cd ..
     - name: WindeployQT
