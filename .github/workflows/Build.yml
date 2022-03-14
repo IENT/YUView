@@ -216,7 +216,7 @@ jobs:
         cd ${{ github.workspace }}/deployment/wix
         cp 'C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\VC\Redist\MSVC\v142\MergeModules\Microsoft_VC142_CRT_x64.msm' .
         dir
-        & "${{ env.WIX }}\bin\heat.exe dir ../../deploy -gg -dr APPLICATIONFOLDER -srd -sreg -cg YUViewComponents -out harvestedDirectory.wxs"
+        & "${{ env.WIX }}\bin\heat.exe" dir ../../deploy -gg -dr APPLICATIONFOLDER -srd -sreg -cg YUViewComponents -out harvestedDirectory.wxs
         dir
         & "${{ env.WIX }}\bin\candle.exe" -dConfiguration=Release -dOutDir=bin/Release/ -dTargetExt=.msi -dTargetFileName=YUViewSetup.msi -dTargetName=YUViewSetup -out obj/Release/ -arch x64 -ext "${WIX}\bin\WixUIExtension.dll" YUView.wxs
         & "${{ env.WIX }}\bin\candle.exe" -dConfiguration=Release -dOutDir=bin/Release/ -dTargetExt=.msi -dTargetFileName=YUViewSetup.msi -dTargetName=YUViewSetup -out obj/Release/ -arch x64 harvestedDirectory.wxs
