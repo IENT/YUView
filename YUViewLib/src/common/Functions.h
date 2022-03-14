@@ -34,6 +34,8 @@
 
 #include <common/Typedef.h>
 
+#include <optional>
+
 namespace functions
 {
 
