@@ -149,8 +149,6 @@ void PixelFormatRGBGuessTest::testFormatGuessFromFilename()
   auto      fmt = video::rgb::guessFormatFromSizeAndName(fileInfo, Size(width, height), fileSize);
   auto      fmtName = fmt.getName();
 
-  std::cout << "expected: " << expectedFormatName.toStdString() << " real: " << fmtName << "\n";
-
   QVERIFY(fmt.isValid());
   QCOMPARE(fmtName, expectedFormatName.toStdString());
 }
