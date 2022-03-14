@@ -43,7 +43,7 @@ public:
   AVMotionVectorWrapper() = delete;
   AVMotionVectorWrapper(LibraryVersion &libVer, uint8_t *data, unsigned idx);
 
-  static size_t getNumberOfMotionVectors(LibraryVersion &libVer, unsigned dataSize);
+  static size_t getNumberOfMotionVectors(LibraryVersion &libVer, size_t dataSize);
 
   // For performance reasons, these are public here. Since update is called at construction, these
   // should be valid.
