@@ -195,9 +195,17 @@ jobs:
         call "C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
         d:\a\YUViewQt\YUViewQt\Qt\bin\qmake CONFIG+=UNITTESTS ..
         jom
+        echo "LASTEXITCODE"
+        echo $LASTEXITCODE
         nmake check
+        echo "LASTEXITCODE"
+        echo $LASTEXITCODE
         call "YUViewUnitTest\filesource\Filesource\tst_Filesource.exe"
+        echo "LASTEXITCODE"
+        echo $LASTEXITCODE
         cd ..
+        echo "LASTEXITCODE"
+        echo $LASTEXITCODE
       shell: cmd
     - name: WindeployQT
       run: |
