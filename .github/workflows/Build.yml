@@ -158,11 +158,15 @@ jobs:
         curl -L https://github.com/ChristianFeldmann/YUViewQt/releases/download/QtBase-5.15.1/qtBase_5.15.1_win.zip -o Qt.zip
         7z x  Qt.zip
         echo "$GITHUB_WORKSPACE/../../YUViewQt/YUViewQt/Qt/bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+        echo "$GITHUB_PATH"
+        echo "$PATH"
     - name: Install Qt deploy tools
       run: |
         cd ../../YUViewQt/YUViewQt
         curl -L https://github.com/ChristianFeldmann/YUViewQt/releases/download/QtDeployTools-5.15.1/qtTools_5.15.1_win.zip -o deployQt.zip
         7z x deployQt.zip
+        echo "$GITHUB_PATH"
+        echo "$PATH"
     - name: Install libde265
       run: |
         curl -L https://github.com/ChristianFeldmann/libde265/releases/download/v1.1/libde265.dll -o libde265.dll
