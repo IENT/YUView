@@ -197,6 +197,7 @@ jobs:
         d:\a\YUViewQt\YUViewQt\Qt\bin\qmake CONFIG+=UNITTESTS ..
         jom
     - name: Run tests
+      run: |
         nmake check
         cd ..
     - name: WindeployQT
