@@ -196,21 +196,21 @@ jobs:
     #     cd build
     #     nmake check
     #     cd ..
-    - name: WindeployQT
-      run: |
-        mkdir deploy
-        cd deploy
-        cp ../build/YUViewApp/YUView.exe .
-        d:\a\YUViewQt\YUViewQt\Qttools\bin\windeployqt.exe --release --dir d:\a\YUView\YUView\deploy --no-compiler-runtime YUView.exe
-        cp ../openSSL/*.dll .
-        mkdir decoder
-        cp ..\libde265.dll decoder
-        cp ..\libde265License.txt decoder
-        cp ../LICENSE.GPL3 .
-        cd ..
-        python deployment/versioning.py -d deploy -o deploy/versioninfo.txt
-        mkdir artifacts
-        7z a artifacts/YUView-Win.zip ./deploy/*
+    # - name: WindeployQT
+    #   run: |
+    #     mkdir deploy
+    #     cd deploy
+    #     cp ../build/YUViewApp/YUView.exe .
+    #     d:\a\YUViewQt\YUViewQt\Qttools\bin\windeployqt.exe --release --dir d:\a\YUView\YUView\deploy --no-compiler-runtime YUView.exe
+    #     cp ../openSSL/*.dll .
+    #     mkdir decoder
+    #     cp ..\libde265.dll decoder
+    #     cp ..\libde265License.txt decoder
+    #     cp ../LICENSE.GPL3 .
+    #     cd ..
+    #     python deployment/versioning.py -d deploy -o deploy/versioninfo.txt
+    #     mkdir artifacts
+    #     7z a artifacts/YUView-Win.zip ./deploy/*
     - name: Wix Windows
       run: |
         cd ${{ github.workspace }}/deployment/wix
