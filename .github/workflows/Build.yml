@@ -189,6 +189,7 @@ jobs:
       shell: bash
       if: matrix.auto_update == true
     - name: Build Windows
+      shell: cmd
       run: |
         mkdir build
         cd build
@@ -206,7 +207,6 @@ jobs:
         cd ..
         echo "errorlevel"
         echo %errorlevel%
-      shell: cmd
     - name: WindeployQT
       run: |
         mkdir deploy
