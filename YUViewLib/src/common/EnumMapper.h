@@ -32,11 +32,20 @@
 
 #pragma once
 
+#include <common/Functions.h>
+
 #include <map>
 #include <optional>
+#include <stdexcept>
 #include <string>
 #include <vector>
-#include <stdexcept>
+
+enum class EnumMapperStringType
+{
+  Name,
+  Text,
+  NameOrIndex
+};
 
 /* This class implement mapping of "enum class" values to and from names (string).
  */
@@ -57,11 +66,20 @@ public:
   EnumMapper() = default;
   EnumMapper(const EntryVector &entryVector) : entryVector(entryVector){};
 
-  std::optional<T> getValue(std::string name, bool isText = false) const
+  std::optional<T> getValue(std::string          name,
+                            EnumMapperStringType stringType = EnumMapperStringType::Name) const
   {
+    if (stringType == EnumMapperStringType::NameOrIndex)
+      if (auto index = functions::toUnsigned(name))
+        return this->at(*index);
+
     for (const auto &entry : this->entryVector)
-      if ((!isText && entry.name == name) || (isText && entry.text == name))
+    {
+      if ((stringType == EnumMapperStringType::Name && entry.name == name) ||
+          (stringType == EnumMapperStringType::NameOrIndex && entry.text == name) ||
+          (stringType == EnumMapperStringType::Text && entry.text == name))
         return entry.value;
+    }
     return {};
   }
 
