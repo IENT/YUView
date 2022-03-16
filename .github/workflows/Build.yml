@@ -125,7 +125,6 @@ jobs:
       with:
         name: ${{matrix.ARTIFACT_NAME}}
         path: artifacts
-      if: matrix.os != 'ubuntu-18.04'
     - name: Upload Release
       uses: actions/upload-release-asset@v1.0.1
       env:
@@ -135,7 +134,7 @@ jobs:
         asset_path: artifacts/${{matrix.ARTIFACT_NAME}}
         asset_name: ${{matrix.ARTIFACT_NAME}}
         asset_content_type: application/zip
-      if: github.event_name == 'release' && matrix.os != 'ubuntu-18.04'
+      if: github.event_name == 'release'
   build-windows:
     runs-on: ${{ matrix.os }}
     strategy:
