@@ -48,12 +48,13 @@ namespace video::rgb
 namespace
 {
 
-const auto componentShowMapper = EnumMapper<ComponentDisplayMode>({{ComponentDisplayMode::RGBA, "RGBA", "RGBA"},
-                                                            {ComponentDisplayMode::RGB, "RGB", "RGB"},
-                                                            {ComponentDisplayMode::R, "R", "Red Only"},
-                                                            {ComponentDisplayMode::G, "G", "Green Only"},
-                                                            {ComponentDisplayMode::B, "B", "Blue Only"},
-                                                            {ComponentDisplayMode::A, "A", "Alpha Only"}});
+const auto componentShowMapper =
+    EnumMapper<ComponentDisplayMode>({{ComponentDisplayMode::RGBA, "RGBA", "RGBA"},
+                                      {ComponentDisplayMode::RGB, "RGB", "RGB"},
+                                      {ComponentDisplayMode::R, "R", "Red Only"},
+                                      {ComponentDisplayMode::G, "G", "Green Only"},
+                                      {ComponentDisplayMode::B, "B", "Blue Only"},
+                                      {ComponentDisplayMode::A, "A", "Alpha Only"}});
 
 template <typename T> T swapLowestBytes(const T &val)
 {
@@ -514,7 +515,7 @@ void videoHandlerRGB::slotDisplayOptionsChanged()
 {
   {
     auto selection = ui.colorComponentsComboBox->currentText().toStdString();
-    if (auto c = componentShowMapper.getValue(selection, true))
+    if (auto c = componentShowMapper.getValue(selection, EnumMapperStringType::Text))
       this->componentDisplayMode = *c;
   }
 
@@ -567,7 +568,10 @@ void videoHandlerRGB::updateControlsForNewPixelFormat()
                    ComponentDisplayMode::B,
                    ComponentDisplayMode::A};
     else
-      listItems = {ComponentDisplayMode::RGB, ComponentDisplayMode::R, ComponentDisplayMode::G, ComponentDisplayMode::B};
+      listItems = {ComponentDisplayMode::RGB,
+                   ComponentDisplayMode::R,
+                   ComponentDisplayMode::G,
+                   ComponentDisplayMode::B};
 
     if (!hasAlpha && (this->componentDisplayMode == ComponentDisplayMode::A ||
                       this->componentDisplayMode == ComponentDisplayMode::RGBA))
@@ -861,8 +865,8 @@ void videoHandlerRGB::convertSourceToRGBA32Bit(const QByteArray &sourceBuffer,
   if (this->componentDisplayMode == ComponentDisplayMode::RGB ||
       this->componentDisplayMode == ComponentDisplayMode::RGBA)
   {
-    const auto renderAlpha =
-        this->componentDisplayMode == ComponentDisplayMode::RGBA && outputSupportsAlpha && inputHasAlpha;
+    const auto renderAlpha = this->componentDisplayMode == ComponentDisplayMode::RGBA &&
+                             outputSupportsAlpha && inputHasAlpha;
 
     if (bps == 8)
       convertInputRGBToRGBA<8>(sourceBuffer,
@@ -887,20 +891,20 @@ void videoHandlerRGB::convertSourceToRGBA32Bit(const QByteArray &sourceBuffer,
   }
   else // Single component
   {
-    auto       displayIndexMap = std::map<ComponentDisplayMode, unsigned>({{ComponentDisplayMode::R, 0},
-                                                              {ComponentDisplayMode::G, 1},
-                                                              {ComponentDisplayMode::B, 2},
-                                                              {ComponentDisplayMode::A, 3}});
-    const auto displayIndex    = displayIndexMap[this->componentDisplayMode];
+    auto displayIndexMap = std::map<ComponentDisplayMode, unsigned>({{ComponentDisplayMode::R, 0},
+                                                                     {ComponentDisplayMode::G, 1},
+                                                                     {ComponentDisplayMode::B, 2},
+                                                                     {ComponentDisplayMode::A, 3}});
+    const auto displayIndex = displayIndexMap[this->componentDisplayMode];
 
     const auto scale  = this->componentScale[displayIndex];
     const auto invert = this->componentInvert[displayIndex];
 
-    auto componentToChannel =
-        std::map<ComponentDisplayMode, rgb::Channel>({{ComponentDisplayMode::R, rgb::Channel::Red},
-                                               {ComponentDisplayMode::G, rgb::Channel::Green},
-                                               {ComponentDisplayMode::B, rgb::Channel::Blue},
-                                               {ComponentDisplayMode::A, rgb::Channel::Alpha}});
+    auto componentToChannel = std::map<ComponentDisplayMode, rgb::Channel>(
+        {{ComponentDisplayMode::R, rgb::Channel::Red},
+         {ComponentDisplayMode::G, rgb::Channel::Green},
+         {ComponentDisplayMode::B, rgb::Channel::Blue},
+         {ComponentDisplayMode::A, rgb::Channel::Alpha}});
     const auto displayComponentOffset =
         this->srcPixelFormat.getComponentPosition(componentToChannel[this->componentDisplayMode]);
 
@@ -1304,4 +1308,4 @@ QImage videoHandlerRGB::calculateDifference(FrameHandler *   item2,
   return outputImage;
 }
 
-} // namespace video
+} // namespace video::rgb

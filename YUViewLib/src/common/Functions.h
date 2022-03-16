@@ -34,6 +34,8 @@
 
 #include <common/Typedef.h>
 
+#include <optional>
+
 namespace functions
 {
 
@@ -72,5 +74,7 @@ unsigned clipToUnsigned(T val)
     return 0;
   return unsigned(val);
 }
+
+std::optional<unsigned long> toUnsigned(const std::string &text);
 
 } // namespace functions

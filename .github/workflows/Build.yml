@@ -125,7 +125,6 @@ jobs:
       with:
         name: ${{matrix.ARTIFACT_NAME}}
         path: artifacts
-      if: matrix.os != 'ubuntu-18.04'
     - name: Upload Release
       uses: actions/upload-release-asset@v1.0.1
       env:
@@ -135,7 +134,7 @@ jobs:
         asset_path: artifacts/${{matrix.ARTIFACT_NAME}}
         asset_name: ${{matrix.ARTIFACT_NAME}}
         asset_content_type: application/zip
-      if: github.event_name == 'release' && matrix.os != 'ubuntu-18.04'
+      if: github.event_name == 'release'
   build-windows:
     runs-on: ${{ matrix.os }}
     strategy:
@@ -157,25 +156,21 @@ jobs:
         cd YUViewQt/YUViewQt
         curl -L https://github.com/ChristianFeldmann/YUViewQt/releases/download/QtBase-5.15.1/qtBase_5.15.1_win.zip -o Qt.zip
         7z x  Qt.zip
-        echo "$GITHUB_WORKSPACE/../../YUViewQt/YUViewQt/Qt/bin" >> $GITHUB_PATH
-      shell: bash
+        echo "${{ github.workspace }}\..\..\YUViewQt\YUViewQt\Qt\bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
     - name: Install Qt deploy tools
       run: |
-        cd $GITHUB_WORKSPACE/../../YUViewQt/YUViewQt
+        cd ../../YUViewQt/YUViewQt
         curl -L https://github.com/ChristianFeldmann/YUViewQt/releases/download/QtDeployTools-5.15.1/qtTools_5.15.1_win.zip -o deployQt.zip
         7z x deployQt.zip
-      shell: bash
     - name: Install libde265
       run: |
         curl -L https://github.com/ChristianFeldmann/libde265/releases/download/v1.1/libde265.dll -o libde265.dll
         curl -L https://raw.githubusercontent.com/ChristianFeldmann/libde265/master/COPYING -o libde265License.txt
-      shell: bash
     - name: Install jom
       run: |
-        cd $GITHUB_WORKSPACE
+        Get-Location
         curl -L https://github.com/ChristianFeldmann/jom/releases/download/v1.1.3-build/jom.exe -o jom.exe
-        cp jom.exe $GITHUB_WORKSPACE/../../YUViewQt/YUViewQt/Qt/bin/
-      shell: bash
+        cp jom.exe ../../YUViewQt/YUViewQt/Qt/bin/
     - name: Install openSSL
       run: |
         mkdir openSSL
@@ -183,28 +178,29 @@ jobs:
         curl -L https://github.com/ChristianFeldmann/YUViewQt/releases/download/openSSL1.1.1g/openSSL_1_1_1g_win.zip -o openSSL.zip
         7z x openSSL.zip
         cd ..
-      shell: bash
     - name: Activate auto update
       run: sed -i -- "s/#define UPDATE_FEATURE_ENABLE 0/#define UPDATE_FEATURE_ENABLE 1/g" YUViewLib/src/common/Typedef.h
       shell: bash
       if: matrix.auto_update == true
-    - name: Build Windows
+    - name: Set up Visual Studio shell
+      uses: egor-tensin/vs-shell@v2
+    - name: Build
       run: |
         mkdir build
         cd build
-        call "C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
         d:\a\YUViewQt\YUViewQt\Qt\bin\qmake CONFIG+=UNITTESTS ..
         jom
+    - name: Run tests
+      run: |
+        cd build
         nmake check
-        call "YUViewUnitTest\filesource\Filesource\tst_Filesource.exe"
         cd ..
-      shell: cmd
     - name: WindeployQT
       run: |
         mkdir deploy
         cd deploy
         cp ../build/YUViewApp/YUView.exe .
-        d:\a\YUViewQt\YUViewQt\Qttools\bin\windeployqt.exe --release --dir d:\a\YUView\YUView\deploy --no-compiler-runtime YUView.exe
+        d:\a\YUViewQt\YUViewQt\Qttools\bin\windeployqt.exe --release --no-compiler-runtime YUView.exe
         cp ../openSSL/*.dll .
         mkdir decoder
         cp ..\libde265.dll decoder
@@ -214,18 +210,16 @@ jobs:
         python deployment/versioning.py -d deploy -o deploy/versioninfo.txt
         mkdir artifacts
         7z a artifacts/YUView-Win.zip ./deploy/*
-      shell: cmd
     - name: Wix Windows
       run: |
-        cd $GITHUB_WORKSPACE/deployment/wix
-        cp /c/Program\ Files\ \(x86\)/Microsoft\ Visual\ Studio/2019/Enterprise/VC/Redist/MSVC/v142/MergeModules/Microsoft_VC142_CRT_x64.msm .
-        "${WIX}\bin\heat.exe" dir ../../deploy -gg -dr APPLICATIONFOLDER -srd -sreg -cg YUViewComponents -out harvestedDirectory.wxs
-        "${WIX}\bin\candle.exe" -dConfiguration=Release -dOutDir=bin/Release/ -dTargetExt=.msi -dTargetFileName=YUViewSetup.msi -dTargetName=YUViewSetup -out obj/Release/ -arch x64 -ext "${WIX}\bin\WixUIExtension.dll" YUView.wxs
-        "${WIX}\bin\candle.exe" -dConfiguration=Release -dOutDir=bin/Release/ -dTargetExt=.msi -dTargetFileName=YUViewSetup.msi -dTargetName=YUViewSetup -out obj/Release/ -arch x64 harvestedDirectory.wxs
-        "${WIX}\bin\Light.exe" -b ../../deploy -out bin/Release/YUViewSetup.msi -pdbout bin/Release/YUViewSetup.wixpdb -cultures:null -ext "${WIX}\bin\WixUIExtension.dll" -contentsfile obj/Release/YUViewSetup.wixproj.BindContentsFileListnull.txt -outputsfile obj/Release/YUViewSetup.wixproj.BindOutputsFileListnull.txt -builtoutputsfile obj/Release/YUViewSetup.wixproj.BindBuiltOutputsFileListnull.txt obj/Release/YUView.wixobj obj/Release/harvestedDirectory.wixobj
-        cd $GITHUB_WORKSPACE
+        cd ${{ github.workspace }}/deployment/wix
+        cp 'C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\VC\Redist\MSVC\v142\MergeModules\Microsoft_VC142_CRT_x64.msm' .
+        & "${{ env.WIX }}\bin\heat.exe" dir ../../deploy -gg -dr APPLICATIONFOLDER -srd -sreg -cg YUViewComponents -out harvestedDirectory.wxs
+        & "${{ env.WIX }}\bin\candle.exe" -dConfiguration=Release -dOutDir=bin/Release/ '-dTargetExt=.msi' '-dTargetFileName=YUViewSetup.msi' -dTargetName=YUViewSetup -out obj/Release/ -arch x64 -ext "${{ env.WIX }}\bin\WixUIExtension.dll" YUView.wxs
+        & "${{ env.WIX }}\bin\candle.exe" -dConfiguration=Release -dOutDir=bin/Release/ '-dTargetExt=.msi' '-dTargetFileName=YUViewSetup.msi' -dTargetName=YUViewSetup -out obj/Release/ -arch x64 harvestedDirectory.wxs
+        & "${{ env.WIX }}\bin\Light.exe" -b ../../deploy -out bin/Release/YUViewSetup.msi -pdbout bin/Release/YUViewSetup.wixpdb -cultures:null -ext "${{ env.WIX }}\bin\WixUIExtension.dll" -contentsfile obj/Release/YUViewSetup.wixproj.BindContentsFileListnull.txt -outputsfile obj/Release/YUViewSetup.wixproj.BindOutputsFileListnull.txt -builtoutputsfile obj/Release/YUViewSetup.wixproj.BindBuiltOutputsFileListnull.txt obj/Release/YUView.wixobj obj/Release/harvestedDirectory.wixobj
+        cd ${{ github.workspace }}
         cp deployment/wix/bin/Release/YUViewSetup.msi ./
-      shell: bash
       if: matrix.auto_update == true
     - name: Upload Artifact
       uses: actions/upload-artifact@v2

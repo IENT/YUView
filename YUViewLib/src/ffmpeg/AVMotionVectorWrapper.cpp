@@ -99,7 +99,7 @@ AVMotionVectorWrapper::AVMotionVectorWrapper(LibraryVersion &libVer, uint8_t *da
     throw std::runtime_error("Invalid library version");
 }
 
-size_t AVMotionVectorWrapper::getNumberOfMotionVectors(LibraryVersion &libVer, unsigned dataSize)
+size_t AVMotionVectorWrapper::getNumberOfMotionVectors(LibraryVersion &libVer, size_t dataSize)
 {
   if (libVer.avutil.major == 54)
     return dataSize / sizeof(AVMotionVector_54);

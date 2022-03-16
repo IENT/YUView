@@ -103,27 +103,23 @@ bool polygonContainsPoint(const stats::Polygon &polygon, const Point &pt)
   if (polygon.empty())
     return false;
 
-  unsigned numPts = polygon.size();
+  auto numPts = polygon.size();
   // Test the ray against all sides
   unsigned intersections = 0;
-  for (unsigned i = 0; i < numPts - 1; i++)
+  for (size_t i = 0; i < numPts - 1; i++)
   {
     Line side = Line(polygon.at(i), polygon.at(i + 1));
     // Test if current side intersects with ray.
     if (doesLineIntersectWithHorizontalLine(side, pt))
-    {
       intersections++;
-    }
   }
   // close polygon
   if (polygon.front() != polygon.back())
   {
-    Line side = Line(polygon.front(), polygon.back());
+    auto side = Line(polygon.front(), polygon.back());
     // Test if current side intersects with ray.
     if (doesLineIntersectWithHorizontalLine(side, pt))
-    {
       intersections++;
-    }
   }
 
   if ((intersections & 1) == 1)

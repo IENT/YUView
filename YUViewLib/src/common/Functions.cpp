@@ -45,7 +45,10 @@
 
 #include <QThread>
 
-unsigned int functions::getOptimalThreadCount()
+namespace functions
+{
+
+unsigned int getOptimalThreadCount()
 {
   int nrThreads = QThread::idealThreadCount() - 1;
   if (nrThreads > 0)
@@ -54,7 +57,7 @@ unsigned int functions::getOptimalThreadCount()
     return 1;
 }
 
-unsigned int functions::systemMemorySizeInMB()
+unsigned int systemMemorySizeInMB()
 {
   static unsigned int memorySizeInMB;
   if (!memorySizeInMB)
@@ -84,23 +87,23 @@ unsigned int functions::systemMemorySizeInMB()
   return memorySizeInMB;
 }
 
-QStringList functions::getThemeNameList()
+QStringList getThemeNameList()
 {
-  QStringList ret {};
+  QStringList ret{};
   ret.append("Default");
   ret.append("Simple Dark/Blue");
   ret.append("Simple Dark/Orange");
   return ret;
 }
 
-QString functions::getThemeFileName(QString themeName)
+QString getThemeFileName(QString themeName)
 {
   if (themeName == "Simple Dark/Blue" || themeName == "Simple Dark/Orange")
     return ":YUViewSimple.qss";
   return "";
 }
 
-QStringList functions::getThemeColors(QString themeName)
+QStringList getThemeColors(QString themeName)
 {
   if (themeName == "Simple Dark/Blue")
     return QStringList() << "#262626"
@@ -115,7 +118,7 @@ QStringList functions::getThemeColors(QString themeName)
   return QStringList();
 }
 
-QString functions::formatDataSize(double size, bool isBits)
+QString formatDataSize(double size, bool isBits)
 {
   unsigned divCounter = 0;
   bool     isNegative = size < 0;
@@ -150,7 +153,7 @@ QString functions::formatDataSize(double size, bool isBits)
   return valueString;
 }
 
-QStringList functions::toQStringList(const std::vector<std::string> &stringVec)
+QStringList toQStringList(const std::vector<std::string> &stringVec)
 {
   QStringList list;
   for (const auto &s : stringVec)
@@ -158,9 +161,24 @@ QStringList functions::toQStringList(const std::vector<std::string> &stringVec)
   return list;
 }
 
-std::string functions::toLower(std::string str)
+std::string toLower(std::string str)
 {
   std::transform(
       str.begin(), str.end(), str.begin(), [](unsigned char c) { return std::tolower(c); });
   return str;
 }
+
+std::optional<unsigned long> toUnsigned(const std::string &text)
+{
+  try
+  {
+    auto index = std::stoul(text);
+    return index;
+  }
+  catch (...)
+  {
+    return {};
+  }
+}
+
+} // namespace functions
