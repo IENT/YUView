@@ -33,7 +33,7 @@
 #include "videoHandlerYUV.h"
 
 #include <algorithm>
-#include <cmac.h>
+#include <cmath>
 #include <cstdio>
 #include <type_traits>
 #include <vector>
