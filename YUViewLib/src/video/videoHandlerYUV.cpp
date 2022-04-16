@@ -33,9 +33,11 @@
 #include "videoHandlerYUV.h"
 
 #include <algorithm>
+#include <cmac.h>
 #include <cstdio>
 #include <type_traits>
 #include <vector>
+
 #if SSE_CONVERSION_420_ALT
 #include <xmmintrin.h>
 #endif
