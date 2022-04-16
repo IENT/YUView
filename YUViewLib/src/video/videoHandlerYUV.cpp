@@ -33,9 +33,11 @@
 #include "videoHandlerYUV.h"
 
 #include <algorithm>
+#include <cmath>
 #include <cstdio>
 #include <type_traits>
 #include <vector>
+
 #if SSE_CONVERSION_420_ALT
 #include <xmmintrin.h>
 #endif
@@ -4056,15 +4058,34 @@ QImage videoHandlerYUV::calculateDifference(FrameHandler *   item2,
                QString("YUV %1").arg(QString::fromStdString(
                    SubsamplingMapper.getText(srcPixelFormat.getSubsampling())))));
 
-  double mse[4];
-  mse[0] = double(mseAdd[0]) / (w_out * h_out);
-  mse[1] = double(mseAdd[1]) / (w_out * h_out);
-  mse[2] = double(mseAdd[2]) / (w_out * h_out);
-  mse[3] = mse[0] + mse[1] + mse[2];
-  differenceInfoList.append(InfoItem("MSE Y", QString("%1").arg(mse[0])));
-  differenceInfoList.append(InfoItem("MSE U", QString("%1").arg(mse[1])));
-  differenceInfoList.append(InfoItem("MSE V", QString("%1").arg(mse[2])));
-  differenceInfoList.append(InfoItem("MSE All", QString("%1").arg(mse[3])));
+  {
+    auto       nrPixelsLuma = w_out * h_out;
+    const auto maxSquared   = ((1 << bps_out) - 1) * ((1 << bps_out) - 1);
+    auto       mse          = double(mseAdd[0]) / nrPixelsLuma;
+    auto       psnr         = 10 * std::log10(maxSquared / mse);
+    differenceInfoList.append(
+        InfoItem("MSE/PSNR Y", QString("%1 (%2dB)").arg(mse, 0, 'f', 1).arg(psnr, 0, 'f', 2)));
+
+    if (srcPixelFormat.getSubsampling() != Subsampling::YUV_400)
+    {
+      auto nrPixelsChroma = w_out / subH * h_out / subV;
+
+      auto mseU  = double(mseAdd[1]) / nrPixelsChroma;
+      auto psnrU = 10 * std::log10(maxSquared / mseU);
+      differenceInfoList.append(
+          InfoItem("MSE/PSNR U", QString("%1 (%2dB)").arg(mseU, 0, 'f', 1).arg(psnrU, 0, 'f', 2)));
+
+      auto mseV  = double(mseAdd[2]) / nrPixelsChroma;
+      auto psnrV = 10 * std::log10(maxSquared / mseV);
+      differenceInfoList.append(
+          InfoItem("MSE/PSNR V", QString("%1 (%2dB)").arg(mseV, 0, 'f', 1).arg(psnrV, 0, 'f', 2)));
+
+      auto mseAvg = double(mseAdd[0] + mseAdd[1] + mseAdd[2]) / (nrPixelsLuma + 2 * nrPixelsChroma);
+      auto psnrAvg = 10 * std::log10(maxSquared / mseAvg);
+      differenceInfoList.append(InfoItem(
+          "MSE/PSNR Avg", QString("%1 (%2dB)").arg(mseAvg, 0, 'f', 1).arg(psnrAvg, 0, 'f', 2)));
+    }
+  }
 
   if (is_Q_OS_LINUX)
   {

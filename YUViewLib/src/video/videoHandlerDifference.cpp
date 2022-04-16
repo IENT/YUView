@@ -291,10 +291,9 @@ void videoHandlerDifference::reportFirstDifferencePosition(QList<InfoItem> &info
                                       videoYUV0->getDiffYUVFormat()))
           {
             // We found a difference in this block
-            infoList.append(InfoItem("First Difference LCU", QString::number(y * widthLCU + x)));
-            infoList.append(InfoItem("First Difference X", QString::number(firstX)));
-            infoList.append(InfoItem("First Difference Y", QString::number(firstY)));
-            infoList.append(InfoItem("First Difference partIndex", QString::number(partIndex)));
+            infoList.append(InfoItem("First diff LCU", QString::number(y * widthLCU + x)));
+            infoList.append(InfoItem("First diff X,Y", QString("%1,%2").arg(firstX).arg(firstY)));
+            infoList.append(InfoItem("First diff partIndex", QString::number(partIndex)));
             return;
           }
         }
@@ -303,10 +302,9 @@ void videoHandlerDifference::reportFirstDifferencePosition(QList<InfoItem> &info
           if (hierarchicalPosition(x * 64, y * 64, 64, firstX, firstY, partIndex, currentImage))
           {
             // We found a difference in this block
-            infoList.append(InfoItem("First Difference LCU", QString::number(y * widthLCU + x)));
-            infoList.append(InfoItem("First Difference X", QString::number(firstX)));
-            infoList.append(InfoItem("First Difference Y", QString::number(firstY)));
-            infoList.append(InfoItem("First Difference partIndex", QString::number(partIndex)));
+            infoList.append(InfoItem("First diff LCU", QString::number(y * widthLCU + x)));
+            infoList.append(InfoItem("First diff X,Y", QString("%1,%2").arg(firstX).arg(firstY)));
+            infoList.append(InfoItem("First diff partIndex", QString::number(partIndex)));
             return;
           }
         }
