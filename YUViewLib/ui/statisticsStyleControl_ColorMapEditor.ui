@@ -68,6 +68,10 @@
        <property name="text">
         <string/>
        </property>
+       <property name="icon">
+        <iconset resource="../images/images.qrc">
+         <normaloff>:/img_add.png</normaloff>:/img_add.png</iconset>
+       </property>
       </widget>
      </item>
      <item>
@@ -77,6 +81,10 @@
        </property>
        <property name="text">
         <string/>
+       </property>
+       <property name="icon">
+        <iconset resource="../images/images.qrc">
+         <normaloff>:/img_delete.png</normaloff>:/img_delete.png</iconset>
        </property>
       </widget>
      </item>

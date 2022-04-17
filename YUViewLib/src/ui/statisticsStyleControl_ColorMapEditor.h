@@ -32,8 +32,9 @@
 
 #pragma once
 
-#include <common/Functions.h>
 #include <common/Color.h>
+#include <common/Functions.h>
+
 
 #include <QDialog>
 
@@ -48,8 +49,8 @@ public:
                                                  const Color &               other,
                                                  QWidget *                   parent = 0);
 
-  std::map<int, Color> getColorMap();
-  Color                getOtherColor();
+  std::map<int, Color> getColorMap() const;
+  Color                getOtherColor() const;
 
 public slots:
   // Override from QDialog. Check for dublicate entries.
