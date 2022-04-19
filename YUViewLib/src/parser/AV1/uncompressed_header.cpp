@@ -32,6 +32,7 @@
 
 #include "uncompressed_header.h"
 
+#include <common/Functions.h>
 #include <common/Typedef.h>
 #include <parser/common/Functions.h>
 
@@ -425,7 +426,7 @@ int uncompressed_header::get_qindex(bool ignoreDeltaQ, int segmentId) const
     auto qindex = int(this->quantizationParams.base_q_idx) + data;
     if (!ignoreDeltaQ && this->deltaQParams.delta_q_present)
       qindex = CurrentQIndex + data;
-    return clip(qindex, 0, 255);
+    return functions::clip(qindex, 0, 255);
   }
   else if (!ignoreDeltaQ && this->deltaQParams.delta_q_present)
     return CurrentQIndex;

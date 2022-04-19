@@ -421,7 +421,7 @@ void StatisticsFileCSV::readHeaderFromFile(StatisticsData &statisticsData)
         auto b = (unsigned char)rowItemList[5].toInt();
         auto a = (unsigned char)rowItemList[6].toInt();
 
-        aType.colorMapper.mappingType  = ColorMapper::MappingType::map;
+        aType.colorMapper.mappingType  = color::MappingType::Map;
         aType.colorMapper.colorMap[id] = Color(r, g, b, a);
       }
       else if (rowItemList[1] == "range")
@@ -441,16 +441,16 @@ void StatisticsFileCSV::readHeaderFromFile(StatisticsData &statisticsData)
         a             = rowItemList[11].toInt();
         auto maxColor = Color(r, g, b, a);
 
-        aType.colorMapper = ColorMapper(min, minColor, max, maxColor);
+        aType.colorMapper = color::ColorMapper({min, max}, minColor, maxColor);
       }
       else if (rowItemList[1] == "defaultRange")
       {
         // This is a color gradient function
         int  min       = rowItemList[2].toInt();
         int  max       = rowItemList[3].toInt();
-        auto rangeName = rowItemList[4];
+        auto rangeName = rowItemList[4].toStdString();
 
-        aType.colorMapper = ColorMapper(rangeName, min, max);
+        aType.colorMapper = color::ColorMapper({min, max}, rangeName);
       }
       else if (rowItemList[1] == "vectorColor")
       {

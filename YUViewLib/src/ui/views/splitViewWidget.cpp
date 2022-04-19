@@ -823,8 +823,8 @@ void splitViewWidget::paintPixelRulersX(QPainter &    painter,
   auto  worldTransform = centerPoints + offset;
   int   xMin           = (videoRect.width() / 2 - worldTransform.x() - xPixMin) / zoom;
   int   xMax           = (videoRect.width() / 2 - (worldTransform.x() - xPixMax)) / zoom;
-  xMin                 = clip(xMin, 0, frameSize.width());
-  xMax                 = clip(xMax, 0, frameSize.width());
+  xMin                 = functions::clip(xMin, 0, frameSize.width());
+  xMax                 = functions::clip(xMax, 0, frameSize.width());
 
   // Draw the X Pixel indicators on the top
   for (int x = xMin; x < xMax + 1; x++)
@@ -878,8 +878,8 @@ void splitViewWidget::paintPixelRulersY(QPainter &    painter,
   // Get the pixel values that are visible on screen
   int yMin = (videoRect.height() / 2 - worldTransform.y()) / zoom;
   int yMax = (videoRect.height() / 2 - (worldTransform.y() - yPixMax)) / zoom;
-  yMin     = clip(yMin, 0, frameSize.height());
-  yMax     = clip(yMax, 0, frameSize.height());
+  yMin     = functions::clip(yMin, 0, frameSize.height());
+  yMax     = functions::clip(yMax, 0, frameSize.height());
 
   // Draw pixel indicatoes on the left
   for (int y = yMin; y < yMax + 1; y++)
@@ -960,11 +960,11 @@ void splitViewWidget::mouseMoveEvent(QMouseEvent *mouse_event)
 
     // The user is currently dragging the splitter. Calculate the new splitter point.
 #if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
-    auto xClip = clip(mouse_event->position().x(),
+    auto xClip = functions::clip(mouse_event->position().x(),
                       SPLITVIEWWIDGET_SPLITTER_CLIPX,
                       (width() - 2 - SPLITVIEWWIDGET_SPLITTER_CLIPX));
 #else
-    auto xClip = clip(double(mouse_event->x()),
+    auto xClip = functions::clip(double(mouse_event->x()),
                       SPLITVIEWWIDGET_SPLITTER_CLIPX,
                       (double(width()) - 2.0 - SPLITVIEWWIDGET_SPLITTER_CLIPX));
 #endif
@@ -1027,11 +1027,11 @@ void splitViewWidget::mouseReleaseEvent(QMouseEvent *mouse_event)
 
     // Update current splitting position / update last time
 #if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
-    auto xClip = clip(mouse_event->position().x(),
+    auto xClip = functions::clip(mouse_event->position().x(),
                       SPLITVIEWWIDGET_SPLITTER_CLIPX,
                       (double(width()) - 2.0 - SPLITVIEWWIDGET_SPLITTER_CLIPX));
 #else
-    auto xClip = clip(double(mouse_event->x()),
+    auto xClip = functions::clip(double(mouse_event->x()),
                       SPLITVIEWWIDGET_SPLITTER_CLIPX,
                       (double(width()) - 2.0 - SPLITVIEWWIDGET_SPLITTER_CLIPX));
 #endif

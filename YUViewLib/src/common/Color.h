@@ -32,7 +32,12 @@
 
 #pragma once
 
+#include <map>
 #include <string>
+
+class Color;
+
+using ColorMap = std::map<int, Color>;
 
 class Color
 {

@@ -40,30 +40,31 @@
 #include <QMessageBox>
 
 StatisticsStyleControl_ColorMapEditor::StatisticsStyleControl_ColorMapEditor(
-    const std::map<int, Color> &colorMap, const Color &other, QWidget *parent)
+    const ColorMap &colorMap, const Color &other, QWidget *parent)
     : QDialog(parent, Qt::Dialog | Qt::WindowStaysOnTopHint)
 {
   ui.setupUi(this);
 
-  ui.colorMapTable->setRowCount(int(colorMap.size()) + 1);
+  const auto table = this->ui.colorMapTable;
+  table->setRowCount(int(colorMap.size()) + 1);
 
   // Put all the colors from the colorMap into the table widget
   int count = 0;
   for (const auto &entry : colorMap)
   {
-    auto *newItem = new QTableWidgetItem();
+    auto newItem = new QTableWidgetItem();
     newItem->setData(Qt::EditRole, entry.first);
-    ui.colorMapTable->setItem(count, 0, newItem);
+    table->setItem(count, 0, newItem);
 
     newItem = new QTableWidgetItem();
     newItem->setBackground(QBrush(functionsGui::toQColor(entry.second)));
-    ui.colorMapTable->setItem(count, 1, newItem);
+    table->setItem(count, 1, newItem);
 
     count++;
   }
 
   // Into the last row, put the item for "other"
-  auto *newItem = new QTableWidgetItem("Other");
+  auto newItem = new QTableWidgetItem("Other");
   newItem->setFlags((~newItem->flags()) & Qt::ItemIsEditable);
   ui.colorMapTable->setItem(count, 0, newItem);
   // with a white color value.
@@ -82,10 +83,10 @@ StatisticsStyleControl_ColorMapEditor::StatisticsStyleControl_ColorMapEditor(
                 &StatisticsStyleControl_ColorMapEditor::slotItemChanged);
 }
 
-std::map<int, Color> StatisticsStyleControl_ColorMapEditor::getColorMap() const
+ColorMap StatisticsStyleControl_ColorMapEditor::getColorMap() const
 {
-  std::map<int, Color> colorMap;
-  const auto           table = this->ui.colorMapTable;
+  ColorMap   colorMap;
+  const auto table = this->ui.colorMapTable;
 
   for (int row = 0; row < ui.colorMapTable->rowCount(); row++)
   {

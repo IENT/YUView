@@ -54,8 +54,8 @@ const std::vector<Pattern> AllPatterns = {
 
 struct LineDrawStyle
 {
-  Color   color;
-  double  width{};
+  Color   color{};
+  double  width{0.25};
   Pattern pattern{Pattern::Solid};
 
   bool operator!=(const LineDrawStyle &other) const
@@ -73,19 +73,10 @@ class StatisticsType
 public:
   StatisticsType(int typeID = INT_INVALID, const QString &typeName = "?");
   StatisticsType(int typeID, const QString &typeName, int vectorScaling);
-  StatisticsType(int            typeID,
-                 const QString &typeName,
-                 const QString &defaultColorRangeName,
-                 int            rangeMin,
-                 int            rangeMax,
-                 bool           hasAndRenderVectorData = false);
-  StatisticsType(int            typeID,
-                 const QString &typeName,
-                 int            cRangeMin,
-                 const Color &  cRangeMinColor,
-                 int            cRangeMax,
-                 const Color &  cRangeMaxColor,
-                 bool           hasAndRenderVectorData = false);
+  StatisticsType(int                       typeID,
+                 const QString &           typeName,
+                 const color::ColorMapper &colorMapper,
+                 bool                      hasAndRenderVectorData = false);
 
   // Save all the values that the user could change. When saving to playlist we can save only the
   // changed values to playlist.
@@ -112,10 +103,10 @@ public:
   int  alphaFactor{50};
 
   // Value data (a certain value, that is set for a block)
-  bool        hasValueData{};          // Does this type have value data?
-  bool        renderValueData{};       // Do we render the value data?
-  bool        scaleValueToBlockSize{}; // Scale the values according to the size of the block
-  ColorMapper colorMapper;             // How do we map values to color?
+  bool               hasValueData{};          // Does this type have value data?
+  bool               renderValueData{};       // Do we render the value data?
+  bool               scaleValueToBlockSize{}; // Scale the values according to the size of the block
+  color::ColorMapper colorMapper;             // How do we map values to color?
 
   // Vector data (a vector that is set for a block)
   bool hasVectorData{}; // Does this type have any vector data?
@@ -155,9 +146,9 @@ private:
     bool render;
     int  alphaFactor;
 
-    bool        renderValueData;
-    bool        scaleValueToBlockSize;
-    ColorMapper colorMapper;
+    bool               renderValueData;
+    bool               scaleValueToBlockSize;
+    color::ColorMapper colorMapper;
 
     bool          renderVectorData;
     bool          scaleVectorToZoom;

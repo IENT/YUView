@@ -76,7 +76,6 @@ std::vector<StatisticsType::ArrowHead> AllArrowHeads = {StatisticsType::ArrowHea
 StatisticsType::StatisticsType(int typeID, const QString &typeName)
     : typeID(typeID), typeName(typeName)
 {
-  gridStyle.width = 0.25;
 }
 
 StatisticsType::StatisticsType(int typeID, const QString &typeName, int vectorScaling)
@@ -90,40 +89,16 @@ StatisticsType::StatisticsType(int typeID, const QString &typeName, int vectorSc
 }
 
 // Convenience constructor for a statistics type with block data and a named color map
-StatisticsType::StatisticsType(int            typeID,
-                               const QString &typeName,
-                               const QString &defaultColorRangeName,
-                               int            rangeMin,
-                               int            rangeMax,
-                               bool           hasAndRenderVectorData)
+StatisticsType::StatisticsType(int                       typeID,
+                               const QString &           typeName,
+                               const color::ColorMapper &colorMapper,
+                               bool                      hasAndRenderVectorData)
     : StatisticsType(typeID, typeName)
 {
   // There is value data. Set up a color mapper.
   this->hasValueData    = true;
   this->renderValueData = true;
-  this->colorMapper     = ColorMapper(defaultColorRangeName, rangeMin, rangeMax);
-
-  this->hasVectorData    = hasAndRenderVectorData;
-  this->renderVectorData = hasAndRenderVectorData;
-
-  this->setInitialState();
-}
-
-// Convenience constructor for a statistics type with block data and a color gradient based color
-// mapping
-StatisticsType::StatisticsType(int            typeID,
-                               const QString &typeName,
-                               int            cRangeMin,
-                               const Color &  cRangeMinColor,
-                               int            cRangeMax,
-                               const Color &  cRangeMaxColor,
-                               bool           hasAndRenderVectorData)
-    : StatisticsType(typeID, typeName)
-{
-  // There is value data. Set up a color mapper.
-  this->hasValueData    = true;
-  this->renderValueData = true;
-  this->colorMapper     = ColorMapper(cRangeMin, cRangeMinColor, cRangeMax, cRangeMaxColor);
+  this->colorMapper     = colorMapper;
 
   this->hasVectorData    = hasAndRenderVectorData;
   this->renderVectorData = hasAndRenderVectorData;
@@ -169,8 +144,7 @@ void StatisticsType::savePlaylist(YUViewDomElement &root) const
   if (!statChanged)
     return;
 
-  // Create a new node
-  auto newChild = root.ownerDocument().createElement(QString("statType%1").arg(typeID));
+  YUViewDomElement newChild = root.ownerDocument().createElement(QString("statType%1").arg(typeID));
   newChild.appendChild(root.ownerDocument().createTextNode(typeName));
 
   // Append only the parameters that changed
@@ -182,44 +156,8 @@ void StatisticsType::savePlaylist(YUViewDomElement &root) const
     newChild.setAttribute("renderValueData", renderValueData);
   if (init.scaleValueToBlockSize != scaleValueToBlockSize)
     newChild.setAttribute("scaleValueToBlockSize", scaleValueToBlockSize);
-  if (init.colorMapper != colorMapper)
-  {
-    if (init.colorMapper.mappingType != colorMapper.mappingType)
-      newChild.setAttribute("colorMapperType",
-                            ColorMapper::mappingTypeToUInt(colorMapper.mappingType));
-    if (colorMapper.mappingType == ColorMapper::MappingType::gradient)
-    {
-      if (init.colorMapper.minColor != colorMapper.minColor)
-        newChild.setAttribute("colorMapperMinColor",
-                              QString::fromStdString(colorMapper.minColor.toHex()));
-      if (init.colorMapper.maxColor != colorMapper.maxColor)
-        newChild.setAttribute("colorMapperMaxColor",
-                              QString::fromStdString(colorMapper.maxColor.toHex()));
-    }
-    if (colorMapper.mappingType == ColorMapper::MappingType::gradient ||
-        colorMapper.mappingType == ColorMapper::MappingType::complex)
-    {
-      if (init.colorMapper.rangeMin != colorMapper.rangeMin)
-        newChild.setAttribute("colorMapperRangeMin", colorMapper.rangeMin);
-      if (init.colorMapper.rangeMax != colorMapper.rangeMax)
-        newChild.setAttribute("colorMapperRangeMax", colorMapper.rangeMax);
-    }
-    if (colorMapper.mappingType == ColorMapper::MappingType::complex)
-    {
-      newChild.setAttribute("colorMapperComplexType", colorMapper.complexType);
-    }
-    if (colorMapper.mappingType == ColorMapper::MappingType::map)
-    {
-      if (init.colorMapper.colorMap != colorMapper.colorMap)
-      {
-        // Append the whole color map
-        for (auto &[key, value] : colorMapper.colorMap)
-          newChild.setAttribute(QString("colorMapperMapValue%1").arg(key),
-                                QString::fromStdString(value.toHex()));
-      }
-    }
-  }
-
+  if (init.colorMapper != this->colorMapper)
+    this->colorMapper.savePlaylist(newChild);
   if (init.renderVectorData != renderVectorData)
     newChild.setAttribute("renderVectorData", renderVectorData);
   if (init.scaleVectorToZoom != scaleVectorToZoom)
@@ -248,10 +186,9 @@ void StatisticsType::savePlaylist(YUViewDomElement &root) const
 
 void StatisticsType::loadPlaylist(const YUViewDomElement &root)
 {
-  QStringPairList attributes;
-  auto            statItemName = root.findChildValue(QString("statType%1").arg(typeID), attributes);
+  auto [name, attributes] = root.findChildValueWithAttributes(QString("statType%1").arg(typeID));
 
-  if (statItemName != typeName)
+  if (name != this->typeName)
     // The name of this type with the right ID and the name in the playlist don't match?...
     return;
 
@@ -266,24 +203,6 @@ void StatisticsType::loadPlaylist(const YUViewDomElement &root)
       renderValueData = (attributes[i].second != "0");
     else if (attributes[i].first == "scaleValueToBlockSize")
       scaleValueToBlockSize = (attributes[i].second != "0");
-    else if (attributes[i].first == "colorMapperType")
-      colorMapper.mappingType = ColorMapper::MappingType(attributes[i].second.toInt());
-    else if (attributes[i].first == "colorMapperMinColor")
-      colorMapper.minColor = Color(attributes[i].second.toStdString());
-    else if (attributes[i].first == "colorMapperMaxColor")
-      colorMapper.maxColor = Color(attributes[i].second.toStdString());
-    else if (attributes[i].first == "colorMapperRangeMin")
-      colorMapper.rangeMin = attributes[i].second.toInt();
-    else if (attributes[i].first == "colorMapperRangeMax")
-      colorMapper.rangeMax = attributes[i].second.toInt();
-    else if (attributes[i].first == "colorMapperComplexType")
-      colorMapper.complexType = attributes[i].second;
-    else if (attributes[i].first.startsWith("colorMapperMapValue"))
-    {
-      auto key                  = attributes[i].first.mid(19).toInt();
-      auto value                = Color(attributes[i].second.toStdString());
-      colorMapper.colorMap[key] = value;
-    }
     else if (attributes[i].first == "renderVectorData")
       renderVectorData = (attributes[i].second != "0");
     else if (attributes[i].first == "scaleVectorToZoom")
@@ -307,6 +226,8 @@ void StatisticsType::loadPlaylist(const YUViewDomElement &root)
     else if (attributes[i].first == "scaleGridToZoom")
       scaleGridToZoom = (attributes[i].second != "0");
   }
+
+  this->colorMapper.loadPlaylist(attributes);
 }
 
 // If the internal valueMap can map the value to text, text and value will be returned.

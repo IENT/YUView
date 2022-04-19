@@ -116,7 +116,8 @@ void paintVector(QPainter *                   painter,
     auto vectorStyle = statisticsType.vectorStyle;
     auto arrowColor  = functionsGui::toQColor(vectorStyle.color);
     if (statisticsType.mapVectorToColor)
-      arrowColor.setHsvF(clip((std::atan2(vy, vx) + M_PI) / (2 * M_PI), 0.0, 1.0), 1.0, 1.0);
+      arrowColor.setHsvF(
+          functions::clip((std::atan2(vy, vx) + M_PI) / (2 * M_PI), 0.0, 1.0), 1.0, 1.0);
     arrowColor.setAlpha(arrowColor.alpha() * ((float)statisticsType.alphaFactor / 100.0));
 
     if (statisticsType.scaleVectorToZoom)
@@ -554,7 +555,8 @@ void stats::paintStatisticsData(QPainter *             painter,
           auto vectorStyle = it->vectorStyle;
           auto arrowColor  = functionsGui::toQColor(vectorStyle.color);
           if (it->mapVectorToColor)
-            arrowColor.setHsvF(clip((std::atan2(vy, vx) + M_PI) / (2 * M_PI), 0.0, 1.0), 1.0, 1.0);
+            arrowColor.setHsvF(
+                functions::clip((std::atan2(vy, vx) + M_PI) / (2 * M_PI), 0.0, 1.0), 1.0, 1.0);
           arrowColor.setAlpha(arrowColor.alpha() * ((float)it->alphaFactor / 100.0));
           if (it->scaleVectorToZoom)
             vectorStyle.width = vectorStyle.width * zoomFactor / 8;
@@ -874,7 +876,8 @@ void stats::paintStatisticsData(QPainter *             painter,
           auto vectorStyle = it->vectorStyle;
           auto arrowColor  = functionsGui::toQColor(vectorStyle.color);
           if (it->mapVectorToColor)
-            arrowColor.setHsvF(clip((std::atan2(vy, vx) + M_PI) / (2 * M_PI), 0.0, 1.0), 1.0, 1.0);
+            arrowColor.setHsvF(
+                functions::clip((std::atan2(vy, vx) + M_PI) / (2 * M_PI), 0.0, 1.0), 1.0, 1.0);
           arrowColor.setAlpha(arrowColor.alpha() * ((float)it->alphaFactor / 100.0));
           if (it->scaleVectorToZoom)
             vectorStyle.width = vectorStyle.width * zoomFactor / 8;

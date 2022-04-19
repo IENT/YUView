@@ -300,12 +300,12 @@ void FrameHandler::drawPixelValues(QPainter *painter,
   int xMax = (videoRect.width() / 2 - (worldTransform.dx() - viewport.width())) / zoomFactor;
   int yMax = (videoRect.height() / 2 - (worldTransform.dy() - viewport.height())) / zoomFactor;
 
-  // Clip the min/max visible pixel values to the size of the item (no pixels outside of the
-  // item have to be labeled)
-  xMin = clip(xMin, 0, int(frameSize.width) - 1);
-  yMin = clip(yMin, 0, int(frameSize.height) - 1);
-  xMax = clip(xMax, 0, int(frameSize.width) - 1);
-  yMax = clip(yMax, 0, int(frameSize.height) - 1);
+  // functions::clip the min/max visible pixel values to the size of the item (no pixels outside of
+  // the item have to be labeled)
+  xMin = functions::clip(xMin, 0, int(frameSize.width) - 1);
+  yMin = functions::clip(yMin, 0, int(frameSize.height) - 1);
+  xMax = functions::clip(xMax, 0, int(frameSize.width) - 1);
+  yMax = functions::clip(yMax, 0, int(frameSize.height) - 1);
 
   // The center point of the pixel (0,0).
   auto centerPointZero = (QPoint(-(int(frameSize.width)), -(int(frameSize.height))) * zoomFactor +
@@ -345,9 +345,9 @@ void FrameHandler::drawPixelValues(QPainter *painter,
           drawWhite = (dR == 0 && dG == 0 && dB == 0);
         else
         {
-          int r     = clip(128 + dR, 0, 255);
-          int g     = clip(128 + dG, 0, 255);
-          int b     = clip(128 + dB, 0, 255);
+          int r     = functions::clip(128 + dR, 0, 255);
+          int g     = functions::clip(128 + dG, 0, 255);
+          int b     = functions::clip(128 + dB, 0, 255);
           pixVal    = qRgb(r, g, b);
           drawWhite = (qRed(pixVal) < 128 && qGreen(pixVal) < 128 && qBlue(pixVal) < 128);
         }
@@ -404,15 +404,15 @@ QImage FrameHandler::calculateDifference(FrameHandler *item2,
       }
       else if (amplificationFactor != 1)
       {
-        r = clip(128 + dR * amplificationFactor, 0, 255);
-        g = clip(128 + dG * amplificationFactor, 0, 255);
-        b = clip(128 + dB * amplificationFactor, 0, 255);
+        r = functions::clip(128 + dR * amplificationFactor, 0, 255);
+        g = functions::clip(128 + dG * amplificationFactor, 0, 255);
+        b = functions::clip(128 + dB * amplificationFactor, 0, 255);
       }
       else
       {
-        r = clip(128 + dR, 0, 255);
-        g = clip(128 + dG, 0, 255);
-        b = clip(128 + dB, 0, 255);
+        r = functions::clip(128 + dR, 0, 255);
+        g = functions::clip(128 + dG, 0, 255);
+        b = functions::clip(128 + dB, 0, 255);
       }
 
       mseAdd[0] += dR * dR;

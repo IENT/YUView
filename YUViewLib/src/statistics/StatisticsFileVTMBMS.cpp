@@ -503,7 +503,7 @@ void StatisticsFileVTMBMS::readHeaderFromFile(StatisticsData &statisticsData)
         {
           aType.hasValueData    = true;
           aType.renderValueData = true;
-          aType.colorMapper     = ColorMapper("jet", 0, 1);
+          aType.colorMapper     = color::ColorMapper({0, 1}, color::PredefinedType::Jet);
         }
         else if (statType.contains("Integer")) // for now do the same as for Flags
         {
@@ -520,7 +520,7 @@ void StatisticsFileVTMBMS::readHeaderFromFile(StatisticsData &statisticsData)
 
           aType.hasValueData    = true;
           aType.renderValueData = true;
-          aType.colorMapper     = ColorMapper("jet", minVal, maxVal);
+          aType.colorMapper     = color::ColorMapper({minVal, maxVal}, color::PredefinedType::Jet);
         }
         else if (statType.contains("Line"))
         {

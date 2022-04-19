@@ -3128,10 +3128,10 @@ void videoHandlerYUV::drawPixelValues(QPainter *    painter,
 
   // Clip the min/max visible pixel values to the size of the item (no pixels outside of the
   // item have to be labeled)
-  const int xMin = clip(xMin_tmp, 0, int(size.width) - 1);
-  const int yMin = clip(yMin_tmp, 0, int(size.height) - 1);
-  const int xMax = clip(xMax_tmp, 0, int(size.width) - 1);
-  const int yMax = clip(yMax_tmp, 0, int(size.height) - 1);
+  const int xMin = functions::clip(xMin_tmp, 0, int(size.width) - 1);
+  const int yMin = functions::clip(yMin_tmp, 0, int(size.height) - 1);
+  const int xMax = functions::clip(xMax_tmp, 0, int(size.width) - 1);
+  const int yMax = functions::clip(yMax_tmp, 0, int(size.height) - 1);
 
   // The center point of the pixel (0,0).
   const auto centerPointZero = (QPoint(-(int(size.width)), -(int(size.height))) * zoomFactor +
@@ -3955,7 +3955,7 @@ QImage videoHandlerYUV::calculateDifference(FrameHandler *   item2,
       mseAdd[0] += diff * diff;
       if (amplification)
         diff *= amplificationFactor;
-      diff = clip(diff + diffZero, 0, maxVal);
+      diff = functions::clip(diff + diffZero, 0, maxVal);
 
       setValueInBuffer(dstY, diff, 0, bps_out, true);
       dstY += (bps_out > 8) ? 2 : 1;
@@ -4001,8 +4001,8 @@ QImage videoHandlerYUV::calculateDifference(FrameHandler *   item2,
         diffU *= amplificationFactor;
         diffV *= amplificationFactor;
       }
-      diffU = clip(diffU + diffZero, 0, maxVal);
-      diffV = clip(diffV + diffZero, 0, maxVal);
+      diffU = functions::clip(diffU + diffZero, 0, maxVal);
+      diffV = functions::clip(diffV + diffZero, 0, maxVal);
 
       setValueInBuffer(dstU, diffU, 0, bps_out, true);
       setValueInBuffer(dstV, diffV, 0, bps_out, true);

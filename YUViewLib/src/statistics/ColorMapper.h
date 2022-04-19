@@ -32,61 +32,103 @@
 
 #pragma once
 
-#include "common/Color.h"
+#include <common/Color.h>
+#include <common/EnumMapper.h>
+#include <common/Typedef.h>
+#include <common/YUViewDomElement.h>
 
-#include <QString>
 #include <map>
 
-namespace stats
+namespace stats::color
 {
 
 /* This class knows how to map values to color.
  * There are 3 types of mapping:
  * 1: gradient - We use a min and max value (rangeMin, rangeMax) and two colors (minColor,
- * maxColor). getColor(rangeMin) will return minColor. getColor(rangeMax) will return maxColor. In
- * between, we perform linear interpolation. 2: map      - We use a fixed map to map values (int) to
- * color. The values are stored in colorMap. 3: complex  - We use a specific complex color gradient
- * for values from rangeMin to rangeMax. They are similar to the ones used in MATLAB. The are set by
- * name. supportedComplexTypes has a list of all supported types.
+ *    maxColor). getColor(rangeMin) will return minColor. getColor(rangeMax) will return maxColor.
+ *    In between, we perform linear interpolation. //
+ * 2: map - We use a fixed map to map values (int) to color. The values are stored in colorMap.
+ * 3: complex - We use a specific complex color gradient for values from rangeMin to rangeMax.
+ *    They are similar to the ones used in MATLAB. The are set by name. supportedComplexTypes has a
+ *    list of all supported types.
  */
+
+enum class PredefinedType
+{
+  Jet,
+  Heat,
+  Hsv,
+  Shuffle,
+  Hot,
+  Cool,
+  Spring,
+  Summer,
+  Autumn,
+  Winter,
+  Gray,
+  Bone,
+  Copper,
+  Pink,
+  Lines,
+  Col3_gblr,
+  Col3_gwr,
+  Col3_bblr,
+  Col3_bwr,
+  Col3_bblg,
+  Col3_bwg
+};
+
+const auto PredefinedTypeMapper = EnumMapper<PredefinedType>(
+    {{PredefinedType::Jet, "Jet"},           {PredefinedType::Heat, "Heat"},
+     {PredefinedType::Hsv, "Hsv"},           {PredefinedType::Shuffle, "Shuffle"},
+     {PredefinedType::Hot, "Hot"},           {PredefinedType::Cool, "Cool"},
+     {PredefinedType::Spring, "Spring"},     {PredefinedType::Summer, "Summer"},
+     {PredefinedType::Autumn, "Autumn"},     {PredefinedType::Winter, "Winter"},
+     {PredefinedType::Gray, "Gray"},         {PredefinedType::Bone, "Bone"},
+     {PredefinedType::Copper, "Copper"},     {PredefinedType::Pink, "Pink"},
+     {PredefinedType::Lines, "Lines"},       {PredefinedType::Col3_gblr, "Col3_gblr"},
+     {PredefinedType::Col3_gwr, "Col3_gwr"}, {PredefinedType::Col3_bblr, "Col3_bblr"},
+     {PredefinedType::Col3_bwr, "Col3_bwr"}, {PredefinedType::Col3_bblg, "Col3_bblg"},
+     {PredefinedType::Col3_bwg, "Col3_bwg"}});
+
+enum class MappingType
+{
+  Gradient,
+  Map,
+  Predefined
+};
+
+const auto MappingTypeMapper = EnumMapper<MappingType>({{MappingType::Gradient, "Gradient"},
+                                                        {MappingType::Map, "Map"},
+                                                        {MappingType::Predefined, "Predefined"}});
+
 class ColorMapper
 {
 public:
   ColorMapper() = default;
-  ColorMapper(int min, const Color &colMin, int max, const Color &colMax);
-  ColorMapper(const QString &rangeName, int min, int max);
+  ColorMapper(Range<int> valueRange, Color gradientColorStart, Color gradientColorEnd);
+  ColorMapper(const ColorMap &colorMap, Color other);
+  ColorMapper(Range<int> valueRange, PredefinedType predefinedType);
+  ColorMapper(Range<int> valueRange, std::string predefinedTypeName);
 
   Color getColor(int value) const;
-  Color getColor(float value) const;
-  int   getMinVal() const;
-  int   getMaxVal() const;
+  Color getColor(double value) const;
 
-  // ID: 0:colorMapperGradient, 1:colorMapperMap, 2+:ColorMapperComplex
-  int getID() const;
-
-  int                  rangeMin{0};
-  int                  rangeMax{0};
-  Color                minColor{};
-  Color                maxColor{};
-  std::map<int, Color> colorMap;        // Each int is mapped to a specific color
-  Color                colorMapOther{}; // All other values are mapped to this color
-  QString              complexType{};
+  void savePlaylist(YUViewDomElement &root) const;
+  void loadPlaylist(const QStringPairList &attributes);
 
   // Two colorMappers are identical if they will return the same color when asked for any value.
   // When changing the type of one of the mappers, this might not be true anymore.
   bool operator!=(const ColorMapper &other) const;
 
-  enum class MappingType
-  {
-    gradient,
-    map,
-    complex,
-    none
-  };
-  static unsigned mappingTypeToUInt(MappingType mappingType);
+  MappingType mappingType{MappingType::Predefined};
 
-  MappingType        mappingType{MappingType::none};
-  static QStringList supportedComplexTypes;
+  Range<int>     valueRange{};
+  Color          gradientColorStart{};
+  Color          gradientColorEnd{};
+  ColorMap       colorMap;
+  Color          colorMapOther{};
+  PredefinedType predefinedType{PredefinedType::Jet};
 };
 
-} // namespace stats
+} // namespace stats::color

@@ -895,11 +895,14 @@ void decoderLibde265::cacheStatistics_TUTree_recursive(uint8_t *const tuInfo,
 
 void decoderLibde265::fillStatisticList(stats::StatisticsData &statisticsData) const
 {
-  stats::StatisticsType sliceIdx(0, "Slice Index", 0, Color(0, 0, 0), 10, Color(255, 0, 0));
+  using namespace stats::color;
+
+  stats::StatisticsType sliceIdx(
+      0, "Slice Index", ColorMapper({0, 10}, Color(0, 0, 0), Color(255, 0, 0)));
   sliceIdx.description = "The slice index reported per CTU";
   statisticsData.addStatType(sliceIdx);
 
-  stats::StatisticsType partSize(1, "Part Size", "jet", 0, 7);
+  stats::StatisticsType partSize(1, "Part Size", ColorMapper({0, 7}, PredefinedType::Jet));
   partSize.description = "The partition size of each CU into PUs";
   partSize.setMappingValues({"PART_2Nx2N",
                              "PART_2NxN",
@@ -911,25 +914,26 @@ void decoderLibde265::fillStatisticList(stats::StatisticsData &statisticsData) c
                              "PART_nRx2N"});
   statisticsData.addStatType(partSize);
 
-  stats::StatisticsType predMode(2, "Pred Mode", "jet", 0, 2);
+  stats::StatisticsType predMode(2, "Pred Mode", ColorMapper({0, 2}, PredefinedType::Jet));
   predMode.description = "The internal libde265 prediction mode (intra/inter/skip) per CU";
   predMode.setMappingValues({"INTRA", "INTER", "SKIP"});
   statisticsData.addStatType(predMode);
 
-  stats::StatisticsType pcmFlag(3, "PCM flag", 0, Color(0, 0, 0), 1, Color(255, 0, 0));
+  stats::StatisticsType pcmFlag(
+      3, "PCM flag", ColorMapper({0, 1}, Color(0, 0, 0), Color(255, 0, 0)));
   pcmFlag.description = "The PCM flag per CU";
   statisticsData.addStatType(pcmFlag);
 
   stats::StatisticsType transQuantBypass(
-      4, "Transquant Bypass Flag", 0, Color(0, 0, 0), 1, Color(255, 0, 0));
+      4, "Transquant Bypass Flag", ColorMapper({0, 1}, Color(0, 0, 0), Color(255, 0, 0)));
   transQuantBypass.description = "The transquant bypass flag per CU";
   statisticsData.addStatType(transQuantBypass);
 
-  stats::StatisticsType refIdx0(5, "Ref POC 0", "col3_bblg", -16, 16);
+  stats::StatisticsType refIdx0(5, "Ref POC 0", ColorMapper({-16, 16}, PredefinedType::Col3_bblg));
   refIdx0.description = "The reference POC in LIST 0 relative to the current POC per PU";
   statisticsData.addStatType(refIdx0);
 
-  stats::StatisticsType refIdx1(6, "Ref POC 1", "col3_bblg", -16, 16);
+  stats::StatisticsType refIdx1(6, "Ref POC 1", ColorMapper({-16, 16}, PredefinedType::Col3_bblg));
   refIdx1.description = "The reference POC in LIST 1 relative to the current POC per PU";
   statisticsData.addStatType(refIdx1);
 
@@ -941,7 +945,7 @@ void decoderLibde265::fillStatisticList(stats::StatisticsData &statisticsData) c
   motionVec1.description = "The motion vector in LIST 1 per PU";
   statisticsData.addStatType(motionVec1);
 
-  stats::StatisticsType intraDirY(9, "Intra Dir Luma", "jet", 0, 34);
+  stats::StatisticsType intraDirY(9, "Intra Dir Luma", ColorMapper({0, 34}, PredefinedType::Jet));
   intraDirY.description =
       "The intra mode for the luma component per TU (intra prediction is performed on a TU level)";
   intraDirY.hasVectorData    = true;
@@ -961,7 +965,8 @@ void decoderLibde265::fillStatisticList(stats::StatisticsData &statisticsData) c
        "INTRA_ANGULAR_32", "INTRA_ANGULAR_33", "INTRA_ANGULAR_34"});
   statisticsData.addStatType(intraDirY);
 
-  stats::StatisticsType intraDirC(10, "Intra Dir Chroma", "jet", 0, 34);
+  stats::StatisticsType intraDirC(
+      10, "Intra Dir Chroma", ColorMapper({0, 34}, PredefinedType::Jet));
   intraDirC.description = "The intra mode for the chroma component per TU (intra prediction is "
                           "performed on a TU level)";
   intraDirC.hasVectorData          = true;
@@ -981,7 +986,7 @@ void decoderLibde265::fillStatisticList(stats::StatisticsData &statisticsData) c
   statisticsData.addStatType(intraDirC);
 
   stats::StatisticsType transformDepth(
-      11, "Transform Depth", 0, Color(0, 0, 0), 3, Color(0, 255, 0));
+      11, "Transform Depth", ColorMapper({0, 3}, Color(0, 0, 0), Color(0, 255, 0)));
   transformDepth.description = "The transform depth within the transform tree per TU";
   statisticsData.addStatType(transformDepth);
 }
