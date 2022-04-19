@@ -43,8 +43,6 @@
         <file>img_resample@2x.png</file>
         <file>img_save.png</file>
         <file>img_save@2x.png</file>
-        <file>img_convert.png</file>
-        <file>img_convert@2x.png</file>
         <file>YUViewSimple.qss</file>
     </qresource>
 </RCC>
