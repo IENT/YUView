@@ -241,6 +241,7 @@ bool FFmpegLibraryFunctions::loadFFmpegLibraryInPath(QString path, LibraryVersio
     if (!loadLibrary(this->libAvformat, "avformat", libraryVersion.avformat.major))
       continue;
 
+    success = true;
     break;
   }
 
