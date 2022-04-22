@@ -41,7 +41,7 @@
 
 #include <common/Functions.h>
 #include <playlistitem/playlistItem.h>
-#include <ui/playbackController.h>
+#include <ui/PlaybackController.h>
 
 namespace video
 {

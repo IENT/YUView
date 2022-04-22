@@ -30,12 +30,12 @@
  *   along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "statisticsstylecontrol.h"
+#include "Statisticsstylecontrol.h"
 
 #include <common/FunctionsGui.h>
 #include <common/Typedef.h>
 #include <statistics/StatisticsType.h>
-#include <ui/statisticsStyleControl_ColorMapEditor.h>
+#include <ui/StatisticsStyleControl_ColorMapEditor.h>
 
 #include <QColorDialog>
 #include <algorithm>

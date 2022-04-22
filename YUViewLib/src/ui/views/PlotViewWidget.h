@@ -33,7 +33,7 @@
 #pragma once
 
 #include "MoveAndZoomableView.h"
-#include "plotModel.h"
+#include "PlotModel.h"
 
 class PlotViewWidget : public MoveAndZoomableView
 {

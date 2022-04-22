@@ -30,10 +30,10 @@
  *   along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "splitViewWidget.h"
+#include "SplitViewWidget.h"
 
 #include <playlistitem/playlistItem.h>
-#include <ui/playbackController.h>
+#include <ui/PlaybackController.h>
 #include <video/FrameHandler.h>
 #include <video/VideoCache.h>
 

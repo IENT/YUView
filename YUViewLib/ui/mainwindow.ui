@@ -278,13 +278,13 @@
   <customwidget>
    <class>splitViewWidget</class>
    <extends>QWidget</extends>
-   <header>ui/views/splitViewWidget.h</header>
+   <header>ui/views/SplitViewWidget.h</header>
    <container>1</container>
   </customwidget>
   <customwidget>
    <class>PlaybackController</class>
    <extends>QWidget</extends>
-   <header>ui/playbackController.h</header>
+   <header>ui/PlaybackController.h</header>
    <container>1</container>
   </customwidget>
   <customwidget>

@@ -182,7 +182,7 @@
   <customwidget>
    <class>PlotViewWidget</class>
    <extends>QWidget</extends>
-   <header>ui/views/plotViewWidget.h</header>
+   <header>ui/views/PlotViewWidget.h</header>
    <container>1</container>
   </customwidget>
  </customwidgets>

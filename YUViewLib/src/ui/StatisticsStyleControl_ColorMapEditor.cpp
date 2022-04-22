@@ -30,7 +30,7 @@
  *   along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "statisticsStyleControl_ColorMapEditor.h"
+#include "StatisticsStyleControl_ColorMapEditor.h"
 
 #include <common/FunctionsGui.h>
 #include <common/Typedef.h>

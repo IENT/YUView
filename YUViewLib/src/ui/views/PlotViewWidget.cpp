@@ -30,7 +30,7 @@
  *   along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "plotViewWidget.h"
+#include "PlotViewWidget.h"
 
 #include <common/Functions.h>
 #include <common/Typedef.h>
