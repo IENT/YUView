@@ -32,6 +32,8 @@
 
 #pragma once
 
+#include <statistics/CustomColorMapStorage.h>
+
 #include <QDialog>
 
 #include "ui_statisticsstylecontrol.h"
@@ -96,4 +98,6 @@ private slots:
 private:
   Ui::StatisticsStyleControl ui;
   stats::StatisticsType *    currentItem;
+
+  stats::color::CustomColorMapStorage customColorMapStorage;
 };

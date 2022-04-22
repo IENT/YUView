@@ -39,6 +39,7 @@
 
 #include <QColorDialog>
 #include <algorithm>
+#include <map>
 
 namespace
 {
@@ -53,6 +54,8 @@ namespace
 
 } // namespace
 
+using MappingType = stats::color::MappingType;
+
 StatisticsStyleControl::StatisticsStyleControl(QWidget *parent)
     : QDialog(parent, Qt::Dialog | Qt::WindowStaysOnTopHint)
 {
@@ -64,6 +67,8 @@ StatisticsStyleControl::StatisticsStyleControl(QWidget *parent)
 
   for (auto typeName : stats::color::PredefinedTypeMapper.getNames())
     this->ui.comboBoxPreset->addItem(QString::fromStdString(typeName));
+  for (const auto &customColorMap : this->customColorMapStorage.getCustomColorMaps())
+    this->ui.comboBoxCustomMap->addItem(customColorMap.name);
 }
 
 void StatisticsStyleControl::setStatsItem(stats::StatisticsType *item)
@@ -79,27 +84,17 @@ void StatisticsStyleControl::setStatsItem(stats::StatisticsType *item)
 
     this->ui.frameDataColor->setColorMapper(colorMapper);
 
-    this->ui.comboBoxPreset->setCurrentIndex(
-        stats::color::PredefinedTypeMapper.indexOf(colorMapper.predefinedType));
-    this->ui.spinBoxPresetRangeMin->setValue(colorMapper.valueRange.min);
-    this->ui.spinBoxPresetRangeMax->setValue(colorMapper.valueRange.max);
-
-    this->ui.frameGradientStartColor->setPlainColor(
-        functionsGui::toQColor(colorMapper.gradientColorStart));
-    this->ui.frameGradientEndColor->setPlainColor(
-        functionsGui::toQColor(colorMapper.gradientColorEnd));
-    this->ui.spinBoxGradientRangeMin->setValue(colorMapper.valueRange.min);
-    this->ui.spinBoxGradientRangeMax->setValue(colorMapper.valueRange.max);
+    static const std::map<MappingType, int> MappingTypeToTabIndex(
+        {{MappingType::Predefined, 0}, {MappingType::Gradient, 1}, {MappingType::Map, 2}});
+    this->ui.blockDataTab->setCurrentIndex(MappingTypeToTabIndex.at(colorMapper.mappingType));
   }
   else
     this->ui.groupBoxBlockData->hide();
 
-  // Does this statistics type have vector data to show?
   if (this->currentItem->hasVectorData)
   {
     this->ui.groupBoxVector->show();
 
-    // Update all the values in the vector controls
     auto penStyleIndex = indexInVec(stats::AllPatterns, this->currentItem->vectorStyle.pattern);
     if (penStyleIndex != -1)
       this->ui.comboBoxVectorLineStyle->setCurrentIndex(penStyleIndex);
@@ -120,7 +115,6 @@ void StatisticsStyleControl::setStatsItem(stats::StatisticsType *item)
   this->ui.doubleSpinBoxGridLineWidth->setValue(this->currentItem->gridStyle.width);
   this->ui.checkBoxGridScaleToZoom->setChecked(this->currentItem->scaleGridToZoom);
 
-  // Convert the current pen style to an index and set it in the comboBoxGridLineStyle
   auto penStyleIndex = indexInVec(stats::AllPatterns, this->currentItem->vectorStyle.pattern);
   if (penStyleIndex != -1)
     this->ui.comboBoxGridLineStyle->setCurrentIndex(penStyleIndex);
@@ -148,6 +142,30 @@ void StatisticsStyleControl::on_checkBoxScaleValueToBlockSize_stateChanged(int v
 
 void StatisticsStyleControl::on_blockDataTab_currentChanged(int index)
 {
+  const auto &colorMapper = this->currentItem->colorMapper;
+  if (index == 0)
+  {
+    this->ui.comboBoxPreset->setCurrentIndex(
+        stats::color::PredefinedTypeMapper.indexOf(colorMapper.predefinedType));
+    this->ui.spinBoxPresetRangeMin->setValue(colorMapper.valueRange.min);
+    this->ui.spinBoxPresetRangeMax->setValue(colorMapper.valueRange.max);
+  }
+  else if (index == 1)
+  {
+    this->ui.frameGradientStartColor->setPlainColor(
+        functionsGui::toQColor(colorMapper.gradientColorStart));
+    this->ui.frameGradientEndColor->setPlainColor(
+        functionsGui::toQColor(colorMapper.gradientColorEnd));
+    this->ui.spinBoxGradientRangeMin->setValue(colorMapper.valueRange.min);
+    this->ui.spinBoxGradientRangeMax->setValue(colorMapper.valueRange.max);
+  }
+  else if (index == 2)
+  {
+    if (auto customMapEntry = this->customColorMapStorage.indexOfColorMap(colorMapper.colorMap))
+      this->ui.comboBoxCustomMap->setCurrentIndex(*customMapEntry);
+    else
+      this->ui.comboBoxCustomMap->setCurrentText("Unsaved Map");
+  }
 }
 
 void StatisticsStyleControl::on_comboBoxPreset_currentIndexChanged(int index)
