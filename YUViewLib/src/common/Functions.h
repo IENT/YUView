@@ -83,9 +83,9 @@ template <typename T, typename R> inline T clip(const T val, const R min, const 
   return (val < min) ? min : (val > max) ? max : val;
 }
 
-template <typename T, typename R> unsigned clip(T val, Range<R> range)
+template <typename T, typename R> inline T clip(T val, Range<R> range)
 {
-  return (val < range.min) ? range.min : (val > range.max) ? range.max : val;
+  return (val < T(range.min)) ? T(range.min) : (val > T(range.max)) ? T(range.max) : val;
 }
 
 std::optional<unsigned long> toUnsigned(const std::string &text);

@@ -144,12 +144,13 @@ Color ColorMapper::getColor(double value) const
   if (this->mappingType == MappingType::Map)
     return this->getColor(int(value + 0.5));
 
-  value = functions::clip(value, this->valueRange);
+  value           = functions::clip(value, this->valueRange);
+  auto rangeWidth = double(this->valueRange.max) - double(this->valueRange.min);
 
   if (mappingType == MappingType::Gradient)
   {
     // The value scaled from 0 to 1 within the range (rangeMin ... rangeMax)
-    auto valScaled = (value - this->valueRange.min) / (this->valueRange.max - this->valueRange.min);
+    auto valScaled = (value - this->valueRange.min) / rangeWidth;
 
     auto interpolate = [&valScaled](int start, int end) {
       auto range       = end - start;
@@ -165,8 +166,7 @@ Color ColorMapper::getColor(double value) const
   }
   else if (mappingType == MappingType::Predefined)
   {
-    auto rangeWidth = this->valueRange.max - this->valueRange.min;
-    auto x          = (value - this->valueRange.min) / rangeWidth;
+    auto x = (value - this->valueRange.min) / rangeWidth;
 
     RGBA rgba{};
 

@@ -104,7 +104,7 @@ void ShowColorWidget::paintEvent(QPaintEvent *event)
       // Set the right color
 
       auto xRel   = double(x) / (drawRect.right() - drawRect.left()); // 0...1
-      auto xRange = minVal + (double(maxVal - minVal) + 1.0) * xRel;
+      auto xRange = minVal + (double(maxVal - minVal)) * xRel;
 
       auto c = this->colMapper.getColor(xRange);
       if (this->isEnabled())
