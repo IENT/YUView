@@ -93,7 +93,7 @@ void ShowColorWidget::paintEvent(QPaintEvent *event)
     drawRect.setHeight(drawRect.height() - h - lineHeight);
   }
 
-  if (renderRange)
+  if (this->renderRange)
   {
     // Split the rect into lines with width of 1 pixel
     const auto y0 = drawRect.bottom();
@@ -104,7 +104,7 @@ void ShowColorWidget::paintEvent(QPaintEvent *event)
       // Set the right color
 
       auto xRel   = double(x) / (drawRect.right() - drawRect.left()); // 0...1
-      auto xRange = minVal + (maxVal - minVal) * xRel;
+      auto xRange = minVal + (double(maxVal - minVal) + 1.0) * xRel;
 
       auto c = this->colMapper.getColor(xRange);
       if (this->isEnabled())
@@ -146,5 +146,6 @@ void ShowColorWidget::setPlainColor(const QColor &color)
 
 void ShowColorWidget::mouseReleaseEvent(QMouseEvent *)
 {
+  // If the mouse is released, emit a clicked() event.
   emit clicked();
 }
