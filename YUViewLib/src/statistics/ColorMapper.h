@@ -124,8 +124,8 @@ public:
   MappingType mappingType{MappingType::Predefined};
 
   Range<int>     valueRange{};
-  Color          gradientColorStart{};
-  Color          gradientColorEnd{};
+  Color          gradientColorStart{0, 0, 0};
+  Color          gradientColorEnd{0, 0, 255};
   ColorMap       colorMap;
   Color          colorMapOther{};
   PredefinedType predefinedType{PredefinedType::Jet};

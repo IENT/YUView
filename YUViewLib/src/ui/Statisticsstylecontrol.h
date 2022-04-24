@@ -63,9 +63,9 @@ private slots:
   void on_groupBoxBlockData_clicked(bool check);
   void on_checkBoxScaleValueToBlockSize_stateChanged(int val);
   void on_blockDataTab_currentChanged(int index);
-  void on_comboBoxPreset_currentIndexChanged(int index);
-  void on_spinBoxPresetRangeMin_valueChanged(int val);
-  void on_spinBoxPresetRangeMax_valueChanged(int val);
+  void on_comboBoxPredefined_currentIndexChanged(int index);
+  void on_spinBoxPredefinedRangeMin_valueChanged(int val);
+  void on_spinBoxPredefinedRangeMax_valueChanged(int val);
   void on_frameGradientStartColor_clicked();
   void on_pushButtonGradientEditStartColor_clicked();
   void on_frameGradientEndColor_clicked();
@@ -97,7 +97,7 @@ private slots:
 
 private:
   Ui::StatisticsStyleControl ui;
-  stats::StatisticsType *    currentItem;
+  stats::StatisticsType *    currentItem{};
 
   stats::color::CustomColorMapStorage customColorMapStorage;
 };

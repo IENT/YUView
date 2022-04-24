@@ -52,21 +52,32 @@ namespace
 #define DEBUG_STAT_STYLE(fmt, ...) ((void)0)
 #endif
 
-} // namespace
-
 using MappingType = stats::color::MappingType;
+using ColorMapper = stats::color::ColorMapper;
+
+ColorMap convertNonMapTypeToColorMap(const stats::color::ColorMapper &colorMapper)
+{
+  ColorMap colorMap;
+  auto     lower  = std::min(colorMapper.valueRange.min, colorMapper.valueRange.max);
+  auto     higher = std::max(colorMapper.valueRange.min, colorMapper.valueRange.max);
+  for (int i = lower; i <= higher; i++)
+    colorMap[i] = colorMapper.getColor(i);
+  return colorMap;
+}
+
+} // namespace
 
 StatisticsStyleControl::StatisticsStyleControl(QWidget *parent)
     : QDialog(parent, Qt::Dialog | Qt::WindowStaysOnTopHint)
 {
   this->ui.setupUi(this);
 
-  this->ui.frameGradientStartColor->setPlainColor(QColor(0, 0, 0));
-  this->ui.frameGradientEndColor->setPlainColor(QColor(0, 0, 255));
   this->ui.frameDataColor->setRenderRangeValues(true);
 
+  QSignalBlocker blockerPredefined(this->ui.comboBoxPredefined);
   for (auto typeName : stats::color::PredefinedTypeMapper.getNames())
-    this->ui.comboBoxPreset->addItem(QString::fromStdString(typeName));
+    this->ui.comboBoxPredefined->addItem(QString::fromStdString(typeName));
+  QSignalBlocker blockerCustomMap(this->ui.comboBoxCustomMap);
   for (const auto &customColorMap : this->customColorMapStorage.getCustomColorMaps())
     this->ui.comboBoxCustomMap->addItem(customColorMap.name);
 }
@@ -86,7 +97,11 @@ void StatisticsStyleControl::setStatsItem(stats::StatisticsType *item)
 
     static const std::map<MappingType, int> MappingTypeToTabIndex(
         {{MappingType::Predefined, 0}, {MappingType::Gradient, 1}, {MappingType::Map, 2}});
-    this->ui.blockDataTab->setCurrentIndex(MappingTypeToTabIndex.at(colorMapper.mappingType));
+
+    QSignalBlocker blockTabIndexChanged(this->ui.blockDataTab);
+    auto           newIndex = MappingTypeToTabIndex.at(colorMapper.mappingType);
+    this->ui.blockDataTab->setCurrentIndex(newIndex);
+    this->on_blockDataTab_currentChanged(newIndex);
   }
   else
     this->ui.groupBoxBlockData->hide();
@@ -124,34 +139,44 @@ void StatisticsStyleControl::setStatsItem(stats::StatisticsType *item)
 
 void StatisticsStyleControl::on_groupBoxVector_clicked(bool check)
 {
+  if (!this->currentItem)
+    return;
+
   this->currentItem->renderVectorData = check;
   emit StyleChanged();
 }
 
 void StatisticsStyleControl::on_groupBoxBlockData_clicked(bool check)
 {
+  if (!this->currentItem)
+    return;
+
   this->currentItem->renderValueData = check;
   emit StyleChanged();
 }
 
 void StatisticsStyleControl::on_checkBoxScaleValueToBlockSize_stateChanged(int val)
 {
+  if (!this->currentItem)
+    return;
   this->currentItem->scaleValueToBlockSize = (val != 0);
   emit StyleChanged();
 }
 
 void StatisticsStyleControl::on_blockDataTab_currentChanged(int index)
 {
-  const auto &colorMapper = this->currentItem->colorMapper;
+  auto &colorMapper = this->currentItem->colorMapper;
   if (index == 0)
   {
-    this->ui.comboBoxPreset->setCurrentIndex(
-        stats::color::PredefinedTypeMapper.indexOf(colorMapper.predefinedType));
-    this->ui.spinBoxPresetRangeMin->setValue(colorMapper.valueRange.min);
-    this->ui.spinBoxPresetRangeMax->setValue(colorMapper.valueRange.max);
+    colorMapper.mappingType = MappingType::Predefined;
+    this->ui.comboBoxPredefined->setCurrentIndex(
+        int(stats::color::PredefinedTypeMapper.indexOf(colorMapper.predefinedType)));
+    this->ui.spinBoxPredefinedRangeMin->setValue(colorMapper.valueRange.min);
+    this->ui.spinBoxPredefinedRangeMax->setValue(colorMapper.valueRange.max);
   }
   else if (index == 1)
   {
+    colorMapper.mappingType = MappingType::Gradient;
     this->ui.frameGradientStartColor->setPlainColor(
         functionsGui::toQColor(colorMapper.gradientColorStart));
     this->ui.frameGradientEndColor->setPlainColor(
@@ -161,32 +186,60 @@ void StatisticsStyleControl::on_blockDataTab_currentChanged(int index)
   }
   else if (index == 2)
   {
+    if (colorMapper.mappingType != MappingType::Map)
+    {
+      colorMapper.colorMap = convertNonMapTypeToColorMap(colorMapper);
+    }
+    colorMapper.mappingType = MappingType::Map;
     if (auto customMapEntry = this->customColorMapStorage.indexOfColorMap(colorMapper.colorMap))
-      this->ui.comboBoxCustomMap->setCurrentIndex(*customMapEntry);
+      this->ui.comboBoxCustomMap->setCurrentIndex(int(*customMapEntry));
     else
       this->ui.comboBoxCustomMap->setCurrentText("Unsaved Map");
   }
+  this->ui.frameDataColor->setColorMapper(colorMapper);
+  emit StyleChanged();
 }
 
-void StatisticsStyleControl::on_comboBoxPreset_currentIndexChanged(int index)
+void StatisticsStyleControl::on_comboBoxPredefined_currentIndexChanged(int index)
 {
+  if (!this->currentItem || this->currentItem->colorMapper.mappingType != MappingType::Predefined)
+    return;
+
+  if (auto newType = stats::color::PredefinedTypeMapper.at(size_t(index)))
+  {
+    this->currentItem->colorMapper.predefinedType = *newType;
+    this->ui.frameDataColor->setColorMapper(this->currentItem->colorMapper);
+    emit StyleChanged();
+  }
 }
 
-void StatisticsStyleControl::on_spinBoxPresetRangeMin_valueChanged(int val)
+void StatisticsStyleControl::on_spinBoxPredefinedRangeMin_valueChanged(int val)
 {
+  if (!this->currentItem || this->currentItem->colorMapper.mappingType != MappingType::Predefined)
+    return;
+
+  this->currentItem->colorMapper.valueRange.min = val;
+  this->ui.frameDataColor->setColorMapper(this->currentItem->colorMapper);
+  emit StyleChanged();
 }
 
-void StatisticsStyleControl::on_spinBoxPresetRangeMax_valueChanged(int val)
+void StatisticsStyleControl::on_spinBoxPredefinedRangeMax_valueChanged(int val)
 {
+  if (!this->currentItem || this->currentItem->colorMapper.mappingType != MappingType::Predefined)
+    return;
+
+  this->currentItem->colorMapper.valueRange.max = val;
+  this->ui.frameDataColor->setColorMapper(this->currentItem->colorMapper);
+  emit StyleChanged();
 }
 
 void StatisticsStyleControl::on_frameGradientStartColor_clicked()
 {
-  auto newQColor =
-      QColorDialog::getColor(functionsGui::toQColor(this->currentItem->gridStyle.color),
-                             this,
-                             tr("Select color range minimum"),
-                             QColorDialog::ShowAlphaChannel);
+  auto newQColor = QColorDialog::getColor(
+      functionsGui::toQColor(this->currentItem->colorMapper.gradientColorStart),
+      this,
+      tr("Select color range minimum"),
+      QColorDialog::ShowAlphaChannel);
 
   auto newColor = functionsGui::toColor(newQColor);
   if (newQColor.isValid() && this->currentItem->colorMapper.gradientColorStart != newColor)
@@ -205,11 +258,11 @@ void StatisticsStyleControl::on_pushButtonGradientEditStartColor_clicked()
 
 void StatisticsStyleControl::on_frameGradientEndColor_clicked()
 {
-  auto newQColor =
-      QColorDialog::getColor(functionsGui::toQColor(this->currentItem->gridStyle.color),
-                             this,
-                             tr("Select color range maximum"),
-                             QColorDialog::ShowAlphaChannel);
+  auto newQColor = QColorDialog::getColor(
+      functionsGui::toQColor(this->currentItem->colorMapper.gradientColorEnd),
+      this,
+      tr("Select color range maximum"),
+      QColorDialog::ShowAlphaChannel);
 
   auto newColor = functionsGui::toColor(newQColor);
   if (newQColor.isValid() && this->currentItem->colorMapper.gradientColorEnd != newColor)
@@ -228,10 +281,22 @@ void StatisticsStyleControl::on_pushButtonGradientEditEndColor_clicked()
 
 void StatisticsStyleControl::on_spinBoxGradientRangeMin_valueChanged(int val)
 {
+  if (!this->currentItem || this->currentItem->colorMapper.mappingType != MappingType::Gradient)
+    return;
+
+  this->currentItem->colorMapper.valueRange.min = val;
+  this->ui.frameDataColor->setColorMapper(this->currentItem->colorMapper);
+  emit StyleChanged();
 }
 
 void StatisticsStyleControl::on_spinBoxGradientRangeMax_valueChanged(int val)
 {
+  if (!this->currentItem || this->currentItem->colorMapper.mappingType != MappingType::Gradient)
+    return;
+
+  this->currentItem->colorMapper.valueRange.max = val;
+  this->ui.frameDataColor->setColorMapper(this->currentItem->colorMapper);
+  emit StyleChanged();
 }
 
 void StatisticsStyleControl::on_comboBoxCustomMap_currentIndexChanged(int index)
@@ -240,39 +305,14 @@ void StatisticsStyleControl::on_comboBoxCustomMap_currentIndexChanged(int index)
 
 void StatisticsStyleControl::on_pushButtonEditMap_clicked()
 {
-  std::map<int, Color> colorMap;
-  auto                 otherColor = this->currentItem->colorMapper.colorMapOther;
-
-  if (this->currentItem->colorMapper.mappingType == stats::color::MappingType::Map)
-    // Edit the currently set color map
-    colorMap = this->currentItem->colorMapper.colorMap;
-  else
-  {
-    // Convert the currently selected range to a map and let the user edit that
-    auto lower  = std::min(this->currentItem->colorMapper.valueRange.min,
-                          this->currentItem->colorMapper.valueRange.max);
-    auto higher = std::max(this->currentItem->colorMapper.valueRange.min,
-                           this->currentItem->colorMapper.valueRange.max);
-    for (int i = lower; i <= higher; i++)
-      colorMap[i] = this->currentItem->colorMapper.getColor(i);
-  }
+  const auto &colorMap   = this->currentItem->colorMapper.colorMap;
+  const auto &otherColor = this->currentItem->colorMapper.colorMapOther;
 
   StatisticsStyleControl_ColorMapEditor colorMapEditor(colorMap, otherColor, this);
   if (colorMapEditor.exec() == QDialog::Accepted)
   {
-    // Set the new color map
     this->currentItem->colorMapper.colorMap      = colorMapEditor.getColorMap();
     this->currentItem->colorMapper.colorMapOther = colorMapEditor.getOtherColor();
-
-    // // Select the color map (if not yet set)
-    // if (this->ui.comboBoxDataColorMap->currentIndex() != 1)
-    //   // This will also set the color map and emit the style change signal
-    //   this->ui.comboBoxDataColorMap->setCurrentIndex(1);
-    // else
-    // {
-    //   this->ui.frameDataColor->setColorMapper(this->currentItem->colorMapper);
-    //   emit StyleChanged();
-    // }
   }
 }
 
@@ -283,63 +323,6 @@ void StatisticsStyleControl::on_pushButtonSaveMap_clicked()
 void StatisticsStyleControl::on_pushButtonDeleteMap_clicked()
 {
 }
-
-// void StatisticsStyleControl::on_comboBoxDataColorMap_currentIndexChanged(int index)
-// {
-//   const auto isCustomRange = (index == 0);
-//   const auto isMap         = (index == 1);
-
-//   this->ui.frameMinColor->setEnabled(isCustomRange);
-//   this->ui.pushButtonEditMinColor->setEnabled(isCustomRange);
-//   this->ui.frameMaxColor->setEnabled(isCustomRange);
-//   this->ui.pushButtonEditMaxColor->setEnabled(isCustomRange);
-//   this->ui.spinBoxRangeMin->setEnabled(!isMap);
-//   this->ui.spinBoxRangeMax->setEnabled(!isMap);
-
-//   // If a color map is selected, the button will edit it. If no color map is selected, the button
-//   // will convert the color mapping to a map and edit/set that one.
-//   const auto editButton = this->ui.pushButtonEditColorMap;
-//   if (isMap)
-//   {
-//     editButton->setIcon(functionsGui::convertIcon(":img_convert.png"));
-//     editButton->setToolTip("Edit colormap");
-//     editButton->setWhatsThis("Edit colormap");
-//   }
-//   else
-//   {
-//     editButton->setIcon(functionsGui::convertIcon(":img_convert.png"));
-//     editButton->setToolTip("Convert current mapping to a colormap");
-//     editButton->setWhatsThis("Convert current mapping to a colormap");
-//   }
-
-//   if (isCustomRange)
-//   {
-//     this->currentItem->colorMapper.mappingType = stats::ColorMapper::MappingType::gradient;
-//     this->currentItem->colorMapper.rangeMin    = this->ui.spinBoxRangeMin->value();
-//     this->currentItem->colorMapper.rangeMax    = this->ui.spinBoxRangeMax->value();
-
-//     this->currentItem->colorMapper.minColor =
-//         functionsGui::toColor(ui.frameMinColor->getPlainColor());
-//     this->currentItem->colorMapper.maxColor =
-//         functionsGui::toColor(ui.frameMaxColor->getPlainColor());
-//   }
-//   else if (isMap)
-//     this->currentItem->colorMapper.mappingType = stats::ColorMapper::MappingType::map;
-//   else
-//   {
-//     if (index - 2 < stats::ColorMapper::supportedComplexTypes.length())
-//     {
-//       this->currentItem->colorMapper.mappingType = stats::ColorMapper::MappingType::complex;
-//       this->currentItem->colorMapper.rangeMin    = this->ui.spinBoxRangeMin->value();
-//       this->currentItem->colorMapper.rangeMax    = this->ui.spinBoxRangeMax->value();
-//       this->currentItem->colorMapper.complexType =
-//           stats::ColorMapper::supportedComplexTypes[index - 2];
-//     }
-//   }
-
-//   this->ui.frameDataColor->setColorMapper(this->currentItem->colorMapper);
-//   emit StyleChanged();
-// }
 
 void StatisticsStyleControl::on_comboBoxVectorLineStyle_currentIndexChanged(int index)
 {
@@ -434,17 +417,3 @@ void StatisticsStyleControl::on_checkBoxGridScaleToZoom_stateChanged(int arg1)
   this->currentItem->scaleGridToZoom = (arg1 != 0);
   emit StyleChanged();
 }
-
-// void StatisticsStyleControl::on_spinBoxRangeMin_valueChanged(int minVal)
-// {
-//   this->currentItem->colorMapper.rangeMin = minVal;
-//   ui.frameDataColor->setColorMapper(this->currentItem->colorMapper);
-//   emit StyleChanged();
-// }
-
-// void StatisticsStyleControl::on_spinBoxRangeMax_valueChanged(int maxVal)
-// {
-//   this->currentItem->colorMapper.rangeMax = maxVal;
-//   ui.frameDataColor->setColorMapper(this->currentItem->colorMapper);
-//   emit StyleChanged();
-// }
