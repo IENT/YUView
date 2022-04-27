@@ -88,7 +88,7 @@ Range<int> rangeFromString(std::string rangeText)
     auto second = std::stoi(secondStr);
     return {first, second};
   }
-  catch (const std::exception)
+  catch (const std::exception&)
   {
     return {};
   }
