@@ -63,7 +63,7 @@ QString toString(const ColorMap &colorMap)
   QString str;
   for (const auto &color : colorMap)
     str += QString("%1,%2|").arg(color.first).arg(QString::fromStdString(color.second.toHex()));
-  if (str.size() > 0 && str.last(1) == "|")
+  if (str.size() > 0 && str.endsWith("|"))
     str.chop(1);
   return str;
 }
@@ -114,7 +114,7 @@ const std::vector<CustomColorMap> &CustomColorMapStorage::getCustomColorMaps() c
   return this->customColorMaps;
 }
 
-const CustomColorMap &CustomColorMapStorage::at(size_t index) const
+CustomColorMap CustomColorMapStorage::at(size_t index) const
 {
   if (index >= this->customColorMaps.size())
     return {};

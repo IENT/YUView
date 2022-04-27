@@ -54,9 +54,9 @@ public:
   CustomColorMapStorage();
 
   const std::vector<CustomColorMap> &getCustomColorMaps() const;
-  const CustomColorMap &             at(size_t index) const;
-  std::optional<size_t> indexOfColorMap(const ColorMap &colorMap, const Color &other) const;
-  bool                  contains(const QString &name) const;
+  CustomColorMap                     at(size_t index) const;
+  std::optional<size_t>              indexOfColorMap(const ColorMap &colorMap, const Color &other) const;
+  bool                               contains(const QString &name) const;
 
   size_t saveAndGetIndex(const CustomColorMap &customColormap);
   void   remove(const QString &name);
