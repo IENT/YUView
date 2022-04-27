@@ -51,6 +51,9 @@ public:
   ColorMap getColorMap() const;
   Color    getOtherColor() const;
 
+signals:
+  void mapChanged();
+
 public slots:
   // Override from QDialog. Check for dublicate entries.
   virtual void done(int r) override;

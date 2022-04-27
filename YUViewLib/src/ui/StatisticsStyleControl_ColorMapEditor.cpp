@@ -115,10 +115,10 @@ Color StatisticsStyleControl_ColorMapEditor::getOtherColor() const
 
 void StatisticsStyleControl_ColorMapEditor::slotItemChanged(QTableWidgetItem *item)
 {
-  if (item->column() != 0)
-    return;
+  if (item->column() == 0)
+    this->ui.colorMapTable->sortItems(0);
 
-  this->ui.colorMapTable->sortItems(0);
+  emit mapChanged();
 }
 
 void StatisticsStyleControl_ColorMapEditor::on_pushButtonAdd_clicked()
@@ -162,16 +162,23 @@ void StatisticsStyleControl_ColorMapEditor::on_pushButtonAdd_clicked()
                 &QTableWidget::itemClicked,
                 this,
                 &StatisticsStyleControl_ColorMapEditor::slotItemClicked);
+  emit mapChanged();
 }
 
 void StatisticsStyleControl_ColorMapEditor::on_pushButtonDelete_clicked()
 {
-  const auto table = this->ui.colorMapTable;
+  const auto table       = this->ui.colorMapTable;
+  bool       itemDeleted = false;
   for (auto item : table->selectedItems())
   {
     if (item->column() == 1 && item->row() != table->rowCount() - 1)
+    {
       table->removeRow(item->row());
+      itemDeleted = true;
+    }
   }
+  if (itemDeleted)
+    emit mapChanged();
 }
 
 void StatisticsStyleControl_ColorMapEditor::slotItemClicked(QTableWidgetItem *item)
@@ -195,6 +202,8 @@ void StatisticsStyleControl_ColorMapEditor::keyPressEvent(QKeyEvent *keyEvent)
     this->on_pushButtonDelete_clicked();
   else if (keyEvent->modifiers() == Qt::NoModifier && keyEvent->key() == Qt::Key_Insert)
     this->on_pushButtonAdd_clicked();
+  else if (keyEvent->modifiers() == Qt::NoModifier && keyEvent->key() == Qt::Key_Escape)
+    this->reject();
   else
     QWidget::keyPressEvent(keyEvent);
 }

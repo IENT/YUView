@@ -38,6 +38,8 @@
 #include <ui/StatisticsStyleControl_ColorMapEditor.h>
 
 #include <QColorDialog>
+#include <QInputDialog>
+#include <QMessageBox>
 #include <algorithm>
 #include <map>
 
@@ -77,9 +79,7 @@ StatisticsStyleControl::StatisticsStyleControl(QWidget *parent)
   QSignalBlocker blockerPredefined(this->ui.comboBoxPredefined);
   for (auto typeName : stats::color::PredefinedTypeMapper.getNames())
     this->ui.comboBoxPredefined->addItem(QString::fromStdString(typeName));
-  QSignalBlocker blockerCustomMap(this->ui.comboBoxCustomMap);
-  for (const auto &customColorMap : this->customColorMapStorage.getCustomColorMaps())
-    this->ui.comboBoxCustomMap->addItem(customColorMap.name);
+  this->refreshComboBoxCustomMapFromStorage();
 }
 
 void StatisticsStyleControl::setStatsItem(stats::StatisticsType *item)
@@ -191,10 +191,11 @@ void StatisticsStyleControl::on_blockDataTab_currentChanged(int index)
       colorMapper.colorMap = convertNonMapTypeToColorMap(colorMapper);
     }
     colorMapper.mappingType = MappingType::Map;
-    if (auto customMapEntry = this->customColorMapStorage.indexOfColorMap(colorMapper.colorMap))
+    if (auto customMapEntry = this->customColorMapStorage.indexOfColorMap(
+            colorMapper.colorMap, colorMapper.colorMapOther))
       this->ui.comboBoxCustomMap->setCurrentIndex(int(*customMapEntry));
     else
-      this->ui.comboBoxCustomMap->setCurrentText("Unsaved Map");
+      this->ui.comboBoxCustomMap->setCurrentIndex(-1);
   }
   this->ui.frameDataColor->setColorMapper(colorMapper);
   emit StyleChanged();
@@ -301,27 +302,96 @@ void StatisticsStyleControl::on_spinBoxGradientRangeMax_valueChanged(int val)
 
 void StatisticsStyleControl::on_comboBoxCustomMap_currentIndexChanged(int index)
 {
+  if (!this->currentItem || this->currentItem->colorMapper.mappingType != MappingType::Map ||
+      index < 0)
+    return;
+
+  const auto customColormap                    = this->customColorMapStorage.at(size_t(index));
+  this->currentItem->colorMapper.colorMap      = customColormap.colorMap;
+  this->currentItem->colorMapper.colorMapOther = customColormap.other;
+  this->ui.frameDataColor->setColorMapper(this->currentItem->colorMapper);
+  emit StyleChanged();
 }
 
 void StatisticsStyleControl::on_pushButtonEditMap_clicked()
 {
-  const auto &colorMap   = this->currentItem->colorMapper.colorMap;
-  const auto &otherColor = this->currentItem->colorMapper.colorMapOther;
+  const auto originalColorMap   = this->currentItem->colorMapper.colorMap;
+  const auto originalOtherColor = this->currentItem->colorMapper.colorMapOther;
 
-  StatisticsStyleControl_ColorMapEditor colorMapEditor(colorMap, otherColor, this);
-  if (colorMapEditor.exec() == QDialog::Accepted)
-  {
+  StatisticsStyleControl_ColorMapEditor colorMapEditor(originalColorMap, originalOtherColor, this);
+
+  connect(&colorMapEditor, &StatisticsStyleControl_ColorMapEditor::mapChanged, [&]() {
     this->currentItem->colorMapper.colorMap      = colorMapEditor.getColorMap();
     this->currentItem->colorMapper.colorMapOther = colorMapEditor.getOtherColor();
+    this->ui.frameDataColor->setColorMapper(this->currentItem->colorMapper);
+    emit StyleChanged();
+  });
+
+  if (colorMapEditor.exec() == QDialog::Accepted)
+  {
+    auto somethingChanged = originalColorMap != colorMapEditor.getColorMap() ||
+                            originalOtherColor != colorMapEditor.getOtherColor();
+    if (somethingChanged)
+    {
+      this->ui.comboBoxCustomMap->setCurrentIndex(-1);
+      this->currentItem->colorMapper.colorMap      = colorMapEditor.getColorMap();
+      this->currentItem->colorMapper.colorMapOther = colorMapEditor.getOtherColor();
+    }
+  }
+  else
+  {
+    this->currentItem->colorMapper.colorMap      = originalColorMap;
+    this->currentItem->colorMapper.colorMapOther = originalOtherColor;
+    this->ui.frameDataColor->setColorMapper(this->currentItem->colorMapper);
+    emit StyleChanged();
   }
 }
 
 void StatisticsStyleControl::on_pushButtonSaveMap_clicked()
 {
+  if (!this->currentItem || this->currentItem->colorMapper.mappingType != MappingType::Map)
+    return;
+
+  bool ok{};
+  auto name = QInputDialog::getText(this,
+                                    "Save custom map",
+                                    "Please enter a name for the custom map.",
+                                    QLineEdit::Normal,
+                                    "",
+                                    &ok);
+  if (ok && !name.isEmpty())
+  {
+    if (this->customColorMapStorage.contains(name))
+    {
+      auto choice = QMessageBox::question(
+          this,
+          "Save custom map",
+          "A custom map with the given name already exists. Do you want to overwrite it?",
+          QMessageBox::Yes | QMessageBox::No,
+          QMessageBox::Yes);
+      if (choice != QMessageBox::Yes)
+        return;
+    }
+    auto newIndex =
+        this->customColorMapStorage.saveAndGetIndex({name,
+                                                     this->currentItem->colorMapper.colorMap,
+                                                     this->currentItem->colorMapper.colorMapOther});
+    this->refreshComboBoxCustomMapFromStorage();
+    QSignalBlocker blockerPredefined(this->ui.comboBoxCustomMap);
+    this->ui.comboBoxCustomMap->setCurrentIndex(int(newIndex));
+  }
 }
 
 void StatisticsStyleControl::on_pushButtonDeleteMap_clicked()
 {
+  auto itemName = this->ui.comboBoxCustomMap->currentText();
+  if (itemName.isEmpty())
+    return;
+
+  this->customColorMapStorage.remove(itemName);
+  this->refreshComboBoxCustomMapFromStorage();
+  QSignalBlocker blockerPredefined(this->ui.comboBoxCustomMap);
+  this->ui.comboBoxCustomMap->setCurrentIndex(-1);
 }
 
 void StatisticsStyleControl::on_comboBoxVectorLineStyle_currentIndexChanged(int index)
@@ -416,4 +486,12 @@ void StatisticsStyleControl::on_checkBoxGridScaleToZoom_stateChanged(int arg1)
 {
   this->currentItem->scaleGridToZoom = (arg1 != 0);
   emit StyleChanged();
+}
+
+void StatisticsStyleControl::refreshComboBoxCustomMapFromStorage()
+{
+  QSignalBlocker blockerCustomMap(this->ui.comboBoxCustomMap);
+  this->ui.comboBoxCustomMap->clear();
+  for (const auto &customColorMap : this->customColorMapStorage.getCustomColorMaps())
+    this->ui.comboBoxCustomMap->addItem(customColorMap.name);
 }

@@ -96,6 +96,8 @@ private slots:
   void on_checkBoxGridScaleToZoom_stateChanged(int val);
 
 private:
+  void refreshComboBoxCustomMapFromStorage();
+
   Ui::StatisticsStyleControl ui;
   stats::StatisticsType *    currentItem{};
 

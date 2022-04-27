@@ -96,7 +96,7 @@
          <string/>
         </property>
         <property name="currentIndex">
-         <number>1</number>
+         <number>0</number>
         </property>
         <widget class="QWidget" name="tabPreset">
          <property name="toolTip">
@@ -106,7 +106,7 @@
           <string>Use a fixed prest mapping from color to value.</string>
          </property>
          <attribute name="title">
-          <string>Preset</string>
+          <string>Predefined</string>
          </attribute>
          <layout class="QGridLayout" name="gridLayout_5" columnstretch="0,1">
           <item row="2" column="0">
@@ -123,7 +123,7 @@
            </spacer>
           </item>
           <item row="0" column="1">
-           <widget class="QComboBox" name="comboBoxPreset">
+           <widget class="QComboBox" name="comboBoxPredefined">
             <property name="toolTip">
              <string>Select a fixed custom mapping function.</string>
             </property>
@@ -133,9 +133,9 @@
            </widget>
           </item>
           <item row="0" column="0">
-           <widget class="QLabel" name="labelPreset">
+           <widget class="QLabel" name="labelPredefinedType">
             <property name="text">
-             <string>Preset</string>
+             <string>Type</string>
             </property>
            </widget>
           </item>
@@ -149,7 +149,7 @@
           <item row="1" column="1">
            <layout class="QHBoxLayout" name="horizontalLayoutPresetValueRange">
             <item>
-             <widget class="QSpinBox" name="spinBoxPresetRangeMin">
+             <widget class="QSpinBox" name="spinBoxPredefinedRangeMin">
               <property name="toolTip">
                <string>Lowest value which will be mapped to the &quot;lowest&quot; color of the color preset. All lower values will be clipped to this value.</string>
               </property>
@@ -165,7 +165,7 @@
              </widget>
             </item>
             <item>
-             <widget class="QSpinBox" name="spinBoxPresetRangeMax">
+             <widget class="QSpinBox" name="spinBoxPredefinedRangeMax">
               <property name="toolTip">
                <string>Highest value which will be mapped to the &quot;highest&quot; color of the color preset. All higher values will be clipped to this value.</string>
               </property>
@@ -908,9 +908,9 @@
   <tabstop>groupBoxBlockData</tabstop>
   <tabstop>checkBoxScaleValueToBlockSize</tabstop>
   <tabstop>blockDataTab</tabstop>
-  <tabstop>comboBoxPreset</tabstop>
-  <tabstop>spinBoxPresetRangeMin</tabstop>
-  <tabstop>spinBoxPresetRangeMax</tabstop>
+  <tabstop>comboBoxPredefined</tabstop>
+  <tabstop>spinBoxPredefinedRangeMin</tabstop>
+  <tabstop>spinBoxPredefinedRangeMax</tabstop>
   <tabstop>pushButtonGradientEditStartColor</tabstop>
   <tabstop>pushButtonGradientEditEndColor</tabstop>
   <tabstop>spinBoxGradientRangeMin</tabstop>

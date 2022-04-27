@@ -68,12 +68,11 @@ QString toString(const ColorMap &colorMap)
   return str;
 }
 
-} // namespace
-
-CustomColorMapStorage::CustomColorMapStorage()
+std::vector<CustomColorMap> loadFromSettings()
 {
-  QSettings settings;
-  settings.beginGroup("CustomColorMaps");
+  QSettings                   settings;
+  std::vector<CustomColorMap> colorMaps;
+
   auto size = settings.beginReadArray("CustomColorMaps");
   for (int i = 0; i < size; ++i)
   {
@@ -82,9 +81,32 @@ CustomColorMapStorage::CustomColorMapStorage()
     CustomColorMap customColorMap;
     customColorMap.name     = settings.value("name").toString();
     customColorMap.colorMap = parseColorMap(settings.value("colorMap").toString());
-    this->customColorMaps.push_back(customColorMap);
+    customColorMap.other    = Color(settings.value("otherColor").toString().toStdString());
+    colorMaps.push_back(customColorMap);
   }
   settings.endArray();
+  return colorMaps;
+}
+
+void storeToSettings(const std::vector<CustomColorMap> &colorMaps)
+{
+  QSettings settings;
+  settings.beginWriteArray("CustomColorMaps");
+  for (size_t i = 0; i < colorMaps.size(); ++i)
+  {
+    settings.setArrayIndex(int(i));
+    settings.setValue("name", colorMaps.at(i).name);
+    settings.setValue("colorMap", toString(colorMaps.at(i).colorMap));
+    settings.setValue("otherColor", QString::fromStdString(colorMaps.at(i).other.toHex()));
+  }
+  settings.endArray();
+}
+
+} // namespace
+
+CustomColorMapStorage::CustomColorMapStorage()
+{
+  this->customColorMaps = loadFromSettings();
 }
 
 const std::vector<CustomColorMap> &CustomColorMapStorage::getCustomColorMaps() const
@@ -92,16 +114,61 @@ const std::vector<CustomColorMap> &CustomColorMapStorage::getCustomColorMaps() c
   return this->customColorMaps;
 }
 
-std::optional<size_t> CustomColorMapStorage::indexOfColorMap(const ColorMap &colorMap)
+const CustomColorMap &CustomColorMapStorage::at(size_t index) const
+{
+  if (index >= this->customColorMaps.size())
+    return {};
+  return this->customColorMaps.at(index);
+}
+
+std::optional<size_t> CustomColorMapStorage::indexOfColorMap(const ColorMap &colorMap,
+                                                             const Color &   other) const
 {
   auto colorMapString = toString(colorMap);
   for (size_t i = 0; i < this->customColorMaps.size(); i++)
   {
     auto mapEntryAsString = toString(this->customColorMaps.at(i).colorMap);
-    if (colorMapString == mapEntryAsString)
+    if (colorMapString == mapEntryAsString && this->customColorMaps.at(i).other == other)
       return i;
   }
   return {};
+}
+
+bool CustomColorMapStorage::contains(const QString &name) const
+{
+  auto it = std::find_if(this->customColorMaps.begin(),
+                         this->customColorMaps.end(),
+                         [&name](const CustomColorMap &map) { return map.name == name; });
+  return it != this->customColorMaps.end();
+}
+
+size_t CustomColorMapStorage::saveAndGetIndex(const CustomColorMap &customColormap)
+{
+  for (size_t i = 0; i < this->customColorMaps.size(); ++i)
+  {
+    if (this->customColorMaps.at(i).name == customColormap.name)
+    {
+      this->customColorMaps[i] = customColormap;
+      storeToSettings(this->customColorMaps);
+      return i;
+    }
+  }
+
+  this->customColorMaps.push_back(customColormap);
+  storeToSettings(this->customColorMaps);
+  return this->customColorMaps.size() - 1;
+}
+
+void CustomColorMapStorage::remove(const QString &name)
+{
+  auto it = std::find_if(this->customColorMaps.begin(),
+                         this->customColorMaps.end(),
+                         [&name](const CustomColorMap &map) { return map.name == name; });
+  if (it == this->customColorMaps.end())
+    return;
+
+  this->customColorMaps.erase(it);
+  storeToSettings(this->customColorMaps);
 }
 
 } // namespace stats::color
