@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>284</width>
-    <height>601</height>
+    <width>310</width>
+    <height>672</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -40,316 +40,7 @@
      <property name="checkable">
       <bool>true</bool>
      </property>
-     <layout class="QGridLayout" name="gridLayout_3" columnstretch="0,1">
-      <item row="1" column="0">
-       <widget class="QLabel" name="labelColorMapping">
-        <property name="toolTip">
-         <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;How should values be mapped to colors? There are multiple predefined color mappings and two custom color mappings:&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600;&quot;&gt;Custom Color Gradient:&lt;/span&gt; Select two colors from the controls below. The value range is mapped to this gradient of colors.&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600;&quot;&gt;Color Map:&lt;/span&gt; Create a color map in which specific values are mapped to specific colors.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-        </property>
-        <property name="whatsThis">
-         <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;How should values be mapped to colors? There are multiple predefined color mappings and two custom color mappings:&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600;&quot;&gt;Custom Color Gradient:&lt;/span&gt; Select two colors from the controls below. The value range is mapped to this gradient of colors.&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600;&quot;&gt;Color Map:&lt;/span&gt; Create a color map in which specific values are mapped to specific colors.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-        </property>
-        <property name="text">
-         <string>Color Mapping</string>
-        </property>
-       </widget>
-      </item>
-      <item row="1" column="1">
-       <layout class="QHBoxLayout" name="horizontalLayout_4" stretch="0">
-        <item>
-         <widget class="QComboBox" name="comboBoxDataColorMap">
-          <property name="toolTip">
-           <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;How should values be mapped to colors? There are multiple predefined color mappings and two custom color mappings:&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600;&quot;&gt;Custom Color Gradient:&lt;/span&gt; Select two colors from the controls below. The value range is mapped to this gradient of colors.&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600;&quot;&gt;Color Map:&lt;/span&gt; Create a color map in which specific values are mapped to specific colors.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-          </property>
-          <property name="whatsThis">
-           <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;How should values be mapped to colors? There are multiple predefined color mappings and two custom color mappings:&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600;&quot;&gt;Custom Color Gradient:&lt;/span&gt; Select two colors from the controls below. The value range is mapped to this gradient of colors.&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600;&quot;&gt;Color Map:&lt;/span&gt; Create a color map in which specific values are mapped to specific colors.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-          </property>
-          <item>
-           <property name="text">
-            <string>Custom Color Gradient</string>
-           </property>
-          </item>
-          <item>
-           <property name="text">
-            <string>Color Map</string>
-           </property>
-          </item>
-          <item>
-           <property name="text">
-            <string>jet</string>
-           </property>
-          </item>
-          <item>
-           <property name="text">
-            <string>heat</string>
-           </property>
-          </item>
-          <item>
-           <property name="text">
-            <string>hsv</string>
-           </property>
-          </item>
-          <item>
-           <property name="text">
-            <string>shuffle</string>
-           </property>
-          </item>
-          <item>
-           <property name="text">
-            <string>hot</string>
-           </property>
-          </item>
-          <item>
-           <property name="text">
-            <string>cool</string>
-           </property>
-          </item>
-          <item>
-           <property name="text">
-            <string>spring</string>
-           </property>
-          </item>
-          <item>
-           <property name="text">
-            <string>summer</string>
-           </property>
-          </item>
-          <item>
-           <property name="text">
-            <string>autumn</string>
-           </property>
-          </item>
-          <item>
-           <property name="text">
-            <string>winter</string>
-           </property>
-          </item>
-          <item>
-           <property name="text">
-            <string>gray</string>
-           </property>
-          </item>
-          <item>
-           <property name="text">
-            <string>bone</string>
-           </property>
-          </item>
-          <item>
-           <property name="text">
-            <string>copper</string>
-           </property>
-          </item>
-          <item>
-           <property name="text">
-            <string>pink</string>
-           </property>
-          </item>
-          <item>
-           <property name="text">
-            <string>lines</string>
-           </property>
-          </item>
-          <item>
-           <property name="text">
-            <string>col3_gblr</string>
-           </property>
-          </item>
-          <item>
-           <property name="text">
-            <string>col3_gwr</string>
-           </property>
-          </item>
-          <item>
-           <property name="text">
-            <string>col3_bblr</string>
-           </property>
-          </item>
-          <item>
-           <property name="text">
-            <string>col3_bwr</string>
-           </property>
-          </item>
-          <item>
-           <property name="text">
-            <string>col3_bblg</string>
-           </property>
-          </item>
-          <item>
-           <property name="text">
-            <string>col3_bwg</string>
-           </property>
-          </item>
-         </widget>
-        </item>
-       </layout>
-      </item>
-      <item row="4" column="1">
-       <layout class="QHBoxLayout" name="horizontalLayoutValueRange">
-        <item>
-         <widget class="QSpinBox" name="spinBoxRangeMin">
-          <property name="toolTip">
-           <string>Lowest value which will be mapped to the &quot;lowest&quot; color of the color mapping. All lower values will be clipped and are also mapped to this color.</string>
-          </property>
-          <property name="whatsThis">
-           <string>Lowest value which will be mapped to the &quot;lowest&quot; color of the color mapping. All lower values will be clipped and are also mapped to this color.</string>
-          </property>
-          <property name="minimum">
-           <number>-99999999</number>
-          </property>
-          <property name="maximum">
-           <number>999999999</number>
-          </property>
-         </widget>
-        </item>
-        <item>
-         <widget class="QSpinBox" name="spinBoxRangeMax">
-          <property name="toolTip">
-           <string>Highest value which will be mapped to the &quot;highest&quot; color of the color mapping. All higher values will be clipped and are also mapped to this color.</string>
-          </property>
-          <property name="whatsThis">
-           <string>Highest value which will be mapped to the &quot;highest&quot; color of the color mapping. All higher values will be clipped and are also mapped to this color.</string>
-          </property>
-          <property name="minimum">
-           <number>-999999999</number>
-          </property>
-          <property name="maximum">
-           <number>999999999</number>
-          </property>
-         </widget>
-        </item>
-       </layout>
-      </item>
-      <item row="2" column="0">
-       <widget class="QLabel" name="labelCustomColorRange">
-        <property name="toolTip">
-         <string>Define a custom color gradient from the left to the right color</string>
-        </property>
-        <property name="whatsThis">
-         <string>Define a custom color gradient from the left to the right color</string>
-        </property>
-        <property name="text">
-         <string>Custom Range</string>
-        </property>
-       </widget>
-      </item>
-      <item row="4" column="0">
-       <widget class="QLabel" name="labelValueRange">
-        <property name="toolTip">
-         <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;What range of values should be mapped to the color range. The lower value is mapped to the left color and the higher value is mapped to the right color. In between, interpolation is performed.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-        </property>
-        <property name="whatsThis">
-         <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;What range of values should be mapped to the color range. The lower value is mapped to the left color and the higher value is mapped to the right color. In between, interpolation is performed.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-        </property>
-        <property name="text">
-         <string>Value Range</string>
-        </property>
-       </widget>
-      </item>
-      <item row="3" column="1">
-       <widget class="QPushButton" name="pushButtonEditColorMap">
-        <property name="toolTip">
-         <string>Edit the color map, which maps specific values to specific colors.</string>
-        </property>
-        <property name="whatsThis">
-         <string>Edit the color map, which maps specific values to specific colors.</string>
-        </property>
-        <property name="text">
-         <string>Edit Color Map</string>
-        </property>
-       </widget>
-      </item>
-      <item row="2" column="1">
-       <layout class="QHBoxLayout" name="customColorRangeHLayout">
-        <property name="spacing">
-         <number>6</number>
-        </property>
-        <item>
-         <layout class="QHBoxLayout" name="customColorRangeHSubLayout1" stretch="1,0">
-          <property name="spacing">
-           <number>0</number>
-          </property>
-          <item>
-           <widget class="ShowColorWidget" name="frameMinColor">
-            <property name="toolTip">
-             <string>The left color of the custom color gradient.</string>
-            </property>
-            <property name="whatsThis">
-             <string>The left color of the custom color gradient.</string>
-            </property>
-            <property name="frameShape">
-             <enum>QFrame::StyledPanel</enum>
-            </property>
-            <property name="frameShadow">
-             <enum>QFrame::Plain</enum>
-            </property>
-           </widget>
-          </item>
-          <item>
-           <widget class="QPushButton" name="pushButtonEditMinColor">
-            <property name="toolTip">
-             <string>Select the left color of the custom color gradient.</string>
-            </property>
-            <property name="whatsThis">
-             <string>Select the left color of the custom color gradient.</string>
-            </property>
-            <property name="text">
-             <string/>
-            </property>
-           </widget>
-          </item>
-         </layout>
-        </item>
-        <item>
-         <layout class="QHBoxLayout" name="customColorRangeHSubLayout2" stretch="1,0">
-          <property name="spacing">
-           <number>0</number>
-          </property>
-          <item>
-           <widget class="ShowColorWidget" name="frameMaxColor">
-            <property name="toolTip">
-             <string>The right color of the custom color gradient.</string>
-            </property>
-            <property name="whatsThis">
-             <string>The right color of the custom color gradient.</string>
-            </property>
-            <property name="frameShape">
-             <enum>QFrame::StyledPanel</enum>
-            </property>
-            <property name="frameShadow">
-             <enum>QFrame::Plain</enum>
-            </property>
-           </widget>
-          </item>
-          <item>
-           <widget class="QPushButton" name="pushButtonEditMaxColor">
-            <property name="toolTip">
-             <string>Select the right color of the custom color gradient.</string>
-            </property>
-            <property name="whatsThis">
-             <string>Select the right color of the custom color gradient.</string>
-            </property>
-            <property name="text">
-             <string/>
-            </property>
-           </widget>
-          </item>
-         </layout>
-        </item>
-       </layout>
-      </item>
-      <item row="3" column="0">
-       <widget class="QLabel" name="labelColorMap">
-        <property name="toolTip">
-         <string>Edit the color map, which maps specific values to specific colors.</string>
-        </property>
-        <property name="whatsThis">
-         <string>Edit the color map, which maps specific values to specific colors.</string>
-        </property>
-        <property name="text">
-         <string>Color Map</string>
-        </property>
-       </widget>
-      </item>
+     <layout class="QGridLayout" name="gridLayout_3" columnstretch="0,0">
       <item row="0" column="0" colspan="2">
        <widget class="QGroupBox" name="groupBox">
         <property name="whatsThis">
@@ -396,20 +87,365 @@
         </layout>
        </widget>
       </item>
-      <item row="5" column="0">
-       <widget class="QLabel" name="labelValueScaling">
+      <item row="3" column="0" colspan="2">
+       <widget class="QTabWidget" name="blockDataTab">
         <property name="toolTip">
-         <string>Divide (scale) every value by the size of the corresponding block in pixels.</string>
+         <string/>
         </property>
         <property name="whatsThis">
-         <string>Divide (scale) every value by the size of the corresponding block in pixels.</string>
+         <string/>
         </property>
-        <property name="text">
-         <string>Value Scaling</string>
+        <property name="currentIndex">
+         <number>0</number>
         </property>
+        <widget class="QWidget" name="tabPreset">
+         <property name="toolTip">
+          <string>Use a fixed prest mapping from color to value.</string>
+         </property>
+         <property name="whatsThis">
+          <string>Use a fixed prest mapping from color to value.</string>
+         </property>
+         <attribute name="title">
+          <string>Predefined</string>
+         </attribute>
+         <layout class="QGridLayout" name="gridLayout_5" columnstretch="0,1">
+          <item row="2" column="0">
+           <spacer name="verticalSpacerPreset">
+            <property name="orientation">
+             <enum>Qt::Vertical</enum>
+            </property>
+            <property name="sizeHint" stdset="0">
+             <size>
+              <width>20</width>
+              <height>40</height>
+             </size>
+            </property>
+           </spacer>
+          </item>
+          <item row="0" column="1">
+           <widget class="QComboBox" name="comboBoxPredefined">
+            <property name="toolTip">
+             <string>Select a fixed custom mapping function.</string>
+            </property>
+            <property name="whatsThis">
+             <string>Select a fixed custom mapping function.</string>
+            </property>
+           </widget>
+          </item>
+          <item row="0" column="0">
+           <widget class="QLabel" name="labelPredefinedType">
+            <property name="text">
+             <string>Type</string>
+            </property>
+           </widget>
+          </item>
+          <item row="1" column="0">
+           <widget class="QLabel" name="labelPresetValueRange">
+            <property name="text">
+             <string>Value Range</string>
+            </property>
+           </widget>
+          </item>
+          <item row="1" column="1">
+           <layout class="QHBoxLayout" name="horizontalLayoutPresetValueRange">
+            <item>
+             <widget class="QSpinBox" name="spinBoxPredefinedRangeMin">
+              <property name="toolTip">
+               <string>Lowest value which will be mapped to the &quot;lowest&quot; color of the color preset. All lower values will be clipped to this value.</string>
+              </property>
+              <property name="whatsThis">
+               <string>Lowest value which will be mapped to the &quot;lowest&quot; color of the color preset. All lower values will be clipped to this value.</string>
+              </property>
+              <property name="minimum">
+               <number>-999999999</number>
+              </property>
+              <property name="maximum">
+               <number>999999999</number>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QSpinBox" name="spinBoxPredefinedRangeMax">
+              <property name="toolTip">
+               <string>Highest value which will be mapped to the &quot;highest&quot; color of the color preset. All higher values will be clipped to this value.</string>
+              </property>
+              <property name="whatsThis">
+               <string>Highest value which will be mapped to the &quot;highest&quot; color of the color preset. All higher values will be clipped to this value.</string>
+              </property>
+              <property name="minimum">
+               <number>-999999999</number>
+              </property>
+              <property name="maximum">
+               <number>999999999</number>
+              </property>
+             </widget>
+            </item>
+           </layout>
+          </item>
+         </layout>
+        </widget>
+        <widget class="QWidget" name="tabGradient">
+         <property name="toolTip">
+          <string>Use a linear gradient with two colors.</string>
+         </property>
+         <property name="whatsThis">
+          <string>Use a linear gradient with two colors.</string>
+         </property>
+         <attribute name="title">
+          <string>Gradient</string>
+         </attribute>
+         <layout class="QGridLayout" name="gridLayout_6" columnstretch="0,0">
+          <item row="2" column="1">
+           <spacer name="verticalSpacerGradientTab">
+            <property name="orientation">
+             <enum>Qt::Vertical</enum>
+            </property>
+            <property name="sizeHint" stdset="0">
+             <size>
+              <width>20</width>
+              <height>40</height>
+             </size>
+            </property>
+           </spacer>
+          </item>
+          <item row="0" column="0">
+           <widget class="QLabel" name="labelGradientColorRange">
+            <property name="text">
+             <string>Color Range</string>
+            </property>
+           </widget>
+          </item>
+          <item row="0" column="1">
+           <layout class="QHBoxLayout" name="horizontalLayoutGradientColorRange">
+            <item>
+             <layout class="QHBoxLayout" name="horizontalLayoutGradientColorRangeLeft">
+              <item>
+               <widget class="ShowColorWidget" name="frameGradientStartColor">
+                <property name="toolTip">
+                 <string>First gradient color.</string>
+                </property>
+                <property name="whatsThis">
+                 <string>First gradient color.</string>
+                </property>
+                <property name="frameShape">
+                 <enum>QFrame::StyledPanel</enum>
+                </property>
+                <property name="frameShadow">
+                 <enum>QFrame::Raised</enum>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="QPushButton" name="pushButtonGradientEditStartColor">
+                <property name="toolTip">
+                 <string>Edit first gradient color.</string>
+                </property>
+                <property name="whatsThis">
+                 <string>Edit first gradient color.</string>
+                </property>
+                <property name="text">
+                 <string/>
+                </property>
+                <property name="icon">
+                 <iconset resource="../images/images.qrc">
+                  <normaloff>:/img_edit.png</normaloff>:/img_edit.png</iconset>
+                </property>
+               </widget>
+              </item>
+             </layout>
+            </item>
+            <item>
+             <layout class="QHBoxLayout" name="horizontalLayoutGradientColorRangeRight">
+              <item>
+               <widget class="ShowColorWidget" name="frameGradientEndColor">
+                <property name="toolTip">
+                 <string>Second gradient color.</string>
+                </property>
+                <property name="whatsThis">
+                 <string>Second gradient color.</string>
+                </property>
+                <property name="frameShape">
+                 <enum>QFrame::StyledPanel</enum>
+                </property>
+                <property name="frameShadow">
+                 <enum>QFrame::Raised</enum>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="QPushButton" name="pushButtonGradientEditEndColor">
+                <property name="toolTip">
+                 <string>Edit second gradient color.</string>
+                </property>
+                <property name="whatsThis">
+                 <string>Edit second gradient color.</string>
+                </property>
+                <property name="text">
+                 <string/>
+                </property>
+                <property name="icon">
+                 <iconset resource="../images/images.qrc">
+                  <normaloff>:/img_edit.png</normaloff>:/img_edit.png</iconset>
+                </property>
+               </widget>
+              </item>
+             </layout>
+            </item>
+           </layout>
+          </item>
+          <item row="1" column="0">
+           <widget class="QLabel" name="labelGradientValueRange">
+            <property name="text">
+             <string>Value Range</string>
+            </property>
+           </widget>
+          </item>
+          <item row="1" column="1">
+           <layout class="QHBoxLayout" name="horizontalLayoutGradientValueRange">
+            <item>
+             <widget class="QSpinBox" name="spinBoxGradientRangeMin">
+              <property name="toolTip">
+               <string>Lowest value which will be mapped to the &quot;lowest&quot; color of the color gradient. All lower values will be clipped to this value.</string>
+              </property>
+              <property name="whatsThis">
+               <string>Lowest value which will be mapped to the &quot;lowest&quot; color of the color gradient. All lower values will be clipped to this value.</string>
+              </property>
+              <property name="minimum">
+               <number>-99999999</number>
+              </property>
+              <property name="maximum">
+               <number>999999999</number>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QSpinBox" name="spinBoxGradientRangeMax">
+              <property name="toolTip">
+               <string>Highest value which will be mapped to the &quot;highest&quot; color of the color gradient. All higher values will be clipped to this value.</string>
+              </property>
+              <property name="whatsThis">
+               <string>Highest value which will be mapped to the &quot;highest&quot; color of the color gradient. All higher values will be clipped to this value.</string>
+              </property>
+              <property name="minimum">
+               <number>-99999999</number>
+              </property>
+              <property name="maximum">
+               <number>999999999</number>
+              </property>
+             </widget>
+            </item>
+           </layout>
+          </item>
+         </layout>
+        </widget>
+        <widget class="QWidget" name="tabMap">
+         <property name="toolTip">
+          <string>Use a custom one to one mapping from values to colors.</string>
+         </property>
+         <property name="whatsThis">
+          <string>Use a custom one to one mapping from values to colors.</string>
+         </property>
+         <attribute name="title">
+          <string>Map</string>
+         </attribute>
+         <layout class="QGridLayout" name="gridLayout_7" columnstretch="0,1">
+          <item row="0" column="0">
+           <widget class="QLabel" name="labelCustomMap">
+            <property name="text">
+             <string>Custom Map</string>
+            </property>
+           </widget>
+          </item>
+          <item row="0" column="1">
+           <widget class="QComboBox" name="comboBoxCustomMap">
+            <property name="toolTip">
+             <string>Select a previously defined custom mapping. Hit save to save a mapping in this list.</string>
+            </property>
+            <property name="whatsThis">
+             <string>Select a previously defined custom mapping. Hit save to save a mapping in this list.</string>
+            </property>
+           </widget>
+          </item>
+          <item row="2" column="0">
+           <spacer name="verticalSpacerMapTab">
+            <property name="orientation">
+             <enum>Qt::Vertical</enum>
+            </property>
+            <property name="sizeHint" stdset="0">
+             <size>
+              <width>20</width>
+              <height>40</height>
+             </size>
+            </property>
+           </spacer>
+          </item>
+          <item row="1" column="0">
+           <widget class="QLabel" name="labelModifyMap">
+            <property name="text">
+             <string>Modify Map</string>
+            </property>
+           </widget>
+          </item>
+          <item row="1" column="1">
+           <layout class="QHBoxLayout" name="horizontalLayoutMapModifyButtons">
+            <item>
+             <widget class="QPushButton" name="pushButtonEditMap">
+              <property name="toolTip">
+               <string>Edit the current mapping.</string>
+              </property>
+              <property name="whatsThis">
+               <string>Edit the current mapping.</string>
+              </property>
+              <property name="text">
+               <string/>
+              </property>
+              <property name="icon">
+               <iconset resource="../images/images.qrc">
+                <normaloff>:/img_edit.png</normaloff>:/img_edit.png</iconset>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QPushButton" name="pushButtonSaveMap">
+              <property name="toolTip">
+               <string>Save the current mapping in the custom map list.</string>
+              </property>
+              <property name="whatsThis">
+               <string>Save the current mapping in the custom map list.</string>
+              </property>
+              <property name="text">
+               <string/>
+              </property>
+              <property name="icon">
+               <iconset resource="../images/images.qrc">
+                <normaloff>:/img_save.png</normaloff>:/img_save.png</iconset>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QPushButton" name="pushButtonDeleteMap">
+              <property name="toolTip">
+               <string>Delete the custom mapping from the custom map list.</string>
+              </property>
+              <property name="whatsThis">
+               <string>Delete the custom mapping from the custom map list.</string>
+              </property>
+              <property name="text">
+               <string/>
+              </property>
+              <property name="icon">
+               <iconset resource="../images/images.qrc">
+                <normaloff>:/img_delete.png</normaloff>:/img_delete.png</iconset>
+              </property>
+             </widget>
+            </item>
+           </layout>
+          </item>
+         </layout>
+        </widget>
        </widget>
       </item>
-      <item row="5" column="1">
+      <item row="2" column="1">
        <widget class="QCheckBox" name="checkBoxScaleValueToBlockSize">
         <property name="toolTip">
          <string>Divide (scale) every value by the size of the corresponding block in pixels.</string>
@@ -419,6 +455,19 @@
         </property>
         <property name="text">
          <string>Scale To Block Size</string>
+        </property>
+       </widget>
+      </item>
+      <item row="2" column="0">
+       <widget class="QLabel" name="labelValueScaling">
+        <property name="toolTip">
+         <string>Divide (scale) every value by the size of the corresponding block in pixels.</string>
+        </property>
+        <property name="whatsThis">
+         <string>Divide (scale) every value by the size of the corresponding block in pixels.</string>
+        </property>
+        <property name="text">
+         <string>Value Scaling</string>
         </property>
        </widget>
       </item>
@@ -589,7 +638,7 @@
        </widget>
       </item>
       <item row="5" column="1">
-       <layout class="QHBoxLayout" name="horizontalLayout_3" stretch="1,0">
+       <layout class="QHBoxLayout" name="horizontalLayoutVectorColor" stretch="1,0">
         <property name="spacing">
          <number>0</number>
         </property>
@@ -857,13 +906,19 @@
  </customwidgets>
  <tabstops>
   <tabstop>groupBoxBlockData</tabstop>
-  <tabstop>comboBoxDataColorMap</tabstop>
-  <tabstop>pushButtonEditMinColor</tabstop>
-  <tabstop>pushButtonEditMaxColor</tabstop>
-  <tabstop>pushButtonEditColorMap</tabstop>
-  <tabstop>spinBoxRangeMin</tabstop>
-  <tabstop>spinBoxRangeMax</tabstop>
   <tabstop>checkBoxScaleValueToBlockSize</tabstop>
+  <tabstop>blockDataTab</tabstop>
+  <tabstop>comboBoxPredefined</tabstop>
+  <tabstop>spinBoxPredefinedRangeMin</tabstop>
+  <tabstop>spinBoxPredefinedRangeMax</tabstop>
+  <tabstop>pushButtonGradientEditStartColor</tabstop>
+  <tabstop>pushButtonGradientEditEndColor</tabstop>
+  <tabstop>spinBoxGradientRangeMin</tabstop>
+  <tabstop>spinBoxGradientRangeMax</tabstop>
+  <tabstop>comboBoxCustomMap</tabstop>
+  <tabstop>pushButtonEditMap</tabstop>
+  <tabstop>pushButtonSaveMap</tabstop>
+  <tabstop>pushButtonDeleteMap</tabstop>
   <tabstop>groupBoxVector</tabstop>
   <tabstop>comboBoxVectorLineStyle</tabstop>
   <tabstop>doubleSpinBoxVectorLineWidth</tabstop>
@@ -877,7 +932,9 @@
   <tabstop>doubleSpinBoxGridLineWidth</tabstop>
   <tabstop>checkBoxGridScaleToZoom</tabstop>
  </tabstops>
- <resources/>
+ <resources>
+  <include location="../images/images.qrc"/>
+ </resources>
  <connections>
   <connection>
    <sender>buttonBox</sender>
@@ -886,8 +943,8 @@
    <slot>reject()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>316</x>
-     <y>260</y>
+     <x>292</x>
+     <y>662</y>
     </hint>
     <hint type="destinationlabel">
      <x>286</x>
@@ -902,8 +959,8 @@
    <slot>accept()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>248</x>
-     <y>254</y>
+     <x>257</x>
+     <y>662</y>
     </hint>
     <hint type="destinationlabel">
      <x>157</x>

@@ -32,8 +32,8 @@
 
 #pragma once
 
-#include <common/Functions.h>
 #include <common/Color.h>
+#include <common/Functions.h>
 
 #include <QDialog>
 
@@ -44,12 +44,15 @@ class StatisticsStyleControl_ColorMapEditor : public QDialog
   Q_OBJECT
 
 public:
-  explicit StatisticsStyleControl_ColorMapEditor(const std::map<int, Color> &colorMap,
-                                                 const Color &               other,
-                                                 QWidget *                   parent = 0);
+  explicit StatisticsStyleControl_ColorMapEditor(const ColorMap &colorMap,
+                                                 const Color &   other,
+                                                 QWidget *       parent = 0);
 
-  std::map<int, Color> getColorMap();
-  Color                getOtherColor();
+  ColorMap getColorMap() const;
+  Color    getOtherColor() const;
+
+signals:
+  void mapChanged();
 
 public slots:
   // Override from QDialog. Check for dublicate entries.

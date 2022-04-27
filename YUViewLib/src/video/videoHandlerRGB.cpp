@@ -114,24 +114,24 @@ void convertInputRGBToRGBA(const QByteArray &    sourceBuffer,
     }
 
     valR = (valR * componentScale[0]) >> rightShift;
-    valR = clip(valR, 0, 255);
+    valR = functions::clip(valR, 0, 255);
     if (componentInvert[0])
       valR = 255 - valR;
 
     valG = (valG * componentScale[1]) >> rightShift;
-    valG = clip(valG, 0, 255);
+    valG = functions::clip(valG, 0, 255);
     if (componentInvert[1])
       valG = 255 - valG;
 
     valB = (valB * componentScale[2]) >> rightShift;
-    valB = clip(valB, 0, 255);
+    valB = functions::clip(valB, 0, 255);
     if (componentInvert[2])
       valB = 255 - valB;
 
     if (hasAlpha)
     {
       valA = (valA * componentScale[3]) >> rightShift;
-      valA = clip(valA, 0, 255);
+      valA = functions::clip(valA, 0, 255);
       if (componentInvert[3])
         valA = 255 - valA;
     }
@@ -201,7 +201,7 @@ void convertSinglePlaneRGBToGreyscaleRGBA(const QByteArray &    sourceBuffer,
     if (bitDepth > 8 && srcPixelFormat.getEndianess() == Endianness::Big)
       val = swapLowestBytes(val);
     val = (val * scale) >> rightShift;
-    val = clip(val, 0, 255);
+    val = functions::clip(val, 0, 255);
     if (invert)
       val = 255 - val;
     if (limitedRange)
@@ -966,12 +966,12 @@ void videoHandlerRGB::drawPixelValues(QPainter *    painter,
   int xMax = (videoRect.width() / 2 - (worldTransform.dx() - viewport.width())) / zoomFactor;
   int yMax = (videoRect.height() / 2 - (worldTransform.dy() - viewport.height())) / zoomFactor;
 
-  // Clip the min/max visible pixel values to the size of the item (no pixels outside of the
-  // item have to be labeled)
-  xMin = clip(xMin, 0, int(frameSize.width) - 1);
-  yMin = clip(yMin, 0, int(frameSize.height) - 1);
-  xMax = clip(xMax, 0, int(frameSize.width) - 1);
-  yMax = clip(yMax, 0, int(frameSize.height) - 1);
+  // functions::clip the min/max visible pixel values to the size of the item (no pixels outside of
+  // the item have to be labeled)
+  xMin = functions::clip(xMin, 0, int(frameSize.width) - 1);
+  yMin = functions::clip(yMin, 0, int(frameSize.height) - 1);
+  xMax = functions::clip(xMax, 0, int(frameSize.width) - 1);
+  yMax = functions::clip(yMax, 0, int(frameSize.height) - 1);
 
   // Get the other RGB item (if any)
   auto rgbItem2 = dynamic_cast<videoHandlerRGB *>(item2);
@@ -1200,9 +1200,9 @@ QImage videoHandlerRGB::calculateDifference(FrameHandler *   item2,
           else
           {
             // We want to see the difference
-            dst[0] = clip(128 + deltaB * amplificationFactor, 0, 255);
-            dst[1] = clip(128 + deltaG * amplificationFactor, 0, 255);
-            dst[2] = clip(128 + deltaR * amplificationFactor, 0, 255);
+            dst[0] = functions::clip(128 + deltaB * amplificationFactor, 0, 255);
+            dst[1] = functions::clip(128 + deltaG * amplificationFactor, 0, 255);
+            dst[2] = functions::clip(128 + deltaR * amplificationFactor, 0, 255);
           }
           dst[3] = 255;
           dst += 4;
@@ -1279,9 +1279,9 @@ QImage videoHandlerRGB::calculateDifference(FrameHandler *   item2,
           else
           {
             // We want to see the difference
-            dst[0] = clip(128 + deltaB * amplificationFactor, 0, 255);
-            dst[1] = clip(128 + deltaG * amplificationFactor, 0, 255);
-            dst[2] = clip(128 + deltaR * amplificationFactor, 0, 255);
+            dst[0] = functions::clip(128 + deltaB * amplificationFactor, 0, 255);
+            dst[1] = functions::clip(128 + deltaG * amplificationFactor, 0, 255);
+            dst[2] = functions::clip(128 + deltaR * amplificationFactor, 0, 255);
           }
           dst[3] = 255;
           dst += 4;

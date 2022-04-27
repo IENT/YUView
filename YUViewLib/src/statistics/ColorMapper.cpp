@@ -37,446 +37,349 @@
 #include <QStringList>
 #include <random>
 
-namespace stats
+namespace stats::color
 {
 
-// All types that are supported by the getColor() function.
-QStringList ColorMapper::supportedComplexTypes = QStringList() << "jet"
-                                                               << "heat"
-                                                               << "hsv"
-                                                               << "shuffle"
-                                                               << "hot"
-                                                               << "cool"
-                                                               << "spring"
-                                                               << "summer"
-                                                               << "autumn"
-                                                               << "winter"
-                                                               << "gray"
-                                                               << "bone"
-                                                               << "copper"
-                                                               << "pink"
-                                                               << "lines"
-                                                               << "col3_gblr"
-                                                               << "col3_gwr"
-                                                               << "col3_bblr"
-                                                               << "col3_bwr"
-                                                               << "col3_bblg"
-                                                               << "col3_bwg";
-
-// Setup a color mapper with a gradient
-ColorMapper::ColorMapper(int min, const Color &colMin, int max, const Color &colMax)
+namespace
 {
-  rangeMin      = min;
-  rangeMax      = max;
-  minColor      = colMin;
-  maxColor      = colMax;
-  mappingType   = MappingType::gradient;
+
+struct RGBA
+{
+  double r{1.0};
+  double g{1.0};
+  double b{1.0};
+  double a{1.0};
+};
+
+RGBA applyIMapping(int i, double k, double n)
+{
+  if (i == 0)
+    return RGBA({1.0, k, 0.0, 1.0});
+  if (i == 1)
+    return RGBA({n, 1.0, 0.0, 1.0});
+  if (i == 2)
+    return RGBA({0.0, 1.0, k, 1.0});
+  if (i == 3)
+    return RGBA({0.0, n, 1.0, 1.0});
+  if (i == 4)
+    return RGBA({k, 0.0, 1.0, 1.0});
+  if (i == 5)
+    return RGBA({1.0, 0.0, n, 1.0});
+  return {};
 }
 
-ColorMapper::ColorMapper(const QString &rangeName, int min, int max)
+std::string rangeToString(const Range<int> range)
 {
-  if (supportedComplexTypes.contains(rangeName))
+  return std::to_string(range.min) + "|" + std::to_string(range.max);
+}
+
+Range<int> rangeFromString(std::string rangeText)
+{
+  auto seperator = rangeText.find("|");
+  if (seperator == std::string::npos)
+    return {};
+
+  auto firstStr  = rangeText.substr(0, seperator);
+  auto secondStr = rangeText.substr(seperator + 1);
+
+  try
   {
-    rangeMin    = min;
-    rangeMax    = max;
-    complexType = rangeName;
-    mappingType = MappingType::complex;
+    auto first  = std::stoi(firstStr);
+    auto second = std::stoi(secondStr);
+    return {first, second};
   }
+  catch (const std::exception&)
+  {
+    return {};
+  }
+}
+
+} // namespace
+
+ColorMapper::ColorMapper(Range<int> valueRange, Color gradientColorStart, Color gradientColorEnd)
+{
+  this->mappingType        = MappingType::Gradient;
+  this->valueRange         = valueRange;
+  this->gradientColorStart = gradientColorStart;
+  this->gradientColorEnd   = gradientColorEnd;
+}
+
+ColorMapper::ColorMapper(const ColorMap &colorMap, Color other)
+{
+  this->mappingType   = MappingType::Map;
+  this->colorMap      = colorMap;
+  this->colorMapOther = other;
+}
+
+ColorMapper::ColorMapper(Range<int> valueRange, PredefinedType predefinedType)
+{
+  this->mappingType    = MappingType::Predefined;
+  this->valueRange     = valueRange;
+  this->predefinedType = predefinedType;
+}
+
+ColorMapper::ColorMapper(Range<int> valueRange, std::string predefinedTypeName)
+{
+  this->mappingType = MappingType::Predefined;
+  this->valueRange  = valueRange;
+  if (auto type = PredefinedTypeMapper.getValue(predefinedTypeName))
+    this->predefinedType = *type;
 }
 
 Color ColorMapper::getColor(int value) const
 {
-  if (mappingType == MappingType::map)
+  if (this->mappingType == MappingType::Map)
   {
-    if (colorMap.count(value) > 0)
-      return colorMap.at(value);
+    if (this->colorMap.count(value) > 0)
+      return this->colorMap.at(value);
     else
-      return colorMapOther;
+      return this->colorMapOther;
   }
   else
-  {
-    return getColor(float(value));
-  }
+    return this->getColor(double(value));
 }
 
-Color ColorMapper::getColor(float value) const
+Color ColorMapper::getColor(double value) const
 {
-  if (mappingType == MappingType::map)
-    // Round and use the integer value to get the value from the map
-    return getColor(int(value + 0.5));
+  if (this->mappingType == MappingType::Map)
+    return this->getColor(int(value + 0.5));
 
-  // clamp the value to [min max]
-  if (value > rangeMax)
-    value = rangeMax;
-  if (value < rangeMin)
-    value = rangeMin;
+  value           = functions::clip(value, this->valueRange);
+  auto rangeWidth = double(this->valueRange.max) - double(this->valueRange.min);
 
-  if (mappingType == MappingType::gradient)
+  if (mappingType == MappingType::Gradient)
   {
     // The value scaled from 0 to 1 within the range (rangeMin ... rangeMax)
-    float valScaled = (value - rangeMin) / (rangeMax - rangeMin);
+    auto valScaled = (value - this->valueRange.min) / rangeWidth;
 
-    unsigned char retR =
-        minColor.R() +
-        (unsigned char)(floor(valScaled * (float)(maxColor.R() - minColor.R()) + 0.5f));
-    unsigned char retG =
-        minColor.G() +
-        (unsigned char)(floor(valScaled * (float)(maxColor.G() - minColor.G()) + 0.5f));
-    unsigned char retB =
-        minColor.B() +
-        (unsigned char)(floor(valScaled * (float)(maxColor.B() - minColor.B()) + 0.5f));
-    unsigned char retA =
-        minColor.A() +
-        (unsigned char)(floor(valScaled * (float)(maxColor.A() - minColor.A()) + 0.5f));
+    auto interpolate = [&valScaled](int start, int end) {
+      auto range       = end - start;
+      auto rangeScaled = std::floor(valScaled * double(range) + 0.5);
+      return start + int(rangeScaled);
+    };
+    auto retR = interpolate(this->gradientColorStart.R(), this->gradientColorEnd.R());
+    auto retG = interpolate(this->gradientColorStart.G(), this->gradientColorEnd.G());
+    auto retB = interpolate(this->gradientColorStart.B(), this->gradientColorEnd.B());
+    auto retA = interpolate(this->gradientColorStart.A(), this->gradientColorEnd.A());
 
     return Color(retR, retG, retB, retA);
   }
-  else if (mappingType == MappingType::complex)
+  else if (mappingType == MappingType::Predefined)
   {
-    float x = (value - rangeMin) / (rangeMax - rangeMin);
-    float r = 1, g = 1, b = 1, a = 1;
+    auto x = (value - this->valueRange.min) / rangeWidth;
 
-    if (complexType == "jet")
+    RGBA rgba{};
+
+    if (this->predefinedType == PredefinedType::Jet)
     {
       if ((x >= 3.0 / 8.0) && (x < 5.0 / 8.0))
-        r = (4.0f * x - 3.0f / 2.0f);
+        rgba.r = (4.0 * x - 3.0 / 2.0);
       else if ((x >= 5.0 / 8.0) && (x < 7.0 / 8.0))
-        r = 1.0;
+        rgba.r = 1.0;
       else if (x >= 7.0 / 8.0)
-        r = (-4.0f * x + 9.0f / 2.0f);
+        rgba.r = (-4.0 * x + 9.0 / 2.0);
       else
-        r = 0.0f;
+        rgba.r = 0.0;
       if ((x >= 1.0 / 8.0) && (x < 3.0 / 8.0))
-        g = (4.0f * x - 1.0f / 2.0f);
+        rgba.g = (4.0 * x - 1.0 / 2.0);
       else if ((x >= 3.0 / 8.0) && (x < 5.0 / 8.0))
-        g = 1.0;
+        rgba.g = 1.0;
       else if ((x >= 5.0 / 8.0) && (x < 7.0 / 8.0))
-        g = (-4.0f * x + 7.0f / 2.0f);
+        rgba.g = (-4.0 * x + 7.0 / 2.0);
       else
-        g = 0.0f;
+        rgba.g = 0.0;
       if (x < 1.0 / 8.0)
-        b = (4.0f * x + 1.0f / 2.0f);
+        rgba.b = (4.0 * x + 1.0 / 2.0);
       else if ((x >= 1.0 / 8.0) && (x < 3.0 / 8.0))
-        b = 1.0f;
+        rgba.b = 1.0;
       else if ((x >= 3.0 / 8.0) & (x < 5.0 / 8.0))
-        b = (-4.0f * x + 5.0f / 2.0f);
+        rgba.b = (-4.0 * x + 5.0 / 2.0);
       else
-        b = 0.0f;
+        rgba.b = 0.0;
     }
-    else if (complexType == "heat")
-    {
-      r = 1;
-      g = 0;
-      b = 0;
-      a = x;
-    }
-    else if (complexType == "hsv")
+    else if (this->predefinedType == PredefinedType::Heat)
+      rgba = RGBA({1.0, 0.0, 0.0, x});
+    else if (this->predefinedType == PredefinedType::Hsv)
     {
       // h = x, s = 1, v = 1
       if (x >= 1.0)
         x = 0.0;
-      x       = x * 6.0f;
-      int   I = (int)x; /* should be in the range 0..5 */
-      float F = x - I;  /* fractional part */
+      x      = x * 6.0;
+      auto i = (int)x; /* should be in the range 0..5 */
+      auto f = x - i;  /* fractional part */
 
-      float N = (1.0f - 1.0f * F);
-      float K = (1.0f - 1.0f * (1 - F));
+      auto n = (1.0 - 1.0 * f);
+      auto k = (1.0 - 1.0 * (1 - f));
 
-      if (I == 0)
-      {
-        r = 1;
-        g = K;
-        b = 0;
-      }
-      if (I == 1)
-      {
-        r = N;
-        g = 1.0;
-        b = 0;
-      }
-      if (I == 2)
-      {
-        r = 0;
-        g = 1.0;
-        b = K;
-      }
-      if (I == 3)
-      {
-        r = 0;
-        g = N;
-        b = 1.0;
-      }
-      if (I == 4)
-      {
-        r = K;
-        g = 0;
-        b = 1.0;
-      }
-      if (I == 5)
-      {
-        r = 1.0;
-        g = 0;
-        b = N;
-      }
+      rgba = applyIMapping(i, k, n);
     }
-    else if (complexType == "shuffle")
+    else if (this->predefinedType == PredefinedType::Shuffle)
     {
-      int rangeSize = rangeMax - rangeMin + 1;
       // randomly remap the x value, but always with the same random seed
       unsigned         seed = 42;
       std::vector<int> randomMap;
-      for (int val = 0; val < rangeSize; ++val)
-      {
+      for (int val = 0; val <= rangeWidth; ++val)
         randomMap.push_back(val);
-      }
-      shuffle(randomMap.begin(), randomMap.end(), std::default_random_engine(seed));
+      std::shuffle(randomMap.begin(), randomMap.end(), std::default_random_engine(seed));
 
-      int   valueInt    = clip(int(value - rangeMin), rangeMin, rangeMax);
-      float rem         = value - valueInt;
-      float valueMapped = randomMap[valueInt] + rem;
-
-      float x = valueMapped / (rangeMax - rangeMin);
+      auto valueInt    = functions::clip(int(value) - this->valueRange.min, this->valueRange);
+      auto remainder   = value - valueInt;
+      auto valueMapped = randomMap[valueInt] + remainder;
+      auto x           = valueMapped / rangeWidth;
 
       // h = x, s = 1, v = 1
       if (x >= 1.0)
         x = 0.0;
-      x       = x * 6.0f;
-      int   I = (int)x; /* should be in the range 0..5 */
-      float F = x - I;  /* fractional part */
+      x      = x * 6.0;
+      auto i = (int)x; /* should be in the range 0..5 */
+      auto f = x - i;  /* fractional part */
 
-      float N = (1.0f - 1.0f * F);
-      float K = (1.0f - 1.0f * (1 - F));
+      auto n = (1.0 - 1.0 * f);
+      auto k = (1.0 - 1.0 * (1 - f));
 
-      if (I == 0)
-      {
-        r = 1;
-        g = K;
-        b = 0;
-      }
-      if (I == 1)
-      {
-        r = N;
-        g = 1.0;
-        b = 0;
-      }
-      if (I == 2)
-      {
-        r = 0;
-        g = 1.0;
-        b = K;
-      }
-      if (I == 3)
-      {
-        r = 0;
-        g = N;
-        b = 1.0;
-      }
-      if (I == 4)
-      {
-        r = K;
-        g = 0;
-        b = 1.0;
-      }
-      if (I == 5)
-      {
-        r = 1.0;
-        g = 0;
-        b = N;
-      }
+      rgba = applyIMapping(i, k, n);
     }
-    else if (complexType == "hot")
+    else if (this->predefinedType == PredefinedType::Hot)
     {
       if (x < 2.0 / 5.0)
-        r = (5.0f / 2.0f * x);
+        rgba.r = (5.0 / 2.0 * x);
       else
-        r = 1.0f;
+        rgba.r = 1.0;
       if ((x >= 2.0 / 5.0) && (x < 4.0 / 5.0))
-        g = (5.0f / 2.0f * x - 1);
+        rgba.g = (5.0 / 2.0 * x - 1);
       else if (x >= 4.0 / 5.0)
-        g = 1.0f;
+        rgba.g = 1.0;
       else
-        g = 0.0f;
+        rgba.g = 0.0;
       if (x >= 4.0 / 5.0)
-        b = (5.0f * x - 4.0f);
+        rgba.b = (5.0 * x - 4.0);
       else
-        b = 0.0f;
+        rgba.b = 0.0;
     }
-    else if (complexType == "cool")
-    {
-      r = x;
-      g = 1.0f - x;
-      b = 1.0;
-    }
-    else if (complexType == "spring")
-    {
-      r = 1.0f;
-      g = x;
-      b = 1.0f - x;
-    }
-    else if (complexType == "summer")
-    {
-      r = x;
-      g = 0.5f + x / 2.0f;
-      b = 0.4f;
-    }
-    else if (complexType == "autumn")
-    {
-      r = 1.0;
-      g = x;
-      b = 0.0;
-    }
-    else if (complexType == "winter")
-    {
-      r = 0;
-      g = x;
-      b = 1.0f - x / 2.0f;
-    }
-    else if (complexType == "gray")
-    {
-      r = x;
-      g = x;
-      b = x;
-    }
-    else if (complexType == "bone")
+    else if (this->predefinedType == PredefinedType::Cool)
+      rgba = RGBA({x, 1.0 - x, 1.0, 1.0});
+    else if (this->predefinedType == PredefinedType::Spring)
+      rgba = RGBA({1.0, x, 1.0 - x, 1.0});
+    else if (this->predefinedType == PredefinedType::Summer)
+      rgba = RGBA({x, 0.5 + x / 2.0, 0.4, 1.0});
+    else if (this->predefinedType == PredefinedType::Autumn)
+      rgba = RGBA({1.0, x, 0.0, 1.0});
+    else if (this->predefinedType == PredefinedType::Winter)
+      rgba = RGBA({0.0, x, 1.0 - x / 2.0, 1.0});
+    else if (this->predefinedType == PredefinedType::Gray)
+      rgba = RGBA({x, x, x, 1.0});
+    else if (this->predefinedType == PredefinedType::Bone)
     {
       if (x < 3.0 / 4.0)
-        r = (7.0f / 8.0f * x);
+        rgba.r = (7.0 / 8.0 * x);
       else if (x >= 3.0 / 4.0)
-        r = (11.0f / 8.0f * x - 3.0f / 8.0f);
+        rgba.r = (11.0 / 8.0 * x - 3.0 / 8.0);
       if (x < 3.0 / 8.0)
-        g = (7.0f / 8.0f * x);
+        rgba.g = (7.0 / 8.0 * x);
       else if ((x >= 3.0 / 8.0) && (x < 3.0 / 4.0))
-        g = (29.0f / 24.0f * x - 1.0f / 8.0f);
+        rgba.g = (29.0 / 24.0 * x - 1.0 / 8.0);
       else if (x >= 3.0 / 4.0)
-        g = (7.0f / 8.0f * x + 1.0f / 8.0f);
+        rgba.g = (7.0 / 8.0 * x + 1.0 / 8.0);
       if (x < 3.0 / 8.0)
-        b = (29.0f / 24.0f * x);
+        rgba.b = (29.0 / 24.0 * x);
       else if (x >= 3.0 / 8.0)
-        b = (7.0f / 8.0f * x + 1.0f / 8.0f);
+        rgba.b = (7.0 / 8.0 * x + 1.0 / 8.0);
     }
-    else if (complexType == "copper")
+    else if (this->predefinedType == PredefinedType::Copper)
     {
       if (x < 4.0 / 5.0)
-        r = (5.0f / 4.0f * x);
+        rgba.r = 5.0 / 4.0 * x;
       else
-        r = 1.0f;
-      g = 4.0f / 5.0f * x;
-      b = 1.0f / 2.0f * x;
+        rgba.r = 1.0;
+      rgba.g = 4.0 / 5.0 * x;
+      rgba.b = 1.0 / 2.0 * x;
     }
-    else if (complexType == "pink")
+    else if (this->predefinedType == PredefinedType::Pink)
     {
       if (x < 3.0 / 8.0)
-        r = (14.0f / 9.0f * x);
+        rgba.r = (14.0 / 9.0 * x);
       else if (x >= 3.0 / 8.0)
-        r = (2.0f / 3.0f * x + 1.0f / 3.0f);
+        rgba.r = (2.0 / 3.0 * x + 1.0 / 3.0);
       if (x < 3.0 / 8.0)
-        g = (2.0f / 3.0f * x);
+        rgba.g = (2.0 / 3.0 * x);
       else if ((x >= 3.0 / 8.0) && (x < 3.0 / 4.0))
-        g = (14.0f / 9.0f * x - 1.0f / 3.0f);
+        rgba.g = (14.0 / 9.0 * x - 1.0 / 3.0);
       else if (x >= 3.0 / 4.0)
-        g = (2.0f / 3.0f * x + 1.0f / 3.0f);
+        rgba.g = (2.0 / 3.0 * x + 1.0 / 3.0);
       if (x < 3.0 / 4.0)
-        b = (2.0f / 3.0f * x);
+        rgba.b = (2.0 / 3.0 * x);
       else if (x >= 3.0 / 4.0)
-        b = (2.0f * x - 1.0f);
+        rgba.b = (2.0 * x - 1.0);
     }
-    else if (complexType == "lines")
+    else if (this->predefinedType == PredefinedType::Lines)
     {
       if (x >= 1.0)
-        x = 0.0f;
-      x     = x * 7.0f;
-      int I = (int)x;
+        x = 0.0;
+      x      = x * 7.0;
+      auto i = (int)x;
 
-      if (I == 0)
-      {
-        r = 0.0;
-        g = 0.0;
-        b = 1.0;
-      }
-      if (I == 1)
-      {
-        r = 0.0;
-        g = 0.5;
-        b = 0.0;
-      }
-      if (I == 2)
-      {
-        r = 1.0;
-        g = 0.0;
-        b = 0.0;
-      }
-      if (I == 3)
-      {
-        r = 0.0;
-        g = 0.75;
-        b = 0.75;
-      }
-      if (I == 4)
-      {
-        r = 0.75;
-        g = 0.0;
-        b = 0.75;
-      }
-      if (I == 5)
-      {
-        r = 0.75;
-        g = 0.75;
-        b = 0.0;
-      }
-      if (I == 6)
-      {
-        r = 0.25;
-        g = 0.25;
-        b = 0.25;
-      }
+      if (i == 0)
+        rgba = RGBA({0.0, 0.0, 1.0, 1.0});
+      if (i == 1)
+        rgba = RGBA({0.0, 0.5, 0.0, 1.0});
+      if (i == 2)
+        rgba = RGBA({1.0, 0.0, 0.0, 1.0});
+      if (i == 3)
+        rgba = RGBA({0.0, 0.75, 0.75, 1.0});
+      if (i == 4)
+        rgba = RGBA({0.75, 0.0, 0.75, 1.0});
+      if (i == 5)
+        rgba = RGBA({0.75, 0.75, 0.0, 1.0});
+      if (i == 6)
+        rgba = RGBA({0.25, 0.25, 0.25, 1.0});
     }
-    else if (complexType == "col3_gblr")
+    else if (this->predefinedType == PredefinedType::Col3_gblr)
     {
       // 3 colors: green, black, red
-      r = (x < 0.5) ? 0.0 : (x - 0.5) * 2;
-      g = (x < 0.5) ? (0.5 - x) * 2 : 0.0;
-      b = 0.0;
+      rgba.r = (x < 0.5) ? 0.0 : (x - 0.5) * 2;
+      rgba.g = (x < 0.5) ? (0.5 - x) * 2 : 0.0;
+      rgba.b = 0.0;
     }
-    else if (complexType == "col3_gwr")
+    else if (this->predefinedType == PredefinedType::Col3_gwr)
     {
       // 3 colors: green, white, red
-      r = (x < 0.5) ? x * 2 : 1.0;
-      g = (x < 0.5) ? 1.0 : (1 - x) * 2;
-      b = (x < 0.5) ? x * 2 : (1 - x) * 2;
+      rgba.r = (x < 0.5) ? x * 2 : 1.0;
+      rgba.g = (x < 0.5) ? 1.0 : (1 - x) * 2;
+      rgba.b = (x < 0.5) ? x * 2 : (1 - x) * 2;
     }
-    else if (complexType == "col3_bblr")
+    else if (this->predefinedType == PredefinedType::Col3_bblr)
     {
       // 3 colors: blue,  black, red
-      r = (x < 0.5) ? 0.0 : (x - 0.5) * 2;
-      g = 0.0;
-      b = (x < 0.5) ? 1.0 - 2 * x : 0.0;
+      rgba.r = (x < 0.5) ? 0.0 : (x - 0.5) * 2;
+      rgba.g = 0.0;
+      rgba.b = (x < 0.5) ? 1.0 - 2 * x : 0.0;
     }
-    else if (complexType == "col3_bwr")
+    else if (this->predefinedType == PredefinedType::Col3_bwr)
     {
       // 3 colors: blue,  white, red
-      r = (x < 0.5) ? x * 2 : 1.0;
-      g = (x < 0.5) ? x * 2 : (1 - x) * 2;
-      b = (x < 0.5) ? 1.0 : (1 - x) * 2;
+      rgba.r = (x < 0.5) ? x * 2 : 1.0;
+      rgba.g = (x < 0.5) ? x * 2 : (1 - x) * 2;
+      rgba.b = (x < 0.5) ? 1.0 : (1 - x) * 2;
     }
-    else if (complexType == "col3_bblg")
+    else if (this->predefinedType == PredefinedType::Col3_bblg)
     {
       // 3 colors: blue,  black, green
-      r = 0.0;
-      g = (x < 0.5) ? 0.0 : (x - 0.5) * 2;
-      b = (x < 0.5) ? 1.0 - 2 * x : 0.0;
+      rgba.r = 0.0;
+      rgba.g = (x < 0.5) ? 0.0 : (x - 0.5) * 2;
+      rgba.b = (x < 0.5) ? 1.0 - 2 * x : 0.0;
     }
-    else if (complexType == "col3_bwg")
+    else if (this->predefinedType == PredefinedType::Col3_bwg)
     {
       // 3 colors: blue,  white, green
-      r = (x < 0.5) ? x * 2 : (1 - x) * 2;
-      g = (x < 0.5) ? x * 2 : 1.0;
-      b = (x < 0.5) ? 1.0 : (1 - x) * 2;
+      rgba.r = (x < 0.5) ? x * 2 : (1 - x) * 2;
+      rgba.g = (x < 0.5) ? x * 2 : 1.0;
+      rgba.b = (x < 0.5) ? 1.0 : (1 - x) * 2;
     }
 
-    unsigned char retR = (unsigned char)(floor(r * 255.0f + 0.5f));
-    unsigned char retG = (unsigned char)(floor(g * 255.0f + 0.5f));
-    unsigned char retB = (unsigned char)(floor(b * 255.0f + 0.5f));
-    unsigned char retA = (unsigned char)(floor(a * 255.0f + 0.5f));
+    auto retR = functions::clip(int(std::floor(rgba.r * 255.0 + 0.5)), 0, 255);
+    auto retG = functions::clip(int(std::floor(rgba.g * 255.0 + 0.5)), 0, 255);
+    auto retB = functions::clip(int(std::floor(rgba.b * 255.0 + 0.5)), 0, 255);
+    auto retA = functions::clip(int(std::floor(rgba.a * 255.0 + 0.5)), 0, 255);
 
     return Color(retR, retG, retB, retA);
   }
@@ -484,61 +387,80 @@ Color ColorMapper::getColor(float value) const
   return {};
 }
 
-int ColorMapper::getMinVal() const
+void ColorMapper::savePlaylist(YUViewDomElement &root) const
 {
-  if (mappingType == MappingType::gradient || mappingType == MappingType::complex)
-    return rangeMin;
-  else if (mappingType == MappingType::map && !colorMap.empty())
-    return colorMap.begin()->first;
-
-  return 0;
+  root.setAttribute("colorMapperType", MappingTypeMapper.getName(this->mappingType));
+  if (this->mappingType == MappingType::Gradient)
+  {
+    root.setAttribute("colorMapperGradientStart", this->gradientColorStart.toHex());
+    root.setAttribute("colorMapperGradientEnd", this->gradientColorEnd.toHex());
+  }
+  if (this->mappingType == MappingType::Gradient || this->mappingType == MappingType::Predefined)
+    root.setAttribute("colorMapperRange", rangeToString(this->valueRange));
+  if (this->mappingType == MappingType::Predefined)
+    root.setAttribute("colorMapperPredefinedType",
+                      PredefinedTypeMapper.getName(this->predefinedType));
+  if (this->mappingType == MappingType::Map)
+    for (auto &[key, value] : this->colorMap)
+      root.setAttribute("colorMapperMapValue" + std::to_string(key), value.toHex());
 }
 
-int ColorMapper::getMaxVal() const
+void ColorMapper::loadPlaylist(const QStringPairList &attributes)
 {
-  if (mappingType == MappingType::gradient || mappingType == MappingType::complex)
-    return rangeMax;
-  else if (mappingType == MappingType::map && !colorMap.empty())
-    return colorMap.rbegin()->first;
-
-  return 0;
-}
-
-int ColorMapper::getID() const
-{
-  if (mappingType == MappingType::gradient)
-    return 0;
-  else if (mappingType == MappingType::map)
-    return 1;
-  else if (mappingType == MappingType::complex)
-    return supportedComplexTypes.indexOf(complexType) + 2;
-
-  // Invalid type
-  return -1;
-}
-
-unsigned ColorMapper::mappingTypeToUInt(MappingType mappingType)
-{
-  auto m = std::map<MappingType, unsigned>({{MappingType::gradient, 0},
-                                            {MappingType::map, 1},
-                                            {MappingType::complex, 2},
-                                            {MappingType::none, 3}});
-  return m[mappingType];
+  for (auto attribute : attributes)
+  {
+    if (attribute.first == "colorMapperType")
+    {
+      bool ok    = false;
+      auto value = attribute.second.toInt(&ok);
+      if (ok)
+      {
+        if (auto type = MappingTypeMapper.at(value))
+          this->mappingType = *type;
+      }
+      else if (auto type = MappingTypeMapper.getValue(attribute.second.toStdString()))
+        this->mappingType = *type;
+    }
+    else if (attribute.first == "colorMapperMinColor" ||
+             attribute.first == "colorMapperGradientStart")
+      this->gradientColorStart = Color(attribute.second.toStdString());
+    else if (attribute.first == "colorMapperMaxColor" ||
+             attribute.first == "colorMapperGradientEnd")
+      this->gradientColorEnd = Color(attribute.second.toStdString());
+    else if (attribute.first == "colorMapperRangeMin")
+      this->valueRange.min = attribute.second.toInt();
+    else if (attribute.first == "colorMapperRangeMax")
+      this->valueRange.max = attribute.second.toInt();
+    else if (attribute.first == "colorMapperRange")
+      this->valueRange = rangeFromString(attribute.second.toStdString());
+    else if (attribute.first == "colorMapperComplexType" ||
+             attribute.first == "colorMapperPredefinedType")
+    {
+      if (auto type = PredefinedTypeMapper.getValue(attribute.second.toStdString()))
+        this->predefinedType = *type;
+    }
+    else if (attribute.first.startsWith("colorMapperMapValue"))
+    {
+      auto key            = attribute.first.mid(19).toInt();
+      auto value          = Color(attribute.second.toStdString());
+      this->colorMap[key] = value;
+    }
+  }
 }
 
 bool ColorMapper::operator!=(const ColorMapper &other) const
 {
-  if (mappingType != other.mappingType)
+  if (this->mappingType != other.mappingType)
     return true;
-  if (mappingType == MappingType::gradient)
-    return rangeMin != other.rangeMin || rangeMax != other.rangeMax || minColor != other.minColor ||
-           maxColor != other.maxColor;
-  if (mappingType == MappingType::map)
-    return colorMap != other.colorMap;
-  if (mappingType == MappingType::complex)
-    return rangeMin != other.rangeMin || rangeMax != other.rangeMax ||
-           complexType != other.complexType;
+  if (this->mappingType == MappingType::Gradient)
+    return this->valueRange != other.valueRange ||
+           this->gradientColorStart != other.gradientColorStart ||
+           this->gradientColorEnd != other.gradientColorEnd;
+  if (this->mappingType == MappingType::Map)
+    return this->colorMap != other.colorMap;
+  if (this->mappingType == MappingType::Predefined)
+    return this->valueRange != other.valueRange || this->predefinedType != other.predefinedType;
   return false;
 }
 
-} // namespace stats
+} // namespace stats::color

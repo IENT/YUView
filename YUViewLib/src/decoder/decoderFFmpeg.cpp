@@ -426,8 +426,11 @@ bool decoderFFmpeg::decodeFrame()
 
 void decoderFFmpeg::fillStatisticList(stats::StatisticsData &statisticsData) const
 {
-  statisticsData.addStatType(stats::StatisticsType(0, "Source -", "col3_bblg", -2, 2));
-  statisticsData.addStatType(stats::StatisticsType(1, "Source +", "col3_bblg", -2, 2));
+  auto sourceColorMapper =
+      stats::color::ColorMapper({-2, 2}, stats::color::PredefinedType::Col3_bblg);
+
+  statisticsData.addStatType(stats::StatisticsType(0, "Source -", sourceColorMapper));
+  statisticsData.addStatType(stats::StatisticsType(1, "Source +", sourceColorMapper));
   statisticsData.addStatType(stats::StatisticsType(2, "Motion Vector -", 4));
   statisticsData.addStatType(stats::StatisticsType(3, "Motion Vector +", 4));
 }

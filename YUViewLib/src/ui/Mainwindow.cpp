@@ -30,7 +30,7 @@
  *   along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "mainwindow.h"
+#include "Mainwindow.h"
 
 #include <QByteArray>
 #include <QFileDialog>
@@ -44,8 +44,8 @@
 #include <common/Functions.h>
 #include <common/FunctionsGui.h>
 #include <playlistitem/playlistItems.h>
-#include <ui/mainwindow_performanceTestDialog.h>
-#include <ui/settingsDialog.h>
+#include <ui/Mainwindow_performanceTestDialog.h>
+#include <ui/SettingsDialog.h>
 #include <ui/widgets/PlaylistTreeWidget.h>
 
 MainWindow::MainWindow(bool useAlternativeSources, QWidget *parent) : QMainWindow(parent)

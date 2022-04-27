@@ -34,7 +34,7 @@
 
 #include <common/Typedef.h>
 
-#include "views/splitViewWidget.h"
+#include "views/SplitViewWidget.h"
 #include "widgets/PlaylistTreeWidget.h"
 
 #include <QBasicTimer>

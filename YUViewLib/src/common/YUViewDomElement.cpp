@@ -34,25 +34,33 @@
 
 QString YUViewDomElement::findChildValue(const QString &tagName) const
 {
-  QStringPairList b;
-  return findChildValue(tagName, b);
+  for (auto n = firstChild(); !n.isNull(); n = n.nextSibling())
+  {
+    if (n.isElement() && n.toElement().tagName() == tagName)
+      return n.toElement().text();
+  }
+  return {};
 }
 
-QString YUViewDomElement::findChildValue(const QString &  tagName,
-                                         QStringPairList &attributeList) const
+std::pair<QString, QStringPairList>
+YUViewDomElement::findChildValueWithAttributes(const QString &tagName) const
 {
   for (auto n = firstChild(); !n.isNull(); n = n.nextSibling())
+  {
     if (n.isElement() && n.toElement().tagName() == tagName)
     {
-      auto attributes = n.toElement().attributes();
+      QStringPairList attributeList;
+      auto            attributes = n.toElement().attributes();
       for (int i = 0; i < attributes.length(); i++)
       {
         auto name = attributes.item(i).nodeName();
         auto val  = attributes.item(i).nodeValue();
         attributeList.append(QStringPair(name, val));
       }
-      return n.toElement().text();
+      auto text = n.toElement().text();
+      return {text, attributeList};
     }
+  }
   return {};
 }
 
@@ -77,6 +85,11 @@ void YUViewDomElement::appendProperiteChild(const QString &        type,
   for (int i = 0; i < attributes.length(); i++)
     newChild.setAttribute(attributes[i].first, attributes[i].second);
   appendChild(newChild);
+}
+
+void YUViewDomElement::setAttribute(const std::string &name, const std::string &value)
+{
+  QDomElement::setAttribute(QString::fromStdString(name), QString::fromStdString(value));
 }
 
 void YUViewDomElement::appendProperiteChild(const std::string &type, const std::string &name)

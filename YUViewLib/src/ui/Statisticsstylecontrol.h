@@ -32,6 +32,8 @@
 
 #pragma once
 
+#include <statistics/CustomColorMapStorage.h>
+
 #include <QDialog>
 
 #include "ui_statisticsstylecontrol.h"
@@ -59,23 +61,29 @@ signals:
 private slots:
   // Block data controls
   void on_groupBoxBlockData_clicked(bool check);
-  void on_comboBoxDataColorMap_currentIndexChanged(int index);
-  void on_frameMinColor_clicked();
-  void on_pushButtonEditMinColor_clicked() { on_frameMinColor_clicked(); }
-  void on_frameMaxColor_clicked();
-  void on_pushButtonEditMaxColor_clicked() { on_frameMaxColor_clicked(); }
-  void on_pushButtonEditColorMap_clicked();
-  void on_spinBoxRangeMin_valueChanged(int arg1);
-  void on_spinBoxRangeMax_valueChanged(int arg1);
-  void on_checkBoxScaleValueToBlockSize_stateChanged(int arg1);
+  void on_checkBoxScaleValueToBlockSize_stateChanged(int val);
+  void on_blockDataTab_currentChanged(int index);
+  void on_comboBoxPredefined_currentIndexChanged(int index);
+  void on_spinBoxPredefinedRangeMin_valueChanged(int val);
+  void on_spinBoxPredefinedRangeMax_valueChanged(int val);
+  void on_frameGradientStartColor_clicked();
+  void on_pushButtonGradientEditStartColor_clicked();
+  void on_frameGradientEndColor_clicked();
+  void on_pushButtonGradientEditEndColor_clicked();
+  void on_spinBoxGradientRangeMin_valueChanged(int val);
+  void on_spinBoxGradientRangeMax_valueChanged(int val);
+  void on_comboBoxCustomMap_currentIndexChanged(int index);
+  void on_pushButtonEditMap_clicked();
+  void on_pushButtonSaveMap_clicked();
+  void on_pushButtonDeleteMap_clicked();
 
   // Vector data controls
   void on_groupBoxVector_clicked(bool check);
   void on_comboBoxVectorLineStyle_currentIndexChanged(int index);
-  void on_doubleSpinBoxVectorLineWidth_valueChanged(double arg1);
-  void on_checkBoxVectorScaleToZoom_stateChanged(int arg1);
+  void on_doubleSpinBoxVectorLineWidth_valueChanged(double val);
+  void on_checkBoxVectorScaleToZoom_stateChanged(int val);
   void on_comboBoxVectorHeadStyle_currentIndexChanged(int index);
-  void on_checkBoxVectorMapToColor_stateChanged(int arg1);
+  void on_checkBoxVectorMapToColor_stateChanged(int val);
   void on_colorFrameVectorColor_clicked();
   void on_pushButtonEditVectorColor_clicked() { on_colorFrameVectorColor_clicked(); }
 
@@ -84,10 +92,14 @@ private slots:
   void on_frameGridColor_clicked();
   void on_pushButtonEditGridColor_clicked() { on_frameGridColor_clicked(); }
   void on_comboBoxGridLineStyle_currentIndexChanged(int index);
-  void on_doubleSpinBoxGridLineWidth_valueChanged(double arg1);
-  void on_checkBoxGridScaleToZoom_stateChanged(int arg1);
+  void on_doubleSpinBoxGridLineWidth_valueChanged(double val);
+  void on_checkBoxGridScaleToZoom_stateChanged(int val);
 
 private:
+  void refreshComboBoxCustomMapFromStorage();
+
   Ui::StatisticsStyleControl ui;
-  stats::StatisticsType *    currentItem;
+  stats::StatisticsType *    currentItem{};
+
+  stats::color::CustomColorMapStorage customColorMapStorage;
 };

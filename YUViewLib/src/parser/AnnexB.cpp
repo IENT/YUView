@@ -182,7 +182,7 @@ bool AnnexB::parseAnnexBFile(QScopedPointer<FileSourceAnnexBFile> &file, QWidget
     // Update the progress dialog
     int64_t pos = file->pos();
     if (stream_info.file_size > 0)
-      progressPercentValue = clip((int)(pos * 100 / stream_info.file_size), 0, 100);
+      progressPercentValue = functions::clip((int)(pos * 100 / stream_info.file_size), 0, 100);
 
     try
     {
@@ -221,7 +221,7 @@ bool AnnexB::parseAnnexBFile(QScopedPointer<FileSourceAnnexBFile> &file, QWidget
 
       int newPercentValue = 0;
       if (maxPos > 0)
-        newPercentValue = clip(int((file->pos() - maxPos) * 100 / maxPos), 0, 100);
+        newPercentValue = functions::clip(int((file->pos() - maxPos) * 100 / maxPos), 0, 100);
       if (newPercentValue != curPercentValue)
       {
         progressDialog->setValue(newPercentValue);

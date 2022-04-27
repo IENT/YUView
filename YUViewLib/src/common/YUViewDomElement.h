@@ -45,10 +45,14 @@ class YUViewDomElement : public QDomElement
 public:
   YUViewDomElement(const QDomElement &a) : QDomElement(a) {}
 
-  QString findChildValue(const QString &tagName) const;
-  QString findChildValue(const QString &tagName, QStringPairList &attributeList) const;
-  int     findChildValueInt(const QString &tagName, int defaultValue) const;
-  double  findChildValueDouble(const QString &tagName, double defaultValue) const;
+  QString                             findChildValue(const QString &tagName) const;
+  std::pair<QString, QStringPairList> findChildValueWithAttributes(const QString &tagName) const;
+
+  int    findChildValueInt(const QString &tagName, int defaultValue) const;
+  double findChildValueDouble(const QString &tagName, double defaultValue) const;
+
+  using QDomElement::setAttribute;
+  void setAttribute(const std::string &name, const std::string &value);
 
   void appendProperiteChild(const QString &        type,
                             const QString &        name,

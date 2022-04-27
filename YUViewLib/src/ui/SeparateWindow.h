@@ -30,66 +30,39 @@
 *   along with this program. If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "separateWindow.h"
+#pragma once
 
-#include <QSettings>
+#include <QMainWindow>
 
-SeparateWindow::SeparateWindow() :
-  splitView(this)
+#include "views/SplitViewWidget.h"
+
+class SeparateWindow : public QMainWindow
 {
-  setCentralWidget(&splitView);
-  splitView.setAttribute(Qt::WA_AcceptTouchEvents);
+  Q_OBJECT
 
-  connect(&splitView, &splitViewWidget::signalToggleFullScreen, this, &SeparateWindow::toggleFullscreen);
-  connect(&splitView, &splitViewWidget::signalShowSeparateWindow, this, &SeparateWindow::splitViewShowSeparateWindow);
-}
+public:
+  explicit SeparateWindow();
+  splitViewWidget splitView;
 
-void SeparateWindow::toggleFullscreen()
-{
-  QSettings settings;
-  if (isFullScreen())
-  {
-    // Show the window normal or maximized (depending on how it was shown before)
-    if (showNormalMaximized)
-      showMaximized();
-    else
-      showNormal();
-  }
-  else
-  {
-    // Save if the window is currently maximized
-    showNormalMaximized = isMaximized();
+signals:
+  // Signal that the user wants to go back to single window mode
+  void signalSingleWindowMode();
+  
+  // There was a key event in the separate window, but the separate view did not handle it.
+  // The signal should be processed by the main window (maybe it is a nex/prev frame key event or something...).
+  void unhandledKeyPress(QKeyEvent *event);
 
-    showFullScreen();
-  }
-}
+public slots:
+  void toggleFullscreen();
 
-void SeparateWindow::closeEvent(QCloseEvent *event)
-{
-  // This window cannot be closed. Signal that we want to go to single window mode.
-  // The main window will then hide this window.
-  event->ignore();
-  emit signalSingleWindowMode();
-}
+protected:
+  void closeEvent(QCloseEvent *event) override;
+  void keyPressEvent(QKeyEvent *event) override;
 
-void SeparateWindow::keyPressEvent(QKeyEvent *event)
-{
-  int key = event->key();
-  bool controlOnly = (event->modifiers() == Qt::ControlModifier);
+protected slots:
+  void splitViewShowSeparateWindow(bool show) { if (!show) emit signalSingleWindowMode(); }
 
-  if (key == Qt::Key_Escape)
-  {
-    if (isFullScreen())
-      toggleFullscreen();
-  }
-  else if (key == Qt::Key_F && controlOnly)
-    toggleFullscreen();
-  else
-  {
-    // See if the split view widget handles this key press. If not, pass the event on to the QWidget.
-    if (!splitView.handleKeyPress(event))
-      emit unhandledKeyPress(event);
-
-    //QWidget::keyPressEvent(event);
-  }
-}
+private:
+  // If the window is shown full screen, this saves if it was maximized before going to full screen
+  bool showNormalMaximized;
+};

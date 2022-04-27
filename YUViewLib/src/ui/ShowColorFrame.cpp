@@ -38,29 +38,26 @@
 
 ShowColorWidget::ShowColorWidget(QWidget *parent) : QFrame(parent)
 {
-  renderRange       = false;
-  renderRangeValues = false;
 }
 
 void ShowColorWidget::paintEvent(QPaintEvent *event)
 {
   QFrame::paintEvent(event);
 
-  // Draw
   QPainter painter(this);
-  int      fw       = frameWidth();
-  QRect    r        = rect();
-  QRect    drawRect = QRect(r.left() + fw, r.top() + fw, r.width() - fw * 2, r.height() - fw * 2);
+  auto     fw       = this->frameWidth();
+  auto     r        = this->rect();
+  auto     drawRect = QRect(r.left() + fw, r.top() + fw, r.width() - fw * 2, r.height() - fw * 2);
 
   // Get the min/max values from the color map
-  const double minVal = colMapper.getMinVal();
-  const double maxVal = colMapper.getMaxVal();
+  const auto minVal = this->colMapper.valueRange.min;
+  const auto maxVal = this->colMapper.valueRange.max;
 
-  if (renderRangeValues)
+  if (this->renderRangeValues)
   {
     // How high is one digit when drawing it?
-    QFontMetrics metrics(font());
-    int          h = metrics.size(0, "0").height();
+    QFontMetrics metrics(this->font());
+    auto         h = metrics.size(0, "0").height();
 
     // Draw two small lines (at the left and at the right)
     const int lineHeight = 3;
@@ -74,18 +71,18 @@ void ShowColorWidget::paintEvent(QPaintEvent *event)
     painter.drawText(
         drawRect.left(), y, drawRect.width(), h, Qt::AlignRight, QString::number(maxVal));
     // Draw the middle value
-    int middleValue = (maxVal - minVal) / 2 + minVal;
+    auto middleValue = (maxVal - minVal) / 2 + minVal;
     if (middleValue != minVal && middleValue != maxVal)
     {
       // Where (x coordinate) to draw the middle value
-      int xPos      = drawRect.width() / 2;
-      int drawWidth = drawRect.width();
-      if ((int)(maxVal - minVal) % 2 == 1)
+      auto xPos      = drawRect.width() / 2;
+      auto drawWidth = drawRect.width();
+      if ((maxVal - minVal) % 2 == 1)
       {
         // The difference is uneven. The middle value is not in the exact middle of the interval.
-        double step = drawRect.width() / (maxVal - minVal);
-        xPos        = drawRect.left() + int(step * middleValue);
-        drawWidth   = int(step * 2 * middleValue);
+        auto step = drawRect.width() / (maxVal - minVal);
+        xPos      = drawRect.left() + int(step * middleValue);
+        drawWidth = step * 2 * middleValue;
       }
       painter.drawLine(xPos, y, xPos, y - lineHeight);
       painter.drawText(
@@ -96,21 +93,21 @@ void ShowColorWidget::paintEvent(QPaintEvent *event)
     drawRect.setHeight(drawRect.height() - h - lineHeight);
   }
 
-  if (renderRange)
+  if (this->renderRange)
   {
     // Split the rect into lines with width of 1 pixel
-    const int y0 = drawRect.bottom();
-    const int y1 = drawRect.top();
-    for (int x = drawRect.left(); x <= drawRect.right(); x++)
+    const auto y0 = drawRect.bottom();
+    const auto y1 = drawRect.top();
+    for (auto x = drawRect.left(); x <= drawRect.right(); x++)
     {
       // For every line (1px width), draw a line.
       // Set the right color
 
-      float xRel   = (float)x / (drawRect.right() - drawRect.left()); // 0...1
-      float xRange = minVal + (maxVal - minVal) * xRel;
+      auto xRel   = double(x) / (drawRect.right() - drawRect.left()); // 0...1
+      auto xRange = minVal + (double(maxVal - minVal)) * xRel;
 
-      auto c = colMapper.getColor(xRange);
-      if (isEnabled())
+      auto c = this->colMapper.getColor(xRange);
+      if (this->isEnabled())
         painter.setPen(functionsGui::toQColor(c));
       else
       {
@@ -123,31 +120,32 @@ void ShowColorWidget::paintEvent(QPaintEvent *event)
   }
   else
   {
-    if (isEnabled())
+    if (this->isEnabled())
       painter.fillRect(drawRect, plainColor);
     else
     {
-      int gray = 64 + qGray(plainColor.rgb()) / 2;
+      auto gray = 64 + qGray(plainColor.rgb()) / 2;
       painter.fillRect(drawRect, QColor(gray, gray, gray));
     }
   }
 }
 
-void ShowColorWidget::setColorMapper(const stats::ColorMapper &mapper)
+void ShowColorWidget::setColorMapper(const stats::color::ColorMapper &mapper)
 {
-  renderRange = true;
-  colMapper   = mapper;
-  update();
+  this->renderRange = true;
+  this->colMapper   = mapper;
+  this->update();
 }
 
 void ShowColorWidget::setPlainColor(const QColor &color)
 {
-  renderRange = false;
-  plainColor  = color;
-  update();
+  this->renderRange = false;
+  this->plainColor  = color;
+  this->update();
 }
 
 void ShowColorWidget::mouseReleaseEvent(QMouseEvent *)
 {
+  // If the mouse is released, emit a clicked() event.
   emit clicked();
 }

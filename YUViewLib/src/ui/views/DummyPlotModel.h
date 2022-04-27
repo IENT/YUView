@@ -32,7 +32,7 @@
 
 #pragma once
 
-#include "plotModel.h"
+#include "PlotModel.h"
 
 #include <QList>
 #include <random>

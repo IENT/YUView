@@ -52,7 +52,7 @@
 #include <parser/VVC/AnnexBVVC.h>
 #include <parser/common/SubByteReaderLogging.h>
 #include <statistics/StatisticsDataPainting.h>
-#include <ui/mainwindow.h>
+#include <ui/Mainwindow.h>
 #include <ui_playlistItemCompressedFile_logDialog.h>
 #include <video/videoHandlerRGB.h>
 #include <video/videoHandlerYUV.h>

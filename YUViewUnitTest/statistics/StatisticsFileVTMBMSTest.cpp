@@ -36,7 +36,7 @@ struct CheckPolygonVectorItem
 };
 
 void checkVectorList(const std::vector<stats::StatsItemVector> &vectors,
-                     const std::vector<CheckStatsItem> &              checkItems)
+                     const std::vector<CheckStatsItem> &        checkItems)
 {
   QCOMPARE(vectors.size(), checkItems.size());
   for (unsigned i = 0; i < vectors.size(); i++)
@@ -53,7 +53,7 @@ void checkVectorList(const std::vector<stats::StatsItemVector> &vectors,
 }
 
 void checkAffineTFVectorList(const std::vector<stats::StatsItemAffineTF> &affineTFvectors,
-                             const std::vector<CheckAffineTFItem> &             checkItems)
+                             const std::vector<CheckAffineTFItem> &       checkItems)
 {
   QCOMPARE(affineTFvectors.size(), checkItems.size());
   for (unsigned i = 0; i < affineTFvectors.size(); i++)
@@ -74,7 +74,7 @@ void checkAffineTFVectorList(const std::vector<stats::StatsItemAffineTF> &affine
 }
 
 void checkLineList(const std::vector<stats::StatsItemVector> &lines,
-                   const std::vector<CheckLineItem> &               checkItems)
+                   const std::vector<CheckLineItem> &         checkItems)
 {
   QCOMPARE(lines.size(), checkItems.size());
   for (unsigned i = 0; i < lines.size(); i++)
@@ -93,7 +93,7 @@ void checkLineList(const std::vector<stats::StatsItemVector> &lines,
 }
 
 void checkPolygonvectorList(const std::vector<stats::StatsItemPolygonVector> &polygonList,
-                            const std::vector<CheckPolygonVectorItem> &             checkItems)
+                            const std::vector<CheckPolygonVectorItem> &       checkItems)
 {
   QCOMPARE(polygonList.size(), checkItems.size());
   for (unsigned i = 0; i < polygonList.size(); i++)
@@ -112,7 +112,7 @@ void checkPolygonvectorList(const std::vector<stats::StatsItemPolygonVector> &po
 }
 
 void checkValueList(const std::vector<stats::StatsItemValue> &values,
-                    const std::vector<CheckStatsItem> &             checkItems)
+                    const std::vector<CheckStatsItem> &       checkItems)
 {
   QCOMPARE(values.size(), checkItems.size());
   for (unsigned i = 0; i < values.size(); i++)
@@ -202,9 +202,9 @@ BlockStat: POC 8 @[(544, 760)--(545, 768)--(544, 768)--] GeoMVL0={ 180,  38}
 
   QCOMPARE(types[0].hasVectorData, false);
   QCOMPARE(types[0].hasValueData, true);
-  QCOMPARE(types[0].colorMapper.rangeMin, 0);
-  QCOMPARE(types[0].colorMapper.rangeMax, 4);
-  QCOMPARE(types[0].colorMapper.complexType, QString("jet"));
+  QCOMPARE(types[0].colorMapper.valueRange.min, 0);
+  QCOMPARE(types[0].colorMapper.valueRange.max, 4);
+  QCOMPARE(types[0].colorMapper.predefinedType, stats::color::PredefinedType::Jet);
   QCOMPARE(types[0].gridStyle.color.toHex(), std::string("#000000"));
 
   QCOMPARE(types[1].hasVectorData, true);

@@ -41,6 +41,8 @@
         <file>img_x@2x.png</file>
         <file>img_resample.png</file>
         <file>img_resample@2x.png</file>
+        <file>img_save.png</file>
+        <file>img_save@2x.png</file>
         <file>YUViewSimple.qss</file>
     </qresource>
 </RCC>

@@ -35,7 +35,7 @@
 #include <QKeyEvent>
 
 #include "playlistitem/playlistItem.h"
-#include "ui/playbackController.h"
+#include "ui/PlaybackController.h"
 
 ViewStateHandler::ViewStateHandler() {}
 

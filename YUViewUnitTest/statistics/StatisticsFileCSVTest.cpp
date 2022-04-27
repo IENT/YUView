@@ -17,7 +17,7 @@ struct CheckStatsItem
 };
 
 void checkVectorList(const std::vector<stats::StatsItemVector> &vectors,
-                     const std::vector<CheckStatsItem> &              checkItems)
+                     const std::vector<CheckStatsItem> &        checkItems)
 {
   QCOMPARE(vectors.size(), checkItems.size());
   for (unsigned i = 0; i < vectors.size(); i++)
@@ -34,7 +34,7 @@ void checkVectorList(const std::vector<stats::StatsItemVector> &vectors,
 }
 
 void checkValueList(const std::vector<stats::StatsItemValue> &values,
-                    const std::vector<CheckStatsItem> &             checkItems)
+                    const std::vector<CheckStatsItem> &       checkItems)
 {
   QCOMPARE(values.size(), checkItems.size());
   for (unsigned i = 0; i < values.size(); i++)
@@ -69,7 +69,7 @@ void StatisticsFileCSVTest::testCSVFileParsing1()
 
   {
     const std::string stats_str =
-R"(%;syntax-version;v1.2
+        R"(%;syntax-version;v1.2
 %;seq-specs;BasketballDrive_L1_1920x1080_50_encoder+randomaccess+main+B+2x_FTBE9_IBD08_IBD18_IBD08_IBD18_IP48_QPL1022_SEIDPH0_stats;0;1920;1080;0;
 %;type;9;MVDL0;vector;
 %;vectorColor;100;0;0;255
@@ -204,9 +204,7 @@ R"(%;syntax-version;v1.2
   auto vectorScaleFactors = std::vector<int>({4, 4, 4, 4, -1, -1, -1, -1, -1, -1, -1, -1});
   auto valueColorRangeMin = std::vector<int>({-1, -1, -1, -1, 0, 0, 0, 0, 0, 0, 0, 0});
   auto valueColorRangeMax = std::vector<int>({-1, -1, -1, -1, 1, 1, 5, 5, 1, 3, 3, 1});
-  auto valueComplexTypes  = std::vector<QString>(
-      {"", "", "", "", "jet", "jet", "jet", "jet", "jet", "jet", "jet", "jet"});
-  auto valueGridColors = std::vector<std::string>({"",
+  auto valueGridColors    = std::vector<std::string>({"",
                                                    "",
                                                    "",
                                                    "",
@@ -232,9 +230,9 @@ R"(%;syntax-version;v1.2
     }
     if (t.hasValueData)
     {
-      QCOMPARE(t.colorMapper.rangeMin, valueColorRangeMin[i]);
-      QCOMPARE(t.colorMapper.rangeMax, valueColorRangeMax[i]);
-      QCOMPARE(t.colorMapper.complexType, valueComplexTypes[i]);
+      QCOMPARE(t.colorMapper.valueRange.min, valueColorRangeMin[i]);
+      QCOMPARE(t.colorMapper.valueRange.max, valueColorRangeMax[i]);
+      QCOMPARE(t.colorMapper.predefinedType, stats::color::PredefinedType::Jet);
       QCOMPARE(t.gridStyle.color.toHex(), valueGridColors[i]);
     }
   }

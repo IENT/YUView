@@ -32,6 +32,7 @@
 
 #include "AVCodecParametersWrapper.h"
 
+#include <common/Functions.h>
 namespace FFmpeg
 {
 
@@ -140,13 +141,15 @@ QStringPairList AVCodecParametersWrapper::getInfoText()
                                    << "Top coded first, bottom displayed first"
                                    << "Bottom coded first, top displayed first";
   info.append(
-      {"Field Order", fieldOrders.at(clip(int(this->codec_type), 0, int(fieldOrders.count())))});
+      {"Field Order",
+       fieldOrders.at(functions::clip(int(this->codec_type), 0, int(fieldOrders.count())))});
   auto colorRanges = QStringList() << "Unspecified"
                                    << "The normal 219*2^(n-8) MPEG YUV ranges"
                                    << "The normal 2^n-1 JPEG YUV ranges"
                                    << "Not part of ABI";
   info.append(
-      {"Color Range", colorRanges.at(clip(int(this->color_range), 0, int(colorRanges.count())))});
+      {"Color Range",
+       colorRanges.at(functions::clip(int(this->color_range), 0, int(colorRanges.count())))});
   auto colorPrimaries =
       QStringList()
       << "Reserved"

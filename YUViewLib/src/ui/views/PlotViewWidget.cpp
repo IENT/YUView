@@ -30,8 +30,9 @@
  *   along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "plotViewWidget.h"
+#include "PlotViewWidget.h"
 
+#include <common/Functions.h>
 #include <common/Typedef.h>
 
 #include <QPainter>
@@ -277,9 +278,9 @@ void PlotViewWidget::setMoveOffset(QPointF offset)
 
   QPointF offsetClipped;
   if (axisLengthInValues > (visibleRange->max - visibleRange->min))
-    offsetClipped = QPointF(clip(offset.x(), clipLeft, clipRight), 0);
+    offsetClipped = QPointF(functions::clip(offset.x(), clipLeft, clipRight), 0);
   else
-    offsetClipped = QPointF(clip(offset.x(), clipRight, clipLeft), 0);
+    offsetClipped = QPointF(functions::clip(offset.x(), clipRight, clipLeft), 0);
 
   DEBUG_PLOT("PlotViewWidget::setMoveOffset offset " << offset << " clipped " << offsetClipped);
   MoveAndZoomableView::setMoveOffset(offsetClipped);

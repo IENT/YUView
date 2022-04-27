@@ -34,7 +34,7 @@
 
 #include <common/Typedef.h>
 #include <handler/SingleInstanceHandler.h>
-#include <ui/mainwindow.h>
+#include <ui/Mainwindow.h>
 
 #include <QApplication>
 #include <QSettings>

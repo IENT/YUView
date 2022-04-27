@@ -37,7 +37,7 @@
 #include <QString>
 
 #include <common/Typedef.h>
-#include <ui/views/plotModel.h>
+#include <ui/views/PlotModel.h>
 
 class BitratePlotModel : public PlotModel
 {

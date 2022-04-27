@@ -32,6 +32,8 @@
 
 #include "segmentation_params.h"
 
+#include <common/Functions.h>
+
 #include "Typedef.h"
 
 namespace parser::av1
@@ -78,12 +80,13 @@ void segmentation_params::parse(reader::SubByteReaderLogging &reader, unsigned p
             auto limit      = Segmentation_Feature_Max[j];
             if (Segmentation_Feature_Signed[j])
             {
-              clippedValue =
-                  clip(int(reader.readSU("feature_value", bitsToRead + 1)), -limit, limit);
+              clippedValue = functions::clip(
+                  int(reader.readSU("feature_value", bitsToRead + 1)), -limit, limit);
             }
             else
             {
-              clippedValue = clip(int(reader.readBits("feature_value", bitsToRead)), 0, limit);
+              clippedValue =
+                  functions::clip(int(reader.readBits("feature_value", bitsToRead)), 0, limit);
             }
           }
           this->FeatureData[i][j] = clippedValue;

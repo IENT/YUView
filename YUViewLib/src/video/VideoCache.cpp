@@ -41,7 +41,7 @@
 
 #include <common/Functions.h>
 #include <playlistitem/playlistItem.h>
-#include <ui/playbackController.h>
+#include <ui/PlaybackController.h>
 
 namespace video
 {
@@ -1223,10 +1223,11 @@ bool VideoCache::pushNextJobToCachingThread(loadingThread *thread)
   if (testMode)
   {
     Q_ASSERT_X(testItem, Q_FUNC_INFO, "Test item invalid");
-    auto range   = testItem->properties().startEndRange;
-    int  frameNr = clip((1000 - testLoopCount) % (range.second - range.first) + range.first,
-                       range.first,
-                       range.second);
+    auto range = testItem->properties().startEndRange;
+    int  frameNr =
+        functions::clip((1000 - testLoopCount) % (range.second - range.first) + range.first,
+                        range.first,
+                        range.second);
     if (frameNr < 0)
       frameNr = 0;
     thread->worker()->setJob(testItem, frameNr, true);

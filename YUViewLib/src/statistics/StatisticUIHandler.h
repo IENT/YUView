@@ -36,7 +36,7 @@
 #include <common/YUViewDomElement.h>
 #include <common/Typedef.h>
 #include <statistics/StatisticsType.h>
-#include <ui/statisticsstylecontrol.h>
+#include <ui/Statisticsstylecontrol.h>
 
 #include <QMutex>
 #include <QPointer>

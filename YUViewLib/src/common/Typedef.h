@@ -200,11 +200,6 @@ private:
 
 #define MAX_RECENT_FILES 10
 
-template <typename T> inline T clip(const T n, const T lower, const T upper)
-{
-  return (n < lower) ? lower : (n > upper) ? upper : n;
-}
-
 /// ---- Custom types
 typedef std::pair<uint64_t, uint64_t>       pairUint64;
 typedef std::pair<int64_t, int64_t>         pairInt64;
@@ -272,6 +267,11 @@ template <typename T> struct Range
 {
   T min{};
   T max{};
+
+  bool operator!=(const Range &other) const
+  {
+    return this->min != other.min || this->max != other.max;
+  }
 };
 
 struct Ratio
