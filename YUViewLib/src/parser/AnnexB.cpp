@@ -247,10 +247,17 @@ bool AnnexB::parseAnnexBFile(QScopedPointer<FileSourceAnnexBFile> &file, QWidget
     }
   }
 
-  // We are done.
-  auto parseResult = this->parseAndAddNALUnit(-1, {}, {}, {});
-  if (!parseResult.success)
+  try
+  {
+    auto parseResult = this->parseAndAddNALUnit(-1, {}, {}, {});
+    if (!parseResult.success)
+      DEBUG_ANNEXB("AnnexB::parseAndAddNALUnit Error finalizing parsing. This should not happen.");
+  }
+  catch (...)
+  {
     DEBUG_ANNEXB("AnnexB::parseAndAddNALUnit Error finalizing parsing. This should not happen.");
+  }
+
   DEBUG_ANNEXB("AnnexB::parseAndAddNALUnit Parsing done. Found " << this->frameList.size()
                                                                  << " POCs");
 
