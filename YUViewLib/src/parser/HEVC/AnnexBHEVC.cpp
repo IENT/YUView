@@ -553,6 +553,7 @@ AnnexBHEVC::parseAndAddNALUnit(int                                           nal
       // Dolby vision EL or metadata
       // Technically this is not a specific NAL unit type but dolby vision uses a different
       // seperator that makes the DV metadata and EL data appear to be NAL unit type 62 and 63.
+      // https://patents.google.com/patent/US20180278963A1/en
       specificDescription = " Dolby Vision";
       DEBUG_HEVC("AnnexBHEVC::parseAndAddNALUnit Dolby Vision Metadata");
       parseResult.nalTypeName = "Dolby Vision ";

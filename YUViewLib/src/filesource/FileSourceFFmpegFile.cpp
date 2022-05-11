@@ -208,11 +208,12 @@ QByteArray FileSourceFFmpegFile::getExtradata()
 {
   // Get the video stream
   if (!video_stream)
-    return QByteArray();
-  FFmpeg::AVCodecContextWrapper codec = video_stream.getCodec();
-  if (!codec)
-    return QByteArray();
-  return codec.getExtradata();
+    return {};
+  if (auto codec = video_stream.getCodec())
+    return codec.getExtradata();
+  if (auto codecPar = video_stream.getCodecpar())
+    return codecPar.getExtradata();
+  return {};
 }
 
 StringPairVec FileSourceFFmpegFile::getMetadata()
@@ -232,7 +233,13 @@ QList<QByteArray> FileSourceFFmpegFile::getParameterSets()
    * To access them from libav* APIs you need to look for extradata field in AVCodecContext of
    * AVStream which relate to needed video stream. Also extradata can have different format from
    * standard H.264 NALs so look in MP4-container specs for format description. */
-  auto              extradata = getExtradata();
+  auto extradata = getExtradata();
+  if (extradata.isEmpty())
+  {
+    DEBUG_FFMPEG("Error no extradata could be found.");
+    return {};
+  }
+
   QList<QByteArray> retArray;
 
   // Since the FFmpeg developers don't want to make it too easy, the extradata is organized
@@ -523,9 +530,7 @@ void FileSourceFFmpegFile::openFileAndFindVideoStream(QString fileName)
   this->timeBase = this->video_stream.getTimeBase();
 
   auto colSpace   = this->video_stream.getColorspace();
-  auto w          = this->video_stream.getFrameWidth();
-  auto h          = this->video_stream.getFrameHeight();
-  this->frameSize = Size(w, h);
+  this->frameSize = this->video_stream.getFrameSize();
 
   if (colSpace == AVCOL_SPC_BT2020_NCL || colSpace == AVCOL_SPC_BT2020_CL)
     this->colorConversionType = video::yuv::ColorConversion::BT2020_LimitedRange;
@@ -690,7 +695,8 @@ QList<QString> FileSourceFFmpegFile::getShortStreamDescriptionAllStreams()
     auto codecID = this->ff.getCodecIDWrapper(stream.getCodecID());
     description += " " + codecID.getCodecName();
 
-    description += QString(" (%1x%2)").arg(stream.getFrameWidth()).arg(stream.getFrameHeight());
+    description +=
+        QString(" (%1x%2)").arg(stream.getFrameSize().width).arg(stream.getFrameSize().height);
 
     descriptions.append(description);
   }

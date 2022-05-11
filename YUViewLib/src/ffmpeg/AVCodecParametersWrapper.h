@@ -45,12 +45,12 @@ public:
   explicit        operator bool() const { return param != nullptr; }
   QStringPairList getInfoText();
 
-  AVMediaType getCodecType();
-  AVCodecID getCodecID();
-  int getWidth();
-  int getHeight();
+  AVMediaType  getCodecType();
+  AVCodecID    getCodecID();
+  QByteArray   getExtradata();
+  Size         getSize();
   AVColorSpace getColorspace();
-  Ratio getSampleAspectRatio();
+  Ratio        getSampleAspectRatio();
 
   // Set a default set of (unknown) values
   void setClearValues();
@@ -73,8 +73,7 @@ private:
   AVMediaType                   codec_type{};
   AVCodecID                     codec_id{};
   uint32_t                      codec_tag{};
-  uint8_t *                     extradata{};
-  int                           extradata_size{};
+  QByteArray                    extradata{};
   int                           format{};
   int64_t                       bit_rate{};
   int                           bits_per_coded_sample{};
@@ -91,9 +90,6 @@ private:
   AVColorSpace                  color_space{};
   AVChromaLocation              chroma_location{};
   int                           video_delay{};
-
-  // When setting custom metadata, we keep a reference to it here.
-  QByteArray set_extradata{};
 
   AVCodecParameters *param{};
   LibraryVersion     libVer{};
