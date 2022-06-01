@@ -515,7 +515,8 @@ void videoHandlerRGB::slotDisplayOptionsChanged()
 {
   {
     auto selection = ui.colorComponentsComboBox->currentText().toStdString();
-    if (auto c = componentShowMapper.getValue(selection, EnumMapperStringType::Text))
+    if (auto c = componentShowMapper.getValue(selection,
+                                              EnumMapper<ComponentDisplayMode>::StringType::Text))
       this->componentDisplayMode = *c;
   }
 

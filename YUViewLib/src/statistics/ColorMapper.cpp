@@ -88,7 +88,7 @@ Range<int> rangeFromString(std::string rangeText)
     auto second = std::stoi(secondStr);
     return {first, second};
   }
-  catch (const std::exception&)
+  catch (const std::exception &)
   {
     return {};
   }
@@ -122,7 +122,7 @@ ColorMapper::ColorMapper(Range<int> valueRange, std::string predefinedTypeName)
 {
   this->mappingType = MappingType::Predefined;
   this->valueRange  = valueRange;
-  if (auto type = PredefinedTypeMapper.getValue(predefinedTypeName))
+  if (auto type = PredefinedTypeMapper.getValueCaseInsensitive(predefinedTypeName))
     this->predefinedType = *type;
 }
 
@@ -436,7 +436,7 @@ void ColorMapper::loadPlaylist(const QStringPairList &attributes)
     else if (attribute.first == "colorMapperComplexType" ||
              attribute.first == "colorMapperPredefinedType")
     {
-      if (auto type = PredefinedTypeMapper.getValue(attribute.second.toStdString()))
+      if (auto type = PredefinedTypeMapper.getValueCaseInsensitive(attribute.second.toStdString()))
         this->predefinedType = *type;
     }
     else if (attribute.first.startsWith("colorMapperMapValue"))
