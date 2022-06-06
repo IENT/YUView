@@ -40,18 +40,17 @@
 #include <string>
 #include <vector>
 
-enum class EnumMapperStringType
-{
-  Name,
-  Text,
-  NameOrIndex
-};
-
 /* This class implement mapping of "enum class" values to and from names (string).
  */
 template <typename T> class EnumMapper
 {
 public:
+  enum class StringType
+  {
+    Name,
+    Text,
+    NameOrIndex
+  };
   struct Entry
   {
     Entry(T value, std::string name) : value(value), name(name) {}
@@ -66,18 +65,35 @@ public:
   EnumMapper() = default;
   EnumMapper(const EntryVector &entryVector) : entryVector(entryVector){};
 
-  std::optional<T> getValue(std::string          name,
-                            EnumMapperStringType stringType = EnumMapperStringType::Name) const
+  std::optional<T> getValue(std::string name, StringType stringType = StringType::Name) const
   {
-    if (stringType == EnumMapperStringType::NameOrIndex)
+    if (stringType == StringType::NameOrIndex)
       if (auto index = functions::toUnsigned(name))
         return this->at(*index);
 
     for (const auto &entry : this->entryVector)
     {
-      if ((stringType == EnumMapperStringType::Name && entry.name == name) ||
-          (stringType == EnumMapperStringType::NameOrIndex && entry.text == name) ||
-          (stringType == EnumMapperStringType::Text && entry.text == name))
+      if ((stringType == StringType::Name && entry.name == name) ||
+          (stringType == StringType::NameOrIndex && entry.text == name) ||
+          (stringType == StringType::Text && entry.text == name))
+        return entry.value;
+    }
+    return {};
+  }
+
+  std::optional<T> getValueCaseInsensitive(std::string name,
+                                           StringType  stringType = StringType::Name) const
+  {
+    if (stringType == StringType::NameOrIndex)
+      if (auto index = functions::toUnsigned(name))
+        return this->at(*index);
+
+    name = functions::toLower(name);
+    for (const auto &entry : this->entryVector)
+    {
+      if ((stringType == StringType::Name && functions::toLower(entry.name) == name) ||
+          (stringType == StringType::NameOrIndex && functions::toLower(entry.text) == name) ||
+          (stringType == StringType::Text && functions::toLower(entry.text) == name))
         return entry.value;
     }
     return {};
