@@ -151,7 +151,7 @@ void playlistItemResample::drawItem(QPainter *painter,
         this->video.setInterpolation(interpolation);
         this->video.setCutAndSample(this->cutRange, this->sampling);
         auto nrFrames            = (this->cutRange.second - this->cutRange.first) / this->sampling;
-        this->prop.startEndRange = indexRange(0, nrFrames);
+        this->prop.startEndRange = IndexRange(0, nrFrames);
       }
       else
       {
@@ -267,7 +267,7 @@ playlistItemResample *playlistItemResample::newPlaylistItemResample(const YUView
       Size(root.findChildValueInt("width", 0), root.findChildValueInt("height", 0));
   newItemResample->interpolationIndex = root.findChildValueInt("interpolation", 0);
   newItemResample->cutRange =
-      indexRange({root.findChildValueInt("cutStart", 0), root.findChildValueInt("cutEnd", 0)});
+      IndexRange({root.findChildValueInt("cutStart", 0), root.findChildValueInt("cutEnd", 0)});
   newItemResample->sampling = root.findChildValueInt("sampling", 0);
 
   newItemResample->useLoadedValues = true;
@@ -321,7 +321,7 @@ void playlistItemResample::loadFrame(int frameIdx, bool playing, bool loadRawDat
       this->video.loadResampledFrame(nextFrameIdx, true);
       this->isFrameLoadingDoubleBuffer = false;
       if (emitSignals)
-        emit signalItemDoubleBufferLoaded();
+        emit signalLoadFinished(LoadBuffer::Primary);
     }
   }
 }
@@ -332,7 +332,7 @@ void playlistItemResample::childChanged(bool redraw, recacheIndicator recache)
   // and has to be recalculated.
 
   auto nrFrames            = (this->cutRange.second - this->cutRange.first) / this->sampling;
-  this->prop.startEndRange = indexRange(0, nrFrames);
+  this->prop.startEndRange = IndexRange(0, nrFrames);
 
   this->video.invalidateAllBuffers();
   playlistItemContainer::childChanged(redraw, recache);
@@ -355,11 +355,11 @@ void playlistItemResample::slotInterpolationModeChanged(int)
 
 void playlistItemResample::slotCutAndSampleControlChanged(int)
 {
-  this->cutRange = indexRange(ui.spinBoxStart->value(), ui.spinBoxEnd->value());
+  this->cutRange = IndexRange(ui.spinBoxStart->value(), ui.spinBoxEnd->value());
   this->sampling = std::max(ui.spinBoxSampling->value(), 1);
 
   auto nrFrames            = (this->cutRange.second - this->cutRange.first) / this->sampling;
-  this->prop.startEndRange = indexRange(0, nrFrames);
+  this->prop.startEndRange = IndexRange(0, nrFrames);
 
   this->video.setCutAndSample(this->cutRange, this->sampling);
 }

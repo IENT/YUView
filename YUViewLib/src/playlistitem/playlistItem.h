@@ -97,7 +97,7 @@ public:
        Normally this is: (0, numFrames-1). This value can change. Just emit a
        SignalItemChanged to update the limits.
       */
-    indexRange startEndRange{-1, -1};
+    IndexRange startEndRange{-1, -1};
 
     Ratio sampleAspectRatio{1, 1};
   };
@@ -254,6 +254,12 @@ public:
     zoom         = savedZoom[primaryView ? 0 : 1];
   }
 
+  enum class LoadBuffer
+  {
+    Primary,
+    DoubleBuffer
+  };
+
 signals:
   // Something in the item changed. If redraw is set, a redraw of the item is necessary.
   // If recache is set, the entire cache is now invalid and needs to be recached. This is passed to
@@ -261,10 +267,10 @@ signals:
   // everything. This will trigger the tree widget to update it's contents.
   void SignalItemChanged(bool redraw, recacheIndicator recache);
 
-  // The item finished loading a frame into the double buffer. This is relevant if playback is
-  // paused and waiting for the item to load the next frame into the double buffer. This will
-  // restart the timer.
-  void signalItemDoubleBufferLoaded();
+  // The item finished loading a frame into the primary buffer or into the double buffer.
+  // This is relevant if playback is paused and is waiting for the item to load the next frame 
+  // into the buffer.
+  void signalLoadFinished(LoadBuffer loadBuffer);
 
 protected:
   // The widget which is put into the stack.

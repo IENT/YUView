@@ -422,10 +422,7 @@ void PlaylistTreeWidget::appendNewItem(playlistItem *item, bool emitplaylistChan
 
   insertTopLevelItem(topLevelItemCount(), item);
   connect(item, &playlistItem::SignalItemChanged, this, &PlaylistTreeWidget::slotItemChanged);
-  connect(item,
-          &playlistItem::signalItemDoubleBufferLoaded,
-          this,
-          &PlaylistTreeWidget::slotItemDoubleBufferLoaded);
+  connect(item, &playlistItem::signalLoadFinished, this, &PlaylistTreeWidget::slotItemLoadFinished);
   setItemWidget(item, 1, new bufferStatusWidget(item, this));
   header()->resizeSection(1, 50);
 
@@ -507,19 +504,15 @@ void PlaylistTreeWidget::slotItemChanged(bool redraw, recacheIndicator recache)
   }
 }
 
-void PlaylistTreeWidget::slotItemDoubleBufferLoaded()
+void PlaylistTreeWidget::slotItemLoadFinished(playlistItem::LoadBuffer loadBuffer)
 {
-  // Check if the calling object is (one of) the currently selected item(s)
-  auto     items  = getSelectedItems();
-  QObject *sender = QObject::sender();
-  if (sender == items[0])
-    // The first of the currently selected items send this signal.
-    // Inform the playbackController that loading the double buffer of the item finished.
-    emit selectedItemDoubleBufferLoad(0);
-  if (sender == items[1])
-    // The second of the currently selected items send this signal.
-    // Inform the playbackController that loading the double buffer of the item finished.
-    emit selectedItemDoubleBufferLoad(1);
+  auto selectedItems = this->getSelectedItems();
+  auto sender        = QObject::sender();
+
+  if (sender == selectedItems[0])
+    emit selectedItemLoadFinished(0, loadBuffer);
+  if (sender == selectedItems[1])
+    emit selectedItemLoadFinished(1, loadBuffer);
 }
 
 void PlaylistTreeWidget::mousePressEvent(QMouseEvent *event)

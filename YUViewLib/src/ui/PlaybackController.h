@@ -54,26 +54,15 @@ class PlaybackController : public QWidget, private Ui::PlaybackController
 public:
   PlaybackController();
 
-  void setSplitViews(splitViewWidget *primary, splitViewWidget *separate)
-  {
-    splitViewPrimary  = primary;
-    splitViewSeparate = separate;
-  }
-  void setPlaylist(PlaylistTreeWidget *playlistWidget) { playlist = playlistWidget; }
+  void setSplitViews(splitViewWidget *primary, splitViewWidget *separate);
+  void setPlaylist(PlaylistTreeWidget *playlistWidget);
 
-  // If playback is running, stop it by pressing the playPauseButton.
-  void pausePlayback()
-  {
-    if (playing())
-      on_playPauseButton_clicked();
-  }
+  void pausePlayback();
 
-  // What is the sate of the playback?
-  bool playing() const { return playbackMode != PlaybackStopped; }
-  bool isWaitingForCaching() const { return playbackMode == PlaybackWaitingForCache; }
+  bool playing() const;
+  bool isWaitingForCaching() const;
 
-  // Get the currently shown frame index
-  int getCurrentFrame() const { return currentFrameIdx; }
+  int getCurrentFrame() const;
   // Set the current frame in the controls and update the splitView without invoking more events
   // from the controls. Return if an update was performed.
   bool setCurrentFrame(int frame, bool updateView = true);
@@ -96,11 +85,12 @@ public slots:
   // Accept the signal from the playlistTreeWidget that signals if a new (or two) item was selected.
   // The playback controller will save a pointer to this in order to get playback info from the item
   // later like the sampling or the framerate. This will also update the slider and the spin box.
-  // Playback will be stopped if chageByPlayback is false.
-  void currentSelectedItemsChanged(playlistItem *item1, playlistItem *item2, bool chageByPlayback);
+  // Playback will be stopped if changedByPlayback is false.
+  void
+  currentSelectedItemsChanged(playlistItem *item1, playlistItem *item2, bool changedByPlayback);
 
   // One of the (possibly two) selected items finished loading the double bufffer.
-  void currentSelectedItemsDoubleBufferLoad(int itemID);
+  void currentSelectedItemsLoadFinished(int itemID, playlistItem::LoadBuffer loadBuffer);
 
   // The properties of the currently selected item(s) changed. Update the frame sliders and toggle
   // an update() in the splitView if necessary.
@@ -110,8 +100,8 @@ public slots:
   void updateSettings();
 
 signals:
-  void ControllerStartCachingCurrentSelection(indexRange range);
-  void ControllerRemoveFromCache(indexRange range);
+  void ControllerStartCachingCurrentSelection(IndexRange range);
+  void ControllerRemoveFromCache(IndexRange range);
 
   // This is connected to the VideoCache and tells it to call itemCachingFinished when caching is
   // finished.
@@ -139,8 +129,8 @@ private:
 
   // The current frame index. -1 means the frame index is invalid. In this case, lastValidFrameIdx
   // contains the last valid frame index which will be restored if a valid indexed item is selected.
-  int currentFrameIdx;
-  int lastValidFrameIdx;
+  int currentFrameIdx{-1};
+  int lastValidFrameIdx{-1};
 
   // Start the time if not running or update the timer interval. This is called when we jump to the
   // next item, when the user presses play or when the rate of the current item changes.
@@ -151,13 +141,13 @@ private:
 
   // Set the new repeat mode and save it into the settings. Update the control.
   // Always use this function to set the new repeat mode.
-  typedef enum
+  enum class RepeatMode
   {
-    RepeatModeOff,
-    RepeatModeOne,
-    RepeatModeAll
-  } RepeatMode;
-  RepeatMode repeatMode;
+    Off,
+    One,
+    All
+  };
+  RepeatMode repeatMode{RepeatMode::All};
   void       setRepeatMode(RepeatMode mode);
 
   QIcon iconPlay;
@@ -168,30 +158,30 @@ private:
   QIcon iconRepeatOne;
 
   // Is playback currently running?
-  typedef enum
+  enum class PlaybackState
   {
-    PlaybackStopped,
-    PlaybackRunning,
-    PlaybackStalled,
-    PlaybackWaitingForCache,
-  } PlaybackMode;
-  PlaybackMode playbackMode;
+    Stopped,
+    Running,
+    Stalled,
+    WaitingForCache,
+  };
+  PlaybackState playbackState{PlaybackState::Stopped};
 
   // If playback mode is PlaybackStalled, which items are we waiting for?
-  bool waitingForItem[2];
+  bool waitingForItem[2]{false};
 
   // Was playback stalled recently? This is used to indicate stalling in the fps label.
-  bool playbackWasStalled;
+  bool playbackWasStalled{false};
 
   // Before starting playback of an item, do we wait until caching is complete?
   bool waitForCachingOfItem;
 
   // The timer for playback
   QBasicTimer timer;
-  int timerInterval;   // The current timer interval in milli seconds. If it changes, update the
-                       // running timer.
-  int timerFPSCounter; // Every time the timer is toggled count this up. If it reaches 50, calculate
-                       // FPS.
+  int timerInterval{-1};  // The current timer interval in milli seconds. If it changes, update the
+                          // running timer.
+  int timerFPSCounter{0}; // Every time the timer is toggled count this up. If it reaches 50,
+                          // calculate FPS.
   QTime timerLastFPSTime; // The last time we updated the FPS counter. Used to calculate new FPS.
   int   timerStaticItemCountDown; // Also for static items we run the timer to update the slider.
   virtual void

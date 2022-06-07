@@ -211,7 +211,7 @@ typedef std::vector<StringPair>             StringPairVec;
 /// ---- Legacy types that will be replaced
 typedef QPair<QString, QString>           QStringPair;
 typedef QList<QStringPair>                QStringPairList;
-typedef QPair<int, int>                   indexRange; // QPair of integers (minimum and maximum)
+typedef QPair<int, int>                   IndexRange; // QPair of integers (minimum and maximum)
 typedef QPair<unsigned int, unsigned int> QUIntPair;
 
 template <typename T> using umap_1d = std::map<unsigned, T>;

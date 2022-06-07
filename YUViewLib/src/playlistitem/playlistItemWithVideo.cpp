@@ -128,7 +128,7 @@ void playlistItemWithVideo::loadFrame(int  frameIdx,
       video->loadFrame(nextFrameIdx, true);
       isFrameLoadingDoubleBuffer = false;
       if (emitSignals)
-        emit signalItemDoubleBufferLoaded();
+        emit signalLoadFinished(LoadBuffer::Primary);
     }
   }
 }

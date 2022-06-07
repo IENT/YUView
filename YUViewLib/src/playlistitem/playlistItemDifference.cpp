@@ -252,7 +252,7 @@ void playlistItemDifference::loadFrame(int  frameIdx,
       difference.loadFrameDifference(frameIdx, true);
       isDifferenceLoadingToDoubleBuffer = false;
       if (emitSignals)
-        emit signalItemDoubleBufferLoaded();
+        emit signalLoadFinished(LoadBuffer::Primary);
     }
   }
 }

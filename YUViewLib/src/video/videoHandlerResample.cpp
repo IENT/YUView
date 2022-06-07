@@ -162,7 +162,7 @@ void videoHandlerResample::setInterpolation(Interpolation interpolation)
   emit signalHandlerChanged(true, RECACHE_CLEAR);
 }
 
-void videoHandlerResample::setCutAndSample(indexRange startEnd, int sampling)
+void videoHandlerResample::setCutAndSample(IndexRange startEnd, int sampling)
 {
   if (startEnd.first > startEnd.second || sampling < 1)
     return;

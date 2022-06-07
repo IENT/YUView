@@ -182,7 +182,7 @@ playlistItemCompressedVideo::playlistItemCompressedVideo(const QString &compress
     this->prop.frameRate = inputFileAnnexBParser->getFramerate();
     DEBUG_COMPRESSED("playlistItemCompressedVideo::playlistItemCompressedVideo framerate "
                      << this->prop.frameRate);
-    this->prop.startEndRange = indexRange(0, int(inputFileAnnexBParser->getNumberPOCs() - 1));
+    this->prop.startEndRange = IndexRange(0, int(inputFileAnnexBParser->getNumberPOCs() - 1));
     DEBUG_COMPRESSED("playlistItemCompressedVideo::playlistItemCompressedVideo startEndRange (0,"
                      << inputFileAnnexBParser->getNumberPOCs() << ")");
     this->prop.sampleAspectRatio = inputFileAnnexBParser->getSampleAspectRatio();
@@ -360,7 +360,7 @@ playlistItemCompressedVideo::playlistItemCompressedVideo(const QString &compress
   this->fillStatisticList();
 
   // Set the frame number limits
-  if (this->prop.startEndRange == indexRange({-1, -1}))
+  if (this->prop.startEndRange == IndexRange({-1, -1}))
     // No frames to decode
     return;
 
@@ -1249,7 +1249,7 @@ void playlistItemCompressedVideo::loadFrame(int  frameIdx,
 
     isFrameLoading = false;
     if (emitSignals)
-      emit SignalItemChanged(true, RECACHE_NONE);
+      emit signalLoadFinished(LoadBuffer::Primary);
   }
 
   if (playing && (stateYUV == ItemLoadingState::LoadingNeeded ||
@@ -1266,7 +1266,7 @@ void playlistItemCompressedVideo::loadFrame(int  frameIdx,
       video->loadFrame(nextFrameIdx, true);
       isFrameLoadingDoubleBuffer = false;
       if (emitSignals)
-        emit signalItemDoubleBufferLoaded();
+        emit signalLoadFinished(LoadBuffer::DoubleBuffer);
     }
   }
 }

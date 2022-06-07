@@ -584,7 +584,7 @@ void VideoCache::updateCacheQueue()
   int64_t cacheLevel = 0;
   for (playlistItem *item : allItems)
   {
-    indexRange range         = item->properties().startEndRange;
+    IndexRange range         = item->properties().startEndRange;
     QList<int> cached_frames = item->getCachedFrames();
     for (int i : cached_frames)
       if (i < range.first || i > range.second)
@@ -626,7 +626,7 @@ void VideoCache::updateCacheQueue()
   cacheLevelCurrent = cacheLevel;
 
   // How much space do we need to cache the entire item?
-  indexRange range =
+  IndexRange range =
       selection[0]->properties().startEndRange; // These are the frames that we want to cache
   int64_t cachingFrameSize          = selection[0]->getCachingFrameSize();
   int64_t itemSpaceNeeded           = (range.second - range.first + 1) * cachingFrameSize;
@@ -670,8 +670,8 @@ void VideoCache::updateCacheQueue()
             int64_t nrFramesCachable = availableSpace / allItems[i]->getCachingFrameSize() + 1;
 
             // These frames should be added...
-            indexRange addFrames =
-                indexRange(itemRange.first, itemRange.first + nrFramesCachable - 1);
+            IndexRange addFrames =
+                IndexRange(itemRange.first, itemRange.first + nrFramesCachable - 1);
             enqueueCacheJob(allItems[i], addFrames);
             newCacheLevel += nrFramesCachable * allItems[i]->getCachingFrameSize();
             // ... and the rest should be removed (if they are cached)
@@ -955,7 +955,7 @@ void VideoCache::updateCacheQueue()
 #endif
 }
 
-void VideoCache::enqueueCacheJob(playlistItem *item, indexRange range)
+void VideoCache::enqueueCacheJob(playlistItem *item, IndexRange range)
 {
   // Only schedule frames for caching that were not yet cached.
   QList<int> cachedFrames = item->getCachedFrames();
@@ -1281,7 +1281,7 @@ bool VideoCache::pushNextJobToCachingThread(loadingThread *thread)
 
   QMutableListIterator<cacheJob> j(cacheQueue);
   playlistItem *                 plItem = nullptr;
-  indexRange                     range;
+  IndexRange                     range;
   while (j.hasNext())
   {
     cacheJob &job = j.next();

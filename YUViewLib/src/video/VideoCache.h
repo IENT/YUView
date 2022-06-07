@@ -113,13 +113,13 @@ private:
   struct cacheJob
   {
     cacheJob() {}
-    cacheJob(playlistItem *item, indexRange range)
+    cacheJob(playlistItem *item, IndexRange range)
     {
       plItem     = item;
       frameRange = range;
     }
     QPointer<playlistItem> plItem;
-    indexRange             frameRange;
+    IndexRange             frameRange;
   };
   typedef QPair<QPointer<playlistItem>, int> plItemFrame;
 
@@ -143,7 +143,7 @@ private:
 
   // Enqueue the job in the queue. If all frames within the range are already cached in the item, do
   // nothing.
-  void enqueueCacheJob(playlistItem *item, indexRange range);
+  void enqueueCacheJob(playlistItem *item, IndexRange range);
 
   // Start the given number of worker threads (if caching is running, also new jobs will be pushed
   // to the workers)

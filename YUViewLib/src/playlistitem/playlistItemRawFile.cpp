@@ -150,7 +150,7 @@ void playlistItemRawFile::updateStartEndRange()
 {
   if (!this->dataSource.isOk() || !this->video->isFormatValid())
   {
-    this->prop.startEndRange = indexRange(-1, -1);
+    this->prop.startEndRange = IndexRange(-1, -1);
     return;
   }
 
@@ -162,13 +162,13 @@ void playlistItemRawFile::updateStartEndRange()
     auto bpf = this->video->getBytesPerFrame();
     if (bpf == 0)
     {
-      this->prop.startEndRange = indexRange(-1, -1);
+      this->prop.startEndRange = IndexRange(-1, -1);
       return;
     }
     nrFrames = this->dataSource.getFileSize() / bpf;
   }
 
-  this->prop.startEndRange = indexRange(0, std::max(nrFrames - 1, 0));
+  this->prop.startEndRange = IndexRange(0, std::max(nrFrames - 1, 0));
 }
 
 InfoData playlistItemRawFile::getInfo() const

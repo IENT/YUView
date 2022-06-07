@@ -39,8 +39,8 @@
 #include <cassert>
 #include <iostream>
 
-#include <common/YUViewDomElement.h>
 #include <common/FunctionsGui.h>
+#include <common/YUViewDomElement.h>
 #include <statistics/StatisticsDataPainting.h>
 #include <statistics/StatisticsFileCSV.h>
 #include <statistics/StatisticsFileVTMBMS.h>
@@ -179,7 +179,7 @@ QSize playlistItemStatisticsFile::getSize() const
   return QSize(s.width, s.height);
 }
 
-void playlistItemStatisticsFile::loadFrame(int frameIdx, bool, bool, bool emitSignals)
+void playlistItemStatisticsFile::loadFrame(int frameIdx, bool playback, bool, bool emitSignals)
 {
   DEBUG_STAT("playlistItemStatisticsFile::loadFrame frameIdx %d", frameIdx);
 
@@ -193,7 +193,7 @@ void playlistItemStatisticsFile::loadFrame(int frameIdx, bool, bool, bool emitSi
     }
     this->isStatisticsLoading = false;
     if (emitSignals)
-      emit SignalItemChanged(true, RECACHE_NONE);
+      emit signalLoadFinished(LoadBuffer::Primary);
   }
 }
 
@@ -318,6 +318,6 @@ void playlistItemStatisticsFile::timerEvent(QTimerEvent *event)
   }
 
   if (this->file)
-    this->prop.startEndRange = indexRange(0, this->file->getMaxPoc());
+    this->prop.startEndRange = IndexRange(0, this->file->getMaxPoc());
   emit SignalItemChanged(false, RECACHE_NONE);
 }

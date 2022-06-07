@@ -74,7 +74,7 @@ public:
 
   void setScaledSize(Size scaledSize);
   void setInterpolation(Interpolation interpolation);
-  void setCutAndSample(indexRange startEnd, int sampling);
+  void setCutAndSample(IndexRange startEnd, int sampling);
 
   virtual void setFormatFromSizeAndName(const Size       frameSize,
                                         int              bitDepth,
@@ -92,7 +92,7 @@ private:
 
   Size          scaledSize{0, 0};
   Interpolation interpolation{Interpolation::Bilinear};
-  indexRange    cutRange{0, 0};
+  IndexRange    cutRange{0, 0};
   int           sampling{1};
 };
 

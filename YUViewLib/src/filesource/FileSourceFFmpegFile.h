@@ -102,7 +102,7 @@ public:
   int64_t getMaxTS();
 
   // Get information on the video stream
-  indexRange getDecodableFrameLimits() const;
+  IndexRange getDecodableFrameLimits() const;
 
   FFmpeg::AVCodecIDWrapper getVideoStreamCodecID()
   {

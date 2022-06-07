@@ -164,14 +164,14 @@ QList<playlistItem *> playlistItemContainer::takeAllChildItemsRecursive()
 
 void playlistItemContainer::childChanged(bool redraw, recacheIndicator recache)
 {
-  this->prop.startEndRange = indexRange(-1, -1);
+  this->prop.startEndRange = IndexRange(-1, -1);
   for (int i = 0; i < childCount(); i++)
   {
     auto childItem = getChildPlaylistItem(i);
     if (childItem->properties().isIndexedByFrame())
     {
       auto itemRange = childItem->properties().startEndRange;
-      if (this->prop.startEndRange == indexRange(-1, -1))
+      if (this->prop.startEndRange == IndexRange(-1, -1))
         this->prop.startEndRange = itemRange;
 
       if (frameLimitsMax)

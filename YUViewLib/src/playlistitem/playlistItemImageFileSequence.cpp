@@ -296,7 +296,7 @@ void playlistItemImageFileSequence::slotFrameRequest(int frameIdx, bool)
 void playlistItemImageFileSequence::setInternals(const QString &filePath)
 {
   // Set start end frame and frame size if it has not been set yet.
-  if (this->prop.startEndRange == indexRange(-1, -1))
+  if (this->prop.startEndRange == IndexRange(-1, -1))
   {
     auto nrFrames            = this->imageFiles.size();
     this->prop.startEndRange = {0, nrFrames};

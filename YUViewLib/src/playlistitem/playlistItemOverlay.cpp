@@ -656,9 +656,9 @@ void playlistItemOverlay::loadFrame(int frameIdx, bool playing, bool loadRawData
   }
 
   if (emitSignals && itemLoaded)
-    emit SignalItemChanged(true, RECACHE_NONE);
+    emit signalLoadFinished(LoadBuffer::Primary);
   if (emitSignals && itemLoadedDoubleBuffer)
-    emit signalItemDoubleBufferLoaded();
+    emit signalLoadFinished(LoadBuffer::DoubleBuffer);
 }
 
 bool playlistItemOverlay::isLoading() const

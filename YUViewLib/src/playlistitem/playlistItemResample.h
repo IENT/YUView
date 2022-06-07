@@ -92,7 +92,7 @@ private:
 
   Size scaledSize {0, 0};
   int interpolationIndex {0};
-  indexRange cutRange {0, 0};
+  IndexRange cutRange {0, 0};
   int sampling {1};
 
   bool useLoadedValues {false};

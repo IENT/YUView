@@ -638,12 +638,12 @@ int64_t FileSourceFFmpegFile::getMaxTS()
   return this->duration / AV_TIME_BASE * this->timeBase.den / this->timeBase.num;
 }
 
-indexRange FileSourceFFmpegFile::getDecodableFrameLimits() const
+IndexRange FileSourceFFmpegFile::getDecodableFrameLimits() const
 {
   if (this->keyFrameList.isEmpty() || this->nrFrames == 0)
     return {};
 
-  indexRange range;
+  IndexRange range;
   range.first  = int(this->keyFrameList.at(0).frame);
   range.second = int(this->nrFrames);
   return range;

@@ -56,7 +56,7 @@ MainWindow::MainWindow(bool useAlternativeSources, QWidget *parent) : QMainWindo
   SettingsDialog::initializeDefaults();
 
   QSettings settings;
-  qRegisterMetaType<indexRange>("indexRange");
+  qRegisterMetaType<IndexRange>("IndexRange");
 
   ui.setupUi(this);
 
@@ -139,9 +139,9 @@ MainWindow::MainWindow(bool useAlternativeSources, QWidget *parent) : QMainWindo
           this,
           &MainWindow::showFileOpenDialog);
   connect(ui.playlistTreeWidget,
-          &PlaylistTreeWidget::selectedItemDoubleBufferLoad,
+          &PlaylistTreeWidget::selectedItemLoadFinished,
           ui.playbackController,
-          &PlaybackController::currentSelectedItemsDoubleBufferLoad);
+          &PlaybackController::currentSelectedItemsLoadFinished);
 
   ui.displaySplitView->setAttribute(Qt::WA_AcceptTouchEvents);
 

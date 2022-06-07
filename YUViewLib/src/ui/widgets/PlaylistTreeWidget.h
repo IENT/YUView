@@ -136,8 +136,8 @@ signals:
   // is still running)
   void itemAboutToBeDeleted(playlistItem *item);
 
-  void startCachingCurrentSelection(indexRange range);
-  void removeFromCacheCurrentSelection(indexRange range);
+  void startCachingCurrentSelection(IndexRange range);
+  void removeFromCacheCurrentSelection(IndexRange range);
 
   // Something about the playlist changed (an item was moved, a different item was selected,
   // an item was deleted). This is used by the VideoCache to rethink what to cache next.
@@ -146,7 +146,7 @@ signals:
   void saveViewStatesToPlaylist(QDomElement &root);
 
   // The selected item finished loading the double buffer.
-  void selectedItemDoubleBufferLoad(int itemID);
+  void selectedItemLoadFinished(int itemID, playlistItem::LoadBuffer loadBuffer);
 
 protected:
   // Overload from QWidget to create a custom context menu
@@ -179,7 +179,7 @@ protected slots:
 
   // All item's signals signalItemDoubleBufferLoaded are connected here. If the sending item is
   // currently selected, forward this to the playbackController which might me waiting for this.
-  void slotItemDoubleBufferLoaded();
+  void slotItemLoadFinished(playlistItem::LoadBuffer loadBuffer);
 
 private:
   playlistItem *getDropTarget(const QPoint &pos) const;
