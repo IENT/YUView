@@ -45,8 +45,8 @@
 #include <statistics/StatisticsFileCSV.h>
 #include <statistics/StatisticsFileVTMBMS.h>
 
-#define PLAYLISTITEMSTATISTICS_DEBUG 0
-#if PLAYLISTITEMSTATISTICS_DEBUG && !NDEBUG
+#define PLAYLISTITEMSTATISTICS_DEBUG 1
+#if PLAYLISTITEMSTATISTICS_DEBUG
 #define DEBUG_STAT qDebug
 #else
 #define DEBUG_STAT(fmt, ...) ((void)0)
@@ -61,10 +61,6 @@ playlistItemStatisticsFile::playlistItemStatisticsFile(const QString &itemNameOr
                                                        OpenMode       openMode)
     : playlistItem(itemNameOrFileName, Type::Indexed), openMode(openMode)
 {
-  // Set default variables
-  currentDrawnFrameIdx = -1;
-  isStatisticsLoading  = false;
-
   this->prop.isFileSource          = true;
   this->prop.propertiesWidgetTitle = "Statistics File Properties";
   this->prop.providesStatistics    = true;
@@ -146,6 +142,7 @@ ItemLoadingState playlistItemStatisticsFile::needsLoading(int frameIdx, bool)
 
 void playlistItemStatisticsFile::drawItem(QPainter *painter, int frameIdx, double zoomFactor, bool)
 {
+  DEBUG_STAT("playlistItemStatisticsFile::drawItem frameIdx %d", frameIdx);
   stats::paintStatisticsData(painter, this->statisticsData, frameIdx, zoomFactor);
   this->currentDrawnFrameIdx = frameIdx;
 }
@@ -179,7 +176,7 @@ QSize playlistItemStatisticsFile::getSize() const
   return QSize(s.width, s.height);
 }
 
-void playlistItemStatisticsFile::loadFrame(int frameIdx, bool playback, bool, bool emitSignals)
+void playlistItemStatisticsFile::loadFrame(int frameIdx, bool, bool, bool emitSignals)
 {
   DEBUG_STAT("playlistItemStatisticsFile::loadFrame frameIdx %d", frameIdx);
 
@@ -194,12 +191,14 @@ void playlistItemStatisticsFile::loadFrame(int frameIdx, bool playback, bool, bo
     this->isStatisticsLoading = false;
     if (emitSignals)
       emit signalLoadFinished(LoadBuffer::Primary);
+    DEBUG_STAT("playlistItemStatisticsFile::loadFrame frameIdx %d finished %s",
+               frameIdx,
+               emitSignals ? " emitting signal" : "");
   }
 }
 
-ValuePairListSets playlistItemStatisticsFile::getPixelValues(const QPoint &pixelPos, int frameIdx)
+ValuePairListSets playlistItemStatisticsFile::getPixelValues(const QPoint &pixelPos, int)
 {
-  (void)frameIdx;
   return ValuePairListSets("Stats", this->statisticsData.getValuesAt(pixelPos));
 }
 
@@ -265,7 +264,6 @@ void playlistItemStatisticsFile::createPropertiesWidget()
 
 void playlistItemStatisticsFile::openStatisticsFile()
 {
-  // Is the background parser still running? If yes, abort it.
   if (this->backgroundParserFuture.isRunning())
   {
     // signal to background thread that we want to cancel the processing

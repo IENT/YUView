@@ -40,7 +40,7 @@
 
 // Activate this if you want to know when which buffer is loaded/converted to image and so on.
 #define PLAYBACKCONTROLLER_DEBUG 1
-#if PLAYBACKCONTROLLER_DEBUG && !NDEBUG
+#if PLAYBACKCONTROLLER_DEBUG
 #define DEBUG_PLAYBACK qDebug
 #else
 #define DEBUG_PLAYBACK(fmt, ...) ((void)0)
@@ -658,25 +658,18 @@ void PlaybackController::currentSelectedItemsLoadFinished(int                   
     {
       DEBUG_PLAYBACK("PlaybackController::currentSelectedItemsLoadFinished - timer interval %d",
                      this->timerInterval);
-      this->timer.start(this->timerInterval, Qt::PreciseTimer, this);
-      if (loadBuffer == playlistItem::LoadBuffer::Primary)
-      {
-        DEBUG_PLAYBACK("PlaybackController::currentSelectedItemsLoadFinished refreshing item");
-        this->splitViewPrimary->update(false, true);
-        this->splitViewSeparate->update(false, true);
-      }
-      else
+      if (loadBuffer != playlistItem::LoadBuffer::Primary)
         this->timerEvent(nullptr);
+      this->timer.start(this->timerInterval, Qt::PreciseTimer, this);
       this->playbackState = PlaybackState::Running;
     }
   }
 
-  if (loadBuffer == playlistItem::LoadBuffer::Primary &&
-      this->playbackState == PlaybackState::Stopped)
+  if (loadBuffer == playlistItem::LoadBuffer::Primary)
   {
     DEBUG_PLAYBACK("PlaybackController::currentSelectedItemsLoadFinished refreshing item");
-    this->splitViewPrimary->update(false, true);
-    this->splitViewSeparate->update(false, true);
+    this->splitViewPrimary->update(true, false);
+    this->splitViewSeparate->update(true, false);
   }
 }
 
@@ -707,7 +700,7 @@ bool PlaybackController::setCurrentFrame(int frame, bool updateView)
     // Also update the view to display the new frame
     this->splitViewPrimary->update(true);
     this->splitViewSeparate->update();
-    return true;
+    DEBUG_PLAYBACK("PlaybackController::setCurrentFrame refreshing item");
   }
-  return false;
+  return updateView;
 }
