@@ -649,20 +649,34 @@ void PlaybackController::timerEvent(QTimerEvent *event)
 void PlaybackController::currentSelectedItemsLoadFinished(int                      itemID,
                                                           playlistItem::LoadBuffer loadBuffer)
 {
-  // Todo: Use LoadBuffer ...
-
   assert(itemID == 0 || itemID == 1);
   if (this->playbackState == PlaybackState::Stalled)
   {
     this->waitingForItem[itemID] = false;
-    if (!this->waitingForItem[0] && !this->waitingForItem[1])
+    auto waitFinished            = (!this->waitingForItem[0] && !this->waitingForItem[1]);
+    if (waitFinished)
     {
       DEBUG_PLAYBACK("PlaybackController::currentSelectedItemsLoadFinished - timer interval %d",
                      this->timerInterval);
       this->timer.start(this->timerInterval, Qt::PreciseTimer, this);
-      this->timerEvent(nullptr);
+      if (loadBuffer == playlistItem::LoadBuffer::Primary)
+      {
+        DEBUG_PLAYBACK("PlaybackController::currentSelectedItemsLoadFinished refreshing item");
+        this->splitViewPrimary->update(false, true);
+        this->splitViewSeparate->update(false, true);
+      }
+      else
+        this->timerEvent(nullptr);
       this->playbackState = PlaybackState::Running;
     }
+  }
+
+  if (loadBuffer == playlistItem::LoadBuffer::Primary &&
+      this->playbackState == PlaybackState::Stopped)
+  {
+    DEBUG_PLAYBACK("PlaybackController::currentSelectedItemsLoadFinished refreshing item");
+    this->splitViewPrimary->update(false, true);
+    this->splitViewSeparate->update(false, true);
   }
 }
 
