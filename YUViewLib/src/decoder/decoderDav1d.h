@@ -120,7 +120,8 @@ public:
   int         nrSignalsSupported() const override { return nrSignals; }
   bool        isSignalDifference(int signalID) const override;
   QStringList getSignalNames() const override;
-  void        setDecodeSignal(int signalID, bool &decoderResetNeeded) override;
+
+  DecoderResetNeeded setDecodeSignal(int signalID) override;
 
   // Decoding / pushing data
   bool       decodeNextFrame() override;
@@ -167,35 +168,19 @@ private:
   // Try to decode a frame. If successful, the frame will be in curPicture.
   bool decodeFrame();
 
-  Dav1dPictureWrapper curPicture;
-
-  // We buffer the current image as a QByteArray so you can call getYUVFrameData as often as
-  // necessary without invoking the copy operation from the libde265 buffer to the QByteArray again.
 #if SSE_CONVERSION
   byteArrayAligned currentOutputBuffer;
-  void             copyImgToByteArray(const Dav1dPictureWrapper &src, byteArrayAligned &dst);
 #else
   QByteArray currentOutputBuffer;
-  void       copyImgToByteArray(
-            const Dav1dPictureWrapper &src,
-            QByteArray &               dst); // Copy the raw data from the Dav1dPicture source *src to the byte array
 #endif
 
-  // Statistics
-  void fillStatisticList(stats::StatisticsData &) const override;
-  void cacheStatistics(const Dav1dPictureWrapper &img);
-  void parseBlockRecursive(
-      Av1Block *blockData, unsigned x, unsigned y, BlockLevel level, dav1dFrameInfo &frameInfo);
-  void         parseBlockPartition(Av1Block *      blockData,
-                                   unsigned        x,
-                                   unsigned        y,
-                                   unsigned        blockWidth4,
-                                   unsigned        blockHeight4,
-                                   dav1dFrameInfo &frameInfo);
-  IntPair      calculateIntraPredDirection(IntraPredMode predMode, int angleDelta);
+  Dav1dPictureWrapper curPicture;
+
+  std::vector<stats::StatisticsType> getStatisticsTypes() const override;
+
   unsigned int subBlockSize{};
 
-  LibraryFunctionsDav1d lib;
+  LibraryFunctionsDav1d lib{};
 };
 
 } // namespace decoder

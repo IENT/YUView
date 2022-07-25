@@ -43,15 +43,15 @@ namespace decoder
 #if DECODERBASE_DEBUG_OUTPUT && !NDEBUG
 #include <QDebug>
 #if DECODERBASE_DEBUG_OUTPUT == 1
-#define DEBUG_HEVCDECODERBASE                                                                      \
+#define DEBUG_DECODERBASE                                                                          \
   if (!isCachingDecoder)                                                                           \
   qDebug
 #elif DECODERBASE_DEBUG_OUTPUT == 2
-#define DEBUG_HEVCDECODERBASE                                                                      \
+#define DEBUG_DECODERBASE                                                                          \
   if (isCachingDecoder)                                                                            \
   qDebug
 #elif DECODERBASE_DEBUG_OUTPUT == 3
-#define DEBUG_HEVCDECODERBASE                                                                      \
+#define DEBUG_DECODERBASE                                                                          \
   if (isCachingDecoder)                                                                            \
     qDebug("c:");                                                                                  \
   else                                                                                             \
@@ -82,11 +82,21 @@ bool decoderBase::isSignalDifference(int signalID) const
   return false;
 }
 
-void decoderBase::setDecodeSignal(int signalID, bool &decoderResetNeeded)
+decoderBase::DecoderResetNeeded decoderBase::setDecodeSignal(int signalID)
 {
   if (signalID >= 0 && signalID < nrSignalsSupported())
     this->decodeSignal = signalID;
-  decoderResetNeeded = false;
+  return false;
+}
+
+void decoderBase::enableStatisticsStorage()
+{
+  if (!this->statisticsSupported)
+  {
+    DEBUG_DECODERBASE("Can not enable statistics. Not supported.");
+    return;
+  }
+  this->statisticsEnabled = true;
 }
 
 void decoderBaseSingleLib::loadDecoderLibrary(QString specificLibrary)

@@ -102,8 +102,10 @@ public:
   virtual int         nrSignalsSupported() const { return 1; }
   virtual QStringList getSignalNames() const { return QStringList() << "Reconstruction"; }
   virtual bool        isSignalDifference(int signalID) const;
-  virtual void        setDecodeSignal(int signalID, bool &decoderResetNeeded);
-  int                 getDecodeSignal() const { return this->decodeSignal; }
+
+  using DecoderResetNeeded = bool;
+  virtual DecoderResetNeeded setDecodeSignal(int signalID);
+  int                        getDecodeSignal() const { return this->decodeSignal; }
 
   // -- The decoding interface
   // If the current frame is valid, the current frame can be retrieved using getRawFrameData.
@@ -124,10 +126,10 @@ public:
 
   // Get the statistics values for the current frame. In order to enable statistics retrievel,
   // activate it, reset the decoder and decode to the current frame again.
-  bool statisticsSupported() const { return internalsSupported; }
-  bool statisticsEnabled() const { return statisticsData != nullptr; }
-  void enableStatisticsRetrieval(stats::StatisticsData *s) { this->statisticsData = s; }
-  virtual void         fillStatisticList(stats::StatisticsData &) const {};
+  bool areStatisticsSupported() const { return this->statisticsSupported; }
+  bool areStatisticsEnabled() const { return this->statisticsEnabled; }
+  void enableStatisticsStorage();
+  virtual std::vector<stats::StatisticsType> getStatisticsTypes() const { return {}; }
 
   // Error handling
   bool    errorInDecoder() const { return decoderState == DecoderState::Error; }
@@ -148,7 +150,10 @@ protected:
   int  decodeSignal{0};  ///< Which signal should be decoded?
   bool isCachingDecoder; ///< Is this the caching or the interactive decoder?
 
-  bool internalsSupported{false}; ///< Enable in the constructor if you support statistics
+  bool statisticsSupported{false}; ///< Enable in the constructor if you support statistics
+  bool statisticsEnabled{false};
+  stats::StatisticsData statisticsData;
+
   Size frameSize{};
 
   // Some decoders are able to handel both YUV and RGB output
@@ -168,9 +173,6 @@ protected:
     return false;
   }
   QString errorString{};
-
-  // If set, fill it (if possible). The playlistItem has ownership of this.
-  stats::StatisticsData *statisticsData{};
 };
 
 // This abstract base class extends the decoderBase class by the ability to load one single library
