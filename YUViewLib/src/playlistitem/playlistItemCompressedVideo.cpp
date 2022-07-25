@@ -1249,7 +1249,7 @@ void playlistItemCompressedVideo::loadFrame(int  frameIdx,
 
     isFrameLoading = false;
     if (emitSignals)
-      emit signalLoadFinished(LoadBuffer::Primary);
+      emit signalLoadFinished(BufferSelection::Primary);
   }
 
   if (playing && (stateYUV == ItemLoadingState::LoadingNeeded ||
@@ -1266,7 +1266,7 @@ void playlistItemCompressedVideo::loadFrame(int  frameIdx,
       video->loadFrame(nextFrameIdx, true);
       isFrameLoadingDoubleBuffer = false;
       if (emitSignals)
-        emit signalLoadFinished(LoadBuffer::DoubleBuffer);
+        emit signalLoadFinished(BufferSelection::DoubleBuffer);
     }
   }
 }

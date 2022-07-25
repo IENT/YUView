@@ -105,8 +105,8 @@ public:
   loadFrame(int frameIdx, bool playing, bool loadRawData, bool emitSignals = true) override;
 
   // Is an image currently being loaded?
-  virtual bool isLoading() const override { return isFrameLoading; }
-  virtual bool isLoadingDoubleBuffer() const override { return isFrameLoadingDoubleBuffer; }
+  virtual bool isLoading() const override { return this->isFrameLoading; }
+  virtual bool isLoadingDoubleBuffer() const override { return this->isFrameLoadingDoubleBuffer; }
 
 private slots:
   void slotVideoHandlerChanged(bool redrawNeeded, recacheIndicator recache);

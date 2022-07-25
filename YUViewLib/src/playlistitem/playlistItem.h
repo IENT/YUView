@@ -254,12 +254,6 @@ public:
     zoom         = savedZoom[primaryView ? 0 : 1];
   }
 
-  enum class LoadBuffer
-  {
-    Primary,
-    DoubleBuffer
-  };
-
 signals:
   // Something in the item changed. If redraw is set, a redraw of the item is necessary.
   // If recache is set, the entire cache is now invalid and needs to be recached. This is passed to
@@ -268,9 +262,9 @@ signals:
   void SignalItemChanged(bool redraw, recacheIndicator recache);
 
   // The item finished loading a frame into the primary buffer or into the double buffer.
-  // This is relevant if playback is paused and is waiting for the item to load the next frame 
+  // This is relevant if playback is paused and is waiting for the item to load the next frame
   // into the buffer.
-  void signalLoadFinished(LoadBuffer loadBuffer);
+  void signalLoadFinished(BufferSelection buffer);
 
 protected:
   // The widget which is put into the stack.

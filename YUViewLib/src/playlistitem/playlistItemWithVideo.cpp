@@ -41,15 +41,7 @@
 #endif
 
 playlistItemWithVideo::playlistItemWithVideo(const QString &itemNameOrFileName)
-    : playlistItem(itemNameOrFileName, Type::Indexed)
-{
-  // Nothing is currently being loaded
-  this->isFrameLoading             = false;
-  this->isFrameLoadingDoubleBuffer = false;
-  this->unresolvableError          = false;
-  // No videoHandler is allocated yet. Don't forget to do this in derived classes.
-  this->rawFormat = video::RawFormat::Invalid;
-};
+    : playlistItem(itemNameOrFileName, Type::Indexed){};
 
 QSize playlistItemWithVideo::getSize() const
 {
@@ -128,7 +120,7 @@ void playlistItemWithVideo::loadFrame(int  frameIdx,
       video->loadFrame(nextFrameIdx, true);
       isFrameLoadingDoubleBuffer = false;
       if (emitSignals)
-        emit signalLoadFinished(LoadBuffer::Primary);
+        emit signalLoadFinished(BufferSelection::DoubleBuffer);
     }
   }
 }

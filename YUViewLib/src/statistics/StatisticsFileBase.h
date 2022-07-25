@@ -55,7 +55,10 @@ public:
   virtual void readFrameAndTypePositionsFromFile(std::atomic_bool &breakFunction) = 0;
 
   // Load the statistics for "poc/type" from file and put it into the handlers cache.
-  virtual void loadStatisticData(StatisticsData &statisticsData, int poc, int typeID) = 0;
+  virtual void loadStatisticData(StatisticsData &statisticsData,
+                                 int             poc,
+                                 int             typeID,
+                                 bool            loadToDoubleBuffer) = 0;
 
   operator bool() const { return !this->error; };
 

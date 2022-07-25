@@ -504,15 +504,15 @@ void PlaylistTreeWidget::slotItemChanged(bool redraw, recacheIndicator recache)
   }
 }
 
-void PlaylistTreeWidget::slotItemLoadFinished(playlistItem::LoadBuffer loadBuffer)
+void PlaylistTreeWidget::slotItemLoadFinished(BufferSelection buffer)
 {
   auto selectedItems = this->getSelectedItems();
   auto sender        = QObject::sender();
 
   if (sender == selectedItems[0])
-    emit selectedItemLoadFinished(0, loadBuffer);
+    emit selectedItemLoadFinished(0, buffer);
   if (sender == selectedItems[1])
-    emit selectedItemLoadFinished(1, loadBuffer);
+    emit selectedItemLoadFinished(1, buffer);
 }
 
 void PlaylistTreeWidget::mousePressEvent(QMouseEvent *event)

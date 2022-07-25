@@ -46,6 +46,9 @@
 namespace stats
 {
 
+namespace
+{
+
 // code for checking if a point is inside a polygon. adapted from
 // https://stackoverflow.com/questions/217578/how-can-i-determine-whether-a-2d-point-is-within-a-polygon
 bool doesLineIntersectWithHorizontalLine(const Line side, const Point pt)
@@ -134,59 +137,88 @@ bool polygonContainsPoint(const stats::Polygon &polygon, const Point &pt)
   }
 }
 
-FrameTypeData StatisticsData::getFrameTypeData(int typeID)
+bool anyStatsNeedLoading(const TypesVec &types, const DataPerTypeMap &dataMap)
 {
-  if (this->frameCache.count(typeID) == 0)
-    return {};
-
-  return this->frameCache[typeID];
+  for (auto &type : types)
+  {
+    if (type.render && dataMap.count(type.typeID) == 0)
+    {
+      DEBUG_STATDATA("StatisticsData::checkIfAnyStatsNeedLoading type " << type.typeID
+                                                                        << " needs loading");
+      return true;
+    }
+  }
+  return false;
 }
+
+bool anyStatsAreRendered(const TypesVec &types)
+{
+  return std::any_of<StatisticsType>(
+      types.begin(), types.end(), [](const StatisticsType &type) { return type.render; });
+}
+
+} // namespace
 
 ItemLoadingState StatisticsData::needsLoading(int frameIndex) const
 {
-  if (frameIndex != this->frameIdx)
-  {
-    // New frame, but do we even render any statistics?
-    for (auto &t : this->statsTypes)
-      if (t.render)
-      {
-        // At least one statistic type is drawn. We need to load it.
-        DEBUG_STATDATA("StatisticsData::needsLoading new frameIndex " << frameIdx
-                                                                      << " LoadingNeeded");
-        return ItemLoadingState::LoadingNeeded;
-      }
-  }
-
   std::unique_lock<std::mutex> lock(this->accessMutex);
-  // Check all the statistics. Do some need loading?
-  for (auto it = this->statsTypes.rbegin(); it != this->statsTypes.rend(); it++)
+
+  if (!anyStatsAreRendered(this->types))
   {
-    // If the statistics for this frame index were not loaded yet but will be rendered, load them
-    // now.
-    if (it->render && this->frameCache.count(it->typeID) == 0)
-    {
-      // Return that loading is needed before we can render the statitics.
-      DEBUG_STATDATA("StatisticsData::needsLoading type " << it->typeID << " LoadingNeeded");
-      return ItemLoadingState::LoadingNeeded;
-    }
+    DEBUG_STATDATA("StatisticsData::needsLoading " << frameIndex
+                                                   << " nothing rendered - LoadingNotNeeded");
+    return ItemLoadingState::LoadingNotNeeded;
   }
 
-  // Everything needed for drawing is loaded
-  DEBUG_STATDATA("StatisticsData::needsLoading " << frameIdx << " LoadingNotNeeded");
+  if (frameIndex != this->dataCacheMain.frameIndex)
+  {
+    DEBUG_STATDATA("StatisticsData::needsLoading " << frameIndex << " new frame - LoadingNeeded");
+    return ItemLoadingState::LoadingNeeded;
+  }
+
+  if (anyStatsNeedLoading(this->types, this->dataCacheMain.data))
+  {
+    DEBUG_STATDATA("StatisticsData::needsLoading " << frameIndex << " LoadingNeeded");
+    return ItemLoadingState::LoadingNeeded;
+  }
+
+  if (frameIndex + 1 != this->dataCacheDoubleBuffer.frameIndex)
+  {
+    DEBUG_STATDATA("StatisticsData::needsLoading "
+                   << frameIndex << " new frame for double buffer - LoadingNeededDoubleBuffer");
+    return ItemLoadingState::LoadingNeededDoubleBuffer;
+  }
+
+  if (anyStatsNeedLoading(this->types, this->dataCacheDoubleBuffer.data))
+  {
+    DEBUG_STATDATA("StatisticsData::needsLoading " << frameIndex << " LoadingNeededDoubleBuffer");
+    return ItemLoadingState::LoadingNeededDoubleBuffer;
+  }
+
+  DEBUG_STATDATA("StatisticsData::needsLoading " << frameIndex << " LoadingNotNeeded");
   return ItemLoadingState::LoadingNotNeeded;
 }
 
-std::vector<int> StatisticsData::getTypesThatNeedLoading(int frameIndex) const
+std::vector<int> StatisticsData::getTypesThatNeedLoading(int             frameIndex,
+                                                         BufferSelection buffer) const
 {
   std::vector<int> typesToLoad;
-  auto             loadAll = this->frameIdx != frameIndex;
-  for (const auto &statsType : this->statsTypes)
+
+  auto  loadedFrameIndex = (buffer == BufferSelection::DoubleBuffer)
+                               ? this->dataCacheDoubleBuffer.frameIndex
+                               : this->dataCacheMain.frameIndex;
+  auto  loadAll          = loadedFrameIndex != frameIndex;
+  auto &dataCache =
+      (buffer == BufferSelection::DoubleBuffer) ? this->dataCacheDoubleBuffer : this->dataCacheMain;
+
+  for (const auto &type : this->types)
   {
-    if (statsType.render && (loadAll || this->frameCache.count(statsType.typeID) == 0))
-      typesToLoad.push_back(statsType.typeID);
+    if (type.render && (loadAll || dataCache.data.count(type.typeID) == 0))
+      typesToLoad.push_back(type.typeID);
   }
 
   DEBUG_STATDATA("StatisticsData::getTypesThatNeedLoading "
+                 << ((buffer == BufferSelection::DoubleBuffer) ? "doubleBuffer" : "primaryBuffer")
                  << QString::fromStdString(to_string(typesToLoad)));
   return typesToLoad;
 }
@@ -194,55 +226,46 @@ std::vector<int> StatisticsData::getTypesThatNeedLoading(int frameIndex) const
 // return raw(!) value of front-most, active statistic item at given position
 // Info is always read from the current buffer. So these values are only valid if a draw event
 // occurred first.
-QStringPairList StatisticsData::getValuesAt(const QPoint &pos) const
+QStringPairList StatisticsData::getValuesAt(const QPoint &qPoint) const
 {
   QStringPairList valueList;
+  const Point     point(qPoint.x(), qPoint.y());
 
   std::unique_lock<std::mutex> lock(this->accessMutex);
 
-  for (auto it = this->statsTypes.rbegin(); it != this->statsTypes.rend(); it++)
+  for (auto it = this->types.rbegin(); it != this->types.rend(); it++)
   {
     if (!it->renderGrid)
       continue;
 
-    if (it->typeID == INT_INVALID || this->frameCache.count(it->typeID) == 0)
+    if (it->typeID == INT_INVALID || this->dataCacheMain.data.count(it->typeID) == 0)
       // no active statistics data
       continue;
 
-    // Get all value data entries
+    const auto &typeData = this->dataCacheMain.data.at(it->typeID);
+
     bool foundStats = false;
-    for (const auto &valueItem : this->frameCache.at(it->typeID).valueData)
+    for (const auto &blockWithValue : typeData.valueData)
     {
-      auto rect = QRect(valueItem.pos[0], valueItem.pos[1], valueItem.size[0], valueItem.size[1]);
-      if (rect.contains(pos))
+      if (blockWithValue.contains(point))
       {
-        int  value  = valueItem.value;
+        int  value  = blockWithValue.value;
         auto valTxt = it->getValueTxt(value);
         if (valTxt.isEmpty() && it->scaleValueToBlockSize)
-          valTxt = QString("%1").arg(float(value) / (valueItem.size[0] * valueItem.size[1]));
+          valTxt = QString("%1").arg(float(value) / blockWithValue.area());
 
         valueList.append(QStringPair(it->typeName, valTxt));
         foundStats = true;
       }
     }
 
-    for (const auto &vectorItem : this->frameCache.at(it->typeID).vectorData)
+    for (const auto &blockWithVector : typeData.vectorData)
     {
-      auto rect =
-          QRect(vectorItem.pos[0], vectorItem.pos[1], vectorItem.size[0], vectorItem.size[1]);
-      if (rect.contains(pos))
+      if (blockWithVector.contains(point))
       {
-        float vectorValue1, vectorValue2;
-        if (vectorItem.isLine)
-        {
-          vectorValue1 = float(vectorItem.point[1].x - vectorItem.point[0].x) / it->vectorScale;
-          vectorValue2 = float(vectorItem.point[1].y - vectorItem.point[0].y) / it->vectorScale;
-        }
-        else
-        {
-          vectorValue1 = float(vectorItem.point[0].x / it->vectorScale);
-          vectorValue2 = float(vectorItem.point[0].y / it->vectorScale);
-        }
+        auto vectorValue1 = float(blockWithVector.vector.x / it->vectorScale);
+        auto vectorValue2 = float(blockWithVector.vector.y / it->vectorScale);
+
         valueList.append(
             QStringPair(QString("%1[x]").arg(it->typeName), QString::number(vectorValue1)));
         valueList.append(
@@ -251,16 +274,31 @@ QStringPairList StatisticsData::getValuesAt(const QPoint &pos) const
       }
     }
 
-    for (const auto &affineTFItem : this->frameCache.at(it->typeID).affineTFData)
+    for (const auto &blockWithLine : typeData.lineData)
     {
-      const auto rect = QRect(
-          affineTFItem.pos[0], affineTFItem.pos[1], affineTFItem.size[0], affineTFItem.size[1]);
-      if (rect.contains(pos))
+      if (blockWithLine.contains(point))
       {
-        for (unsigned i = 0; i < 3; i++)
+        auto lineValue1 =
+            float(blockWithLine.line.p2.x - blockWithLine.line.p1.x) / it->vectorScale;
+        auto lineValue2 =
+            float(blockWithLine.line.p2.y - blockWithLine.line.p1.y) / it->vectorScale;
+
+        valueList.append(
+            QStringPair(QString("%1[x]").arg(it->typeName), QString::number(lineValue1)));
+        valueList.append(
+            QStringPair(QString("%1[y]").arg(it->typeName), QString::number(lineValue2)));
+        foundStats = true;
+      }
+    }
+
+    for (const auto &blockWithAffineTF : typeData.affineTFData)
+    {
+      if (blockWithAffineTF.contains(point))
+      {
+        for (int i = 0; i < 3; i++)
         {
-          auto xScaled = float(affineTFItem.point[i].x / it->vectorScale);
-          auto yScaled = float(affineTFItem.point[i].y / it->vectorScale);
+          auto xScaled = float(blockWithAffineTF.point[i].x / it->vectorScale);
+          auto yScaled = float(blockWithAffineTF.point[i].y / it->vectorScale);
           valueList.append(
               QStringPair(QString("%1_%2[x]").arg(it->typeName).arg(i), QString::number(xScaled)));
           valueList.append(
@@ -270,30 +308,29 @@ QStringPairList StatisticsData::getValuesAt(const QPoint &pos) const
       }
     }
 
-    for (const auto &valueItem : this->frameCache.at(it->typeID).polygonValueData)
+    for (const auto &polygonWithValue : typeData.polygonValueData)
     {
-      if (valueItem.corners.size() < 3)
-        continue; // need at least triangle -- or more corners
-      if (stats::polygonContainsPoint(valueItem.corners, Point(pos.x(), pos.y())))
+      if (polygonWithValue.size() < 3)
+        continue;
+      if (polygonContainsPoint(polygonWithValue, point))
       {
-        int  value  = valueItem.value;
-        auto valTxt = it->getValueTxt(value);
+        auto valTxt = it->getValueTxt(polygonWithValue.value);
         valueList.append(QStringPair(it->typeName, valTxt));
         foundStats = true;
       }
     }
 
-    for (const auto &polygonVectorItem : this->frameCache.at(it->typeID).polygonVectorData)
+    for (const auto &polygonWithVector : typeData.polygonVectorData)
     {
-      if (polygonVectorItem.corners.size() < 3)
-        continue; // need at least triangle -- or more corners
-      if (stats::polygonContainsPoint(polygonVectorItem.corners, Point(pos.x(), pos.y())))
+      if (polygonWithVector.size() < 3)
+        continue;
+      if (polygonContainsPoint(polygonWithVector, point))
       {
         if (it->renderVectorData)
         {
           // The length of the vector
-          auto xScaled = (float)polygonVectorItem.point.x / it->vectorScale;
-          auto yScaled = (float)polygonVectorItem.point.y / it->vectorScale;
+          auto xScaled = (float)polygonWithVector.vector.x / it->vectorScale;
+          auto yScaled = (float)polygonWithVector.vector.y / it->vectorScale;
           valueList.append(
               QStringPair(QString("%1[x]").arg(it->typeName), QString::number(xScaled)));
           valueList.append(
@@ -310,34 +347,69 @@ QStringPairList StatisticsData::getValuesAt(const QPoint &pos) const
   return valueList;
 }
 
-void StatisticsData::clear()
-{
-  this->frameCache.clear();
-  this->frameIdx  = -1;
-  this->frameSize = {};
-  this->statsTypes.clear();
-}
-
-void StatisticsData::setFrameIndex(int frameIndex)
+bool StatisticsData::hasDataForTypeID(int typeID) const
 {
   std::unique_lock<std::mutex> lock(this->accessMutex);
-  if (this->frameIdx != frameIndex)
+  return this->dataCacheMain.data.count(typeID) > 0;
+}
+
+void StatisticsData::add(BufferSelection buffer, TypeID typeID, BlockWithValue &&blockWithValue)
+{
+  if (buffer == BufferSelection::Primary)
+    this->dataCacheMain.data[typeID].valueData.push_back(std::move(blockWithValue));
+  if (buffer == BufferSelection::DoubleBuffer)
+    this->dataCacheDoubleBuffer.data[typeID].valueData.push_back(std::move(blockWithValue));
+}
+
+void StatisticsData::add(BufferSelection buffer, TypeID typeID, BlockWithVector &&blockWithVector)
+{
+  if (buffer == BufferSelection::Primary)
+    this->dataCacheMain.data[typeID].vectorData.push_back(std::move(blockWithVector));
+  if (buffer == BufferSelection::DoubleBuffer)
+    this->dataCacheDoubleBuffer.data[typeID].vectorData.push_back(std::move(blockWithVector));
+}
+
+void StatisticsData::clear()
+{
+  this->dataCacheMain.data.clear();
+  this->dataCacheDoubleBuffer.data.clear();
+  this->dataCacheMain.frameIndex         = {};
+  this->dataCacheDoubleBuffer.frameIndex = {};
+  this->frameSize                        = {};
+  this->types.clear();
+}
+
+void StatisticsData::setFrameIndex(int frameIndex, BufferSelection buffer)
+{
+  std::unique_lock<std::mutex> lock(this->accessMutex);
+
+  if (buffer == BufferSelection::DoubleBuffer &&
+      this->dataCacheDoubleBuffer.frameIndex != frameIndex)
   {
-    DEBUG_STATDATA("StatisticsData::getTypesThatNeedLoading New frame index set "
-                   << this->frameIdx << "->" << frameIndex);
-    this->frameCache.clear();
-    this->frameIdx = frameIndex;
+    DEBUG_STATDATA("StatisticsData::setFrameIndex New frame index set double buffer "
+                   << this->dataCacheDoubleBuffer.frameIndex.value_or(-1) << "->" << frameIndex);
+    this->dataCacheDoubleBuffer.data.clear();
+    this->dataCacheDoubleBuffer.frameIndex = frameIndex;
+  }
+  if (buffer == BufferSelection::Primary && this->dataCacheMain.frameIndex != frameIndex)
+  {
+    DEBUG_STATDATA("StatisticsData::setFrameIndex New frame index set "
+                   << this->dataCacheMain.frameIndex.value_or(-1) << "->" << frameIndex);
+    this->dataCacheMain.data.clear();
+    this->dataCacheMain.frameIndex = frameIndex;
   }
 }
 
 void StatisticsData::addStatType(const StatisticsType &type)
 {
+  std::unique_lock<std::mutex> lock(this->accessMutex);
+
   if (type.typeID == -1)
   {
     // stat source does not have type ids. need to auto assign an id for this type
     // check if type not already in list
     int maxTypeID = 0;
-    for (auto it = this->statsTypes.begin(); it != this->statsTypes.end(); it++)
+    for (auto it = this->types.begin(); it != this->types.end(); it++)
     {
       if (it->typeName == type.typeName)
         return;
@@ -347,21 +419,21 @@ void StatisticsData::addStatType(const StatisticsType &type)
 
     auto newType   = type;
     newType.typeID = maxTypeID + 1;
-    this->statsTypes.push_back(newType);
+    this->types.push_back(newType);
   }
   else
-    this->statsTypes.push_back(type);
+    this->types.push_back(type);
 }
 
 void StatisticsData::savePlaylist(YUViewDomElement &root) const
 {
-  for (const auto &type : this->statsTypes)
+  for (const auto &type : this->types)
     type.savePlaylist(root);
 }
 
 void StatisticsData::loadPlaylist(const YUViewDomElement &root)
 {
-  for (auto &type : this->statsTypes)
+  for (auto &type : this->types)
     type.loadPlaylist(root);
 }
 

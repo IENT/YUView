@@ -321,7 +321,7 @@ void playlistItemResample::loadFrame(int frameIdx, bool playing, bool loadRawDat
       this->video.loadResampledFrame(nextFrameIdx, true);
       this->isFrameLoadingDoubleBuffer = false;
       if (emitSignals)
-        emit signalLoadFinished(LoadBuffer::Primary);
+        emit signalLoadFinished(BufferSelection::Primary);
     }
   }
 }

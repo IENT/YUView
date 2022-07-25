@@ -47,9 +47,7 @@ class videoHandler : public FrameHandler
   Q_OBJECT
 
 public:
-  /*
-   */
-  videoHandler();
+  videoHandler() = default;
 
   // Draw the frame with the given frame index and zoom factor. If onLoadShowLasFrame is set, show
   // the last frame if the frame with the current frame index is loaded in the background.

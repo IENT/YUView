@@ -229,14 +229,17 @@ void StatisticsFileCSV::readFrameAndTypePositionsFromFile(std::atomic_bool &brea
   }
 }
 
-void StatisticsFileCSV::loadStatisticData(StatisticsData &statisticsData, int poc, int typeID)
+void StatisticsFileCSV::loadStatisticData(StatisticsData &statisticsData,
+                                          int             poc,
+                                          int             typeID,
+                                          bool            loadToDoubleBuffer)
 {
   if (!this->file.isOk())
     return;
 
   try
   {
-    statisticsData.setFrameIndex(poc);
+    statisticsData.setFrameIndex(poc, loadToDoubleBuffer);
 
     if (this->pocTypeFileposMap.count(poc) == 0 || this->pocTypeFileposMap[poc].count(typeID) == 0)
     {

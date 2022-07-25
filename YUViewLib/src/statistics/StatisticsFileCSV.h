@@ -55,7 +55,7 @@ public:
   // Load the statistics for "poc/type" from file and put it into the statisticsData.
   // If the statistics file is in an interleaved format (types are mixed within one POC) this function also parses
   // types which were not requested by the given 'type'.
-  virtual void loadStatisticData(StatisticsData &statisticsData, int poc, int typeID) override;
+  virtual void loadStatisticData(StatisticsData &statisticsData, int poc, int typeID, bool loadToDoubleBuffer) override;
 
 protected:
   //! Scan the header: What types are saved in this file?

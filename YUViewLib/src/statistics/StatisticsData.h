@@ -32,7 +32,7 @@
 
 #pragma once
 
-#include "FrameTypeData.h"
+#include "DataPerType.h"
 #include "StatisticsType.h"
 
 #include <map>
@@ -42,44 +42,44 @@
 namespace stats
 {
 
-using StatisticsTypesVec = std::vector<StatisticsType>;
+using TypesVec       = std::vector<StatisticsType>;
+using TypeID         = int;
+using DataPerTypeMap = std::map<TypeID, DataPerType>;
+
+struct FrameDataCache
+{
+  std::map<TypeID, DataPerType> data{};
+  std::optional<int>            frameIndex;
+};
 
 class StatisticsData
 {
 public:
-  StatisticsData() = default;
+  ItemLoadingState needsLoading(int frameIndex) const;
+  std::vector<int> getTypesThatNeedLoading(int frameIndex, BufferSelection buffer) const;
+  QStringPairList  getValuesAt(const QPoint &pos) const;
+  const TypesVec & getStatisticsTypes() { return this->types; }
+  bool             hasDataForTypeID(int typeID) const;
 
-  FrameTypeData       getFrameTypeData(int typeId);
-  Size                getFrameSize() const { return this->frameSize; }
-  int                 getFrameIndex() const { return this->frameIdx; }
-  ItemLoadingState    needsLoading(int frameIndex) const;
-  std::vector<int>    getTypesThatNeedLoading(int frameIndex) const;
-  QStringPairList     getValuesAt(const QPoint &pos) const;
-  StatisticsTypesVec &getStatisticsTypes() { return this->statsTypes; }
-  bool                hasDataForTypeID(int typeID) { return this->frameCache.count(typeID) > 0; }
-  void                eraseDataForTypeID(int typeID) { this->frameCache.erase(typeID); }
+  void add(BufferSelection buffer, TypeID typeID, BlockWithValue &&blockWithValue);
+  void add(BufferSelection buffer, TypeID typeID, BlockWithVector &&BlockWithVector);
 
   void clear();
   void setFrameSize(Size size) { this->frameSize = size; }
-  void setFrameIndex(int frameIndex);
+  void setFrameIndex(int frameIndex, BufferSelection buffer);
   void addStatType(const StatisticsType &type);
 
   void savePlaylist(YUViewDomElement &root) const;
   void loadPlaylist(const YUViewDomElement &root);
 
-  FrameTypeData &operator[](int typeID) { return this->frameCache[typeID]; }
-  FrameTypeData &at(int typeID) { return this->frameCache[typeID]; }
-
-  mutable std::mutex accessMutex;
-
 private:
-  // cache of the statistics for the current POC [statsTypeID]
-  std::map<int, FrameTypeData> frameCache;
-  int                          frameIdx{-1};
+  FrameDataCache dataCacheMain{};
+  FrameDataCache dataCacheDoubleBuffer{};
 
-  Size frameSize;
+  mutable std::mutex accessMutex{};
 
-  StatisticsTypesVec statsTypes;
+  Size     frameSize{};
+  TypesVec types{};
 };
 
 } // namespace stats

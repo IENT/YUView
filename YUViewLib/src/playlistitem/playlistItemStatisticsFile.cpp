@@ -176,25 +176,51 @@ QSize playlistItemStatisticsFile::getSize() const
   return QSize(s.width, s.height);
 }
 
-void playlistItemStatisticsFile::loadFrame(int frameIdx, bool, bool, bool emitSignals)
+void playlistItemStatisticsFile::loadFrame(int frameIdx, bool playing, bool, bool emitSignals)
 {
-  DEBUG_STAT("playlistItemStatisticsFile::loadFrame frameIdx %d", frameIdx);
+  DEBUG_STAT(
+      "playlistItemStatisticsFile::loadFrame frameIdx %d%s", frameIdx, playing ? " playing" : "");
 
-  if (this->statisticsData.needsLoading(frameIdx) == ItemLoadingState::LoadingNeeded)
+  auto state = this->statisticsData.needsLoading(frameIdx);
+  if (state == ItemLoadingState::LoadingNeeded)
   {
     this->isStatisticsLoading = true;
-    {
-      auto typesToLoad = this->statisticsData.getTypesThatNeedLoading(frameIdx);
-      for (auto typeID : typesToLoad)
-        this->file->loadStatisticData(this->statisticsData, frameIdx, typeID);
-    }
+    this->loadStatisticsData(frameIdx, false);
     this->isStatisticsLoading = false;
     if (emitSignals)
-      emit signalLoadFinished(LoadBuffer::Primary);
+      emit signalLoadFinished(BufferSelection::Primary);
     DEBUG_STAT("playlistItemStatisticsFile::loadFrame frameIdx %d finished %s",
                frameIdx,
                emitSignals ? " emitting signal" : "");
   }
+
+  if (playing && (state == ItemLoadingState::LoadingNeeded ||
+                  state == ItemLoadingState::LoadingNeededDoubleBuffer))
+  {
+    // Load the next frame into the double buffer
+    auto nextFrameIdx = frameIdx + 1;
+    if (nextFrameIdx <= properties().startEndRange.second)
+    {
+      DEBUG_STAT("playlistItemStatisticsFile::loadFrame loading frame into double buffer %d%s",
+                 nextFrameIdx,
+                 playing ? " playing" : "");
+      this->isStatisticsLoadingDoubleBuffer = true;
+      this->loadStatisticsData(nextFrameIdx, true);
+      this->isStatisticsLoadingDoubleBuffer = false;
+      if (emitSignals)
+        emit signalLoadFinished(BufferSelection::DoubleBuffer);
+    }
+  }
+}
+
+bool playlistItemStatisticsFile::isLoading() const
+{
+  return this->isStatisticsLoading;
+}
+
+bool playlistItemStatisticsFile::isLoadingDoubleBuffer() const
+{
+  return this->isStatisticsLoadingDoubleBuffer;
 }
 
 ValuePairListSets playlistItemStatisticsFile::getPixelValues(const QPoint &pixelPos, int)
@@ -227,7 +253,7 @@ void playlistItemStatisticsFile::onPOCTypeParsed(int poc, int typeID)
 {
   if (poc == this->currentDrawnFrameIdx && this->statisticsData.hasDataForTypeID(typeID))
   {
-    this->statisticsData.eraseDataForTypeID(typeID);
+    //this->statisticsData.eraseDataForTypeID(typeID);
     emit SignalItemChanged(true, RECACHE_NONE);
   }
 }
@@ -301,6 +327,13 @@ void playlistItemStatisticsFile::openStatisticsFile()
 
   DEBUG_STAT(
       "playlistItemStatisticsFile::openStatisticsFile File opened. Background parsing started.");
+}
+
+void playlistItemStatisticsFile::loadStatisticsData(int frameIdx, bool toDoubleBuffer)
+{
+  auto typesToLoad = this->statisticsData.getTypesThatNeedLoading(frameIdx);
+  for (auto typeID : typesToLoad)
+    this->file->loadStatisticData(this->statisticsData, frameIdx, typeID, toDoubleBuffer);
 }
 
 // This timer event is called regularly when the background loading process is running.

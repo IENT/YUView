@@ -341,6 +341,12 @@ Q_DECL_CONSTEXPR inline QPoint centerRoundTL(const QRect &r) Q_DECL_NOTHROW
                 int((int64_t(r.top()) + r.bottom() - 1) / 2));
 }
 
+enum class BufferSelection
+{
+  Primary,
+  DoubleBuffer // Or secondary
+};
+
 // When asking the playlist item if it needs loading, there are some states that the item can return
 enum class ItemLoadingState
 {

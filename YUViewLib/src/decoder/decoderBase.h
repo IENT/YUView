@@ -127,7 +127,6 @@ public:
   bool statisticsSupported() const { return internalsSupported; }
   bool statisticsEnabled() const { return statisticsData != nullptr; }
   void enableStatisticsRetrieval(stats::StatisticsData *s) { this->statisticsData = s; }
-  stats::FrameTypeData getCurrentFrameStatsForType(int typeIdx) const;
   virtual void         fillStatisticList(stats::StatisticsData &) const {};
 
   // Error handling

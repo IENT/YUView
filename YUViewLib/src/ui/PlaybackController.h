@@ -90,7 +90,7 @@ public slots:
   currentSelectedItemsChanged(playlistItem *item1, playlistItem *item2, bool changedByPlayback);
 
   // One of the (possibly two) selected items finished loading the double bufffer.
-  void currentSelectedItemsLoadFinished(int itemID, playlistItem::LoadBuffer loadBuffer);
+  void currentSelectedItemsLoadFinished(int itemID, BufferSelection buffer);
 
   // The properties of the currently selected item(s) changed. Update the frame sliders and toggle
   // an update() in the splitView if necessary.

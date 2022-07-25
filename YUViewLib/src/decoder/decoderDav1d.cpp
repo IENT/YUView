@@ -687,7 +687,6 @@ void decoderDav1d::fillStatisticList(stats::StatisticsData &statisticsData) cons
   statisticsData.addStatType(chromaFromLumaAlphaV);
 
   // Inter specific values
-
   stats::StatisticsType refFrames0(
       14, "ref frame index 0", ColorMapper({0, 7}, PredefinedType::Jet));
   statisticsData.addStatType(refFrames0);
@@ -782,19 +781,19 @@ void decoderDav1d::cacheStatistics(const Dav1dPictureWrapper &img)
 
   DEBUG_DAV1D("decoderDav1d::cacheStatistics");
 
-  Av1Block *        blockData   = img.getBlockData();
-  Dav1dFrameHeader *frameHeader = img.getFrameHeader();
+  auto blockData   = img.getBlockData();
+  auto frameHeader = img.getFrameHeader();
   if (frameHeader == nullptr)
     return;
 
   dav1dFrameInfo frameInfo(img.getFrameSize(), frameHeader->frame_type);
   frameInfo.frameSize = img.getFrameSize();
 
-  const int sb_step = subBlockSize >> 2;
+  const auto sb_step = subBlockSize >> 2;
 
   for (unsigned y = 0; y < frameInfo.frameSizeAligned.height; y += sb_step)
     for (unsigned x = 0; x < frameInfo.frameSizeAligned.width; x += sb_step)
-      parseBlockRecursive(blockData, x, y, BL_128X128, frameInfo);
+      this->parseBlockRecursive(blockData, x, y, BL_128X128, frameInfo);
 }
 
 void decoderDav1d::parseBlockRecursive(
@@ -803,87 +802,86 @@ void decoderDav1d::parseBlockRecursive(
   if (y >= frameInfo.sizeInBlocks.height)
     return;
 
-  Av1Block         b          = blockData[y * frameInfo.b4_stride + x];
-  const BlockLevel blockLevel = (BlockLevel)b.bl;
+  auto       b          = blockData[y * frameInfo.b4_stride + x];
+  const auto blockLevel = BlockLevel(b.bl);
 
-  // assert(b.bl >= 0 && b.bl <= 4);
   if (b.bl > 4)
     return;
 
   const int blockWidth4 = 1 << (5 - level);
 
-  if (blockLevel > level)
+  const auto isFurtherSplit = blockLevel > level;
+  if (isFurtherSplit)
   {
-    // Recurse
-    const BlockLevel nextLevel = (BlockLevel)(level + 1);
-    const int        subw      = blockWidth4 / 2;
-    parseBlockRecursive(blockData, x, y, nextLevel, frameInfo);
-    parseBlockRecursive(blockData, x + subw, y, nextLevel, frameInfo);
-    parseBlockRecursive(blockData, x, y + subw, nextLevel, frameInfo);
-    parseBlockRecursive(blockData, x + subw, y + subw, nextLevel, frameInfo);
+    const auto nextLevel = BlockLevel(level + 1);
+    const auto subw      = blockWidth4 / 2;
+
+    this->parseBlockRecursive(blockData, x, y, nextLevel, frameInfo);
+    this->parseBlockRecursive(blockData, x + subw, y, nextLevel, frameInfo);
+    this->parseBlockRecursive(blockData, x, y + subw, nextLevel, frameInfo);
+    this->parseBlockRecursive(blockData, x + subw, y + subw, nextLevel, frameInfo);
   }
   else
   {
-    // Parse the current partition. How is it split into blocks?
-    const BlockPartition blockPartition = (BlockPartition)b.bp;
+    const auto blockPartition = BlockPartition(b.bp);
 
-    const int o  = blockWidth4 / 2;
-    const int oq = blockWidth4 / 2;
-    const int bs = blockWidth4;
+    const auto o  = blockWidth4 / 2;
+    const auto oq = blockWidth4 / 2;
+    const auto bs = blockWidth4;
     switch (blockPartition)
     {
     case PARTITION_NONE:
-      parseBlockPartition(blockData, x, y, bs, bs, frameInfo);
+      this->parseBlockPartition(blockData, x, y, bs, bs, frameInfo);
       break;
     case PARTITION_H:
-      parseBlockPartition(blockData, x, y, bs, bs / 2, frameInfo);
-      parseBlockPartition(blockData, x, y + o, bs, bs / 2, frameInfo);
+      this->parseBlockPartition(blockData, x, y, bs, bs / 2, frameInfo);
+      this->parseBlockPartition(blockData, x, y + o, bs, bs / 2, frameInfo);
       break;
     case PARTITION_V:
-      parseBlockPartition(blockData, x, y, bs / 2, bs, frameInfo);
-      parseBlockPartition(blockData, x + o, y, bs / 2, bs, frameInfo);
+      this->parseBlockPartition(blockData, x, y, bs / 2, bs, frameInfo);
+      this->parseBlockPartition(blockData, x + o, y, bs / 2, bs, frameInfo);
       break;
     case PARTITION_T_TOP_SPLIT: // PARTITION_HORZ_A
-      parseBlockPartition(blockData, x, y, bs / 2, bs / 2, frameInfo);
-      parseBlockPartition(blockData, x + o, y, bs / 2, bs / 2, frameInfo);
-      parseBlockPartition(blockData, x, y + o, bs, bs / 2, frameInfo);
+      this->parseBlockPartition(blockData, x, y, bs / 2, bs / 2, frameInfo);
+      this->parseBlockPartition(blockData, x + o, y, bs / 2, bs / 2, frameInfo);
+      this->parseBlockPartition(blockData, x, y + o, bs, bs / 2, frameInfo);
       break;
     case PARTITION_T_BOTTOM_SPLIT: // PARTITION_HORZ_B
-      parseBlockPartition(blockData, x, y, bs, bs / 2, frameInfo);
-      parseBlockPartition(blockData, x, y + o, bs / 2, bs / 2, frameInfo);
-      parseBlockPartition(blockData, x + o, y + o, bs / 2, bs / 2, frameInfo);
+      this->parseBlockPartition(blockData, x, y, bs, bs / 2, frameInfo);
+      this->parseBlockPartition(blockData, x, y + o, bs / 2, bs / 2, frameInfo);
+      this->parseBlockPartition(blockData, x + o, y + o, bs / 2, bs / 2, frameInfo);
       break;
     case PARTITION_T_LEFT_SPLIT: // PARTITION_VERT_A
-      parseBlockPartition(blockData, x, y, bs / 2, bs / 2, frameInfo);
-      parseBlockPartition(blockData, x, y + o, bs / 2, bs / 2, frameInfo);
-      parseBlockPartition(blockData, x + o, y, bs / 2, bs, frameInfo);
+      this->parseBlockPartition(blockData, x, y, bs / 2, bs / 2, frameInfo);
+      this->parseBlockPartition(blockData, x, y + o, bs / 2, bs / 2, frameInfo);
+      this->parseBlockPartition(blockData, x + o, y, bs / 2, bs, frameInfo);
       break;
     case PARTITION_T_RIGHT_SPLIT: // PARTITION_VERT_B
-      parseBlockPartition(blockData, x, y, bs / 2, bs, frameInfo);
-      parseBlockPartition(blockData, x, y + o, bs / 2, bs / 2, frameInfo);
-      parseBlockPartition(blockData, x + o, y + o, bs / 2, bs / 2, frameInfo);
+      this->parseBlockPartition(blockData, x, y, bs / 2, bs, frameInfo);
+      this->parseBlockPartition(blockData, x, y + o, bs / 2, bs / 2, frameInfo);
+      this->parseBlockPartition(blockData, x + o, y + o, bs / 2, bs / 2, frameInfo);
       break;
     case PARTITION_H4: // PARTITION_HORZ_4
-      parseBlockPartition(blockData, x, y, bs, bs / 4, frameInfo);
-      parseBlockPartition(blockData, x, y + oq, bs, bs / 4, frameInfo);
-      parseBlockPartition(blockData, x, y + oq * 2, bs, bs / 4, frameInfo);
-      parseBlockPartition(blockData, x, y + oq * 3, bs, bs / 4, frameInfo);
+      this->parseBlockPartition(blockData, x, y, bs, bs / 4, frameInfo);
+      this->parseBlockPartition(blockData, x, y + oq, bs, bs / 4, frameInfo);
+      this->parseBlockPartition(blockData, x, y + oq * 2, bs, bs / 4, frameInfo);
+      this->parseBlockPartition(blockData, x, y + oq * 3, bs, bs / 4, frameInfo);
       break;
     case PARTITION_V4: // PARTITION_VER_4
-      parseBlockPartition(blockData, x, y, bs / 4, bs, frameInfo);
-      parseBlockPartition(blockData, x + oq, y, bs / 4, bs, frameInfo);
-      parseBlockPartition(blockData, x + oq * 2, y, bs / 4, bs, frameInfo);
-      parseBlockPartition(blockData, x + oq * 3, y, bs / 4, bs, frameInfo);
+      this->parseBlockPartition(blockData, x, y, bs / 4, bs, frameInfo);
+      this->parseBlockPartition(blockData, x + oq, y, bs / 4, bs, frameInfo);
+      this->parseBlockPartition(blockData, x + oq * 2, y, bs / 4, bs, frameInfo);
+      this->parseBlockPartition(blockData, x + oq * 3, y, bs / 4, bs, frameInfo);
       break;
     case PARTITION_SPLIT:
       if (blockLevel == BL_8X8)
       {
         // 4 square 4x4 blocks. This is allowed.
         assert(blockWidth4 == 2);
-        parseBlockPartition(blockData, x, y, 1, 1, frameInfo);
-        parseBlockPartition(blockData, x + 1, y, 1, 1, frameInfo);
-        parseBlockPartition(blockData, x, y + 1, 1, 1, frameInfo);
-        parseBlockPartition(blockData, x + 1, y + 1, 1, 1, frameInfo);
+        this->parseBlockPartition(blockData, x, y, 1, 1, frameInfo);
+        this->parseBlockPartition(blockData, x + 1, y, 1, 1, frameInfo);
+        this->parseBlockPartition(blockData, x, y + 1, 1, 1, frameInfo);
+        this->parseBlockPartition(blockData, x + 1, y + 1, 1, 1, frameInfo);
       }
       else
       {
@@ -907,140 +905,114 @@ void decoderDav1d::parseBlockPartition(Av1Block *      blockData,
   if (y >= frameInfo.sizeInBlocks.height || x >= frameInfo.sizeInBlocks.width)
     return;
 
-  Av1Block b = blockData[y * frameInfo.b4_stride + x];
+  auto b = blockData[y * frameInfo.b4_stride + x];
 
-  const auto cbPosX   = x * 4;
-  const auto cbPosY   = y * 4;
-  const auto cbWidth  = blockWidth4 * 4;
-  const auto cbHeight = blockHeight4 * 4;
+  stats::Block block(x * 4, y * 4, blockWidth4 * 4, blockHeight4 * 4);
+  auto         buffer = BufferSelection::Primary;
 
   // Set prediction mode (ID 0)
-  const bool isIntra  = (b.intra != 0);
-  const int  predMode = isIntra ? 0 : 1;
-  this->statisticsData->at(0).addBlockValue(cbPosX, cbPosY, cbWidth, cbHeight, predMode);
+  const auto isIntra  = (b.intra != 0);
+  const auto predMode = isIntra ? 0 : 1;
+  this->statisticsData->add(buffer, 0, stats::BlockWithValue(block, predMode));
 
   bool FrameIsIntra = (frameInfo.frameType == DAV1D_FRAME_TYPE_KEY ||
                        frameInfo.frameType == DAV1D_FRAME_TYPE_INTRA);
   if (FrameIsIntra)
-  {
-    // Set the segment ID (ID 1)
-    this->statisticsData->at(1).addBlockValue(cbPosX, cbPosY, cbWidth, cbHeight, b.seg_id);
-  }
-
-  // Set the skip "flag" (ID 2)
-  this->statisticsData->at(2).addBlockValue(cbPosX, cbPosY, cbWidth, cbHeight, b.skip);
-
-  // Set the skip_mode (ID 3)
-  this->statisticsData->at(3).addBlockValue(cbPosX, cbPosY, cbWidth, cbHeight, b.skip_mode);
+    this->statisticsData->add(buffer, 1, stats::BlockWithValue(block, b.seg_id));
+  this->statisticsData->add(buffer, 2, stats::BlockWithValue(block, b.skip));
+  this->statisticsData->add(buffer, 2, stats::BlockWithValue(block, b.skip_mode));
 
   if (isIntra)
   {
-    // Set the intra pred mode luma/chrmoa (ID 4, 5)
-    this->statisticsData->at(4).addBlockValue(cbPosX, cbPosY, cbWidth, cbHeight, b.y_mode);
-    this->statisticsData->at(5).addBlockValue(cbPosX, cbPosY, cbWidth, cbHeight, b.uv_mode);
+    this->statisticsData->add(buffer, 4, stats::BlockWithValue(block, b.y_mode));
+    this->statisticsData->add(buffer, 5, stats::BlockWithValue(block, b.uv_mode));
 
-    // Set the palette size Y/UV (ID 6, 7)
-    this->statisticsData->at(6).addBlockValue(cbPosX, cbPosY, cbWidth, cbHeight, b.pal_sz[0]);
-    this->statisticsData->at(7).addBlockValue(cbPosX, cbPosY, cbWidth, cbHeight, b.pal_sz[1]);
+    this->statisticsData->add(buffer, 6, stats::BlockWithValue(block, b.pal_sz[0]));
+    this->statisticsData->add(buffer, 7, stats::BlockWithValue(block, b.pal_sz[1]));
 
-    // Set the intra angle delta luma/chroma (ID 8, 9)
-    this->statisticsData->at(8).addBlockValue(cbPosX, cbPosY, cbWidth, cbHeight, b.y_angle);
-    this->statisticsData->at(9).addBlockValue(cbPosX, cbPosY, cbWidth, cbHeight, b.uv_angle);
+    this->statisticsData->add(buffer, 8, stats::BlockWithValue(block, b.y_angle));
+    this->statisticsData->add(buffer, 9, stats::BlockWithValue(block, b.uv_angle));
 
-    // Calculate and set the intra prediction direction luma/chroma (ID 10, 11)
     for (int yc = 0; yc < 2; yc++)
     {
-      int           angleDelta = (yc == 0) ? b.y_angle : b.uv_angle;
-      IntraPredMode predMode   = (yc == 0) ? (IntraPredMode)b.y_mode : (IntraPredMode)b.uv_mode;
-      auto          vec        = calculateIntraPredDirection(predMode, angleDelta);
+      auto angleDelta = (yc == 0) ? b.y_angle : b.uv_angle;
+      auto predMode   = (yc == 0) ? IntraPredMode(b.y_mode) : IntraPredMode(b.uv_mode);
+      auto vec        = calculateIntraPredDirection(predMode, angleDelta);
       if (vec.first == 0 && vec.second == 0)
         continue;
 
-      int blockScale = std::min(blockWidth4, blockHeight4);
-      int vecX       = (float)vec.first * blockScale / 4;
-      int vecY       = (float)vec.second * blockScale / 4;
+      auto blockScale = std::min(blockWidth4, blockHeight4);
+      auto vecX       = int(double(vec.first) * blockScale / 4);
+      auto vecY       = int(double(vec.second) * blockScale / 4);
 
-      this->statisticsData->at(10 + yc).addBlockVector(
-          cbPosX, cbPosY, cbWidth, cbHeight, vecX, vecY);
+      this->statisticsData->add(
+          buffer, 10 + yc, stats::BlockWithVector(block, stats::Vector(vecX, vecY)));
     }
 
     if (b.y_mode == CFL_PRED)
     {
-      // Set the chroma from luma alpha U/V (ID 12, 13)
-      this->statisticsData->at(12).addBlockValue(cbPosX, cbPosY, cbWidth, cbHeight, b.cfl_alpha[0]);
-      this->statisticsData->at(13).addBlockValue(cbPosX, cbPosY, cbWidth, cbHeight, b.cfl_alpha[1]);
+      this->statisticsData->add(buffer, 12, stats::BlockWithValue(block, b.cfl_alpha[0]));
+      this->statisticsData->add(buffer, 13, stats::BlockWithValue(block, b.cfl_alpha[1]));
     }
   }
   else // inter
   {
-    CompInterType compoundType = (CompInterType)b.comp_type;
-    bool          isCompound   = (compoundType != COMP_INTER_NONE);
+    auto compoundType = CompInterType(b.comp_type);
+    auto isCompound   = (compoundType != COMP_INTER_NONE);
 
-    // Set the reference frame indices 0/1 (ID 14, 15)
-    this->statisticsData->at(14).addBlockValue(cbPosX, cbPosY, cbWidth, cbHeight, b.ref[0]);
+    this->statisticsData->add(buffer, 14, stats::BlockWithValue(block, b.ref[0]));
     if (isCompound)
-      this->statisticsData->at(15).addBlockValue(cbPosX, cbPosY, cbWidth, cbHeight, b.ref[1]);
+      this->statisticsData->add(buffer, 15, stats::BlockWithValue(block, b.ref[1]));
 
-    // Set the compound prediction type (ID 16)
-    this->statisticsData->at(16).addBlockValue(cbPosX, cbPosY, cbWidth, cbHeight, b.comp_type);
+    this->statisticsData->add(buffer, 16, stats::BlockWithValue(block, b.comp_type));
 
-    // Set the wedge index (ID 17)
     if (b.comp_type == COMP_INTER_WEDGE || b.interintra_type == INTER_INTRA_WEDGE)
-      this->statisticsData->at(17).addBlockValue(cbPosX, cbPosY, cbWidth, cbHeight, b.wedge_idx);
+      this->statisticsData->add(buffer, 17, stats::BlockWithValue(block, b.wedge_idx));
 
-    // Set the mask sign (ID 18)
     if (isCompound) // TODO: This might not be correct
-      this->statisticsData->at(18).addBlockValue(cbPosX, cbPosY, cbWidth, cbHeight, b.mask_sign);
+      this->statisticsData->add(buffer, 18, stats::BlockWithValue(block, b.mask_sign));
 
-    // Set the inter mode (ID 19)
-    this->statisticsData->at(19).addBlockValue(cbPosX, cbPosY, cbWidth, cbHeight, b.inter_mode);
+    this->statisticsData->add(buffer, 19, stats::BlockWithValue(block, b.inter_mode));
 
-    // Set the dynamic reference list index (ID 20)
     if (isCompound) // TODO: This might not be correct
-      this->statisticsData->at(20).addBlockValue(cbPosX, cbPosY, cbWidth, cbHeight, b.drl_idx);
+      this->statisticsData->add(buffer, 20, stats::BlockWithValue(block, b.drl_idx));
 
     if (isCompound)
     {
-      // Set inter intra type (ID 21)
-      this->statisticsData->at(21).addBlockValue(
-          cbPosX, cbPosY, cbWidth, cbHeight, b.interintra_type);
-      // Set inter intra mode (ID 22)
-      this->statisticsData->at(22).addBlockValue(
-          cbPosX, cbPosY, cbWidth, cbHeight, b.interintra_mode);
+      this->statisticsData->add(buffer, 21, stats::BlockWithValue(block, b.interintra_type));
+      this->statisticsData->add(buffer, 22, stats::BlockWithValue(block, b.interintra_mode));
     }
 
-    // Set motion mode (ID 23)
-    this->statisticsData->at(23).addBlockValue(cbPosX, cbPosY, cbWidth, cbHeight, b.motion_mode);
-
-    // Set motion vector 0/1 (ID 24, 25)
-    this->statisticsData->at(24).addBlockVector(
-        cbPosX, cbPosY, cbWidth, cbHeight, b.mv[0].x, b.mv[0].y);
+    this->statisticsData->add(buffer, 23, stats::BlockWithValue(block, b.motion_mode));
+    this->statisticsData->add(
+        buffer, 24, stats::BlockWithVector(block, stats::Vector(b.mv[0].x, b.mv[0].y)));
     if (isCompound)
-      this->statisticsData->at(25).addBlockVector(
-          cbPosX, cbPosY, cbWidth, cbHeight, b.mv[1].x, b.mv[1].y);
+      this->statisticsData->add(
+          buffer, 25, stats::BlockWithVector(block, stats::Vector(b.mv[1].x, b.mv[1].y)));
   }
 
-  const TxfmSize        tx_val               = TxfmSize(isIntra ? b.tx : b.max_ytx);
-  static const unsigned TxfmSizeWidthTable[] = {
+  const auto       tx_val               = int(isIntra ? b.tx : b.max_ytx);
+  static const int TxfmSizeWidthTable[] = {
       4, 8, 16, 32, 64, 4, 8, 8, 16, 16, 32, 32, 64, 4, 16, 8, 32, 16, 64};
-  static const unsigned TxfmSizeHeightTable[] = {
+  static const int TxfmSizeHeightTable[] = {
       4, 8, 16, 32, 64, 8, 4, 16, 8, 32, 16, 64, 32, 16, 4, 32, 8, 64, 16};
-  const unsigned tx_w = TxfmSizeWidthTable[tx_val];
-  const unsigned tx_h = TxfmSizeHeightTable[tx_val];
+  const auto tx_w = TxfmSizeWidthTable[tx_val];
+  const auto tx_h = TxfmSizeHeightTable[tx_val];
 
-  if (tx_w > cbWidth || tx_h > cbHeight)
+  if (tx_w > block.width || tx_h > block.height)
     // Transform can not be bigger then the coding block
     return;
 
-  for (unsigned x = 0; x < cbWidth; x += tx_w)
+  for (int x = 0; x < block.width; x += tx_w)
   {
-    for (unsigned y = 0; y < cbHeight; y += tx_h)
+    for (int y = 0; y < block.height; y += tx_h)
     {
-      // Set the transform size (ID 26)
-      const int x_abs = cbPosX + x;
-      const int y_abs = cbPosY + y;
-      if (x_abs < int(frameInfo.frameSize.width) && y_abs < int(frameInfo.frameSize.height))
-        this->statisticsData->at(26).addBlockValue(x_abs, y_abs, tx_w, tx_h, (int)tx_val);
+      if ((block.pos.x + x) < int(frameInfo.frameSize.width) &&
+          (block.pos.y + y) < int(frameInfo.frameSize.height))
+      {
+        stats::Block transformBlock(block.pos.x + x, block.pos.y + y, tx_w, tx_h);
+        this->statisticsData->add(buffer, 26, stats::BlockWithValue(transformBlock, tx_val));
+      }
     }
   }
 }

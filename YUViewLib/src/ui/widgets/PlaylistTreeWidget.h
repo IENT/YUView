@@ -146,7 +146,7 @@ signals:
   void saveViewStatesToPlaylist(QDomElement &root);
 
   // The selected item finished loading the double buffer.
-  void selectedItemLoadFinished(int itemID, playlistItem::LoadBuffer loadBuffer);
+  void selectedItemLoadFinished(int itemID, BufferSelection buffer);
 
 protected:
   // Overload from QWidget to create a custom context menu
@@ -179,7 +179,7 @@ protected slots:
 
   // All item's signals signalItemDoubleBufferLoaded are connected here. If the sending item is
   // currently selected, forward this to the playbackController which might me waiting for this.
-  void slotItemLoadFinished(playlistItem::LoadBuffer loadBuffer);
+  void slotItemLoadFinished(BufferSelection buffer);
 
 private:
   playlistItem *getDropTarget(const QPoint &pos) const;

@@ -89,14 +89,6 @@ void decoderBase::setDecodeSignal(int signalID, bool &decoderResetNeeded)
   decoderResetNeeded = false;
 }
 
-stats::FrameTypeData decoderBase::getCurrentFrameStatsForType(int typeId) const
-{
-  if (!this->statisticsEnabled())
-    return {};
-
-  return statisticsData->getFrameTypeData(typeId);
-}
-
 void decoderBaseSingleLib::loadDecoderLibrary(QString specificLibrary)
 {
   // Try to load the HM library from the current working directory

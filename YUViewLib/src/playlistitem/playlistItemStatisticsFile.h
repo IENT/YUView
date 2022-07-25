@@ -81,8 +81,9 @@ public:
   // called from a thread.
   virtual void
   loadFrame(int frameIdx, bool playback, bool loadRawdata, bool emitSignals = true) override;
-  // Are statistics currently being loaded?
-  virtual bool isLoading() const override { return isStatisticsLoading; }
+
+  virtual bool isLoading() const override;
+  virtual bool isLoadingDoubleBuffer() const override;
 
   // Override from playlistItem. Return the statistics values under the given pixel position.
   virtual ValuePairListSets getPixelValues(const QPoint &pixelPos, int frameIdx) override;
@@ -110,6 +111,8 @@ protected:
 
   void openStatisticsFile();
 
+  void loadStatisticsData(int frameIdx, bool toDoubleBuffer);
+
   stats::StatisticUIHandler statisticsUIHandler;
   stats::StatisticsData     statisticsData;
 
@@ -117,7 +120,8 @@ protected:
   OpenMode                                   openMode;
 
   // Is the loadFrame function currently loading?
-  bool isStatisticsLoading {false};
+  bool isStatisticsLoading{false};
+  bool isStatisticsLoadingDoubleBuffer{false};
 
   QFuture<void>    backgroundParserFuture;
   std::atomic_bool breakBackgroundAtomic;
