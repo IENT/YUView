@@ -138,8 +138,7 @@ private:
 
   int nrSignals{0};
 
-  // Add the statistics supported by the HM decoder
-  void fillStatisticList(stats::StatisticsData &statisticsData) const override;
+  virtual stats::StatisticsTypes getStatisticsTypes() const override;
 
   // We buffer the current image as a QByteArray so you can call getYUVFrameData as often as
   // necessary without invoking the copy operation from the hm image buffer to the QByteArray again.
