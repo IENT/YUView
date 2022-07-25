@@ -45,6 +45,39 @@
 namespace decoder
 {
 
+namespace
+{
+
+void cacheCurStatistics(stats::StatisticsData &        statisticsData,
+                        FFmpeg::AVFrameSideDataWrapper sideData)
+{
+  // Copy the statistics of the current frame to the buffer
+  DEBUG_FFMPEG("decoderFFmpeg::cacheCurStatistics");
+
+  auto buffer = BufferSelection::Primary;
+
+  // Try to get the motion information
+  if (sideData)
+  {
+    const auto nrMVs = sideData.getNumberMotionVectors();
+    for (size_t i = 0; i < nrMVs; i++)
+    {
+      auto mvs = sideData.getMotionVector(unsigned(i));
+
+      auto block        = stats::Block(mvs.dst_x - mvs.w / 2, mvs.dst_y - mvs.h / 2, mvs.w, mvs.h);
+      const int16_t mvX = mvs.dst_x - mvs.src_x;
+      const int16_t mvY = mvs.dst_y - mvs.src_y;
+
+      statisticsData.add(
+          buffer, (mvs.source < 0 ? 0 : 1), stats::BlockWithValue(block, int(mvs.source)));
+      statisticsData.add(
+          buffer, (mvs.source < 0 ? 2 : 3), stats::BlockWithVector(block, stats::Vector(mvX, mvY)));
+    }
+  }
+}
+
+} // namespace
+
 decoderFFmpeg::decoderFFmpeg(FFmpeg::AVCodecIDWrapper   codecID,
                              Size                       size,
                              QByteArray                 extradata,
@@ -84,8 +117,8 @@ decoderFFmpeg::decoderFFmpeg(FFmpeg::AVCodecIDWrapper   codecID,
     return;
   }
 
-  this->flushing           = false;
-  this->internalsSupported = true;
+  this->flushing            = false;
+  this->statisticsSupported = true;
   // Fill the padding array
   for (int i = 0; i < AV_INPUT_BUFFER_PADDING_SIZE; i++)
     this->avPacketPaddingData.append((char)0);
@@ -111,8 +144,8 @@ decoderFFmpeg::decoderFFmpeg(FFmpeg::AVCodecParametersWrapper codecpar, bool cac
     return;
   }
 
-  this->flushing           = false;
-  this->internalsSupported = true;
+  this->flushing            = false;
+  this->statisticsSupported = true;
 
   DEBUG_FFMPEG("decoderFFmpeg::decoderFFmpeg Created new FFmpeg decoder - codec "
                << this->getCodecName() << (cachingDecoder ? " - caching" : ""));
@@ -164,9 +197,9 @@ QByteArray decoderFFmpeg::getRawFrameData()
     DEBUG_FFMPEG("decoderFFmpeg::decodeNextFrame: Copy frame data to buffer");
     this->copyCurImageToBuffer();
 
-    if (this->statisticsEnabled())
-      // Get the statistics from the image and put them into the statistics cache
-      this->cacheCurStatistics();
+    if (this->statisticsSupported)
+      cacheCurStatistics(this->statisticsData,
+                         this->ff.getSideData(frame, FFmpeg::AV_FRAME_DATA_MOTION_VECTORS));
   }
 
   return this->currentOutputBuffer;
@@ -263,34 +296,6 @@ void decoderFFmpeg::copyCurImageToBuffer()
         dst += wDst;
         src += srcLinesize;
       }
-    }
-  }
-}
-
-void decoderFFmpeg::cacheCurStatistics()
-{
-  // Copy the statistics of the current frame to the buffer
-  DEBUG_FFMPEG("decoderFFmpeg::cacheCurStatistics");
-
-  // Try to get the motion information
-  auto sideData = this->ff.getSideData(frame, FFmpeg::AV_FRAME_DATA_MOTION_VECTORS);
-  if (sideData)
-  {
-    const auto nrMVs = sideData.getNumberMotionVectors();
-    for (size_t i = 0; i < nrMVs; i++)
-    {
-      auto mvs = sideData.getMotionVector(unsigned(i));
-
-      // dst marks the center of the current block so the block position is:
-      const int     blockX = mvs.dst_x - mvs.w / 2;
-      const int     blockY = mvs.dst_y - mvs.h / 2;
-      const int16_t mvX    = mvs.dst_x - mvs.src_x;
-      const int16_t mvY    = mvs.dst_y - mvs.src_y;
-
-      this->statisticsData->at(mvs.source < 0 ? 0 : 1)
-          .addBlockValue(blockX, blockY, mvs.w, mvs.h, (int)mvs.source);
-      this->statisticsData->at(mvs.source < 0 ? 2 : 3)
-          .addBlockVector(blockX, blockY, mvs.w, mvs.h, mvX, mvY);
     }
   }
 }
@@ -424,15 +429,15 @@ bool decoderFFmpeg::decodeFrame()
   return false;
 }
 
-void decoderFFmpeg::fillStatisticList(stats::StatisticsData &statisticsData) const
+stats::StatisticsTypes decoderFFmpeg::getStatisticsTypes() const
 {
   auto sourceColorMapper =
       stats::color::ColorMapper({-2, 2}, stats::color::PredefinedType::Col3_bblg);
 
-  statisticsData.addStatType(stats::StatisticsType(0, "Source -", sourceColorMapper));
-  statisticsData.addStatType(stats::StatisticsType(1, "Source +", sourceColorMapper));
-  statisticsData.addStatType(stats::StatisticsType(2, "Motion Vector -", 4));
-  statisticsData.addStatType(stats::StatisticsType(3, "Motion Vector +", 4));
+  return {stats::StatisticsType(0, "Source -", sourceColorMapper),
+          stats::StatisticsType(1, "Source +", sourceColorMapper),
+          stats::StatisticsType(2, "Motion Vector -", 4),
+          stats::StatisticsType(3, "Motion Vector +", 4)};
 }
 
 bool decoderFFmpeg::createDecoder(FFmpeg::AVCodecIDWrapper         codecID,

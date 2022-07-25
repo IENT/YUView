@@ -863,11 +863,11 @@ QStringList decoderDav1d::getLibraryNames() const
                          << "libdav1d";
 }
 
-std::vector<stats::StatisticsType> decoderDav1d::getStatisticsTypes() const
+stats::StatisticsTypes decoderDav1d::getStatisticsTypes() const
 {
   using namespace stats::color;
 
-  std::vector<stats::StatisticsType> types;
+  stats::StatisticsTypes types;
 
   stats::StatisticsType predMode(0, "Pred Mode", ColorMapper({0, 1}, PredefinedType::Jet));
   predMode.description = "The prediction mode (intra/inter) per block";

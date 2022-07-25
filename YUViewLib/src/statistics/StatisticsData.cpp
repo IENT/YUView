@@ -137,7 +137,7 @@ bool polygonContainsPoint(const stats::Polygon &polygon, const Point &pt)
   }
 }
 
-bool anyStatsNeedLoading(const TypesVec &types, const DataPerTypeMap &dataMap)
+bool anyStatsNeedLoading(const StatisticsTypes &types, const DataPerTypeMap &dataMap)
 {
   for (auto &type : types)
   {
@@ -151,7 +151,7 @@ bool anyStatsNeedLoading(const TypesVec &types, const DataPerTypeMap &dataMap)
   return false;
 }
 
-bool anyStatsAreRendered(const TypesVec &types)
+bool anyStatsAreRendered(const StatisticsTypes &types)
 {
   return std::any_of<StatisticsType>(
       types.begin(), types.end(), [](const StatisticsType &type) { return type.render; });

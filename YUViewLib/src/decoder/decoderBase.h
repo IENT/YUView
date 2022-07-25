@@ -129,7 +129,7 @@ public:
   bool areStatisticsSupported() const { return this->statisticsSupported; }
   bool areStatisticsEnabled() const { return this->statisticsEnabled; }
   void enableStatisticsStorage();
-  virtual std::vector<stats::StatisticsType> getStatisticsTypes() const { return {}; }
+  virtual stats::StatisticsTypes getStatisticsTypes() const { return {}; }
 
   // Error handling
   bool    errorInDecoder() const { return decoderState == DecoderState::Error; }

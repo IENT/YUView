@@ -66,8 +66,7 @@ public:
   bool pushAVPacket(FFmpeg::AVPacketWrapper &pkt);
   bool pushData(QByteArray &data) override;
 
-  // What statistics do we support?
-  void fillStatisticList(stats::StatisticsData &statisticsData) const override;
+  stats::StatisticsTypes getStatisticsTypes() const override;
 
   QStringList getLibraryPaths() const override { return ff.getLibPaths(); }
   QString     getDecoderName() const override { return "FFmpeg"; }
@@ -88,9 +87,6 @@ protected:
 
   // Try to decode a frame. If successful, the frame will be in "frame" and return true.
   bool decodeFrame();
-
-  // Statistics caching
-  void cacheCurStatistics();
 
   QByteArray currentOutputBuffer;
   void

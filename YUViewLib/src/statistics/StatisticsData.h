@@ -42,9 +42,9 @@
 namespace stats
 {
 
-using TypesVec       = std::vector<StatisticsType>;
-using TypeID         = int;
-using DataPerTypeMap = std::map<TypeID, DataPerType>;
+using StatisticsTypes = std::vector<StatisticsType>;
+using TypeID          = int;
+using DataPerTypeMap  = std::map<TypeID, DataPerType>;
 
 struct FrameDataCache
 {
@@ -55,11 +55,11 @@ struct FrameDataCache
 class StatisticsData
 {
 public:
-  ItemLoadingState needsLoading(int frameIndex) const;
-  std::vector<int> getTypesThatNeedLoading(int frameIndex, BufferSelection buffer) const;
-  QStringPairList  getValuesAt(const QPoint &pos) const;
-  const TypesVec & getStatisticsTypes() { return this->types; }
-  bool             hasDataForTypeID(int typeID) const;
+  ItemLoadingState       needsLoading(int frameIndex) const;
+  std::vector<int>       getTypesThatNeedLoading(int frameIndex, BufferSelection buffer) const;
+  QStringPairList        getValuesAt(const QPoint &pos) const;
+  const StatisticsTypes &getStatisticsTypes() { return this->types; }
+  bool                   hasDataForTypeID(int typeID) const;
 
   void add(BufferSelection buffer, TypeID typeID, BlockWithValue &&blockWithValue);
   void add(BufferSelection buffer, TypeID typeID, BlockWithVector &&BlockWithVector);
@@ -78,8 +78,8 @@ private:
 
   mutable std::mutex accessMutex{};
 
-  Size     frameSize{};
-  TypesVec types{};
+  Size            frameSize{};
+  StatisticsTypes types{};
 };
 
 } // namespace stats
