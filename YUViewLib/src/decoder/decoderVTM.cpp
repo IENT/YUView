@@ -111,17 +111,17 @@ decoderVTM::decoderVTM(int, bool cachingDecoder) : decoderBaseSingleLib(cachingD
   // Try to load the decoder library (.dll on Windows, .so on Linux, .dylib on Mac)
   QSettings settings;
   settings.beginGroup("Decoders");
-  loadDecoderLibrary(settings.value("libVTMFile", "").toString());
+  this->loadDecoderLibrary(settings.value("libVTMFile", "").toString());
   settings.endGroup();
 
-  if (decoderState != DecoderState::Error)
-    allocateNewDecoder();
+  if (this->decoderState != DecoderState::Error)
+    this->allocateNewDecoder();
 }
 
 decoderVTM::~decoderVTM()
 {
-  if (decoder != nullptr)
-    this->lib.libVTMDec_free_decoder(decoder);
+  if (this->decoder != nullptr)
+    this->lib.libVTMDec_free_decoder(this->decoder);
 }
 
 QStringList decoderVTM::getLibraryNames() const
@@ -129,7 +129,7 @@ QStringList decoderVTM::getLibraryNames() const
   // If the file name is not set explicitly, QLibrary will try to open the .so file first.
   // Since this has been compiled for linux it will fail and not even try to open the .dylib.
   // On windows and linux ommitting the extension works
-  QStringList names =
+  auto names =
       is_Q_OS_MAC ? QStringList() << "libVTMDecoder.dylib" : QStringList() << "libVTMDecoder";
 
   return names;
@@ -138,48 +138,53 @@ QStringList decoderVTM::getLibraryNames() const
 void decoderVTM::resolveLibraryFunctionPointers()
 {
   // Get/check function pointers
-  if (!resolve(this->lib.libVTMDec_get_version, "libVTMDec_get_version"))
+  if (!this->resolve(this->lib.libVTMDec_get_version, "libVTMDec_get_version"))
     return;
-  if (!resolve(this->lib.libVTMDec_new_decoder, "libVTMDec_new_decoder"))
+  if (!this->resolve(this->lib.libVTMDec_new_decoder, "libVTMDec_new_decoder"))
     return;
-  if (!resolve(this->lib.libVTMDec_free_decoder, "libVTMDec_free_decoder"))
+  if (!this->resolve(this->lib.libVTMDec_free_decoder, "libVTMDec_free_decoder"))
     return;
-  if (!resolve(this->lib.libVTMDec_set_SEI_Check, "libVTMDec_set_SEI_Check"))
+  if (!this->resolve(this->lib.libVTMDec_set_SEI_Check, "libVTMDec_set_SEI_Check"))
     return;
-  if (!resolve(this->lib.libVTMDec_set_max_temporal_layer, "libVTMDec_set_max_temporal_layer"))
+  if (!this->resolve(this->lib.libVTMDec_set_max_temporal_layer,
+                     "libVTMDec_set_max_temporal_layer"))
     return;
-  if (!resolve(this->lib.libVTMDec_push_nal_unit, "libVTMDec_push_nal_unit"))
-    return;
-
-  if (!resolve(this->lib.libVTMDec_get_picture, "libVTMDec_get_picture"))
-    return;
-  if (!resolve(this->lib.libVTMDec_get_POC, "libVTMDec_get_POC"))
-    return;
-  if (!resolve(this->lib.libVTMDec_get_picture_width, "libVTMDec_get_picture_width"))
-    return;
-  if (!resolve(this->lib.libVTMDec_get_picture_height, "libVTMDec_get_picture_height"))
-    return;
-  if (!resolve(this->lib.libVTMDec_get_picture_stride, "libVTMDec_get_picture_stride"))
-    return;
-  if (!resolve(this->lib.libVTMDec_get_image_plane, "libVTMDec_get_image_plane"))
-    return;
-  if (!resolve(this->lib.libVTMDec_get_chroma_format, "libVTMDec_get_chroma_format"))
-    return;
-  if (!resolve(this->lib.libVTMDec_get_internal_bit_depth, "libVTMDec_get_internal_bit_depth"))
+  if (!this->resolve(this->lib.libVTMDec_push_nal_unit, "libVTMDec_push_nal_unit"))
     return;
 
-  /*if (!resolve(libVTMDec_get_internal_type_number, "libVTMDec_get_internal_type_number")) return;
-  if (!resolve(libVTMDec_get_internal_type_name, "libVTMDec_get_internal_type_name")) return;*/
-  /*if (!resolve(libVTMDec_get_internal_type, "libVTMDec_get_internal_type")) return;
-  if (!resolve(libVTMDec_get_internal_type_max, "libVTMDec_get_internal_type_max")) return;
-  if (!resolve(libVTMDec_get_internal_type_vector_scaling,
+  if (!this->resolve(this->lib.libVTMDec_get_picture, "libVTMDec_get_picture"))
+    return;
+  if (!this->resolve(this->lib.libVTMDec_get_POC, "libVTMDec_get_POC"))
+    return;
+  if (!this->resolve(this->lib.libVTMDec_get_picture_width, "libVTMDec_get_picture_width"))
+    return;
+  if (!this->resolve(this->lib.libVTMDec_get_picture_height, "libVTMDec_get_picture_height"))
+    return;
+  if (!this->resolve(this->lib.libVTMDec_get_picture_stride, "libVTMDec_get_picture_stride"))
+    return;
+  if (!this->resolve(this->lib.libVTMDec_get_image_plane, "libVTMDec_get_image_plane"))
+    return;
+  if (!this->resolve(this->lib.libVTMDec_get_chroma_format, "libVTMDec_get_chroma_format"))
+    return;
+  if (!this->resolve(this->lib.libVTMDec_get_internal_bit_depth,
+                     "libVTMDec_get_internal_bit_depth"))
+    return;
+
+  /*if (!this->resolve(libVTMDec_get_internal_type_number, "libVTMDec_get_internal_type_number"))
+  return;
+  if (!this->resolve(libVTMDec_get_internal_type_name, "libVTMDec_get_internal_type_name"))
+  return;*/
+  /*if (!this->resolve(libVTMDec_get_internal_type, "libVTMDec_get_internal_type")) return;
+  if (!this->resolve(libVTMDec_get_internal_type_max, "libVTMDec_get_internal_type_max")) return;
+  if (!this->resolve(libVTMDec_get_internal_type_vector_scaling,
   "libVTMDec_get_internal_type_vector_scaling")) return; if
-  (!resolve(libVTMDec_get_internal_type_description, "libVTMDec_get_internal_type_description"))
-  return; if (!resolve(libVTMDec_get_internal_info, "libVTMDec_get_internal_info")) return; if
-  (!resolve(libVTMDec_clear_internal_info, "libVTMDec_clear_internal_info")) return;*/
+  (!this->resolve(libVTMDec_get_internal_type_description,
+  "libVTMDec_get_internal_type_description")) return; if
+  (!this->resolve(libVTMDec_get_internal_info, "libVTMDec_get_internal_info")) return; if
+  (!this->resolve(libVTMDec_clear_internal_info, "libVTMDec_clear_internal_info")) return;*/
 
   // All interbals functions were successfully retrieved
-  internalsSupported = true;
+  this->internalsSupported = true;
 
   return;
 
@@ -190,7 +195,7 @@ void decoderVTM::resolveLibraryFunctionPointers()
 
 template <typename T> T decoderVTM::resolve(T &fun, const char *symbol, bool optional)
 {
-  QFunctionPointer ptr = this->library.resolve(symbol);
+  auto ptr = this->library.resolve(symbol);
   if (!ptr)
   {
     if (!optional)
@@ -205,107 +210,107 @@ template <typename T> T decoderVTM::resolve(T &fun, const char *symbol, bool opt
 void decoderVTM::resetDecoder()
 {
   // Delete decoder
-  if (decoder != nullptr)
-    if (this->lib.libVTMDec_free_decoder(decoder) != LIBVTMDEC_OK)
+  if (this->decoder != nullptr)
+    if (this->lib.libVTMDec_free_decoder(this->decoder) != LIBVTMDEC_OK)
       return setError("Reset: Freeing the decoder failed.");
 
   decoderBase::resetDecoder();
-  decoder             = nullptr;
-  decodedFrameWaiting = false;
+  this->decoder             = nullptr;
+  this->decodedFrameWaiting = false;
 
   // Create new decoder
-  allocateNewDecoder();
+  this->allocateNewDecoder();
 }
 
 void decoderVTM::allocateNewDecoder()
 {
-  if (decoder != nullptr)
+  if (this->decoder != nullptr)
     return;
 
-  DEBUG_DECVTM("decoderVTM::allocateNewDecoder - decodeSignal %d", decodeSignal);
+  DEBUG_DECVTM("decoderVTM::allocateNewDecoder - decodeSignal %d", this->decodeSignal);
 
   // Create new decoder object
-  decoder = this->lib.libVTMDec_new_decoder();
+  this->decoder = this->lib.libVTMDec_new_decoder();
 
   // Set some decoder parameters
-  this->lib.libVTMDec_set_SEI_Check(decoder, true);
-  this->lib.libVTMDec_set_max_temporal_layer(decoder, -1);
+  this->lib.libVTMDec_set_SEI_Check(this->decoder, true);
+  this->lib.libVTMDec_set_max_temporal_layer(this->decoder, -1);
 }
 
 bool decoderVTM::decodeNextFrame()
 {
-  if (decoderState != DecoderState::RetrieveFrames)
+  if (this->decoderState != DecoderState::RetrieveFrames)
   {
     DEBUG_DECVTM("decoderVTM::decodeNextFrame: Wrong decoder state.");
     return false;
   }
 
-  if (currentVTMPic == nullptr)
+  if (this->currentVTMPic == nullptr)
   {
     DEBUG_DECVTM("decoderVTM::decodeNextFrame: No frame available.");
     return false;
   }
 
-  if (decodedFrameWaiting)
+  if (this->decodedFrameWaiting)
   {
-    decodedFrameWaiting = false;
+    this->decodedFrameWaiting = false;
     return true;
   }
 
-  return getNextFrameFromDecoder();
+  return this->getNextFrameFromDecoder();
 }
 
 bool decoderVTM::getNextFrameFromDecoder()
 {
   DEBUG_DECVTM("decoderVTM::getNextFrameFromDecoder");
 
-  currentVTMPic = this->lib.libVTMDec_get_picture(decoder);
-  if (currentVTMPic == nullptr)
+  this->currentVTMPic = this->lib.libVTMDec_get_picture(decoder);
+  if (this->currentVTMPic == nullptr)
   {
-    decoderState = DecoderState::NeedsMoreData;
+    this->decoderState = DecoderState::NeedsMoreData;
     return false;
   }
 
   // Check the validity of the picture
-  auto picSize = Size(this->lib.libVTMDec_get_picture_width(currentVTMPic, LIBVTMDEC_LUMA),
-                      this->lib.libVTMDec_get_picture_height(currentVTMPic, LIBVTMDEC_LUMA));
+  auto picSize = Size(this->lib.libVTMDec_get_picture_width(this->currentVTMPic, LIBVTMDEC_LUMA),
+                      this->lib.libVTMDec_get_picture_height(this->currentVTMPic, LIBVTMDEC_LUMA));
   if (!picSize.isValid())
     DEBUG_DECVTM("decoderVTM::getNextFrameFromDecoder got invalid size");
   auto subsampling =
-      convertFromInternalSubsampling(this->lib.libVTMDec_get_chroma_format(currentVTMPic));
+      convertFromInternalSubsampling(this->lib.libVTMDec_get_chroma_format(this->currentVTMPic));
   if (subsampling == Subsampling::UNKNOWN)
     DEBUG_DECVTM("decoderVTM::getNextFrameFromDecoder got invalid chroma format");
   auto bitDepth = functions::clipToUnsigned(
-      this->lib.libVTMDec_get_internal_bit_depth(currentVTMPic, LIBVTMDEC_LUMA));
+      this->lib.libVTMDec_get_internal_bit_depth(this->currentVTMPic, LIBVTMDEC_LUMA));
   if (bitDepth < 8 || bitDepth > 16)
     DEBUG_DECVTM("decoderVTM::getNextFrameFromDecoder got invalid bit depth");
 
-  if (!frameSize.isValid() && !formatYUV.isValid())
+  if (!frameSize.isValid() && !this->formatYUV.isValid())
   {
     // Set the values
-    frameSize = picSize;
-    formatYUV = video::yuv::PixelFormatYUV(subsampling, bitDepth);
+    this->frameSize = picSize;
+    this->formatYUV = video::yuv::PixelFormatYUV(subsampling, bitDepth);
   }
   else
   {
     // Check the values against the previously set values
-    if (frameSize != picSize)
+    if (this->frameSize != picSize)
       return setErrorB("Received a frame of different size");
-    if (formatYUV.getSubsampling() != subsampling)
+    if (this->formatYUV.getSubsampling() != subsampling)
       return setErrorB("Received a frame with different subsampling");
-    if (formatYUV.getBitsPerSample() != bitDepth)
+    if (this->formatYUV.getBitsPerSample() != bitDepth)
       return setErrorB("Received a frame with different bit depth");
   }
 
   DEBUG_DECVTM("decoderVTM::getNextFrameFromDecoder got a valid frame wit POC %d",
-               this->lib.libVTMDec_get_POC(currentVTMPic));
-  currentOutputBuffer.clear();
+               this->lib.libVTMDec_get_POC(this->currentVTMPic));
+  this->currentOutputBuffer.clear();
   return true;
 }
 
 bool decoderVTM::pushData(QByteArray &data)
 {
-  if (decoderState != DecoderState::NeedsMoreData)
+  if (this->decoderState != DecoderState::NeedsMoreData)
   {
     DEBUG_DECVTM("decoderVTM::pushData: Wrong decoder state.");
     return false;
@@ -319,9 +324,9 @@ bool decoderVTM::pushData(QByteArray &data)
   // with a start code and without.
   bool checkOutputPictures = false;
   bool bNewPicture         = false;
-  auto err                 = this->lib.libVTMDec_push_nal_unit(
-      decoder, data, data.length(), endOfFile, bNewPicture, checkOutputPictures);
-  if (err != LIBVTMDEC_OK)
+  if (this->lib.libVTMDec_push_nal_unit(
+          decoder, data, data.length(), endOfFile, bNewPicture, checkOutputPictures) !=
+      LIBVTMDEC_OK)
     return setErrorB(QString("Error pushing data to decoder (libVTMDec_push_nal_unit) length %1")
                          .arg(data.length()));
   DEBUG_DECVTM("decoderVTM::pushData pushed NAL length %d%s%s",
@@ -331,9 +336,9 @@ bool decoderVTM::pushData(QByteArray &data)
 
   if (checkOutputPictures && getNextFrameFromDecoder())
   {
-    decodedFrameWaiting = true;
-    decoderState        = DecoderState::RetrieveFrames;
-    currentOutputBuffer.clear();
+    this->decodedFrameWaiting = true;
+    this->decoderState        = DecoderState::RetrieveFrames;
+    this->currentOutputBuffer.clear();
   }
 
   // If bNewPicture is true, the decoder noticed that a new picture starts with this
@@ -344,26 +349,26 @@ bool decoderVTM::pushData(QByteArray &data)
 
 QByteArray decoderVTM::getRawFrameData()
 {
-  if (currentVTMPic == nullptr)
+  if (this->currentVTMPic == nullptr)
     return QByteArray();
-  if (decoderState != DecoderState::RetrieveFrames)
+  if (this->decoderState != DecoderState::RetrieveFrames)
   {
     DEBUG_DECVTM("decoderVTM::getRawFrameData: Wrong decoder state.");
     return QByteArray();
   }
 
-  if (currentOutputBuffer.isEmpty())
+  if (this->currentOutputBuffer.isEmpty())
   {
     // Put image data into buffer
-    copyImgToByteArray(currentVTMPic, currentOutputBuffer);
+    copyImgToByteArray(this->currentVTMPic, currentOutputBuffer);
     DEBUG_DECVTM("decoderVTM::getRawFrameData copied frame to buffer");
 
-    if (this->statisticsEnabled())
+    if (this->statisticsEnabled)
       // Get the statistics from the image and put them into the statistics cache
-      this->cacheStatistics(currentVTMPic);
+      this->cacheStatistics(this->currentVTMPic);
   }
 
-  return currentOutputBuffer;
+  return this->currentOutputBuffer;
 }
 
 #if SSE_CONVERSION
@@ -410,8 +415,8 @@ void decoderVTM::copyImgToByteArray(libVTMDec_picture *src, QByteArray &dst)
     if (img_c == nullptr)
       return;
 
-    int width  = this->lib.libVTMDec_get_picture_width(src, component);
-    int height = this->lib.libVTMDec_get_picture_height(src, component);
+    auto width  = this->lib.libVTMDec_get_picture_width(src, component);
+    auto height = this->lib.libVTMDec_get_picture_height(src, component);
 
     if (outputTwoByte)
     {
@@ -456,9 +461,6 @@ void decoderVTM::copyImgToByteArray(libVTMDec_picture *src, QByteArray &dst)
 
 void decoderVTM::cacheStatistics(libVTMDec_picture *)
 {
-  if (!internalsSupported)
-    return;
-
   DEBUG_DECVTM("decoderVTM::cacheStatistics ...");
 
   // // Conversion from intra prediction mode to vector.
@@ -517,7 +519,7 @@ void decoderVTM::cacheStatistics(libVTMDec_picture *)
   //}
 }
 
-void decoderVTM::fillStatisticList(stats::StatisticsData &) const
+stats::StatisticsTypes decoderVTM::getStatisticsTypes() const
 {
   // Ask the decoder how many internals types there are
   // unsigned int nrTypes = this->lib.libVTMDec_get_internal_type_number();
@@ -606,11 +608,13 @@ void decoderVTM::fillStatisticList(stats::StatisticsData &) const
   //    statSource.addStatType(intraDir);
   //  }
   //}
+
+  return {};
 }
 
 QString decoderVTM::getDecoderName() const
 {
-  return (decoderState == DecoderState::Error) ? "VTM" : this->lib.libVTMDec_get_version();
+  return (this->decoderState == DecoderState::Error) ? "VTM" : this->lib.libVTMDec_get_version();
 }
 
 bool decoderVTM::checkLibraryFile(QString libFilePath, QString &error)
