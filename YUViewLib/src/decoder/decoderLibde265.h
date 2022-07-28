@@ -105,7 +105,7 @@ public:
                          << "Residual"
                          << "Transform Coefficients";
   }
-  void setDecodeSignal(int signalID, bool &decoderResetNeeded) override;
+  virtual DecoderResetNeeded setDecodeSignal(int signalID) override;
 
   // Decoding / pushing data
   bool       decodeNextFrame() override;
@@ -113,7 +113,7 @@ public:
   bool       pushData(QByteArray &data) override;
 
   // Statistics
-  void fillStatisticList(stats::StatisticsData &statisticsData) const override;
+  virtual stats::StatisticsTypes getStatisticsTypes() const;
 
   // Check if the given library file is an existing libde265 decoder that we can use.
   static bool checkLibraryFile(QString libFilePath, QString &error);
@@ -158,8 +158,6 @@ private:
 
   // With the given partitioning mode, the size of the CU and the prediction block index, calculate
   // the sub-position and size of the prediction block
-  void getPBSubPosition(
-      int partMode, int CUSizePix, int pbIdx, int *pbX, int *pbY, int *pbW, int *pbH) const;
   void cacheStatistics_TUTree_recursive(uint8_t *const tuInfo,
                                         int            tuInfoWidth,
                                         int            tuUnitSizePix,

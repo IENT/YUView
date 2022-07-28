@@ -86,6 +86,73 @@ Subsampling convertFromInternalSubsampling(de265_chroma fmt)
   return Subsampling::UNKNOWN;
 }
 
+std::tuple<int, int, int, int> getPBSubPosition(int partMode, int cbSizePix, int pbIdx)
+{
+  int pbX = 0;
+  int pbY = 0;
+  int pbW = 0;
+  int pbH = 0;
+
+  // Get the position/width/height of the PB
+  if (partMode == 0) // PART_2Nx2N
+  {
+    pbW = cbSizePix;
+    pbH = cbSizePix;
+    pbX = 0;
+    pbY = 0;
+  }
+  else if (partMode == 1) // PART_2NxN
+  {
+    pbW = cbSizePix;
+    pbH = cbSizePix / 2;
+    pbX = 0;
+    pbY = (pbIdx == 0) ? 0 : cbSizePix / 2;
+  }
+  else if (partMode == 2) // PART_Nx2N
+  {
+    pbW = cbSizePix / 2;
+    pbH = cbSizePix;
+    pbX = (pbIdx == 0) ? 0 : cbSizePix / 2;
+    pbY = 0;
+  }
+  else if (partMode == 3) // PART_NxN
+  {
+    pbW = cbSizePix / 2;
+    pbH = cbSizePix / 2;
+    pbX = (pbIdx == 0 || pbIdx == 2) ? 0 : cbSizePix / 2;
+    pbY = (pbIdx == 0 || pbIdx == 1) ? 0 : cbSizePix / 2;
+  }
+  else if (partMode == 4) // PART_2NxnU
+  {
+    pbW = cbSizePix;
+    pbH = (pbIdx == 0) ? cbSizePix / 4 : cbSizePix / 4 * 3;
+    pbX = 0;
+    pbY = (pbIdx == 0) ? 0 : cbSizePix / 4;
+  }
+  else if (partMode == 5) // PART_2NxnD
+  {
+    pbW = cbSizePix;
+    pbH = (pbIdx == 0) ? cbSizePix / 4 * 3 : cbSizePix / 4;
+    pbX = 0;
+    pbY = (pbIdx == 0) ? 0 : cbSizePix / 4 * 3;
+  }
+  else if (partMode == 6) // PART_nLx2N
+  {
+    pbW = (pbIdx == 0) ? cbSizePix / 4 : cbSizePix / 4 * 3;
+    pbH = cbSizePix;
+    pbX = (pbIdx == 0) ? 0 : cbSizePix / 4;
+    pbY = 0;
+  }
+  else if (partMode == 7) // PART_nRx2N
+  {
+    pbW = (pbIdx == 0) ? cbSizePix / 4 * 3 : cbSizePix / 4;
+    pbH = cbSizePix;
+    pbX = (pbIdx == 0) ? 0 : cbSizePix / 4 * 3;
+    pbY = 0;
+  }
+  return {pbX, pbY, pbW, pbH};
+}
+
 } // namespace
 
 decoderLibde265::decoderLibde265(int signalID, bool cachingDecoder)
@@ -102,7 +169,7 @@ decoderLibde265::decoderLibde265(int signalID, bool cachingDecoder)
   settings.endGroup();
 
   bool resetDecoder;
-  this->setDecodeSignal(signalID, resetDecoder);
+  this->setDecodeSignal(signalID);
   this->allocateNewDecoder();
 }
 
@@ -117,8 +184,7 @@ void decoderLibde265::resetDecoder()
   if (!this->decoder)
     return;
 
-  de265_error err = this->lib.de265_free_decoder(this->decoder);
-  if (err != DE265_OK)
+  if (this->lib.de265_free_decoder(this->decoder) != DE265_OK)
     return setError("Reset: Freeing the decoder failed.");
 
   decoderBase::resetDecoder();
@@ -128,104 +194,106 @@ void decoderLibde265::resetDecoder()
   this->allocateNewDecoder();
 }
 
-void decoderLibde265::setDecodeSignal(int signalID, bool &decoderResetNeeded)
+decoderLibde265::DecoderResetNeeded decoderLibde265::setDecodeSignal(int signalID)
 {
-  decoderResetNeeded = false;
+  bool decoderResetNeeded = false;
   if (signalID == this->decodeSignal)
-    return;
-  if (signalID >= 0 && signalID < nrSignalsSupported())
+    return false;
+  if (signalID >= 0 && signalID < this->nrSignalsSupported())
     this->decodeSignal = signalID;
-  decoderResetNeeded = true;
+  return true;
 }
 
 void decoderLibde265::resolveLibraryFunctionPointers()
 {
   // Get/check function pointers
-  if (!resolve(this->lib.de265_new_decoder, "de265_new_decoder"))
+  if (!this->resolve(this->lib.de265_new_decoder, "de265_new_decoder"))
     return;
-  if (!resolve(this->lib.de265_set_parameter_bool, "de265_set_parameter_bool"))
+  if (!this->resolve(this->lib.de265_set_parameter_bool, "de265_set_parameter_bool"))
     return;
-  if (!resolve(this->lib.de265_set_parameter_int, "de265_set_parameter_int"))
+  if (!this->resolve(this->lib.de265_set_parameter_int, "de265_set_parameter_int"))
     return;
-  if (!resolve(this->lib.de265_disable_logging, "de265_disable_logging"))
+  if (!this->resolve(this->lib.de265_disable_logging, "de265_disable_logging"))
     return;
-  if (!resolve(this->lib.de265_set_verbosity, "de265_set_verbosity"))
+  if (!this->resolve(this->lib.de265_set_verbosity, "de265_set_verbosity"))
     return;
-  if (!resolve(this->lib.de265_start_worker_threads, "de265_start_worker_threads"))
+  if (!this->resolve(this->lib.de265_start_worker_threads, "de265_start_worker_threads"))
     return;
-  if (!resolve(this->lib.de265_set_limit_TID, "de265_set_limit_TID"))
+  if (!this->resolve(this->lib.de265_set_limit_TID, "de265_set_limit_TID"))
     return;
-  if (!resolve(this->lib.de265_get_error_text, "de265_get_error_text"))
+  if (!this->resolve(this->lib.de265_get_error_text, "de265_get_error_text"))
     return;
-  if (!resolve(this->lib.de265_get_chroma_format, "de265_get_chroma_format"))
+  if (!this->resolve(this->lib.de265_get_chroma_format, "de265_get_chroma_format"))
     return;
-  if (!resolve(this->lib.de265_get_image_width, "de265_get_image_width"))
+  if (!this->resolve(this->lib.de265_get_image_width, "de265_get_image_width"))
     return;
-  if (!resolve(this->lib.de265_get_image_height, "de265_get_image_height"))
+  if (!this->resolve(this->lib.de265_get_image_height, "de265_get_image_height"))
     return;
-  if (!resolve(this->lib.de265_get_image_plane, "de265_get_image_plane"))
+  if (!this->resolve(this->lib.de265_get_image_plane, "de265_get_image_plane"))
     return;
-  if (!resolve(this->lib.de265_get_bits_per_pixel, "de265_get_bits_per_pixel"))
+  if (!this->resolve(this->lib.de265_get_bits_per_pixel, "de265_get_bits_per_pixel"))
     return;
-  if (!resolve(this->lib.de265_decode, "de265_decode"))
+  if (!this->resolve(this->lib.de265_decode, "de265_decode"))
     return;
-  if (!resolve(this->lib.de265_push_data, "de265_push_data"))
+  if (!this->resolve(this->lib.de265_push_data, "de265_push_data"))
     return;
-  if (!resolve(this->lib.de265_push_NAL, "de265_push_NAL"))
+  if (!this->resolve(this->lib.de265_push_NAL, "de265_push_NAL"))
     return;
-  if (!resolve(this->lib.de265_flush_data, "de265_flush_data"))
+  if (!this->resolve(this->lib.de265_flush_data, "de265_flush_data"))
     return;
-  if (!resolve(this->lib.de265_get_next_picture, "de265_get_next_picture"))
+  if (!this->resolve(this->lib.de265_get_next_picture, "de265_get_next_picture"))
     return;
-  if (!resolve(this->lib.de265_free_decoder, "de265_free_decoder"))
+  if (!this->resolve(this->lib.de265_free_decoder, "de265_free_decoder"))
     return;
   DEBUG_LIBDE265("decoderLibde265::resolveLibraryFunctionPointers - decoding functions found");
 
   // Get pointers to the internals/statistics functions (if present)
   // If not, disable the statistics extraction. Normal decoding of the video will still work.
 
-  if (!resolve(this->lib.de265_internals_get_CTB_Info_Layout,
-               "de265_internals_get_CTB_Info_Layout",
-               true))
+  if (!this->resolve(this->lib.de265_internals_get_CTB_Info_Layout,
+                     "de265_internals_get_CTB_Info_Layout",
+                     true))
     return;
-  if (!resolve(
+  if (!this->resolve(
           this->lib.de265_internals_get_CTB_sliceIdx, "de265_internals_get_CTB_sliceIdx", true))
     return;
-  if (!resolve(
+  if (!this->resolve(
           this->lib.de265_internals_get_CB_Info_Layout, "de265_internals_get_CB_Info_Layout", true))
     return;
-  if (!resolve(this->lib.de265_internals_get_CB_info, "de265_internals_get_CB_info", true))
+  if (!this->resolve(this->lib.de265_internals_get_CB_info, "de265_internals_get_CB_info", true))
     return;
-  if (!resolve(
+  if (!this->resolve(
           this->lib.de265_internals_get_PB_Info_layout, "de265_internals_get_PB_Info_layout", true))
     return;
-  if (!resolve(this->lib.de265_internals_get_PB_info, "de265_internals_get_PB_info", true))
+  if (!this->resolve(this->lib.de265_internals_get_PB_info, "de265_internals_get_PB_info", true))
     return;
-  if (!resolve(this->lib.de265_internals_get_IntraDir_Info_layout,
-               "de265_internals_get_IntraDir_Info_layout",
-               true))
+  if (!this->resolve(this->lib.de265_internals_get_IntraDir_Info_layout,
+                     "de265_internals_get_IntraDir_Info_layout",
+                     true))
     return;
-  if (!resolve(
+  if (!this->resolve(
           this->lib.de265_internals_get_intraDir_info, "de265_internals_get_intraDir_info", true))
     return;
-  if (!resolve(this->lib.de265_internals_get_TUInfo_Info_layout,
-               "de265_internals_get_TUInfo_Info_layout",
-               true))
+  if (!this->resolve(this->lib.de265_internals_get_TUInfo_Info_layout,
+                     "de265_internals_get_TUInfo_Info_layout",
+                     true))
     return;
-  if (!resolve(this->lib.de265_internals_get_TUInfo_info, "de265_internals_get_TUInfo_info", true))
+  if (!this->resolve(
+          this->lib.de265_internals_get_TUInfo_info, "de265_internals_get_TUInfo_info", true))
     return;
   // All interbals functions were successfully retrieved
-  internalsSupported = true;
+  this->statisticsSupported = true;
   DEBUG_LIBDE265("decoderLibde265::resolveLibraryFunctionPointers - statistics internals found");
 
   // Get pointers to the functions for retrieving prediction/residual signals
-  if (!resolve(this->lib.de265_internals_get_image_plane, "de265_internals_get_image_plane", true))
+  if (!this->resolve(
+          this->lib.de265_internals_get_image_plane, "de265_internals_get_image_plane", true))
     return;
-  if (!resolve(
+  if (!this->resolve(
           this->lib.de265_internals_set_parameter_bool, "de265_internals_set_parameter_bool", true))
     return;
   // The prediction and residual signal can be obtained
-  nrSignals = 4;
+  this->nrSignals = 4;
   DEBUG_LIBDE265(
       "decoderLibde265::resolveLibraryFunctionPointers - prediction/residual internals found");
 }
@@ -325,9 +393,9 @@ bool decoderLibde265::decodeNextFrame()
 
 bool decoderLibde265::decodeFrame()
 {
-  int more = 1;
-  curImage = nullptr;
-  while (more && curImage == nullptr)
+  int more       = 1;
+  this->curImage = nullptr;
+  while (more && this->curImage == nullptr)
   {
     more     = 0;
     auto err = this->lib.de265_decode(this->decoder, &more);
@@ -343,18 +411,18 @@ bool decoderLibde265::decodeFrame()
     this->curImage = this->lib.de265_get_next_picture(this->decoder);
   }
 
-  if (more == 0 && curImage == nullptr)
+  if (more == 0 && this->curImage == nullptr)
   {
     // Decoding ended
     this->decoderState = DecoderState::EndOfBitstream;
     return false;
   }
 
-  if (curImage != nullptr)
+  if (this->curImage != nullptr)
   {
     // Get the resolution / yuv format from the frame
-    auto s = Size(this->lib.de265_get_image_width(curImage, 0),
-                  this->lib.de265_get_image_height(curImage, 0));
+    auto s = Size(this->lib.de265_get_image_width(this->curImage, 0),
+                  this->lib.de265_get_image_height(this->curImage, 0));
     if (!s.isValid())
       DEBUG_LIBDE265("decoderLibde265::decodeFrame got invalid frame size");
     auto subsampling = convertFromInternalSubsampling(this->lib.de265_get_chroma_format(curImage));
@@ -374,11 +442,11 @@ bool decoderLibde265::decodeFrame()
     {
       // Check the values against the previously set values
       if (this->frameSize != s)
-        return setErrorB("Received a frame of different size");
+        return this->setErrorB("Received a frame of different size");
       if (this->formatYUV.getSubsampling() != subsampling)
-        return setErrorB("Received a frame with different subsampling");
+        return this->setErrorB("Received a frame with different subsampling");
       if (this->formatYUV.getBitsPerSample() != bitDepth)
-        return setErrorB("Received a frame with different bit depth");
+        return this->setErrorB("Received a frame with different bit depth");
     }
     DEBUG_LIBDE265("decoderLibde265::decodeFrame Picture decoded");
 
@@ -404,7 +472,7 @@ QByteArray decoderLibde265::getRawFrameData()
     this->copyImgToByteArray(this->curImage, this->currentOutputBuffer);
     DEBUG_LIBDE265("decoderLibde265::getRawFrameData copied frame to buffer");
 
-    if (this->statisticsEnabled())
+    if (this->statisticsEnabled)
       this->cacheStatistics(this->curImage);
   }
 
@@ -472,16 +540,15 @@ void decoderLibde265::copyImgToByteArray(const de265_image *src, QByteArray &dst
 {
   // How many image planes are there?
   auto cMode    = this->lib.de265_get_chroma_format(src);
-  int  nrPlanes = (cMode == de265_chroma_mono) ? 1 : 3;
+  auto nrPlanes = (cMode == de265_chroma_mono) ? 1 : 3;
 
   // At first get how many bytes we are going to write
   int nrBytes = 0;
-  int stride;
   for (int c = 0; c < nrPlanes; c++)
   {
-    int width            = this->lib.de265_get_image_width(src, c);
-    int height           = this->lib.de265_get_image_height(src, c);
-    int nrBytesPerSample = (this->lib.de265_get_bits_per_pixel(src, c) > 8) ? 2 : 1;
+    auto width            = this->lib.de265_get_image_width(src, c);
+    auto height           = this->lib.de265_get_image_height(src, c);
+    auto nrBytesPerSample = (this->lib.de265_get_bits_per_pixel(src, c) > 8) ? 2 : 1;
 
     nrBytes += width * height * nrBytesPerSample;
   }
@@ -492,26 +559,27 @@ void decoderLibde265::copyImgToByteArray(const de265_image *src, QByteArray &dst
   if (dst.capacity() < nrBytes)
     dst.resize(nrBytes);
 
-  uint8_t *dst_c = (uint8_t *)dst.data();
+  auto dst_c = (uint8_t *)(dst.data());
 
   // We can now copy from src to dst
   for (int c = 0; c < nrPlanes; c++)
   {
-    const int    width            = this->lib.de265_get_image_width(src, c);
-    const int    height           = this->lib.de265_get_image_height(src, c);
-    const int    nrBytesPerSample = (this->lib.de265_get_bits_per_pixel(src, c) > 8) ? 2 : 1;
-    const size_t widthInBytes     = width * nrBytesPerSample;
+    const auto width            = this->lib.de265_get_image_width(src, c);
+    const auto height           = this->lib.de265_get_image_height(src, c);
+    const auto nrBytesPerSample = (this->lib.de265_get_bits_per_pixel(src, c) > 8) ? 2 : 1;
+    const auto widthInBytes     = width * nrBytesPerSample;
 
-    const uint8_t *img_c = nullptr;
-    if (decodeSignal == 0)
+    const uint8_t *img_c  = nullptr;
+    int            stride = 0;
+    if (this->decodeSignal == 0)
       img_c = this->lib.de265_get_image_plane(src, c, &stride);
-    else if (decodeSignal == 1)
+    else if (this->decodeSignal == 1)
       img_c = this->lib.de265_internals_get_image_plane(
           src, DE265_INTERNALS_DECODER_PARAM_SAVE_PREDICTION, c, &stride);
-    else if (decodeSignal == 2)
+    else if (this->decodeSignal == 2)
       img_c = this->lib.de265_internals_get_image_plane(
           src, DE265_INTERNALS_DECODER_PARAM_SAVE_RESIDUAL, c, &stride);
-    else if (decodeSignal == 3)
+    else if (this->decodeSignal == 3)
       img_c = this->lib.de265_internals_get_image_plane(
           src, DE265_INTERNALS_DECODER_PARAM_SAVE_TR_COEFF, c, &stride);
 
@@ -529,15 +597,14 @@ void decoderLibde265::copyImgToByteArray(const de265_image *src, QByteArray &dst
 
 void decoderLibde265::cacheStatistics(const de265_image *img)
 {
-  if (!this->internalsSupported)
-    return;
-
   DEBUG_LIBDE265("decoderLibde265::cacheStatistics");
 
   /// --- CTB internals/statistics
   int widthInCTB, heightInCTB, log2CTBSize;
   this->lib.de265_internals_get_CTB_Info_Layout(img, &widthInCTB, &heightInCTB, &log2CTBSize);
   int ctb_size = 1 << log2CTBSize; // width and height of each CTB
+
+  auto buffer = BufferSelection::Primary;
 
   // Save Slice index
   {
@@ -546,9 +613,9 @@ void decoderLibde265::cacheStatistics(const de265_image *img)
     for (int y = 0; y < heightInCTB; y++)
       for (int x = 0; x < widthInCTB; x++)
       {
-        uint16_t val = tmpArr[y * widthInCTB + x];
-        this->statisticsData->at(0).addBlockValue(
-            x * ctb_size, y * ctb_size, ctb_size, ctb_size, (int)val);
+        auto               val = tmpArr[y * widthInCTB + x];
+        const stats::Block ctbBlock(x * ctb_size, y * ctb_size, ctb_size, ctb_size);
+        this->statisticsData.add(buffer, 0, stats::BlockWithValue(ctbBlock, int(val)));
       }
   }
 
@@ -627,17 +694,12 @@ void decoderLibde265::cacheStatistics(const de265_image *img)
         bool    pcmFlag   = (val & 256);      // Next bit (PCM flag)
         bool    tqBypass  = (val & 512);      // Next bit (TransQuant bypass flag)
 
-        // Set part mode (ID 1)
-        this->statisticsData->at(1).addBlockValue(cbPosX, cbPosY, cbSizePix, cbSizePix, partMode);
+        const stats::Block tuBlock(cbPosX, cbPosY, cbSizePix, cbSizePix);
 
-        // Set prediction mode (ID 2)
-        this->statisticsData->at(2).addBlockValue(cbPosX, cbPosY, cbSizePix, cbSizePix, predMode);
-
-        // Set PCM flag (ID 3)
-        this->statisticsData->at(3).addBlockValue(cbPosX, cbPosY, cbSizePix, cbSizePix, pcmFlag);
-
-        // Set transQuant bypass flag (ID 4)
-        this->statisticsData->at(4).addBlockValue(cbPosX, cbPosY, cbSizePix, cbSizePix, tqBypass);
+        this->statisticsData.add(buffer, 1, stats::BlockWithValue(tuBlock, int(partMode)));
+        this->statisticsData.add(buffer, 2, stats::BlockWithValue(tuBlock, int(predMode)));
+        this->statisticsData.add(buffer, 3, stats::BlockWithValue(tuBlock, int(pcmFlag)));
+        this->statisticsData.add(buffer, 4, stats::BlockWithValue(tuBlock, int(tqBypass)));
 
         if (predMode != 0)
         {
@@ -646,11 +708,11 @@ void decoderLibde265::cacheStatistics(const de265_image *img)
           int numPB = (partMode == 0) ? 1 : (partMode == 3) ? 4 : 2;
           for (int i = 0; i < numPB; i++)
           {
-            // Get pb position/size
-            int pbSubX, pbSubY, pbW, pbH;
-            getPBSubPosition(partMode, cbSizePix, i, &pbSubX, &pbSubY, &pbW, &pbH);
-            int pbX = cbPosX + pbSubX;
-            int pbY = cbPosY + pbSubY;
+            auto [pbSubX, pbSubY, pbW, pbH] = getPBSubPosition(partMode, cbSizePix, i);
+            int pbX                         = cbPosX + pbSubX;
+            int pbY                         = cbPosY + pbSubY;
+
+            const stats::Block pbBlock(pbX, pbY, pbW, pbH);
 
             // Get index for this xy position in pb_info array
             int pbIdx = (pbY / pb_infoUnit_size) * widthInPB + (pbX / pb_infoUnit_size);
@@ -658,22 +720,22 @@ void decoderLibde265::cacheStatistics(const de265_image *img)
             // Add ref index 0 (ID 5)
             int16_t ref0 = refPOC0[pbIdx];
             if (ref0 != -1)
-              this->statisticsData->at(5).addBlockValue(pbX, pbY, pbW, pbH, ref0 - iPOC);
+              this->statisticsData.add(buffer, 5, stats::BlockWithValue(pbBlock, int(ref0 - iPOC)));
 
             // Add ref index 1 (ID 6)
             int16_t ref1 = refPOC1[pbIdx];
             if (ref1 != -1)
-              this->statisticsData->at(6).addBlockValue(pbX, pbY, pbW, pbH, ref1 - iPOC);
+              this->statisticsData.add(buffer, 6, stats::BlockWithValue(pbBlock, int(ref1 - iPOC)));
 
             // Add motion vector 0 (ID 7)
             if (ref0 != -1)
-              this->statisticsData->at(7).addBlockVector(
-                  pbX, pbY, pbW, pbH, vec0_x[pbIdx], vec0_y[pbIdx]);
+              this->statisticsData.add(
+                  buffer, 7, stats::BlockWithVector(pbBlock, {vec0_x[pbIdx], vec0_y[pbIdx]}));
 
             // Add motion vector 1 (ID 8)
             if (ref1 != -1)
-              this->statisticsData->at(8).addBlockVector(
-                  pbX, pbY, pbW, pbH, vec1_x[pbIdx], vec1_y[pbIdx]);
+              this->statisticsData.add(
+                  buffer, 8, stats::BlockWithVector(pbBlock, {vec1_x[pbIdx], vec1_y[pbIdx]}));
           }
         }
 
@@ -693,68 +755,6 @@ void decoderLibde265::cacheStatistics(const de265_image *img)
                                          widthInIntraDirUnits);
       }
     }
-  }
-}
-
-void decoderLibde265::getPBSubPosition(
-    int partMode, int cbSizePix, int pbIdx, int *pbX, int *pbY, int *pbW, int *pbH) const
-{
-  // Get the position/width/height of the PB
-  if (partMode == 0) // PART_2Nx2N
-  {
-    *pbW = cbSizePix;
-    *pbH = cbSizePix;
-    *pbX = 0;
-    *pbY = 0;
-  }
-  else if (partMode == 1) // PART_2NxN
-  {
-    *pbW = cbSizePix;
-    *pbH = cbSizePix / 2;
-    *pbX = 0;
-    *pbY = (pbIdx == 0) ? 0 : cbSizePix / 2;
-  }
-  else if (partMode == 2) // PART_Nx2N
-  {
-    *pbW = cbSizePix / 2;
-    *pbH = cbSizePix;
-    *pbX = (pbIdx == 0) ? 0 : cbSizePix / 2;
-    *pbY = 0;
-  }
-  else if (partMode == 3) // PART_NxN
-  {
-    *pbW = cbSizePix / 2;
-    *pbH = cbSizePix / 2;
-    *pbX = (pbIdx == 0 || pbIdx == 2) ? 0 : cbSizePix / 2;
-    *pbY = (pbIdx == 0 || pbIdx == 1) ? 0 : cbSizePix / 2;
-  }
-  else if (partMode == 4) // PART_2NxnU
-  {
-    *pbW = cbSizePix;
-    *pbH = (pbIdx == 0) ? cbSizePix / 4 : cbSizePix / 4 * 3;
-    *pbX = 0;
-    *pbY = (pbIdx == 0) ? 0 : cbSizePix / 4;
-  }
-  else if (partMode == 5) // PART_2NxnD
-  {
-    *pbW = cbSizePix;
-    *pbH = (pbIdx == 0) ? cbSizePix / 4 * 3 : cbSizePix / 4;
-    *pbX = 0;
-    *pbY = (pbIdx == 0) ? 0 : cbSizePix / 4 * 3;
-  }
-  else if (partMode == 6) // PART_nLx2N
-  {
-    *pbW = (pbIdx == 0) ? cbSizePix / 4 : cbSizePix / 4 * 3;
-    *pbH = cbSizePix;
-    *pbX = (pbIdx == 0) ? 0 : cbSizePix / 4;
-    *pbY = 0;
-  }
-  else if (partMode == 7) // PART_nRx2N
-  {
-    *pbW = (pbIdx == 0) ? cbSizePix / 4 * 3 : cbSizePix / 4;
-    *pbH = cbSizePix;
-    *pbX = (pbIdx == 0) ? 0 : cbSizePix / 4 * 3;
-    *pbY = 0;
   }
 }
 
@@ -838,10 +838,14 @@ void decoderLibde265::cacheStatistics_TUTree_recursive(uint8_t *const tuInfo,
   else
   {
     // The transform is not split any further. Add the TU depth to the statistics (ID 11)
-    int tuWidth = tuWidth_units * tuUnitSizePix;
-    int posX    = tuIdx % tuInfoWidth * tuUnitSizePix;
-    int posY    = tuIdx / tuInfoWidth * tuUnitSizePix;
-    this->statisticsData->at(11).addBlockValue(posX, posY, tuWidth, tuWidth, trDepth);
+    auto tuWidth = tuWidth_units * tuUnitSizePix;
+    auto posX    = tuIdx % tuInfoWidth * tuUnitSizePix;
+    auto posY    = tuIdx / tuInfoWidth * tuUnitSizePix;
+    auto buffer  = BufferSelection::Primary;
+
+    const stats::Block tuBlock(posX, posY, tuWidth, tuWidth);
+
+    this->statisticsData.add(buffer, 11, stats::BlockWithValue(tuBlock, trDepth));
 
     if (isIntra)
     {
@@ -857,50 +861,52 @@ void decoderLibde265::cacheStatistics_TUTree_recursive(uint8_t *const tuInfo,
           {-5, 32}, {-9, 32}, {-13, 32}, {-17, 32}, {-21, 32}, {-26, 32}, {-32, 32}};
 
       // Get index for this xy position in the intraDir array
-      int intraDirIdx =
+      auto intraDirIdx =
           (posY / intraDir_infoUnit_size) * widthInIntraDirUnits + (posX / intraDir_infoUnit_size);
 
       // Set Intra prediction direction Luma (ID 9)
-      int intraDirLuma = intraDirY[intraDirIdx];
+      auto intraDirLuma = intraDirY[intraDirIdx];
       if (intraDirLuma <= 34)
       {
-        this->statisticsData->at(9).addBlockValue(posX, posY, tuWidth, tuWidth, intraDirLuma);
+        this->statisticsData.add(buffer, 11, stats::BlockWithValue(tuBlock, intraDirLuma));
 
         if (intraDirLuma >= 2)
         {
           // Set Intra prediction direction Luma (ID 9) as vector
           int vecX = (float)vectorTable[intraDirLuma][0] * tuWidth / 4;
           int vecY = (float)vectorTable[intraDirLuma][1] * tuWidth / 4;
-          this->statisticsData->at(9).addBlockVector(posX, posY, tuWidth, tuWidth, vecX, vecY);
+          this->statisticsData.add(buffer, 9, stats::BlockWithVector(tuBlock, {vecX, vecY}));
         }
       }
 
       // Set Intra prediction direction Chroma (ID 10)
-      int intraDirChroma = intraDirC[intraDirIdx];
+      auto intraDirChroma = intraDirC[intraDirIdx];
       if (intraDirChroma <= 34)
       {
-        this->statisticsData->at(10).addBlockValue(posX, posY, tuWidth, tuWidth, intraDirChroma);
+        this->statisticsData.add(buffer, 10, stats::BlockWithValue(tuBlock, intraDirChroma));
 
         if (intraDirChroma >= 2)
         {
           // Set Intra prediction direction Chroma (ID 10) as vector
           int vecX = (float)vectorTable[intraDirChroma][0] * tuWidth / 4;
           int vecY = (float)vectorTable[intraDirChroma][1] * tuWidth / 4;
-          this->statisticsData->at(10).addBlockVector(posX, posY, tuWidth, tuWidth, vecX, vecY);
+          this->statisticsData.add(buffer, 10, stats::BlockWithVector(tuBlock, {vecX, vecY}));
         }
       }
     }
   }
 }
 
-void decoderLibde265::fillStatisticList(stats::StatisticsData &statisticsData) const
+stats::StatisticsTypes decoderLibde265::getStatisticsTypes() const
 {
   using namespace stats::color;
+
+  stats::StatisticsTypes statisticsTypes;
 
   stats::StatisticsType sliceIdx(
       0, "Slice Index", ColorMapper({0, 10}, Color(0, 0, 0), Color(255, 0, 0)));
   sliceIdx.description = "The slice index reported per CTU";
-  statisticsData.addStatType(sliceIdx);
+  statisticsTypes.push_back(sliceIdx);
 
   stats::StatisticsType partSize(1, "Part Size", ColorMapper({0, 7}, PredefinedType::Jet));
   partSize.description = "The partition size of each CU into PUs";
@@ -912,38 +918,38 @@ void decoderLibde265::fillStatisticList(stats::StatisticsData &statisticsData) c
                              "PART_2NxnD",
                              "PART_nLx2N",
                              "PART_nRx2N"});
-  statisticsData.addStatType(partSize);
+  statisticsTypes.push_back(partSize);
 
   stats::StatisticsType predMode(2, "Pred Mode", ColorMapper({0, 2}, PredefinedType::Jet));
   predMode.description = "The internal libde265 prediction mode (intra/inter/skip) per CU";
   predMode.setMappingValues({"INTRA", "INTER", "SKIP"});
-  statisticsData.addStatType(predMode);
+  statisticsTypes.push_back(predMode);
 
   stats::StatisticsType pcmFlag(
       3, "PCM flag", ColorMapper({0, 1}, Color(0, 0, 0), Color(255, 0, 0)));
   pcmFlag.description = "The PCM flag per CU";
-  statisticsData.addStatType(pcmFlag);
+  statisticsTypes.push_back(pcmFlag);
 
   stats::StatisticsType transQuantBypass(
       4, "Transquant Bypass Flag", ColorMapper({0, 1}, Color(0, 0, 0), Color(255, 0, 0)));
   transQuantBypass.description = "The transquant bypass flag per CU";
-  statisticsData.addStatType(transQuantBypass);
+  statisticsTypes.push_back(transQuantBypass);
 
   stats::StatisticsType refIdx0(5, "Ref POC 0", ColorMapper({-16, 16}, PredefinedType::Col3_bblg));
   refIdx0.description = "The reference POC in LIST 0 relative to the current POC per PU";
-  statisticsData.addStatType(refIdx0);
+  statisticsTypes.push_back(refIdx0);
 
   stats::StatisticsType refIdx1(6, "Ref POC 1", ColorMapper({-16, 16}, PredefinedType::Col3_bblg));
   refIdx1.description = "The reference POC in LIST 1 relative to the current POC per PU";
-  statisticsData.addStatType(refIdx1);
+  statisticsTypes.push_back(refIdx1);
 
   stats::StatisticsType motionVec0(7, "Motion Vector 0", 4);
   motionVec0.description = "The motion vector in LIST 0 per PU";
-  statisticsData.addStatType(motionVec0);
+  statisticsTypes.push_back(motionVec0);
 
   stats::StatisticsType motionVec1(8, "Motion Vector 1", 4);
   motionVec1.description = "The motion vector in LIST 1 per PU";
-  statisticsData.addStatType(motionVec1);
+  statisticsTypes.push_back(motionVec1);
 
   stats::StatisticsType intraDirY(9, "Intra Dir Luma", ColorMapper({0, 34}, PredefinedType::Jet));
   intraDirY.description =
@@ -963,7 +969,7 @@ void decoderLibde265::fillStatisticList(stats::StatisticsData &statisticsData) c
        "INTRA_ANGULAR_24", "INTRA_ANGULAR_25", "INTRA_ANGULAR_26", "INTRA_ANGULAR_27",
        "INTRA_ANGULAR_28", "INTRA_ANGULAR_29", "INTRA_ANGULAR_30", "INTRA_ANGULAR_31",
        "INTRA_ANGULAR_32", "INTRA_ANGULAR_33", "INTRA_ANGULAR_34"});
-  statisticsData.addStatType(intraDirY);
+  statisticsTypes.push_back(intraDirY);
 
   stats::StatisticsType intraDirC(
       10, "Intra Dir Chroma", ColorMapper({0, 34}, PredefinedType::Jet));
@@ -983,12 +989,14 @@ void decoderLibde265::fillStatisticList(stats::StatisticsData &statisticsData) c
        "INTRA_ANGULAR_24", "INTRA_ANGULAR_25", "INTRA_ANGULAR_26", "INTRA_ANGULAR_27",
        "INTRA_ANGULAR_28", "INTRA_ANGULAR_29", "INTRA_ANGULAR_30", "INTRA_ANGULAR_31",
        "INTRA_ANGULAR_32", "INTRA_ANGULAR_33", "INTRA_ANGULAR_34"});
-  statisticsData.addStatType(intraDirC);
+  statisticsTypes.push_back(intraDirC);
 
   stats::StatisticsType transformDepth(
       11, "Transform Depth", ColorMapper({0, 3}, Color(0, 0, 0), Color(0, 255, 0)));
   transformDepth.description = "The transform depth within the transform tree per TU";
-  statisticsData.addStatType(transformDepth);
+  statisticsTypes.push_back(transformDepth);
+
+  return statisticsTypes;
 }
 
 bool decoderLibde265::checkLibraryFile(QString libFilePath, QString &error)
