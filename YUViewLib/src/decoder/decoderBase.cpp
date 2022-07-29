@@ -96,7 +96,6 @@ void decoderBase::enableStatisticsStorage()
     DEBUG_DECODERBASE("Can not enable statistics. Not supported.");
     return;
   }
-  this->setStatisticsTypesInStatisticsData();
   this->statisticsEnabled = true;
 }
 

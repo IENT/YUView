@@ -111,12 +111,13 @@ public:
   // If the current frame is valid, the current frame can be retrieved using getRawFrameData.
   // Call decodeNextFrame to advance to the next frame. When the function returns false, more data
   // is probably needed.
-  virtual bool               decodeNextFrame() = 0;
-  virtual QByteArray         getRawFrameData() = 0;
-  video::RawFormat           getRawFormat() const { return this->rawFormat; }
-  video::yuv::PixelFormatYUV getPixelFormatYUV() const { return this->formatYUV; }
-  video::rgb::PixelFormatRGB getRGBPixelFormat() const { return this->formatRGB; }
-  Size                       getFrameSize() const { return this->frameSize; }
+  virtual bool                  decodeNextFrame()        = 0;
+  virtual QByteArray            getRawFrameData()        = 0;
+  virtual stats::DataPerTypeMap getFrameStatisticsData() = 0;
+  video::RawFormat              getRawFormat() const { return this->rawFormat; }
+  video::yuv::PixelFormatYUV    getPixelFormatYUV() const { return this->formatYUV; }
+  video::rgb::PixelFormatRGB    getRGBPixelFormat() const { return this->formatRGB; }
+  Size                          getFrameSize() const { return this->frameSize; }
   // Push data to the decoder (until no more data is needed)
   // In order to make the interface generic, the pushData function accepts data only without start
   // codes
@@ -129,6 +130,7 @@ public:
   bool areStatisticsSupported() const { return this->statisticsSupported; }
   bool areStatisticsEnabled() const { return this->statisticsEnabled; }
   void enableStatisticsStorage();
+  virtual stats::StatisticsTypes getStatisticsTypes() const { return {}; }
 
   // Error handling
   bool    errorInDecoder() const { return decoderState == DecoderState::Error; }
@@ -151,9 +153,6 @@ protected:
 
   bool statisticsSupported{false}; ///< Enable in the constructor if you support statistics
   bool statisticsEnabled{false};
-
-  virtual void          setStatisticsTypesInStatisticsData() {}
-  stats::StatisticsData statisticsData;
 
   Size frameSize{};
 

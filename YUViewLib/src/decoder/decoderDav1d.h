@@ -124,9 +124,12 @@ public:
   DecoderResetNeeded setDecodeSignal(int signalID) override;
 
   // Decoding / pushing data
-  bool       decodeNextFrame() override;
-  QByteArray getRawFrameData() override;
-  bool       pushData(QByteArray &data) override;
+  bool                  decodeNextFrame() override;
+  QByteArray            getRawFrameData() override;
+  stats::DataPerTypeMap getFrameStatisticsData() override;
+  bool                  pushData(QByteArray &data) override;
+
+  virtual stats::StatisticsTypes getStatisticsTypes() const;
 
   // Check if the given library file is an existing libde265 decoder that we can use.
   static bool checkLibraryFile(QString libFilePath, QString &error);
@@ -175,8 +178,6 @@ private:
 #endif
 
   Dav1dPictureWrapper curPicture;
-
-  virtual void setStatisticsTypesInStatisticsData() override;
 
   unsigned int subBlockSize{};
 

@@ -48,8 +48,8 @@ using DataPerTypeMap  = std::map<TypeID, DataPerType>;
 
 struct FrameDataCache
 {
-  std::map<TypeID, DataPerType> data{};
-  std::optional<int>            frameIndex;
+  DataPerTypeMap     data{};
+  std::optional<int> frameIndex;
 };
 
 class StatisticsData

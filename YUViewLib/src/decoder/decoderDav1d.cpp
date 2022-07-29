@@ -130,7 +130,7 @@ IntPair calculateIntraPredDirection(IntraPredMode predMode, int angleDelta)
   return {vectorTable[modeIndex][deltaIndex][0], vectorTable[modeIndex][deltaIndex][1]};
 }
 
-void parseBlockPartition(stats::StatisticsData &statisticsData,
+void parseBlockPartition(stats::DataPerTypeMap &statisticsData,
                          Av1Block *             blockData,
                          unsigned               x,
                          unsigned               y,
@@ -144,30 +144,29 @@ void parseBlockPartition(stats::StatisticsData &statisticsData,
   auto b = blockData[y * frameInfo.b4_stride + x];
 
   stats::Block block(x * 4, y * 4, blockWidth4 * 4, blockHeight4 * 4);
-  auto         buffer = BufferSelection::Primary;
 
   // Set prediction mode (ID 0)
   const auto isIntra  = (b.intra != 0);
   const auto predMode = isIntra ? 0 : 1;
-  statisticsData.add(buffer, 0, stats::BlockWithValue(block, predMode));
+  statisticsData[0].valueData.push_back(stats::BlockWithValue(block, predMode));
 
   bool FrameIsIntra = (frameInfo.frameType == DAV1D_FRAME_TYPE_KEY ||
                        frameInfo.frameType == DAV1D_FRAME_TYPE_INTRA);
   if (FrameIsIntra)
-    statisticsData.add(buffer, 1, stats::BlockWithValue(block, b.seg_id));
-  statisticsData.add(buffer, 2, stats::BlockWithValue(block, b.skip));
-  statisticsData.add(buffer, 2, stats::BlockWithValue(block, b.skip_mode));
+    statisticsData[1].valueData.push_back(stats::BlockWithValue(block, b.seg_id));
+  statisticsData[2].valueData.push_back(stats::BlockWithValue(block, b.skip));
+  statisticsData[2].valueData.push_back(stats::BlockWithValue(block, b.skip_mode));
 
   if (isIntra)
   {
-    statisticsData.add(buffer, 4, stats::BlockWithValue(block, b.y_mode));
-    statisticsData.add(buffer, 5, stats::BlockWithValue(block, b.uv_mode));
+    statisticsData[4].valueData.push_back(stats::BlockWithValue(block, b.y_mode));
+    statisticsData[5].valueData.push_back(stats::BlockWithValue(block, b.uv_mode));
 
-    statisticsData.add(buffer, 6, stats::BlockWithValue(block, b.pal_sz[0]));
-    statisticsData.add(buffer, 7, stats::BlockWithValue(block, b.pal_sz[1]));
+    statisticsData[6].valueData.push_back(stats::BlockWithValue(block, b.pal_sz[0]));
+    statisticsData[7].valueData.push_back(stats::BlockWithValue(block, b.pal_sz[1]));
 
-    statisticsData.add(buffer, 8, stats::BlockWithValue(block, b.y_angle));
-    statisticsData.add(buffer, 9, stats::BlockWithValue(block, b.uv_angle));
+    statisticsData[8].valueData.push_back(stats::BlockWithValue(block, b.y_angle));
+    statisticsData[9].valueData.push_back(stats::BlockWithValue(block, b.uv_angle));
 
     for (int yc = 0; yc < 2; yc++)
     {
@@ -181,13 +180,14 @@ void parseBlockPartition(stats::StatisticsData &statisticsData,
       auto vecX       = int(double(vec.first) * blockScale / 4);
       auto vecY       = int(double(vec.second) * blockScale / 4);
 
-      statisticsData.add(buffer, 10 + yc, stats::BlockWithVector(block, stats::Vector(vecX, vecY)));
+      statisticsData[10 + yc].vectorData.push_back(
+          stats::BlockWithVector(block, stats::Vector(vecX, vecY)));
     }
 
     if (b.y_mode == CFL_PRED)
     {
-      statisticsData.add(buffer, 12, stats::BlockWithValue(block, b.cfl_alpha[0]));
-      statisticsData.add(buffer, 13, stats::BlockWithValue(block, b.cfl_alpha[1]));
+      statisticsData[12].valueData.push_back(stats::BlockWithValue(block, b.cfl_alpha[0]));
+      statisticsData[13].valueData.push_back(stats::BlockWithValue(block, b.cfl_alpha[1]));
     }
   }
   else // inter
@@ -195,35 +195,35 @@ void parseBlockPartition(stats::StatisticsData &statisticsData,
     auto compoundType = CompInterType(b.comp_type);
     auto isCompound   = (compoundType != COMP_INTER_NONE);
 
-    statisticsData.add(buffer, 14, stats::BlockWithValue(block, b.ref[0]));
+    statisticsData[14].valueData.push_back(stats::BlockWithValue(block, b.ref[0]));
     if (isCompound)
-      statisticsData.add(buffer, 15, stats::BlockWithValue(block, b.ref[1]));
+      statisticsData[15].valueData.push_back(stats::BlockWithValue(block, b.ref[1]));
 
-    statisticsData.add(buffer, 16, stats::BlockWithValue(block, b.comp_type));
+    statisticsData[16].valueData.push_back(stats::BlockWithValue(block, b.comp_type));
 
     if (b.comp_type == COMP_INTER_WEDGE || b.interintra_type == INTER_INTRA_WEDGE)
-      statisticsData.add(buffer, 17, stats::BlockWithValue(block, b.wedge_idx));
+      statisticsData[17].valueData.push_back(stats::BlockWithValue(block, b.wedge_idx));
 
     if (isCompound) // TODO: This might not be correct
-      statisticsData.add(buffer, 18, stats::BlockWithValue(block, b.mask_sign));
+      statisticsData[18].valueData.push_back(stats::BlockWithValue(block, b.mask_sign));
 
-    statisticsData.add(buffer, 19, stats::BlockWithValue(block, b.inter_mode));
+    statisticsData[19].valueData.push_back(stats::BlockWithValue(block, b.inter_mode));
 
     if (isCompound) // TODO: This might not be correct
-      statisticsData.add(buffer, 20, stats::BlockWithValue(block, b.drl_idx));
+      statisticsData[20].valueData.push_back(stats::BlockWithValue(block, b.drl_idx));
 
     if (isCompound)
     {
-      statisticsData.add(buffer, 21, stats::BlockWithValue(block, b.interintra_type));
-      statisticsData.add(buffer, 22, stats::BlockWithValue(block, b.interintra_mode));
+      statisticsData[21].valueData.push_back(stats::BlockWithValue(block, b.interintra_type));
+      statisticsData[22].valueData.push_back(stats::BlockWithValue(block, b.interintra_mode));
     }
 
-    statisticsData.add(buffer, 23, stats::BlockWithValue(block, b.motion_mode));
-    statisticsData.add(
-        buffer, 24, stats::BlockWithVector(block, stats::Vector(b.mv[0].x, b.mv[0].y)));
+    statisticsData[23].valueData.push_back(stats::BlockWithValue(block, b.motion_mode));
+    statisticsData[24].vectorData.push_back(
+        stats::BlockWithVector(block, stats::Vector(b.mv[0].x, b.mv[0].y)));
     if (isCompound)
-      statisticsData.add(
-          buffer, 25, stats::BlockWithVector(block, stats::Vector(b.mv[1].x, b.mv[1].y)));
+      statisticsData[25].vectorData.push_back(
+          stats::BlockWithVector(block, stats::Vector(b.mv[1].x, b.mv[1].y)));
   }
 
   const auto       tx_val               = int(isIntra ? b.tx : b.max_ytx);
@@ -246,13 +246,13 @@ void parseBlockPartition(stats::StatisticsData &statisticsData,
           (block.pos.y + y) < int(frameInfo.frameSize.height))
       {
         stats::Block transformBlock(block.pos.x + x, block.pos.y + y, tx_w, tx_h);
-        statisticsData.add(buffer, 26, stats::BlockWithValue(transformBlock, tx_val));
+        statisticsData[26].valueData.push_back(stats::BlockWithValue(transformBlock, tx_val));
       }
     }
   }
 }
 
-void parseBlockRecursive(stats::StatisticsData &statisticsData,
+void parseBlockRecursive(stats::DataPerTypeMap &statisticsData,
                          Av1Block *             blockData,
                          unsigned               x,
                          unsigned               y,
@@ -355,27 +355,6 @@ void parseBlockRecursive(stats::StatisticsData &statisticsData,
   }
 }
 
-void cacheStatistics(stats::StatisticsData &    statisticsData,
-                     const Dav1dPictureWrapper &img,
-                     int                        subBlockSize)
-{
-  DEBUG_DAV1D("decoderDav1d::cacheStatistics");
-
-  auto blockData   = img.getBlockData();
-  auto frameHeader = img.getFrameHeader();
-  if (frameHeader == nullptr)
-    return;
-
-  dav1dFrameInfo frameInfo(img.getFrameSize(), frameHeader->frame_type);
-  frameInfo.frameSize = img.getFrameSize();
-
-  const auto sb_step = subBlockSize >> 2;
-
-  for (unsigned y = 0; y < frameInfo.frameSizeAligned.height; y += sb_step)
-    for (unsigned x = 0; x < frameInfo.frameSizeAligned.width; x += sb_step)
-      parseBlockRecursive(statisticsData, blockData, x, y, BL_128X128, frameInfo);
-}
-
 #if SSE_CONVERSION
 void copyImgToByteArray(const Dav1dPictureWrapper &src, byteArrayAligned &dst, int decodeSignal)
 #else
@@ -462,8 +441,6 @@ dav1dFrameInfo::dav1dFrameInfo(Size frameSize, Dav1dFrameType frameType)
 
 decoderDav1d::decoderDav1d(int signalID, bool cachingDecoder) : decoderBaseSingleLib(cachingDecoder)
 {
-  this->statisticsData.clear();
-
   // Libde265 can only decoder HEVC in YUV format
   this->rawFormat = video::RawFormat::YUV;
 
@@ -716,16 +693,35 @@ QByteArray decoderDav1d::getRawFrameData()
 
   if (this->currentOutputBuffer.isEmpty())
   {
-    // Put image data into buffer
     copyImgToByteArray(curPicture, this->currentOutputBuffer, this->decodeSignal);
     DEBUG_DAV1D("decoderDav1d::getRawFrameData copied frame to buffer");
-
-    if (this->statisticsEnabled)
-      // Get the statistics from the image and put them into the statistics cache
-      cacheStatistics(this->statisticsData, this->curPicture, this->subBlockSize);
   }
 
   return currentOutputBuffer;
+}
+
+stats::DataPerTypeMap decoderDav1d::getFrameStatisticsData()
+{
+  if (!this->statisticsEnabled)
+    return {};
+
+  DEBUG_DAV1D("decoderDav1d::cacheStatistics");
+
+  stats::DataPerTypeMap data;
+
+  auto blockData   = this->curPicture.getBlockData();
+  auto frameHeader = this->curPicture.getFrameHeader();
+  if (blockData == nullptr || frameHeader == nullptr)
+    return {};
+
+  dav1dFrameInfo frameInfo(this->curPicture.getFrameSize(), frameHeader->frame_type);
+  const auto     sb_step = this->subBlockSize >> 2;
+
+  for (unsigned y = 0; y < frameInfo.frameSizeAligned.height; y += sb_step)
+    for (unsigned x = 0; x < frameInfo.frameSizeAligned.width; x += sb_step)
+      parseBlockRecursive(data, blockData, x, y, BL_128X128, frameInfo);
+
+  return data;
 }
 
 bool decoderDav1d::pushData(QByteArray &data)
@@ -735,6 +731,7 @@ bool decoderDav1d::pushData(QByteArray &data)
     DEBUG_DAV1D("decoderDav1d::pushData: Wrong decoder state.");
     return false;
   }
+
   if (this->flushing)
   {
     DEBUG_DAV1D("decoderDav1d::pushData: Do not push data when flushing!");
@@ -819,51 +816,7 @@ bool decoderDav1d::pushData(QByteArray &data)
   return true;
 }
 
-bool decoderDav1d::checkLibraryFile(QString libFilePath, QString &error)
-{
-  decoderDav1d testDecoder;
-
-  // Try to load the library file
-  testDecoder.library.setFileName(libFilePath);
-  if (!testDecoder.library.load())
-  {
-    error = "Error opening QLibrary.";
-    return false;
-  }
-
-  // Now let's see if we can retrive all the function pointers that we will need.
-  // If this works, we can be fairly certain that this is a valid libde265 library.
-  testDecoder.resolveLibraryFunctionPointers();
-
-  error = testDecoder.decoderErrorString();
-  return testDecoder.state() != DecoderState::Error;
-}
-
-QString decoderDav1d::getDecoderName() const
-{
-  if (this->decoder)
-    return "Dav1d deoder Version " + QString(this->lib.dav1d_version());
-  return "Dav1d decoder";
-}
-
-QStringList decoderDav1d::getLibraryNames() const
-{
-  // If the file name is not set explicitly, QLibrary will try to open
-  // the libde265.so file first. Since this has been compiled for linux
-  // it will fail and not even try to open the libde265.dylib.
-  // On windows and linux ommitting the extension works
-  if (is_Q_OS_MAC)
-    return QStringList() << "libdav1d-internals.dylib"
-                         << "libdav1d.dylib";
-  if (is_Q_OS_WIN)
-    return QStringList() << "dav1d-internals"
-                         << "dav1d";
-  if (is_Q_OS_LINUX)
-    return QStringList() << "libdav1d-internals"
-                         << "libdav1d";
-}
-
-void decoderDav1d::setStatisticsTypesInStatisticsData()
+stats::StatisticsTypes decoderDav1d::getStatisticsTypes() const
 {
   using namespace stats::color;
 
@@ -1058,7 +1011,51 @@ void decoderDav1d::setStatisticsTypesInStatisticsData()
                                    "RTX_64X16"});
   types.push_back(transformDepth);
 
-  this->statisticsData.setStatisticsTypes(std::move(types));
+  return types;
+}
+
+bool decoderDav1d::checkLibraryFile(QString libFilePath, QString &error)
+{
+  decoderDav1d testDecoder;
+
+  // Try to load the library file
+  testDecoder.library.setFileName(libFilePath);
+  if (!testDecoder.library.load())
+  {
+    error = "Error opening QLibrary.";
+    return false;
+  }
+
+  // Now let's see if we can retrive all the function pointers that we will need.
+  // If this works, we can be fairly certain that this is a valid libde265 library.
+  testDecoder.resolveLibraryFunctionPointers();
+
+  error = testDecoder.decoderErrorString();
+  return testDecoder.state() != DecoderState::Error;
+}
+
+QString decoderDav1d::getDecoderName() const
+{
+  if (this->decoder)
+    return "Dav1d deoder Version " + QString(this->lib.dav1d_version());
+  return "Dav1d decoder";
+}
+
+QStringList decoderDav1d::getLibraryNames() const
+{
+  // If the file name is not set explicitly, QLibrary will try to open
+  // the libde265.so file first. Since this has been compiled for linux
+  // it will fail and not even try to open the libde265.dylib.
+  // On windows and linux ommitting the extension works
+  if (is_Q_OS_MAC)
+    return QStringList() << "libdav1d-internals.dylib"
+                         << "libdav1d.dylib";
+  if (is_Q_OS_WIN)
+    return QStringList() << "dav1d-internals"
+                         << "dav1d";
+  if (is_Q_OS_LINUX)
+    return QStringList() << "libdav1d-internals"
+                         << "libdav1d";
 }
 
 } // namespace decoder
