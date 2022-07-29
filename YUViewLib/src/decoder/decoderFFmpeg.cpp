@@ -45,39 +45,6 @@
 namespace decoder
 {
 
-namespace
-{
-
-void cacheCurStatistics(stats::StatisticsData &        statisticsData,
-                        FFmpeg::AVFrameSideDataWrapper sideData)
-{
-  // Copy the statistics of the current frame to the buffer
-  DEBUG_FFMPEG("decoderFFmpeg::cacheCurStatistics");
-
-  auto buffer = BufferSelection::Primary;
-
-  // Try to get the motion information
-  if (sideData)
-  {
-    const auto nrMVs = sideData.getNumberMotionVectors();
-    for (size_t i = 0; i < nrMVs; i++)
-    {
-      auto mvs = sideData.getMotionVector(unsigned(i));
-
-      auto block        = stats::Block(mvs.dst_x - mvs.w / 2, mvs.dst_y - mvs.h / 2, mvs.w, mvs.h);
-      const int16_t mvX = mvs.dst_x - mvs.src_x;
-      const int16_t mvY = mvs.dst_y - mvs.src_y;
-
-      statisticsData.add(
-          buffer, (mvs.source < 0 ? 0 : 1), stats::BlockWithValue(block, int(mvs.source)));
-      statisticsData.add(
-          buffer, (mvs.source < 0 ? 2 : 3), stats::BlockWithVector(block, stats::Vector(mvX, mvY)));
-    }
-  }
-}
-
-} // namespace
-
 decoderFFmpeg::decoderFFmpeg(FFmpeg::AVCodecIDWrapper   codecID,
                              Size                       size,
                              QByteArray                 extradata,
@@ -196,13 +163,39 @@ QByteArray decoderFFmpeg::getRawFrameData()
   {
     DEBUG_FFMPEG("decoderFFmpeg::decodeNextFrame: Copy frame data to buffer");
     this->copyCurImageToBuffer();
-
-    if (this->statisticsSupported)
-      cacheCurStatistics(this->statisticsData,
-                         this->ff.getSideData(frame, FFmpeg::AV_FRAME_DATA_MOTION_VECTORS));
   }
 
   return this->currentOutputBuffer;
+}
+
+stats::DataPerTypeMap decoderFFmpeg::getFrameStatisticsData()
+{
+  if (!this->statisticsEnabled)
+    return {};
+
+  DEBUG_FFMPEG("decoderFFmpeg::cacheCurStatistics");
+
+  auto sideData = this->ff.getSideData(frame, FFmpeg::AV_FRAME_DATA_MOTION_VECTORS);
+  if (!sideData)
+    return {};
+
+  stats::DataPerTypeMap data;
+
+  const auto nrMVs = sideData.getNumberMotionVectors();
+  for (size_t i = 0; i < nrMVs; i++)
+  {
+    auto mvs = sideData.getMotionVector(unsigned(i));
+
+    auto          block = stats::Block(mvs.dst_x - mvs.w / 2, mvs.dst_y - mvs.h / 2, mvs.w, mvs.h);
+    const int16_t mvX   = mvs.dst_x - mvs.src_x;
+    const int16_t mvY   = mvs.dst_y - mvs.src_y;
+
+    data[mvs.source < 0 ? 0 : 1].valueData.push_back(stats::BlockWithValue(block, int(mvs.source)));
+    data[mvs.source < 0 ? 2 : 3].vectorData.push_back(
+        stats::BlockWithVector(block, stats::Vector(mvX, mvY)));
+  }
+
+  return data;
 }
 
 void decoderFFmpeg::copyCurImageToBuffer()
@@ -322,6 +315,17 @@ bool decoderFFmpeg::pushData(QByteArray &data)
   this->raw_pkt.setPTS(AV_NOPTS_VALUE);
 
   return this->pushAVPacket(this->raw_pkt);
+}
+
+stats::StatisticsTypes decoderFFmpeg::getStatisticsTypes() const
+{
+  auto sourceColorMapper =
+      stats::color::ColorMapper({-2, 2}, stats::color::PredefinedType::Col3_bblg);
+
+  return {stats::StatisticsType(0, "Source -", sourceColorMapper),
+          stats::StatisticsType(1, "Source +", sourceColorMapper),
+          stats::StatisticsType(2, "Motion Vector -", 4),
+          stats::StatisticsType(3, "Motion Vector +", 4)};
 }
 
 bool decoderFFmpeg::pushAVPacket(FFmpeg::AVPacketWrapper &pkt)
@@ -478,17 +482,6 @@ bool decoderFFmpeg::createDecoder(FFmpeg::AVCodecIDWrapper         codecID,
     return this->setErrorB(QStringLiteral("Could not allocate frame (av_frame_alloc)."));
 
   return true;
-}
-
-void decoderFFmpeg::setStatisticsTypesInStatisticsData()
-{
-  auto sourceColorMapper =
-      stats::color::ColorMapper({-2, 2}, stats::color::PredefinedType::Col3_bblg);
-
-  this->statisticsData.setStatisticsTypes({stats::StatisticsType(0, "Source -", sourceColorMapper),
-                                           stats::StatisticsType(1, "Source +", sourceColorMapper),
-                                           stats::StatisticsType(2, "Motion Vector -", 4),
-                                           stats::StatisticsType(3, "Motion Vector +", 4)});
 }
 
 } // namespace decoder
