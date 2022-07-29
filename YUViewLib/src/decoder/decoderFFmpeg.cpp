@@ -429,17 +429,6 @@ bool decoderFFmpeg::decodeFrame()
   return false;
 }
 
-stats::StatisticsTypes decoderFFmpeg::getStatisticsTypes() const
-{
-  auto sourceColorMapper =
-      stats::color::ColorMapper({-2, 2}, stats::color::PredefinedType::Col3_bblg);
-
-  return {stats::StatisticsType(0, "Source -", sourceColorMapper),
-          stats::StatisticsType(1, "Source +", sourceColorMapper),
-          stats::StatisticsType(2, "Motion Vector -", 4),
-          stats::StatisticsType(3, "Motion Vector +", 4)};
-}
-
 bool decoderFFmpeg::createDecoder(FFmpeg::AVCodecIDWrapper         codecID,
                                   FFmpeg::AVCodecParametersWrapper codecpar)
 {
@@ -489,6 +478,17 @@ bool decoderFFmpeg::createDecoder(FFmpeg::AVCodecIDWrapper         codecID,
     return this->setErrorB(QStringLiteral("Could not allocate frame (av_frame_alloc)."));
 
   return true;
+}
+
+void decoderFFmpeg::setStatisticsTypesInStatisticsData()
+{
+  auto sourceColorMapper =
+      stats::color::ColorMapper({-2, 2}, stats::color::PredefinedType::Col3_bblg);
+
+  this->statisticsData.setStatisticsTypes({stats::StatisticsType(0, "Source -", sourceColorMapper),
+                                           stats::StatisticsType(1, "Source +", sourceColorMapper),
+                                           stats::StatisticsType(2, "Motion Vector -", 4),
+                                           stats::StatisticsType(3, "Motion Vector +", 4)});
 }
 
 } // namespace decoder

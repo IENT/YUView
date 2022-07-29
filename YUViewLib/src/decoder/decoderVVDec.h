@@ -92,7 +92,7 @@ public:
   QString getDecoderName() const override;
   QString getCodecName() const override { return "hevc"; }
 
-  int nrSignalsSupported() const override { return nrSignals; }
+  int nrSignalsSupported() const override { return this->nrSignals; }
 
 private:
   // A private constructor that creates an uninitialized decoder library.

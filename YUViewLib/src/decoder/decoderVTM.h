@@ -126,9 +126,6 @@ private:
   bool internalsSupported{false};
   int  nrSignals{0};
 
-  // Add the statistics supported by the HM decoder
-  void fillStatisticList(stats::StatisticsData &statisticsData) const override;
-
   // We buffer the current image as a QByteArray so you can call getYUVFrameData as often as
   // necessary without invoking the copy operation from the hm image buffer to the QByteArray again.
 #if SSE_CONVERSION
@@ -142,6 +139,8 @@ private:
 #endif
 
   LibraryFunctionsVTM lib;
+
+  virtual void setStatisticsTypesInStatisticsData() override;
 };
 
 } // namespace decoder

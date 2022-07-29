@@ -400,29 +400,10 @@ void StatisticsData::setFrameIndex(int frameIndex, BufferSelection buffer)
   }
 }
 
-void StatisticsData::addStatType(const StatisticsType &type)
+void StatisticsData::setStatisticsTypes(const StatisticsTypes &&types)
 {
   std::unique_lock<std::mutex> lock(this->accessMutex);
-
-  if (type.typeID == -1)
-  {
-    // stat source does not have type ids. need to auto assign an id for this type
-    // check if type not already in list
-    int maxTypeID = 0;
-    for (auto it = this->types.begin(); it != this->types.end(); it++)
-    {
-      if (it->typeName == type.typeName)
-        return;
-      if (it->typeID > maxTypeID)
-        maxTypeID = it->typeID;
-    }
-
-    auto newType   = type;
-    newType.typeID = maxTypeID + 1;
-    this->types.push_back(newType);
-  }
-  else
-    this->types.push_back(type);
+  this->types = std::move(types);
 }
 
 void StatisticsData::savePlaylist(YUViewDomElement &root) const

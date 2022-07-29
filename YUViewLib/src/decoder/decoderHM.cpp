@@ -516,77 +516,6 @@ void decoderHM::cacheStatistics(libHMDec_picture *img)
   }
 }
 
-stats::StatisticsTypes decoderHM::getStatisticsTypes() const
-{
-  using namespace stats::color;
-
-  stats::StatisticsTypes statisticsTypes;
-
-  auto nrTypes = this->lib.libHMDEC_get_internal_type_number();
-
-  for (auto i = 0u; i < nrTypes; i++)
-  {
-    auto name        = QString(this->lib.libHMDEC_get_internal_type_name(i));
-    auto description = QString(this->lib.libHMDEC_get_internal_type_description(i));
-    auto statType    = this->lib.libHMDEC_get_internal_type(i);
-    int  max         = 0;
-    if (statType == LIBHMDEC_TYPE_RANGE || statType == LIBHMDEC_TYPE_RANGE_ZEROCENTER)
-    {
-      auto uMax = this->lib.libHMDEC_get_internal_type_max(i);
-      max       = (uMax > INT_MAX) ? INT_MAX : uMax;
-    }
-
-    if (statType == LIBHMDEC_TYPE_FLAG)
-    {
-      stats::StatisticsType flag(i, name, ColorMapper({0, 1}, PredefinedType::Jet));
-      flag.description = description;
-      statisticsTypes.push_back(flag);
-    }
-    else if (statType == LIBHMDEC_TYPE_RANGE)
-    {
-      stats::StatisticsType range(i, name, ColorMapper({0, max}, PredefinedType::Jet));
-      range.description = description;
-      statisticsTypes.push_back(range);
-    }
-    else if (statType == LIBHMDEC_TYPE_RANGE_ZEROCENTER)
-    {
-      stats::StatisticsType rangeZero(i, name, ColorMapper({-max, max}, PredefinedType::Col3_bblg));
-      rangeZero.description = description;
-      statisticsTypes.push_back(rangeZero);
-    }
-    else if (statType == LIBHMDEC_TYPE_VECTOR)
-    {
-      auto                  scale = this->lib.libHMDEC_get_internal_type_vector_scaling(i);
-      stats::StatisticsType vec(i, name, scale);
-      vec.description = description;
-      statisticsTypes.push_back(vec);
-    }
-    else if (statType == LIBHMDEC_TYPE_INTRA_DIR)
-    {
-      stats::StatisticsType intraDir(i, name, ColorMapper({0, 34}, PredefinedType::Jet));
-      intraDir.description      = description;
-      intraDir.hasVectorData    = true;
-      intraDir.renderVectorData = true;
-      intraDir.vectorScale      = 32;
-      // Don't draw the vector values for the intra dir. They don't have actual meaning.
-      intraDir.renderVectorDataValues = false;
-      intraDir.setMappingValues(
-          {"INTRA_PLANAR",     "INTRA_DC",         "INTRA_ANGULAR_2",  "INTRA_ANGULAR_3",
-           "INTRA_ANGULAR_4",  "INTRA_ANGULAR_5",  "INTRA_ANGULAR_6",  "INTRA_ANGULAR_7",
-           "INTRA_ANGULAR_8",  "INTRA_ANGULAR_9",  "INTRA_ANGULAR_10", "INTRA_ANGULAR_11",
-           "INTRA_ANGULAR_12", "INTRA_ANGULAR_13", "INTRA_ANGULAR_14", "INTRA_ANGULAR_15",
-           "INTRA_ANGULAR_16", "INTRA_ANGULAR_17", "INTRA_ANGULAR_18", "INTRA_ANGULAR_19",
-           "INTRA_ANGULAR_20", "INTRA_ANGULAR_21", "INTRA_ANGULAR_22", "INTRA_ANGULAR_23",
-           "INTRA_ANGULAR_24", "INTRA_ANGULAR_25", "INTRA_ANGULAR_26", "INTRA_ANGULAR_27",
-           "INTRA_ANGULAR_28", "INTRA_ANGULAR_29", "INTRA_ANGULAR_30", "INTRA_ANGULAR_31",
-           "INTRA_ANGULAR_32", "INTRA_ANGULAR_33", "INTRA_ANGULAR_34"});
-      statisticsTypes.push_back(intraDir);
-    }
-  }
-
-  return statisticsTypes;
-}
-
 QString decoderHM::getDecoderName() const
 {
   return (decoderState == DecoderState::Error) ? "HM" : this->lib.libHMDec_get_version();
@@ -609,6 +538,77 @@ bool decoderHM::checkLibraryFile(QString libFilePath, QString &error)
   testDecoder.resolveLibraryFunctionPointers();
   error = testDecoder.decoderErrorString();
   return testDecoder.state() != DecoderState::Error;
+}
+
+void decoderHM::setStatisticsTypesInStatisticsData()
+{
+  using namespace stats::color;
+
+  stats::StatisticsTypes types;
+
+  auto nrTypes = this->lib.libHMDEC_get_internal_type_number();
+
+  for (auto i = 0u; i < nrTypes; i++)
+  {
+    auto name        = QString(this->lib.libHMDEC_get_internal_type_name(i));
+    auto description = QString(this->lib.libHMDEC_get_internal_type_description(i));
+    auto statType    = this->lib.libHMDEC_get_internal_type(i);
+    int  max         = 0;
+    if (statType == LIBHMDEC_TYPE_RANGE || statType == LIBHMDEC_TYPE_RANGE_ZEROCENTER)
+    {
+      auto uMax = this->lib.libHMDEC_get_internal_type_max(i);
+      max       = (uMax > INT_MAX) ? INT_MAX : uMax;
+    }
+
+    if (statType == LIBHMDEC_TYPE_FLAG)
+    {
+      stats::StatisticsType flag(i, name, ColorMapper({0, 1}, PredefinedType::Jet));
+      flag.description = description;
+      types.push_back(flag);
+    }
+    else if (statType == LIBHMDEC_TYPE_RANGE)
+    {
+      stats::StatisticsType range(i, name, ColorMapper({0, max}, PredefinedType::Jet));
+      range.description = description;
+      types.push_back(range);
+    }
+    else if (statType == LIBHMDEC_TYPE_RANGE_ZEROCENTER)
+    {
+      stats::StatisticsType rangeZero(i, name, ColorMapper({-max, max}, PredefinedType::Col3_bblg));
+      rangeZero.description = description;
+      types.push_back(rangeZero);
+    }
+    else if (statType == LIBHMDEC_TYPE_VECTOR)
+    {
+      auto                  scale = this->lib.libHMDEC_get_internal_type_vector_scaling(i);
+      stats::StatisticsType vec(i, name, scale);
+      vec.description = description;
+      types.push_back(vec);
+    }
+    else if (statType == LIBHMDEC_TYPE_INTRA_DIR)
+    {
+      stats::StatisticsType intraDir(i, name, ColorMapper({0, 34}, PredefinedType::Jet));
+      intraDir.description      = description;
+      intraDir.hasVectorData    = true;
+      intraDir.renderVectorData = true;
+      intraDir.vectorScale      = 32;
+      // Don't draw the vector values for the intra dir. They don't have actual meaning.
+      intraDir.renderVectorDataValues = false;
+      intraDir.setMappingValues(
+          {"INTRA_PLANAR",     "INTRA_DC",         "INTRA_ANGULAR_2",  "INTRA_ANGULAR_3",
+           "INTRA_ANGULAR_4",  "INTRA_ANGULAR_5",  "INTRA_ANGULAR_6",  "INTRA_ANGULAR_7",
+           "INTRA_ANGULAR_8",  "INTRA_ANGULAR_9",  "INTRA_ANGULAR_10", "INTRA_ANGULAR_11",
+           "INTRA_ANGULAR_12", "INTRA_ANGULAR_13", "INTRA_ANGULAR_14", "INTRA_ANGULAR_15",
+           "INTRA_ANGULAR_16", "INTRA_ANGULAR_17", "INTRA_ANGULAR_18", "INTRA_ANGULAR_19",
+           "INTRA_ANGULAR_20", "INTRA_ANGULAR_21", "INTRA_ANGULAR_22", "INTRA_ANGULAR_23",
+           "INTRA_ANGULAR_24", "INTRA_ANGULAR_25", "INTRA_ANGULAR_26", "INTRA_ANGULAR_27",
+           "INTRA_ANGULAR_28", "INTRA_ANGULAR_29", "INTRA_ANGULAR_30", "INTRA_ANGULAR_31",
+           "INTRA_ANGULAR_32", "INTRA_ANGULAR_33", "INTRA_ANGULAR_34"});
+      types.push_back(intraDir);
+    }
+  }
+
+  this->statisticsData.setStatisticsTypes(std::move(types));
 }
 
 } // namespace decoder

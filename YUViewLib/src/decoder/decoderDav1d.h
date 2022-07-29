@@ -176,7 +176,7 @@ private:
 
   Dav1dPictureWrapper curPicture;
 
-  stats::StatisticsTypes getStatisticsTypes() const override;
+  virtual void setStatisticsTypesInStatisticsData() override;
 
   unsigned int subBlockSize{};
 

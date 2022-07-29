@@ -194,6 +194,14 @@ void decoderLibde265::resetDecoder()
   this->allocateNewDecoder();
 }
 
+QStringList decoderLibde265::getSignalNames() const
+{
+  return QStringList() << "Reconstruction"
+                       << "Prediction"
+                       << "Residual"
+                       << "Transform Coefficients";
+}
+
 decoderLibde265::DecoderResetNeeded decoderLibde265::setDecodeSignal(int signalID)
 {
   bool decoderResetNeeded = false;
@@ -897,108 +905,6 @@ void decoderLibde265::cacheStatistics_TUTree_recursive(uint8_t *const tuInfo,
   }
 }
 
-stats::StatisticsTypes decoderLibde265::getStatisticsTypes() const
-{
-  using namespace stats::color;
-
-  stats::StatisticsTypes statisticsTypes;
-
-  stats::StatisticsType sliceIdx(
-      0, "Slice Index", ColorMapper({0, 10}, Color(0, 0, 0), Color(255, 0, 0)));
-  sliceIdx.description = "The slice index reported per CTU";
-  statisticsTypes.push_back(sliceIdx);
-
-  stats::StatisticsType partSize(1, "Part Size", ColorMapper({0, 7}, PredefinedType::Jet));
-  partSize.description = "The partition size of each CU into PUs";
-  partSize.setMappingValues({"PART_2Nx2N",
-                             "PART_2NxN",
-                             "PART_Nx2N",
-                             "PART_NxN",
-                             "PART_2NxnU",
-                             "PART_2NxnD",
-                             "PART_nLx2N",
-                             "PART_nRx2N"});
-  statisticsTypes.push_back(partSize);
-
-  stats::StatisticsType predMode(2, "Pred Mode", ColorMapper({0, 2}, PredefinedType::Jet));
-  predMode.description = "The internal libde265 prediction mode (intra/inter/skip) per CU";
-  predMode.setMappingValues({"INTRA", "INTER", "SKIP"});
-  statisticsTypes.push_back(predMode);
-
-  stats::StatisticsType pcmFlag(
-      3, "PCM flag", ColorMapper({0, 1}, Color(0, 0, 0), Color(255, 0, 0)));
-  pcmFlag.description = "The PCM flag per CU";
-  statisticsTypes.push_back(pcmFlag);
-
-  stats::StatisticsType transQuantBypass(
-      4, "Transquant Bypass Flag", ColorMapper({0, 1}, Color(0, 0, 0), Color(255, 0, 0)));
-  transQuantBypass.description = "The transquant bypass flag per CU";
-  statisticsTypes.push_back(transQuantBypass);
-
-  stats::StatisticsType refIdx0(5, "Ref POC 0", ColorMapper({-16, 16}, PredefinedType::Col3_bblg));
-  refIdx0.description = "The reference POC in LIST 0 relative to the current POC per PU";
-  statisticsTypes.push_back(refIdx0);
-
-  stats::StatisticsType refIdx1(6, "Ref POC 1", ColorMapper({-16, 16}, PredefinedType::Col3_bblg));
-  refIdx1.description = "The reference POC in LIST 1 relative to the current POC per PU";
-  statisticsTypes.push_back(refIdx1);
-
-  stats::StatisticsType motionVec0(7, "Motion Vector 0", 4);
-  motionVec0.description = "The motion vector in LIST 0 per PU";
-  statisticsTypes.push_back(motionVec0);
-
-  stats::StatisticsType motionVec1(8, "Motion Vector 1", 4);
-  motionVec1.description = "The motion vector in LIST 1 per PU";
-  statisticsTypes.push_back(motionVec1);
-
-  stats::StatisticsType intraDirY(9, "Intra Dir Luma", ColorMapper({0, 34}, PredefinedType::Jet));
-  intraDirY.description =
-      "The intra mode for the luma component per TU (intra prediction is performed on a TU level)";
-  intraDirY.hasVectorData    = true;
-  intraDirY.renderVectorData = true;
-  intraDirY.vectorScale      = 32;
-  // Don't draw the vector values for the intra dir. They don't have actual meaning.
-  intraDirY.renderVectorDataValues = false;
-  intraDirY.setMappingValues(
-      {"INTRA_PLANAR",     "INTRA_DC",         "INTRA_ANGULAR_2",  "INTRA_ANGULAR_3",
-       "INTRA_ANGULAR_4",  "INTRA_ANGULAR_5",  "INTRA_ANGULAR_6",  "INTRA_ANGULAR_7",
-       "INTRA_ANGULAR_8",  "INTRA_ANGULAR_9",  "INTRA_ANGULAR_10", "INTRA_ANGULAR_11",
-       "INTRA_ANGULAR_12", "INTRA_ANGULAR_13", "INTRA_ANGULAR_14", "INTRA_ANGULAR_15",
-       "INTRA_ANGULAR_16", "INTRA_ANGULAR_17", "INTRA_ANGULAR_18", "INTRA_ANGULAR_19",
-       "INTRA_ANGULAR_20", "INTRA_ANGULAR_21", "INTRA_ANGULAR_22", "INTRA_ANGULAR_23",
-       "INTRA_ANGULAR_24", "INTRA_ANGULAR_25", "INTRA_ANGULAR_26", "INTRA_ANGULAR_27",
-       "INTRA_ANGULAR_28", "INTRA_ANGULAR_29", "INTRA_ANGULAR_30", "INTRA_ANGULAR_31",
-       "INTRA_ANGULAR_32", "INTRA_ANGULAR_33", "INTRA_ANGULAR_34"});
-  statisticsTypes.push_back(intraDirY);
-
-  stats::StatisticsType intraDirC(
-      10, "Intra Dir Chroma", ColorMapper({0, 34}, PredefinedType::Jet));
-  intraDirC.description = "The intra mode for the chroma component per TU (intra prediction is "
-                          "performed on a TU level)";
-  intraDirC.hasVectorData          = true;
-  intraDirC.renderVectorData       = true;
-  intraDirC.renderVectorDataValues = false;
-  intraDirC.vectorScale            = 32;
-  intraDirC.setMappingValues(
-      {"INTRA_PLANAR",     "INTRA_DC",         "INTRA_ANGULAR_2",  "INTRA_ANGULAR_3",
-       "INTRA_ANGULAR_4",  "INTRA_ANGULAR_5",  "INTRA_ANGULAR_6",  "INTRA_ANGULAR_7",
-       "INTRA_ANGULAR_8",  "INTRA_ANGULAR_9",  "INTRA_ANGULAR_10", "INTRA_ANGULAR_11",
-       "INTRA_ANGULAR_12", "INTRA_ANGULAR_13", "INTRA_ANGULAR_14", "INTRA_ANGULAR_15",
-       "INTRA_ANGULAR_16", "INTRA_ANGULAR_17", "INTRA_ANGULAR_18", "INTRA_ANGULAR_19",
-       "INTRA_ANGULAR_20", "INTRA_ANGULAR_21", "INTRA_ANGULAR_22", "INTRA_ANGULAR_23",
-       "INTRA_ANGULAR_24", "INTRA_ANGULAR_25", "INTRA_ANGULAR_26", "INTRA_ANGULAR_27",
-       "INTRA_ANGULAR_28", "INTRA_ANGULAR_29", "INTRA_ANGULAR_30", "INTRA_ANGULAR_31",
-       "INTRA_ANGULAR_32", "INTRA_ANGULAR_33", "INTRA_ANGULAR_34"});
-  statisticsTypes.push_back(intraDirC);
-
-  stats::StatisticsType transformDepth(
-      11, "Transform Depth", ColorMapper({0, 3}, Color(0, 0, 0), Color(0, 255, 0)));
-  transformDepth.description = "The transform depth within the transform tree per TU";
-  statisticsTypes.push_back(transformDepth);
-
-  return statisticsTypes;
-}
-
 bool decoderLibde265::checkLibraryFile(QString libFilePath, QString &error)
 {
   decoderLibde265 testDecoder;
@@ -1030,6 +936,108 @@ QStringList decoderLibde265::getLibraryNames() const
                                                      << "libde265";
 
   return libNames;
+}
+
+void decoderLibde265::setStatisticsTypesInStatisticsData()
+{
+  using namespace stats::color;
+
+  stats::StatisticsTypes types;
+
+  stats::StatisticsType sliceIdx(
+      0, "Slice Index", ColorMapper({0, 10}, Color(0, 0, 0), Color(255, 0, 0)));
+  sliceIdx.description = "The slice index reported per CTU";
+  types.push_back(sliceIdx);
+
+  stats::StatisticsType partSize(1, "Part Size", ColorMapper({0, 7}, PredefinedType::Jet));
+  partSize.description = "The partition size of each CU into PUs";
+  partSize.setMappingValues({"PART_2Nx2N",
+                             "PART_2NxN",
+                             "PART_Nx2N",
+                             "PART_NxN",
+                             "PART_2NxnU",
+                             "PART_2NxnD",
+                             "PART_nLx2N",
+                             "PART_nRx2N"});
+  types.push_back(partSize);
+
+  stats::StatisticsType predMode(2, "Pred Mode", ColorMapper({0, 2}, PredefinedType::Jet));
+  predMode.description = "The internal libde265 prediction mode (intra/inter/skip) per CU";
+  predMode.setMappingValues({"INTRA", "INTER", "SKIP"});
+  types.push_back(predMode);
+
+  stats::StatisticsType pcmFlag(
+      3, "PCM flag", ColorMapper({0, 1}, Color(0, 0, 0), Color(255, 0, 0)));
+  pcmFlag.description = "The PCM flag per CU";
+  types.push_back(pcmFlag);
+
+  stats::StatisticsType transQuantBypass(
+      4, "Transquant Bypass Flag", ColorMapper({0, 1}, Color(0, 0, 0), Color(255, 0, 0)));
+  transQuantBypass.description = "The transquant bypass flag per CU";
+  types.push_back(transQuantBypass);
+
+  stats::StatisticsType refIdx0(5, "Ref POC 0", ColorMapper({-16, 16}, PredefinedType::Col3_bblg));
+  refIdx0.description = "The reference POC in LIST 0 relative to the current POC per PU";
+  types.push_back(refIdx0);
+
+  stats::StatisticsType refIdx1(6, "Ref POC 1", ColorMapper({-16, 16}, PredefinedType::Col3_bblg));
+  refIdx1.description = "The reference POC in LIST 1 relative to the current POC per PU";
+  types.push_back(refIdx1);
+
+  stats::StatisticsType motionVec0(7, "Motion Vector 0", 4);
+  motionVec0.description = "The motion vector in LIST 0 per PU";
+  types.push_back(motionVec0);
+
+  stats::StatisticsType motionVec1(8, "Motion Vector 1", 4);
+  motionVec1.description = "The motion vector in LIST 1 per PU";
+  types.push_back(motionVec1);
+
+  stats::StatisticsType intraDirY(9, "Intra Dir Luma", ColorMapper({0, 34}, PredefinedType::Jet));
+  intraDirY.description =
+      "The intra mode for the luma component per TU (intra prediction is performed on a TU level)";
+  intraDirY.hasVectorData    = true;
+  intraDirY.renderVectorData = true;
+  intraDirY.vectorScale      = 32;
+  // Don't draw the vector values for the intra dir. They don't have actual meaning.
+  intraDirY.renderVectorDataValues = false;
+  intraDirY.setMappingValues(
+      {"INTRA_PLANAR",     "INTRA_DC",         "INTRA_ANGULAR_2",  "INTRA_ANGULAR_3",
+       "INTRA_ANGULAR_4",  "INTRA_ANGULAR_5",  "INTRA_ANGULAR_6",  "INTRA_ANGULAR_7",
+       "INTRA_ANGULAR_8",  "INTRA_ANGULAR_9",  "INTRA_ANGULAR_10", "INTRA_ANGULAR_11",
+       "INTRA_ANGULAR_12", "INTRA_ANGULAR_13", "INTRA_ANGULAR_14", "INTRA_ANGULAR_15",
+       "INTRA_ANGULAR_16", "INTRA_ANGULAR_17", "INTRA_ANGULAR_18", "INTRA_ANGULAR_19",
+       "INTRA_ANGULAR_20", "INTRA_ANGULAR_21", "INTRA_ANGULAR_22", "INTRA_ANGULAR_23",
+       "INTRA_ANGULAR_24", "INTRA_ANGULAR_25", "INTRA_ANGULAR_26", "INTRA_ANGULAR_27",
+       "INTRA_ANGULAR_28", "INTRA_ANGULAR_29", "INTRA_ANGULAR_30", "INTRA_ANGULAR_31",
+       "INTRA_ANGULAR_32", "INTRA_ANGULAR_33", "INTRA_ANGULAR_34"});
+  types.push_back(intraDirY);
+
+  stats::StatisticsType intraDirC(
+      10, "Intra Dir Chroma", ColorMapper({0, 34}, PredefinedType::Jet));
+  intraDirC.description = "The intra mode for the chroma component per TU (intra prediction is "
+                          "performed on a TU level)";
+  intraDirC.hasVectorData          = true;
+  intraDirC.renderVectorData       = true;
+  intraDirC.renderVectorDataValues = false;
+  intraDirC.vectorScale            = 32;
+  intraDirC.setMappingValues(
+      {"INTRA_PLANAR",     "INTRA_DC",         "INTRA_ANGULAR_2",  "INTRA_ANGULAR_3",
+       "INTRA_ANGULAR_4",  "INTRA_ANGULAR_5",  "INTRA_ANGULAR_6",  "INTRA_ANGULAR_7",
+       "INTRA_ANGULAR_8",  "INTRA_ANGULAR_9",  "INTRA_ANGULAR_10", "INTRA_ANGULAR_11",
+       "INTRA_ANGULAR_12", "INTRA_ANGULAR_13", "INTRA_ANGULAR_14", "INTRA_ANGULAR_15",
+       "INTRA_ANGULAR_16", "INTRA_ANGULAR_17", "INTRA_ANGULAR_18", "INTRA_ANGULAR_19",
+       "INTRA_ANGULAR_20", "INTRA_ANGULAR_21", "INTRA_ANGULAR_22", "INTRA_ANGULAR_23",
+       "INTRA_ANGULAR_24", "INTRA_ANGULAR_25", "INTRA_ANGULAR_26", "INTRA_ANGULAR_27",
+       "INTRA_ANGULAR_28", "INTRA_ANGULAR_29", "INTRA_ANGULAR_30", "INTRA_ANGULAR_31",
+       "INTRA_ANGULAR_32", "INTRA_ANGULAR_33", "INTRA_ANGULAR_34"});
+  types.push_back(intraDirC);
+
+  stats::StatisticsType transformDepth(
+      11, "Transform Depth", ColorMapper({0, 3}, Color(0, 0, 0), Color(0, 255, 0)));
+  transformDepth.description = "The transform depth within the transform tree per TU";
+  types.push_back(transformDepth);
+
+  this->statisticsData.setStatisticsTypes(std::move(types));
 }
 
 } // namespace decoder

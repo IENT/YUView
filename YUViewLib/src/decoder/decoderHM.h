@@ -138,8 +138,6 @@ private:
 
   int nrSignals{0};
 
-  virtual stats::StatisticsTypes getStatisticsTypes() const override;
-
   // We buffer the current image as a QByteArray so you can call getYUVFrameData as often as
   // necessary without invoking the copy operation from the hm image buffer to the QByteArray again.
 #if SSE_CONVERSION
@@ -153,6 +151,8 @@ private:
 #endif
 
   LibraryFunctionsHM lib;
+
+  virtual void setStatisticsTypesInStatisticsData() override;
 };
 
 } // namespace decoder

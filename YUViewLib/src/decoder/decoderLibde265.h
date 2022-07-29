@@ -98,22 +98,13 @@ public:
 
   int  nrSignalsSupported() const override { return nrSignals; }
   bool isSignalDifference(int signalID) const override { return signalID == 2 || signalID == 3; }
-  QStringList getSignalNames() const override
-  {
-    return QStringList() << "Reconstruction"
-                         << "Prediction"
-                         << "Residual"
-                         << "Transform Coefficients";
-  }
+  QStringList                getSignalNames() const override;
   virtual DecoderResetNeeded setDecodeSignal(int signalID) override;
 
   // Decoding / pushing data
   bool       decodeNextFrame() override;
   QByteArray getRawFrameData() override;
   bool       pushData(QByteArray &data) override;
-
-  // Statistics
-  virtual stats::StatisticsTypes getStatisticsTypes() const;
 
   // Check if the given library file is an existing libde265 decoder that we can use.
   static bool checkLibraryFile(QString libFilePath, QString &error);
@@ -184,6 +175,8 @@ private:
 #endif
 
   LibraryFunctionsDe265 lib;
+
+  virtual void setStatisticsTypesInStatisticsData() override;
 };
 
 } // namespace decoder

@@ -66,8 +66,6 @@ public:
   bool pushAVPacket(FFmpeg::AVPacketWrapper &pkt);
   bool pushData(QByteArray &data) override;
 
-  stats::StatisticsTypes getStatisticsTypes() const override;
-
   QStringList getLibraryPaths() const override { return ff.getLibPaths(); }
   QString     getDecoderName() const override { return "FFmpeg"; }
   QString     getCodecName() const override { return this->codecName; }
@@ -89,8 +87,8 @@ protected:
   bool decodeFrame();
 
   QByteArray currentOutputBuffer;
-  void
-  copyCurImageToBuffer(); // Copy the raw data from the de265_image source *src to the byte array
+  // Copy the raw data from the de265_image source *src to the byte array
+  void copyCurImageToBuffer();
 
   // At the end of the file, when no more data is available, we will swith to flushing. After all
   // remaining frames were decoding, we will not request more data but switch to
@@ -104,6 +102,8 @@ protected:
   QByteArray avPacketPaddingData;
 
   QString codecName{};
+
+  virtual void setStatisticsTypesInStatisticsData() override;
 };
 
 } // namespace decoder

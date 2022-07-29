@@ -519,7 +519,31 @@ void decoderVTM::cacheStatistics(libVTMDec_picture *)
   //}
 }
 
-stats::StatisticsTypes decoderVTM::getStatisticsTypes() const
+QString decoderVTM::getDecoderName() const
+{
+  return (this->decoderState == DecoderState::Error) ? "VTM" : this->lib.libVTMDec_get_version();
+}
+
+bool decoderVTM::checkLibraryFile(QString libFilePath, QString &error)
+{
+  decoderVTM testDecoder;
+
+  // Try to load the library file
+  testDecoder.library.setFileName(libFilePath);
+  if (!testDecoder.library.load())
+  {
+    error = "Error opening QLibrary.";
+    return false;
+  }
+
+  // Now let's see if we can retrive all the function pointers that we will need.
+  // If this works, we can be fairly certain that this is a valid libde265 library.
+  testDecoder.resolveLibraryFunctionPointers();
+  error = testDecoder.decoderErrorString();
+  return testDecoder.state() != DecoderState::Error;
+}
+
+void decoderVTM::setStatisticsTypesInStatisticsData()
 {
   // Ask the decoder how many internals types there are
   // unsigned int nrTypes = this->lib.libVTMDec_get_internal_type_number();
@@ -608,32 +632,6 @@ stats::StatisticsTypes decoderVTM::getStatisticsTypes() const
   //    statSource.addStatType(intraDir);
   //  }
   //}
-
-  return {};
-}
-
-QString decoderVTM::getDecoderName() const
-{
-  return (this->decoderState == DecoderState::Error) ? "VTM" : this->lib.libVTMDec_get_version();
-}
-
-bool decoderVTM::checkLibraryFile(QString libFilePath, QString &error)
-{
-  decoderVTM testDecoder;
-
-  // Try to load the library file
-  testDecoder.library.setFileName(libFilePath);
-  if (!testDecoder.library.load())
-  {
-    error = "Error opening QLibrary.";
-    return false;
-  }
-
-  // Now let's see if we can retrive all the function pointers that we will need.
-  // If this works, we can be fairly certain that this is a valid libde265 library.
-  testDecoder.resolveLibraryFunctionPointers();
-  error = testDecoder.decoderErrorString();
-  return testDecoder.state() != DecoderState::Error;
 }
 
 } // namespace decoder

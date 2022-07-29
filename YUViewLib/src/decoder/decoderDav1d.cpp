@@ -863,7 +863,7 @@ QStringList decoderDav1d::getLibraryNames() const
                          << "libdav1d";
 }
 
-stats::StatisticsTypes decoderDav1d::getStatisticsTypes() const
+void decoderDav1d::setStatisticsTypesInStatisticsData()
 {
   using namespace stats::color;
 
@@ -1058,7 +1058,7 @@ stats::StatisticsTypes decoderDav1d::getStatisticsTypes() const
                                    "RTX_64X16"});
   types.push_back(transformDepth);
 
-  return types;
+  this->statisticsData.setStatisticsTypes(std::move(types));
 }
 
 } // namespace decoder

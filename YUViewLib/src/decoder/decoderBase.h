@@ -129,7 +129,6 @@ public:
   bool areStatisticsSupported() const { return this->statisticsSupported; }
   bool areStatisticsEnabled() const { return this->statisticsEnabled; }
   void enableStatisticsStorage();
-  virtual stats::StatisticsTypes getStatisticsTypes() const { return {}; }
 
   // Error handling
   bool    errorInDecoder() const { return decoderState == DecoderState::Error; }
@@ -152,6 +151,8 @@ protected:
 
   bool statisticsSupported{false}; ///< Enable in the constructor if you support statistics
   bool statisticsEnabled{false};
+
+  virtual void          setStatisticsTypesInStatisticsData() {}
   stats::StatisticsData statisticsData;
 
   Size frameSize{};

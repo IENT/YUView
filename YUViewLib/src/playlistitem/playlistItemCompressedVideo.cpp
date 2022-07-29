@@ -38,9 +38,9 @@
 
 #include <inttypes.h>
 
-#include <common/YUViewDomElement.h>
 #include <common/Functions.h>
 #include <common/FunctionsGui.h>
+#include <common/YUViewDomElement.h>
 #include <decoder/decoderDav1d.h>
 #include <decoder/decoderFFmpeg.h>
 #include <decoder/decoderHM.h>
@@ -408,7 +408,7 @@ void playlistItemCompressedVideo::savePlaylist(QDomElement &root, const QDir &pl
 
   if (this->video)
     this->video->savePlaylist(d);
-  if (this->loadingDecoder && loadingDecoder->statisticsSupported())
+  if (this->loadingDecoder && loadingDecoder->areStatisticsSupported())
   {
     auto newChild = YUViewDomElement(d.ownerDocument().createElement("StatisticsData"));
     this->statisticsData.savePlaylist(newChild);
@@ -500,11 +500,11 @@ InfoData playlistItemCompressedVideo::getInfo() const
       info.items.append(InfoItem("Decoder", loadingDecoder->getDecoderName()));
       info.items.append(InfoItem("Decoder", loadingDecoder->getCodecName()));
       info.items.append(InfoItem("Statistics",
-                                 loadingDecoder->statisticsSupported() ? "Yes" : "No",
+                                 loadingDecoder->areStatisticsSupported() ? "Yes" : "No",
                                  "Is the decoder able to provide internals (statistics)?"));
       info.items.append(
           InfoItem("Stat Parsing",
-                   loadingDecoder->statisticsEnabled() ? "Yes" : "No",
+                   loadingDecoder->areStatisticsEnabled() ? "Yes" : "No",
                    "Are the statistics of the sequence currently extracted from the stream?"));
     }
   }
@@ -781,8 +781,8 @@ void playlistItemCompressedVideo::loadRawData(int frameIdx, bool caching)
         rightFrame = caching ? currentFrameIdx[1] == frameIdx : currentFrameIdx[0] == frameIdx;
         if (rightFrame)
         {
-          if (dec->statisticsEnabled())
-            this->statisticsData.setFrameIndex(frameIdx);
+          if (dec->areStatisticsEnabled())
+            this->statisticsData.setFrameIndex(frameIdx, BufferSelection::Primary);
           video->rawData            = dec->getRawFrameData();
           video->rawData_frameIndex = frameIdx;
         }
@@ -1077,10 +1077,10 @@ bool playlistItemCompressedVideo::allocateDecoder(int displayComponent)
 
 void playlistItemCompressedVideo::fillStatisticList()
 {
-  if (!loadingDecoder || !loadingDecoder->statisticsSupported())
+  if (!loadingDecoder || !loadingDecoder->areStatisticsSupported())
     return;
 
-  loadingDecoder->fillStatisticList(this->statisticsData);
+  this->statisticsData.setStatisticsTypes(std::move(this->loadingDecoder->getStatisticsTypes()));
 }
 
 void playlistItemCompressedVideo::loadStatistics(int frameIdx)
@@ -1088,25 +1088,25 @@ void playlistItemCompressedVideo::loadStatistics(int frameIdx)
   DEBUG_COMPRESSED("playlistItemCompressedVideo::loadStatisticToCache Request statistics for frame "
                    << frameIdx);
 
-  if (!loadingDecoder->statisticsSupported())
+  if (!this->loadingDecoder->areStatisticsSupported())
     return;
-  if (!loadingDecoder->statisticsEnabled())
+  if (!this->loadingDecoder->areStatisticsEnabled())
   {
     // We have to enable collecting of statistics in the decoder. By default (for speed reasons)
     // this is off. Enabeling works like this: Enable collection, reset the decoder and decode the
     // current frame again. Statisitcs are always retrieved for the loading decoder.
-    loadingDecoder->enableStatisticsRetrieval(&this->statisticsData);
+    this->loadingDecoder->enableStatisticsStorage();
     DEBUG_COMPRESSED("playlistItemCompressedVideo::loadStatistics Enable loading of stats frame "
                      << frameIdx);
 
     // Reload the current frame (force a seek and decode operation)
-    int frameToLoad    = currentFrameIdx[0];
-    currentFrameIdx[0] = -1;
+    int frameToLoad          = this->currentFrameIdx[0];
+    this->currentFrameIdx[0] = -1;
     this->loadRawData(frameToLoad, false);
 
     // The statistics should now be loaded
   }
-  else if (frameIdx != currentFrameIdx[0])
+  else if (frameIdx != this->currentFrameIdx[0])
   {
     // If the requested frame is not currently decoded, decode it.
     // This can happen if the picture was gotten from the cache.
