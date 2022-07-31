@@ -137,9 +137,6 @@ private:
   // retrive a new frame.
   bool decodedFrameWaiting{false};
 
-  // Statistics caching
-  void cacheStatistics(libHMDec_picture *pic);
-
   int nrSignals{0};
 
   // We buffer the current image as a QByteArray so you can call getYUVFrameData as often as

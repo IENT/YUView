@@ -170,6 +170,11 @@ QByteArray decoderFFmpeg::getRawFrameData()
 
 stats::DataPerTypeMap decoderFFmpeg::getFrameStatisticsData()
 {
+  if (this->decoderState != DecoderState::RetrieveFrames)
+  {
+    DEBUG_FFMPEG("decoderFFmpeg::getFrameStatisticsData: Wrong decoder state.");
+    return {};
+  }
   if (!this->statisticsEnabled)
     return {};
 

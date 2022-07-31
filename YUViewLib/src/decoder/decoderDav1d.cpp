@@ -702,10 +702,15 @@ QByteArray decoderDav1d::getRawFrameData()
 
 stats::DataPerTypeMap decoderDav1d::getFrameStatisticsData()
 {
+  if (this->decoderState != DecoderState::RetrieveFrames)
+  {
+    DEBUG_DAV1D("decoderDav1d::getFrameStatisticsData: Wrong decoder state.");
+    return {};
+  }
   if (!this->statisticsEnabled)
     return {};
 
-  DEBUG_DAV1D("decoderDav1d::cacheStatistics");
+  DEBUG_DAV1D("decoderDav1d::getFrameStatisticsData");
 
   stats::DataPerTypeMap data;
 

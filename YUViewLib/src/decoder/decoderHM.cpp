@@ -432,9 +432,6 @@ QByteArray decoderHM::getRawFrameData()
     // Put image data into buffer
     this->copyImgToByteArray(this->currentHMPic, this->currentOutputBuffer);
     DEBUG_DECHM("decoderHM::getRawFrameData copied frame to buffer");
-
-    // Get the statistics from the image and put them into the statistics cache
-    this->cacheStatistics(currentHMPic);
   }
 
   return this->currentOutputBuffer;
@@ -442,10 +439,18 @@ QByteArray decoderHM::getRawFrameData()
 
 stats::DataPerTypeMap decoderHM::getFrameStatisticsData()
 {
+  if (this->currentHMPic == nullptr)
+    return {};
+  if (this->decoderState != DecoderState::RetrieveFrames)
+  {
+    DEBUG_DECHM("decoderHM::getFrameStatisticsData: Wrong decoder state.");
+    return {};
+  }
   if (!this->statisticsEnabled)
     return {};
 
-  DEBUG_DECHM("decoderHM::cacheStatistics POC %d", this->lib.libHMDEC_get_POC(this->currentHMPic));
+  DEBUG_DECHM("decoderHM::getFrameStatisticsData POC %d",
+              this->lib.libHMDEC_get_POC(this->currentHMPic));
 
   stats::DataPerTypeMap data;
 
