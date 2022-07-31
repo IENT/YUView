@@ -98,7 +98,7 @@ public:
 
   bool pushData(QByteArray &data) override;
 
-  virtual stats::StatisticsTypes getStatisticsTypes() const;
+  stats::StatisticsTypes getStatisticsTypes() const;
 
   // Check if the given library file is an existing libde265 decoder that we can use.
   static bool checkLibraryFile(QString libFilePath, QString &error);

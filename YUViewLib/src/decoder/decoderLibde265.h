@@ -98,13 +98,17 @@ public:
 
   int  nrSignalsSupported() const override { return nrSignals; }
   bool isSignalDifference(int signalID) const override { return signalID == 2 || signalID == 3; }
-  QStringList                getSignalNames() const override;
-  virtual DecoderResetNeeded setDecodeSignal(int signalID) override;
+  QStringList        getSignalNames() const override;
+  DecoderResetNeeded setDecodeSignal(int signalID) override;
 
   // Decoding / pushing data
-  bool       decodeNextFrame() override;
-  QByteArray getRawFrameData() override;
-  bool       pushData(QByteArray &data) override;
+  bool                  decodeNextFrame() override;
+  QByteArray            getRawFrameData() override;
+  stats::DataPerTypeMap getFrameStatisticsData() override;
+
+  bool pushData(QByteArray &data) override;
+
+  stats::StatisticsTypes getStatisticsTypes() const;
 
   // Check if the given library file is an existing libde265 decoder that we can use.
   static bool checkLibraryFile(QString libFilePath, QString &error);
@@ -144,24 +148,6 @@ private:
   bool               decodeFrame();
   const de265_image *curImage{nullptr};
 
-  // Statistics caching
-  void cacheStatistics(const de265_image *img);
-
-  // With the given partitioning mode, the size of the CU and the prediction block index, calculate
-  // the sub-position and size of the prediction block
-  void cacheStatistics_TUTree_recursive(uint8_t *const tuInfo,
-                                        int            tuInfoWidth,
-                                        int            tuUnitSizePix,
-                                        int            iPOC,
-                                        int            tuIdx,
-                                        int            tuWidth_units,
-                                        int            trDepth,
-                                        bool           isIntra,
-                                        uint8_t *const intraDirY,
-                                        uint8_t *const intraDirC,
-                                        int            intraDir_infoUnit_size,
-                                        int            widthInIntraDirUnits);
-
   // We buffer the current image as a QByteArray so you can call getYUVFrameData as often as
   // necessary without invoking the copy operation from the libde265 buffer to the QByteArray again.
 #if SSE_CONVERSION
@@ -175,8 +161,6 @@ private:
 #endif
 
   LibraryFunctionsDe265 lib;
-
-  virtual void setStatisticsTypesInStatisticsData() override;
 };
 
 } // namespace decoder

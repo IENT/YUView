@@ -67,7 +67,7 @@ public:
   bool pushAVPacket(FFmpeg::AVPacketWrapper &pkt);
   bool pushData(QByteArray &data) override;
 
-  virtual stats::StatisticsTypes getStatisticsTypes() const;
+  stats::StatisticsTypes getStatisticsTypes() const;
 
   QStringList getLibraryPaths() const override { return ff.getLibPaths(); }
   QString     getDecoderName() const override { return "FFmpeg"; }

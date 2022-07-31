@@ -153,6 +153,149 @@ std::tuple<int, int, int, int> getPBSubPosition(int partMode, int cbSizePix, int
   return {pbX, pbY, pbW, pbH};
 }
 
+/* Walk into the TU tree and set the tree depth as a statistic value if the TU is not further split
+ * \param tuInfo: The tuInfo array
+ * \param tuInfoWidth: The number of TU units per line in the tuInfo array
+ * \param tuUnitSizePix: The size of one TU unit in pixels
+ * \param iPOC: The current POC
+ * \param tuIdx: The top left index of the currently handled TU in tuInfo
+ * \param tuWidth_units: The WIdth of the TU in units
+ * \param trDepth: The current transform tree depth
+ * \param isIntra: is the CU using intra prediction?
+ */
+void cacheStatistics_TUTree_recursive(stats::DataPerTypeMap &data,
+                                      uint8_t *const         tuInfo,
+                                      int                    tuInfoWidth,
+                                      int                    tuUnitSizePix,
+                                      int                    iPOC,
+                                      int                    tuIdx,
+                                      int                    tuWidth_units,
+                                      int                    trDepth,
+                                      bool                   isIntra,
+                                      uint8_t *const         intraDirY,
+                                      uint8_t *const         intraDirC,
+                                      int                    intraDir_infoUnit_size,
+                                      int                    widthInIntraDirUnits)
+{
+  // Check if the TU is further split.
+  if (tuInfo[tuIdx] & (1 << trDepth))
+  {
+    // The transform is split further
+    int yOffset = (tuWidth_units / 2) * tuInfoWidth;
+    cacheStatistics_TUTree_recursive(data,
+                                     tuInfo,
+                                     tuInfoWidth,
+                                     tuUnitSizePix,
+                                     iPOC,
+                                     tuIdx,
+                                     tuWidth_units / 2,
+                                     trDepth + 1,
+                                     isIntra,
+                                     intraDirY,
+                                     intraDirC,
+                                     intraDir_infoUnit_size,
+                                     widthInIntraDirUnits);
+    cacheStatistics_TUTree_recursive(data,
+                                     tuInfo,
+                                     tuInfoWidth,
+                                     tuUnitSizePix,
+                                     iPOC,
+                                     tuIdx + tuWidth_units / 2,
+                                     tuWidth_units / 2,
+                                     trDepth + 1,
+                                     isIntra,
+                                     intraDirY,
+                                     intraDirC,
+                                     intraDir_infoUnit_size,
+                                     widthInIntraDirUnits);
+    cacheStatistics_TUTree_recursive(data,
+                                     tuInfo,
+                                     tuInfoWidth,
+                                     tuUnitSizePix,
+                                     iPOC,
+                                     tuIdx + yOffset,
+                                     tuWidth_units / 2,
+                                     trDepth + 1,
+                                     isIntra,
+                                     intraDirY,
+                                     intraDirC,
+                                     intraDir_infoUnit_size,
+                                     widthInIntraDirUnits);
+    cacheStatistics_TUTree_recursive(data,
+                                     tuInfo,
+                                     tuInfoWidth,
+                                     tuUnitSizePix,
+                                     iPOC,
+                                     tuIdx + yOffset + tuWidth_units / 2,
+                                     tuWidth_units / 2,
+                                     trDepth + 1,
+                                     isIntra,
+                                     intraDirY,
+                                     intraDirC,
+                                     intraDir_infoUnit_size,
+                                     widthInIntraDirUnits);
+  }
+  else
+  {
+    // The transform is not split any further. Add the TU depth to the statistics (ID 11)
+    auto tuWidth = tuWidth_units * tuUnitSizePix;
+    auto posX    = tuIdx % tuInfoWidth * tuUnitSizePix;
+    auto posY    = tuIdx / tuInfoWidth * tuUnitSizePix;
+
+    const stats::Block tuBlock(posX, posY, tuWidth, tuWidth);
+
+    data[11].valueData.push_back(stats::BlockWithValue(tuBlock, trDepth));
+
+    if (isIntra)
+    {
+      // Display the intra prediction mode (as it is executed) per transform unit
+
+      // Conversion from intra prediction mode to vector.
+      // Coordinates are in x,y with the axes going right and down.
+      static const int vectorTable[35][2] = {
+          {0, 0},   {0, 0},   {32, -32}, {32, -26}, {32, -21}, {32, -17}, {32, -13},
+          {32, -9}, {32, -5}, {32, -2},  {32, 0},   {32, 2},   {32, 5},   {32, 9},
+          {32, 13}, {32, 17}, {32, 21},  {32, 26},  {32, 32},  {26, 32},  {21, 32},
+          {17, 32}, {13, 32}, {9, 32},   {5, 32},   {2, 32},   {0, 32},   {-2, 32},
+          {-5, 32}, {-9, 32}, {-13, 32}, {-17, 32}, {-21, 32}, {-26, 32}, {-32, 32}};
+
+      // Get index for this xy position in the intraDir array
+      auto intraDirIdx =
+          (posY / intraDir_infoUnit_size) * widthInIntraDirUnits + (posX / intraDir_infoUnit_size);
+
+      // Set Intra prediction direction Luma (ID 9)
+      auto intraDirLuma = intraDirY[intraDirIdx];
+      if (intraDirLuma <= 34)
+      {
+        data[11].valueData.push_back(stats::BlockWithValue(tuBlock, intraDirLuma));
+
+        if (intraDirLuma >= 2)
+        {
+          // Set Intra prediction direction Luma (ID 9) as vector
+          int vecX = (float)vectorTable[intraDirLuma][0] * tuWidth / 4;
+          int vecY = (float)vectorTable[intraDirLuma][1] * tuWidth / 4;
+          data[9].vectorData.push_back(stats::BlockWithVector(tuBlock, {vecX, vecY}));
+        }
+      }
+
+      // Set Intra prediction direction Chroma (ID 10)
+      auto intraDirChroma = intraDirC[intraDirIdx];
+      if (intraDirChroma <= 34)
+      {
+        data[10].valueData.push_back(stats::BlockWithValue(tuBlock, intraDirChroma));
+
+        if (intraDirChroma >= 2)
+        {
+          // Set Intra prediction direction Chroma (ID 10) as vector
+          int vecX = (float)vectorTable[intraDirChroma][0] * tuWidth / 4;
+          int vecY = (float)vectorTable[intraDirChroma][1] * tuWidth / 4;
+          data[10].vectorData.push_back(stats::BlockWithVector(tuBlock, {vecX, vecY}));
+        }
+      }
+    }
+  }
+}
+
 } // namespace
 
 decoderLibde265::decoderLibde265(int signalID, bool cachingDecoder)
@@ -168,7 +311,6 @@ decoderLibde265::decoderLibde265(int signalID, bool cachingDecoder)
   this->loadDecoderLibrary(settings.value("libde265File", "").toString());
   settings.endGroup();
 
-  bool resetDecoder;
   this->setDecodeSignal(signalID);
   this->allocateNewDecoder();
 }
@@ -204,7 +346,6 @@ QStringList decoderLibde265::getSignalNames() const
 
 decoderLibde265::DecoderResetNeeded decoderLibde265::setDecodeSignal(int signalID)
 {
-  bool decoderResetNeeded = false;
   if (signalID == this->decodeSignal)
     return false;
   if (signalID >= 0 && signalID < this->nrSignalsSupported())
@@ -479,12 +620,196 @@ QByteArray decoderLibde265::getRawFrameData()
   {
     this->copyImgToByteArray(this->curImage, this->currentOutputBuffer);
     DEBUG_LIBDE265("decoderLibde265::getRawFrameData copied frame to buffer");
-
-    if (this->statisticsEnabled)
-      this->cacheStatistics(this->curImage);
   }
 
   return this->currentOutputBuffer;
+}
+
+stats::DataPerTypeMap decoderLibde265::getFrameStatisticsData()
+{
+  if (this->curImage == nullptr)
+    return {};
+  if (this->decoderState != DecoderState::RetrieveFrames)
+  {
+    DEBUG_LIBDE265("decoderLibde265::getRawFrameData: Wrong decoder state.");
+    return {};
+  }
+  if (!this->statisticsEnabled)
+    return {};
+
+  DEBUG_LIBDE265("decoderLibde265::getFrameStatisticsData");
+
+  stats::DataPerTypeMap data;
+
+  /// --- CTB internals/statistics
+  int widthInCTB, heightInCTB, log2CTBSize;
+  this->lib.de265_internals_get_CTB_Info_Layout(
+      this->curImage, &widthInCTB, &heightInCTB, &log2CTBSize);
+  int ctb_size = 1 << log2CTBSize; // width and height of each CTB
+
+  // Save Slice index
+  {
+    QScopedArrayPointer<uint16_t> tmpArr(new uint16_t[widthInCTB * heightInCTB]);
+    this->lib.de265_internals_get_CTB_sliceIdx(this->curImage, tmpArr.data());
+    for (int y = 0; y < heightInCTB; y++)
+      for (int x = 0; x < widthInCTB; x++)
+      {
+        auto               val = tmpArr[y * widthInCTB + x];
+        const stats::Block ctbBlock(x * ctb_size, y * ctb_size, ctb_size, ctb_size);
+        data[0].valueData.push_back(stats::BlockWithValue(ctbBlock, int(val)));
+      }
+  }
+
+  /// --- CB internals/statistics (part Size, prediction mode, PCM flag, CU trans_quant_bypass_flag)
+
+  // TODO: How do we get the POC in here? / Should the decoder not be able to tell us the POC?
+  const int iPOC = 0;
+
+  // Get CB info array layout from image
+  int widthInCB          = 0;
+  int heightInCB         = 0;
+  int log2CBInfoUnitSize = 0;
+  this->lib.de265_internals_get_CB_Info_Layout(
+      this->curImage, &widthInCB, &heightInCB, &log2CBInfoUnitSize);
+  int cb_infoUnit_size = 1 << log2CBInfoUnitSize;
+
+  // Get CB info from image
+  std::vector<uint16_t> cbInfoArr(widthInCB * heightInCB);
+  this->lib.de265_internals_get_CB_info(this->curImage, cbInfoArr.data());
+
+  // Get PB array layout from image
+  int widthInPB          = 0;
+  int heightInPB         = 0;
+  int log2PBInfoUnitSize = 0;
+  this->lib.de265_internals_get_PB_Info_layout(
+      this->curImage, &widthInPB, &heightInPB, &log2PBInfoUnitSize);
+  int pb_infoUnit_size = 1 << log2PBInfoUnitSize;
+
+  // Get PB info from image
+  std::vector<int16_t> refPOC0(widthInPB * heightInPB);
+  std::vector<int16_t> refPOC1(widthInPB * heightInPB);
+  std::vector<int16_t> vec0_x(widthInPB * heightInPB);
+  std::vector<int16_t> vec0_y(widthInPB * heightInPB);
+  std::vector<int16_t> vec1_x(widthInPB * heightInPB);
+  std::vector<int16_t> vec1_y(widthInPB * heightInPB);
+  this->lib.de265_internals_get_PB_info(this->curImage,
+                                        refPOC0.data(),
+                                        refPOC1.data(),
+                                        vec0_x.data(),
+                                        vec0_y.data(),
+                                        vec1_x.data(),
+                                        vec1_y.data());
+
+  // Get intra prediction mode (intra direction) layout from image
+  int widthInIntraDirUnits  = 0;
+  int heightInIntraDirUnits = 0;
+  int log2IntraDirUnitsSize = 0;
+  this->lib.de265_internals_get_IntraDir_Info_layout(
+      this->curImage, &widthInIntraDirUnits, &heightInIntraDirUnits, &log2IntraDirUnitsSize);
+  auto intraDir_infoUnit_size = 1 << log2IntraDirUnitsSize;
+
+  // Get intra prediction mode (intra direction) from image
+  std::vector<uint8_t> intraDirY(widthInIntraDirUnits * heightInIntraDirUnits);
+  std::vector<uint8_t> intraDirC(widthInIntraDirUnits * heightInIntraDirUnits);
+  this->lib.de265_internals_get_intraDir_info(this->curImage, intraDirY.data(), intraDirC.data());
+
+  // Get TU info array layout
+  int widthInTUInfoUnits  = 0;
+  int heightInTUInfoUnits = 0;
+  int log2TUInfoUnitSize  = 0;
+  this->lib.de265_internals_get_TUInfo_Info_layout(
+      this->curImage, &widthInTUInfoUnits, &heightInTUInfoUnits, &log2TUInfoUnitSize);
+  auto tuInfo_unit_size = 1 << log2TUInfoUnitSize;
+
+  // Get TU info
+  std::vector<uint8_t> tuInfo(widthInTUInfoUnits * heightInTUInfoUnits);
+  this->lib.de265_internals_get_TUInfo_info(this->curImage, tuInfo.data());
+
+  for (int y = 0; y < heightInCB; y++)
+  {
+    for (int x = 0; x < widthInCB; x++)
+    {
+      auto val         = cbInfoArr[y * widthInCB + x];
+      auto log2_cbSize = (val & 7); // Extract lowest 3 bits;
+
+      if (log2_cbSize > 0)
+      {
+        // We are in the top left position of a CB.
+
+        // Get values of this CB
+        auto cbSizePix = 1 << log2_cbSize;     // Size (w,h) in pixels
+        int  cbPosX    = x * cb_infoUnit_size; // Position of this CB in pixels
+        int  cbPosY    = y * cb_infoUnit_size;
+        auto partMode  = ((val >> 3) & 7); // Extract next 3 bits (part size);
+        auto predMode  = ((val >> 6) & 3); // Extract next 2 bits (prediction mode);
+        bool pcmFlag   = (val & 256);      // Next bit (PCM flag)
+        bool tqBypass  = (val & 512);      // Next bit (TransQuant bypass flag)
+
+        const stats::Block tuBlock(cbPosX, cbPosY, cbSizePix, cbSizePix);
+
+        data[1].valueData.push_back(stats::BlockWithValue(tuBlock, partMode));
+        data[2].valueData.push_back(stats::BlockWithValue(tuBlock, predMode));
+        data[3].valueData.push_back(stats::BlockWithValue(tuBlock, int(pcmFlag)));
+        data[4].valueData.push_back(stats::BlockWithValue(tuBlock, int(tqBypass)));
+
+        if (predMode != 0)
+        {
+          // For each of the prediction blocks set some info
+
+          int numPB = (partMode == 0) ? 1 : (partMode == 3) ? 4 : 2;
+          for (int i = 0; i < numPB; i++)
+          {
+            auto [pbSubX, pbSubY, pbW, pbH] = getPBSubPosition(partMode, cbSizePix, i);
+            auto pbX                        = cbPosX + pbSubX;
+            auto pbY                        = cbPosY + pbSubY;
+
+            const stats::Block pbBlock(pbX, pbY, pbW, pbH);
+
+            // Get index for this xy position in pb_info array
+            auto pbIdx = (pbY / pb_infoUnit_size) * widthInPB + (pbX / pb_infoUnit_size);
+
+            // Add ref index 0 (ID 5)
+            auto ref0 = refPOC0[pbIdx];
+            if (ref0 != -1)
+              data[5].valueData.push_back(stats::BlockWithValue(pbBlock, int(ref0 - iPOC)));
+
+            // Add ref index 1 (ID 6)
+            auto ref1 = refPOC1[pbIdx];
+            if (ref1 != -1)
+              data[6].valueData.push_back(stats::BlockWithValue(pbBlock, int(ref1 - iPOC)));
+
+            // Add motion vector 0 (ID 7)
+            if (ref0 != -1)
+              data[7].vectorData.push_back(
+                  stats::BlockWithVector(pbBlock, {vec0_x[pbIdx], vec0_y[pbIdx]}));
+
+            // Add motion vector 1 (ID 8)
+            if (ref1 != -1)
+              data[8].vectorData.push_back(
+                  stats::BlockWithVector(pbBlock, {vec1_x[pbIdx], vec1_y[pbIdx]}));
+          }
+        }
+
+        // Walk into the TU tree
+        int tuIdx = (cbPosY / tuInfo_unit_size) * widthInTUInfoUnits + (cbPosX / tuInfo_unit_size);
+        cacheStatistics_TUTree_recursive(data,
+                                         tuInfo.data(),
+                                         widthInTUInfoUnits,
+                                         tuInfo_unit_size,
+                                         iPOC,
+                                         tuIdx,
+                                         cbSizePix / tuInfo_unit_size,
+                                         0,
+                                         predMode == 0,
+                                         intraDirY.data(),
+                                         intraDirC.data(),
+                                         intraDir_infoUnit_size,
+                                         widthInIntraDirUnits);
+      }
+    }
+  }
+
+  return data;
 }
 
 bool decoderLibde265::pushData(QByteArray &data)
@@ -540,405 +865,7 @@ bool decoderLibde265::pushData(QByteArray &data)
   return true;
 }
 
-#if SSE_CONVERSION
-void decoderLibde265::copyImgToByteArray(const de265_image *src, byteArrayAligned &dst)
-#else
-void decoderLibde265::copyImgToByteArray(const de265_image *src, QByteArray &dst)
-#endif
-{
-  // How many image planes are there?
-  auto cMode    = this->lib.de265_get_chroma_format(src);
-  auto nrPlanes = (cMode == de265_chroma_mono) ? 1 : 3;
-
-  // At first get how many bytes we are going to write
-  int nrBytes = 0;
-  for (int c = 0; c < nrPlanes; c++)
-  {
-    auto width            = this->lib.de265_get_image_width(src, c);
-    auto height           = this->lib.de265_get_image_height(src, c);
-    auto nrBytesPerSample = (this->lib.de265_get_bits_per_pixel(src, c) > 8) ? 2 : 1;
-
-    nrBytes += width * height * nrBytesPerSample;
-  }
-
-  DEBUG_LIBDE265("decoderLibde265::copyImgToByteArray nrBytes %d", nrBytes);
-
-  // Is the output big enough?
-  if (dst.capacity() < nrBytes)
-    dst.resize(nrBytes);
-
-  auto dst_c = (uint8_t *)(dst.data());
-
-  // We can now copy from src to dst
-  for (int c = 0; c < nrPlanes; c++)
-  {
-    const auto width            = this->lib.de265_get_image_width(src, c);
-    const auto height           = this->lib.de265_get_image_height(src, c);
-    const auto nrBytesPerSample = (this->lib.de265_get_bits_per_pixel(src, c) > 8) ? 2 : 1;
-    const auto widthInBytes     = width * nrBytesPerSample;
-
-    const uint8_t *img_c  = nullptr;
-    int            stride = 0;
-    if (this->decodeSignal == 0)
-      img_c = this->lib.de265_get_image_plane(src, c, &stride);
-    else if (this->decodeSignal == 1)
-      img_c = this->lib.de265_internals_get_image_plane(
-          src, DE265_INTERNALS_DECODER_PARAM_SAVE_PREDICTION, c, &stride);
-    else if (this->decodeSignal == 2)
-      img_c = this->lib.de265_internals_get_image_plane(
-          src, DE265_INTERNALS_DECODER_PARAM_SAVE_RESIDUAL, c, &stride);
-    else if (this->decodeSignal == 3)
-      img_c = this->lib.de265_internals_get_image_plane(
-          src, DE265_INTERNALS_DECODER_PARAM_SAVE_TR_COEFF, c, &stride);
-
-    if (img_c == nullptr)
-      return;
-
-    for (int y = 0; y < height; y++)
-    {
-      memcpy(dst_c, img_c, widthInBytes);
-      img_c += stride;
-      dst_c += widthInBytes;
-    }
-  }
-}
-
-void decoderLibde265::cacheStatistics(const de265_image *img)
-{
-  DEBUG_LIBDE265("decoderLibde265::cacheStatistics");
-
-  /// --- CTB internals/statistics
-  int widthInCTB, heightInCTB, log2CTBSize;
-  this->lib.de265_internals_get_CTB_Info_Layout(img, &widthInCTB, &heightInCTB, &log2CTBSize);
-  int ctb_size = 1 << log2CTBSize; // width and height of each CTB
-
-  auto buffer = BufferSelection::Primary;
-
-  // Save Slice index
-  {
-    QScopedArrayPointer<uint16_t> tmpArr(new uint16_t[widthInCTB * heightInCTB]);
-    this->lib.de265_internals_get_CTB_sliceIdx(img, tmpArr.data());
-    for (int y = 0; y < heightInCTB; y++)
-      for (int x = 0; x < widthInCTB; x++)
-      {
-        auto               val = tmpArr[y * widthInCTB + x];
-        const stats::Block ctbBlock(x * ctb_size, y * ctb_size, ctb_size, ctb_size);
-        this->statisticsData.add(buffer, 0, stats::BlockWithValue(ctbBlock, int(val)));
-      }
-  }
-
-  /// --- CB internals/statistics (part Size, prediction mode, PCM flag, CU trans_quant_bypass_flag)
-
-  // TODO: How do we get the POC in here? / Should the decoder not be able to tell us the POC?
-  const int iPOC = 0;
-
-  // Get CB info array layout from image
-  int widthInCB, heightInCB, log2CBInfoUnitSize;
-  this->lib.de265_internals_get_CB_Info_Layout(img, &widthInCB, &heightInCB, &log2CBInfoUnitSize);
-  int cb_infoUnit_size = 1 << log2CBInfoUnitSize;
-  // Get CB info from image
-  QScopedArrayPointer<uint16_t> cbInfoArr(new uint16_t[widthInCB * heightInCB]);
-  this->lib.de265_internals_get_CB_info(img, cbInfoArr.data());
-
-  // Get PB array layout from image
-  int widthInPB, heightInPB, log2PBInfoUnitSize;
-  this->lib.de265_internals_get_PB_Info_layout(img, &widthInPB, &heightInPB, &log2PBInfoUnitSize);
-  int pb_infoUnit_size = 1 << log2PBInfoUnitSize;
-
-  // Get PB info from image
-  QScopedArrayPointer<int16_t> refPOC0(new int16_t[widthInPB * heightInPB]);
-  QScopedArrayPointer<int16_t> refPOC1(new int16_t[widthInPB * heightInPB]);
-  QScopedArrayPointer<int16_t> vec0_x(new int16_t[widthInPB * heightInPB]);
-  QScopedArrayPointer<int16_t> vec0_y(new int16_t[widthInPB * heightInPB]);
-  QScopedArrayPointer<int16_t> vec1_x(new int16_t[widthInPB * heightInPB]);
-  QScopedArrayPointer<int16_t> vec1_y(new int16_t[widthInPB * heightInPB]);
-  this->lib.de265_internals_get_PB_info(img,
-                                        refPOC0.data(),
-                                        refPOC1.data(),
-                                        vec0_x.data(),
-                                        vec0_y.data(),
-                                        vec1_x.data(),
-                                        vec1_y.data());
-
-  // Get intra prediction mode (intra direction) layout from image
-  int widthInIntraDirUnits, heightInIntraDirUnits, log2IntraDirUnitsSize;
-  this->lib.de265_internals_get_IntraDir_Info_layout(
-      img, &widthInIntraDirUnits, &heightInIntraDirUnits, &log2IntraDirUnitsSize);
-  int intraDir_infoUnit_size = 1 << log2IntraDirUnitsSize;
-
-  // Get intra prediction mode (intra direction) from image
-  QScopedArrayPointer<uint8_t> intraDirY(new uint8_t[widthInIntraDirUnits * heightInIntraDirUnits]);
-  QScopedArrayPointer<uint8_t> intraDirC(new uint8_t[widthInIntraDirUnits * heightInIntraDirUnits]);
-  this->lib.de265_internals_get_intraDir_info(img, intraDirY.data(), intraDirC.data());
-
-  // Get TU info array layout
-  int widthInTUInfoUnits, heightInTUInfoUnits, log2TUInfoUnitSize;
-  this->lib.de265_internals_get_TUInfo_Info_layout(
-      img, &widthInTUInfoUnits, &heightInTUInfoUnits, &log2TUInfoUnitSize);
-  int tuInfo_unit_size = 1 << log2TUInfoUnitSize;
-
-  // Get TU info
-  QScopedArrayPointer<uint8_t> tuInfo(new uint8_t[widthInTUInfoUnits * heightInTUInfoUnits]);
-  this->lib.de265_internals_get_TUInfo_info(img, tuInfo.data());
-
-  for (int y = 0; y < heightInCB; y++)
-  {
-    for (int x = 0; x < widthInCB; x++)
-    {
-      uint16_t val = cbInfoArr[y * widthInCB + x];
-
-      uint8_t log2_cbSize = (val & 7); // Extract lowest 3 bits;
-
-      if (log2_cbSize > 0)
-      {
-        // We are in the top left position of a CB.
-
-        // Get values of this CB
-        uint8_t cbSizePix = 1 << log2_cbSize;     // Size (w,h) in pixels
-        int     cbPosX    = x * cb_infoUnit_size; // Position of this CB in pixels
-        int     cbPosY    = y * cb_infoUnit_size;
-        uint8_t partMode  = ((val >> 3) & 7); // Extract next 3 bits (part size);
-        uint8_t predMode  = ((val >> 6) & 3); // Extract next 2 bits (prediction mode);
-        bool    pcmFlag   = (val & 256);      // Next bit (PCM flag)
-        bool    tqBypass  = (val & 512);      // Next bit (TransQuant bypass flag)
-
-        const stats::Block tuBlock(cbPosX, cbPosY, cbSizePix, cbSizePix);
-
-        this->statisticsData.add(buffer, 1, stats::BlockWithValue(tuBlock, int(partMode)));
-        this->statisticsData.add(buffer, 2, stats::BlockWithValue(tuBlock, int(predMode)));
-        this->statisticsData.add(buffer, 3, stats::BlockWithValue(tuBlock, int(pcmFlag)));
-        this->statisticsData.add(buffer, 4, stats::BlockWithValue(tuBlock, int(tqBypass)));
-
-        if (predMode != 0)
-        {
-          // For each of the prediction blocks set some info
-
-          int numPB = (partMode == 0) ? 1 : (partMode == 3) ? 4 : 2;
-          for (int i = 0; i < numPB; i++)
-          {
-            auto [pbSubX, pbSubY, pbW, pbH] = getPBSubPosition(partMode, cbSizePix, i);
-            int pbX                         = cbPosX + pbSubX;
-            int pbY                         = cbPosY + pbSubY;
-
-            const stats::Block pbBlock(pbX, pbY, pbW, pbH);
-
-            // Get index for this xy position in pb_info array
-            int pbIdx = (pbY / pb_infoUnit_size) * widthInPB + (pbX / pb_infoUnit_size);
-
-            // Add ref index 0 (ID 5)
-            int16_t ref0 = refPOC0[pbIdx];
-            if (ref0 != -1)
-              this->statisticsData.add(buffer, 5, stats::BlockWithValue(pbBlock, int(ref0 - iPOC)));
-
-            // Add ref index 1 (ID 6)
-            int16_t ref1 = refPOC1[pbIdx];
-            if (ref1 != -1)
-              this->statisticsData.add(buffer, 6, stats::BlockWithValue(pbBlock, int(ref1 - iPOC)));
-
-            // Add motion vector 0 (ID 7)
-            if (ref0 != -1)
-              this->statisticsData.add(
-                  buffer, 7, stats::BlockWithVector(pbBlock, {vec0_x[pbIdx], vec0_y[pbIdx]}));
-
-            // Add motion vector 1 (ID 8)
-            if (ref1 != -1)
-              this->statisticsData.add(
-                  buffer, 8, stats::BlockWithVector(pbBlock, {vec1_x[pbIdx], vec1_y[pbIdx]}));
-          }
-        }
-
-        // Walk into the TU tree
-        int tuIdx = (cbPosY / tuInfo_unit_size) * widthInTUInfoUnits + (cbPosX / tuInfo_unit_size);
-        cacheStatistics_TUTree_recursive(tuInfo.data(),
-                                         widthInTUInfoUnits,
-                                         tuInfo_unit_size,
-                                         iPOC,
-                                         tuIdx,
-                                         cbSizePix / tuInfo_unit_size,
-                                         0,
-                                         predMode == 0,
-                                         intraDirY.data(),
-                                         intraDirC.data(),
-                                         intraDir_infoUnit_size,
-                                         widthInIntraDirUnits);
-      }
-    }
-  }
-}
-
-/* Walk into the TU tree and set the tree depth as a statistic value if the TU is not further split
- * \param tuInfo: The tuInfo array
- * \param tuInfoWidth: The number of TU units per line in the tuInfo array
- * \param tuUnitSizePix: The size of one TU unit in pixels
- * \param iPOC: The current POC
- * \param tuIdx: The top left index of the currently handled TU in tuInfo
- * \param tuWidth_units: The WIdth of the TU in units
- * \param trDepth: The current transform tree depth
- * \param isIntra: is the CU using intra prediction?
- */
-void decoderLibde265::cacheStatistics_TUTree_recursive(uint8_t *const tuInfo,
-                                                       int            tuInfoWidth,
-                                                       int            tuUnitSizePix,
-                                                       int            iPOC,
-                                                       int            tuIdx,
-                                                       int            tuWidth_units,
-                                                       int            trDepth,
-                                                       bool           isIntra,
-                                                       uint8_t *const intraDirY,
-                                                       uint8_t *const intraDirC,
-                                                       int            intraDir_infoUnit_size,
-                                                       int            widthInIntraDirUnits)
-{
-  // Check if the TU is further split.
-  if (tuInfo[tuIdx] & (1 << trDepth))
-  {
-    // The transform is split further
-    int yOffset = (tuWidth_units / 2) * tuInfoWidth;
-    cacheStatistics_TUTree_recursive(tuInfo,
-                                     tuInfoWidth,
-                                     tuUnitSizePix,
-                                     iPOC,
-                                     tuIdx,
-                                     tuWidth_units / 2,
-                                     trDepth + 1,
-                                     isIntra,
-                                     intraDirY,
-                                     intraDirC,
-                                     intraDir_infoUnit_size,
-                                     widthInIntraDirUnits);
-    cacheStatistics_TUTree_recursive(tuInfo,
-                                     tuInfoWidth,
-                                     tuUnitSizePix,
-                                     iPOC,
-                                     tuIdx + tuWidth_units / 2,
-                                     tuWidth_units / 2,
-                                     trDepth + 1,
-                                     isIntra,
-                                     intraDirY,
-                                     intraDirC,
-                                     intraDir_infoUnit_size,
-                                     widthInIntraDirUnits);
-    cacheStatistics_TUTree_recursive(tuInfo,
-                                     tuInfoWidth,
-                                     tuUnitSizePix,
-                                     iPOC,
-                                     tuIdx + yOffset,
-                                     tuWidth_units / 2,
-                                     trDepth + 1,
-                                     isIntra,
-                                     intraDirY,
-                                     intraDirC,
-                                     intraDir_infoUnit_size,
-                                     widthInIntraDirUnits);
-    cacheStatistics_TUTree_recursive(tuInfo,
-                                     tuInfoWidth,
-                                     tuUnitSizePix,
-                                     iPOC,
-                                     tuIdx + yOffset + tuWidth_units / 2,
-                                     tuWidth_units / 2,
-                                     trDepth + 1,
-                                     isIntra,
-                                     intraDirY,
-                                     intraDirC,
-                                     intraDir_infoUnit_size,
-                                     widthInIntraDirUnits);
-  }
-  else
-  {
-    // The transform is not split any further. Add the TU depth to the statistics (ID 11)
-    auto tuWidth = tuWidth_units * tuUnitSizePix;
-    auto posX    = tuIdx % tuInfoWidth * tuUnitSizePix;
-    auto posY    = tuIdx / tuInfoWidth * tuUnitSizePix;
-    auto buffer  = BufferSelection::Primary;
-
-    const stats::Block tuBlock(posX, posY, tuWidth, tuWidth);
-
-    this->statisticsData.add(buffer, 11, stats::BlockWithValue(tuBlock, trDepth));
-
-    if (isIntra)
-    {
-      // Display the intra prediction mode (as it is executed) per transform unit
-
-      // Conversion from intra prediction mode to vector.
-      // Coordinates are in x,y with the axes going right and down.
-      static const int vectorTable[35][2] = {
-          {0, 0},   {0, 0},   {32, -32}, {32, -26}, {32, -21}, {32, -17}, {32, -13},
-          {32, -9}, {32, -5}, {32, -2},  {32, 0},   {32, 2},   {32, 5},   {32, 9},
-          {32, 13}, {32, 17}, {32, 21},  {32, 26},  {32, 32},  {26, 32},  {21, 32},
-          {17, 32}, {13, 32}, {9, 32},   {5, 32},   {2, 32},   {0, 32},   {-2, 32},
-          {-5, 32}, {-9, 32}, {-13, 32}, {-17, 32}, {-21, 32}, {-26, 32}, {-32, 32}};
-
-      // Get index for this xy position in the intraDir array
-      auto intraDirIdx =
-          (posY / intraDir_infoUnit_size) * widthInIntraDirUnits + (posX / intraDir_infoUnit_size);
-
-      // Set Intra prediction direction Luma (ID 9)
-      auto intraDirLuma = intraDirY[intraDirIdx];
-      if (intraDirLuma <= 34)
-      {
-        this->statisticsData.add(buffer, 11, stats::BlockWithValue(tuBlock, intraDirLuma));
-
-        if (intraDirLuma >= 2)
-        {
-          // Set Intra prediction direction Luma (ID 9) as vector
-          int vecX = (float)vectorTable[intraDirLuma][0] * tuWidth / 4;
-          int vecY = (float)vectorTable[intraDirLuma][1] * tuWidth / 4;
-          this->statisticsData.add(buffer, 9, stats::BlockWithVector(tuBlock, {vecX, vecY}));
-        }
-      }
-
-      // Set Intra prediction direction Chroma (ID 10)
-      auto intraDirChroma = intraDirC[intraDirIdx];
-      if (intraDirChroma <= 34)
-      {
-        this->statisticsData.add(buffer, 10, stats::BlockWithValue(tuBlock, intraDirChroma));
-
-        if (intraDirChroma >= 2)
-        {
-          // Set Intra prediction direction Chroma (ID 10) as vector
-          int vecX = (float)vectorTable[intraDirChroma][0] * tuWidth / 4;
-          int vecY = (float)vectorTable[intraDirChroma][1] * tuWidth / 4;
-          this->statisticsData.add(buffer, 10, stats::BlockWithVector(tuBlock, {vecX, vecY}));
-        }
-      }
-    }
-  }
-}
-
-bool decoderLibde265::checkLibraryFile(QString libFilePath, QString &error)
-{
-  decoderLibde265 testDecoder;
-
-  // Try to load the library file
-  testDecoder.library.setFileName(libFilePath);
-  if (!testDecoder.library.load())
-  {
-    error = "Error opening QLibrary.";
-    return false;
-  }
-
-  // Now let's see if we can retrive all the function pointers that we will need.
-  // If this works, we can be fairly certain that this is a valid libde265 library.
-  testDecoder.resolveLibraryFunctionPointers();
-  error = testDecoder.decoderErrorString();
-  return testDecoder.state() != DecoderState::Error;
-}
-
-QStringList decoderLibde265::getLibraryNames() const
-{
-  // If the file name is not set explicitly, QLibrary will try to open
-  // the libde265.so file first. Since this has been compiled for linux
-  // it will fail and not even try to open the libde265.dylib.
-  // On windows and linux ommitting the extension works
-  QStringList libNames = is_Q_OS_MAC ? QStringList() << "libde265-internals.dylib"
-                                                     << "libde265.dylib"
-                                     : QStringList() << "libde265-internals"
-                                                     << "libde265";
-
-  return libNames;
-}
-
-void decoderLibde265::setStatisticsTypesInStatisticsData()
+stats::StatisticsTypes decoderLibde265::getStatisticsTypes() const
 {
   using namespace stats::color;
 
@@ -1037,7 +964,103 @@ void decoderLibde265::setStatisticsTypesInStatisticsData()
   transformDepth.description = "The transform depth within the transform tree per TU";
   types.push_back(transformDepth);
 
-  this->statisticsData.setStatisticsTypes(std::move(types));
+  return types;
+}
+
+#if SSE_CONVERSION
+void decoderLibde265::copyImgToByteArray(const de265_image *src, byteArrayAligned &dst)
+#else
+void decoderLibde265::copyImgToByteArray(const de265_image *src, QByteArray &dst)
+#endif
+{
+  // How many image planes are there?
+  auto cMode    = this->lib.de265_get_chroma_format(src);
+  auto nrPlanes = (cMode == de265_chroma_mono) ? 1 : 3;
+
+  // At first get how many bytes we are going to write
+  int nrBytes = 0;
+  for (int c = 0; c < nrPlanes; c++)
+  {
+    auto width            = this->lib.de265_get_image_width(src, c);
+    auto height           = this->lib.de265_get_image_height(src, c);
+    auto nrBytesPerSample = (this->lib.de265_get_bits_per_pixel(src, c) > 8) ? 2 : 1;
+
+    nrBytes += width * height * nrBytesPerSample;
+  }
+
+  DEBUG_LIBDE265("decoderLibde265::copyImgToByteArray nrBytes %d", nrBytes);
+
+  // Is the output big enough?
+  if (dst.capacity() < nrBytes)
+    dst.resize(nrBytes);
+
+  auto dst_c = (uint8_t *)(dst.data());
+
+  // We can now copy from src to dst
+  for (int c = 0; c < nrPlanes; c++)
+  {
+    const auto width            = this->lib.de265_get_image_width(src, c);
+    const auto height           = this->lib.de265_get_image_height(src, c);
+    const auto nrBytesPerSample = (this->lib.de265_get_bits_per_pixel(src, c) > 8) ? 2 : 1;
+    const auto widthInBytes     = width * nrBytesPerSample;
+
+    const uint8_t *img_c  = nullptr;
+    int            stride = 0;
+    if (this->decodeSignal == 0)
+      img_c = this->lib.de265_get_image_plane(src, c, &stride);
+    else if (this->decodeSignal == 1)
+      img_c = this->lib.de265_internals_get_image_plane(
+          src, DE265_INTERNALS_DECODER_PARAM_SAVE_PREDICTION, c, &stride);
+    else if (this->decodeSignal == 2)
+      img_c = this->lib.de265_internals_get_image_plane(
+          src, DE265_INTERNALS_DECODER_PARAM_SAVE_RESIDUAL, c, &stride);
+    else if (this->decodeSignal == 3)
+      img_c = this->lib.de265_internals_get_image_plane(
+          src, DE265_INTERNALS_DECODER_PARAM_SAVE_TR_COEFF, c, &stride);
+
+    if (img_c == nullptr)
+      return;
+
+    for (int y = 0; y < height; y++)
+    {
+      memcpy(dst_c, img_c, widthInBytes);
+      img_c += stride;
+      dst_c += widthInBytes;
+    }
+  }
+}
+
+bool decoderLibde265::checkLibraryFile(QString libFilePath, QString &error)
+{
+  decoderLibde265 testDecoder;
+
+  // Try to load the library file
+  testDecoder.library.setFileName(libFilePath);
+  if (!testDecoder.library.load())
+  {
+    error = "Error opening QLibrary.";
+    return false;
+  }
+
+  // Now let's see if we can retrive all the function pointers that we will need.
+  // If this works, we can be fairly certain that this is a valid libde265 library.
+  testDecoder.resolveLibraryFunctionPointers();
+  error = testDecoder.decoderErrorString();
+  return testDecoder.state() != DecoderState::Error;
+}
+
+QStringList decoderLibde265::getLibraryNames() const
+{
+  // If the file name is not set explicitly, QLibrary will try to open
+  // the libde265.so file first. Since this has been compiled for linux
+  // it will fail and not even try to open the libde265.dylib.
+  // On windows and linux ommitting the extension works
+  QStringList libNames = is_Q_OS_MAC ? QStringList() << "libde265-internals.dylib"
+                                                     << "libde265.dylib"
+                                     : QStringList() << "libde265-internals"
+                                                     << "libde265";
+
+  return libNames;
 }
 
 } // namespace decoder
