@@ -112,9 +112,9 @@ private:
 
   void allocateNewDecoder();
 
-  vvdecDecoder *decoder{nullptr};
-  vvdecAccessUnit* accessUnit{nullptr};
-  vvdecFrame *currentFrame{nullptr};
+  vvdecDecoder *   decoder{nullptr};
+  vvdecAccessUnit *accessUnit{nullptr};
+  vvdecFrame *     currentFrame{nullptr};
 
   // Try to get the next picture from the decoder and save it in currentHMPic
   bool getNextFrameFromDecoder();
@@ -132,4 +132,4 @@ private:
   LibraryFunctionsVVDec lib{};
 };
 
-}
+} // namespace decoder

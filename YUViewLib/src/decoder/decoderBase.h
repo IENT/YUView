@@ -111,9 +111,9 @@ public:
   // If the current frame is valid, the current frame can be retrieved using getRawFrameData.
   // Call decodeNextFrame to advance to the next frame. When the function returns false, more data
   // is probably needed.
-  virtual bool                  decodeNextFrame()        = 0;
-  virtual QByteArray            getRawFrameData()        = 0;
-  virtual stats::DataPerTypeMap getFrameStatisticsData() = 0;
+  virtual bool                  decodeNextFrame() = 0;
+  virtual QByteArray            getRawFrameData() = 0;
+  virtual stats::DataPerTypeMap getFrameStatisticsData() { return {}; }
   video::RawFormat              getRawFormat() const { return this->rawFormat; }
   video::yuv::PixelFormatYUV    getPixelFormatYUV() const { return this->formatYUV; }
   video::rgb::PixelFormatRGB    getRGBPixelFormat() const { return this->formatRGB; }
