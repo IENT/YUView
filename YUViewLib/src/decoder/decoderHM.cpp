@@ -346,6 +346,77 @@ bool decoderHM::pushData(QByteArray &data)
   return !bNewPicture;
 }
 
+stats::StatisticsTypes decoderHM::getStatisticsTypes() const
+{
+  using namespace stats::color;
+
+  stats::StatisticsTypes types;
+
+  auto nrTypes = this->lib.libHMDEC_get_internal_type_number();
+
+  for (auto i = 0u; i < nrTypes; i++)
+  {
+    auto name        = QString(this->lib.libHMDEC_get_internal_type_name(i));
+    auto description = QString(this->lib.libHMDEC_get_internal_type_description(i));
+    auto statType    = this->lib.libHMDEC_get_internal_type(i);
+    int  max         = 0;
+    if (statType == LIBHMDEC_TYPE_RANGE || statType == LIBHMDEC_TYPE_RANGE_ZEROCENTER)
+    {
+      auto uMax = this->lib.libHMDEC_get_internal_type_max(i);
+      max       = (uMax > INT_MAX) ? INT_MAX : uMax;
+    }
+
+    if (statType == LIBHMDEC_TYPE_FLAG)
+    {
+      stats::StatisticsType flag(i, name, ColorMapper({0, 1}, PredefinedType::Jet));
+      flag.description = description;
+      types.push_back(flag);
+    }
+    else if (statType == LIBHMDEC_TYPE_RANGE)
+    {
+      stats::StatisticsType range(i, name, ColorMapper({0, max}, PredefinedType::Jet));
+      range.description = description;
+      types.push_back(range);
+    }
+    else if (statType == LIBHMDEC_TYPE_RANGE_ZEROCENTER)
+    {
+      stats::StatisticsType rangeZero(i, name, ColorMapper({-max, max}, PredefinedType::Col3_bblg));
+      rangeZero.description = description;
+      types.push_back(rangeZero);
+    }
+    else if (statType == LIBHMDEC_TYPE_VECTOR)
+    {
+      auto                  scale = this->lib.libHMDEC_get_internal_type_vector_scaling(i);
+      stats::StatisticsType vec(i, name, scale);
+      vec.description = description;
+      types.push_back(vec);
+    }
+    else if (statType == LIBHMDEC_TYPE_INTRA_DIR)
+    {
+      stats::StatisticsType intraDir(i, name, ColorMapper({0, 34}, PredefinedType::Jet));
+      intraDir.description      = description;
+      intraDir.hasVectorData    = true;
+      intraDir.renderVectorData = true;
+      intraDir.vectorScale      = 32;
+      // Don't draw the vector values for the intra dir. They don't have actual meaning.
+      intraDir.renderVectorDataValues = false;
+      intraDir.setMappingValues(
+          {"INTRA_PLANAR",     "INTRA_DC",         "INTRA_ANGULAR_2",  "INTRA_ANGULAR_3",
+           "INTRA_ANGULAR_4",  "INTRA_ANGULAR_5",  "INTRA_ANGULAR_6",  "INTRA_ANGULAR_7",
+           "INTRA_ANGULAR_8",  "INTRA_ANGULAR_9",  "INTRA_ANGULAR_10", "INTRA_ANGULAR_11",
+           "INTRA_ANGULAR_12", "INTRA_ANGULAR_13", "INTRA_ANGULAR_14", "INTRA_ANGULAR_15",
+           "INTRA_ANGULAR_16", "INTRA_ANGULAR_17", "INTRA_ANGULAR_18", "INTRA_ANGULAR_19",
+           "INTRA_ANGULAR_20", "INTRA_ANGULAR_21", "INTRA_ANGULAR_22", "INTRA_ANGULAR_23",
+           "INTRA_ANGULAR_24", "INTRA_ANGULAR_25", "INTRA_ANGULAR_26", "INTRA_ANGULAR_27",
+           "INTRA_ANGULAR_28", "INTRA_ANGULAR_29", "INTRA_ANGULAR_30", "INTRA_ANGULAR_31",
+           "INTRA_ANGULAR_32", "INTRA_ANGULAR_33", "INTRA_ANGULAR_34"});
+      types.push_back(intraDir);
+    }
+  }
+
+  return types;
+}
+
 QByteArray decoderHM::getRawFrameData()
 {
   if (this->currentHMPic == nullptr)
@@ -362,12 +433,73 @@ QByteArray decoderHM::getRawFrameData()
     this->copyImgToByteArray(this->currentHMPic, this->currentOutputBuffer);
     DEBUG_DECHM("decoderHM::getRawFrameData copied frame to buffer");
 
-    if (this->statisticsEnabled)
-      // Get the statistics from the image and put them into the statistics cache
-      this->cacheStatistics(currentHMPic);
+    // Get the statistics from the image and put them into the statistics cache
+    this->cacheStatistics(currentHMPic);
   }
 
   return this->currentOutputBuffer;
+}
+
+stats::DataPerTypeMap decoderHM::getFrameStatisticsData()
+{
+  if (!this->statisticsEnabled)
+    return {};
+
+  DEBUG_DECHM("decoderHM::cacheStatistics POC %d", this->lib.libHMDEC_get_POC(this->currentHMPic));
+
+  stats::DataPerTypeMap data;
+
+  // Conversion from intra prediction mode to vector.
+  // Coordinates are in x,y with the axes going right and down.
+  static const int vectorTable[35][2] = {
+      {0, 0},   {0, 0},   {32, -32}, {32, -26}, {32, -21}, {32, -17}, {32, -13}, {32, -9}, {32, -5},
+      {32, -2}, {32, 0},  {32, 2},   {32, 5},   {32, 9},   {32, 13},  {32, 17},  {32, 21}, {32, 26},
+      {32, 32}, {26, 32}, {21, 32},  {17, 32},  {13, 32},  {9, 32},   {5, 32},   {2, 32},  {0, 32},
+      {-2, 32}, {-5, 32}, {-9, 32},  {-13, 32}, {-17, 32}, {-21, 32}, {-26, 32}, {-32, 32}};
+
+  // Get all the statistics
+  // TODO: Could we only retrieve the statistics that are active/displayed?
+  auto nrTypes = this->lib.libHMDEC_get_internal_type_number();
+  for (unsigned t = 0; t <= nrTypes; t++)
+  {
+    bool callAgain{};
+    do
+    {
+      // Get a pointer to the data values and how many values in this array are valid.
+      unsigned int nrValues{};
+      auto         stats =
+          this->lib.libHMDEC_get_internal_info(decoder, this->currentHMPic, t, nrValues, callAgain);
+
+      auto statType = this->lib.libHMDEC_get_internal_type(t);
+      if (stats != nullptr && nrValues > 0)
+      {
+        for (unsigned i = 0; i < nrValues; i++)
+        {
+          auto         b = stats[i];
+          stats::Block block(b.x, b.y, b.w, b.h);
+
+          if (statType == LIBHMDEC_TYPE_VECTOR)
+            data[t].vectorData.push_back(
+                stats::BlockWithVector(block, stats::Vector(b.value, b.value2)));
+          else
+            data[t].valueData.push_back(stats::BlockWithValue(block, b.value));
+          if (statType == LIBHMDEC_TYPE_INTRA_DIR)
+          {
+            // Also add the vecotr to draw
+            if (b.value >= 0 && b.value < 35)
+            {
+              int vecX = (float)vectorTable[b.value][0] * b.w / 4;
+              int vecY = (float)vectorTable[b.value][1] * b.w / 4;
+              data[t].vectorData.push_back(
+                  stats::BlockWithVector(block, stats::Vector(vecX, vecY)));
+            }
+          }
+        }
+      }
+    } while (callAgain); // Continue until the library returns that there is no more to retrive
+  }
+
+  return data;
 }
 
 #if SSE_CONVERSION
@@ -460,62 +592,6 @@ void decoderHM::copyImgToByteArray(libHMDec_picture *src, QByteArray &dst)
   }
 }
 
-void decoderHM::cacheStatistics(libHMDec_picture *img)
-{
-  DEBUG_DECHM("decoderHM::cacheStatistics POC %d", this->lib.libHMDEC_get_POC(img));
-
-  auto buffer = BufferSelection::Primary;
-
-  // Conversion from intra prediction mode to vector.
-  // Coordinates are in x,y with the axes going right and down.
-  static const int vectorTable[35][2] = {
-      {0, 0},   {0, 0},   {32, -32}, {32, -26}, {32, -21}, {32, -17}, {32, -13}, {32, -9}, {32, -5},
-      {32, -2}, {32, 0},  {32, 2},   {32, 5},   {32, 9},   {32, 13},  {32, 17},  {32, 21}, {32, 26},
-      {32, 32}, {26, 32}, {21, 32},  {17, 32},  {13, 32},  {9, 32},   {5, 32},   {2, 32},  {0, 32},
-      {-2, 32}, {-5, 32}, {-9, 32},  {-13, 32}, {-17, 32}, {-21, 32}, {-26, 32}, {-32, 32}};
-
-  // Get all the statistics
-  // TODO: Could we only retrieve the statistics that are active/displayed?
-  auto nrTypes = this->lib.libHMDEC_get_internal_type_number();
-  for (unsigned t = 0; t <= nrTypes; t++)
-  {
-    bool callAgain{};
-    do
-    {
-      // Get a pointer to the data values and how many values in this array are valid.
-      unsigned int nrValues{};
-      auto stats = this->lib.libHMDEC_get_internal_info(decoder, img, t, nrValues, callAgain);
-
-      auto statType = this->lib.libHMDEC_get_internal_type(t);
-      if (stats != nullptr && nrValues > 0)
-      {
-        for (unsigned i = 0; i < nrValues; i++)
-        {
-          auto         b = stats[i];
-          stats::Block block(b.x, b.y, b.w, b.h);
-
-          if (statType == LIBHMDEC_TYPE_VECTOR)
-            this->statisticsData.add(
-                buffer, t, stats::BlockWithVector(block, stats::Vector(b.value, b.value2)));
-          else
-            this->statisticsData.add(buffer, t, stats::BlockWithValue(block, b.value));
-          if (statType == LIBHMDEC_TYPE_INTRA_DIR)
-          {
-            // Also add the vecotr to draw
-            if (b.value >= 0 && b.value < 35)
-            {
-              int vecX = (float)vectorTable[b.value][0] * b.w / 4;
-              int vecY = (float)vectorTable[b.value][1] * b.w / 4;
-              this->statisticsData.add(
-                  buffer, t, stats::BlockWithVector(block, stats::Vector(vecX, vecY)));
-            }
-          }
-        }
-      }
-    } while (callAgain); // Continue until the library returns that there is no more to retrive
-  }
-}
-
 QString decoderHM::getDecoderName() const
 {
   return (decoderState == DecoderState::Error) ? "HM" : this->lib.libHMDec_get_version();
@@ -538,77 +614,6 @@ bool decoderHM::checkLibraryFile(QString libFilePath, QString &error)
   testDecoder.resolveLibraryFunctionPointers();
   error = testDecoder.decoderErrorString();
   return testDecoder.state() != DecoderState::Error;
-}
-
-void decoderHM::setStatisticsTypesInStatisticsData()
-{
-  using namespace stats::color;
-
-  stats::StatisticsTypes types;
-
-  auto nrTypes = this->lib.libHMDEC_get_internal_type_number();
-
-  for (auto i = 0u; i < nrTypes; i++)
-  {
-    auto name        = QString(this->lib.libHMDEC_get_internal_type_name(i));
-    auto description = QString(this->lib.libHMDEC_get_internal_type_description(i));
-    auto statType    = this->lib.libHMDEC_get_internal_type(i);
-    int  max         = 0;
-    if (statType == LIBHMDEC_TYPE_RANGE || statType == LIBHMDEC_TYPE_RANGE_ZEROCENTER)
-    {
-      auto uMax = this->lib.libHMDEC_get_internal_type_max(i);
-      max       = (uMax > INT_MAX) ? INT_MAX : uMax;
-    }
-
-    if (statType == LIBHMDEC_TYPE_FLAG)
-    {
-      stats::StatisticsType flag(i, name, ColorMapper({0, 1}, PredefinedType::Jet));
-      flag.description = description;
-      types.push_back(flag);
-    }
-    else if (statType == LIBHMDEC_TYPE_RANGE)
-    {
-      stats::StatisticsType range(i, name, ColorMapper({0, max}, PredefinedType::Jet));
-      range.description = description;
-      types.push_back(range);
-    }
-    else if (statType == LIBHMDEC_TYPE_RANGE_ZEROCENTER)
-    {
-      stats::StatisticsType rangeZero(i, name, ColorMapper({-max, max}, PredefinedType::Col3_bblg));
-      rangeZero.description = description;
-      types.push_back(rangeZero);
-    }
-    else if (statType == LIBHMDEC_TYPE_VECTOR)
-    {
-      auto                  scale = this->lib.libHMDEC_get_internal_type_vector_scaling(i);
-      stats::StatisticsType vec(i, name, scale);
-      vec.description = description;
-      types.push_back(vec);
-    }
-    else if (statType == LIBHMDEC_TYPE_INTRA_DIR)
-    {
-      stats::StatisticsType intraDir(i, name, ColorMapper({0, 34}, PredefinedType::Jet));
-      intraDir.description      = description;
-      intraDir.hasVectorData    = true;
-      intraDir.renderVectorData = true;
-      intraDir.vectorScale      = 32;
-      // Don't draw the vector values for the intra dir. They don't have actual meaning.
-      intraDir.renderVectorDataValues = false;
-      intraDir.setMappingValues(
-          {"INTRA_PLANAR",     "INTRA_DC",         "INTRA_ANGULAR_2",  "INTRA_ANGULAR_3",
-           "INTRA_ANGULAR_4",  "INTRA_ANGULAR_5",  "INTRA_ANGULAR_6",  "INTRA_ANGULAR_7",
-           "INTRA_ANGULAR_8",  "INTRA_ANGULAR_9",  "INTRA_ANGULAR_10", "INTRA_ANGULAR_11",
-           "INTRA_ANGULAR_12", "INTRA_ANGULAR_13", "INTRA_ANGULAR_14", "INTRA_ANGULAR_15",
-           "INTRA_ANGULAR_16", "INTRA_ANGULAR_17", "INTRA_ANGULAR_18", "INTRA_ANGULAR_19",
-           "INTRA_ANGULAR_20", "INTRA_ANGULAR_21", "INTRA_ANGULAR_22", "INTRA_ANGULAR_23",
-           "INTRA_ANGULAR_24", "INTRA_ANGULAR_25", "INTRA_ANGULAR_26", "INTRA_ANGULAR_27",
-           "INTRA_ANGULAR_28", "INTRA_ANGULAR_29", "INTRA_ANGULAR_30", "INTRA_ANGULAR_31",
-           "INTRA_ANGULAR_32", "INTRA_ANGULAR_33", "INTRA_ANGULAR_34"});
-      types.push_back(intraDir);
-    }
-  }
-
-  this->statisticsData.setStatisticsTypes(std::move(types));
 }
 
 } // namespace decoder

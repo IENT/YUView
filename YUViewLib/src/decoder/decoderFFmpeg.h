@@ -57,14 +57,17 @@ public:
   void resetDecoder() override;
 
   // Decoding / pushing data
-  bool       decodeNextFrame() override;
-  QByteArray getRawFrameData() override;
+  bool                  decodeNextFrame() override;
+  QByteArray            getRawFrameData() override;
+  stats::DataPerTypeMap getFrameStatisticsData() override;
 
   // Push an AVPacket or raw data. When this returns false, pushing the given packet failed.
   // Probably the decoder switched to DecoderState::RetrieveFrames. Don't forget to push the given
   // packet again later.
   bool pushAVPacket(FFmpeg::AVPacketWrapper &pkt);
   bool pushData(QByteArray &data) override;
+
+  virtual stats::StatisticsTypes getStatisticsTypes() const;
 
   QStringList getLibraryPaths() const override { return ff.getLibPaths(); }
   QString     getDecoderName() const override { return "FFmpeg"; }
@@ -102,8 +105,6 @@ protected:
   QByteArray avPacketPaddingData;
 
   QString codecName{};
-
-  virtual void setStatisticsTypesInStatisticsData() override;
 };
 
 } // namespace decoder
