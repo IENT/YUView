@@ -170,12 +170,6 @@ void playlistItemStatisticsFile::savePlaylist(QDomElement &root, const QDir &pla
   root.appendChild(d);
 }
 
-QSize playlistItemStatisticsFile::getSize() const
-{
-  auto s = this->statisticsData.getFrameSize();
-  return QSize(s.width, s.height);
-}
-
 void playlistItemStatisticsFile::loadFrame(int frameIdx, bool playing, bool, bool emitSignals)
 {
   DEBUG_STAT(
@@ -185,7 +179,7 @@ void playlistItemStatisticsFile::loadFrame(int frameIdx, bool playing, bool, boo
   if (state == ItemLoadingState::LoadingNeeded)
   {
     this->isStatisticsLoading = true;
-    this->loadStatisticsData(frameIdx, false);
+    this->loadStatisticsData(frameIdx, BufferSelection::Primary);
     this->isStatisticsLoading = false;
     if (emitSignals)
       emit signalLoadFinished(BufferSelection::Primary);
@@ -205,7 +199,7 @@ void playlistItemStatisticsFile::loadFrame(int frameIdx, bool playing, bool, boo
                  nextFrameIdx,
                  playing ? " playing" : "");
       this->isStatisticsLoadingDoubleBuffer = true;
-      this->loadStatisticsData(nextFrameIdx, true);
+      this->loadStatisticsData(nextFrameIdx, BufferSelection::DoubleBuffer);
       this->isStatisticsLoadingDoubleBuffer = false;
       if (emitSignals)
         emit signalLoadFinished(BufferSelection::DoubleBuffer);
@@ -253,7 +247,7 @@ void playlistItemStatisticsFile::onPOCTypeParsed(int poc, int typeID)
 {
   if (poc == this->currentDrawnFrameIdx && this->statisticsData.hasDataForTypeID(typeID))
   {
-    //this->statisticsData.eraseDataForTypeID(typeID);
+    // this->statisticsData.eraseDataForTypeID(typeID);
     emit SignalItemChanged(true, RECACHE_NONE);
   }
 }
@@ -263,7 +257,7 @@ void playlistItemStatisticsFile::onPOCParsed(int poc)
   if (poc == this->currentDrawnFrameIdx)
     emit SignalItemChanged(true, RECACHE_NONE);
 
-  this->statisticsData.setFrameIndex(-1);
+  this->statisticsData.setFrameIndex(-1, BufferSelection::Primary);
 }
 
 void playlistItemStatisticsFile::createPropertiesWidget()
@@ -329,11 +323,13 @@ void playlistItemStatisticsFile::openStatisticsFile()
       "playlistItemStatisticsFile::openStatisticsFile File opened. Background parsing started.");
 }
 
-void playlistItemStatisticsFile::loadStatisticsData(int frameIdx, bool toDoubleBuffer)
+void playlistItemStatisticsFile::loadStatisticsData(int frameIdx, BufferSelection buffer)
 {
-  auto typesToLoad = this->statisticsData.getTypesThatNeedLoading(frameIdx);
+  auto typesToLoad = this->statisticsData.getTypesThatNeedLoading(frameIdx, buffer);
   for (auto typeID : typesToLoad)
-    this->file->loadStatisticData(this->statisticsData, frameIdx, typeID, toDoubleBuffer);
+  {
+    auto data = this->file->loadFrameStatisticsData(frameIdx, typeID);
+  }
 }
 
 // This timer event is called regularly when the background loading process is running.

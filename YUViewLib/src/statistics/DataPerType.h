@@ -112,12 +112,16 @@ struct BlockWithValue : public Block
 
 struct BlockWithVector : public Block
 {
-  BlockWithVector(const Block &block, Vector vector) : Block(block) { this->vector = vector; }
+  BlockWithVector(const Block &block, const Vector &vector) : Block(block)
+  {
+    this->vector = vector;
+  }
   Vector vector{};
 };
 
 struct BlockWithLine : public Block
 {
+  BlockWithLine(const Block &block, const Line &line) : Block(block) { this->line = line; }
   Line line{};
 };
 

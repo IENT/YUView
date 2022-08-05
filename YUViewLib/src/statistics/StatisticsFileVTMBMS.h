@@ -49,11 +49,8 @@ public:
   // can then seek to these positions to load data. Usually this is called in a seperate thread.
   void readFrameAndTypePositionsFromFile(std::atomic_bool &breakFunction) override;
 
-  // Load the statistics for "poc/type" from file and put it into the statisticsData.
-  virtual void loadStatisticData(StatisticsData &statisticsData,
-                                 int             poc,
-                                 int             typeID,
-                                 bool            loadToDoubleBuffer) override;
+  // Load the statistics for "poc/type" from file and return the data
+  stats::DataPerType loadFrameStatisticsData(int poc, int typeID) override;
 
 private:
   //! Scan the header: What types are saved in this file?

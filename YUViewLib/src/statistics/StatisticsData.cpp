@@ -32,6 +32,7 @@
 
 #include "StatisticsData.h"
 
+#include <StatisticsDataPainting.h>
 #include <common/Functions.h>
 
 // Activate this if you want to know when what is loaded.
@@ -153,7 +154,7 @@ bool anyStatsNeedLoading(const StatisticsTypes &types, const DataPerTypeMap &dat
 
 bool anyStatsAreRendered(const StatisticsTypes &types)
 {
-  return std::any_of<StatisticsType>(
+  return std::any_of(
       types.begin(), types.end(), [](const StatisticsType &type) { return type.render; });
 }
 
@@ -353,20 +354,22 @@ bool StatisticsData::hasDataForTypeID(int typeID) const
   return this->dataCacheMain.data.count(typeID) > 0;
 }
 
-void StatisticsData::add(BufferSelection buffer, TypeID typeID, BlockWithValue &&blockWithValue)
+std::optional<int> StatisticsData::getFrameIndex(BufferSelection buffer) const
 {
+  std::unique_lock<std::mutex> lock(this->accessMutex);
   if (buffer == BufferSelection::Primary)
-    this->dataCacheMain.data[typeID].valueData.push_back(std::move(blockWithValue));
-  if (buffer == BufferSelection::DoubleBuffer)
-    this->dataCacheDoubleBuffer.data[typeID].valueData.push_back(std::move(blockWithValue));
+    return this->dataCacheMain.frameIndex;
+  else
+    return this->dataCacheDoubleBuffer.frameIndex;
 }
 
-void StatisticsData::add(BufferSelection buffer, TypeID typeID, BlockWithVector &&blockWithVector)
+void StatisticsData::addData(BufferSelection buffer, TypeID typeID, DataPerType &&data)
 {
+  std::unique_lock<std::mutex> lock(this->accessMutex);
   if (buffer == BufferSelection::Primary)
-    this->dataCacheMain.data[typeID].vectorData.push_back(std::move(blockWithVector));
-  if (buffer == BufferSelection::DoubleBuffer)
-    this->dataCacheDoubleBuffer.data[typeID].vectorData.push_back(std::move(blockWithVector));
+    this->dataCacheMain.data[typeID] = std::move(data);
+  else
+    this->dataCacheDoubleBuffer.data[typeID] = std::move(data);
 }
 
 void StatisticsData::clear()
@@ -375,7 +378,6 @@ void StatisticsData::clear()
   this->dataCacheDoubleBuffer.data.clear();
   this->dataCacheMain.frameIndex         = {};
   this->dataCacheDoubleBuffer.frameIndex = {};
-  this->frameSize                        = {};
   this->types.clear();
 }
 
@@ -416,6 +418,12 @@ void StatisticsData::loadPlaylist(const YUViewDomElement &root)
 {
   for (auto &type : this->types)
     type.loadPlaylist(root);
+}
+
+void StatisticsData::paint(QPainter *painter, Size frameSize, double zoomFactor) const
+{
+  std::unique_lock<std::mutex> lock(this->accessMutex);
+  paintStatisticsData(painter, this->dataCacheMain.data, this->types, frameSize, zoomFactor);
 }
 
 } // namespace stats

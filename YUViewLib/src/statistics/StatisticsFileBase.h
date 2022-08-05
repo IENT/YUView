@@ -54,11 +54,10 @@ public:
   // can then seek to these positions to load data. Usually this is called in a seperate thread.
   virtual void readFrameAndTypePositionsFromFile(std::atomic_bool &breakFunction) = 0;
 
-  // Load the statistics for "poc/type" from file and put it into the handlers cache.
-  virtual void loadStatisticData(StatisticsData &statisticsData,
-                                 int             poc,
-                                 int             typeID,
-                                 bool            loadToDoubleBuffer) = 0;
+  // Load the statistics for "poc/type" from file and return the data.
+  virtual stats::DataPerType loadFrameStatisticsData(int poc, int typeID) = 0;
+
+  stats::StatisticsTypes getStatisticsTypes() const { return this->types; }
 
   operator bool() const { return !this->error; };
 
@@ -91,11 +90,15 @@ protected:
   // found.
   int blockOutsideOfFramePOC{-1};
 
+  Size frameSize{};
+
   bool    error{false};
   QString errorMessage{};
 
   double parsingProgress{};
   bool   abortParsingDestroy{};
+
+  stats::StatisticsTypes types;
 };
 
 } // namespace stats

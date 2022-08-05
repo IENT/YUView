@@ -39,6 +39,8 @@
 #include <mutex>
 #include <vector>
 
+class QPainter;
+
 namespace stats
 {
 
@@ -60,17 +62,18 @@ public:
   QStringPairList        getValuesAt(const QPoint &pos) const;
   const StatisticsTypes &getStatisticsTypes() { return this->types; }
   bool                   hasDataForTypeID(int typeID) const;
+  std::optional<int>     getFrameIndex(BufferSelection buffer) const;
 
-  void add(BufferSelection buffer, TypeID typeID, BlockWithValue &&blockWithValue);
-  void add(BufferSelection buffer, TypeID typeID, BlockWithVector &&BlockWithVector);
+  void addData(BufferSelection buffer, TypeID typeID, DataPerType &&data);
 
   void clear();
-  void setFrameSize(Size size) { this->frameSize = size; }
   void setFrameIndex(int frameIndex, BufferSelection buffer);
   void setStatisticsTypes(const StatisticsTypes &&types);
 
   void savePlaylist(YUViewDomElement &root) const;
   void loadPlaylist(const YUViewDomElement &root);
+
+  void paint(QPainter *painter, Size frameSize, double zoomFactor) const;
 
 private:
   FrameDataCache dataCacheMain{};
@@ -78,7 +81,6 @@ private:
 
   mutable std::mutex accessMutex{};
 
-  Size            frameSize{};
   StatisticsTypes types{};
 };
 

@@ -39,6 +39,10 @@ class QPainter;
 namespace stats
 {
 
-void paintStatisticsData(QPainter *painter, stats::StatisticsData &statisticsData, int frameIndex, double zoomFactor);
+void paintStatisticsData(QPainter *             painter,
+                         const DataPerTypeMap & data,
+                         const StatisticsTypes &types,
+                         Size                   frameSize,
+                         double                 zoomFactor);
 
 }

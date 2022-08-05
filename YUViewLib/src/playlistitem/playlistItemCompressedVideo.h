@@ -163,6 +163,7 @@ protected:
   QMutex cachingMutex;
 
   stats::StatisticUIHandler statisticsUIHandler;
+  stats::StatisticsData     statisticsData;
 
   void fillStatisticList();
   void loadStatistics(int frameIdx);

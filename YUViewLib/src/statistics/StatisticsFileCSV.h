@@ -52,10 +52,8 @@ public:
   // can then seek to these positions to load data. Usually this is called in a seperate thread.
   void readFrameAndTypePositionsFromFile(std::atomic_bool &breakFunction) override;
 
-  // Load the statistics for "poc/type" from file and put it into the statisticsData.
-  // If the statistics file is in an interleaved format (types are mixed within one POC) this function also parses
-  // types which were not requested by the given 'type'.
-  virtual void loadStatisticData(StatisticsData &statisticsData, int poc, int typeID, bool loadToDoubleBuffer) override;
+  // Load the statistics for "poc/type" from file and return the data.
+  stats::DataPerType loadFrameStatisticsData(int poc, int typeID) override;
 
 protected:
   //! Scan the header: What types are saved in this file?
@@ -66,6 +64,13 @@ protected:
   // File positions pocTypeFileposMap[poc][typeID]
   using TypeFileposMap = std::map<int, uint64_t>;
   std::map<int, TypeFileposMap> pocTypeFileposMap;
+
+  struct OtherTypeCache
+  {
+    int                   poc{-1};
+    stats::DataPerTypeMap data;
+  };
+  OtherTypeCache otherTypeCache;
 };
 
 } // namespace stats

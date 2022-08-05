@@ -286,7 +286,6 @@ playlistItemCompressedVideo::playlistItemCompressedVideo(const QString &compress
 
   // Connect the basic signals from the video
   playlistItemWithVideo::connectVideo();
-  this->statisticsData.setFrameSize(this->video->getFrameSize());
 
   if (codec == Codec::HEVC)
     this->possibleDecoders = DecodersHEVC;
@@ -1122,7 +1121,7 @@ ValuePairListSets playlistItemCompressedVideo::getPixelValues(const QPoint &pixe
   ValuePairListSets newSet;
 
   newSet.append("YUV", video->getPixelValues(pixelPos, frameIdx));
-  if (loadingDecoder->statisticsSupported() && loadingDecoder->statisticsEnabled())
+  if (loadingDecoder->areStatisticsSupported() && loadingDecoder->areStatisticsEnabled())
     newSet.append("Stats", this->statisticsData.getValuesAt(pixelPos));
 
   return newSet;
@@ -1273,20 +1272,18 @@ void playlistItemCompressedVideo::loadFrame(int  frameIdx,
 
 void playlistItemCompressedVideo::displaySignalComboBoxChanged(int idx)
 {
-  if (loadingDecoder && idx != loadingDecoder->getDecodeSignal())
+  if (this->loadingDecoder && idx != this->loadingDecoder->getDecodeSignal())
   {
-    bool resetDecoder = false;
-    loadingDecoder->setDecodeSignal(idx, resetDecoder);
-    cachingDecoder->setDecodeSignal(idx, resetDecoder);
-
-    if (resetDecoder)
+    if (this->loadingDecoder->setDecodeSignal(idx))
     {
-      loadingDecoder->resetDecoder();
-      cachingDecoder->resetDecoder();
+      this->loadingDecoder->resetDecoder();
+      this->currentFrameIdx[0] = -1;
+    }
 
-      // Reset the decoded frame indices so that decoding of the current frame is triggered
-      currentFrameIdx[0] = -1;
-      currentFrameIdx[1] = -1;
+    if (this->cachingDecoder->setDecodeSignal(idx))
+    {
+      this->cachingDecoder->resetDecoder();
+      this->currentFrameIdx[1] = -1;
     }
 
     // A different display signal was chosen. Invalidate the cache and signal that we will need a
@@ -1332,7 +1329,6 @@ void playlistItemCompressedVideo::decoderComboxBoxChanged(int idx)
 
     // Update the statistics list with what the new decoder can provide
     this->statisticsUIHandler.clearStatTypes();
-    this->statisticsData.setFrameSize(this->video->getFrameSize());
     this->fillStatisticList();
     this->statisticsUIHandler.updateStatisticsHandlerControls();
 

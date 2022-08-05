@@ -229,24 +229,30 @@ void StatisticsFileCSV::readFrameAndTypePositionsFromFile(std::atomic_bool &brea
   }
 }
 
-void StatisticsFileCSV::loadStatisticData(StatisticsData &statisticsData,
-                                          int             poc,
-                                          int             typeID,
-                                          bool            loadToDoubleBuffer)
+stats::DataPerType StatisticsFileCSV::loadFrameStatisticsData(int poc, int typeID)
 {
   if (!this->file.isOk())
-    return;
+    return {};
+
+  if (poc != this->otherTypeCache.poc)
+  {
+    this->otherTypeCache.data.clear();
+    this->otherTypeCache.poc = poc;
+  }
+  if (this->otherTypeCache.data.count(typeID) > 0)
+  {
+    auto cachedData = std::move(this->otherTypeCache.data.at(typeID));
+    this->otherTypeCache.data.erase(typeID);
+    return std::move(cachedData);
+  }
+
+  stats::DataPerType dataForTypeID;
 
   try
   {
-    statisticsData.setFrameIndex(poc, loadToDoubleBuffer);
-
     if (this->pocTypeFileposMap.count(poc) == 0 || this->pocTypeFileposMap[poc].count(typeID) == 0)
-    {
       // There are no statistics in the file for the given frame and index.
-      statisticsData[typeID] = {};
-      return;
-    }
+      return {};
 
     auto startPos = this->pocTypeFileposMap[poc][typeID];
     if (this->fileSortedByPOC)
@@ -310,25 +316,29 @@ void StatisticsFileCSV::loadStatisticData(StatisticsData &statisticsData,
       auto height = rowItemList[4].toUInt();
 
       // Check if block is within the image range
-      if (this->blockOutsideOfFramePOC == -1 &&
-          (posX + int(width) > int(statisticsData.getFrameSize().width) ||
-           posY + int(height) > int(statisticsData.getFrameSize().height)))
+      if (this->blockOutsideOfFramePOC == -1 && (posX + int(width) > int(this->frameSize.width) ||
+                                                 posY + int(height) > int(this->frameSize.height)))
         // Block not in image. Warn about this.
         this->blockOutsideOfFramePOC = poc;
 
-      auto &statTypes = statisticsData.getStatisticsTypes();
-      auto  statIt    = std::find_if(statTypes.begin(), statTypes.end(), [type](StatisticsType &t) {
+      auto statIt = std::find_if(this->types.begin(), this->types.end(), [type](StatisticsType &t) {
         return t.typeID == type;
       });
-      Q_ASSERT_X(statIt != statTypes.end(), Q_FUNC_INFO, "Stat type not found.");
+      Q_ASSERT_X(statIt != this->types.end(), Q_FUNC_INFO, "Stat type not found.");
 
+      auto  pushToCache = (type != typeID);
+      auto &data        = (pushToCache ? this->otherTypeCache.data[type] : dataForTypeID);
+
+      const auto block = stats::Block(posX, posY, width, height);
       if (vectorData && statIt->hasVectorData)
-        statisticsData[type].addBlockVector(posX, posY, width, height, values[0], values[1]);
+        data.vectorData.push_back(
+            stats::BlockWithVector(block, stats::Vector(values[0], values[1])));
       else if (lineData && statIt->hasVectorData)
-        statisticsData[type].addLine(
-            posX, posY, width, height, values[0], values[1], values[2], values[3]);
+        data.lineData.push_back(stats::BlockWithLine(
+            block,
+            stats::Line(stats::Point(values[0], values[1]), stats::Point(values[2], values[3]))));
       else
-        statisticsData[type].addBlockValue(posX, posY, width, height, values[0]);
+        data.valueData.push_back(stats::BlockWithValue(block, values[0]));
     }
   }
   catch (const char *str)
@@ -343,6 +353,8 @@ void StatisticsFileCSV::loadStatisticData(StatisticsData &statisticsData,
     this->errorMessage = QString("Error while parsing meta data.");
     this->error        = true;
   }
+
+  return dataForTypeID;
 }
 
 void StatisticsFileCSV::readHeaderFromFile(StatisticsData &statisticsData)
@@ -379,7 +391,7 @@ void StatisticsFileCSV::readHeaderFromFile(StatisticsData &statisticsData)
       {
         // Last type is complete. Store this initial state.
         aType.setInitialState();
-        statisticsData.addStatType(aType);
+        types.push_back(aType);
 
         // start from scratch for next item
         aType             = StatisticsType();
@@ -488,7 +500,7 @@ void StatisticsFileCSV::readHeaderFromFile(StatisticsData &statisticsData)
         auto width  = rowItemList[4].toInt();
         auto height = rowItemList[5].toInt();
         if (width > 0 && height > 0)
-          statisticsData.setFrameSize(Size(width, height));
+          this->frameSize = Size(width, height);
         if (rowItemList[6].toDouble() > 0.0)
           this->framerate = rowItemList[6].toDouble();
       }

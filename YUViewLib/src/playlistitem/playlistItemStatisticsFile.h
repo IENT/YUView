@@ -55,9 +55,9 @@ public:
                              OpenMode       openMode = OpenMode::Extension);
   virtual ~playlistItemStatisticsFile();
 
-  virtual void savePlaylist(QDomElement &root, const QDir &playlistDir) const override;
+  void savePlaylist(QDomElement &root, const QDir &playlistDir) const override;
 
-  virtual QSize getSize() const override;
+  QSize getSize() const override { return this->frameSize; }
 
   // Return the info title and info list to be shown in the fileInfo groupBox.
   virtual InfoData getInfo() const override;
@@ -111,7 +111,7 @@ protected:
 
   void openStatisticsFile();
 
-  void loadStatisticsData(int frameIdx, bool toDoubleBuffer);
+  void loadStatisticsData(int frameIdx, BufferSelection buffer);
 
   stats::StatisticUIHandler statisticsUIHandler;
   stats::StatisticsData     statisticsData;
@@ -131,5 +131,6 @@ protected:
   virtual void
   timerEvent(QTimerEvent *event) override; // Overloaded from QObject. Called when the timer fires.
 
-  int currentDrawnFrameIdx{-1};
+  int   currentDrawnFrameIdx{-1};
+  QSize frameSize{};
 };
