@@ -95,6 +95,12 @@ QPen styleToPen(LineDrawStyle &style)
   return QPen(functionsGui::toQColor(style.color), style.width, patternToQPenStyle(style.pattern));
 }
 
+struct VisibleLimits
+{
+  Range<int> xRange;
+  Range<int> yRange;
+};
+
 void paintVector(QPainter *            painter,
                  const StatisticsType &type,
                  const double &        zoomFactor,
@@ -105,154 +111,158 @@ void paintVector(QPainter *            painter,
                  const float &         vx,
                  const float &         vy,
                  bool                  isLine,
-                 const int &           xMin,
-                 const int &           xMax,
-                 const int &           yMin,
-                 const int &           yMax)
+                 const VisibleLimits & visibleLimits)
 {
+  const bool arrowDefinitelyInvisible =
+      (x1 < visibleLimits.xRange.min && x2 < visibleLimits.xRange.min) ||
+      (x1 > visibleLimits.xRange.max && x2 > visibleLimits.xRange.max) ||
+      (y1 < visibleLimits.yRange.min && y2 < visibleLimits.yRange.min) ||
+      (y1 > visibleLimits.yRange.max && y2 > visibleLimits.yRange.max);
+  if (arrowDefinitelyInvisible)
+    return;
 
-  // Is the arrow (possibly) visible?
-  const bool arrowVisible = !(x1 < xMin && x2 < xMin) && !(x1 > xMax && x2 > xMax) &&
-                            !(y1 < yMin && y2 < yMin) && !(y1 > yMax && y2 > yMax);
-  if (arrowVisible)
+  // Set the pen for drawing
+  auto vectorStyle = type.vectorStyle;
+  auto arrowColor  = functionsGui::toQColor(vectorStyle.color);
+  if (type.mapVectorToColor)
+    arrowColor.setHsvF(
+        functions::clip((std::atan2(vy, vx) + M_PI) / (2 * M_PI), 0.0, 1.0), 1.0, 1.0);
+  arrowColor.setAlpha(arrowColor.alpha() * ((float)type.alphaFactor / 100.0));
+
+  if (type.scaleVectorToZoom)
+    vectorStyle.width = vectorStyle.width * zoomFactor / 8;
+
+  painter->setPen(QPen(arrowColor, vectorStyle.width, patternToQPenStyle(vectorStyle.pattern)));
+  painter->setBrush(arrowColor);
+
+  // Draw the arrow tip, or a circle if the vector is (0,0) if the zoom factor is not 1 or
+  // smaller.
+  if (zoomFactor > 1)
   {
-    // Set the pen for drawing
-    auto vectorStyle = type.vectorStyle;
-    auto arrowColor  = functionsGui::toQColor(vectorStyle.color);
-    if (type.mapVectorToColor)
-      arrowColor.setHsvF(
-          functions::clip((std::atan2(vy, vx) + M_PI) / (2 * M_PI), 0.0, 1.0), 1.0, 1.0);
-    arrowColor.setAlpha(arrowColor.alpha() * ((float)type.alphaFactor / 100.0));
+    // At which angle do we draw the triangle?
+    // A vector to the right (1,  0) -> 0°
+    // A vector to the top   (0, -1) -> 90°
+    const auto angle = std::atan2(vy, vx);
 
-    if (type.scaleVectorToZoom)
-      vectorStyle.width = vectorStyle.width * zoomFactor / 8;
-
-    painter->setPen(QPen(arrowColor, vectorStyle.width, patternToQPenStyle(vectorStyle.pattern)));
-    painter->setBrush(arrowColor);
-
-    // Draw the arrow tip, or a circle if the vector is (0,0) if the zoom factor is not 1 or
-    // smaller.
-    if (zoomFactor > 1)
+    // Draw the vector head if the vector is not 0,0
+    if ((vx != 0 || vy != 0))
     {
-      // At which angle do we draw the triangle?
-      // A vector to the right (1,  0) -> 0°
-      // A vector to the top   (0, -1) -> 90°
-      const auto angle = std::atan2(vy, vx);
+      // The size of the arrow head
+      const int headSize = (zoomFactor >= STATISTICS_DRAW_VALUES_ZOOM && !type.scaleVectorToZoom)
+                               ? 8
+                               : zoomFactor / 2;
 
-      // Draw the vector head if the vector is not 0,0
-      if ((vx != 0 || vy != 0))
+      if (type.arrowHead != StatisticsType::ArrowHead::none)
       {
-        // The size of the arrow head
-        const int headSize = (zoomFactor >= STATISTICS_DRAW_VALUES_ZOOM && !type.scaleVectorToZoom)
-                                 ? 8
-                                 : zoomFactor / 2;
+        // We draw an arrow head. This means that we will have to draw a shortened line
+        const int shorten =
+            (type.arrowHead == StatisticsType::ArrowHead::arrow) ? headSize * 2 : headSize * 0.5;
 
-        if (type.arrowHead != StatisticsType::ArrowHead::none)
+        if (std::sqrt(vx * vx * zoomFactor * zoomFactor + vy * vy * zoomFactor * zoomFactor) >
+            shorten)
         {
-          // We draw an arrow head. This means that we will have to draw a shortened line
-          const int shorten =
-              (type.arrowHead == StatisticsType::ArrowHead::arrow) ? headSize * 2 : headSize * 0.5;
-
-          if (std::sqrt(vx * vx * zoomFactor * zoomFactor + vy * vy * zoomFactor * zoomFactor) >
-              shorten)
-          {
-            // Shorten the line and draw it
-            auto vectorLine = QLineF(x1,
-                                     y1,
-                                     double(x2) - std::cos(angle) * shorten,
-                                     double(y2) - std::sin(angle) * shorten);
-            painter->drawLine(vectorLine);
-          }
-        }
-        else
-          // Draw the not shortened line
-          painter->drawLine(x1, y1, x2, y2);
-
-        if (type.arrowHead == StatisticsType::ArrowHead::arrow)
-        {
-          // Save the painter state, translate to the arrow tip, rotate the painter and draw the
-          // normal triangle.
-          painter->save();
-
-          // Draw the arrow tip with fixed size
-          painter->translate(QPoint(x2, y2));
-          painter->rotate(qRadiansToDegrees(angle));
-          const QPoint points[3] = {
-              QPoint(0, 0), QPoint(-headSize * 2, -headSize), QPoint(-headSize * 2, headSize)};
-          painter->drawPolygon(points, 3);
-
-          // Restore. Revert translation/rotation of the painter.
-          painter->restore();
-        }
-        else if (type.arrowHead == StatisticsType::ArrowHead::circle)
-          painter->drawEllipse(x2 - headSize / 2, y2 - headSize / 2, headSize, headSize);
-      }
-
-      if (zoomFactor >= STATISTICS_DRAW_VALUES_ZOOM && type.renderVectorDataValues)
-      {
-        if (isLine)
-        {
-          // if we just draw a line, we want to simply see the coordinate pairs
-          auto txt1 = QString("(%1, %2)").arg(x1 / zoomFactor).arg(y1 / zoomFactor);
-          auto txt2 = QString("(%1, %2)").arg(x2 / zoomFactor).arg(y2 / zoomFactor);
-
-          auto textRect1 = painter->boundingRect(QRect(), Qt::AlignLeft, txt1);
-          auto textRect2 = painter->boundingRect(QRect(), Qt::AlignLeft, txt2);
-
-          textRect1.moveCenter(QPoint(x1, y1));
-          textRect2.moveCenter(QPoint(x2, y2));
-
-          // as angle = atan2(y2-y1, x2-x1) move txt accordingly
-          int a = qRadiansToDegrees(angle);
-          if (a < 45 && a > -45)
-          {
-            textRect1.moveRight(x1);
-            textRect2.moveLeft(x2);
-          }
-          else if (a <= -45 && a > -135)
-          {
-            textRect1.moveTop(y1);
-            textRect2.moveBottom(y2);
-          }
-          else if (a >= 45 && a < 135)
-          {
-            textRect1.moveBottom(y1);
-            textRect2.moveTop(y2);
-          }
-          else
-          {
-            textRect1.moveLeft(x1);
-            textRect2.moveRight(x2);
-          }
-
-          painter->drawText(textRect1, Qt::AlignLeft, txt1);
-          painter->drawText(textRect2, Qt::AlignLeft, txt2);
-        }
-        else
-        {
-          // Also draw the vector value next to the arrow head
-          auto txt      = QString("x %1\ny %2").arg(vx).arg(vy);
-          auto textRect = painter->boundingRect(QRect(), Qt::AlignLeft, txt);
-          textRect.moveCenter(QPoint(x2, y2));
-          int a = qRadiansToDegrees(angle);
-          if (a < 45 && a > -45)
-            textRect.moveLeft(x2);
-          else if (a <= -45 && a > -135)
-            textRect.moveBottom(y2);
-          else if (a >= 45 && a < 135)
-            textRect.moveTop(y2);
-          else
-            textRect.moveRight(x2);
-          painter->drawText(textRect, Qt::AlignLeft, txt);
+          // Shorten the line and draw it
+          auto vectorLine = QLineF(x1,
+                                   y1,
+                                   double(x2) - std::cos(angle) * shorten,
+                                   double(y2) - std::sin(angle) * shorten);
+          painter->drawLine(vectorLine);
         }
       }
+      else
+        // Draw the not shortened line
+        painter->drawLine(x1, y1, x2, y2);
+
+      if (type.arrowHead == StatisticsType::ArrowHead::arrow)
+      {
+        // Save the painter state, translate to the arrow tip, rotate the painter and draw the
+        // normal triangle.
+        painter->save();
+
+        // Draw the arrow tip with fixed size
+        painter->translate(QPoint(x2, y2));
+        painter->rotate(qRadiansToDegrees(angle));
+        const QPoint points[3] = {
+            QPoint(0, 0), QPoint(-headSize * 2, -headSize), QPoint(-headSize * 2, headSize)};
+        painter->drawPolygon(points, 3);
+
+        // Restore. Revert translation/rotation of the painter.
+        painter->restore();
+      }
+      else if (type.arrowHead == StatisticsType::ArrowHead::circle)
+        painter->drawEllipse(x2 - headSize / 2, y2 - headSize / 2, headSize, headSize);
     }
-    else
+
+    if (zoomFactor >= STATISTICS_DRAW_VALUES_ZOOM && type.renderVectorDataValues)
     {
-      // No arrow head is drawn. Only draw a line.
-      painter->drawLine(x1, y1, x2, y2);
+      if (isLine)
+      {
+        // if we just draw a line, we want to simply see the coordinate pairs
+        auto txt1 = QString("(%1, %2)").arg(x1 / zoomFactor).arg(y1 / zoomFactor);
+        auto txt2 = QString("(%1, %2)").arg(x2 / zoomFactor).arg(y2 / zoomFactor);
+
+        auto textRect1 = painter->boundingRect(QRect(), Qt::AlignLeft, txt1);
+        auto textRect2 = painter->boundingRect(QRect(), Qt::AlignLeft, txt2);
+
+        textRect1.moveCenter(QPoint(x1, y1));
+        textRect2.moveCenter(QPoint(x2, y2));
+
+        // as angle = atan2(y2-y1, x2-x1) move txt accordingly
+        int a = qRadiansToDegrees(angle);
+        if (a < 45 && a > -45)
+        {
+          textRect1.moveRight(x1);
+          textRect2.moveLeft(x2);
+        }
+        else if (a <= -45 && a > -135)
+        {
+          textRect1.moveTop(y1);
+          textRect2.moveBottom(y2);
+        }
+        else if (a >= 45 && a < 135)
+        {
+          textRect1.moveBottom(y1);
+          textRect2.moveTop(y2);
+        }
+        else
+        {
+          textRect1.moveLeft(x1);
+          textRect2.moveRight(x2);
+        }
+
+        painter->drawText(textRect1, Qt::AlignLeft, txt1);
+        painter->drawText(textRect2, Qt::AlignLeft, txt2);
+      }
+      else
+      {
+        // Also draw the vector value next to the arrow head
+        auto txt      = QString("x %1\ny %2").arg(vx).arg(vy);
+        auto textRect = painter->boundingRect(QRect(), Qt::AlignLeft, txt);
+        textRect.moveCenter(QPoint(x2, y2));
+        int a = qRadiansToDegrees(angle);
+        if (a < 45 && a > -45)
+          textRect.moveLeft(x2);
+        else if (a <= -45 && a > -135)
+          textRect.moveBottom(y2);
+        else if (a >= 45 && a < 135)
+          textRect.moveTop(y2);
+        else
+          textRect.moveRight(x2);
+        painter->drawText(textRect, Qt::AlignLeft, txt);
+      }
     }
   }
+  else
+  {
+    // No arrow head is drawn. Only draw a line.
+    painter->drawLine(x1, y1, x2, y2);
+  }
+}
+
+bool isRectVisible(const QRect &rect, const VisibleLimits &visibleLimits)
+{
+  return rect.left() < visibleLimits.xRange.max && rect.right() > visibleLimits.xRange.min &&
+         rect.top() < visibleLimits.yRange.max && rect.bottom() > visibleLimits.yRange.min;
 }
 
 void drawRegionGrid(QPainter *            painter,
@@ -318,12 +328,18 @@ void paintStatisticsData(QPainter *             painter,
   statRect.moveCenter(QPoint(0, 0));
 
   // Get the visible coordinates of the statistics
-  auto viewport       = painter->viewport();
-  auto worldTransform = painter->worldTransform();
-  int  xMin           = statRect.width() / 2 - worldTransform.dx();
-  int  yMin           = statRect.height() / 2 - worldTransform.dy();
-  int  xMax           = statRect.width() / 2 - (worldTransform.dx() - viewport.width());
-  int  yMax           = statRect.height() / 2 - (worldTransform.dy() - viewport.height());
+  auto          viewport       = painter->viewport();
+  auto          worldTransform = painter->worldTransform();
+  VisibleLimits visibleLimits;
+  {
+    auto xMin            = int(statRect.width() / 2 - worldTransform.dx());
+    auto xMax            = int(statRect.width() / 2 - (worldTransform.dx() - viewport.width()));
+    visibleLimits.xRange = {xMin, xMax};
+
+    auto yMin            = int(statRect.height() / 2 - worldTransform.dy());
+    auto yMax            = int(statRect.height() / 2 - (worldTransform.dy() - viewport.height()));
+    visibleLimits.yRange = {yMin, yMax};
+  }
 
   painter->translate(statRect.topLeft());
 
@@ -363,10 +379,7 @@ void paintStatisticsData(QPainter *             painter,
                                      valueItem.width * zoomFactor,
                                      valueItem.height * zoomFactor);
 
-      // Check if the rectangle of the statistics item is even visible
-      bool rectVisible = (!(displayRect.left() > xMax || displayRect.right() < xMin ||
-                            displayRect.top() > yMax || displayRect.bottom() < yMin));
-      if (!rectVisible)
+      if (!isRectVisible(displayRect, visibleLimits))
         continue;
 
       int value = valueItem.value; // This value determines the color for this item
@@ -385,7 +398,8 @@ void paintStatisticsData(QPainter *             painter,
         painter->fillRect(displayRect, rectQColor);
       }
 
-      drawRegionGrid(painter, *it, zoomFactor, displayRect);
+      if (isRectVisible(displayRect, visibleLimits))
+        drawRegionGrid(painter, *it, zoomFactor, displayRect);
 
       // Save the position/text in order to draw the values later
       if (zoomFactor >= STATISTICS_DRAW_VALUES_ZOOM)
@@ -433,10 +447,7 @@ void paintStatisticsData(QPainter *             painter,
       auto displayPolygon      = trans.map(valuePoly);
       auto displayBoundingRect = displayPolygon.boundingRect();
 
-      // Check if the rectangle of the statistics item is even visible
-      bool isVisible = (!(displayBoundingRect.left() > xMax || displayBoundingRect.right() < xMin ||
-                          displayBoundingRect.top() > yMax || displayBoundingRect.bottom() < yMin));
-      if (!isVisible)
+      if (!isRectVisible(displayBoundingRect, visibleLimits))
         continue;
 
       const int value = valueItem.value; // This value determines the color for this item
@@ -530,14 +541,10 @@ void paintStatisticsData(QPainter *             painter,
         const auto y2 = int(y1 + zoomFactor * vy);
 
         const bool isLine = false;
-        paintVector(
-            painter, *it, zoomFactor, x1, y1, x2, y2, vx, vy, isLine, xMin, xMax, yMin, yMax);
+        paintVector(painter, *it, zoomFactor, x1, y1, x2, y2, vx, vy, isLine, visibleLimits);
       }
 
-      // Check if the rectangle of the statistics item is even visible
-      const bool rectVisible = (!(displayRect.left() > xMax || displayRect.right() < xMin ||
-                                  displayRect.top() > yMax || displayRect.bottom() < yMin));
-      if (rectVisible)
+      if (isRectVisible(displayRect, visibleLimits))
         drawRegionGrid(painter, *it, zoomFactor, displayRect);
     }
 
@@ -560,14 +567,10 @@ void paintStatisticsData(QPainter *             painter,
         auto vy = double(y2 - y1) / it->vectorScale;
 
         const bool isLine = true;
-        paintVector(
-            painter, *it, zoomFactor, x1, y1, x2, y2, vx, vy, isLine, xMin, xMax, yMin, yMax);
+        paintVector(painter, *it, zoomFactor, x1, y1, x2, y2, vx, vy, isLine, visibleLimits);
       }
 
-      // Check if the rectangle of the statistics item is even visible
-      const bool rectVisible = (!(displayRect.left() > xMax || displayRect.right() < xMin ||
-                                  displayRect.top() > yMax || displayRect.bottom() < yMin));
-      if (rectVisible)
+      if (isRectVisible(displayRect, visibleLimits))
         drawRegionGrid(painter, *it, zoomFactor, displayRect);
     }
 
@@ -578,10 +581,7 @@ void paintStatisticsData(QPainter *             painter,
                                      affineTFItem.pos.y * zoomFactor,
                                      affineTFItem.width * zoomFactor,
                                      affineTFItem.height * zoomFactor);
-      // Check if the rectangle of the statistics item is even visible
-      const bool rectVisible = (!(displayRect.left() > xMax || displayRect.right() < xMin ||
-                                  displayRect.top() > yMax || displayRect.bottom() < yMin));
-      if (!rectVisible)
+      if (!isRectVisible(displayRect, visibleLimits))
         continue;
 
       if (it->renderVectorData)
@@ -622,10 +622,7 @@ void paintStatisticsData(QPainter *             painter,
                     vxLT,
                     vyLT,
                     false,
-                    xMin,
-                    xMax,
-                    yMin,
-                    yMax);
+                    visibleLimits);
         paintVector(painter,
                     *it,
                     zoomFactor,
@@ -636,10 +633,7 @@ void paintStatisticsData(QPainter *             painter,
                     vxRT,
                     vyRT,
                     false,
-                    xMin,
-                    xMax,
-                    yMin,
-                    yMax);
+                    visibleLimits);
         paintVector(painter,
                     *it,
                     zoomFactor,
@@ -650,13 +644,11 @@ void paintStatisticsData(QPainter *             painter,
                     vxLB,
                     vyLB,
                     false,
-                    xMin,
-                    xMax,
-                    yMin,
-                    yMax);
+                    visibleLimits);
       }
 
-      drawRegionGrid(painter, *it, zoomFactor, displayRect);
+      if (isRectVisible(displayRect, visibleLimits))
+        drawRegionGrid(painter, *it, zoomFactor, displayRect);
     }
   }
 
@@ -679,10 +671,7 @@ void paintStatisticsData(QPainter *             painter,
       auto displayPolygon      = trans.map(vectorPoly);
       auto displayBoundingRect = displayPolygon.boundingRect();
 
-      // Check if the rectangle of the statistics item is even visible
-      bool isVisible = (!(displayBoundingRect.left() > xMax || displayBoundingRect.right() < xMin ||
-                          displayBoundingRect.top() > yMax || displayBoundingRect.bottom() < yMin));
-      if (!isVisible)
+      if (!isRectVisible(displayBoundingRect, visibleLimits))
         continue;
 
       if (it->renderVectorData)
@@ -707,8 +696,10 @@ void paintStatisticsData(QPainter *             painter,
         auto head_y = int(center_y + zoomFactor * vy);
 
         // Is the arrow (possibly) visible?
-        if (!(center_x < xMin && head_x < xMin) && !(center_x > xMax && head_x > xMax) &&
-            !(center_y < yMin && head_y < yMin) && !(center_y > yMax && head_y > yMax))
+        if (!(center_x < visibleLimits.xRange.min && head_x < visibleLimits.xRange.min) &&
+            !(center_x > visibleLimits.xRange.max && head_x > visibleLimits.xRange.max) &&
+            !(center_y < visibleLimits.yRange.min && head_y < visibleLimits.yRange.min) &&
+            !(center_y > visibleLimits.yRange.max && head_y > visibleLimits.yRange.max))
         {
           // Set the pen for drawing
           auto vectorStyle = it->vectorStyle;
@@ -814,7 +805,7 @@ void paintStatisticsData(QPainter *             painter,
       }
 
       // optionally, draw the polygon outline
-      if (it->renderGrid && isVisible)
+      if (it->renderGrid)
       {
         auto gridStyle = it->gridStyle;
         if (it->scaleGridToZoom)
