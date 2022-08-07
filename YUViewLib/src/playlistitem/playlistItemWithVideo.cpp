@@ -43,13 +43,11 @@
 playlistItemWithVideo::playlistItemWithVideo(const QString &itemNameOrFileName)
     : playlistItem(itemNameOrFileName, Type::Indexed){};
 
-QSize playlistItemWithVideo::getSize() const
+Size playlistItemWithVideo::getSize() const
 {
   if (this->video)
-  {
-    auto s = video->getFrameSize();
-    return QSize(s.width, s.height);
-  }
+    return video->getFrameSize();
+
   return {};
 }
 

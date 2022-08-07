@@ -69,6 +69,7 @@ public:
   void clear();
   void setFrameIndex(int frameIndex, BufferSelection buffer);
   void setStatisticsTypes(const StatisticsTypes &&types);
+  void setStatisticsType(const StatisticsType &&type);
 
   void savePlaylist(YUViewDomElement &root) const;
   void loadPlaylist(const YUViewDomElement &root);

@@ -203,10 +203,9 @@ InfoData playlistItemImageFile::getInfo() const
   return info;
 }
 
-QSize playlistItemImageFile::getSize() const
+Size playlistItemImageFile::getSize() const
 {
-  auto s = frame.getFrameSize();
-  return QSize(s.width, s.height);
+  return this->frame.getFrameSize();
 }
 
 void playlistItemImageFile::updateSettings()
@@ -215,9 +214,9 @@ void playlistItemImageFile::updateSettings()
   // The addPath/removePath functions will do nothing if called twice for the same file.
   QSettings settings;
   if (settings.value("WatchFiles", true).toBool())
-    fileWatcher.addPath(this->properties().name);
+    this->fileWatcher.addPath(this->properties().name);
   else
-    fileWatcher.removePath(this->properties().name);
+    this->fileWatcher.removePath(this->properties().name);
 }
 
 void playlistItemImageFile::fileSystemWatcherFileChanged(const QString &)

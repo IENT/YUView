@@ -47,7 +47,7 @@ public:
   virtual InfoData getInfo() const override;
 
   // Overload from playlistItemVideo.
-  virtual QSize getSize() const override;
+  virtual Size getSize() const override;
   
   // Overload from playlistItemVideo. We add some specific drawing functionality if the two children are not comparable.
   virtual void drawItem(QPainter *painter, int frameIdx, double zoomFactor, bool drawRawData) override;

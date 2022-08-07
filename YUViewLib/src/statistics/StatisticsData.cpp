@@ -32,8 +32,8 @@
 
 #include "StatisticsData.h"
 
-#include <StatisticsDataPainting.h>
 #include <common/Functions.h>
+#include <statistics/StatisticsDataPainting.h>
 
 // Activate this if you want to know when what is loaded.
 #define STATISTICS_DEBUG_LOADING 0
@@ -406,6 +406,18 @@ void StatisticsData::setStatisticsTypes(const StatisticsTypes &&types)
 {
   std::unique_lock<std::mutex> lock(this->accessMutex);
   this->types = std::move(types);
+}
+
+void StatisticsData::setStatisticsType(const StatisticsType &&type)
+{
+  std::unique_lock<std::mutex> lock(this->accessMutex);
+  auto it = std::find_if(this->types.begin(), this->types.end(), [type](StatisticsType &t) {
+    return t.typeName == type.typeName;
+  });
+  if (it != this->types.end())
+    *it = std::move(type);
+  else
+    this->types.push_back(std::move(type));
 }
 
 void StatisticsData::savePlaylist(YUViewDomElement &root) const

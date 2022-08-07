@@ -299,10 +299,23 @@ struct Size
   {
     return this->width != other.width || this->height != other.height;
   }
+  constexpr Size &operator*=(double factor)
+  {
+    this->width  = int(double(this->width) * factor);
+    this->height = int(double(this->height) * factor);
+    return *this;
+  }
   bool     isValid() const { return this->width != 0 && this->height != 0; }
   unsigned width{};
   unsigned height{};
 };
+
+inline Size operator*(Size size, double factor)
+{
+  size.width  = int(double(size.width) * factor);
+  size.height = int(double(size.height) * factor);
+  return size;
+}
 
 struct Offset
 {

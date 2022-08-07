@@ -52,7 +52,7 @@ public:
   drawItem(QPainter *painter, int frameIdx, double zoomFactor, bool drawRawValues) override;
 
   // All the functions that we have to overload if we are using a video handler
-  virtual QSize                getSize() const override;
+  virtual Size                 getSize() const override;
   virtual video::FrameHandler *getFrameHandler() override { return this->video.get(); }
   virtual void                 activateDoubleBuffer() override
   {

@@ -224,10 +224,11 @@ void playlistItemText::drawItem(QPainter *painter, int, double zoomFactor, bool)
   painter->translate(textRect.topLeft() * -1);
 }
 
-QSize playlistItemText::getSize() const
+Size playlistItemText::getSize() const
 {
   QTextDocument td;
   td.setDefaultFont(this->font);
   td.setHtml(this->text);
-  return td.size().toSize();
+  const auto size = td.size().toSize();
+  return Size(size.width(), size.height());
 }

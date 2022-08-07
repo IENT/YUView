@@ -172,13 +172,12 @@ void playlistItemResample::drawItem(QPainter *painter,
   }
 }
 
-QSize playlistItemResample::getSize() const
+Size playlistItemResample::getSize() const
 {
   if (!this->video.inputValid())
     return playlistItemContainer::getSize();
 
-  auto s = this->video.getFrameSize();
-  return QSize(s.width, s.height);
+  return this->video.getFrameSize();
 }
 
 void playlistItemResample::createPropertiesWidget()
@@ -348,8 +347,8 @@ void playlistItemResample::slotInterpolationModeChanged(int)
 {
   this->interpolationIndex = ui.comboBoxInterpolation->currentIndex();
   auto interpolation       = (this->interpolationIndex == 0)
-                           ? video::videoHandlerResample::Interpolation::Bilinear
-                           : video::videoHandlerResample::Interpolation::Fast;
+                                 ? video::videoHandlerResample::Interpolation::Bilinear
+                                 : video::videoHandlerResample::Interpolation::Fast;
   this->video.setInterpolation(interpolation);
 }
 

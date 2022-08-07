@@ -46,7 +46,9 @@ playlistItem::playlistItem(const QString &itemNameOrFileName, Type type)
   this->prop.id = idCounter++;
 }
 
-playlistItem::~playlistItem() {}
+playlistItem::~playlistItem()
+{
+}
 
 void playlistItem::setName(const QString &name)
 {
@@ -62,7 +64,7 @@ void playlistItem::drawItem(QPainter *painter, int, double zoomFactor, bool)
   auto displayFont = painter->font();
   displayFont.setPointSizeF(painter->font().pointSizeF() * zoomFactor);
   painter->setFont(displayFont);
-  auto textSize = painter->fontMetrics().size(0, infoText);
+  auto  textSize = painter->fontMetrics().size(0, infoText);
   QRect textRect;
   textRect.setSize(textSize);
   textRect.moveCenter(QPoint(0, 0));
@@ -71,12 +73,13 @@ void playlistItem::drawItem(QPainter *painter, int, double zoomFactor, bool)
   painter->drawText(textRect, infoText);
 }
 
-QSize playlistItem::getSize() const
+Size playlistItem::getSize() const
 {
   // Return the size of the text that is drawn on screen.
-  QPainter painter;
-  auto    displayFont = painter.font();
-  return painter.fontMetrics().size(0, infoText);
+  QPainter   painter;
+  const auto displayFont = painter.font();
+  const auto qSize       = painter.fontMetrics().size(0, infoText);
+  return Size({qSize.width(), qSize.height()});
 }
 
 void playlistItem::setType(Type newType)

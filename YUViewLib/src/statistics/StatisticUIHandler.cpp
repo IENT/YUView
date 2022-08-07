@@ -40,9 +40,9 @@
 #endif
 #include <QtMath>
 
+#include <common/FunctionsGui.h>
 #include <statistics/StatisticsData.h>
 #include <statistics/StatisticsType.h>
-#include <common/FunctionsGui.h>
 
 namespace stats
 {
@@ -64,7 +64,10 @@ StatisticUIHandler::StatisticUIHandler()
           Qt::QueuedConnection);
 }
 
-void StatisticUIHandler::setStatisticsData(StatisticsData *data) { this->statisticsData = data; }
+void StatisticUIHandler::setStatisticsData(StatisticsData *data)
+{
+  this->statisticsData = data;
+}
 
 QLayout *StatisticUIHandler::createStatisticsHandlerControls(bool recreateControlsOnly)
 {
@@ -212,7 +215,7 @@ void StatisticUIHandler::onStatisticsControlChanged()
     return;
   }
 
-  auto &statTypes = this->statisticsData->getStatisticsTypes();
+  auto statTypes = this->statisticsData->getStatisticsTypes();
   for (unsigned row = 0; row < statTypes.size(); ++row)
   {
     auto &statType = statTypes.at(row);
@@ -243,6 +246,7 @@ void StatisticUIHandler::onStatisticsControlChanged()
       }
     }
   }
+  this->statisticsData->setStatisticsTypes(std::move(statTypes));
 
   emit updateItem(true);
 }
@@ -258,7 +262,7 @@ void StatisticUIHandler::onSecondaryStatisticsControlChanged()
     return;
   }
 
-  auto &statTypes = this->statisticsData->getStatisticsTypes();
+  auto statTypes = this->statisticsData->getStatisticsTypes();
   for (unsigned row = 0; row < statTypes.size(); ++row)
   {
     auto &statType = statTypes.at(row);
@@ -288,6 +292,7 @@ void StatisticUIHandler::onSecondaryStatisticsControlChanged()
       }
     }
   }
+  this->statisticsData->setStatisticsTypes(std::move(statTypes));
 
   emit updateItem(true);
 }
@@ -320,8 +325,8 @@ void StatisticUIHandler::updateStatisticsHandlerControls()
   }
 
   // First run a check if all statisticsTypes are identical
-  bool controlsStillValid = true;
-  auto &statTypes = this->statisticsData->getStatisticsTypes();
+  bool  controlsStillValid = true;
+  auto &statTypes          = this->statisticsData->getStatisticsTypes();
   if (statTypes.size() != itemNameCheckBoxes[0].size())
     // There are more or less statistics types as before
     controlsStillValid = false;
@@ -401,27 +406,33 @@ void StatisticUIHandler::updateStatisticsHandlerControls()
     // We have a backup of the old statistics types. Maybe some of the old types (with the same
     // name) are still in the new list. If so, we can update the status of those statistics types
     // (are they drawn, transparency ...).
-    for (unsigned i = 0; i < statsTypeListBackup.size(); i++)
+    auto newStatTypes = this->statisticsData->getStatisticsTypes();
+    bool typesChanged = false;
+    for (size_t i = 0; i < statsTypeListBackup.size(); i++)
     {
-      for (unsigned j = 0; j < statTypes.size(); j++)
+      for (size_t j = 0; j < statTypes.size(); j++)
       {
         if (statsTypeListBackup[i].typeName == statTypes[j].typeName)
         {
           // In the new list of statistics types we found one that has the same name as this one.
           // This is enough indication. Apply the old settings to this new type.
-          statTypes[j].render           = statsTypeListBackup[i].render;
-          statTypes[j].renderValueData  = statsTypeListBackup[i].renderValueData;
-          statTypes[j].renderVectorData = statsTypeListBackup[i].renderVectorData;
-          statTypes[j].renderGrid       = statsTypeListBackup[i].renderGrid;
-          statTypes[j].alphaFactor      = statsTypeListBackup[i].alphaFactor;
+          newStatTypes[j].render           = statsTypeListBackup[i].render;
+          newStatTypes[j].renderValueData  = statsTypeListBackup[i].renderValueData;
+          newStatTypes[j].renderVectorData = statsTypeListBackup[i].renderVectorData;
+          newStatTypes[j].renderGrid       = statsTypeListBackup[i].renderGrid;
+          newStatTypes[j].alphaFactor      = statsTypeListBackup[i].alphaFactor;
+          typesChanged                     = true;
         }
       }
     }
 
+    if (typesChanged)
+      this->statisticsData->setStatisticsTypes(std::move(newStatTypes));
+
     // Create new controls
-    createStatisticsHandlerControls(true);
+    this->createStatisticsHandlerControls(true);
     if (ui2.created())
-      getSecondaryStatisticsHandlerControls(true);
+      this->getSecondaryStatisticsHandlerControls(true);
   }
 }
 
@@ -449,9 +460,12 @@ void StatisticUIHandler::onStyleButtonClicked(unsigned id)
     return;
   }
 
-  auto &statTypes = this->statisticsData->getStatisticsTypes();
-  statisticsStyleUI.setStatsItem(&statTypes[id]);
-  statisticsStyleUI.show();
+  const auto &statTypes = this->statisticsData->getStatisticsTypes();
+  this->statisticsStyleUI.setStatsItem(statTypes.at(id));
+  this->statisticsStyleUI.show();
+
+  auto newType = this->statisticsStyleUI.getStatsItem();
+  this->statisticsData->setStatisticsType(std::move(newType));
 }
 
 } // namespace stats

@@ -65,7 +65,7 @@ playlistItemStatisticsFile::playlistItemStatisticsFile(const QString &itemNameOr
   {
     auto suffix = QFileInfo(this->prop.name).suffix();
     if (suffix == "csv")
-      openMode == OpenMode::CSVFile;
+      openMode = OpenMode::CSVFile;
     else if (suffix == "vtmbmsstats")
       openMode = OpenMode::VTMBMSFile;
   }

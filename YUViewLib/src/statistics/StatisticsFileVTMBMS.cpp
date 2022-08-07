@@ -185,7 +185,7 @@ void StatisticsFileVTMBMS::readFrameAndTypePositionsFromFile(std::atomic_bool &b
 stats::DataPerType StatisticsFileVTMBMS::loadFrameStatisticsData(int poc, int typeID)
 {
   if (!this->file.isOk())
-    return;
+    return {};
 
   stats::DataPerType data;
 

@@ -33,15 +33,11 @@
 #pragma once
 
 #include <statistics/CustomColorMapStorage.h>
+#include <statistics/StatisticsType.h>
 
 #include <QDialog>
 
 #include "ui_statisticsstylecontrol.h"
-
-namespace stats
-{
-class StatisticsType;
-}
 
 class StatisticsStyleControl : public QDialog
 {
@@ -53,7 +49,9 @@ public:
   // Set the current statistics item to edit. If this function is called, the controls will be
   // updated to show the current style of the given item. If a control is changed, the style of this
   // given item will be updated.
-  void setStatsItem(stats::StatisticsType *item);
+  void                  setStatsItem(stats::StatisticsType item);
+  stats::StatisticsType getStatsItem() const;
+
 signals:
   // The style was changed by the user. Redraw the view.
   void StyleChanged();
@@ -99,7 +97,7 @@ private:
   void refreshComboBoxCustomMapFromStorage();
 
   Ui::StatisticsStyleControl ui;
-  stats::StatisticsType *    currentItem{};
+  stats::StatisticsType      currentItem{};
 
   stats::color::CustomColorMapStorage customColorMapStorage;
 };

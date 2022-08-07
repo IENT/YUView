@@ -60,7 +60,12 @@ const EnumMapper<OverlayLayoutMode>
                              {OverlayLayoutMode::Arange, "Average"},
                              {OverlayLayoutMode::Custom, "Custom"}});
 
+QSize toQSize(const Size &size)
+{
+  return QSize(size.width, size.height);
 }
+
+} // namespace
 
 playlistItemOverlay::playlistItemOverlay() : playlistItemContainer("Overlay Item")
 {
@@ -84,18 +89,17 @@ InfoData playlistItemOverlay::getInfo() const
   InfoData info("Overlay Info");
 
   // Add the size of this playlistItemOverlay
-  info.items.append(
-      InfoItem("Overlay Size", QString("(%1,%2)").arg(getSize().width()).arg(getSize().height())));
+  const auto size = this->getSize();
+  info.items.append(InfoItem("Overlay Size", QString("(%1,%2)").arg(size.width).arg(size.height)));
 
   // Add the sizes of all child items
   for (int i = 0; i < this->childCount(); i++)
   {
     if (auto childItem = getChildPlaylistItem(i))
     {
-      auto childSize = childItem->getSize();
-      info.items.append(
-          InfoItem(QString("Item %1 size").arg(i),
-                   QString("(%1,%2)").arg(childSize.width()).arg(childSize.height())));
+      const auto childSize = childItem->getSize();
+      info.items.append(InfoItem(QString("Item %1 size").arg(i),
+                                 QString("(%1,%2)").arg(childSize.width).arg(childSize.height)));
     }
   }
   return info;
@@ -202,12 +206,13 @@ void playlistItemOverlay::drawItem(QPainter *painter,
   painter->translate(centerRoundTL(boundingRect) * zoomFactor);
 }
 
-QSize playlistItemOverlay::getSize() const
+Size playlistItemOverlay::getSize() const
 {
   if (this->childCount() == 0)
     return playlistItemContainer::getSize();
 
-  return this->boundingRect.size();
+  const auto qSize = this->boundingRect.size();
+  return {qSize.width(), qSize.height()};
 }
 
 void playlistItemOverlay::updateLayout(bool onlyIfItemsChanged)
@@ -266,16 +271,16 @@ void playlistItemOverlay::updateLayout(bool onlyIfItemsChanged)
   // The first playlist item is the "root".
   // We will arange all other items relative to this one
   auto firstItem = this->getChildPlaylistItem(0);
-  boundingRect.setSize(firstItem->getSize());
+  boundingRect.setSize(toQSize(firstItem->getSize()));
   boundingRect.moveCenter(QPoint(0, 0));
 
   QRect firstItemRect;
-  firstItemRect.setSize(firstItem->getSize());
+  firstItemRect.setSize(toQSize(firstItem->getSize()));
   firstItemRect.moveCenter(QPoint(0, 0));
   this->childItemRects[0] = firstItemRect;
   DEBUG_OVERLAY("playlistItemOverlay::updateLayout item 0 size (%d,%d) firstItemRect (%d,%d)",
-                firstItem->getSize().width(),
-                firstItem->getSize().height(),
+                firstItem->getSize().width,
+                firstItem->getSize().height,
                 firstItemRect.left(),
                 firstItemRect.top());
 
@@ -292,14 +297,14 @@ void playlistItemOverlay::updateLayout(bool onlyIfItemsChanged)
     }
     for (int i = 0; i < this->childCount(); i++)
     {
-      const auto r = i / nrRowsCols;
-      const auto c = i % nrRowsCols;
-      auto       p = this->getChildPlaylistItem(i);
-      auto       s = p->getSize();
-      if (columns[c] < s.width())
-        columns[c] = s.width();
-      if (rows[r] < s.height())
-        rows[r] = s.height();
+      const auto r    = i / nrRowsCols;
+      const auto c    = i % nrRowsCols;
+      auto       p    = this->getChildPlaylistItem(i);
+      auto       size = p->getSize();
+      if (columns[c] < int(size.width))
+        columns[c] = size.width;
+      if (rows[r] < int(size.height))
+        rows[r] = size.height;
     }
   }
 
@@ -308,10 +313,9 @@ void playlistItemOverlay::updateLayout(bool onlyIfItemsChanged)
       "playlistItemOverlay::updateLayout childCount %d layoutMode %d", childCount(), layoutMode);
   for (int i = 1; i < this->childCount(); i++)
   {
-    auto childItem = this->getChildPlaylistItem(i);
-    if (childItem)
+    if (auto childItem = this->getChildPlaylistItem(i))
     {
-      auto  childSize = childItem->getSize();
+      auto  childSize = toQSize(childItem->getSize());
       QRect targetRect;
       targetRect.setSize(childSize);
       targetRect.moveCenter(QPoint(0, 0));

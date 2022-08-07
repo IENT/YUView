@@ -243,23 +243,20 @@ void splitViewWidget::paintEvent(QPaintEvent *)
     int viewNum = (isSplitting() && item[1]) ? 2 : 1;
     for (int view = 0; view < viewNum; view++)
     {
-      // Get the size of the item
-      double itemSize[2];
-      itemSize[0] = item[view]->getSize().width();
-      itemSize[1] = item[view]->getSize().height();
+      auto itemSize = item.at(view)->getSize();
 
       // Is the pixel under the cursor within the item?
       pixelPosInItem[view] = (zoomBoxPixelUnderCursor[view].x() >= 0 &&
-                              zoomBoxPixelUnderCursor[view].x() < itemSize[0]) &&
+                              zoomBoxPixelUnderCursor[view].x() < int(itemSize.width)) &&
                              (zoomBoxPixelUnderCursor[view].y() >= 0 &&
-                              zoomBoxPixelUnderCursor[view].y() < itemSize[1]);
+                              zoomBoxPixelUnderCursor[view].y() < int(itemSize.height));
 
       // Mark the pixel under the cursor with a rectangle around it.
       if (pixelPosInItem[view])
       {
         int pixelPoint[2];
-        pixelPoint[0]       = -((itemSize[0] / 2 - zoomBoxPixelUnderCursor[view].x()) * zoom);
-        pixelPoint[1]       = -((itemSize[1] / 2 - zoomBoxPixelUnderCursor[view].y()) * zoom);
+        pixelPoint[0]       = -((itemSize.width / 2 - zoomBoxPixelUnderCursor[view].x()) * zoom);
+        pixelPoint[1]       = -((itemSize.height / 2 - zoomBoxPixelUnderCursor[view].y()) * zoom);
         zoomPixelRect[view] = QRect(pixelPoint[0], pixelPoint[1], zoom, zoom);
       }
     }
@@ -378,7 +375,7 @@ void splitViewWidget::paintEvent(QPaintEvent *)
       paintPixelRulersX(painter, item[1], xSplit, drawArea_botR.x(), zoom, centerPoints[1], offset);
       // Paint another y ruler at the split line if the resolution in Y direction for the two items
       // is not identical.
-      if (item[0]->getSize().height() != item[1]->getSize().height())
+      if (item[0]->getSize().height != item[1]->getSize().height)
         paintPixelRulersY(
             painter, item[1], drawArea_botR.y(), xSplit, zoom, centerPoints[1], offset);
 
@@ -578,15 +575,14 @@ void splitViewWidget::updatePixelPositions()
     QPoint     positions[2];
     for (int view = 0; view < viewNum; view++)
     {
-      // Get the size of the item
-      int itemSize[] = {item[view]->getSize().width(), item[view]->getSize().height()};
+      const auto itemSize = item.at(view)->getSize();
 
       // Calculate the position under the mouse cursor in pixels in the item under the mouse.
       {
         // Divide and round. We want value from 0...-1 to be quantized to -1 and not 0
         // so subtract 1 from the value if it is < 0.
-        double pixelPosX = -diffInItem[0] + (double(itemSize[0]) / 2) + 0.5;
-        double pixelPoxY = -diffInItem[1] + (double(itemSize[1]) / 2) + 0.5;
+        auto pixelPosX = -diffInItem[0] + (double(itemSize.width) / 2) + 0.5;
+        auto pixelPoxY = -diffInItem[1] + (double(itemSize.height) / 2) + 0.5;
         if (pixelPosX < 0)
           pixelPosX -= 1;
         if (pixelPoxY < 0)
@@ -676,8 +672,8 @@ void splitViewWidget::paintZoomBox(int           view,
 
     // Now we have to calculate the translation of the item, so that the pixel position
     // is in the center of the view (so we can draw it at (0,0)).
-    QPointF itemZoomBoxTranslation = QPointF(item->getSize().width() / 2 - pixelPos.x() - 0.5,
-                                             item->getSize().height() / 2 - pixelPos.y() - 0.5);
+    auto itemZoomBoxTranslation = QPointF(item->getSize().width / 2 - pixelPos.x() - 0.5,
+                                          item->getSize().height / 2 - pixelPos.y() - 0.5);
     painter.translate(itemZoomBoxTranslation * zoomBoxWindowZoomFactor);
 
     // Draw the item again, but this time with a high zoom factor into the clipped region
@@ -779,25 +775,25 @@ void splitViewWidget::paintRegularGrid(QPainter *painter, playlistItem *item)
   if (regularGridSize == 0)
     return;
 
-  QSize itemSize = item->getSize() * this->zoomFactor;
+  auto itemSize = item->getSize() * this->zoomFactor;
   painter->setPen(regularGridColor);
 
   // Draw horizontal lines
-  const int    xMin     = -itemSize.width() / 2;
-  const int    xMax     = itemSize.width() / 2;
+  const int    xMin     = -int(itemSize.width) / 2;
+  const int    xMax     = itemSize.width / 2;
   const double gridZoom = regularGridSize * this->zoomFactor;
-  for (int y = 1; y <= (itemSize.height() - 1) / gridZoom; y++)
+  for (int y = 1; y <= (itemSize.height - 1) / gridZoom; y++)
   {
-    int yPos = (-itemSize.height() / 2) + y * gridZoom;
+    int yPos = (-int(itemSize.height) / 2) + y * gridZoom;
     painter->drawLine(xMin, yPos, xMax, yPos);
   }
 
   // Draw vertical lines
-  const int yMin = -itemSize.height() / 2;
-  const int yMax = itemSize.height() / 2;
-  for (int x = 1; x <= (itemSize.width() - 1) / gridZoom; x++)
+  const int yMin = -int(itemSize.height) / 2;
+  const int yMax = itemSize.height / 2;
+  for (int x = 1; x <= (itemSize.width - 1) / gridZoom; x++)
   {
-    int xPos = (-itemSize.width() / 2) + x * gridZoom;
+    int xPos = (-int(itemSize.width) / 2) + x * gridZoom;
     painter->drawLine(xPos, yMin, xPos, yMax);
   }
 }
@@ -818,26 +814,26 @@ void splitViewWidget::paintPixelRulersX(QPainter &    painter,
   painter.setFont(valueFont);
 
   // Get the pixel values that are visible on screen
-  QSize frameSize      = item->getSize();
-  QSize videoRect      = frameSize * zoom;
-  auto  worldTransform = centerPoints + offset;
-  int   xMin           = (videoRect.width() / 2 - worldTransform.x() - xPixMin) / zoom;
-  int   xMax           = (videoRect.width() / 2 - (worldTransform.x() - xPixMax)) / zoom;
-  xMin                 = functions::clip(xMin, 0, frameSize.width());
-  xMax                 = functions::clip(xMax, 0, frameSize.width());
+  const auto frameSize      = item->getSize();
+  const auto videoRect      = frameSize * zoom;
+  auto       worldTransform = centerPoints + offset;
+  int        xMin           = (videoRect.width / 2 - worldTransform.x() - xPixMin) / zoom;
+  int        xMax           = (videoRect.width / 2 - (worldTransform.x() - xPixMax)) / zoom;
+  xMin                      = functions::clip(xMin, 0, int(frameSize.width));
+  xMax                      = functions::clip(xMax, 0, int(frameSize.width));
 
   // Draw the X Pixel indicators on the top
   for (int x = xMin; x < xMax + 1; x++)
   {
     // Where is the x position of the pixel in the item on screen?
-    int xPosOnScreen = x * zoom - videoRect.width() / 2 + worldTransform.x();
+    int xPosOnScreen = x * zoom - videoRect.width / 2 + worldTransform.x();
     painter.setPen(QPen(Qt::white));
     painter.drawLine(xPosOnScreen, 0, xPosOnScreen, 5);
     painter.setPen(QPen(Qt::black));
     painter.drawLine(xPosOnScreen + 1, 0, xPosOnScreen + 1, 5);
 
     // Draw the values (every fifth value, all values for zoom >= 128)
-    if ((zoom >= 128 || x % 5 == 0) && x != frameSize.width())
+    if ((zoom >= 128 || x % 5 == 0) && x != frameSize.width)
     {
       QString numberText = QString::number(x);
 
@@ -871,27 +867,27 @@ void splitViewWidget::paintPixelRulersY(QPainter &    painter,
   QFont valueFont = QFont(SPLITVIEWWIDGET_ZOOMFACTOR_FONT, 10);
   painter.setFont(valueFont);
 
-  QSize frameSize      = item->getSize();
-  QSize videoRect      = frameSize * zoom;
-  auto  worldTransform = centerPoints + offset;
+  const auto frameSize      = item->getSize();
+  const auto videoRect      = frameSize * zoom;
+  auto       worldTransform = centerPoints + offset;
 
   // Get the pixel values that are visible on screen
-  int yMin = (videoRect.height() / 2 - worldTransform.y()) / zoom;
-  int yMax = (videoRect.height() / 2 - (worldTransform.y() - yPixMax)) / zoom;
-  yMin     = functions::clip(yMin, 0, frameSize.height());
-  yMax     = functions::clip(yMax, 0, frameSize.height());
+  int yMin = (videoRect.height / 2 - worldTransform.y()) / zoom;
+  int yMax = (videoRect.height / 2 - (worldTransform.y() - yPixMax)) / zoom;
+  yMin     = functions::clip(yMin, 0, int(frameSize.height));
+  yMax     = functions::clip(yMax, 0, int(frameSize.height));
 
   // Draw pixel indicatoes on the left
   for (int y = yMin; y < yMax + 1; y++)
   {
-    int yPosOnScreen = y * zoom - videoRect.height() / 2 + worldTransform.y();
+    int yPosOnScreen = y * zoom - videoRect.height / 2 + worldTransform.y();
     painter.setPen(QPen(Qt::white));
     painter.drawLine(xPos, yPosOnScreen, xPos + 5, yPosOnScreen);
     painter.setPen(QPen(Qt::black));
     painter.drawLine(xPos, yPosOnScreen + 1, xPos + 5, yPosOnScreen + 1);
 
     // Draw the values (every fifth value, all values for zoom >= 128)
-    if ((zoom >= 128 || y % 5 == 0) && y != frameSize.height())
+    if ((zoom >= 128 || y % 5 == 0) && y != frameSize.height)
     {
       QString numberText = QString::number(y);
 
@@ -961,12 +957,12 @@ void splitViewWidget::mouseMoveEvent(QMouseEvent *mouse_event)
     // The user is currently dragging the splitter. Calculate the new splitter point.
 #if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
     auto xClip = functions::clip(mouse_event->position().x(),
-                      SPLITVIEWWIDGET_SPLITTER_CLIPX,
-                      (width() - 2 - SPLITVIEWWIDGET_SPLITTER_CLIPX));
+                                 SPLITVIEWWIDGET_SPLITTER_CLIPX,
+                                 (width() - 2 - SPLITVIEWWIDGET_SPLITTER_CLIPX));
 #else
     auto xClip = functions::clip(double(mouse_event->x()),
-                      SPLITVIEWWIDGET_SPLITTER_CLIPX,
-                      (double(width()) - 2.0 - SPLITVIEWWIDGET_SPLITTER_CLIPX));
+                                 SPLITVIEWWIDGET_SPLITTER_CLIPX,
+                                 (double(width()) - 2.0 - SPLITVIEWWIDGET_SPLITTER_CLIPX));
 #endif
     setSplittingPoint(xClip / (double(width()) - 2.0));
 
@@ -1028,12 +1024,12 @@ void splitViewWidget::mouseReleaseEvent(QMouseEvent *mouse_event)
     // Update current splitting position / update last time
 #if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
     auto xClip = functions::clip(mouse_event->position().x(),
-                      SPLITVIEWWIDGET_SPLITTER_CLIPX,
-                      (double(width()) - 2.0 - SPLITVIEWWIDGET_SPLITTER_CLIPX));
+                                 SPLITVIEWWIDGET_SPLITTER_CLIPX,
+                                 (double(width()) - 2.0 - SPLITVIEWWIDGET_SPLITTER_CLIPX));
 #else
     auto xClip = functions::clip(double(mouse_event->x()),
-                      SPLITVIEWWIDGET_SPLITTER_CLIPX,
-                      (double(width()) - 2.0 - SPLITVIEWWIDGET_SPLITTER_CLIPX));
+                                 SPLITVIEWWIDGET_SPLITTER_CLIPX,
+                                 (double(width()) - 2.0 - SPLITVIEWWIDGET_SPLITTER_CLIPX));
 #endif
     setSplittingPoint(xClip / (double(width()) - 2.0));
 
@@ -1246,32 +1242,32 @@ void splitViewWidget::zoomToFitInternal()
   if (!isSplitting())
   {
     // Get the size of item 0 and the size of the widget and set the zoom factor so that this fits
-    QSize item0Size = item[0]->getSize();
-    if (item0Size.width() <= 0 || item0Size.height() <= 0)
+    const auto item0Size = item.at(0)->getSize();
+    if (item0Size.width <= 0 || item0Size.height <= 0)
       return;
 
-    double zoomH = (double)size().width() / item0Size.width();
-    double zoomV = (double)size().height() / item0Size.height();
+    double zoomH = (double)size().width() / item0Size.width;
+    double zoomV = (double)size().height() / item0Size.height;
 
     fracZoom = std::min(zoomH, zoomV);
   }
   else if (viewSplitMode == COMPARISON)
   {
     // We can just zoom to an item that is the size of the bigger of the two items
-    QSize virtualItemSize = item[0]->getSize();
+    auto virtualItemSize = item.at(0)->getSize();
 
     if (item[1])
     {
       // Extend the size of the virtual item if a second item is available
-      QSize item1Size = item[1]->getSize();
-      if (item1Size.width() > virtualItemSize.width())
-        virtualItemSize.setWidth(item1Size.width());
-      if (item1Size.height() > virtualItemSize.height())
-        virtualItemSize.setHeight(item1Size.height());
+      const auto item1Size = item.at(1)->getSize();
+      if (item1Size.width > virtualItemSize.width)
+        virtualItemSize.width = item1Size.width;
+      if (item1Size.height > virtualItemSize.height)
+        virtualItemSize.height = item1Size.height;
     }
 
-    double zoomH = (double)size().width() / virtualItemSize.width();
-    double zoomV = (double)size().height() / virtualItemSize.height();
+    double zoomH = (double)size().width() / virtualItemSize.width;
+    double zoomV = (double)size().height() / virtualItemSize.height;
 
     fracZoom = std::min(zoomH, zoomV);
   }
@@ -1281,23 +1277,23 @@ void splitViewWidget::zoomToFitInternal()
     int xSplit = int(size().width() * splittingPoint);
 
     // Left item
-    QSize item0Size = item[0]->getSize();
-    if (item0Size.width() <= 0 || item0Size.height() <= 0)
+    const auto item0Size = item.at(0)->getSize();
+    if (!item0Size.isValid())
       return;
 
-    double zoomH = (double)xSplit / item0Size.width();
-    double zoomV = (double)size().height() / item0Size.height();
-    fracZoom     = std::min(zoomH, zoomV);
+    auto zoomH = double(xSplit) / item0Size.width;
+    auto zoomV = double(size().height()) / item0Size.height;
+    fracZoom   = std::min(zoomH, zoomV);
 
     // Right item
     if (item[1])
     {
-      QSize item1Size = item[1]->getSize();
-      if (item1Size.width() > 0 && item1Size.height() > 0)
+      const auto item1Size = item.at(1)->getSize();
+      if (item1Size.isValid())
       {
-        double zoomH2        = (double)(size().width() - xSplit) / item1Size.width();
-        double zoomV2        = (double)size().height() / item1Size.height();
-        double item2FracZoom = std::min(zoomH2, zoomV2);
+        auto zoomH2        = double((size().width()) - xSplit) / item1Size.width;
+        auto zoomV2        = double(size().height()) / item1Size.height;
+        auto item2FracZoom = std::min(zoomH2, zoomV2);
 
         // If we need to zoom out more for item 2, then do so.
         if (item2FracZoom < fracZoom)
@@ -1432,14 +1428,15 @@ QImage splitViewWidget::getScreenshot(bool fullItem)
       return QImage();
 
     // Create an image buffer with the size of the item.
-    QImage   screenshot(item[0]->getSize(), fmt);
-    QPainter painter(&screenshot);
+    const auto qSize = QSize(item[0]->getSize().width, item[0]->getSize().height);
+    QImage     screenshot(qSize, fmt);
+    QPainter   painter(&screenshot);
 
     // Get the current frame to draw
     int frame = playback->getCurrentFrame();
 
     // Translate the painter to the position where we want the item to be
-    QPoint center = QRect(QPoint(0, 0), item[0]->getSize()).center();
+    const auto center = QRect(QPoint(0, 0), qSize).center();
     painter.translate(center);
 
     // TODO: What if loading is still in progress?

@@ -136,16 +136,13 @@ ItemLoadingState playlistItemDifference::needsLoading(int frameIdx, bool loadRaw
   return this->difference.needsLoading(frameIdx, loadRawData);
 }
 
-QSize playlistItemDifference::getSize() const
+Size playlistItemDifference::getSize() const
 {
   if (!difference.inputsValid())
-  {
     // Return the size of the empty text.
     return playlistItemContainer::getSize();
-  }
 
-  auto s = difference.getFrameSize();
-  return QSize(s.width, s.height);
+  return difference.getFrameSize();
 }
 
 void playlistItemDifference::createPropertiesWidget()
@@ -257,7 +254,10 @@ void playlistItemDifference::loadFrame(int  frameIdx,
   }
 }
 
-bool playlistItemDifference::isLoading() const { return this->isDifferenceLoading; }
+bool playlistItemDifference::isLoading() const
+{
+  return this->isDifferenceLoading;
+}
 
 bool playlistItemDifference::isLoadingDoubleBuffer() const
 {

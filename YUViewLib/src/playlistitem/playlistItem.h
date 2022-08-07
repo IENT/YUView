@@ -132,7 +132,7 @@ public:
   // Get the size of the item (in pixels). The default implementation will return
   // the size when the infoText is drawn. In your inherited calss, you should return this
   // size if you call the playlistItem::drawItem function to draw the info text.
-  virtual QSize getSize() const;
+  virtual Size getSize() const;
 
   virtual void itemAboutToBeDeleted(playlistItem *) {}
 
