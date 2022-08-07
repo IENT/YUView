@@ -59,14 +59,24 @@
 
 playlistItemStatisticsFile::playlistItemStatisticsFile(const QString &itemNameOrFileName,
                                                        OpenMode       openMode)
-    : playlistItem(itemNameOrFileName, Type::Indexed), openMode(openMode)
+    : playlistItem(itemNameOrFileName, Type::Indexed)
 {
+  if (openMode == OpenMode::Extension)
+  {
+    auto suffix = QFileInfo(this->prop.name).suffix();
+    if (suffix == "csv")
+      openMode == OpenMode::CSVFile;
+    else if (suffix == "vtmbmsstats")
+      openMode = OpenMode::VTMBMSFile;
+  }
+  this->openMode = openMode;
+
   this->prop.isFileSource          = true;
   this->prop.propertiesWidgetTitle = "Statistics File Properties";
   this->prop.providesStatistics    = true;
 
   // Set statistics icon
-  setIcon(0, functionsGui::convertIcon(":img_stats.png"));
+  this->setIcon(0, functionsGui::convertIcon(":img_stats.png"));
 
   this->openStatisticsFile();
   this->statisticsUIHandler.setStatisticsData(&this->statisticsData);
@@ -143,7 +153,11 @@ ItemLoadingState playlistItemStatisticsFile::needsLoading(int frameIdx, bool)
 void playlistItemStatisticsFile::drawItem(QPainter *painter, int frameIdx, double zoomFactor, bool)
 {
   DEBUG_STAT("playlistItemStatisticsFile::drawItem frameIdx %d", frameIdx);
-  stats::paintStatisticsData(painter, this->statisticsData, frameIdx, zoomFactor);
+  if (this->statisticsData.getFrameIndex(BufferSelection::Primary) != frameIdx)
+    DEBUG_STAT("playlistItemCompressedVideo::drawItem Error drawing statistics. Wrong "
+               "frame index in statistics.");
+  else
+    this->statisticsData.paint(painter, this->frameSize, zoomFactor);
   this->currentDrawnFrameIdx = frameIdx;
 }
 
@@ -292,12 +306,11 @@ void playlistItemStatisticsFile::openStatisticsFile()
   }
 
   auto suffix = QFileInfo(this->prop.name).suffix();
-  if (this->openMode == OpenMode::CSVFile ||
-      (this->openMode == OpenMode::Extension && suffix == "csv"))
-    this->file.reset(new stats::StatisticsFileCSV(this->prop.name, this->statisticsData));
-  else if (this->openMode == OpenMode::VTMBMSFile ||
-           (this->openMode == OpenMode::Extension && suffix == "vtmbmsstats"))
-    this->file.reset(new stats::StatisticsFileVTMBMS(this->prop.name, this->statisticsData));
+  if (this->openMode == OpenMode::CSVFile)
+    this->file = std::make_unique<stats::StatisticsFileCSV>(this->prop.name, this->statisticsData);
+  else if (this->openMode == OpenMode::VTMBMSFile)
+    this->file =
+        std::make_unique<stats::StatisticsFileVTMBMS>(this->prop.name, this->statisticsData);
   else
     assert(false);
 

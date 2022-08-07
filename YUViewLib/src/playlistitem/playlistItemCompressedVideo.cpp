@@ -51,7 +51,6 @@
 #include <parser/HEVC/AnnexBHEVC.h>
 #include <parser/VVC/AnnexBVVC.h>
 #include <parser/common/SubByteReaderLogging.h>
-#include <statistics/StatisticsDataPainting.h>
 #include <ui/Mainwindow.h>
 #include <ui_playlistItemCompressedFile_logDialog.h>
 #include <video/videoHandlerRGB.h>
@@ -586,7 +585,11 @@ void playlistItemCompressedVideo::drawItem(QPainter *painter,
   else if (frameIdx >= range.first && frameIdx <= range.second)
   {
     video->drawFrame(painter, frameIdx, zoomFactor, drawRawData);
-    stats::paintStatisticsData(painter, this->statisticsData, frameIdx, zoomFactor);
+    if (this->statisticsData.getFrameIndex(BufferSelection::Primary) != frameIdx)
+      DEBUG_COMPRESSED("playlistItemCompressedVideo::drawItem Error drawing statistics. Wrong "
+                       "frame index in statistics.");
+    else
+      this->statisticsData.paint(painter, this->video->getFrameSize(), zoomFactor);
   }
 }
 

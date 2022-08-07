@@ -131,6 +131,6 @@ protected:
   virtual void
   timerEvent(QTimerEvent *event) override; // Overloaded from QObject. Called when the timer fires.
 
-  int   currentDrawnFrameIdx{-1};
-  QSize frameSize{};
+  int  currentDrawnFrameIdx{-1};
+  Size frameSize{};
 };
