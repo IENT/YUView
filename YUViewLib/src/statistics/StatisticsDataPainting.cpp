@@ -101,23 +101,32 @@ struct VisibleLimits
   Range<int> yRange;
 };
 
-void paintVector(QPainter *            painter,
-                 const StatisticsType &type,
-                 const double &        zoomFactor,
-                 const int &           x1,
-                 const int &           y1,
-                 const int &           x2,
-                 const int &           y2,
-                 const float &         vx,
-                 const float &         vy,
-                 bool                  isLine,
-                 const VisibleLimits & visibleLimits)
+struct RawVectorValues
+{
+  double x{};
+  double y{};
+};
+
+enum class VectorType
+{
+  Line,
+  Vector
+};
+
+void paintVector(QPainter *             painter,
+                 const StatisticsType & type,
+                 const double &         zoomFactor,
+                 const Point &          start,
+                 const Point &          end,
+                 const RawVectorValues &vector,
+                 VectorType             vectorType,
+                 const VisibleLimits &  visibleLimits)
 {
   const bool arrowDefinitelyInvisible =
-      (x1 < visibleLimits.xRange.min && x2 < visibleLimits.xRange.min) ||
-      (x1 > visibleLimits.xRange.max && x2 > visibleLimits.xRange.max) ||
-      (y1 < visibleLimits.yRange.min && y2 < visibleLimits.yRange.min) ||
-      (y1 > visibleLimits.yRange.max && y2 > visibleLimits.yRange.max);
+      (start.x < visibleLimits.xRange.min && end.x < visibleLimits.xRange.min) ||
+      (start.x > visibleLimits.xRange.max && end.x > visibleLimits.xRange.max) ||
+      (start.y < visibleLimits.yRange.min && end.y < visibleLimits.yRange.min) ||
+      (start.y > visibleLimits.yRange.max && end.y > visibleLimits.yRange.max);
   if (arrowDefinitelyInvisible)
     return;
 
@@ -126,7 +135,7 @@ void paintVector(QPainter *            painter,
   auto arrowColor  = functionsGui::toQColor(vectorStyle.color);
   if (type.mapVectorToColor)
     arrowColor.setHsvF(
-        functions::clip((std::atan2(vy, vx) + M_PI) / (2 * M_PI), 0.0, 1.0), 1.0, 1.0);
+        functions::clip((std::atan2(vector.y, vector.x) + M_PI) / (2 * M_PI), 0.0, 1.0), 1.0, 1.0);
   arrowColor.setAlpha(arrowColor.alpha() * ((float)type.alphaFactor / 100.0));
 
   if (type.scaleVectorToZoom)
@@ -142,10 +151,10 @@ void paintVector(QPainter *            painter,
     // At which angle do we draw the triangle?
     // A vector to the right (1,  0) -> 0°
     // A vector to the top   (0, -1) -> 90°
-    const auto angle = std::atan2(vy, vx);
+    const auto angle = std::atan2(vector.y, vector.x);
 
     // Draw the vector head if the vector is not 0,0
-    if ((vx != 0 || vy != 0))
+    if ((vector.x != 0 || vector.y != 0))
     {
       // The size of the arrow head
       const int headSize = (zoomFactor >= STATISTICS_DRAW_VALUES_ZOOM && !type.scaleVectorToZoom)
@@ -158,20 +167,20 @@ void paintVector(QPainter *            painter,
         const int shorten =
             (type.arrowHead == StatisticsType::ArrowHead::arrow) ? headSize * 2 : headSize * 0.5;
 
-        if (std::sqrt(vx * vx * zoomFactor * zoomFactor + vy * vy * zoomFactor * zoomFactor) >
-            shorten)
+        if (std::sqrt(vector.x * vector.x * zoomFactor * zoomFactor +
+                      vector.y * vector.y * zoomFactor * zoomFactor) > shorten)
         {
           // Shorten the line and draw it
-          auto vectorLine = QLineF(x1,
-                                   y1,
-                                   double(x2) - std::cos(angle) * shorten,
-                                   double(y2) - std::sin(angle) * shorten);
+          auto vectorLine = QLineF(start.x,
+                                   start.y,
+                                   double(end.x) - std::cos(angle) * shorten,
+                                   double(end.y) - std::sin(angle) * shorten);
           painter->drawLine(vectorLine);
         }
       }
       else
         // Draw the not shortened line
-        painter->drawLine(x1, y1, x2, y2);
+        painter->drawLine(start.x, start.y, end.x, end.y);
 
       if (type.arrowHead == StatisticsType::ArrowHead::arrow)
       {
@@ -180,7 +189,7 @@ void paintVector(QPainter *            painter,
         painter->save();
 
         // Draw the arrow tip with fixed size
-        painter->translate(QPoint(x2, y2));
+        painter->translate(QPoint(end.x, end.y));
         painter->rotate(qRadiansToDegrees(angle));
         const QPoint points[3] = {
             QPoint(0, 0), QPoint(-headSize * 2, -headSize), QPoint(-headSize * 2, headSize)};
@@ -190,44 +199,44 @@ void paintVector(QPainter *            painter,
         painter->restore();
       }
       else if (type.arrowHead == StatisticsType::ArrowHead::circle)
-        painter->drawEllipse(x2 - headSize / 2, y2 - headSize / 2, headSize, headSize);
+        painter->drawEllipse(end.x - headSize / 2, end.y - headSize / 2, headSize, headSize);
     }
 
     if (zoomFactor >= STATISTICS_DRAW_VALUES_ZOOM && type.renderVectorDataValues)
     {
-      if (isLine)
+      if (vectorType == VectorType::Line)
       {
         // if we just draw a line, we want to simply see the coordinate pairs
-        auto txt1 = QString("(%1, %2)").arg(x1 / zoomFactor).arg(y1 / zoomFactor);
-        auto txt2 = QString("(%1, %2)").arg(x2 / zoomFactor).arg(y2 / zoomFactor);
+        auto txt1 = QString("(%1, %2)").arg(start.x / zoomFactor).arg(start.y / zoomFactor);
+        auto txt2 = QString("(%1, %2)").arg(end.x / zoomFactor).arg(end.y / zoomFactor);
 
         auto textRect1 = painter->boundingRect(QRect(), Qt::AlignLeft, txt1);
         auto textRect2 = painter->boundingRect(QRect(), Qt::AlignLeft, txt2);
 
-        textRect1.moveCenter(QPoint(x1, y1));
-        textRect2.moveCenter(QPoint(x2, y2));
+        textRect1.moveCenter(QPoint(start.x, start.y));
+        textRect2.moveCenter(QPoint(end.x, end.y));
 
         // as angle = atan2(y2-y1, x2-x1) move txt accordingly
         int a = qRadiansToDegrees(angle);
         if (a < 45 && a > -45)
         {
-          textRect1.moveRight(x1);
-          textRect2.moveLeft(x2);
+          textRect1.moveRight(start.x);
+          textRect2.moveLeft(end.x);
         }
         else if (a <= -45 && a > -135)
         {
-          textRect1.moveTop(y1);
-          textRect2.moveBottom(y2);
+          textRect1.moveTop(start.y);
+          textRect2.moveBottom(end.y);
         }
         else if (a >= 45 && a < 135)
         {
-          textRect1.moveBottom(y1);
-          textRect2.moveTop(y2);
+          textRect1.moveBottom(start.y);
+          textRect2.moveTop(end.y);
         }
         else
         {
-          textRect1.moveLeft(x1);
-          textRect2.moveRight(x2);
+          textRect1.moveLeft(start.x);
+          textRect2.moveRight(end.x);
         }
 
         painter->drawText(textRect1, Qt::AlignLeft, txt1);
@@ -236,18 +245,18 @@ void paintVector(QPainter *            painter,
       else
       {
         // Also draw the vector value next to the arrow head
-        auto txt      = QString("x %1\ny %2").arg(vx).arg(vy);
+        auto txt      = QString("x %1\ny %2").arg(vector.x).arg(vector.y);
         auto textRect = painter->boundingRect(QRect(), Qt::AlignLeft, txt);
-        textRect.moveCenter(QPoint(x2, y2));
+        textRect.moveCenter(QPoint(end.x, end.y));
         int a = qRadiansToDegrees(angle);
         if (a < 45 && a > -45)
-          textRect.moveLeft(x2);
+          textRect.moveLeft(end.x);
         else if (a <= -45 && a > -135)
-          textRect.moveBottom(y2);
+          textRect.moveBottom(end.y);
         else if (a >= 45 && a < 135)
-          textRect.moveTop(y2);
+          textRect.moveTop(end.y);
         else
-          textRect.moveRight(x2);
+          textRect.moveRight(end.x);
         painter->drawText(textRect, Qt::AlignLeft, txt);
       }
     }
@@ -255,7 +264,7 @@ void paintVector(QPainter *            painter,
   else
   {
     // No arrow head is drawn. Only draw a line.
-    painter->drawLine(x1, y1, x2, y2);
+    painter->drawLine(start.x, start.y, end.x, end.y);
   }
 }
 
@@ -529,19 +538,15 @@ void paintStatisticsData(QPainter *             painter,
       if (it->renderVectorData)
       {
         // Calculate the start and end point of the arrow. The vector starts at center of the block.
-        const auto x1 = displayRect.left() + displayRect.width() / 2;
-        const auto y1 = displayRect.top() + displayRect.height() / 2;
+        const auto start  = Point({displayRect.left() + displayRect.width() / 2,
+                                  displayRect.top() + displayRect.height() / 2});
+        const auto vector = RawVectorValues({double(vectorItem.vector.x / it->vectorScale),
+                                             double(vectorItem.vector.y / it->vectorScale)});
+        const auto end =
+            Point({int(start.x + zoomFactor * vector.x), int(start.y + zoomFactor * vector.y)});
 
-        // The length of the vector
-        const auto vx = double(vectorItem.vector.x / it->vectorScale);
-        const auto vy = double(vectorItem.vector.y / it->vectorScale);
-
-        // The end point of the vector
-        const auto x2 = int(x1 + zoomFactor * vx);
-        const auto y2 = int(y1 + zoomFactor * vy);
-
-        const bool isLine = false;
-        paintVector(painter, *it, zoomFactor, x1, y1, x2, y2, vx, vy, isLine, visibleLimits);
+        paintVector(
+            painter, *it, zoomFactor, start, end, vector, VectorType::Vector, visibleLimits);
       }
 
       if (isRectVisible(displayRect, visibleLimits))
@@ -559,15 +564,14 @@ void paintStatisticsData(QPainter *             painter,
       if (it->renderVectorData)
       {
         // Calculate the start and end point of the arrow. The vector starts at center of the block.
-        auto x1 = int(displayRect.left() + zoomFactor * lineItem.line.p1.x);
-        auto y1 = int(displayRect.top() + zoomFactor * lineItem.line.p1.y);
-        auto x2 = int(displayRect.left() + zoomFactor * lineItem.line.p2.x);
-        auto y2 = int(displayRect.top() + zoomFactor * lineItem.line.p2.y);
-        auto vx = double(x2 - x1) / it->vectorScale;
-        auto vy = double(y2 - y1) / it->vectorScale;
+        const auto start  = Point({int(displayRect.left() + zoomFactor * lineItem.line.p1.x),
+                                  int(displayRect.top() + zoomFactor * lineItem.line.p1.y)});
+        const auto end    = Point({int(displayRect.left() + zoomFactor * lineItem.line.p2.x),
+                                int(displayRect.top() + zoomFactor * lineItem.line.p2.y)});
+        const auto vector = RawVectorValues(
+            {double(end.x - start.x) / it->vectorScale, double(end.y - start.y) / it->vectorScale});
 
-        const bool isLine = true;
-        paintVector(painter, *it, zoomFactor, x1, y1, x2, y2, vx, vy, isLine, visibleLimits);
+        paintVector(painter, *it, zoomFactor, start, end, vector, VectorType::Line, visibleLimits);
       }
 
       if (isRectVisible(displayRect, visibleLimits))
@@ -589,62 +593,30 @@ void paintStatisticsData(QPainter *             painter,
         // affine vectors start at bottom left, top left and top right of the block
         // mv0: LT, mv1: RT, mv2: LB
 
-        const auto xLTstart = displayRect.left();
-        const auto yLTstart = displayRect.top();
-        const auto xRTstart = displayRect.right();
-        const auto yRTstart = displayRect.top();
-        const auto xLBstart = displayRect.left();
-        const auto yLBstart = displayRect.bottom();
+        const auto startL = Point({displayRect.left(), displayRect.top()});
+        const auto startR = Point({displayRect.right(), displayRect.top()});
+        const auto startB = Point({displayRect.left(), displayRect.bottom()});
 
-        // The length of the vectors
-        const auto vxLT = double(affineTFItem.point[0].x) / it->vectorScale;
-        const auto vyLT = double(affineTFItem.point[0].y) / it->vectorScale;
-        const auto vxRT = double(affineTFItem.point[1].x) / it->vectorScale;
-        const auto vyRT = double(affineTFItem.point[1].y) / it->vectorScale;
-        const auto vxLB = double(affineTFItem.point[2].x) / it->vectorScale;
-        const auto vyLB = double(affineTFItem.point[2].y) / it->vectorScale;
+        const auto vectorL = RawVectorValues({double(affineTFItem.point[0].x) / it->vectorScale,
+                                              double(affineTFItem.point[0].y) / it->vectorScale});
+        const auto vectorR = RawVectorValues({double(affineTFItem.point[1].x) / it->vectorScale,
+                                              double(affineTFItem.point[1].y) / it->vectorScale});
+        const auto vectorB = RawVectorValues({double(affineTFItem.point[2].x) / it->vectorScale,
+                                              double(affineTFItem.point[2].y) / it->vectorScale});
 
-        // The end point of the vectors
-        const auto xLTend = int(xLTstart + zoomFactor * vxLT);
-        const auto yLTend = int(yLTstart + zoomFactor * vyLT);
-        const auto xRTend = int(xRTstart + zoomFactor * vxRT);
-        const auto yRTend = int(yRTstart + zoomFactor * vyRT);
-        const auto xLBend = int(xLBstart + zoomFactor * vxLB);
-        const auto yLBend = int(yLBstart + zoomFactor * vyLB);
+        const auto endL =
+            Point({int(startL.x + zoomFactor * vectorL.x), int(startL.y + zoomFactor * vectorL.y)});
+        const auto endR =
+            Point({int(startR.x + zoomFactor * vectorR.x), int(startR.y + zoomFactor * vectorR.y)});
+        const auto endB =
+            Point({int(startB.x + zoomFactor * vectorB.x), int(startB.y + zoomFactor * vectorB.y)});
 
-        paintVector(painter,
-                    *it,
-                    zoomFactor,
-                    xLTstart,
-                    yLTstart,
-                    xLTend,
-                    yLTend,
-                    vxLT,
-                    vyLT,
-                    false,
-                    visibleLimits);
-        paintVector(painter,
-                    *it,
-                    zoomFactor,
-                    xRTstart,
-                    yRTstart,
-                    xRTend,
-                    yRTend,
-                    vxRT,
-                    vyRT,
-                    false,
-                    visibleLimits);
-        paintVector(painter,
-                    *it,
-                    zoomFactor,
-                    xLBstart,
-                    yLBstart,
-                    xLBend,
-                    yLBend,
-                    vxLB,
-                    vyLB,
-                    false,
-                    visibleLimits);
+        paintVector(
+            painter, *it, zoomFactor, startL, endL, vectorL, VectorType::Vector, visibleLimits);
+        paintVector(
+            painter, *it, zoomFactor, startR, endR, vectorR, VectorType::Vector, visibleLimits);
+        paintVector(
+            painter, *it, zoomFactor, startB, endB, vectorB, VectorType::Vector, visibleLimits);
       }
 
       if (isRectVisible(displayRect, visibleLimits))
