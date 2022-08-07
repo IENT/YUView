@@ -455,10 +455,6 @@ QByteArray decoderVTM::getRawFrameData()
     // Put image data into buffer
     copyImgToByteArray(this->currentVTMPic, currentOutputBuffer);
     DEBUG_DECVTM("decoderVTM::getRawFrameData copied frame to buffer");
-
-    if (this->statisticsEnabled)
-      // Get the statistics from the image and put them into the statistics cache
-      this->cacheStatistics(this->currentVTMPic);
   }
 
   return this->currentOutputBuffer;

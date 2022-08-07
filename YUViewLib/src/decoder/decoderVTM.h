@@ -124,9 +124,6 @@ private:
   // retrive a new frame.
   bool decodedFrameWaiting{false};
 
-  // Statistics caching
-  void cacheStatistics(libVTMDec_picture *pic);
-
   bool internalsSupported{false};
   int  nrSignals{0};
 
