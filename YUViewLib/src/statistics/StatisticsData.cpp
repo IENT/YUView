@@ -232,21 +232,20 @@ QStringPairList StatisticsData::getValuesAt(const QPoint &pos) const
           QRect(vectorItem.pos[0], vectorItem.pos[1], vectorItem.size[0], vectorItem.size[1]);
       if (rect.contains(pos))
       {
-        float vectorValue1, vectorValue2;
+        double x{};
+        double y{};
         if (vectorItem.isLine)
         {
-          vectorValue1 = float(vectorItem.point[1].x - vectorItem.point[0].x) / it->vectorScale;
-          vectorValue2 = float(vectorItem.point[1].y - vectorItem.point[0].y) / it->vectorScale;
+          x = double(vectorItem.point[1].x - vectorItem.point[0].x) / it->vectorScale;
+          y = double(vectorItem.point[1].y - vectorItem.point[0].y) / it->vectorScale;
         }
         else
         {
-          vectorValue1 = float(vectorItem.point[0].x / it->vectorScale);
-          vectorValue2 = float(vectorItem.point[0].y / it->vectorScale);
+          x = double(vectorItem.point[0].x) / it->vectorScale;
+          y = double(vectorItem.point[0].y) / it->vectorScale;
         }
         valueList.append(
-            QStringPair(QString("%1[x]").arg(it->typeName), QString::number(vectorValue1)));
-        valueList.append(
-            QStringPair(QString("%1[y]").arg(it->typeName), QString::number(vectorValue2)));
+            QStringPair(QString("%1").arg(it->typeName), QString("(%1,%2)").arg(x).arg(y)));
         foundStats = true;
       }
     }
