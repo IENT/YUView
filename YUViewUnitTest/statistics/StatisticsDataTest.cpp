@@ -65,14 +65,13 @@ void StatisticsDataTest::testPixelValueRetrieval2()
   data[typeID].addBlockVector(8, 8, 16, 16, 5, 13);
 
   const auto dataInsideRect = data.getValuesAt(QPoint(10, 12));
-  QCOMPARE(dataInsideRect.size(), 2);
+  QCOMPARE(dataInsideRect.size(), 1);
   // This is wrong
-  QCOMPARE(dataInsideRect[0], QStringPair({"Something[x]", "1"}));
-  QCOMPARE(dataInsideRect[0], QStringPair({"Something[y]", "3"}));
+  QCOMPARE(dataInsideRect[0], QStringPair({"Something", "(1.25,3.25)"}));
 
-  // const auto dataOutside = data.getValuesAt(QPoint(0, 0));
-  // QCOMPARE(dataOutside.size(), 1);
-  // QCOMPARE(dataOutside[0], QStringPair({"Something", "-"}));
+  const auto dataOutside = data.getValuesAt(QPoint(0, 0));
+  QCOMPARE(dataOutside.size(), 1);
+  QCOMPARE(dataOutside[0], QStringPair({"Something", "-"}));
 }
 
 QTEST_MAIN(StatisticsDataTest)
