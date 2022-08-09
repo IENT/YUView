@@ -28,7 +28,7 @@ void StatisticsDataTest::testPixelValueRetrieval1()
   data.addStatType(valueType);
 
   QCOMPARE(data.needsLoading(frameIndex), ItemLoadingState::LoadingNeeded);
-  QCOMPARE(data.getTypesThatNeedLoading(frameIndex).size(), 1);
+  QCOMPARE(data.getTypesThatNeedLoading(frameIndex).size(), std::size_t(1));
   QCOMPARE(data.getTypesThatNeedLoading(frameIndex).at(0), typeID);
 
   // Load data
@@ -37,11 +37,11 @@ void StatisticsDataTest::testPixelValueRetrieval1()
 
   const auto dataInsideRect = data.getValuesAt(QPoint(10, 12));
   QCOMPARE(dataInsideRect.size(), 1);
-  QCOMPARE(dataInsideRect[0], QStringPair({"Something", "7"}));
+  QCOMPARE(dataInsideRect.at(0), QStringPair({"Something", "7"}));
 
   const auto dataOutside = data.getValuesAt(QPoint(0, 0));
   QCOMPARE(dataOutside.size(), 1);
-  QCOMPARE(dataOutside[0], QStringPair({"Something", "-"}));
+  QCOMPARE(dataOutside.at(0), QStringPair({"Something", "-"}));
 }
 
 void StatisticsDataTest::testPixelValueRetrieval2()
@@ -57,7 +57,7 @@ void StatisticsDataTest::testPixelValueRetrieval2()
   data.addStatType(valueType);
 
   QCOMPARE(data.needsLoading(frameIndex), ItemLoadingState::LoadingNeeded);
-  QCOMPARE(data.getTypesThatNeedLoading(frameIndex).size(), 1);
+  QCOMPARE(data.getTypesThatNeedLoading(frameIndex).size(), std::size_t(1));
   QCOMPARE(data.getTypesThatNeedLoading(frameIndex).at(0), typeID);
 
   // Load data
@@ -67,11 +67,11 @@ void StatisticsDataTest::testPixelValueRetrieval2()
   const auto dataInsideRect = data.getValuesAt(QPoint(10, 12));
   QCOMPARE(dataInsideRect.size(), 1);
   // This is wrong
-  QCOMPARE(dataInsideRect[0], QStringPair({"Something", "(1.25,3.25)"}));
+  QCOMPARE(dataInsideRect.at(0), QStringPair({"Something", "(1.25,3.25)"}));
 
   const auto dataOutside = data.getValuesAt(QPoint(0, 0));
   QCOMPARE(dataOutside.size(), 1);
-  QCOMPARE(dataOutside[0], QStringPair({"Something", "-"}));
+  QCOMPARE(dataOutside.at(0), QStringPair({"Something", "-"}));
 }
 
 QTEST_MAIN(StatisticsDataTest)
