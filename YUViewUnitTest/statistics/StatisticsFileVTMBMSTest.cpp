@@ -1,7 +1,6 @@
 #include <QtTest>
 
 #include "common/TemporaryFile.h"
-#include "statistics/StatisticsData.h"
 #include "statistics/StatisticsFileVTMBMS.h"
 
 #include <fstream>
