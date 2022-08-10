@@ -106,6 +106,12 @@ AVColorSpace AVCodecParametersWrapper::getColorspace()
   return this->color_space;
 }
 
+AVPixelFormat AVCodecParametersWrapper::getPixelFormat()
+{
+  this->update();
+  return AVPixelFormat(this->format);
+}
+
 Ratio AVCodecParametersWrapper::getSampleAspectRatio()
 {
   this->update();

@@ -59,6 +59,7 @@ public:
   int                      getFrameWidth();
   int                      getFrameHeight();
   AVColorSpace             getColorspace();
+  AVPixelFormat            getPixelFormat();
   int                      getIndex();
   AVCodecParametersWrapper getCodecpar();
 

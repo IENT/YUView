@@ -136,7 +136,7 @@ AVPixFmtDescriptorWrapper::Flags parseFlags(uint8_t flagsValue)
   return flags;
 }
 
-bool flagsSupported(AVPixFmtDescriptorWrapper::Flags &flags)
+bool flagsSupported(const AVPixFmtDescriptorWrapper::Flags &flags)
 {
   // We don't support any of these
   if (flags.pallette)
@@ -244,7 +244,7 @@ video::RawFormat AVPixFmtDescriptorWrapper::getRawFormat() const
   return this->flags.rgb ? video::RawFormat::RGB : video::RawFormat::YUV;
 }
 
-PixelFormatYUV AVPixFmtDescriptorWrapper::getPixelFormatYUV()
+PixelFormatYUV AVPixFmtDescriptorWrapper::getPixelFormatYUV() const
 {
   if (this->getRawFormat() == video::RawFormat::RGB || !flagsSupported(this->flags))
     return {};
@@ -291,7 +291,7 @@ PixelFormatYUV AVPixFmtDescriptorWrapper::getPixelFormatYUV()
   return PixelFormatYUV(subsampling, bitsPerSample, planeOrder, this->flags.bigEndian);
 }
 
-video::rgb::PixelFormatRGB AVPixFmtDescriptorWrapper::getRGBPixelFormat()
+video::rgb::PixelFormatRGB AVPixFmtDescriptorWrapper::getRGBPixelFormat() const
 {
   if (this->getRawFormat() == video::RawFormat::YUV || !flagsSupported(this->flags))
     return {};

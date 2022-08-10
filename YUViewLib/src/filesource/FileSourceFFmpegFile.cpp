@@ -511,8 +511,8 @@ void FileSourceFFmpegFile::openFileAndFindVideoStream(QString fileName)
   else
     frameRate = avgFrameRate.num / double(avgFrameRate.den);
 
-  auto ffmpegPixFormat = this->ff.getAvPixFmtDescriptionFromAvPixelFormat(
-      this->video_stream.getCodec().getPixelFormat());
+  const auto ffmpegPixFormat =
+      this->ff.getAvPixFmtDescriptionFromAvPixelFormat(this->video_stream.getPixelFormat());
   this->rawFormat = ffmpegPixFormat.getRawFormat();
   if (this->rawFormat == video::RawFormat::YUV)
     this->pixelFormat_yuv = ffmpegPixFormat.getPixelFormatYUV();

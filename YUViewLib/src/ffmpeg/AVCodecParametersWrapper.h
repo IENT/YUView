@@ -45,12 +45,13 @@ public:
   explicit        operator bool() const { return param != nullptr; }
   QStringPairList getInfoText();
 
-  AVMediaType getCodecType();
-  AVCodecID getCodecID();
-  int getWidth();
-  int getHeight();
-  AVColorSpace getColorspace();
-  Ratio getSampleAspectRatio();
+  AVMediaType   getCodecType();
+  AVCodecID     getCodecID();
+  int           getWidth();
+  int           getHeight();
+  AVColorSpace  getColorspace();
+  AVPixelFormat getPixelFormat();
+  Ratio         getSampleAspectRatio();
 
   // Set a default set of (unknown) values
   void setClearValues();
