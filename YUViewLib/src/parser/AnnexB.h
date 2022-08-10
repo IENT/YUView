@@ -128,7 +128,7 @@ public:
 
   std::optional<pairUint64> getFrameStartEndPos(FrameIndexCodingOrder idx);
 
-  bool parseAnnexBFile(QScopedPointer<FileSourceAnnexBFile> &file, QWidget *mainWindow = nullptr);
+  bool parseAnnexBFile(std::unique_ptr<FileSourceAnnexBFile> &file, QWidget *mainWindow = nullptr);
 
   // Called from the bitstream analyzer. This function can run in a background process.
   bool runParsingOfFile(QString compressedFilePath) override;

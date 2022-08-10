@@ -123,8 +123,8 @@ protected:
   // We allocate two decoder: One for loading images in the foreground and one for caching in the
   // background. This is better if random access and linear decoding (caching) is performed at the
   // same time.
-  QScopedPointer<decoder::decoderBase> loadingDecoder;
-  QScopedPointer<decoder::decoderBase> cachingDecoder;
+  std::unique_ptr<decoder::decoderBase> loadingDecoder;
+  std::unique_ptr<decoder::decoderBase> cachingDecoder;
 
   // When opening the file, we will fill this list with the possible decoders
   std::vector<decoder::DecoderEngine> possibleDecoders;
@@ -137,9 +137,9 @@ protected:
   // and a parser that can understand what the NAL units mean. We open the file source twice (once
   // for interactive loading, once for the background caching). The parser is only needed once and
   // can be used for both loading and caching tasks.
-  QScopedPointer<FileSourceAnnexBFile> inputFileAnnexBLoading;
-  QScopedPointer<FileSourceAnnexBFile> inputFileAnnexBCaching;
-  QScopedPointer<parser::AnnexB>       inputFileAnnexBParser;
+  std::unique_ptr<FileSourceAnnexBFile> inputFileAnnexBLoading;
+  std::unique_ptr<FileSourceAnnexBFile> inputFileAnnexBCaching;
+  std::unique_ptr<parser::AnnexB>       inputFileAnnexBParser;
   // When reading annex B data using the FileSourceAnnexBFile::getFrameData function, we need to
   // count how many frames we already read.
   int readAnnexBFrameCounterCodingOrder{-1};
@@ -150,8 +150,8 @@ protected:
 
   // For FFMpeg files we don't need a reader to parse them. But if the container contains a
   // supported format, we can read the NAL units from the compressed file.
-  QScopedPointer<FileSourceFFmpegFile> inputFileFFmpegLoading;
-  QScopedPointer<FileSourceFFmpegFile> inputFileFFmpegCaching;
+  std::unique_ptr<FileSourceFFmpegFile> inputFileFFmpegLoading;
+  std::unique_ptr<FileSourceFFmpegFile> inputFileFFmpegCaching;
 
   // Is the loadFrame function currently loading?
   bool isFrameLoading{};

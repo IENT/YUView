@@ -146,7 +146,7 @@ std::optional<pairUint64> AnnexB::getFrameStartEndPos(FrameIndexCodingOrder idx)
   return this->frameListCodingOrder[idx].fileStartEndPos;
 }
 
-bool AnnexB::parseAnnexBFile(QScopedPointer<FileSourceAnnexBFile> &file, QWidget *mainWindow)
+bool AnnexB::parseAnnexBFile(std::unique_ptr<FileSourceAnnexBFile> &file, QWidget *mainWindow)
 {
   DEBUG_ANNEXB("AnnexB::parseAnnexBFile");
 
@@ -276,8 +276,8 @@ bool AnnexB::parseAnnexBFile(QScopedPointer<FileSourceAnnexBFile> &file, QWidget
 bool AnnexB::runParsingOfFile(QString compressedFilePath)
 {
   DEBUG_ANNEXB("playlistItemCompressedVideo::runParsingOfFile");
-  QScopedPointer<FileSourceAnnexBFile> file(new FileSourceAnnexBFile(compressedFilePath));
-  return parseAnnexBFile(file);
+  auto file = std::make_unique<FileSourceAnnexBFile>(compressedFilePath);
+  return this->parseAnnexBFile(file);
 }
 
 QList<QTreeWidgetItem *> AnnexB::stream_info_type::getStreamInfo()
