@@ -198,7 +198,7 @@ findFirstDifferenceInHEVCBlockYUV(Position                   pos,
           return PositionAndPartIndex(pos, 0);
 
         // is this a position at which we have a chroma sample?
-        if (subX % subH == 0 && subY % subV == 0 && subX * subV < w_in)
+        if (subX % subH == 0 && subY % subV == 0 && subX * subV < int(w_in))
         {
           auto valU1 = getValueFromSource(srcU1, subX, bps_in, bigEndian);
           auto valV1 = getValueFromSource(srcV1, subX, bps_in, bigEndian);
@@ -292,7 +292,7 @@ void videoHandlerDifference::drawDifferenceFrame(QPainter *painter,
   {
     // Draw the pixel values onto the pixels
     this->inputVideo[0]->drawPixelValues(
-        painter, frameIdx, videoRect, zoomFactor, inputVideo[1], this->markDifference);
+        painter, frameIdx, videoRect, zoomFactor, inputVideo[1], this->markDifference, frameIdx);
   }
 }
 
@@ -370,7 +370,7 @@ QStringPairList videoHandlerDifference::getPixelValues(const QPoint &pixelPos,
                                                        const int frameIdx1)
 {
   if (!this->inputsValid())
-    return QStringPairList();
+    return {};
 
   return this->inputVideo[0]->getPixelValues(pixelPos, frameIdx, this->inputVideo[1], frameIdx1);
 }
