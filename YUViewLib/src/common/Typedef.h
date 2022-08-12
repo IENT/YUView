@@ -274,6 +274,21 @@ template <typename T> struct Range
   }
 };
 
+struct Position
+{
+  Position() = default;
+  Position(int x, int y)
+  {
+    this->x = x;
+    this->y = y;
+  }
+
+  int x{};
+  int y{};
+
+  bool operator!=(const Position &other) const { return this->x != other.x || this->y != other.y; }
+};
+
 struct Ratio
 {
   int num{};
