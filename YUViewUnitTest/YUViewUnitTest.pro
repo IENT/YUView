@@ -2,6 +2,7 @@ TEMPLATE = subdirs
 
 requires(qtHaveModule(testlib))
 
-SUBDIRS = filesource \
+SUBDIRS = helper \
+          filesource \
           statistics \
           video

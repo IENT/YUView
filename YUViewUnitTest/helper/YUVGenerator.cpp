@@ -40,29 +40,47 @@ namespace helper
 namespace
 {
 
-template <int bitDepth> QByteArray generatePlane(Size planeSize)
+QByteArray generatePlane(Size planeSize, int bitDepth)
 {
-  typedef typename std::conditional<bitDepth == 8, uint8_t *, uint16_t *>::type InValueType;
-  static_assert(bitDepth > 0 && bitDepth <= 16);
-  constexpr auto nrBytesPerSample = (bitDepth + 7) / 8;
-  constexpr auto maxValue         = (1 << bitDepth) - 1;
+  assert(bitDepth > 0 && bitDepth <= 16);
+  auto nrBytesPerSample = (bitDepth + 7) / 8;
+  auto maxValue         = (1 << bitDepth) - 1;
 
   const auto nrSamples = planeSize.width * planeSize.height * nrBytesPerSample;
   const auto xPlusYMax = planeSize.width + planeSize.height;
 
   QByteArray data;
   data.resize(nrSamples);
-  const auto *rawPtr = InValueType(data.data());
 
-  for (unsigned x = 0; x < planeSize.width; x++)
+  if (nrBytesPerSample == 1)
   {
+    auto rawPtr = (uint8_t *)(data.data());
     for (unsigned y = 0; y < planeSize.height; y++)
     {
-      const auto val = (x + y) * maxValue / xPlusYMax;
-      const auto idx = y * planeSize.width + x;
-      rawPtr[idx]    = InValueType(val);
+      for (unsigned x = 0; x < planeSize.width; x++)
+      {
+        const auto val = (x + y) * maxValue / xPlusYMax;
+        rawPtr[x]      = uint8_t(val);
+      }
+      rawPtr += planeSize.width;
     }
   }
+  else if (nrBytesPerSample == 2)
+  {
+    auto rawPtr = (uint16_t *)(data.data());
+    for (unsigned y = 0; y < planeSize.height; y++)
+    {
+      for (unsigned x = 0; x < planeSize.width; x++)
+      {
+        const auto val = (x + y) * maxValue / xPlusYMax;
+        rawPtr[x]      = uint16_t(val);
+      }
+      rawPtr += planeSize.width;
+    }
+  }
+  else
+    assert(false);
+
   return data;
 }
 
@@ -82,7 +100,7 @@ QByteArray generateYUVVideo(Size frameSize, int nrFrames, video::yuv::PixelForma
 
     auto chromaSize = Size(frameSize.width / pixelFormat.getSubsamplingHor(),
                            frameSize.height / pixelFormat.getSubsamplingVer());
-    for (int planeIdx = 1; planeIdx < pixelFormat.getNrPlanes(); planeIdx++)
+    for (unsigned planeIdx = 1; planeIdx < pixelFormat.getNrPlanes(); planeIdx++)
       data += generatePlane(chromaSize, pixelFormat.getBitsPerSample());
   }
   return data;

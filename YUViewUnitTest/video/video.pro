@@ -5,4 +5,5 @@ requires(qtHaveModule(testlib))
 SUBDIRS = PixelFormatYUVTest.pro \
           PixelFormatRGBTest.pro \
           PixelFormatYUVGuessTest.pro \
-          PixelFormatRGBGuessTest.pro
+          PixelFormatRGBGuessTest.pro \
+          VideoHandlerDifferenceTest.pro
