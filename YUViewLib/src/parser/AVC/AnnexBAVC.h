@@ -54,6 +54,16 @@ class pic_timing;
 class slice_header;
 class NalUnitAVC;
 class seq_parameter_set_rbsp;
+
+struct FrameParsingData
+{
+  // For every frame, we save the file position where the NAL unit of the first slice starts and
+  // where the NAL of the last slice ends (if known). This is used by getNextFrameNALUnits to
+  // return all information (NAL units) for a specific frame. This includes SPS/PPS.
+  std::optional<pairUint64> fileStartEndPos{};
+  int                       poc{-1};
+  bool                      isRandomAccess{};
+};
 } // namespace avc
 
 // This class knows how to parse the bitrstream of HEVC annexB files
@@ -62,11 +72,8 @@ class AnnexBAVC : public AnnexB
   Q_OBJECT
 
 public:
-  AnnexBAVC(QObject *parent = nullptr) : AnnexB(parent)
-  {
-    curFrameFileStartEndPos = pairUint64(-1, -1);
-  };
-  ~AnnexBAVC(){};
+  AnnexBAVC(QObject *parent = nullptr) : AnnexB(parent){};
+  ~AnnexBAVC() = default;
 
   // Get properties
   double                     getFramerate() const override;
@@ -115,17 +122,7 @@ protected:
 
   bool CpbDpbDelaysPresentFlag{false};
 
-  // For every frame, we save the file position where the NAL unit of the first slice starts and
-  // where the NAL of the last slice ends (if known). This is used by getNextFrameNALUnits to return
-  // all information (NAL units) for a specific frame.
-  std::optional<pairUint64>
-      curFrameFileStartEndPos; //< Save the file start/end position of the current frame (in case
-                               // the frame has multiple NAL units)
-
-  // The POC of the current frame. We save this when we encounter a NAL from the next POC; then we
-  // add it.
-  int  curFramePOC{-1};
-  bool curFrameIsRandomAccess{false};
+  std::optional<avc::FrameParsingData> curFrameData;
 
   std::vector<std::shared_ptr<avc::NalUnitAVC>> nalUnitsForSeeking;
 
