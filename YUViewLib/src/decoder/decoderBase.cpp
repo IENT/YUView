@@ -32,8 +32,10 @@
 
 #include "decoderBase.h"
 
+#include <QCoreApplication>
 #include <QDir>
 #include <QSettings>
+
 
 namespace decoder
 {

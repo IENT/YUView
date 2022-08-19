@@ -40,6 +40,8 @@
 #include <common/FunctionsGui.h>
 #include <filesource/FileSource.h>
 
+#include "ui_FrameHandler.h"
+
 #define IMAGEFILE_ERROR_TEXT "The given image file could not be loaded."
 
 playlistItemImageFile::playlistItemImageFile(const QString &filePath)

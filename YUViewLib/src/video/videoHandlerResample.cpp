@@ -36,7 +36,9 @@
 #include <QPushButton>
 #include <algorithm>
 
-#include "videoHandlerYUV.h"
+#include <video/videoHandlerYUV.h>
+
+#include "ui_FrameHandler.h"
 
 namespace video
 {

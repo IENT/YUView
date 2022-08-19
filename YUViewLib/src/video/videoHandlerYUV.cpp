@@ -50,6 +50,9 @@
 #include <video/PixelFormatYUVGuess.h>
 #include <video/videoHandlerYUVCustomFormatDialog.h>
 
+#include "ui_FrameHandler.h"
+#include "ui_videoHandlerYUV.h"
+
 namespace video::yuv
 {
 
@@ -2470,7 +2473,8 @@ void convertYUVToImage(const QByteArray &        sourceBuffer,
 
 } // namespace
 
-videoHandlerYUV::videoHandlerYUV() : videoHandler()
+videoHandlerYUV::videoHandlerYUV()
+    : videoHandler(), ui(std::make_unique<SafeUi<Ui::videoHandlerYUV>>())
 {
   // Set the default YUV transformation parameters.
   this->conversionSettings.mathParameters[Component::Luma]   = MathParameters(1, 125, false);
@@ -2511,7 +2515,7 @@ void videoHandlerYUV::drawFrame(QPainter *painter,
                                 bool      drawRawData)
 {
   std::string msg;
-  if (!srcPixelFormat.canConvertToRGB(frameSize, &msg))
+  if (!this->srcPixelFormat.canConvertToRGB(frameSize, &msg))
   {
     // The conversion to RGB can not be performed. Draw a text about this
     msg = "With the given settings, the YUV data can not be converted to RGB:\n" + msg;
@@ -2519,7 +2523,7 @@ void videoHandlerYUV::drawFrame(QPainter *painter,
     QFont displayFont = painter->font();
     displayFont.setPointSizeF(painter->font().pointSizeF() * zoomFactor);
     painter->setFont(displayFont);
-    QSize textSize = painter->fontMetrics().size(0, QString::fromStdString(msg));
+    auto  textSize = painter->fontMetrics().size(0, QString::fromStdString(msg));
     QRect textRect;
     textRect.setSize(textSize);
     textRect.moveCenter(QPoint(0, 0));
@@ -2686,7 +2690,7 @@ void videoHandlerYUV::yuv420_to_argb8888(quint8 *yp,
 QLayout *videoHandlerYUV::createVideoHandlerControls(bool isSizeFixed)
 {
   // Absolutely always only call this function once!
-  assert(!ui.created());
+  assert(!this->ui->created());
 
   QVBoxLayout *newVBoxLayout = nullptr;
   if (!isSizeFixed)
@@ -2704,96 +2708,100 @@ QLayout *videoHandlerYUV::createVideoHandlerControls(bool isSizeFixed)
   }
 
   // Create the UI and setup all the controls
-  ui.setupUi();
+  this->ui->setupUi();
 
   // Add the preset YUV formats. If the current format is in the list, add it and select it.
   for (auto format : presetList)
-    ui.yuvFormatComboBox->addItem(QString::fromStdString(format.getName()));
+    this->ui->yuvFormatComboBox->addItem(QString::fromStdString(format.getName()));
 
   int idx = presetList.indexOf(srcPixelFormat);
   if (idx == -1 && srcPixelFormat.isValid())
   {
     // The currently set pixel format is not in the presets list. Add and select it.
-    ui.yuvFormatComboBox->addItem(QString::fromStdString(srcPixelFormat.getName()));
+    this->ui->yuvFormatComboBox->addItem(QString::fromStdString(srcPixelFormat.getName()));
     presetList.append(srcPixelFormat);
     idx = presetList.indexOf(srcPixelFormat);
   }
-  ui.yuvFormatComboBox->setCurrentIndex(idx);
+  this->ui->yuvFormatComboBox->setCurrentIndex(idx);
   // Add the custom... entry that allows the user to add custom formats
-  ui.yuvFormatComboBox->addItem("Custom...");
-  ui.yuvFormatComboBox->setEnabled(!isSizeFixed);
+  this->ui->yuvFormatComboBox->addItem("Custom...");
+  this->ui->yuvFormatComboBox->setEnabled(!isSizeFixed);
 
   // Set all the values of the properties widget to the values of this class
-  ui.colorComponentsComboBox->addItems(
+  this->ui->colorComponentsComboBox->addItems(
       functions::toQStringList(ComponentDisplayModeMapper.getNames()));
-  ui.colorComponentsComboBox->setCurrentIndex(
+  this->ui->colorComponentsComboBox->setCurrentIndex(
       int(ComponentDisplayModeMapper.indexOf(this->conversionSettings.componentDisplayMode)));
-  ui.chromaInterpolationComboBox->addItems(
+  this->ui->chromaInterpolationComboBox->addItems(
       functions::toQStringList(ChromaInterpolationMapper.getNames()));
-  ui.chromaInterpolationComboBox->setCurrentIndex(
+  this->ui->chromaInterpolationComboBox->setCurrentIndex(
       int(ChromaInterpolationMapper.indexOf(this->conversionSettings.chromaInterpolation)));
-  ui.chromaInterpolationComboBox->setEnabled(srcPixelFormat.isChromaSubsampled());
-  ui.colorConversionComboBox->addItems(functions::toQStringList(ColorConversionMapper.getNames()));
-  ui.colorConversionComboBox->setCurrentIndex(
+  this->ui->chromaInterpolationComboBox->setEnabled(srcPixelFormat.isChromaSubsampled());
+  this->ui->colorConversionComboBox->addItems(
+      functions::toQStringList(ColorConversionMapper.getNames()));
+  this->ui->colorConversionComboBox->setCurrentIndex(
       int(ColorConversionMapper.indexOf(this->conversionSettings.colorConversion)));
-  ui.lumaScaleSpinBox->setValue(this->conversionSettings.mathParameters[Component::Luma].scale);
-  ui.lumaOffsetSpinBox->setMaximum(1000);
-  ui.lumaOffsetSpinBox->setValue(this->conversionSettings.mathParameters[Component::Luma].offset);
-  ui.lumaInvertCheckBox->setChecked(
+  this->ui->lumaScaleSpinBox->setValue(
+      this->conversionSettings.mathParameters[Component::Luma].scale);
+  this->ui->lumaOffsetSpinBox->setMaximum(1000);
+  this->ui->lumaOffsetSpinBox->setValue(
+      this->conversionSettings.mathParameters[Component::Luma].offset);
+  this->ui->lumaInvertCheckBox->setChecked(
       this->conversionSettings.mathParameters[Component::Luma].invert);
-  ui.chromaScaleSpinBox->setValue(this->conversionSettings.mathParameters[Component::Chroma].scale);
-  ui.chromaOffsetSpinBox->setMaximum(1000);
-  ui.chromaOffsetSpinBox->setValue(
+  this->ui->chromaScaleSpinBox->setValue(
+      this->conversionSettings.mathParameters[Component::Chroma].scale);
+  this->ui->chromaOffsetSpinBox->setMaximum(1000);
+  this->ui->chromaOffsetSpinBox->setValue(
       this->conversionSettings.mathParameters[Component::Chroma].offset);
-  ui.chromaInvertCheckBox->setChecked(
+  this->ui->chromaInvertCheckBox->setChecked(
       this->conversionSettings.mathParameters[Component::Chroma].invert);
 
   // Connect all the change signals from the controls to "connectWidgetSignals()"
-  connect(ui.yuvFormatComboBox,
+  connect(this->ui->yuvFormatComboBox,
           QOverload<int>::of(&QComboBox::currentIndexChanged),
           this,
           &videoHandlerYUV::slotYUVFormatControlChanged);
-  connect(ui.colorComponentsComboBox,
+  connect(this->ui->colorComponentsComboBox,
           QOverload<int>::of(&QComboBox::currentIndexChanged),
           this,
           &videoHandlerYUV::slotYUVControlChanged);
-  connect(ui.chromaInterpolationComboBox,
+  connect(this->ui->chromaInterpolationComboBox,
           QOverload<int>::of(&QComboBox::currentIndexChanged),
           this,
           &videoHandlerYUV::slotYUVControlChanged);
-  connect(ui.colorConversionComboBox,
+  connect(this->ui->colorConversionComboBox,
           QOverload<int>::of(&QComboBox::currentIndexChanged),
           this,
           &videoHandlerYUV::slotYUVControlChanged);
-  connect(ui.lumaScaleSpinBox,
+  connect(this->ui->lumaScaleSpinBox,
           QOverload<int>::of(&QSpinBox::valueChanged),
           this,
           &videoHandlerYUV::slotYUVControlChanged);
-  connect(ui.lumaOffsetSpinBox,
+  connect(this->ui->lumaOffsetSpinBox,
           QOverload<int>::of(&QSpinBox::valueChanged),
           this,
           &videoHandlerYUV::slotYUVControlChanged);
-  connect(ui.lumaInvertCheckBox,
+  connect(this->ui->lumaInvertCheckBox,
           &QCheckBox::stateChanged,
           this,
           &videoHandlerYUV::slotYUVControlChanged);
-  connect(ui.chromaScaleSpinBox,
+  connect(this->ui->chromaScaleSpinBox,
           QOverload<int>::of(&QSpinBox::valueChanged),
           this,
           &videoHandlerYUV::slotYUVControlChanged);
-  connect(ui.chromaOffsetSpinBox,
+  connect(this->ui->chromaOffsetSpinBox,
           QOverload<int>::of(&QSpinBox::valueChanged),
           this,
           &videoHandlerYUV::slotYUVControlChanged);
-  connect(ui.chromaInvertCheckBox,
+  connect(this->ui->chromaInvertCheckBox,
           &QCheckBox::stateChanged,
           this,
           &videoHandlerYUV::slotYUVControlChanged);
 
   if (!isSizeFixed && newVBoxLayout)
-    newVBoxLayout->addLayout(ui.topVBoxLayout);
+    newVBoxLayout->addLayout(this->ui->topVBoxLayout);
 
-  return (isSizeFixed) ? ui.topVBoxLayout : newVBoxLayout;
+  return (isSizeFixed) ? this->ui->topVBoxLayout : newVBoxLayout;
 }
 
 void videoHandlerYUV::slotYUVFormatControlChanged(int idx)
@@ -2816,18 +2824,19 @@ void videoHandlerYUV::slotYUVFormatControlChanged(int idx)
       {
         // Valid pixel format with is not in the list. Add it...
         presetList.append(newFormat);
-        int                  nrItems = ui.yuvFormatComboBox->count();
-        const QSignalBlocker blocker(ui.yuvFormatComboBox);
-        ui.yuvFormatComboBox->insertItem(nrItems - 1, QString::fromStdString(newFormat.getName()));
+        int                  nrItems = this->ui->yuvFormatComboBox->count();
+        const QSignalBlocker blocker(this->ui->yuvFormatComboBox);
+        this->ui->yuvFormatComboBox->insertItem(nrItems - 1,
+                                                QString::fromStdString(newFormat.getName()));
         // Select the added format
         idx = presetList.indexOf(newFormat);
-        ui.yuvFormatComboBox->setCurrentIndex(idx);
+        this->ui->yuvFormatComboBox->setCurrentIndex(idx);
       }
       else
       {
         // The format is already in the list. Select it without invoking another signal.
-        const QSignalBlocker blocker(ui.yuvFormatComboBox);
-        ui.yuvFormatComboBox->setCurrentIndex(idx);
+        const QSignalBlocker blocker(this->ui->yuvFormatComboBox);
+        this->ui->yuvFormatComboBox->setCurrentIndex(idx);
       }
     }
     else
@@ -2835,8 +2844,8 @@ void videoHandlerYUV::slotYUVFormatControlChanged(int idx)
       // The user pressed cancel. Go back to the old format
       int idx = presetList.indexOf(srcPixelFormat);
       Q_ASSERT(idx != -1); // The previously selected format should always be in the list
-      const QSignalBlocker blocker(ui.yuvFormatComboBox);
-      ui.yuvFormatComboBox->setCurrentIndex(idx);
+      const QSignalBlocker blocker(this->ui->yuvFormatComboBox);
+      this->ui->yuvFormatComboBox->setCurrentIndex(idx);
     }
   }
   else
@@ -2864,15 +2873,16 @@ void videoHandlerYUV::setSrcPixelFormat(PixelFormatYUV format, bool emitSignal)
                                                                     << shift;
   this->conversionSettings.mathParameters[Component::Chroma].offset = 128 << shift;
 
-  if (ui.created())
+  if (this->ui->created())
   {
     // Every time the pixel format changed, see if the interpolation combo box is enabled/disabled
-    QSignalBlocker blocker1(ui.chromaInterpolationComboBox);
-    QSignalBlocker blocker2(ui.lumaOffsetSpinBox);
-    QSignalBlocker blocker3(ui.chromaOffsetSpinBox);
-    ui.chromaInterpolationComboBox->setEnabled(format.isChromaSubsampled());
-    ui.lumaOffsetSpinBox->setValue(this->conversionSettings.mathParameters[Component::Luma].offset);
-    ui.chromaOffsetSpinBox->setValue(
+    QSignalBlocker blocker1(this->ui->chromaInterpolationComboBox);
+    QSignalBlocker blocker2(this->ui->lumaOffsetSpinBox);
+    QSignalBlocker blocker3(this->ui->chromaOffsetSpinBox);
+    this->ui->chromaInterpolationComboBox->setEnabled(format.isChromaSubsampled());
+    this->ui->lumaOffsetSpinBox->setValue(
+        this->conversionSettings.mathParameters[Component::Luma].offset);
+    this->ui->chromaOffsetSpinBox->setValue(
         this->conversionSettings.mathParameters[Component::Chroma].offset);
   }
 
@@ -2898,29 +2908,32 @@ void videoHandlerYUV::slotYUVControlChanged()
   // The control that caused the slot to be called
   auto sender = QObject::sender();
 
-  if (sender == ui.colorComponentsComboBox || sender == ui.chromaInterpolationComboBox ||
-      sender == ui.colorConversionComboBox || sender == ui.lumaScaleSpinBox ||
-      sender == ui.lumaOffsetSpinBox || sender == ui.lumaInvertCheckBox ||
-      sender == ui.chromaScaleSpinBox || sender == ui.chromaOffsetSpinBox ||
-      sender == ui.chromaInvertCheckBox)
+  if (sender == this->ui->colorComponentsComboBox ||
+      sender == this->ui->chromaInterpolationComboBox ||
+      sender == this->ui->colorConversionComboBox || sender == this->ui->lumaScaleSpinBox ||
+      sender == this->ui->lumaOffsetSpinBox || sender == this->ui->lumaInvertCheckBox ||
+      sender == this->ui->chromaScaleSpinBox || sender == this->ui->chromaOffsetSpinBox ||
+      sender == this->ui->chromaInvertCheckBox)
   {
     this->conversionSettings.chromaInterpolation =
-        *ChromaInterpolationMapper.at(ui.chromaInterpolationComboBox->currentIndex());
+        *ChromaInterpolationMapper.at(this->ui->chromaInterpolationComboBox->currentIndex());
     this->conversionSettings.componentDisplayMode =
-        *ComponentDisplayModeMapper.at(ui.colorComponentsComboBox->currentIndex());
+        *ComponentDisplayModeMapper.at(this->ui->colorComponentsComboBox->currentIndex());
     this->conversionSettings.colorConversion =
-        *ColorConversionMapper.at(ui.colorConversionComboBox->currentIndex());
+        *ColorConversionMapper.at(this->ui->colorConversionComboBox->currentIndex());
 
-    this->conversionSettings.mathParameters[Component::Luma].scale  = ui.lumaScaleSpinBox->value();
-    this->conversionSettings.mathParameters[Component::Luma].offset = ui.lumaOffsetSpinBox->value();
+    this->conversionSettings.mathParameters[Component::Luma].scale =
+        this->ui->lumaScaleSpinBox->value();
+    this->conversionSettings.mathParameters[Component::Luma].offset =
+        this->ui->lumaOffsetSpinBox->value();
     this->conversionSettings.mathParameters[Component::Luma].invert =
-        ui.lumaInvertCheckBox->isChecked();
+        this->ui->lumaInvertCheckBox->isChecked();
     this->conversionSettings.mathParameters[Component::Chroma].scale =
-        ui.chromaScaleSpinBox->value();
+        this->ui->chromaScaleSpinBox->value();
     this->conversionSettings.mathParameters[Component::Chroma].offset =
-        ui.chromaOffsetSpinBox->value();
+        this->ui->chromaOffsetSpinBox->value();
     this->conversionSettings.mathParameters[Component::Chroma].invert =
-        ui.chromaInvertCheckBox->isChecked();
+        this->ui->chromaInvertCheckBox->isChecked();
 
     // Set the current frame in the buffer to be invalid and clear the cache.
     // Emit that this item needs redraw and the cache needs updating.
@@ -2929,12 +2942,12 @@ void videoHandlerYUV::slotYUVControlChanged()
     this->setCacheInvalid();
     emit signalHandlerChanged(true, RECACHE_CLEAR);
   }
-  else if (sender == ui.yuvFormatComboBox)
+  else if (sender == this->ui->yuvFormatComboBox)
   {
     auto oldFormatBytesPerFrame = this->srcPixelFormat.bytesPerFrame(frameSize);
 
     // Set the new YUV format
-    // setSrcPixelFormat(yuvFormatList.getFromName(ui.yuvFormatComboBox->currentText()));
+    // setSrcPixelFormat(yuvFormatList.getFromName(this->ui->yuvFormatComboBox->currentText()));
 
     // Set the current frame in the buffer to be invalid and clear the cache.
     // Emit that this item needs redraw and the cache needs updating.
@@ -3439,12 +3452,12 @@ void videoHandlerYUV::loadFrame(int frameIndex, bool loadToDoubleBuffer)
 {
   DEBUG_YUV("videoHandlerYUV::loadFrame " << frameIndex);
 
-  if (!isFormatValid())
+  if (!this->isFormatValid())
     // We cannot load a frame if the format is not known
     return;
 
   // Does the data in currentFrameRawData need to be updated?
-  if (!loadRawYUVData(frameIndex))
+  if (!this->loadRawYUVData(frameIndex))
     // Loading failed or it is still being performed in the background
     return;
 
@@ -3458,8 +3471,8 @@ void videoHandlerYUV::loadFrame(int frameIndex, bool loadToDoubleBuffer)
                       this->srcPixelFormat,
                       this->frameSize,
                       this->conversionSettings);
-    doubleBufferImage           = newImage;
-    doubleBufferImageFrameIndex = frameIndex;
+    this->doubleBufferImage           = newImage;
+    this->doubleBufferImageFrameIndex = frameIndex;
   }
   else if (currentImageIndex != frameIndex)
   {
@@ -3470,8 +3483,8 @@ void videoHandlerYUV::loadFrame(int frameIndex, bool loadToDoubleBuffer)
                       this->frameSize,
                       this->conversionSettings);
     QMutexLocker setLock(&currentImageSetMutex);
-    currentImage      = newImage;
-    currentImageIndex = frameIndex;
+    this->currentImage      = newImage;
+    this->currentImageIndex = frameIndex;
   }
 }
 
@@ -3505,7 +3518,7 @@ void videoHandlerYUV::loadFrameForCaching(int frameIndex, QImage &frameToCache)
 // Load the raw YUV data for the given frame index into currentFrameRawData.
 bool videoHandlerYUV::loadRawYUVData(int frameIndex)
 {
-  if (currentFrameRawData_frameIndex == frameIndex && cacheValid)
+  if (this->currentFrameRawData_frameIndex == frameIndex && this->cacheValid)
     // Buffer already up to date
     return true;
 
@@ -3513,20 +3526,18 @@ bool videoHandlerYUV::loadRawYUVData(int frameIndex)
 
   // The function loadFrameForCaching also uses the signalRequesRawYUVData to request raw data.
   // However, only one thread can use this at a time.
-  requestDataMutex.lock();
-  emit signalRequestRawData(frameIndex, false);
+  QMutexLocker lock(&this->requestDataMutex);
+  emit         signalRequestRawData(frameIndex, false);
 
   if (frameIndex != rawData_frameIndex || rawData.isEmpty())
   {
     // Loading failed
     DEBUG_YUV("videoHandlerYUV::loadRawYUVData Loading failed");
-    requestDataMutex.unlock();
     return false;
   }
 
-  currentFrameRawData            = rawData;
-  currentFrameRawData_frameIndex = frameIndex;
-  requestDataMutex.unlock();
+  this->currentFrameRawData            = rawData;
+  this->currentFrameRawData_frameIndex = frameIndex;
 
   DEBUG_YUV("videoHandlerYUV::loadRawYUVData " << frameIndex << " Done");
   return true;
@@ -4109,7 +4120,7 @@ void videoHandlerYUV::setPixelFormatYUV(const PixelFormatYUV &newFormat, bool em
 
   if (newFormat != srcPixelFormat)
   {
-    if (ui.created())
+    if (this->ui->created())
     {
       // Check if the custom format is in the presets list. If not, add it.
       int idx = presetList.indexOf(newFormat);
@@ -4117,18 +4128,19 @@ void videoHandlerYUV::setPixelFormatYUV(const PixelFormatYUV &newFormat, bool em
       {
         // Valid pixel format with is not in the list. Add it...
         presetList.append(newFormat);
-        int                  nrItems = ui.yuvFormatComboBox->count();
-        const QSignalBlocker blocker(ui.yuvFormatComboBox);
-        ui.yuvFormatComboBox->insertItem(nrItems - 1, QString::fromStdString(newFormat.getName()));
+        int                  nrItems = this->ui->yuvFormatComboBox->count();
+        const QSignalBlocker blocker(this->ui->yuvFormatComboBox);
+        this->ui->yuvFormatComboBox->insertItem(nrItems - 1,
+                                                QString::fromStdString(newFormat.getName()));
         // Select the added format
         idx = presetList.indexOf(newFormat);
-        ui.yuvFormatComboBox->setCurrentIndex(idx);
+        this->ui->yuvFormatComboBox->setCurrentIndex(idx);
       }
       else
       {
         // Just select the format in the combo box
-        const QSignalBlocker blocker(ui.yuvFormatComboBox);
-        ui.yuvFormatComboBox->setCurrentIndex(idx);
+        const QSignalBlocker blocker(this->ui->yuvFormatComboBox);
+        this->ui->yuvFormatComboBox->setCurrentIndex(idx);
       }
     }
 
@@ -4142,8 +4154,8 @@ void videoHandlerYUV::setYUVColorConversion(ColorConversion conversion)
   {
     this->conversionSettings.colorConversion = conversion;
 
-    if (ui.created())
-      ui.colorConversionComboBox->setCurrentIndex(
+    if (this->ui->created())
+      this->ui->colorConversionComboBox->setCurrentIndex(
           int(ColorConversionMapper.indexOf(this->conversionSettings.colorConversion)));
   }
 }

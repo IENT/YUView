@@ -41,7 +41,10 @@
 #include <QObject>
 #include <QSettings>
 
-#include "ui_FrameHandler.h"
+namespace Ui
+{
+class FrameHandler;
+}
 
 namespace video
 {
@@ -156,7 +159,7 @@ private:
   // The (static) list of frame size presets (like CIF, QCIF, 4k ...)
   static frameSizePresetList presetFrameSizes;
 
-  SafeUi<Ui::FrameHandler> ui;
+  std::unique_ptr<SafeUi<Ui::FrameHandler>> ui;
 
 protected slots:
 

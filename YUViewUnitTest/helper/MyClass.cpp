@@ -30,16 +30,9 @@
  *   along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#pragma once
+#include "SomeHelper.h"
 
-#include <common/Typedef.h>
-#include <video/PixelFormatYUV.h>
-
-#include <QByteArray>
-
-namespace helper
+SomeHelper::SomeHelper()
 {
-
-QByteArray generateYUVVideo(Size frameSize, int nrFrames, video::yuv::PixelFormatYUV pixelFormat);
-
+  this->testVal = 2344;
 }

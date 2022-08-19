@@ -38,6 +38,9 @@
 #include <common/Functions.h>
 #include <video/videoHandlerYUV.h>
 
+#include "ui_FrameHandler.h"
+#include "ui_videoHandlerDifference.h"
+
 namespace video
 {
 
@@ -243,6 +246,7 @@ findFirstDifferenceInHEVCBlockYUV(Position                   pos,
 
 videoHandlerDifference::videoHandlerDifference() : videoHandler()
 {
+  this->ui = std::make_unique<SafeUi<Ui::videoHandlerDifference>>();
 }
 
 void videoHandlerDifference::drawDifferenceFrame(QPainter *painter,
@@ -383,31 +387,32 @@ void videoHandlerDifference::setFormatFromSizeAndName(
 
 QLayout *videoHandlerDifference::createDifferenceHandlerControls()
 {
-  Q_ASSERT_X(!ui.created(), "createResampleHandlerControls", "Controls must only be created once");
+  Q_ASSERT_X(
+      !this->ui->created(), "createResampleHandlerControls", "Controls must only be created once");
 
-  ui.setupUi();
+  this->ui->setupUi();
 
   // Set all the values of the properties widget to the values of this class
-  ui.markDifferenceCheckBox->setChecked(markDifference);
-  ui.amplificationFactorSpinBox->setValue(amplificationFactor);
-  ui.codingOrderComboBox->addItems(QStringList() << "HEVC");
-  ui.codingOrderComboBox->setCurrentIndex((int)codingOrder);
+  this->ui->markDifferenceCheckBox->setChecked(markDifference);
+  this->ui->amplificationFactorSpinBox->setValue(amplificationFactor);
+  this->ui->codingOrderComboBox->addItems(QStringList() << "HEVC");
+  this->ui->codingOrderComboBox->setCurrentIndex((int)codingOrder);
 
   // Connect all the change signals from the controls to "connectWidgetSignals()"
-  connect(ui.markDifferenceCheckBox,
+  connect(this->ui->markDifferenceCheckBox,
           &QCheckBox::stateChanged,
           this,
           &videoHandlerDifference::slotDifferenceControlChanged);
-  connect(ui.codingOrderComboBox,
+  connect(this->ui->codingOrderComboBox,
           QOverload<int>::of(&QComboBox::currentIndexChanged),
           this,
           &videoHandlerDifference::slotDifferenceControlChanged);
-  connect(ui.amplificationFactorSpinBox,
+  connect(this->ui->amplificationFactorSpinBox,
           QOverload<int>::of(&QSpinBox::valueChanged),
           this,
           &videoHandlerDifference::slotDifferenceControlChanged);
 
-  return ui.topVBoxLayout;
+  return this->ui->topVBoxLayout;
 }
 
 void videoHandlerDifference::slotDifferenceControlChanged()
@@ -415,25 +420,25 @@ void videoHandlerDifference::slotDifferenceControlChanged()
   // The control that caused the slot to be called
   auto sender = QObject::sender();
 
-  if (sender == ui.markDifferenceCheckBox)
+  if (sender == this->ui->markDifferenceCheckBox)
   {
-    this->markDifference = ui.markDifferenceCheckBox->isChecked();
+    this->markDifference = this->ui->markDifferenceCheckBox->isChecked();
 
     // Set the current frame in the buffer to be invalid and emit the signal that something has
     // changed
     this->currentImageIndex = -1;
     emit signalHandlerChanged(true, RECACHE_NONE);
   }
-  else if (sender == ui.codingOrderComboBox)
+  else if (sender == this->ui->codingOrderComboBox)
   {
-    this->codingOrder = (CodingOrder)ui.codingOrderComboBox->currentIndex();
+    this->codingOrder = (CodingOrder)this->ui->codingOrderComboBox->currentIndex();
 
     // The calculation of the first difference in coding order changed but no redraw is necessary
     emit signalHandlerChanged(false, RECACHE_NONE);
   }
-  else if (sender == ui.amplificationFactorSpinBox)
+  else if (sender == this->ui->amplificationFactorSpinBox)
   {
-    this->amplificationFactor = ui.amplificationFactorSpinBox->value();
+    this->amplificationFactor = this->ui->amplificationFactorSpinBox->value();
 
     // Set the current frame in the buffer to be invalid and emit the signal that something has
     // changed

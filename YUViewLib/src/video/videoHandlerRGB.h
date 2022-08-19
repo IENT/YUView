@@ -32,9 +32,13 @@
 
 #pragma once
 
-#include "PixelFormatRGB.h"
-#include "ui_videoHandlerRGB.h"
-#include "videoHandler.h"
+#include <video/PixelFormatRGB.h>
+#include <video/videoHandler.h>
+
+namespace Ui
+{
+class videoHandlerRGB;
+}
 
 namespace video::rgb
 {
@@ -210,7 +214,7 @@ private:
   // the main thread does not change the RGB format while this is happening.
   QMutex rgbFormatMutex;
 
-  SafeUi<Ui::videoHandlerRGB> ui;
+  std::unique_ptr<SafeUi<Ui::videoHandlerRGB>> ui;
 
 private slots:
 
@@ -220,4 +224,4 @@ private slots:
   void slotDisplayOptionsChanged();
 };
 
-} // namespace video
+} // namespace video::rgb

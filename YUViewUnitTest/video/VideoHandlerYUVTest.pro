@@ -5,13 +5,13 @@ CONFIG += c++1z
 CONFIG -= debug_and_release
 CONFIG -= app_bundled
 
-TARGET = VideoHandlerDifferenceTest
+TARGET = VideoHandlerYUVTest
 
 QT += testlib
-QT += gui widgets xml
+QT += gui widgets
 
 INCLUDEPATH += $$top_srcdir/YUViewLib/src \
                $$top_srcdir/YUViewUnitTest
 LIBS += -L$$top_builddir/YUViewLib -lYUViewLib -L$$top_builddir/YUViewUnitTest/helper -lYUViewUnitTestHelperLib
 
-SOURCES += VideoHandlerDifferenceTest.cpp
+SOURCES += VideoHandlerYUVTest.cpp

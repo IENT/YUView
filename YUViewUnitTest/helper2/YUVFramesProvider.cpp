@@ -30,7 +30,7 @@
  *   along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "YUVGenerator.h"
+#include "YUVFramesProvider.h"
 
 #include <common/Error.h>
 
@@ -86,7 +86,45 @@ QByteArray generatePlane(Size planeSize, int bitDepth)
 
 } // namespace
 
-QByteArray generateYUVVideo(Size frameSize, int nrFrames, video::yuv::PixelFormatYUV pixelFormat)
+YUVFramesProvider::YUVFramesProvider(video::videoHandler *videoHandler)
+{
+  this->videoHandler = videoHandler;
+  connect(videoHandler,
+          &video::videoHandler::signalRequestFrame,
+          this,
+          &YUVFramesProvider::onSignalRequestFrame);
+  connect(videoHandler,
+          &video::videoHandler::signalRequestRawData,
+          this,
+          &YUVFramesProvider::onSignalRequestRawData);
+}
+
+void YUVFramesProvider::onSignalRequestFrame(int frameIndex, bool caching)
+{
+  // Provide a frame ...
+  int debugStop = 234;
+}
+
+void YUVFramesProvider::onSignalRequestRawData(int frameIndex, bool caching)
+{
+  // Provide raw data ...
+  int debugStop = 234;
+}
+
+QByteArray generateYUVPlane(const Size &planeSize, const video::yuv::PixelFormatYUV &pixelFormat)
+{
+  QByteArray data;
+  data += generatePlane(planeSize, pixelFormat.getBitsPerSample());
+
+  auto chromaSize = Size(planeSize.width / pixelFormat.getSubsamplingHor(),
+                         planeSize.height / pixelFormat.getSubsamplingVer());
+  for (unsigned planeIdx = 1; planeIdx < pixelFormat.getNrPlanes(); planeIdx++)
+    data += generatePlane(chromaSize, pixelFormat.getBitsPerSample());
+  return data;
+}
+
+QByteArray
+generateYUVVideo(const Size &frameSize, const video::yuv::PixelFormatYUV &pixelFormat, int nrFrames)
 {
   if (pixelFormat.isValid())
     return {};
@@ -95,14 +133,7 @@ QByteArray generateYUVVideo(Size frameSize, int nrFrames, video::yuv::PixelForma
 
   QByteArray data;
   for (int frameNr = 0; frameNr < nrFrames; frameNr++)
-  {
-    data += generatePlane(frameSize, pixelFormat.getBitsPerSample());
-
-    auto chromaSize = Size(frameSize.width / pixelFormat.getSubsamplingHor(),
-                           frameSize.height / pixelFormat.getSubsamplingVer());
-    for (unsigned planeIdx = 1; planeIdx < pixelFormat.getNrPlanes(); planeIdx++)
-      data += generatePlane(chromaSize, pixelFormat.getBitsPerSample());
-  }
+    data += generateYUVPlane(frameSize, pixelFormat);
   return data;
 }
 
