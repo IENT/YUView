@@ -35,7 +35,7 @@
 #define ANNEXBFILE_DEBUG_OUTPUT 0
 #if ANNEXBFILE_DEBUG_OUTPUT && !NDEBUG
 #include <QDebug>
-#define DEBUG_ANNEXBFILEFILE(f) qDebug() << f
+#define DEBUG_ANNEXBFILE(f) qDebug() << f
 #else
 #define DEBUG_ANNEXBFILE(f) ((void)0)
 #endif
