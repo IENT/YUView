@@ -303,6 +303,14 @@ AVPixelFormat AVStreamWrapper::getPixelFormat()
   return this->codecpar.getPixelFormat();
 }
 
+QByteArray AVStreamWrapper::getExtradata()
+{
+  this->update();
+  if (this->libVer.avformat.major <= 56 || !this->codecpar)
+    return this->codec.getExtradata();
+  return this->codecpar.getExtradata();
+}
+
 int AVStreamWrapper::getIndex()
 {
   this->update();
