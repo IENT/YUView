@@ -2,7 +2,7 @@ TEMPLATE = subdirs
 
 requires(qtHaveModule(testlib))
 
-SUBDIRS = PixelFormatYUVTest.pro \
-          PixelFormatRGBTest.pro \
-          PixelFormatYUVGuessTest.pro \
-          PixelFormatRGBGuessTest.pro
+SUBDIRS = pixelFormatYUV/PixelFormatYUVTest.pro \
+          pixelFormatRGBTest/PixelFormatRGBTest.pro \
+          pixelFormatYUVGuessTest/PixelFormatYUVGuessTest.pro \
+          pixelFormatRGBGuessTest/PixelFormatRGBGuessTest.pro
