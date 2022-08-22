@@ -57,9 +57,9 @@ class seq_parameter_set_rbsp;
 
 struct FrameParsingData
 {
-  // For every frame, we save the file position where the NAL unit of the first slice starts and
-  // where the NAL of the last slice ends (if known). This is used by getNextFrameNALUnits to
-  // return all information (NAL units) for a specific frame. This includes SPS/PPS.
+  // For every frame (AU), we save the file position where the NAL unit of the first slice starts
+  // and where the NAL of the last slice ends (if known). This is used by getNextFrameNALUnits to
+  // return all information (NAL units) for a specific frame (AU). This includes SPS/PPS.
   std::optional<pairUint64> fileStartEndPos{};
   int                       poc{-1};
   bool                      isRandomAccess{};

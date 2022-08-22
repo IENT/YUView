@@ -64,8 +64,8 @@ namespace
 {
 
 std::optional<FrameParsingData>
-updateOrCreateFrameDataWithPos(std::optional<FrameParsingData> data,
-                               std::optional<pairUint64>       nalStartEndPosFile)
+getFrameDataWithUpdatedPosition(std::optional<FrameParsingData> data,
+                                std::optional<pairUint64>       nalStartEndPosFile)
 {
   auto newData = data.value_or(FrameParsingData());
   if (nalStartEndPosFile)
@@ -249,7 +249,7 @@ AnnexBAVC::parseAndAddNALUnit(int                                           nalI
             newSPS->seqParameterSetData.vuiParameters.nalHrdParameters.CpbSize[0]);
       }
 
-      this->curFrameData = updateOrCreateFrameDataWithPos(this->curFrameData, nalStartEndPosFile);
+      this->curFrameData = getFrameDataWithUpdatedPosition(this->curFrameData, nalStartEndPosFile);
 
       DEBUG_AVC("AnnexBAVC::parseAndAddNALUnit Parse SPS ID "
                 << newSPS->seqParameterSetData.seq_parameter_set_id);
@@ -270,7 +270,7 @@ AnnexBAVC::parseAndAddNALUnit(int                                           nalI
 
       specificDescription += " ID " + std::to_string(newPPS->pic_parameter_set_id);
 
-      this->curFrameData = updateOrCreateFrameDataWithPos(this->curFrameData, nalStartEndPosFile);
+      this->curFrameData = getFrameDataWithUpdatedPosition(this->curFrameData, nalStartEndPosFile);
 
       DEBUG_AVC("AnnexBAVC::parseAndAddNALUnit Parse PPS ID " << newPPS->pic_parameter_set_id);
 
@@ -329,33 +329,30 @@ AnnexBAVC::parseAndAddNALUnit(int                                           nalI
       else if (newSliceHeader->slice_type == SliceType::SLICE_I)
         specificDescription += " I-Slice";
 
-      auto isRandomAccess = (nalAVC->header.nal_unit_type == NalType::CODED_SLICE_IDR ||
-                             newSliceHeader->slice_type == SliceType::SLICE_I);
+      const auto isRandomAccess = (nalAVC->header.nal_unit_type == NalType::CODED_SLICE_IDR ||
+                                   newSliceHeader->slice_type == SliceType::SLICE_I);
+      const auto isFirstSlice   = (newSliceHeader->first_mb_in_slice == 0);
       if (!newSliceHeader->bottom_field_flag &&
           (!this->last_picture_first_slice ||
            newSliceHeader->TopFieldOrderCnt != this->last_picture_first_slice->TopFieldOrderCnt ||
            isRandomAccess) &&
-          newSliceHeader->first_mb_in_slice == 0)
+          isFirstSlice)
         this->last_picture_first_slice = newSliceHeader;
 
       specificDescription += " POC " + std::to_string(newSliceHeader->globalPOC);
 
-      this->curFrameData = updateOrCreateFrameDataWithPos(this->curFrameData, nalStartEndPosFile);
+      this->curFrameData = getFrameDataWithUpdatedPosition(this->curFrameData, nalStartEndPosFile);
 
-      if (newSliceHeader->first_mb_in_slice == 0)
+      if (isFirstSlice)
       {
-        // This slice NAL is the start of a new frame
         this->curFrameData->poc            = newSliceHeader->globalPOC;
         this->curFrameData->isRandomAccess = isRandomAccess;
 
         this->currentAUAssociatedSPS = refSPS;
       }
 
-      if (isRandomAccess && newSliceHeader->first_mb_in_slice == 0)
-      {
-        // This is the first slice of a random access point. Add it to the list.
+      if (isRandomAccess && isFirstSlice)
         this->nalUnitsForSeeking.push_back(nalAVC);
-      }
 
       currentSliceIntra = isRandomAccess;
       currentSliceType  = to_string(newSliceHeader->slice_type);
