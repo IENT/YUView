@@ -225,7 +225,10 @@ QList<QByteArray> FileSourceFFmpegFile::getParameterSets()
    * To access them from libav* APIs you need to look for extradata field in AVCodecContext of
    * AVStream which relate to needed video stream. Also extradata can have different format from
    * standard H.264 NALs so look in MP4-container specs for format description. */
-  const auto        extradata = this->getExtradata();
+  const auto extradata = this->getExtradata();
+  if (extradata.length() == 0)
+    return {};
+
   QList<QByteArray> retArray;
 
   // Since the FFmpeg developers don't want to make it too easy, the extradata is organized
