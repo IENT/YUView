@@ -60,6 +60,7 @@ public:
   int                      getFrameHeight();
   AVColorSpace             getColorspace();
   AVPixelFormat            getPixelFormat();
+  QByteArray               getExtradata();
   int                      getIndex();
   AVCodecParametersWrapper getCodecpar();
 
