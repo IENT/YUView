@@ -37,6 +37,7 @@
 #include <QSettings>
 #include <cassert>
 #include <cstring>
+#include <memory>
 
 #include <common/Functions.h>
 #include <common/Typedef.h>
