@@ -177,7 +177,7 @@ playlistItemCompressedVideo::playlistItemCompressedVideo(const QString &compress
                      << frameSize.width << "x" << frameSize.height);
     formatYuv = this->inputFileAnnexBParser->getPixelFormat();
     DEBUG_COMPRESSED("playlistItemCompressedVideo::playlistItemCompressedVideo YUV format "
-                     << this->formatYuv.getName().c_str());
+                     << formatYuv.getName().c_str());
     this->rawFormat      = video::RawFormat::YUV;
     this->prop.frameRate = this->inputFileAnnexBParser->getFramerate();
     DEBUG_COMPRESSED("playlistItemCompressedVideo::playlistItemCompressedVideo framerate "
@@ -204,7 +204,7 @@ playlistItemCompressedVideo::playlistItemCompressedVideo(const QString &compress
     // Is this file RGB or YUV?
     this->rawFormat = this->inputFileFFmpegLoading->getRawFormat();
     DEBUG_COMPRESSED("playlistItemCompressedVideo::playlistItemCompressedVideo Raw format "
-                     << (this->rawFormat == raw_YUV                 ? "YUV"
+                     << (this->rawFormat == video::RawFormat::YUV   ? "YUV"
                          : this->rawFormat == video::RawFormat::RGB ? "RGB"
                                                                     : "Unknown"));
     if (this->rawFormat == video::RawFormat::YUV)
