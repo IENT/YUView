@@ -31,6 +31,7 @@
  */
 
 #include "AVPacketWrapper.h"
+#include <parser/AV1/obu_header.h>
 #include <parser/common/SubByteReaderLogging.h>
 #include <stdexcept>
 
@@ -89,33 +90,13 @@ bool checkForObuFormat(QByteArray &data)
       parser::reader::SubByteReaderLogging reader(
           parser::reader::SubByteReaderLogging::convertToByteVector(data), nullptr, "", posInData);
 
-      QString bitsRead;
-      auto    forbiddenBit = reader.readFlag("obu_forbidden_bit");
-      if (forbiddenBit)
-        return false;
-      auto obu_type = reader.readBits("obu_type", 4);
-      if (obu_type == 0 || (obu_type >= 9 && obu_type <= 14))
-        // RESERVED obu types should not occur (highly unlikely)
-        return false;
-      auto obu_extension_flag = reader.readFlag("obu_extension_flag");
-      auto obu_has_size_field = reader.readFlag("obu_has_size_field");
-      reader.readFlag("obu_reserved_1bit", parser::reader::Options().withCheckEqualTo(1));
+      parser::av1::obu_header header;
+      header.parse(reader);
 
-      if (obu_extension_flag)
+      auto obu_size = header.obu_size;
+      if (!header.obu_has_size_field)
       {
-        reader.readBits("temporal_id", 3);
-        reader.readBits("spatial_id", 2);
-        reader.readBits(
-            "extension_header_reserved_3bits", 3, parser::reader::Options().withCheckEqualTo(0));
-      }
-      size_t obu_size;
-      if (obu_has_size_field)
-      {
-        obu_size = reader.readLEB128("obu_size");
-      }
-      else
-      {
-        obu_size = (size_t(data.size()) - posInData) - 1 - (obu_extension_flag ? 1 : 0);
+        obu_size = (uint64_t(data.size()) - posInData) - 1 - (header.obu_extension_flag ? 1 : 0);
       }
       posInData += obu_size + reader.nrBytesRead();
     }
