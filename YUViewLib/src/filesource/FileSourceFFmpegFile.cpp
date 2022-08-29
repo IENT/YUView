@@ -127,7 +127,7 @@ QByteArray FileSourceFFmpegFile::getNextUnit(bool getLastDataAgain)
     {
       // Return the remainder of the buffer and clear it so that the next packet is loaded on the
       // next call
-      this->lastReturnArray = currentPacketData.mid(this->posInData + offset);
+      this->lastReturnArray = this->currentPacketData.mid(this->posInData + offset);
       this->currentPacketData.clear();
     }
     else
@@ -167,7 +167,7 @@ QByteArray FileSourceFFmpegFile::getNextUnit(bool getLastDataAgain)
   else if (this->packetDataFormat == PacketDataFormat::OBU)
   {
     SubByteReaderLogging reader(
-        SubByteReaderLogging::convertToByteVector(currentPacketData), nullptr, "", posInData);
+        SubByteReaderLogging::convertToByteVector(this->currentPacketData), nullptr, "", posInData);
 
     try
     {
@@ -177,16 +177,16 @@ QByteArray FileSourceFFmpegFile::getNextUnit(bool getLastDataAgain)
       if (header.obu_has_size_field)
       {
         auto completeSize     = header.obu_size + reader.nrBytesRead();
-        this->lastReturnArray = currentPacketData.mid(posInData, completeSize);
+        this->lastReturnArray = this->currentPacketData.mid(posInData, completeSize);
         this->posInData += completeSize;
-        if (this->posInData >= currentPacketData.size())
+        if (this->posInData >= this->currentPacketData.size())
           this->currentPacketData.clear();
       }
       else
       {
         // The OBU is the remainder of the input
-        this->lastReturnArray = currentPacketData.mid(posInData);
-        this->posInData       = currentPacketData.size();
+        this->lastReturnArray = this->currentPacketData.mid(posInData);
+        this->posInData       = this->currentPacketData.size();
         this->currentPacketData.clear();
       }
     }
@@ -231,88 +231,96 @@ QList<QByteArray> FileSourceFFmpegFile::getParameterSets()
 
   QList<QByteArray> retArray;
 
-  // Since the FFmpeg developers don't want to make it too easy, the extradata is organized
-  // differently depending on the codec.
-  auto codecID = this->ff.getCodecIDWrapper(video_stream.getCodecID());
-  if (codecID.isHEVC())
+  try
   {
-    if (extradata.at(0) == 1)
+    // Since the FFmpeg developers don't want to make it too easy, the extradata is organized
+    // differently depending on the codec.
+    auto codecID = this->ff.getCodecIDWrapper(video_stream.getCodecID());
+    if (codecID.isHEVC())
     {
-      // Internally, ffmpeg uses a custom format for the parameter sets (hvcC).
-      // The hvcC parameters come first, and afterwards, the "normal" parameter sets are sent.
-
-      // The first 22 bytes are fixed hvcC parameter set (see hvcc_write in libavformat hevc.c)
-      auto numOfArrays = int(extradata.at(22));
-
-      int pos = 23;
-      for (int i = 0; i < numOfArrays; i++)
+      if (extradata.at(0) == 1)
       {
-        // The first byte contains the NAL unit type (which we don't use here).
-        pos++;
-        // int byte = (unsigned char)(extradata.at(pos++));
-        // bool array_completeness = byte & (1 << 7);
-        // int nalUnitType = byte & 0x3f;
+        // Internally, ffmpeg uses a custom format for the parameter sets (hvcC).
+        // The hvcC parameters come first, and afterwards, the "normal" parameter sets are sent.
 
-        // Two bytes numNalus
-        int numNalus = (unsigned char)(extradata.at(pos++)) << 7;
-        numNalus += (unsigned char)(extradata.at(pos++));
+        // The first 22 bytes are fixed hvcC parameter set (see hvcc_write in libavformat hevc.c)
+        auto numOfArrays = int(extradata.at(22));
 
-        for (int j = 0; j < numNalus; j++)
+        int pos = 23;
+        for (int i = 0; i < numOfArrays; i++)
         {
-          // Two bytes nalUnitLength
+          // The first byte contains the NAL unit type (which we don't use here).
+          pos++;
+          // int byte = (unsigned char)(extradata.at(pos++));
+          // bool array_completeness = byte & (1 << 7);
+          // int nalUnitType = byte & 0x3f;
+
+          // Two bytes numNalus
+          int numNalus = (unsigned char)(extradata.at(pos++)) << 7;
+          numNalus += (unsigned char)(extradata.at(pos++));
+
+          for (int j = 0; j < numNalus; j++)
+          {
+            // Two bytes nalUnitLength
+            int nalUnitLength = (unsigned char)(extradata.at(pos++)) << 7;
+            nalUnitLength += (unsigned char)(extradata.at(pos++));
+
+            // nalUnitLength bytes payload of the NAL unit
+            // This payload includes the NAL unit header
+            auto rawNAL = extradata.mid(pos, nalUnitLength);
+            retArray.append(rawNAL);
+            pos += nalUnitLength;
+          }
+        }
+      }
+    }
+    else if (codecID.isAVC())
+    {
+      // Note: Actually we would only need this if we would feed the AVC bitstream to a different
+      // decoder then ffmpeg.
+      //       So this function is so far not called (and not tested).
+
+      // First byte is 1, length must be at least 7 bytes
+      if (extradata.at(0) == 1 && extradata.length() >= 7)
+      {
+        int nrSPS = extradata.at(5) & 0x1f;
+        int pos   = 6;
+        for (int i = 0; i < nrSPS; i++)
+        {
           int nalUnitLength = (unsigned char)(extradata.at(pos++)) << 7;
           nalUnitLength += (unsigned char)(extradata.at(pos++));
 
-          // nalUnitLength bytes payload of the NAL unit
-          // This payload includes the NAL unit header
+          auto rawNAL = extradata.mid(pos, nalUnitLength);
+          retArray.append(rawNAL);
+          pos += nalUnitLength;
+        }
+
+        int nrPPS = extradata.at(pos++);
+        for (int i = 0; i < nrPPS; i++)
+        {
+          int nalUnitLength = (unsigned char)(extradata.at(pos++)) << 7;
+          nalUnitLength += (unsigned char)(extradata.at(pos++));
+
           auto rawNAL = extradata.mid(pos, nalUnitLength);
           retArray.append(rawNAL);
           pos += nalUnitLength;
         }
       }
     }
-  }
-  else if (codecID.isAVC())
-  {
-    // Note: Actually we would only need this if we would feed the AVC bitstream to a different
-    // decoder then ffmpeg.
-    //       So this function is so far not called (and not tested).
-
-    // First byte is 1, length must be at least 7 bytes
-    if (extradata.at(0) == 1 && extradata.length() >= 7)
+    else if (codecID.isAV1())
     {
-      int nrSPS = extradata.at(5) & 0x1f;
-      int pos   = 6;
-      for (int i = 0; i < nrSPS; i++)
-      {
-        int nalUnitLength = (unsigned char)(extradata.at(pos++)) << 7;
-        nalUnitLength += (unsigned char)(extradata.at(pos++));
-
-        auto rawNAL = extradata.mid(pos, nalUnitLength);
-        retArray.append(rawNAL);
-        pos += nalUnitLength;
-      }
-
-      int nrPPS = extradata.at(pos++);
-      for (int i = 0; i < nrPPS; i++)
-      {
-        int nalUnitLength = (unsigned char)(extradata.at(pos++)) << 7;
-        nalUnitLength += (unsigned char)(extradata.at(pos++));
-
-        auto rawNAL = extradata.mid(pos, nalUnitLength);
-        retArray.append(rawNAL);
-        pos += nalUnitLength;
-      }
+      // This should be a normal OBU for the seuqence header starting with the OBU header
+      SubByteReaderLogging    reader(SubByteReaderLogging::convertToByteVector(extradata), nullptr);
+      parser::av1::obu_header header;
+      header.parse(reader);
+      if (header.obu_type == parser::av1::ObuType::OBU_SEQUENCE_HEADER)
+        retArray.append(extradata);
     }
   }
-  else if (codecID.isAV1())
+  catch (const std::exception &e)
   {
-    // This should be a normal OBU for the seuqence header starting with the OBU header
-    SubByteReaderLogging    reader(SubByteReaderLogging::convertToByteVector(extradata), nullptr);
-    parser::av1::obu_header header;
-    header.parse(reader);
-    if (header.obu_type == parser::av1::ObuType::OBU_SEQUENCE_HEADER)
-      retArray.append(extradata);
+    (void)e;
+    DEBUG_FFMPEG("Failed to parse extradata: " << e.what());
   }
 
   return retArray;
