@@ -173,27 +173,13 @@ private:
   // necessary without invoking the copy operation from the libde265 buffer to the QByteArray again.
 #if SSE_CONVERSION
   byteArrayAligned currentOutputBuffer;
-  void             copyImgToByteArray(const Dav1dPictureWrapper &src, byteArrayAligned &dst);
 #else
   QByteArray currentOutputBuffer;
-  void       copyImgToByteArray(
-            const Dav1dPictureWrapper &src,
-            QByteArray &               dst); // Copy the raw data from the Dav1dPicture source *src to the byte array
 #endif
 
-  // Statistics
   void fillStatisticList(stats::StatisticsData &) const override;
-  void cacheStatistics(const Dav1dPictureWrapper &img);
-  void parseBlockRecursive(
-      Av1Block *blockData, unsigned x, unsigned y, BlockLevel level, dav1dFrameInfo &frameInfo);
-  void         parseBlockPartition(Av1Block *      blockData,
-                                   unsigned        x,
-                                   unsigned        y,
-                                   unsigned        blockWidth4,
-                                   unsigned        blockHeight4,
-                                   dav1dFrameInfo &frameInfo);
-  IntPair      calculateIntraPredDirection(IntraPredMode predMode, int angleDelta);
-  unsigned int subBlockSize{};
+
+  int subBlockSize{};
 
   LibraryFunctionsDav1d lib;
 };
