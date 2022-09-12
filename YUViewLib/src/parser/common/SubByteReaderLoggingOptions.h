@@ -43,22 +43,31 @@ namespace parser::reader
 
 using MeaningMap = std::map<int, std::string>;
 
+enum class CheckLevel
+{
+  Error,  // Parsing can not continue
+  Warning // Warn, but continue parsing
+};
+
 struct CheckResult
 {
   explicit    operator bool() const { return this->errorMessage.empty(); }
   std::string errorMessage;
+  CheckLevel  checkLevel{CheckLevel::Error};
 };
 
 class Check
 {
 public:
   Check() = default;
-  Check(std::string errorIfFail) : errorIfFail(errorIfFail){};
+  Check(std::string errorIfFail, CheckLevel checkLevel)
+      : errorIfFail(errorIfFail), checkLevel(checkLevel){};
   virtual ~Check() = default;
 
   virtual CheckResult checkValue(int64_t value) const = 0;
 
   std::string errorIfFail;
+  CheckLevel  checkLevel{CheckLevel::Error};
 };
 
 struct Options
@@ -69,14 +78,23 @@ struct Options
   [[nodiscard]] Options &&withMeaningMap(const MeaningMap &meaningMap);
   [[nodiscard]] Options &&withMeaningVector(const std::vector<std::string> &meaningVector);
   [[nodiscard]] Options &&
-                          withMeaningFunction(const std::function<std::string(int64_t)> &meaningFunction);
-  [[nodiscard]] Options &&withCheckEqualTo(int64_t value, const std::string &errorIfFail = {});
-  [[nodiscard]] Options &&
-  withCheckGreater(int64_t value, bool inclusive = true, const std::string &errorIfFail = {});
-  [[nodiscard]] Options &&
-  withCheckSmaller(int64_t value, bool inclusive = true, const std::string &errorIfFail = {});
-  [[nodiscard]] Options &&
-                          withCheckRange(Range<int64_t> range, bool inclusive = true, const std::string &errorIfFail = {});
+  withMeaningFunction(const std::function<std::string(int64_t)> &meaningFunction);
+  [[nodiscard]] Options &&withCheckEqualTo(int64_t            value,
+                                           const std::string &errorIfFail = {},
+                                           const CheckLevel   checkLevel  = CheckLevel::Error);
+  [[nodiscard]] Options &&withCheckEqualTo(int64_t value, const CheckLevel checkLevel);
+  [[nodiscard]] Options &&withCheckGreater(int64_t            value,
+                                           bool               inclusive   = true,
+                                           const std::string &errorIfFail = {},
+                                           const CheckLevel   checkLevel  = CheckLevel::Error);
+  [[nodiscard]] Options &&withCheckSmaller(int64_t            value,
+                                           bool               inclusive   = true,
+                                           const std::string &errorIfFail = {},
+                                           const CheckLevel   checkLevel  = CheckLevel::Error);
+  [[nodiscard]] Options &&withCheckRange(Range<int64_t>     range,
+                                         bool               inclusive   = true,
+                                         const std::string &errorIfFail = {},
+                                         const CheckLevel   checkLevel  = CheckLevel::Error);
   [[nodiscard]] Options &&withLoggingDisabled();
 
   std::string                         meaningString;
