@@ -42,7 +42,10 @@ struct CheckEqualTo : Check
 {
 public:
   CheckEqualTo() = delete;
-  CheckEqualTo(int64_t value, std::string errorIfFail) : Check(errorIfFail), value(value) {}
+  CheckEqualTo(int64_t value, std::string errorIfFail, CheckLevel checkLevel)
+      : Check(errorIfFail, checkLevel), value(value)
+  {
+  }
   CheckResult checkValue(int64_t value) const override;
 
 private:
@@ -53,8 +56,8 @@ struct CheckGreater : Check
 {
 public:
   CheckGreater() = delete;
-  CheckGreater(int64_t value, bool inclusive, std::string errorIfFail)
-      : Check(errorIfFail), value(value), inclusive(inclusive)
+  CheckGreater(int64_t value, bool inclusive, std::string errorIfFail, CheckLevel checkLevel)
+      : Check(errorIfFail, checkLevel), value(value), inclusive(inclusive)
   {
   }
   CheckResult checkValue(int64_t value) const override;
@@ -68,8 +71,8 @@ struct CheckSmaller : Check
 {
 public:
   CheckSmaller() = delete;
-  CheckSmaller(int64_t value, bool inclusive, std::string errorIfFail)
-      : Check(errorIfFail), value(value), inclusive(inclusive)
+  CheckSmaller(int64_t value, bool inclusive, std::string errorIfFail, CheckLevel checkLevel)
+      : Check(errorIfFail, checkLevel), value(value), inclusive(inclusive)
   {
   }
   CheckResult checkValue(int64_t value) const override;
@@ -83,8 +86,8 @@ struct CheckRange : Check
 {
 public:
   CheckRange() = delete;
-  CheckRange(Range<int64_t> range, bool inclusive, std::string errorIfFail)
-      : Check(errorIfFail), range(range), inclusive(inclusive)
+  CheckRange(Range<int64_t> range, bool inclusive, std::string errorIfFail, CheckLevel checkLevel)
+      : Check(errorIfFail, checkLevel), range(range), inclusive(inclusive)
   {
   }
   CheckResult checkValue(int64_t value) const override;
@@ -101,8 +104,9 @@ CheckResult CheckEqualTo::checkValue(int64_t value) const
   if (value != this->value)
   {
     if (!this->errorIfFail.empty())
-      return CheckResult({this->errorIfFail});
-    return CheckResult({"Value should be equal to " + std::to_string(this->value)});
+      return CheckResult({this->errorIfFail, this->checkLevel});
+    return CheckResult(
+        {"Value should be equal to " + std::to_string(this->value), this->checkLevel});
   }
   return {};
 }
@@ -114,9 +118,10 @@ CheckResult CheckGreater::checkValue(int64_t value) const
   if (checkFailed)
   {
     if (!this->errorIfFail.empty())
-      return CheckResult({this->errorIfFail});
+      return CheckResult({this->errorIfFail, this->checkLevel});
     return CheckResult({"Value should be greater then " + std::to_string(this->value) +
-                        (this->inclusive ? " inclusive." : " exclusive.")});
+                            (this->inclusive ? " inclusive." : " exclusive."),
+                        this->checkLevel});
   }
   return {};
 }
@@ -128,9 +133,10 @@ CheckResult CheckSmaller::checkValue(int64_t value) const
   if (checkFailed)
   {
     if (!this->errorIfFail.empty())
-      return CheckResult({this->errorIfFail});
+      return CheckResult({this->errorIfFail, this->checkLevel});
     return CheckResult({"Value should be smaller then " + std::to_string(this->value) +
-                        (this->inclusive ? " inclusive." : " exclusive.")});
+                            (this->inclusive ? " inclusive." : " exclusive."),
+                        this->checkLevel});
   }
   return {};
 }
@@ -142,10 +148,11 @@ CheckResult CheckRange::checkValue(int64_t value) const
   if (checkFailed)
   {
     if (!this->errorIfFail.empty())
-      return CheckResult({this->errorIfFail});
+      return CheckResult({this->errorIfFail, this->checkLevel});
     return CheckResult({"Value should be in the range of " + std::to_string(this->range.min) +
-                        " to " + std::to_string(this->range.max) +
-                        (this->inclusive ? " inclusive." : " exclusive.")});
+                            " to " + std::to_string(this->range.max) +
+                            (this->inclusive ? " inclusive." : " exclusive."),
+                        this->checkLevel});
   }
   return {};
 }
@@ -177,28 +184,47 @@ Options &&Options::withMeaningFunction(const std::function<std::string(int64_t)>
   return std::move(*this);
 }
 
-Options &&Options::withCheckEqualTo(int64_t value, const std::string &errorIfFail)
+Options &&Options::withCheckEqualTo(int64_t            value,
+                                    const std::string &errorIfFail,
+                                    const CheckLevel   checkLevel)
 {
-  this->checkList.emplace_back(std::make_unique<CheckEqualTo>(value, errorIfFail));
+  this->checkList.emplace_back(std::make_unique<CheckEqualTo>(value, errorIfFail, checkLevel));
   return std::move(*this);
 }
 
-Options &&Options::withCheckGreater(int64_t value, bool inclusive, const std::string &errorIfFail)
+Options &&Options::withCheckEqualTo(int64_t value, const CheckLevel checkLevel)
 {
-  this->checkList.emplace_back(std::make_unique<CheckGreater>(value, inclusive, errorIfFail));
+  this->checkList.emplace_back(std::make_unique<CheckEqualTo>(value, "", checkLevel));
   return std::move(*this);
 }
 
-Options &&Options::withCheckSmaller(int64_t value, bool inclusive, const std::string &errorIfFail)
+Options &&Options::withCheckGreater(int64_t            value,
+                                    bool               inclusive,
+                                    const std::string &errorIfFail,
+                                    const CheckLevel   checkLevel)
 {
-  this->checkList.emplace_back(std::make_unique<CheckSmaller>(value, inclusive, errorIfFail));
+  this->checkList.emplace_back(
+      std::make_unique<CheckGreater>(value, inclusive, errorIfFail, checkLevel));
   return std::move(*this);
 }
 
-Options &&
-Options::withCheckRange(Range<int64_t> range, bool inclusive, const std::string &errorIfFail)
+Options &&Options::withCheckSmaller(int64_t            value,
+                                    bool               inclusive,
+                                    const std::string &errorIfFail,
+                                    const CheckLevel   checkLevel)
 {
-  this->checkList.emplace_back(std::make_unique<CheckRange>(range, inclusive, errorIfFail));
+  this->checkList.emplace_back(
+      std::make_unique<CheckSmaller>(value, inclusive, errorIfFail, checkLevel));
+  return std::move(*this);
+}
+
+Options &&Options::withCheckRange(Range<int64_t>     range,
+                                  bool               inclusive,
+                                  const std::string &errorIfFail,
+                                  const CheckLevel   checkLevel)
+{
+  this->checkList.emplace_back(
+      std::make_unique<CheckRange>(range, inclusive, errorIfFail, checkLevel));
   return std::move(*this);
 }
 
