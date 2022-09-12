@@ -60,7 +60,7 @@
 using namespace functions;
 using namespace decoder;
 
-#define COMPRESSED_VIDEO_DEBUG_OUTPUT 0
+#define COMPRESSED_VIDEO_DEBUG_OUTPUT 1
 #if COMPRESSED_VIDEO_DEBUG_OUTPUT
 #include <QDebug>
 #define DEBUG_COMPRESSED(f) qDebug() << f

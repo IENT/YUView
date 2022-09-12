@@ -48,7 +48,7 @@ namespace decoder
 using Subsampling = video::yuv::Subsampling;
 
 // Debug the decoder (0:off 1:interactive decoder only 2:caching decoder only 3:both)
-#define DECODERDAV1D_DEBUG_OUTPUT 0
+#define DECODERDAV1D_DEBUG_OUTPUT 1
 #if DECODERDAV1D_DEBUG_OUTPUT && !NDEBUG
 #include <QDebug>
 #if DECODERDAV1D_DEBUG_OUTPUT == 1
@@ -673,7 +673,10 @@ bool decoderDav1d::decodeFrame()
 
   this->curPicture.clear();
 
+  DEBUG_DAV1D("decoderDav1d::decodeFrame Start dav1d_get_picture");
   auto res = this->lib.dav1d_get_picture(this->decoder, this->curPicture.getPicture());
+  DEBUG_DAV1D("decoderDav1d::decodeFrame End dav1d_get_picture");
+
   if (res >= 0)
   {
     // We did get a picture
@@ -710,12 +713,18 @@ bool decoderDav1d::decodeFrame()
     this->currentOutputBuffer.clear();
     return true;
   }
-  else if (res != -EAGAIN)
+  if (res == -EAGAIN)
+  {
+    DEBUG_DAV1D("decoderDav1d::decodeFrame Not enough data to output a frame. Push more data.");
+  }
+  else
     return this->setErrorB("Error retrieving frame from decoder.");
 
   if (this->decoderState != DecoderState::NeedsMoreData)
+  {
     DEBUG_DAV1D("decoderDav1d::decodeFrame No frame available - switching back to data push mode");
-  this->decoderState = DecoderState::NeedsMoreData;
+    this->decoderState = DecoderState::NeedsMoreData;
+  }
   return false;
 }
 
@@ -816,7 +825,9 @@ bool decoderDav1d::pushData(QByteArray &data)
     auto rawDataPointer = this->lib.dav1d_data_create(dav1dData.get(), data.size());
     memcpy(rawDataPointer, data.data(), data.size());
 
+    DEBUG_DAV1D("decoderDav1d::pushData Start pushing data size %d", data.size());
     int err = this->lib.dav1d_send_data(decoder, dav1dData.get());
+    DEBUG_DAV1D("decoderDav1d::pushData Finished pushing data");
     if (err == 0)
     {
       dav1dData.release();
