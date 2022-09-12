@@ -93,7 +93,9 @@ void video_parameter_set_rbsp::parse(SubByteReaderLogging &reader)
     {
       this->hrd_layer_set_idx.push_back(reader.readUEV(formatArray("hrd_layer_set_idx", i)));
 
-      if (i > 0)
+      if (i == 0)
+        this->cprms_present_flag.push_back(1);
+      else
         this->cprms_present_flag.push_back(reader.readFlag(formatArray("cprms_present_flag", i)));
 
       // hrd_parameters...
