@@ -37,7 +37,8 @@
 namespace parser::avc
 {
 
-bool AUDelimiterDetector::isStartOfNewAU(std::shared_ptr<NalUnitAVC> nal, int curFramePOC)
+bool AUDelimiterDetector::isStartOfNewAU(std::shared_ptr<NalUnitAVC> nal,
+                                         std::optional<int>          curFramePOC)
 {
   const auto isSlice = (nal->header.nal_unit_type == NalType::CODED_SLICE_NON_IDR ||
                         nal->header.nal_unit_type == NalType::CODED_SLICE_IDR);
@@ -65,10 +66,10 @@ bool AUDelimiterDetector::isStartOfNewAU(std::shared_ptr<NalUnitAVC> nal, int cu
     if (fourteenToEigtheen)
       isStart = true;
 
-    if (isSlice && curFramePOC != this->lastSlicePoc)
+    if (isSlice && curFramePOC && curFramePOC.value() != this->lastSlicePoc)
     {
       isStart            = true;
-      this->lastSlicePoc = curFramePOC;
+      this->lastSlicePoc = curFramePOC.value();
     }
   }
 

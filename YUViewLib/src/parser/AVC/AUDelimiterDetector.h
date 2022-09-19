@@ -33,6 +33,7 @@
 #pragma once
 
 #include <memory>
+#include <optional>
 
 namespace parser::avc
 {
@@ -44,7 +45,7 @@ class AUDelimiterDetector
 public:
   AUDelimiterDetector() = default;
 
-  bool isStartOfNewAU(std::shared_ptr<NalUnitAVC> nal, int curFramePOC);
+  bool isStartOfNewAU(std::shared_ptr<NalUnitAVC> nal, std::optional<int> curFramePOC);
   int  lastSlicePoc{-1};
   bool primaryCodedPictureInAuEncountered{};
 };
