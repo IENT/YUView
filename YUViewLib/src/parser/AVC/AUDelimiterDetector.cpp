@@ -66,10 +66,10 @@ bool AUDelimiterDetector::isStartOfNewAU(std::shared_ptr<NalUnitAVC> nal,
     if (fourteenToEigtheen)
       isStart = true;
 
-    if (isSlice && curFramePOC && curFramePOC.value() != this->lastSlicePoc)
+    if (isSlice && curFramePOC && *curFramePOC != this->lastSlicePoc)
     {
       isStart            = true;
-      this->lastSlicePoc = curFramePOC.value();
+      this->lastSlicePoc = *curFramePOC;
     }
   }
 
