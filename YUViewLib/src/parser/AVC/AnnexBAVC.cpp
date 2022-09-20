@@ -191,12 +191,12 @@ AnnexBAVC::parseAndAddNALUnit(int                                           nalI
     if (this->curFrameData && this->curFrameData->poc)
     {
       // Save the info of the last frame
-      if (!this->addFrameToList(this->curFrameData->poc.value(),
+      if (!this->addFrameToList(*this->curFrameData->poc,
                                 this->curFrameData->fileStartEndPos,
                                 this->curFrameData->isRandomAccess))
       {
         if (parent)
-          parent->createChildItem("Error - POC " + std::to_string(this->curFrameData->poc.value()) +
+          parent->createChildItem("Error - POC " + std::to_string(*this->curFrameData->poc) +
                                   "alread in the POC list.");
         return parseResult;
       }
@@ -204,11 +204,11 @@ AnnexBAVC::parseAndAddNALUnit(int                                           nalI
         DEBUG_AVC("AnnexBAVC::parseAndAddNALUnit Adding start/end "
                   << this->curFrameData->fileStartEndPos->first << "/"
                   << this->curFrameData->fileStartEndPos->second << " - POC "
-                  << this->curFrameData->poc.value()
+                  << *this->curFrameData->poc
                   << (this->curFrameData->isRandomAccess ? " - ra" : ""));
       else
         DEBUG_AVC("AnnexBAVC::parseAndAddNALUnit Adding start/end NA/NA - POC "
-                  << this->curFrameData->poc.value()
+                  << *this->curFrameData->poc
                   << (this->curFrameData->isRandomAccess ? " - ra" : ""));
     }
     // The file ended
@@ -469,23 +469,21 @@ AnnexBAVC::parseAndAddNALUnit(int                                           nalI
   if (this->curFrameData && this->auDelimiterDetector.isStartOfNewAU(nalAVC, curSlicePoc))
   {
     // Save the info of the last frame
-    if (!this->addFrameToList(this->curFrameData->poc.value(),
+    if (!this->addFrameToList(*this->curFrameData->poc,
                               this->curFrameData->fileStartEndPos,
                               this->curFrameData->isRandomAccess))
     {
-      throw std::logic_error("Error - POC " + std::to_string(this->curFrameData->poc.value()) +
+      throw std::logic_error("Error - POC " + std::to_string(*this->curFrameData->poc) +
                              " already in the POC list");
     }
     if (this->curFrameData->fileStartEndPos)
       DEBUG_AVC("AnnexBAVC::parseAndAddNALUnit Adding start/end "
                 << this->curFrameData->fileStartEndPos->first << "/"
                 << this->curFrameData->fileStartEndPos->second << " - POC "
-                << this->curFrameData->poc.value()
-                << (this->curFrameData->isRandomAccess ? " - ra" : ""));
+                << *this->curFrameData->poc << (this->curFrameData->isRandomAccess ? " - ra" : ""));
     else
       DEBUG_AVC("AnnexBAVC::parseAndAddNALUnit Adding start/end NA/NA - POC "
-                << this->curFrameData->poc.value()
-                << (this->curFrameData->isRandomAccess ? " - ra" : ""));
+                << *this->curFrameData->poc << (this->curFrameData->isRandomAccess ? " - ra" : ""));
 
     if (this->sizeCurrentAU > 0)
     {
@@ -504,7 +502,7 @@ AnnexBAVC::parseAndAddNALUnit(int                                           nalI
         entry.pts          = this->lastFramePOC;
         entry.dts          = this->counterAU;
         entry.duration     = 1;
-        this->lastFramePOC = this->curFrameData->poc.value();
+        this->lastFramePOC = *this->curFrameData->poc;
       }
       entry.bitrate  = this->sizeCurrentAU;
       entry.keyframe = this->currentAUAllSlicesIntra;
@@ -518,7 +516,7 @@ AnnexBAVC::parseAndAddNALUnit(int                                           nalI
         {
           if (this->activeParameterSets.spsMap.size() > 0)
             this->hrd.addAU(this->sizeCurrentAU * 8,
-                            this->curFrameData->poc.value(),
+                            *this->curFrameData->poc,
                             this->activeParameterSets.spsMap[0],
                             this->lastBufferingPeriodSEI,
                             this->lastPicTimingSEI,
