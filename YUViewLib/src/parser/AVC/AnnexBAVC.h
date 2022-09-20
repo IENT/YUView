@@ -61,7 +61,7 @@ struct FrameParsingData
   // and where the NAL of the last slice ends (if known). This is used by getNextFrameNALUnits to
   // return all information (NAL units) for a specific frame (AU). This includes SPS/PPS.
   std::optional<pairUint64> fileStartEndPos{};
-  int                       poc{-1};
+  std::optional<int>        poc{};
   bool                      isRandomAccess{};
 };
 } // namespace avc
