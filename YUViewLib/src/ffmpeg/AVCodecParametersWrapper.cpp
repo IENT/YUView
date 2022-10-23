@@ -97,7 +97,7 @@ QByteArray AVCodecParametersWrapper::getExtradata()
 Size AVCodecParametersWrapper::getSize()
 {
   this->update();
-  return Size({this->width, this->height});
+  return Size(this->width, this->height);
 }
 
 AVColorSpace AVCodecParametersWrapper::getColorspace()
@@ -115,13 +115,7 @@ AVPixelFormat AVCodecParametersWrapper::getPixelFormat()
 Ratio AVCodecParametersWrapper::getSampleAspectRatio()
 {
   this->update();
-  return Ratio({this->sample_aspect_ratio.num, this->sample_aspect_ratio.den});
-}
-
-QByteArray AVCodecParametersWrapper::getExtradata()
-{
-  this->update();
-  return this->extradata;
+  return {this->sample_aspect_ratio.num, this->sample_aspect_ratio.den};
 }
 
 QStringPairList AVCodecParametersWrapper::getInfoText()
