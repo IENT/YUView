@@ -206,11 +206,7 @@ QByteArray FileSourceFFmpegFile::getExtradata()
   // Get the video stream
   if (!this->video_stream)
     return {};
-  if (auto codec = this->video_stream.getCodec())
-    return codec.getExtradata();
-  if (auto codecPar = this->video_stream.getCodecpar())
-    return codecPar.getExtradata();
-  return {};
+  return this->video_stream.getExtradata();
 }
 
 StringPairVec FileSourceFFmpegFile::getMetadata()
