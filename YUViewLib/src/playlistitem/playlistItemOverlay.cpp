@@ -531,7 +531,8 @@ playlistItemOverlay *playlistItemOverlay::newPlaylistItemOverlay(const YUViewDom
   else
   {
     if (auto mode = overlayLayoutModeMapper.getValue(
-            root.findChildValue("layoutMode").toStdString(), EnumMapperStringType::NameOrIndex))
+            root.findChildValue("layoutMode").toStdString(),
+            EnumMapper<OverlayLayoutMode>::StringType::NameOrIndex))
       newOverlay->layoutMode = *mode;
     DEBUG_OVERLAY("playlistItemOverlay::newPlaylistItemOverlay layoutMode %d",
                   newOverlay->layoutMode);

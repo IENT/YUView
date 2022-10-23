@@ -77,7 +77,7 @@ void checkAndLog(std::shared_ptr<TreeItem> item,
     item->createChildItem(
         symbolName, value, formatCoding(formatName, code.size()), code, meaning, isError);
   }
-  if (!checkResult)
+  if (!checkResult && checkResult.checkLevel == CheckLevel::Error)
     throw std::logic_error(checkResult.errorMessage);
 }
 

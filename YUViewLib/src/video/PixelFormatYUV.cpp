@@ -148,7 +148,8 @@ PixelFormatYUV::PixelFormatYUV(const std::string &name)
 
     // Parse the subsampling
     auto subsamplingName = sm.str(2);
-    if (auto ss = SubsamplingMapper.getValue(subsamplingName, EnumMapperStringType::Text))
+    if (auto ss =
+            SubsamplingMapper.getValue(subsamplingName, EnumMapper<Subsampling>::StringType::Text))
       newFormat.subsampling = *ss;
 
     // Get the bit depth

@@ -46,8 +46,8 @@ public:
   AVPixFmtDescriptorWrapper(AVPixFmtDescriptor *sideData, LibraryVersion libVer);
 
   video::RawFormat           getRawFormat() const;
-  video::yuv::PixelFormatYUV getPixelFormatYUV();
-  video::rgb::PixelFormatRGB getRGBPixelFormat();
+  video::yuv::PixelFormatYUV getPixelFormatYUV() const;
+  video::rgb::PixelFormatRGB getRGBPixelFormat() const;
 
   bool setValuesFromPixelFormatYUV(video::yuv::PixelFormatYUV fmt);
 

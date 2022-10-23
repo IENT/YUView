@@ -42,15 +42,16 @@ class AVCodecParametersWrapper
 public:
   AVCodecParametersWrapper() = default;
   AVCodecParametersWrapper(AVCodecParameters *p, LibraryVersion v);
-  explicit        operator bool() const { return param != nullptr; }
+  explicit        operator bool() const { return this->param != nullptr; }
   QStringPairList getInfoText();
 
-  AVMediaType  getCodecType();
-  AVCodecID    getCodecID();
-  QByteArray   getExtradata();
-  Size         getSize();
-  AVColorSpace getColorspace();
-  Ratio        getSampleAspectRatio();
+  AVMediaType   getCodecType();
+  AVCodecID     getCodecID();
+  QByteArray    getExtradata();
+  Size          getSize();
+  AVColorSpace  getColorspace();
+  AVPixelFormat getPixelFormat();
+  Ratio         getSampleAspectRatio();
 
   // Set a default set of (unknown) values
   void setClearValues();
@@ -63,7 +64,7 @@ public:
   void setProfileLevel(int profile, int level);
   void setSampleAspectRatio(int num, int den);
 
-  AVCodecParameters *getCodecParameters() { return param; }
+  AVCodecParameters *getCodecParameters() const { return this->param; }
 
 private:
   // Update all private values from the AVCodecParameters

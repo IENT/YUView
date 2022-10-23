@@ -59,7 +59,7 @@ auto startCode = QByteArrayLiteral("\x00\x00\x01");
 
 FileSourceFFmpegFile::FileSourceFFmpegFile()
 {
-  connect(&fileWatcher,
+  connect(&this->fileWatcher,
           &QFileSystemWatcher::fileChanged,
           this,
           &FileSourceFFmpegFile::fileSystemWatcherFileChanged);
@@ -74,13 +74,13 @@ AVPacketWrapper FileSourceFFmpegFile::getNextPacket(bool getLastPackage, bool vi
   if (!this->goToNextPacket(videoPacket))
   {
     this->posInFile = -1;
-    return AVPacketWrapper();
+    return {};
   }
 
   return this->currentPacket;
 }
 
-QByteArray FileSourceFFmpegFile::getNextUnit(bool getLastDataAgain, int64_t *pts)
+QByteArray FileSourceFFmpegFile::getNextUnit(bool getLastDataAgain)
 {
   if (getLastDataAgain)
     return this->lastReturnArray;
@@ -105,8 +105,8 @@ QByteArray FileSourceFFmpegFile::getNextUnit(bool getLastDataAgain, int64_t *pts
   // by the payload
   if (this->packetDataFormat == PacketDataFormat::RawNAL)
   {
-    auto firstBytes = this->currentPacketData.mid(posInData, 4);
-    int  offset;
+    const auto firstBytes = this->currentPacketData.mid(posInData, 4);
+    int        offset;
     if (firstBytes.at(0) == (char)0 && firstBytes.at(1) == (char)0 && firstBytes.at(2) == (char)0 &&
         firstBytes.at(3) == (char)1)
       offset = 4;
@@ -121,7 +121,7 @@ QByteArray FileSourceFFmpegFile::getNextUnit(bool getLastDataAgain, int64_t *pts
     }
 
     // Look for the next start code (or the end of the file)
-    int nextStartCodePos = this->currentPacketData.indexOf(startCode, posInData + 3);
+    auto nextStartCodePos = this->currentPacketData.indexOf(startCode, posInData + 3);
 
     if (nextStartCodePos == -1)
     {
@@ -132,7 +132,7 @@ QByteArray FileSourceFFmpegFile::getNextUnit(bool getLastDataAgain, int64_t *pts
     }
     else
     {
-      int size        = nextStartCodePos - this->posInData - offset;
+      auto size       = nextStartCodePos - this->posInData - offset;
       lastReturnArray = this->currentPacketData.mid(this->posInData + offset, size);
       this->posInData += 3 + size;
     }
@@ -194,12 +194,9 @@ QByteArray FileSourceFFmpegFile::getNextUnit(bool getLastDataAgain, int64_t *pts
     {
       // The reader threw an exception
       this->currentPacketData.clear();
-      return QByteArray();
+      return {};
     }
   }
-
-  if (pts)
-    *pts = this->currentPacket.getPTS();
 
   return this->lastReturnArray;
 }
@@ -207,20 +204,20 @@ QByteArray FileSourceFFmpegFile::getNextUnit(bool getLastDataAgain, int64_t *pts
 QByteArray FileSourceFFmpegFile::getExtradata()
 {
   // Get the video stream
-  if (!video_stream)
+  if (!this->video_stream)
     return {};
-  if (auto codec = video_stream.getCodec())
+  if (auto codec = this->video_stream.getCodec())
     return codec.getExtradata();
-  if (auto codecPar = video_stream.getCodecpar())
+  if (auto codecPar = this->video_stream.getCodecpar())
     return codecPar.getExtradata();
   return {};
 }
 
 StringPairVec FileSourceFFmpegFile::getMetadata()
 {
-  if (!formatCtx)
+  if (!this->formatCtx)
     return {};
-  return ff.getDictionaryEntries(formatCtx.getMetadata(), "", 0);
+  return ff.getDictionaryEntries(this->formatCtx.getMetadata(), "", 0);
 }
 
 QList<QByteArray> FileSourceFFmpegFile::getParameterSets()
@@ -233,7 +230,7 @@ QList<QByteArray> FileSourceFFmpegFile::getParameterSets()
    * To access them from libav* APIs you need to look for extradata field in AVCodecContext of
    * AVStream which relate to needed video stream. Also extradata can have different format from
    * standard H.264 NALs so look in MP4-container specs for format description. */
-  auto extradata = getExtradata();
+  auto extradata = this->getExtradata();
   if (extradata.isEmpty())
   {
     DEBUG_FFMPEG("Error no extradata could be found.");
@@ -420,7 +417,7 @@ bool FileSourceFFmpegFile::scanBitstream(QWidget *mainWindow)
     return false;
 
   // Create the dialog (if the given pointer is not null)
-  auto maxPTS = getMaxTS();
+  auto maxPTS = this->getMaxTS();
   // Updating the dialog (setValue) is quite slow. Only do this if the percent value changes.
   int                             curPercentValue = 0;
   QScopedPointer<QProgressDialog> progress;
@@ -482,7 +479,6 @@ void FileSourceFFmpegFile::openFileAndFindVideoStream(QString fileName)
 
   this->formatCtx.getInputFormat();
 
-  // Iterate through all streams
   for (unsigned idx = 0; idx < this->formatCtx.getNbStreams(); idx++)
   {
     auto stream     = this->formatCtx.getStream(idx);
@@ -508,18 +504,17 @@ void FileSourceFFmpegFile::openFileAndFindVideoStream(QString fileName)
   if (!this->video_stream)
     return;
 
-  // Initialize an empty packet
   this->currentPacket = this->ff.allocatePaket();
 
   // Get the frame rate, picture size and color conversion mode
   auto avgFrameRate = this->video_stream.getAvgFrameRate();
   if (avgFrameRate.den == 0)
-    frameRate = -1.0;
+    this->frameRate = -1.0;
   else
-    frameRate = avgFrameRate.num / double(avgFrameRate.den);
+    this->frameRate = avgFrameRate.num / double(avgFrameRate.den);
 
-  auto ffmpegPixFormat = this->ff.getAvPixFmtDescriptionFromAvPixelFormat(
-      this->video_stream.getCodec().getPixelFormat());
+  const auto ffmpegPixFormat =
+      this->ff.getAvPixFmtDescriptionFromAvPixelFormat(this->video_stream.getPixelFormat());
   this->rawFormat = ffmpegPixFormat.getRawFormat();
   if (this->rawFormat == video::RawFormat::YUV)
     this->pixelFormat_yuv = ffmpegPixFormat.getPixelFormatYUV();

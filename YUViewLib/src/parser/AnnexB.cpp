@@ -146,7 +146,7 @@ std::optional<pairUint64> AnnexB::getFrameStartEndPos(FrameIndexCodingOrder idx)
   return this->frameListCodingOrder[idx].fileStartEndPos;
 }
 
-bool AnnexB::parseAnnexBFile(QScopedPointer<FileSourceAnnexBFile> &file, QWidget *mainWindow)
+bool AnnexB::parseAnnexBFile(std::unique_ptr<FileSourceAnnexBFile> &file, QWidget *mainWindow)
 {
   DEBUG_ANNEXB("AnnexB::parseAnnexBFile");
 
@@ -199,8 +199,9 @@ bool AnnexB::parseAnnexBFile(QScopedPointer<FileSourceAnnexBFile> &file, QWidget
         this->bitratePlotModel->addBitratePoint(0, *parsingResult.bitrateEntry);
       }
     }
-    catch (const std::exception &)
+    catch (const std::exception &exc)
     {
+      (void)exc;
       // Reading a NAL unit failed at some point.
       // This is not too bad. Just don't use this NAL unit and continue with the next one.
       DEBUG_ANNEXB("AnnexB::parseAndAddNALUnit Exception thrown parsing NAL " << nalID << " - "
@@ -258,8 +259,8 @@ bool AnnexB::parseAnnexBFile(QScopedPointer<FileSourceAnnexBFile> &file, QWidget
     DEBUG_ANNEXB("AnnexB::parseAndAddNALUnit Error finalizing parsing. This should not happen.");
   }
 
-  DEBUG_ANNEXB("AnnexB::parseAndAddNALUnit Parsing done. Found " << this->frameList.size()
-                                                                 << " POCs");
+  DEBUG_ANNEXB("AnnexB::parseAndAddNALUnit Parsing done. Found "
+               << this->frameListCodingOrder.size() << " POCs");
 
   if (packetModel)
     emit modelDataUpdated();
@@ -276,8 +277,8 @@ bool AnnexB::parseAnnexBFile(QScopedPointer<FileSourceAnnexBFile> &file, QWidget
 bool AnnexB::runParsingOfFile(QString compressedFilePath)
 {
   DEBUG_ANNEXB("playlistItemCompressedVideo::runParsingOfFile");
-  QScopedPointer<FileSourceAnnexBFile> file(new FileSourceAnnexBFile(compressedFilePath));
-  return parseAnnexBFile(file);
+  auto file = std::make_unique<FileSourceAnnexBFile>(compressedFilePath);
+  return this->parseAnnexBFile(file);
 }
 
 QList<QTreeWidgetItem *> AnnexB::stream_info_type::getStreamInfo()

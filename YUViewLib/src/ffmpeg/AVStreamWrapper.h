@@ -58,6 +58,8 @@ public:
   AVRational               getTimeBase();
   Size                     getFrameSize();
   AVColorSpace             getColorspace();
+  AVPixelFormat            getPixelFormat();
+  QByteArray               getExtradata();
   int                      getIndex();
   AVCodecParametersWrapper getCodecpar();
 
