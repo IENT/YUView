@@ -47,12 +47,11 @@ public:
 
   AVMediaType   getCodecType();
   AVCodecID     getCodecID();
-  int           getWidth();
-  int           getHeight();
+  QByteArray    getExtradata();
+  Size          getSize();
   AVColorSpace  getColorspace();
   AVPixelFormat getPixelFormat();
   Ratio         getSampleAspectRatio();
-  QByteArray    getExtradata();
 
   // Set a default set of (unknown) values
   void setClearValues();

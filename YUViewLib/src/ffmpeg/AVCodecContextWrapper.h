@@ -33,6 +33,7 @@
 #pragma once
 
 #include "FFMpegLibrariesTypes.h"
+#include <common/Typedef.h>
 
 namespace FFmpeg
 {
@@ -49,8 +50,7 @@ public:
   AVCodecID       getCodecID();
   AVCodecContext *getCodec();
   AVPixelFormat   getPixelFormat();
-  int             getWidth();
-  int             getHeight();
+  Size            getSize();
   AVColorSpace    getColorspace();
   AVRational      getTimeBase();
   QByteArray      getExtradata();
