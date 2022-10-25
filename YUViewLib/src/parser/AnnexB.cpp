@@ -199,8 +199,9 @@ bool AnnexB::parseAnnexBFile(std::unique_ptr<FileSourceAnnexBFile> &file, QWidge
         this->bitratePlotModel->addBitratePoint(0, *parsingResult.bitrateEntry);
       }
     }
-    catch (const std::exception &)
+    catch (const std::exception &exc)
     {
+      (void)exc;
       // Reading a NAL unit failed at some point.
       // This is not too bad. Just don't use this NAL unit and continue with the next one.
       DEBUG_ANNEXB("AnnexB::parseAndAddNALUnit Exception thrown parsing NAL " << nalID << " - "
@@ -258,8 +259,8 @@ bool AnnexB::parseAnnexBFile(std::unique_ptr<FileSourceAnnexBFile> &file, QWidge
     DEBUG_ANNEXB("AnnexB::parseAndAddNALUnit Error finalizing parsing. This should not happen.");
   }
 
-  DEBUG_ANNEXB("AnnexB::parseAndAddNALUnit Parsing done. Found " << this->frameList.size()
-                                                                 << " POCs");
+  DEBUG_ANNEXB("AnnexB::parseAndAddNALUnit Parsing done. Found "
+               << this->frameListCodingOrder.size() << " POCs");
 
   if (packetModel)
     emit modelDataUpdated();

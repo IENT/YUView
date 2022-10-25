@@ -457,7 +457,7 @@ bool decoderFFmpeg::createDecoder(FFmpeg::AVCodecIDWrapper         codecID,
     return this->setErrorB(QStringLiteral("Unable to configure decoder from codecpar"));
 
   // Get some parameters from the decoder context
-  this->frameSize = Size(decCtx.getWidth(), decCtx.getHeight());
+  this->frameSize = decCtx.getSize();
 
   auto ffmpegPixFormat = this->ff.getAvPixFmtDescriptionFromAvPixelFormat(decCtx.getPixelFormat());
   this->rawFormat      = ffmpegPixFormat.getRawFormat();

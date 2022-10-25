@@ -239,7 +239,7 @@ bool FileSourceAnnexBFile::seek(int64_t pos)
   if (!isFileOpened)
     return false;
 
-  DEBUG_ANNEXBFILE("FileSourceAnnexBFile::seek ot " << pos);
+  DEBUG_ANNEXBFILE("FileSourceAnnexBFile::seek to " << pos);
   // Seek the file and update the buffer
   srcFile.seek(pos);
   this->fileBufferSize = srcFile.read(this->fileBuffer.data(), BUFFERSIZE);

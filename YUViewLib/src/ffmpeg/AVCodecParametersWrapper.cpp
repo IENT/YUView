@@ -88,16 +88,16 @@ AVCodecID AVCodecParametersWrapper::getCodecID()
   return this->codec_id;
 }
 
-int AVCodecParametersWrapper::getWidth()
+QByteArray AVCodecParametersWrapper::getExtradata()
 {
   this->update();
-  return this->width;
+  return this->extradata;
 }
 
-int AVCodecParametersWrapper::getHeight()
+Size AVCodecParametersWrapper::getSize()
 {
   this->update();
-  return this->height;
+  return Size(this->width, this->height);
 }
 
 AVColorSpace AVCodecParametersWrapper::getColorspace()
@@ -115,13 +115,7 @@ AVPixelFormat AVCodecParametersWrapper::getPixelFormat()
 Ratio AVCodecParametersWrapper::getSampleAspectRatio()
 {
   this->update();
-  return Ratio({this->sample_aspect_ratio.num, this->sample_aspect_ratio.den});
-}
-
-QByteArray AVCodecParametersWrapper::getExtradata()
-{
-  this->update();
-  return this->extradata;
+  return {this->sample_aspect_ratio.num, this->sample_aspect_ratio.den};
 }
 
 QStringPairList AVCodecParametersWrapper::getInfoText()
@@ -298,7 +292,7 @@ void AVCodecParametersWrapper::setExtradata(QByteArray data)
   {
     this->extradata   = data;
     auto p            = reinterpret_cast<AVCodecParameters_57_58_59 *>(this->param);
-    p->extradata      = (uint8_t *)this->extradata.data();
+    p->extradata      = reinterpret_cast<uint8_t *>(this->extradata.data());
     p->extradata_size = this->extradata.length();
   }
 }
