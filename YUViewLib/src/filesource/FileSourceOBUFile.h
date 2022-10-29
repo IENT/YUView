@@ -1,6 +1,6 @@
 /*  This file is part of YUView - The YUV player with advanced analytics toolset
  *   <https://github.com/IENT/YUView>
- *   Copyright (C) 2015  Institut f�r Nachrichtentechnik, RWTH Aachen University, GERMANY
+ *   Copyright (C) 2015  Institut für Nachrichtentechnik, RWTH Aachen University, GERMANY
  *
  *   This program is free software; you can redistribute it and/or modify
  *   it under the terms of the GNU General Public License as published by
@@ -30,42 +30,29 @@
  *   along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "StatisticsFileBase.h"
+#pragma once
 
-namespace stats
+#include <common/Typedef.h>
+#include <filesource/FileSource.h>
+
+/*
+ */
+class FileSourceOBUFile : public FileSource
 {
+  Q_OBJECT
 
-StatisticsFileBase::StatisticsFileBase(const QString &filename)
-{
-  if (!this->file.openFile(filename))
-  {
-    this->errorMessage = "Error opening file " + filename;
-    this->error        = true;
-  }
-}
+public:
+  FileSourceOBUFile() = default;
+  FileSourceOBUFile(const QString &filePath) : FileSource() { this->openFile(filePath); }
+  ~FileSourceOBUFile() = default;
 
-StatisticsFileBase::~StatisticsFileBase()
-{
-  this->abortParsingDestroy = true;
-}
+  bool openFile(const QString &filePath) override;
 
-InfoData StatisticsFileBase::getInfo() const
-{
-  InfoData info("Statistics File info");
+  // Get the next OBU. Also return the start and end position of the OBU in the file so
+  // you can seek to it.
+  [[nodiscard]] DataAndStartEndPos getNextOBU(bool getLastDataAgain = false);
 
-  // Append the file information (path, date created, file size...)
-  info.items.append(this->file.getFileInfoList());
-  info.items.append(InfoItem("Sorted by POC", this->fileSortedByPOC ? "Yes" : "No"));
-  info.items.append(InfoItem("Parsing:", QString("%1%...").arg(this->parsingProgress, 0, 'f', 2)));
-  if (this->blockOutsideOfFramePOC != -1)
-    info.items.append(
-        InfoItem("Warning",
-                 QString("A block in frame %1 is outside of the given size of the statistics.")
-                     .arg(this->blockOutsideOfFramePOC)));
-  if (this->error)
-    info.items.append(InfoItem("Parsing Error:", this->errorMessage));
-
-  return info;
-}
-
-} // namespace stats
+protected:
+  // We will keep the last buffer in case the reader wants to get it again
+  QByteArray lastReturnArray;
+};

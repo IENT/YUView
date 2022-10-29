@@ -167,8 +167,8 @@ bool AnnexB::parseAnnexBFile(std::unique_ptr<FileSourceAnnexBFile> &file, QWidge
     progressDialog->setWindowModality(Qt::WindowModal);
   }
 
-  stream_info.file_size = file->getFileSize();
-  stream_info.parsing   = true;
+  this->streamInfo.fileSize = file->getFileSize();
+  this->streamInfo.parsing  = true;
   emit streamInfoUpdated();
 
   // Just push all NAL units from the annexBFile into the annexBParser
@@ -181,8 +181,8 @@ bool AnnexB::parseAnnexBFile(std::unique_ptr<FileSourceAnnexBFile> &file, QWidge
   {
     // Update the progress dialog
     int64_t pos = file->pos();
-    if (stream_info.file_size > 0)
-      progressPercentValue = functions::clip((int)(pos * 100 / stream_info.file_size), 0, 100);
+    if (this->streamInfo.fileSize > 0)
+      progressPercentValue = functions::clip((int)(pos * 100 / this->streamInfo.fileSize), 0, 100);
 
     try
     {
@@ -265,9 +265,9 @@ bool AnnexB::parseAnnexBFile(std::unique_ptr<FileSourceAnnexBFile> &file, QWidge
   if (packetModel)
     emit modelDataUpdated();
 
-  stream_info.parsing      = false;
-  stream_info.nr_nal_units = nalID;
-  stream_info.nr_frames    = unsigned(this->frameListCodingOrder.size());
+  this->streamInfo.parsing    = false;
+  this->streamInfo.nrNALUnits = nalID;
+  this->streamInfo.nrFrames   = unsigned(this->frameListCodingOrder.size());
   emit streamInfoUpdated();
   emit backgroundParsingDone("");
 
@@ -281,11 +281,12 @@ bool AnnexB::runParsingOfFile(QString compressedFilePath)
   return this->parseAnnexBFile(file);
 }
 
-QList<QTreeWidgetItem *> AnnexB::stream_info_type::getStreamInfo()
+QList<QTreeWidgetItem *> AnnexB::StreamInfo::getStreamInfo()
 {
   QList<QTreeWidgetItem *> infoList;
-  infoList.append(new QTreeWidgetItem(QStringList() << "File size" << QString::number(file_size)));
-  if (parsing)
+  infoList.append(
+      new QTreeWidgetItem(QStringList() << "File size" << QString::number(this->fileSize)));
+  if (this->parsing)
   {
     infoList.append(new QTreeWidgetItem(QStringList() << "Number NAL units"
                                                       << "Parsing..."));
@@ -294,10 +295,10 @@ QList<QTreeWidgetItem *> AnnexB::stream_info_type::getStreamInfo()
   }
   else
   {
+    infoList.append(new QTreeWidgetItem(QStringList() << "Number NAL units"
+                                                      << QString::number(this->nrNALUnits)));
     infoList.append(
-        new QTreeWidgetItem(QStringList() << "Number NAL units" << QString::number(nr_nal_units)));
-    infoList.append(
-        new QTreeWidgetItem(QStringList() << "Number Frames" << QString::number(nr_frames)));
+        new QTreeWidgetItem(QStringList() << "Number Frames" << QString::number(this->nrFrames)));
   }
 
   return infoList;

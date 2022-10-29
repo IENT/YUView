@@ -35,6 +35,7 @@
 #include <common/Typedef.h>
 #include <decoder/decoderBase.h>
 #include <filesource/FileSourceFFmpegFile.h>
+#include <filesource/FileSourceOBUFile.h>
 #include <parser/AnnexB.h>
 #include <statistics/StatisticUIHandler.h>
 #include <statistics/StatisticsData.h>
@@ -144,8 +145,11 @@ protected:
   // count how many frames we already read.
   int readAnnexBFrameCounterCodingOrder{-1};
 
+  // The same applies for Raw OBU files. We open the input twice (for caching and loading). The
+  // parser is only needed once.
+
   // Which type is the input?
-  InputFormat              inputFormat;
+  InputFormat              inputFormat{InputFormat::Invalid};
   FFmpeg::AVCodecIDWrapper ffmpegCodec;
 
   // For FFMpeg files we don't need a reader to parse them. But if the container contains a

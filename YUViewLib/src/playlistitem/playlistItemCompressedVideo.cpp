@@ -77,11 +77,6 @@ bool isInputFormatTypeAnnexB(InputFormat format)
          format == InputFormat::AnnexBAVC;
 }
 
-bool isInputFormatTypeFFmpeg(InputFormat format)
-{
-  return format == InputFormat::Libav;
-}
-
 enum class Codec
 {
   AV1,
@@ -119,13 +114,15 @@ playlistItemCompressedVideo::playlistItemCompressedVideo(const QString &compress
   // Open the input file and get some properties (size, bit depth, subsampling) from the file
   if (input == InputFormat::Invalid)
   {
-    QString ext = QFileInfo(compressedFilePath).suffix();
+    auto ext = QFileInfo(compressedFilePath).suffix();
     if (ext == "hevc" || ext == "h265" || ext == "265")
       this->inputFormat = InputFormat::AnnexBHEVC;
     else if (ext == "vvc" || ext == "h266" || ext == "266")
       this->inputFormat = InputFormat::AnnexBVVC;
     else if (ext == "avc" || ext == "h264" || ext == "264")
       this->inputFormat = InputFormat::AnnexBAVC;
+    else if (ext == "obu")
+      this->inputFormat = InputFormat::OBUAV1;
     else
       this->inputFormat = InputFormat::Libav;
   }
@@ -189,6 +186,12 @@ playlistItemCompressedVideo::playlistItemCompressedVideo(const QString &compress
     DEBUG_COMPRESSED(
         "playlistItemCompressedVideo::playlistItemCompressedVideo sample aspect ratio ("
         << this->prop.sampleAspectRatio.num << "," << this->prop.sampleAspectRatio.den << ")");
+  }
+  else if (this->inputFormat == InputFormat::OBUAV1)
+  {
+    DEBUG_COMPRESSED(
+        "playlistItemCompressedVideo::playlistItemCompressedVideo Opening OBU AV1 file");
+    
   }
   else
   {
@@ -676,8 +679,7 @@ void playlistItemCompressedVideo::loadRawData(int frameIdx, bool caching)
     while (dec->state() == decoder::DecoderState::NeedsMoreData)
     {
       DEBUG_COMPRESSED("playlistItemCompressedVideo::loadRawData decoder needs more data");
-      if (isInputFormatTypeFFmpeg(this->inputFormat) &&
-          this->decoderEngine == DecoderEngine::FFMpeg)
+      if (this->inputFormat == InputFormat::Libav && this->decoderEngine == DecoderEngine::FFMpeg)
       {
         // In this scenario, we can read and push AVPackets
         // from the FFmpeg file and pass them to the FFmpeg decoder directly.
@@ -756,7 +758,7 @@ void playlistItemCompressedVideo::loadRawData(int frameIdx, bool caching)
             << data.size());
         this->repushData = !dec->pushData(data);
       }
-      else if (isInputFormatTypeFFmpeg(this->inputFormat) &&
+      else if (this->inputFormat == InputFormat::Libav &&
                this->decoderEngine != DecoderEngine::FFMpeg)
       {
         // Get the next unit (NAL or OBU) form ffmepg and push it to the decoder
@@ -1187,9 +1189,10 @@ void playlistItemCompressedVideo::getSupportedFileExtensions(QStringList &allExt
       << "webm"
       << "xmv"
       << "ts"
-      << "mxf";
+      << "mxf"
+      << "obu";
   QString filtersString = "FFmpeg files (";
-  for (QString e : ext)
+  for (const auto &e : ext)
     filtersString.append(QString("*.%1").arg(e));
   filtersString.append(")");
 

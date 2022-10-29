@@ -35,11 +35,7 @@
 #include <common/Typedef.h>
 #include <filesource/FileSource.h>
 
-/* This class is a normal FileSource for opening of raw AnnexBFiles.
- * Basically it understands that this is a binary file where each unit starts with a start code
- * (0x0000001)
- * TODO: The reading / parsing could be performed in a background thread in order to increase the
- * performance
+/* Extends the FileSource to read nal units from a raw AnnexB file.
  */
 class FileSourceAnnexBFile : public FileSource
 {
@@ -52,8 +48,7 @@ public:
 
   bool openFile(const QString &filePath) override;
 
-  // Is the file at the end?
-  bool atEnd() const override;
+  [[nodiscard]] bool atEnd() const override;
 
   // --- Retrieving of data from the file ---
   // You can either read a file NAL by NAL or frame by frame. Do not mix the two interfaces.
@@ -71,10 +66,9 @@ public:
   // the payload).
   QByteArray getFrameData(pairUint64 startEndFilePos);
 
-  // Seek the file to the given byte position. Update the buffer.
   bool seek(int64_t pos) override;
 
-  uint64_t getNrBytesBeforeFirstNAL() const { return this->nrBytesBeforeFirstNAL; }
+  [[nodiscard]] uint64_t getNrBytesBeforeFirstNAL() const { return this->nrBytesBeforeFirstNAL; }
 
 protected:
   QByteArray fileBuffer;
@@ -88,10 +82,7 @@ protected:
   // update the buffer and the start of the start code was in the previous buffer
   int64_t posInBuffer{0};
 
-  // load the next buffer
   bool updateBuffer();
-
-  // Seek to the first NAL header in the bitstream
   void seekToFirstNAL();
 
   // We will keep the last buffer in case the reader wants to get it again

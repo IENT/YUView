@@ -67,7 +67,7 @@ public:
   // Clear all knowledge about the bitstream.
   void clearData();
 
-  QList<QTreeWidgetItem *> getStreamInfo() override { return stream_info.getStreamInfo(); }
+  QList<QTreeWidgetItem *> getStreamInfo() override { return this->streamInfo.getStreamInfo(); }
   unsigned int             getNrStreams() override { return 1; }
   QString                  getShortStreamDescription(int streamIndex) const override;
 
@@ -156,16 +156,16 @@ protected:
   int pocOfFirstRandomAccessFrame{-1};
 
   // Save general information about the file here
-  struct stream_info_type
+  struct StreamInfo
   {
     QList<QTreeWidgetItem *> getStreamInfo();
 
-    size_t   file_size;
-    unsigned nr_nal_units{0};
-    unsigned nr_frames{0};
+    size_t   fileSize;
+    unsigned nrNALUnits{0};
+    unsigned nrFrames{0};
     bool     parsing{false};
   };
-  stream_info_type stream_info;
+  StreamInfo streamInfo;
 
   int getFramePOC(FrameIndexDisplayOrder frameIdx);
 
