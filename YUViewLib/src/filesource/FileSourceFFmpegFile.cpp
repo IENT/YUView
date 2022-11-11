@@ -314,7 +314,17 @@ QList<QByteArray> FileSourceFFmpegFile::getParameterSets()
     // This should be a normal OBU for the seuqence header starting with the OBU header
     SubByteReaderLogging    reader(SubByteReaderLogging::convertToByteVector(extradata), nullptr);
     parser::av1::obu_header header;
-    header.parse(reader);
+    try
+    {
+      header.parse(reader);
+    }
+    catch (const std::exception &e)
+    {
+      (void)e;
+      DEBUG_FFMPEG("Error parsing OBU header " + e.what());
+      return retArray;
+    }
+
     if (header.obu_type == parser::av1::ObuType::OBU_SEQUENCE_HEADER)
       retArray.append(extradata);
   }
