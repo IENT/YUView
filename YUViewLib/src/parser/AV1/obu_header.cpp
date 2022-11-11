@@ -62,9 +62,7 @@ void obu_header::parse(SubByteReaderLogging &reader)
   }
 
   if (this->obu_has_size_field)
-  {
     this->obu_size = reader.readLEB128("obu_size");
-  }
 }
 
 } // namespace parser::av1
