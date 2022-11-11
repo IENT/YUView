@@ -51,7 +51,7 @@ public:
 class OpenBitstreamUnit
 {
 public:
-  OpenBitstreamUnit(int obu_idx, std::optional<pairUint64> filePosStartEnd) : obu_idx(obu_idx)
+  OpenBitstreamUnit(int obu_idx, std::optional<FileStartEndPos> filePosStartEnd) : obu_idx(obu_idx)
   {
     if (filePosStartEnd)
       this->filePosStartEnd = *filePosStartEnd;
@@ -61,8 +61,8 @@ public:
   std::shared_ptr<ObuPayload> payload;
 
   // Pointer to the first byte of the start code of the NAL unit
-  pairUint64 filePosStartEnd;
-  int        obu_idx{};
+  FileStartEndPos filePosStartEnd;
+  int             obu_idx{};
 };
 
 } // namespace parser::av1

@@ -47,10 +47,12 @@ ParserAV1OBU::ParserAV1OBU(QObject *parent) : Base(parent)
   this->decValues.PrevFrameID = -1;
 }
 
-std::pair<size_t, std::string> ParserAV1OBU::parseAndAddOBU(int                       obuID,
-                                                            ByteVector &              data,
-                                                            std::shared_ptr<TreeItem> parent,
-                                                            pairUint64 obuStartEndPosFile)
+Base::ParseResult
+ParserAV1OBU::parseAndAddUnit(int                                           obuID,
+                              const ByteVector &                            data,
+                              std::optional<BitratePlotModel::BitrateEntry> bitrateEntry,
+                              std::optional<FileStartEndPos>                obuStartEndPosFile = {},
+                              std::shared_ptr<TreeItem>                     parent = nullptr)
 {
   // Use the given tree item. If it is not set, use the nalUnitMode (if active).
   // We don't set data (a name) for this item yet.

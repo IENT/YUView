@@ -267,11 +267,11 @@ Ratio AnnexBVVC::getSampleAspectRatio()
 }
 
 AnnexB::ParseResult
-AnnexBVVC::parseAndAddNALUnit(int                                           nalID,
-                              const ByteVector &                            data,
-                              std::optional<BitratePlotModel::BitrateEntry> bitrateEntry,
-                              std::optional<pairUint64>                     nalStartEndPosFile,
-                              std::shared_ptr<TreeItem>                     parent)
+AnnexBVVC::parseAndAddUnit(int                                           nalID,
+                           const ByteVector &                            data,
+                           std::optional<BitratePlotModel::BitrateEntry> bitrateEntry,
+                           std::optional<FileStartEndPos>                nalStartEndPosFile,
+                           std::shared_ptr<TreeItem>                     parent)
 {
   AnnexB::ParseResult parseResult;
   parseResult.success = true;
@@ -562,7 +562,7 @@ AnnexBVVC::parseAndAddNALUnit(int                                           nalI
   else if (nalStartEndPosFile)
   {
     if (updatedParsingState.currentAU.fileStartEndPos)
-      updatedParsingState.currentAU.fileStartEndPos->second = nalStartEndPosFile->second;
+      updatedParsingState.currentAU.fileStartEndPos->end = nalStartEndPosFile->end;
     else
       updatedParsingState.currentAU.fileStartEndPos = nalStartEndPosFile;
   }

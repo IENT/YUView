@@ -71,7 +71,7 @@ struct CurrentSliceData
 
 std::optional<FrameParsingData>
 getFrameDataWithUpdatedPosition(std::optional<FrameParsingData> data,
-                                std::optional<pairUint64>       nalStartEndPosFile,
+                                std::optional<FileStartEndPos>  nalStartEndPosFile,
                                 std::optional<CurrentSliceData> currentSliceData)
 {
   auto newData = data.value_or(FrameParsingData());
@@ -80,7 +80,7 @@ getFrameDataWithUpdatedPosition(std::optional<FrameParsingData> data,
     if (!newData.fileStartEndPos)
       newData.fileStartEndPos = nalStartEndPosFile;
     else
-      newData.fileStartEndPos->second = nalStartEndPosFile->second;
+      newData.fileStartEndPos->end = nalStartEndPosFile->end;
   }
   if (currentSliceData)
   {
@@ -178,11 +178,11 @@ video::yuv::PixelFormatYUV AnnexBAVC::getPixelFormat() const
 }
 
 AnnexB::ParseResult
-AnnexBAVC::parseAndAddNALUnit(int                                           nalID,
-                              const ByteVector &                            data,
-                              std::optional<BitratePlotModel::BitrateEntry> bitrateEntry,
-                              std::optional<pairUint64>                     nalStartEndPosFile,
-                              std::shared_ptr<TreeItem>                     parent)
+AnnexBAVC::parseAndAddUnit(int                                           nalID,
+                           const ByteVector &                            data,
+                           std::optional<BitratePlotModel::BitrateEntry> bitrateEntry,
+                           std::optional<FileStartEndPos>                nalStartEndPosFile,
+                           std::shared_ptr<TreeItem>                     parent)
 {
   AnnexB::ParseResult parseResult;
 
@@ -269,7 +269,7 @@ AnnexBAVC::parseAndAddNALUnit(int                                           nalI
       nalAVC->rbsp    = newSPS;
       nalAVC->rawData = data;
       this->nalUnitsForSeeking.push_back(nalAVC);
-      parseResult.nalTypeName =
+      parseResult.unitTypeName =
           "SPS(" + std::to_string(newSPS->seqParameterSetData.seq_parameter_set_id) + ") ";
     }
     else if (nalAVC->header.nal_unit_type == NalType::PPS)
@@ -287,7 +287,7 @@ AnnexBAVC::parseAndAddNALUnit(int                                           nalI
       nalAVC->rbsp    = newPPS;
       nalAVC->rawData = data;
       this->nalUnitsForSeeking.push_back(nalAVC);
-      parseResult.nalTypeName = "PPS(" + std::to_string(newPPS->pic_parameter_set_id) + ") ";
+      parseResult.unitTypeName = "PPS(" + std::to_string(newPPS->pic_parameter_set_id) + ") ";
     }
     else if (nalAVC->header.nal_unit_type == NalType::CODED_SLICE_NON_IDR ||
              nalAVC->header.nal_unit_type == NalType::CODED_SLICE_IDR ||
@@ -364,7 +364,7 @@ AnnexBAVC::parseAndAddNALUnit(int                                           nalI
       currentSliceType  = to_string(newSliceHeader->slice_type);
 
       DEBUG_AVC("AnnexBAVC::parseAndAddNALUnit Parsed Slice POC " << newSliceHeader->globalPOC);
-      parseResult.nalTypeName = "Slice(POC " + std::to_string(newSliceHeader->globalPOC) + ") ";
+      parseResult.unitTypeName = "Slice(POC " + std::to_string(newSliceHeader->globalPOC) + ") ";
     }
     else if (nalAVC->header.nal_unit_type == NalType::CODED_SLICE_DATA_PARTITION_B)
     {
@@ -372,8 +372,8 @@ AnnexBAVC::parseAndAddNALUnit(int                                           nalI
         throw std::logic_error("No partition A slice header found.");
       auto slice = std::make_shared<slice_data_partition_b_layer_rbsp>();
       slice->parse(reader, this->currentAUPartitionASPS);
-      specificDescription     = " Slice Partition B";
-      parseResult.nalTypeName = "Slice-PartB ";
+      specificDescription      = " Slice Partition B";
+      parseResult.unitTypeName = "Slice-PartB ";
     }
     else if (nalAVC->header.nal_unit_type == NalType::CODED_SLICE_DATA_PARTITION_C)
     {
@@ -381,8 +381,8 @@ AnnexBAVC::parseAndAddNALUnit(int                                           nalI
         throw std::logic_error("No partition A slice header found.");
       auto slice = std::make_shared<slice_data_partition_c_layer_rbsp>();
       slice->parse(reader, this->currentAUPartitionASPS);
-      specificDescription     = " Slice Partition C";
-      parseResult.nalTypeName = "Slice-PartC ";
+      specificDescription      = " Slice Partition C";
+      parseResult.unitTypeName = "Slice-PartC ";
     }
     else if (nalAVC->header.nal_unit_type == NalType::SEI)
     {
@@ -420,19 +420,19 @@ AnnexBAVC::parseAndAddNALUnit(int                                           nalI
       specificDescription += "(x" + std::to_string(newSEI->seis.size()) + ")";
       DEBUG_AVC("AnnexBAVC::parseAndAddNALUnit Parsed SEI (" << newSEI->seis.size()
                                                              << " messages)");
-      parseResult.nalTypeName = "SEI(x" + std::to_string(newSEI->seis.size()) + ") ";
+      parseResult.unitTypeName = "SEI(x" + std::to_string(newSEI->seis.size()) + ") ";
     }
     else if (nalAVC->header.nal_unit_type == NalType::FILLER)
     {
       specificDescription = " Filler";
       DEBUG_AVC("AnnexBAVC::parseAndAddNALUnit Parsed Filler data");
-      parseResult.nalTypeName = "Filler ";
+      parseResult.unitTypeName = "Filler ";
     }
     else if (nalAVC->header.nal_unit_type == NalType::AUD)
     {
       specificDescription = " AUD";
       DEBUG_AVC("AnnexBAVC::parseAndAddNALUnit Parsed AUD");
-      parseResult.nalTypeName = "AUD ";
+      parseResult.unitTypeName = "AUD ";
     }
 
     if (nalAVC->header.nal_unit_type == NalType::CODED_SLICE_IDR ||
@@ -608,7 +608,7 @@ std::optional<AnnexB::SeekData> AnnexBAVC::getSeekData(int iFrameNr)
         // Seek here
         AnnexB::SeekData seekData;
         if (nal->filePosStartEnd)
-          seekData.filePos = nal->filePosStartEnd->first;
+          seekData.filePos = nal->filePosStartEnd->start;
 
         // Get the bitstream of all active parameter sets
         for (const auto &nalMap : {activeSPSNal, activePPSNal})

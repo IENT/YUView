@@ -60,13 +60,11 @@ const auto InputFormatMapper = EnumMapper<InputFormat>({{InputFormat::Invalid, "
                                                         {InputFormat::OBUAV1, "OBUAV1"},
                                                         {InputFormat::Libav, "Libav"}});
 
-struct FileStartEndPos
+struct DataAndStartEndPos
 {
-  int64_t start{};
-  int64_t end{};
+  QByteArray      data{};
+  FileStartEndPos startEnd{};
 };
-
-using DataAndStartEndPos = std::pair<QByteArray, FileStartEndPos>;
 
 /* The FileSource class provides functions for accessing files. Besides the reading of
  * certain blocks of the file, it also directly provides information on the file for the

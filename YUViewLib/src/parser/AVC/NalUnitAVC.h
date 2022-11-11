@@ -51,7 +51,7 @@ public:
 class NalUnitAVC
 {
 public:
-  NalUnitAVC(int nalIdx, std::optional<pairUint64> filePosStartEnd)
+  NalUnitAVC(int nalIdx, std::optional<FileStartEndPos> filePosStartEnd)
       : nalIdx(nalIdx), filePosStartEnd(filePosStartEnd)
   {
   }
@@ -61,7 +61,7 @@ public:
 
   int nalIdx{};
   // Pointer to the first byte of the start code of the NAL unit (if known)
-  std::optional<pairUint64> filePosStartEnd;
+  std::optional<FileStartEndPos> filePosStartEnd;
 
   ByteVector rawData;
 };

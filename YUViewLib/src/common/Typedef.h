@@ -314,6 +314,19 @@ struct Offset
   int  y{};
 };
 
+struct FileStartEndPos
+{
+  int64_t start{};
+  int64_t end{};
+};
+
+std::string to_string(const FileStartEndPos fileStartEndPos)
+{
+  std::ostringstream ss;
+  ss << "(" << fileStartEndPos.start << ", " << fileStartEndPos.end << ")";
+  return ss.str();
+}
+
 // A list of value pair lists, where every list has a string (title)
 class ValuePairListSets : public QList<QPair<QString, QStringPairList>>
 {

@@ -47,14 +47,14 @@ public:
 class NalUnitMpeg2
 {
 public:
-  NalUnitMpeg2(int nalIdx, std::optional<pairUint64> filePosStartEnd)
+  NalUnitMpeg2(int nalIdx, std::optional<FileStartEndPos> filePosStartEnd)
       : nalIdx(nalIdx), filePosStartEnd(filePosStartEnd)
   {
   }
 
   int nalIdx{};
   // Pointer to the first byte of the start code of the NAL unit (if known)
-  std::optional<pairUint64> filePosStartEnd;
+  std::optional<FileStartEndPos> filePosStartEnd;
 
   nal_unit_header          header;
   std::shared_ptr<NalRBSP> rbsp;

@@ -50,7 +50,7 @@ public:
 
   // Get the next OBU. Also return the start and end position of the OBU in the file so
   // you can seek to it.
-  [[nodiscard]] DataAndStartEndPos getNextOBU(bool getLastDataAgain = false);
+  DataAndStartEndPos getNextOBU(bool getLastDataAgain = false);
 
 protected:
   // We will keep the last buffer in case the reader wants to get it again

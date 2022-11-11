@@ -37,6 +37,7 @@
 #include <filesource/FileSourceFFmpegFile.h>
 #include <filesource/FileSourceOBUFile.h>
 #include <parser/AnnexB.h>
+#include <parser/OBU.h>
 #include <statistics/StatisticUIHandler.h>
 #include <statistics/StatisticsData.h>
 #include <ui_playlistItemCompressedFile.h>
@@ -147,6 +148,9 @@ protected:
 
   // The same applies for Raw OBU files. We open the input twice (for caching and loading). The
   // parser is only needed once.
+  std::unique_ptr<FileSourceOBUFile> inputFileOBULoading;
+  std::unique_ptr<FileSourceOBUFile> inputFileOBUCaching;
+  std::unique_ptr<parser::OBU>       inputFileOBUParser;
 
   // Which type is the input?
   InputFormat              inputFormat{InputFormat::Invalid};

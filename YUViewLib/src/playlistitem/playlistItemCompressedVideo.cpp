@@ -191,7 +191,6 @@ playlistItemCompressedVideo::playlistItemCompressedVideo(const QString &compress
   {
     DEBUG_COMPRESSED(
         "playlistItemCompressedVideo::playlistItemCompressedVideo Opening OBU AV1 file");
-    
   }
   else
   {
@@ -728,7 +727,7 @@ void playlistItemCompressedVideo::loadRawData(int frameIdx, bool caching)
           DEBUG_COMPRESSED("playlistItemCompressedVideo::loadRawData retrived frame data from file "
                            "- AnnexBCnt "
                            << this->readAnnexBFrameCounterCodingOrder << " startEnd "
-                           << frameStartEndFilePos->first << "-" << frameStartEndFilePos->second
+                           << frameStartEndFilePos->start << "-" << frameStartEndFilePos->end
                            << " - size " << data.size());
         }
 
@@ -751,8 +750,9 @@ void playlistItemCompressedVideo::loadRawData(int frameIdx, bool caching)
       else if (isInputFormatTypeAnnexB(this->inputFormat) &&
                this->decoderEngine != DecoderEngine::FFMpeg)
       {
-        auto data = caching ? this->inputFileAnnexBCaching->getNextNALUnit(repushData)
-                            : this->inputFileAnnexBLoading->getNextNALUnit(repushData);
+        auto [data, fileStartEndPos] =
+            caching ? this->inputFileAnnexBCaching->getNextNALUnit(repushData)
+                    : this->inputFileAnnexBLoading->getNextNALUnit(repushData);
         DEBUG_COMPRESSED(
             "playlistItemCompressedVideo::loadRawData retrived nal unit from file - size "
             << data.size());

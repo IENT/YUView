@@ -59,12 +59,12 @@ public:
   // Also return the start and end position of the NAL unit in the file so you can seek to it.
   // startEndPosInFile: The file positions of the first byte in the NAL header and the end position
   // of the last byte
-  QByteArray getNextNALUnit(bool getLastDataAgain = false, pairUint64 *startEndPosInFile = nullptr);
+  DataAndStartEndPos getNextNALUnit(bool getLastDataAgain = false);
 
   // Get all bytes that are needed to decode the next frame (from the given start to the given end
   // position) The data will be returned in the ISO/IEC 14496-15 format (4 bytes size followed by
   // the payload).
-  QByteArray getFrameData(pairUint64 startEndFilePos);
+  QByteArray getFrameData(const FileStartEndPos &startEndFilePos);
 
   bool seek(int64_t pos) override;
 
@@ -72,8 +72,8 @@ public:
 
 protected:
   QByteArray fileBuffer;
-  uint64_t   fileBufferSize{0}; ///< How many of the bytes are used? We don't resize the fileBuffer
-  uint64_t   bufferStartPosInFile{
+  int64_t    fileBufferSize{0}; ///< How many of the bytes are used? We don't resize the fileBuffer
+  int64_t    bufferStartPosInFile{
       0}; ///< The byte position in the file of the start of the currently loaded buffer
 
   // The current position in the input buffer in bytes. This always points to the first byte of a
@@ -86,7 +86,7 @@ protected:
   void seekToFirstNAL();
 
   // We will keep the last buffer in case the reader wants to get it again
-  QByteArray lastReturnArray;
+  DataAndStartEndPos lastDataAndPos;
 
-  uint64_t nrBytesBeforeFirstNAL{0};
+  int64_t nrBytesBeforeFirstNAL{0};
 };

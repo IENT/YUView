@@ -270,11 +270,11 @@ Ratio AnnexBHEVC::getSampleAspectRatio()
 }
 
 AnnexB::ParseResult
-AnnexBHEVC::parseAndAddNALUnit(int                                           nalID,
-                               const ByteVector &                            data,
-                               std::optional<BitratePlotModel::BitrateEntry> bitrateEntry,
-                               std::optional<pairUint64>                     nalStartEndPosFile,
-                               std::shared_ptr<TreeItem>                     parent)
+AnnexBHEVC::parseAndAddUnit(int                                           nalID,
+                            const ByteVector &                            data,
+                            std::optional<BitratePlotModel::BitrateEntry> bitrateEntry,
+                            std::optional<FileStartEndPos>                nalStartEndPosFile,
+                            std::shared_ptr<TreeItem>                     parent)
 {
   AnnexB::ParseResult parseResult;
 
@@ -337,7 +337,7 @@ AnnexBHEVC::parseAndAddNALUnit(int                                           nal
       nalHEVC->rbsp    = newVPS;
       nalHEVC->rawData = data;
       this->nalUnitsForSeeking.push_back(nalHEVC);
-      parseResult.nalTypeName = "VPS(" + std::to_string(newVPS->vps_video_parameter_set_id) + ") ";
+      parseResult.unitTypeName = "VPS(" + std::to_string(newVPS->vps_video_parameter_set_id) + ") ";
 
       DEBUG_HEVC("AnnexBHEVC::parseAndAddNALUnit VPS ID " << newVPS->vps_video_parameter_set_id);
     }
@@ -356,7 +356,7 @@ AnnexBHEVC::parseAndAddNALUnit(int                                           nal
       nalHEVC->rbsp    = newSPS;
       nalHEVC->rawData = data;
       this->nalUnitsForSeeking.push_back(nalHEVC);
-      parseResult.nalTypeName = "SPS(" + std::to_string(newSPS->sps_seq_parameter_set_id) + ") ";
+      parseResult.unitTypeName = "SPS(" + std::to_string(newSPS->sps_seq_parameter_set_id) + ") ";
     }
     else if (nalHEVC->header.nal_unit_type == hevc::NalType::PPS_NUT)
     {
@@ -373,7 +373,7 @@ AnnexBHEVC::parseAndAddNALUnit(int                                           nal
       nalHEVC->rbsp    = newPPS;
       nalHEVC->rawData = data;
       this->nalUnitsForSeeking.push_back(nalHEVC);
-      parseResult.nalTypeName = "SPS(" + std::to_string(newPPS->pps_pic_parameter_set_id) + ") ";
+      parseResult.unitTypeName = "SPS(" + std::to_string(newPPS->pps_pic_parameter_set_id) + ") ";
     }
     else if (nalHEVC->header.isSlice())
     {
@@ -480,7 +480,7 @@ AnnexBHEVC::parseAndAddNALUnit(int                                           nal
       else if (curFrameFileStartEndPos && nalStartEndPosFile)
         // Another slice NAL which belongs to the last frame
         // Update the end position
-        curFrameFileStartEndPos->second = nalStartEndPosFile->second;
+        curFrameFileStartEndPos->end = nalStartEndPosFile->end;
 
       nalHEVC->rbsp = newSlice;
       if (nalHEVC->header.isIRAP())
@@ -493,7 +493,7 @@ AnnexBHEVC::parseAndAddNALUnit(int                                           nal
       currentSliceType = to_string(newSlice->sliceSegmentHeader.slice_type);
 
       specificDescription += " (POC " + std::to_string(poc) + ")";
-      parseResult.nalTypeName = "Slice(POC " + std::to_string(poc) + ")";
+      parseResult.unitTypeName = "Slice(POC " + std::to_string(poc) + ")";
 
       DEBUG_HEVC("AnnexBHEVC::parseAndAddNALUnit Slice POC "
                  << poc << " - pocCounterOffset " << this->pocCounterOffset << " maxPOCCount "
@@ -540,12 +540,12 @@ AnnexBHEVC::parseAndAddNALUnit(int                                           nal
 
       DEBUG_HEVC("AnnexBHEVC::parseAndAddNALUnit Parsed SEI (" << newSEI->seis.size()
                                                                << " messages)");
-      parseResult.nalTypeName = "SEI(x" + std::to_string(newSEI->seis.size()) + ") ";
+      parseResult.unitTypeName = "SEI(x" + std::to_string(newSEI->seis.size()) + ") ";
     }
     else if (nalHEVC->header.nal_unit_type == NalType::FD_NUT)
     {
       DEBUG_HEVC("AnnexBHEVC::parseAndAddNALUnit Parsed Fillerdata");
-      parseResult.nalTypeName = "Filler ";
+      parseResult.unitTypeName = "Filler ";
     }
     else if (nalHEVC->header.nal_unit_type == NalType::UNSPEC62 ||
              nalHEVC->header.nal_unit_type == NalType::UNSPEC63)
@@ -556,7 +556,7 @@ AnnexBHEVC::parseAndAddNALUnit(int                                           nal
       // https://patents.google.com/patent/US20180278963A1/en
       specificDescription = " Dolby Vision";
       DEBUG_HEVC("AnnexBHEVC::parseAndAddNALUnit Dolby Vision Metadata");
-      parseResult.nalTypeName = "Dolby Vision ";
+      parseResult.unitTypeName = "Dolby Vision ";
     }
 
     if (nalHEVC->header.isSlice())

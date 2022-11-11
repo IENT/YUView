@@ -88,16 +88,13 @@ void FileSourceAnnexBFile::seekToFirstNAL()
   this->nrBytesBeforeFirstNAL = this->bufferStartPosInFile + uint64_t(this->posInBuffer);
 }
 
-QByteArray FileSourceAnnexBFile::getNextNALUnit(bool        getLastDataAgain,
-                                                pairUint64 *startEndPosInFile)
+DataAndStartEndPos FileSourceAnnexBFile::getNextNALUnit(bool getLastDataAgain)
 {
   if (getLastDataAgain)
-    return this->lastReturnArray;
+    return this->lastDataAndPos;
 
-  this->lastReturnArray.clear();
-
-  if (startEndPosInFile)
-    startEndPosInFile->first = this->bufferStartPosInFile + uint64_t(this->posInBuffer);
+  this->lastDataAndPos.data.clear();
+  this->lastDataAndPos.startEnd.start = this->bufferStartPosInFile + this->posInBuffer;
 
   int  nextStartCodePos = -1;
   int  searchOffset     = 3;
@@ -109,25 +106,24 @@ QByteArray FileSourceAnnexBFile::getNextNALUnit(bool        getLastDataAgain,
       // Part of the start code was in the last buffer (see special boundary cases below). Add those
       // parts.
       const auto nrZeroBytesMissing = std::abs(this->posInBuffer);
-      this->lastReturnArray.append(nrZeroBytesMissing, char(0));
+      this->lastDataAndPos.data.append(nrZeroBytesMissing, char(0));
     }
     nextStartCodePos = this->fileBuffer.indexOf(STARTCODE, this->posInBuffer + searchOffset);
 
     if (nextStartCodePos < 0 || (uint64_t)nextStartCodePos > this->fileBufferSize)
     {
       // No start code found ... append all data in the current buffer.
-      this->lastReturnArray +=
+      this->lastDataAndPos.data +=
           this->fileBuffer.mid(this->posInBuffer, this->fileBufferSize - this->posInBuffer);
       DEBUG_ANNEXBFILE("FileSourceHEVCAnnexBFile::getNextNALUnit no start code found - ret size "
-                       << this->lastReturnArray.size());
+                       << this->lastDataAndPos.data.size());
 
       if (this->fileBufferSize < BUFFERSIZE)
       {
         // We are out of file and could not find a next position
-        this->posInBuffer = BUFFERSIZE;
-        if (startEndPosInFile)
-          startEndPosInFile->second = this->bufferStartPosInFile + this->fileBufferSize - 1;
-        return this->lastReturnArray;
+        this->posInBuffer                 = BUFFERSIZE;
+        this->lastDataAndPos.startEnd.end = this->bufferStartPosInFile + this->fileBufferSize - 1;
+        return this->lastDataAndPos;
       }
 
       // Before we load the next bytes: The start code might be located at the boundary to the next
@@ -137,7 +133,7 @@ QByteArray FileSourceAnnexBFile::getNextNALUnit(bool        getLastDataAgain,
       const auto lastByteZero2 = this->fileBuffer.at(this->fileBufferSize - 1) == (char)0;
 
       // We have to continue searching - get the next buffer
-      updateBuffer();
+      this->updateBuffer();
 
       if (this->fileBufferSize > 2)
       {
@@ -148,7 +144,7 @@ QByteArray FileSourceAnnexBFile::getNextNALUnit(bool        getLastDataAgain,
           // buffer
           startCodeFound   = true;
           nextStartCodePos = lastByteZero0 ? -3 : -2;
-          this->lastReturnArray.chop(lastByteZero0 ? 3 : 2);
+          this->lastDataAndPos.data.chop(lastByteZero0 ? 3 : 2);
         }
         else if (this->fileBuffer.at(0) == (char)0 && this->fileBuffer.at(1) == (char)1 &&
                  lastByteZero2)
@@ -157,7 +153,7 @@ QByteArray FileSourceAnnexBFile::getNextNALUnit(bool        getLastDataAgain,
           // last buffer
           startCodeFound   = true;
           nextStartCodePos = lastByteZero1 ? -2 : -1;
-          this->lastReturnArray.chop(lastByteZero0 ? 1 : 1);
+          this->lastDataAndPos.data.chop(lastByteZero0 ? 1 : 1);
         }
         else if (this->fileBuffer.at(0) == (char)0 && this->fileBuffer.at(1) == (char)0 &&
                  this->fileBuffer.at(2) == (char)1)
@@ -166,7 +162,7 @@ QByteArray FileSourceAnnexBFile::getNextNALUnit(bool        getLastDataAgain,
           startCodeFound   = true;
           nextStartCodePos = lastByteZero2 ? -1 : 0;
           if (lastByteZero2)
-            this->lastReturnArray.chop(1);
+            this->lastDataAndPos.data.chop(1);
         }
       }
 
@@ -182,18 +178,17 @@ QByteArray FileSourceAnnexBFile::getNextNALUnit(bool        getLastDataAgain,
   }
 
   // Position found
-  if (startEndPosInFile)
-    startEndPosInFile->second = this->bufferStartPosInFile + nextStartCodePos;
+  this->lastDataAndPos.startEnd.end = this->bufferStartPosInFile + nextStartCodePos;
   if (nextStartCodePos > int(this->posInBuffer))
-    this->lastReturnArray +=
+    this->lastDataAndPos.data +=
         this->fileBuffer.mid(this->posInBuffer, nextStartCodePos - this->posInBuffer);
   this->posInBuffer = nextStartCodePos;
   DEBUG_ANNEXBFILE("FileSourceAnnexBFile::getNextNALUnit start code found - ret size "
-                   << this->lastReturnArray.size());
-  return this->lastReturnArray;
+                   << this->lastDataAndPos.data.size());
+  return this->lastDataAndPos;
 }
 
-QByteArray FileSourceAnnexBFile::getFrameData(pairUint64 startEndFilePos)
+QByteArray FileSourceAnnexBFile::getFrameData(const FileStartEndPos &startEndFilePos)
 {
   // Get all data for the frame (all NAL units in the raw format with start codes).
   // We don't need to convert the format to the mp4 ISO format. The ffmpeg decoder can also accept
@@ -201,16 +196,13 @@ QByteArray FileSourceAnnexBFile::getFrameData(pairUint64 startEndFilePos)
   // units.
   QByteArray retArray;
 
-  auto start = startEndFilePos.first;
-  auto end   = startEndFilePos.second;
-
   // Seek the source file to the start position
-  this->seek(start);
+  this->seek(startEndFilePos.start);
 
   // Retrieve NAL units (and repackage them) until we reached out end position
-  while (end > this->bufferStartPosInFile + this->posInBuffer)
+  while (startEndFilePos.end > this->bufferStartPosInFile + this->posInBuffer)
   {
-    auto nalData = this->getNextNALUnit();
+    auto [nalData, fileStartEndPos] = this->getNextNALUnit();
 
     int headerOffset = 0;
     if (nalData.at(0) == (char)0 && nalData.at(1) == (char)0)

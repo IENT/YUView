@@ -48,18 +48,18 @@ public:
   ParserAV1OBU(QObject *parent = nullptr);
   ~ParserAV1OBU() {}
 
-  std::pair<size_t, std::string> parseAndAddOBU(int                       obuID,
-                                                ByteVector &              data,
-                                                std::shared_ptr<TreeItem> parent,
-                                                pairUint64 obuStartEndPosFile = pairUint64(-1, -1));
+  ParseResult parseAndAddUnit(int                                           obuID,
+                              const ByteVector &                            data,
+                              std::optional<BitratePlotModel::BitrateEntry> bitrateEntry,
+                              std::optional<FileStartEndPos>                nalStartEndPosFile = {},
+                              std::shared_ptr<TreeItem>                     parent = nullptr);
 
-  // So far, we only parse AV1 Obu files from the AVFormat parser so we don't need this (yet).
-  // When parsing of raw OBU files is added, we will need this.
   bool runParsingOfFile(QString) override
   {
     assert(false);
     return false;
   }
+
   QList<QTreeWidgetItem *> getStreamInfo() override { return {}; }
   unsigned int             getNrStreams() override { return 1; }
   QString                  getShortStreamDescription(int) const override { return "Video"; }

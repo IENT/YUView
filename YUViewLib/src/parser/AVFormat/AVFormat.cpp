@@ -164,7 +164,7 @@ bool AVFormat::parseExtradata_AVC(ByteVector &extradata)
       SubByteReaderLoggingSubLevel spsSubLevel(reader, "SPS " + std::to_string(i));
       auto                         sps_size = reader.readBits("sps_size", 16);
       auto spsData     = reader.readBytes("", sps_size, Options().withLoggingDisabled());
-      auto parseResult = this->annexBParser->parseAndAddNALUnit(
+      auto parseResult = this->annexBParser->parseAndAddUnit(
           nalID++, spsData, {}, {}, reader.getCurrentItemTree());
       if (parseResult.success && parseResult.bitrateEntry)
         this->bitratePlotModel->addBitratePoint(this->videoStreamIndex, *parseResult.bitrateEntry);
@@ -176,7 +176,7 @@ bool AVFormat::parseExtradata_AVC(ByteVector &extradata)
       SubByteReaderLoggingSubLevel ppsSubLevel(reader, "PPS " + std::to_string(i));
       auto                         pps_size = reader.readBits("pps_size", 16);
       auto pspsData    = reader.readBytes("", pps_size, Options().withLoggingDisabled());
-      auto parseResult = this->annexBParser->parseAndAddNALUnit(
+      auto parseResult = this->annexBParser->parseAndAddUnit(
           nalID++, pspsData, {}, {}, reader.getCurrentItemTree());
       if (parseResult.success && parseResult.bitrateEntry)
         this->bitratePlotModel->addBitratePoint(this->videoStreamIndex, *parseResult.bitrateEntry);
@@ -301,7 +301,7 @@ AVFormat::parseByteVectorAnnexBStartCodes(ByteVector &                   data,
     auto itNextStartCode = getNextNalStart(itStartCode);
     auto nalData         = ByteVector(itStartCode + sizeStartCode, itNextStartCode);
     auto parseResult =
-        this->annexBParser->parseAndAddNALUnit(nalID++, nalData, packetBitrateEntry, {}, item);
+        this->annexBParser->parseAndAddUnit(nalID++, nalData, packetBitrateEntry, {}, item);
     if (parseResult.success && parseResult.bitrateEntry)
       this->bitratePlotModel->addBitratePoint(this->videoStreamIndex, *parseResult.bitrateEntry);
     if (parseResult.success && parseResult.nalTypeName)

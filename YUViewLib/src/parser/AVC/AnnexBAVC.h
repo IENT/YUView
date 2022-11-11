@@ -60,9 +60,9 @@ struct FrameParsingData
   // For every frame (AU), we save the file position where the NAL unit of the first slice starts
   // and where the NAL of the last slice ends (if known). This is used by getNextFrameNALUnits to
   // return all information (NAL units) for a specific frame (AU). This includes SPS/PPS.
-  std::optional<pairUint64> fileStartEndPos{};
-  std::optional<int>        poc{};
-  bool                      isRandomAccess{};
+  std::optional<FileStartEndPos> fileStartEndPos{};
+  std::optional<int>             poc{};
+  bool                           isRandomAccess{};
 };
 } // namespace avc
 
@@ -80,11 +80,11 @@ public:
   Size                       getSequenceSizeSamples() const override;
   video::yuv::PixelFormatYUV getPixelFormat() const override;
 
-  ParseResult parseAndAddNALUnit(int                                           nalID,
-                                 const ByteVector &                            data,
-                                 std::optional<BitratePlotModel::BitrateEntry> bitrateEntry,
-                                 std::optional<pairUint64> nalStartEndPosFile = {},
-                                 std::shared_ptr<TreeItem> parent             = nullptr) override;
+  ParseResult parseAndAddUnit(int                                           nalID,
+                              const ByteVector &                            data,
+                              std::optional<BitratePlotModel::BitrateEntry> bitrateEntry,
+                              std::optional<FileStartEndPos>                nalStartEndPosFile = {},
+                              std::shared_ptr<TreeItem> parent = nullptr) override;
 
   std::optional<SeekData> getSeekData(int iFrameNr) override;
   QByteArray              getExtradata() override;

@@ -58,9 +58,9 @@ QString AnnexB::getShortStreamDescription(int) const
   return info;
 }
 
-bool AnnexB::addFrameToList(int                       poc,
-                            std::optional<pairUint64> fileStartEndPos,
-                            bool                      randomAccessPoint)
+bool AnnexB::addFrameToList(int                            poc,
+                            std::optional<FileStartEndPos> fileStartEndPos,
+                            bool                           randomAccessPoint)
 {
   for (const auto &f : this->frameListCodingOrder)
     if (f.poc == poc)
@@ -81,9 +81,9 @@ bool AnnexB::addFrameToList(int                       poc,
   return true;
 }
 
-void AnnexB::logNALSize(const ByteVector &        data,
-                        std::shared_ptr<TreeItem> root,
-                        std::optional<pairUint64> nalStartEndPos)
+void AnnexB::logNALSize(const ByteVector &             data,
+                        std::shared_ptr<TreeItem>      root,
+                        std::optional<FileStartEndPos> nalStartEndPos)
 {
   size_t startCodeSize = 0;
   if (data[0] == char(0) && data[1] == char(0) && data[2] == char(0) && data[3] == char(1))
@@ -138,7 +138,7 @@ auto AnnexB::getClosestSeekPoint(FrameIndexDisplayOrder targetFrame,
   return seekPointInfo;
 }
 
-std::optional<pairUint64> AnnexB::getFrameStartEndPos(FrameIndexCodingOrder idx)
+std::optional<FileStartEndPos> AnnexB::getFrameStartEndPos(FrameIndexCodingOrder idx)
 {
   if (idx >= this->frameListCodingOrder.size())
     return {};
@@ -172,8 +172,7 @@ bool AnnexB::parseAnnexBFile(std::unique_ptr<FileSourceAnnexBFile> &file, QWidge
   emit streamInfoUpdated();
 
   // Just push all NAL units from the annexBFile into the annexBParser
-  int           nalID = 0;
-  pairUint64    nalStartEndPosFile;
+  int           nalID        = 0;
   bool          abortParsing = false;
   QElapsedTimer signalEmitTimer;
   signalEmitTimer.start();
@@ -186,10 +185,14 @@ bool AnnexB::parseAnnexBFile(std::unique_ptr<FileSourceAnnexBFile> &file, QWidge
 
     try
     {
-      auto nalData = reader::SubByteReaderLogging::convertToByteVector(
-          file->getNextNALUnit(false, &nalStartEndPosFile));
+      auto [nalData, nalStartEndPos] = file->getNextNALUnit(false);
+
       auto parsingResult =
-          this->parseAndAddNALUnit(nalID, nalData, {}, nalStartEndPosFile, nullptr);
+          this->parseAndAddUnit(nalID,
+                                reader::SubByteReaderLogging::convertToByteVector(nalData),
+                                {},
+                                nalStartEndPos,
+                                nullptr);
       if (!parsingResult.success)
       {
         DEBUG_ANNEXB("AnnexB::parseAndAddNALUnit Error parsing NAL " << nalID);
@@ -250,7 +253,7 @@ bool AnnexB::parseAnnexBFile(std::unique_ptr<FileSourceAnnexBFile> &file, QWidge
 
   try
   {
-    auto parseResult = this->parseAndAddNALUnit(-1, {}, {}, {});
+    auto parseResult = this->parseAndAddUnit(-1, {}, {}, {});
     if (!parseResult.success)
       DEBUG_ANNEXB("AnnexB::parseAndAddNALUnit Error finalizing parsing. This should not happen.");
   }
@@ -265,9 +268,9 @@ bool AnnexB::parseAnnexBFile(std::unique_ptr<FileSourceAnnexBFile> &file, QWidge
   if (packetModel)
     emit modelDataUpdated();
 
-  this->streamInfo.parsing    = false;
-  this->streamInfo.nrNALUnits = nalID;
-  this->streamInfo.nrFrames   = unsigned(this->frameListCodingOrder.size());
+  this->streamInfo.parsing  = false;
+  this->streamInfo.nrUnits  = nalID;
+  this->streamInfo.nrFrames = unsigned(this->frameListCodingOrder.size());
   emit streamInfoUpdated();
   emit backgroundParsingDone("");
 
@@ -279,29 +282,6 @@ bool AnnexB::runParsingOfFile(QString compressedFilePath)
   DEBUG_ANNEXB("playlistItemCompressedVideo::runParsingOfFile");
   auto file = std::make_unique<FileSourceAnnexBFile>(compressedFilePath);
   return this->parseAnnexBFile(file);
-}
-
-QList<QTreeWidgetItem *> AnnexB::StreamInfo::getStreamInfo()
-{
-  QList<QTreeWidgetItem *> infoList;
-  infoList.append(
-      new QTreeWidgetItem(QStringList() << "File size" << QString::number(this->fileSize)));
-  if (this->parsing)
-  {
-    infoList.append(new QTreeWidgetItem(QStringList() << "Number NAL units"
-                                                      << "Parsing..."));
-    infoList.append(new QTreeWidgetItem(QStringList() << "Number Frames"
-                                                      << "Parsing..."));
-  }
-  else
-  {
-    infoList.append(new QTreeWidgetItem(QStringList() << "Number NAL units"
-                                                      << QString::number(this->nrNALUnits)));
-    infoList.append(
-        new QTreeWidgetItem(QStringList() << "Number Frames" << QString::number(this->nrFrames)));
-  }
-
-  return infoList;
 }
 
 int AnnexB::getFramePOC(FrameIndexDisplayOrder frameIdx)

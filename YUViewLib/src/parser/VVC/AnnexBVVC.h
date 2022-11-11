@@ -61,11 +61,11 @@ struct ParsingState
 
   struct CurrentAU
   {
-    size_t                    counter{};
-    size_t                    sizeBytes{};
-    int                       poc{-1};
-    bool                      isKeyframe{};
-    std::optional<pairUint64> fileStartEndPos;
+    size_t                         counter{};
+    size_t                         sizeBytes{};
+    int                            poc{-1};
+    bool                           isKeyframe{};
+    std::optional<FileStartEndPos> fileStartEndPos;
   };
   CurrentAU currentAU{};
 
@@ -94,11 +94,11 @@ public:
   IntPair                         getProfileLevel() override;
   Ratio                           getSampleAspectRatio() override;
 
-  ParseResult parseAndAddNALUnit(int                                           nalID,
-                                 const ByteVector &                            data,
-                                 std::optional<BitratePlotModel::BitrateEntry> bitrateEntry,
-                                 std::optional<pairUint64> nalStartEndPosFile = {},
-                                 std::shared_ptr<TreeItem> parent             = {}) override;
+  ParseResult parseAndAddUnit(int                                           nalID,
+                              const ByteVector &                            data,
+                              std::optional<BitratePlotModel::BitrateEntry> bitrateEntry,
+                              std::optional<FileStartEndPos>                nalStartEndPosFile = {},
+                              std::shared_ptr<TreeItem>                     parent = {}) override;
 
 protected:
   // The PicOrderCntMsb may be reset to zero for IDR frames. In order to count the global POC, we
