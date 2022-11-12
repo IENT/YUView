@@ -164,7 +164,7 @@ bool AVFormat::parseExtradata_AVC(ByteVector &extradata)
       SubByteReaderLoggingSubLevel spsSubLevel(reader, "SPS " + std::to_string(i));
       auto                         sps_size = reader.readBits("sps_size", 16);
       auto spsData     = reader.readBytes("", sps_size, Options().withLoggingDisabled());
-      auto parseResult = this->annexBParser->parseAndAddUnit(
+      auto parseResult = this->annexBParser->parseAndAddNALUnit(
           nalID++, spsData, {}, {}, reader.getCurrentItemTree());
       if (parseResult.success && parseResult.bitrateEntry)
         this->bitratePlotModel->addBitratePoint(this->videoStreamIndex, *parseResult.bitrateEntry);
@@ -176,7 +176,7 @@ bool AVFormat::parseExtradata_AVC(ByteVector &extradata)
       SubByteReaderLoggingSubLevel ppsSubLevel(reader, "PPS " + std::to_string(i));
       auto                         pps_size = reader.readBits("pps_size", 16);
       auto pspsData    = reader.readBytes("", pps_size, Options().withLoggingDisabled());
-      auto parseResult = this->annexBParser->parseAndAddUnit(
+      auto parseResult = this->annexBParser->parseAndAddNALUnit(
           nalID++, pspsData, {}, {}, reader.getCurrentItemTree());
       if (parseResult.success && parseResult.bitrateEntry)
         this->bitratePlotModel->addBitratePoint(this->videoStreamIndex, *parseResult.bitrateEntry);
@@ -295,20 +295,20 @@ AVFormat::parseByteVectorAnnexBStartCodes(ByteVector &                   data,
   const auto sizeStartCode = (dataFormat == PacketDataFormat::RawNAL ? 3u : 4u);
 
   auto                            nalID = 0u;
-  std::map<std::string, unsigned> naNames;
+  std::map<std::string, unsigned> nalNames;
   while (itStartCode != data.end())
   {
     auto itNextStartCode = getNextNalStart(itStartCode);
     auto nalData         = ByteVector(itStartCode + sizeStartCode, itNextStartCode);
     auto parseResult =
-        this->annexBParser->parseAndAddUnit(nalID++, nalData, packetBitrateEntry, {}, item);
+        this->annexBParser->parseAndAddNALUnit(nalID++, nalData, packetBitrateEntry, {}, item);
     if (parseResult.success && parseResult.bitrateEntry)
       this->bitratePlotModel->addBitratePoint(this->videoStreamIndex, *parseResult.bitrateEntry);
-    if (parseResult.success && parseResult.nalTypeName)
-      naNames[*parseResult.nalTypeName]++;
+    if (parseResult.success && parseResult.unitTypeName)
+      nalNames[*parseResult.unitTypeName]++;
     itStartCode = itNextStartCode;
   }
-  return naNames;
+  return nalNames;
 }
 
 bool AVFormat::parseAVPacket(unsigned packetID, unsigned streamPacketID, AVPacketWrapper &packet)
@@ -397,32 +397,44 @@ bool AVFormat::parseAVPacket(unsigned packetID, unsigned streamPacketID, AVPacke
     }
     else if (this->obuParser)
     {
-      auto obuID = 0u;
+      auto obuID = 0;
 
       auto posInData = avpacketData.begin();
       while (true)
       {
-        pairUint64 obuStartEndPosFile; // Not used
         try
         {
-          auto data = ByteVector(posInData, avpacketData.end());
-          auto [nrBytesRead, obuTypeName] =
-              this->obuParser->parseAndAddOBU(obuID, data, itemTree, obuStartEndPosFile);
+          auto data        = ByteVector(posInData, avpacketData.end());
+          auto parseResult = this->obuParser->parseAndAddOBU(obuID, data, {}, itemTree);
+
+          if (!parseResult.success)
+          {
+            DEBUG_AVFORMAT("AVFormat::parseAVPacket Failed to parse OBU");
+            return false;
+          }
+
           DEBUG_AVFORMAT(
               "AVFormat::parseAVPacket parsed OBU %d header %d bytes", obuID, nrBytesRead);
 
-          if (!obuTypeName.empty())
-            unitNames[obuTypeName]++;
+          if (parseResult.unitTypeName)
+            unitNames[*parseResult.unitTypeName]++;
 
-          constexpr auto minOBUSize = 3u;
-          auto           remaining  = std::distance(posInData, avpacketData.end());
-          if (remaining < 0 || nrBytesRead + minOBUSize >= size_t(std::abs(remaining)))
+          if (!parseResult.unitSize)
+          {
+            DEBUG_AVFORMAT("AVFormat::parseAVPacket OBU size unknown. Assuming all bytes of packet "
+                           "to be one OBU.");
             break;
-          posInData += nrBytesRead;
+          }
+
+          constexpr auto minOBUSize = 3;
+          auto           remaining  = std::distance(posInData, avpacketData.end());
+          if (remaining < 0 || parseResult.unitSize.value() + minOBUSize >= std::abs(remaining))
+            break;
+          posInData += parseResult.unitSize.value();
         }
         catch (...)
         {
-          // Catch exceptions and just return
+          DEBUG_AVFORMAT("AVFormat::parseAVPacket Failed to parse OBU");
           break;
         }
 

@@ -57,11 +57,11 @@ namespace parser
 using namespace mpeg2;
 
 AnnexB::ParseResult
-AnnexBMpeg2::parseAndAddUnit(int                                           nalID,
-                             const ByteVector &                            data,
-                             std::optional<BitratePlotModel::BitrateEntry> bitrateEntry,
-                             std::optional<FileStartEndPos>                nalStartEndPosFile,
-                             std::shared_ptr<TreeItem>                     parent)
+AnnexBMpeg2::parseAndAddNALUnit(int                                           nalID,
+                                const ByteVector &                            data,
+                                std::optional<BitratePlotModel::BitrateEntry> bitrateEntry,
+                                std::optional<FileStartEndPos>                nalStartEndPosFile,
+                                std::shared_ptr<TreeItem>                     parent)
 {
   AnnexB::ParseResult parseResult;
 

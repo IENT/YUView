@@ -32,11 +32,11 @@
 
 #pragma once
 
-#include "../AV1/AV1OBU.h"
-#include "../AnnexB.h"
-#include "../Base.h"
 #include <ffmpeg/FFmpegVersionHandler.h>
 #include <filesource/FileSourceFFmpegFile.h>
+#include <parser/AV1/ParserAV1OBU.h>
+#include <parser/AnnexB.h>
+#include <parser/Base.h>
 
 #include <queue>
 
@@ -65,10 +65,10 @@ public:
   // This function can run in a separate thread
   bool runParsingOfFile(QString compressedFilePath) override;
 
-  int getVideoStreamIndex() override { return videoStreamIndex; }
+  int getVideoStreamIndex() override { return this->videoStreamIndex; }
 
 private:
-  FFmpeg::AVCodecIDWrapper codecID;
+  FFmpeg::AVCodecIDWrapper codecID{};
 
   bool parseExtradata(ByteVector &extradata);
   void parseMetadata(const StringPairVec &metadata);

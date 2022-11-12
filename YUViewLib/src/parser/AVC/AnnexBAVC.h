@@ -80,11 +80,11 @@ public:
   Size                       getSequenceSizeSamples() const override;
   video::yuv::PixelFormatYUV getPixelFormat() const override;
 
-  ParseResult parseAndAddUnit(int                                           nalID,
-                              const ByteVector &                            data,
-                              std::optional<BitratePlotModel::BitrateEntry> bitrateEntry,
-                              std::optional<FileStartEndPos>                nalStartEndPosFile = {},
-                              std::shared_ptr<TreeItem> parent = nullptr) override;
+  ParseResult parseAndAddNALUnit(int                                           nalID,
+                                 const ByteVector &                            data,
+                                 std::optional<BitratePlotModel::BitrateEntry> bitrateEntry,
+                                 std::optional<FileStartEndPos> nalStartEndPosFile = {},
+                                 std::shared_ptr<TreeItem>      parent = nullptr) override;
 
   std::optional<SeekData> getSeekData(int iFrameNr) override;
   QByteArray              getExtradata() override;

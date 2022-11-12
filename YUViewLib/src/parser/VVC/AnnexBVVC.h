@@ -94,11 +94,11 @@ public:
   IntPair                         getProfileLevel() override;
   Ratio                           getSampleAspectRatio() override;
 
-  ParseResult parseAndAddUnit(int                                           nalID,
-                              const ByteVector &                            data,
-                              std::optional<BitratePlotModel::BitrateEntry> bitrateEntry,
-                              std::optional<FileStartEndPos>                nalStartEndPosFile = {},
-                              std::shared_ptr<TreeItem>                     parent = {}) override;
+  ParseResult parseAndAddNALUnit(int                                           nalID,
+                                 const ByteVector &                            data,
+                                 std::optional<BitratePlotModel::BitrateEntry> bitrateEntry,
+                                 std::optional<FileStartEndPos> nalStartEndPosFile = {},
+                                 std::shared_ptr<TreeItem>      parent             = {}) override;
 
 protected:
   // The PicOrderCntMsb may be reset to zero for IDR frames. In order to count the global POC, we

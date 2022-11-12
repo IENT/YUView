@@ -183,8 +183,8 @@ std::optional<AnnexB::SeekData> AnnexBVVC::getSeekData(int iFrameNr)
       {
         // Seek here
         AnnexB::SeekData seekData;
-        if (nal->filePosStartEnd)
-          seekData.filePos = nal->filePosStartEnd->first;
+        if (nal->fileStartEndPos)
+          seekData.filePos = nal->fileStartEndPos->start;
 
         for (const auto &nalMap : {activeVPSNal, activeSPSNal, activePPSNal})
         {
@@ -217,7 +217,7 @@ std::optional<AnnexB::SeekData> AnnexBVVC::getSeekData(int iFrameNr)
     {
       auto aps     = std::dynamic_pointer_cast<adaptation_parameter_set_rbsp>(nal->rbsp);
       auto apsType = apsParamTypeMapper.indexOf(aps->aps_params_type);
-      activeAPSNal[{apsType, aps->aps_adaptation_parameter_set_id}] = nal;
+      activeAPSNal[{static_cast<unsigned>(apsType), aps->aps_adaptation_parameter_set_id}] = nal;
     }
   }
 
@@ -267,11 +267,11 @@ Ratio AnnexBVVC::getSampleAspectRatio()
 }
 
 AnnexB::ParseResult
-AnnexBVVC::parseAndAddUnit(int                                           nalID,
-                           const ByteVector &                            data,
-                           std::optional<BitratePlotModel::BitrateEntry> bitrateEntry,
-                           std::optional<FileStartEndPos>                nalStartEndPosFile,
-                           std::shared_ptr<TreeItem>                     parent)
+AnnexBVVC::parseAndAddNALUnit(int                                           nalID,
+                              const ByteVector &                            data,
+                              std::optional<BitratePlotModel::BitrateEntry> bitrateEntry,
+                              std::optional<FileStartEndPos>                nalStartEndPosFile,
+                              std::shared_ptr<TreeItem>                     parent)
 {
   AnnexB::ParseResult parseResult;
   parseResult.success = true;
@@ -370,7 +370,9 @@ AnnexBVVC::parseAndAddUnit(int                                           nalID,
       newAPS->parse(reader);
 
       auto apsType = apsParamTypeMapper.indexOf(newAPS->aps_params_type);
-      this->activeParameterSets.apsMap[{apsType, newAPS->aps_adaptation_parameter_set_id}] = newAPS;
+      this->activeParameterSets
+          .apsMap[{static_cast<unsigned>(apsType), newAPS->aps_adaptation_parameter_set_id}] =
+          newAPS;
 
       specificDescription += " ID " + std::to_string(newAPS->aps_adaptation_parameter_set_id);
 

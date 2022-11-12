@@ -73,11 +73,11 @@ public:
   IntPair                 getProfileLevel() override;
   Ratio                   getSampleAspectRatio() override;
 
-  ParseResult parseAndAddUnit(int                                           nalID,
-                              const ByteVector &                            data,
-                              std::optional<BitratePlotModel::BitrateEntry> bitrateEntry,
-                              std::optional<FileStartEndPos>                nalStartEndPosFile = {},
-                              std::shared_ptr<TreeItem> parent = nullptr) override;
+  ParseResult parseAndAddNALUnit(int                                           nalID,
+                                 const ByteVector &                            data,
+                                 std::optional<BitratePlotModel::BitrateEntry> bitrateEntry,
+                                 std::optional<FileStartEndPos> nalStartEndPosFile = {},
+                                 std::shared_ptr<TreeItem>      parent = nullptr) override;
 
 protected:
   // ----- Some nested classes that are only used in the scope of this file handler class

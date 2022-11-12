@@ -30,7 +30,7 @@
  *   along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "AV1OBU.h"
+#include "ParserAV1OBU.h"
 
 #include "OpenBitstreamUnit.h"
 #include "frame_header_obu.h"
@@ -47,12 +47,10 @@ ParserAV1OBU::ParserAV1OBU(QObject *parent) : Base(parent)
   this->decValues.PrevFrameID = -1;
 }
 
-Base::ParseResult
-ParserAV1OBU::parseAndAddUnit(int                                           obuID,
-                              const ByteVector &                            data,
-                              std::optional<BitratePlotModel::BitrateEntry> bitrateEntry,
-                              std::optional<FileStartEndPos>                obuStartEndPosFile = {},
-                              std::shared_ptr<TreeItem>                     parent = nullptr)
+Base::ParseResult ParserAV1OBU::parseAndAddOBU(int                            obuID,
+                                               const ByteVector &             data,
+                                               std::optional<FileStartEndPos> obuStartEndPosFile,
+                                               std::shared_ptr<TreeItem>      parent)
 {
   // Use the given tree item. If it is not set, use the nalUnitMode (if active).
   // We don't set data (a name) for this item yet.
@@ -71,14 +69,13 @@ ParserAV1OBU::parseAndAddUnit(int                                           obuI
 
   auto nrHeaderBytes = reader.nrBytesRead();
 
-  std::string obuTypeName;
-  std::string errorText;
+  ParseResult parseResult;
   try
   {
     if (obu.header.obu_type == ObuType::OBU_TEMPORAL_DELIMITER)
     {
       decValues.SeenFrameHeader = false;
-      obuTypeName               = "Temporal Delimiter";
+      parseResult.unitTypeName  = "Temporal Delimiter";
     }
     else if (obu.header.obu_type == ObuType::OBU_SEQUENCE_HEADER)
     {
@@ -87,8 +84,8 @@ ParserAV1OBU::parseAndAddUnit(int                                           obuI
 
       this->active_sequence_header = new_sequence_header;
 
-      obuTypeName = "Sequence Header";
-      obu.payload = new_sequence_header;
+      parseResult.unitTypeName = "Sequence Header";
+      obu.payload              = new_sequence_header;
     }
     else if (obu.header.obu_type == ObuType::OBU_FRAME ||
              obu.header.obu_type == ObuType::OBU_FRAME_HEADER)
@@ -100,33 +97,33 @@ ParserAV1OBU::parseAndAddUnit(int                                           obuI
                               obu.header.temporal_id,
                               obu.header.spatial_id);
 
-      obuTypeName = "Frame";
-      obu.payload = new_frame_header;
+      parseResult.unitTypeName = "Frame";
+      obu.payload              = new_frame_header;
     }
   }
   catch (const std::exception &e)
   {
-    errorText   = " ERROR " + std::string(e.what());
-    obuTypeName = "Error";
+    parseResult.errorMessage = " ERROR " + std::string(e.what());
+    parseResult.success      = false;
   }
 
   if (obuRoot)
   {
     auto name = "OBU " + std::to_string(obu.obu_idx) + ": " +
-                obuTypeCoding.getMeaning(obu.header.obu_type) + " " + obuTypeName;
-    if (!errorText.empty())
+                obuTypeCoding.getMeaning(obu.header.obu_type) + " " +
+                parseResult.unitTypeName.value_or("");
+    if (!parseResult.success)
     {
       obuRoot->setError();
-      name += " " + errorText;
+      name += " " + parseResult.errorMessage;
     }
     obuRoot->setProperties(name);
   }
 
-  auto sizeRead = data.size();
   if (obu.header.obu_has_size_field)
-    sizeRead = obu.header.obu_size + nrHeaderBytes;
+    parseResult.unitSize = obu.header.obu_size + nrHeaderBytes;
 
-  return {sizeRead, obuTypeName};
+  return parseResult;
 }
 
 } // namespace parser

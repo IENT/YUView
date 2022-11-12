@@ -64,7 +64,7 @@ bool FileSourceOBUFile::openFile(const QString &fileName)
   return true;
 }
 
-DataAndStartEndPos FileSourceOBUFile::getNextOBU(bool getLastDataAgain = false)
+DataAndStartEndPos FileSourceOBUFile::getNextOBU(bool getLastDataAgain)
 {
   FileStartEndPos fileStartEndPos;
   fileStartEndPos.start = this->pos();

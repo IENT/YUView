@@ -165,8 +165,8 @@ std::optional<AnnexB::SeekData> AnnexBHEVC::getSeekData(int iFrameNr)
       {
         // Seek here
         AnnexB::SeekData seekData;
-        if (nal->filePosStartEnd)
-          seekData.filePos = nal->filePosStartEnd->first;
+        if (nal->fileStartEndPos)
+          seekData.filePos = nal->fileStartEndPos->start;
 
         for (const auto &nalMap : {activeVPSNal, activeSPSNal, activePPSNal})
         {
@@ -270,11 +270,11 @@ Ratio AnnexBHEVC::getSampleAspectRatio()
 }
 
 AnnexB::ParseResult
-AnnexBHEVC::parseAndAddUnit(int                                           nalID,
-                            const ByteVector &                            data,
-                            std::optional<BitratePlotModel::BitrateEntry> bitrateEntry,
-                            std::optional<FileStartEndPos>                nalStartEndPosFile,
-                            std::shared_ptr<TreeItem>                     parent)
+AnnexBHEVC::parseAndAddNALUnit(int                                           nalID,
+                               const ByteVector &                            data,
+                               std::optional<BitratePlotModel::BitrateEntry> bitrateEntry,
+                               std::optional<FileStartEndPos>                nalStartEndPosFile,
+                               std::shared_ptr<TreeItem>                     parent)
 {
   AnnexB::ParseResult parseResult;
 

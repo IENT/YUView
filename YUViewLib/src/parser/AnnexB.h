@@ -110,6 +110,12 @@ public:
   // Called from the bitstream analyzer. This function can run in a background process.
   bool runParsingOfFile(QString compressedFilePath) override;
 
+  virtual ParseResult parseAndAddNALUnit(int                                           unitID,
+                                         const ByteVector &                            data,
+                                         std::optional<BitratePlotModel::BitrateEntry> bitrateEntry,
+                                         std::optional<FileStartEndPos> nalStartEndPosFile = {},
+                                         std::shared_ptr<TreeItem>      parent = nullptr) = 0;
+
 protected:
   struct AnnexBFrame
   {

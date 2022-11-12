@@ -188,11 +188,11 @@ bool AnnexB::parseAnnexBFile(std::unique_ptr<FileSourceAnnexBFile> &file, QWidge
       auto [nalData, nalStartEndPos] = file->getNextNALUnit(false);
 
       auto parsingResult =
-          this->parseAndAddUnit(nalID,
-                                reader::SubByteReaderLogging::convertToByteVector(nalData),
-                                {},
-                                nalStartEndPos,
-                                nullptr);
+          this->parseAndAddNALUnit(nalID,
+                                   reader::SubByteReaderLogging::convertToByteVector(nalData),
+                                   {},
+                                   nalStartEndPos,
+                                   nullptr);
       if (!parsingResult.success)
       {
         DEBUG_ANNEXB("AnnexB::parseAndAddNALUnit Error parsing NAL " << nalID);
@@ -253,7 +253,7 @@ bool AnnexB::parseAnnexBFile(std::unique_ptr<FileSourceAnnexBFile> &file, QWidge
 
   try
   {
-    auto parseResult = this->parseAndAddUnit(-1, {}, {}, {});
+    auto parseResult = this->parseAndAddNALUnit(-1, {}, {}, {});
     if (!parseResult.success)
       DEBUG_ANNEXB("AnnexB::parseAndAddNALUnit Error finalizing parsing. This should not happen.");
   }

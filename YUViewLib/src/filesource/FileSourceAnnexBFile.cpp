@@ -110,7 +110,7 @@ DataAndStartEndPos FileSourceAnnexBFile::getNextNALUnit(bool getLastDataAgain)
     }
     nextStartCodePos = this->fileBuffer.indexOf(STARTCODE, this->posInBuffer + searchOffset);
 
-    if (nextStartCodePos < 0 || (uint64_t)nextStartCodePos > this->fileBufferSize)
+    if (nextStartCodePos < 0 || nextStartCodePos > this->fileBufferSize)
     {
       // No start code found ... append all data in the current buffer.
       this->lastDataAndPos.data +=

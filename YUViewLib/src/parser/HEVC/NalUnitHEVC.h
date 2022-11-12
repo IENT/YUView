@@ -49,8 +49,8 @@ public:
 class NalUnitHEVC
 {
 public:
-  NalUnitHEVC(int nalIdx, std::optional<pairUint64> filePosStartEnd)
-      : nalIdx(nalIdx), filePosStartEnd(filePosStartEnd)
+  NalUnitHEVC(int nalIdx, std::optional<FileStartEndPos> fileStartEndPos)
+      : nalIdx(nalIdx), fileStartEndPos(fileStartEndPos)
   {
   }
 
@@ -59,11 +59,9 @@ public:
 
   int nalIdx{};
   // Pointer to the first byte of the start code of the NAL unit (if known)
-  std::optional<pairUint64> filePosStartEnd;
+  std::optional<FileStartEndPos> fileStartEndPos;
 
   ByteVector rawData;
 };
-
-using NalMap = std::map<unsigned, std::shared_ptr<NalUnitHEVC>>;
 
 } // namespace parser::hevc

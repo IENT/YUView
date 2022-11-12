@@ -178,11 +178,11 @@ video::yuv::PixelFormatYUV AnnexBAVC::getPixelFormat() const
 }
 
 AnnexB::ParseResult
-AnnexBAVC::parseAndAddUnit(int                                           nalID,
-                           const ByteVector &                            data,
-                           std::optional<BitratePlotModel::BitrateEntry> bitrateEntry,
-                           std::optional<FileStartEndPos>                nalStartEndPosFile,
-                           std::shared_ptr<TreeItem>                     parent)
+AnnexBAVC::parseAndAddNALUnit(int                                           nalID,
+                              const ByteVector &                            data,
+                              std::optional<BitratePlotModel::BitrateEntry> bitrateEntry,
+                              std::optional<FileStartEndPos>                nalStartEndPosFile,
+                              std::shared_ptr<TreeItem>                     parent)
 {
   AnnexB::ParseResult parseResult;
 
@@ -607,8 +607,8 @@ std::optional<AnnexB::SeekData> AnnexBAVC::getSeekData(int iFrameNr)
       {
         // Seek here
         AnnexB::SeekData seekData;
-        if (nal->filePosStartEnd)
-          seekData.filePos = nal->filePosStartEnd->start;
+        if (nal->fileStartEndPos)
+          seekData.filePos = nal->fileStartEndPos->start;
 
         // Get the bitstream of all active parameter sets
         for (const auto &nalMap : {activeSPSNal, activePPSNal})

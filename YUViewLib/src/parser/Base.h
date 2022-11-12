@@ -82,16 +82,12 @@ public:
    */
   struct ParseResult
   {
-    ParseResult() = default;
     bool                                          success{false};
+    std::string                                   errorMessage;
     std::optional<std::string>                    unitTypeName;
+    std::optional<int64_t>                        unitSize;
     std::optional<BitratePlotModel::BitrateEntry> bitrateEntry;
   };
-  virtual ParseResult parseAndAddUnit(int                                           unitID,
-                                      const ByteVector &                            data,
-                                      std::optional<BitratePlotModel::BitrateEntry> bitrateEntry,
-                                      std::optional<FileStartEndPos> nalStartEndPosFile = {},
-                                      std::shared_ptr<TreeItem>      parent = nullptr) = 0;
 
   // For parsing files in the background (threading) in the bitstream analysis dialog:
   virtual bool runParsingOfFile(QString fileName) = 0;

@@ -320,7 +320,7 @@ struct FileStartEndPos
   int64_t end{};
 };
 
-std::string to_string(const FileStartEndPos fileStartEndPos)
+static std::string to_string(const FileStartEndPos &fileStartEndPos)
 {
   std::ostringstream ss;
   ss << "(" << fileStartEndPos.start << ", " << fileStartEndPos.end << ")";

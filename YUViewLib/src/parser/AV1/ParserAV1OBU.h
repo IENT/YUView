@@ -48,11 +48,10 @@ public:
   ParserAV1OBU(QObject *parent = nullptr);
   ~ParserAV1OBU() {}
 
-  ParseResult parseAndAddUnit(int                                           obuID,
-                              const ByteVector &                            data,
-                              std::optional<BitratePlotModel::BitrateEntry> bitrateEntry,
-                              std::optional<FileStartEndPos>                nalStartEndPosFile = {},
-                              std::shared_ptr<TreeItem>                     parent = nullptr);
+  ParseResult parseAndAddOBU(int                            obuID,
+                             const ByteVector &             data,
+                             std::optional<FileStartEndPos> obuFileStartEndPos = {},
+                             std::shared_ptr<TreeItem>      parent             = nullptr);
 
   bool runParsingOfFile(QString) override
   {
