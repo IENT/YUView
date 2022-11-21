@@ -32,7 +32,6 @@
 
 #pragma once
 
-#include <QAbstractItemModel>
 #include <QMap>
 #include <QString>
 #include <QTreeWidgetItem>
@@ -68,8 +67,8 @@ public:
   void enableModel();
 
   // Get info about the stream organized in a tree
-  virtual QList<QTreeWidgetItem *> getStreamInfo() = 0;
-  virtual unsigned int             getNrStreams()  = 0;
+  [[nodiscard]] virtual StreamsInfo getStreamsInfo() const = 0;
+  [[nodiscard]] virtual int         getNrStreams() const   = 0;
 
   /* Parse the NAL unit / OBU and what it contains
    *
@@ -114,7 +113,7 @@ signals:
   void modelDataUpdated();
   void backgroundParsingDone(QString error);
 
-  // Signal that the getStreamInfo() function will now return an updated info
+  // Signal that the getStreamsInfo() function will now return an updated info
   void streamInfoUpdated();
 
 protected:
@@ -133,7 +132,7 @@ protected:
   // Save general information about the file here
   struct StreamInfo
   {
-    QList<QTreeWidgetItem *> getStreamInfo();
+    [[nodiscard]] StringPairVec getStreamInfo() const;
 
     size_t   fileSize;
     unsigned nrUnits{0};

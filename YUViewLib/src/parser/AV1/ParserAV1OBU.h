@@ -59,9 +59,9 @@ public:
     return false;
   }
 
-  QList<QTreeWidgetItem *> getStreamInfo() override { return {}; }
-  unsigned int             getNrStreams() override { return 1; }
-  QString                  getShortStreamDescription(int) const override { return "Video"; }
+  [[nodiscard]] StreamsInfo getStreamsInfo() const override { return {}; }
+  [[nodiscard]] int         getNrStreams() const override { return 1; }
+  QString                   getShortStreamDescription(int) const override { return "Video"; }
 
 protected:
   av1::GlobalDecodingValues                 decValues;

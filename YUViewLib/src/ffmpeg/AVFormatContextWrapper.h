@@ -48,17 +48,17 @@ public:
   AVFormatContextWrapper() = default;
   AVFormatContextWrapper(AVFormatContext *c, LibraryVersion v);
 
-  void            updateFrom(AVFormatContext *c);
-  explicit        operator bool() const;
-  QStringPairList getInfoText();
+  void                        updateFrom(AVFormatContext *c);
+  explicit                    operator bool() const;
+  [[nodiscard]] StringPairVec getInfoText() const;
 
-  unsigned int         getNbStreams();
-  AVStreamWrapper      getStream(int idx);
-  AVInputFormatWrapper getInputFormat();
-  int64_t              getStartTime();
-  int64_t              getDuration();
-  AVFormatContext *    getFormatCtx() const;
-  AVDictionaryWrapper  getMetadata();
+  [[nodiscard]] unsigned int         getNbStreams() const;
+  [[nodiscard]] AVStreamWrapper      getStream(int idx) const;
+  [[nodiscard]] AVInputFormatWrapper getInputFormat() const;
+  [[nodiscard]] int64_t              getStartTime() const;
+  [[nodiscard]] int64_t              getDuration() const;
+  [[nodiscard]] AVFormatContext *    getFormatCtx() const;
+  [[nodiscard]] AVDictionaryWrapper  getMetadata() const;
 
 private:
   // Update all private values from the AVFormatContext
@@ -67,20 +67,20 @@ private:
   AVInputFormatWrapper iformat{};
 
   // These are private. Use "update" to update them from the AVFormatContext
-  int                    ctx_flags{0};
-  unsigned int           nb_streams{0};
-  QList<AVStreamWrapper> streams;
-  QString                filename{};
-  int64_t                start_time{-1};
-  int64_t                duration{-1};
-  int                    bit_rate{0};
-  unsigned int           packet_size{0};
-  int                    max_delay{0};
-  int                    flags{0};
+  int                          ctx_flags{0};
+  unsigned int                 nb_streams{0};
+  std::vector<AVStreamWrapper> streams;
+  std::string                  filename{};
+  int64_t                      start_time{-1};
+  int64_t                      duration{-1};
+  int                          bit_rate{0};
+  unsigned int                 packet_size{0};
+  int                          max_delay{0};
+  int                          flags{0};
 
   unsigned int        probesize{0};
   int                 max_analyze_duration{0};
-  QString             key{};
+  std::string         key{};
   unsigned int        nb_programs{0};
   AVCodecID           video_codec_id{AV_CODEC_ID_NONE};
   AVCodecID           audio_codec_id{AV_CODEC_ID_NONE};

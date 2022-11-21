@@ -168,6 +168,31 @@ std::string toLower(std::string str)
   return str;
 }
 
+std::string vstring(const char *format, va_list vargs)
+{
+  std::string result;
+  va_list     args_copy;
+
+  va_copy(args_copy, vargs);
+
+  int len = vsnprintf(nullptr, 0, format, vargs);
+  if (len < 0)
+  {
+    va_end(args_copy);
+    throw std::runtime_error("vsnprintf error");
+  }
+
+  if (len > 0)
+  {
+    result.resize(len);
+    vsnprintf(result.data(), len + 1, format, args_copy);
+  }
+
+  va_end(args_copy);
+
+  return result;
+}
+
 std::optional<unsigned long> toUnsigned(const std::string &text)
 {
   try

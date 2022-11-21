@@ -201,36 +201,29 @@ auto SupportedLibraryVersionCombinations = {LibraryVersion(57, 59, 59, 4),
 //}
 //
 
-QString FFmpegVersionHandler::getLibVersionString() const
+std::string FFmpegVersionHandler::getLibVersionFormatted() const
 {
-  QString s;
-  s += QString("avUtil %1.%2.%3 ")
-           .arg(libVersion.avutil.major)
-           .arg(libVersion.avutil.minor.value_or(0))
-           .arg(libVersion.avutil.micro.value_or(0));
-  s += QString("avFormat %1.%2.%3 ")
-           .arg(libVersion.avformat.major)
-           .arg(libVersion.avformat.minor.value_or(0))
-           .arg(libVersion.avformat.micro.value_or(0));
-  s += QString("avCodec %1.%2.%3 ")
-           .arg(libVersion.avcodec.major)
-           .arg(libVersion.avcodec.minor.value_or(0))
-           .arg(libVersion.avcodec.micro.value_or(0));
-  s += QString("swresample %1.%2.%3")
-           .arg(libVersion.swresample.major)
-           .arg(libVersion.swresample.minor.value_or(0))
-           .arg(libVersion.swresample.micro.value_or(0));
+  std::stringstream stream;
+  auto              formatVersion = [&stream](std::string name, const FFmpeg::Version &version) {
+    stream << "avUtil " << version.major << "." << version.minor.value_or(0) << "."
+           << version.micro.value_or(0) << " ";
+  };
 
-  return s;
+  formatVersion("avUtil", this->libVersion.avutil);
+  formatVersion("avFormat", this->libVersion.avformat);
+  formatVersion("avCodec", this->libVersion.avcodec);
+  formatVersion("swresample", this->libVersion.swresample);
+
+  return stream.str();
 }
 
-AVCodecIDWrapper FFmpegVersionHandler::getCodecIDWrapper(AVCodecID id)
+AVCodecIDWrapper FFmpegVersionHandler::getCodecIDWrapper(AVCodecID id) const
 {
-  auto codecName = QString(lib.avcodec.avcodec_get_name(id));
+  auto codecName = std::string(lib.avcodec.avcodec_get_name(id));
   return AVCodecIDWrapper(id, codecName);
 }
 
-AVCodecID FFmpegVersionHandler::getCodecIDFromWrapper(AVCodecIDWrapper &wrapper)
+AVCodecID FFmpegVersionHandler::getCodecIDFromWrapper(AVCodecIDWrapper &wrapper) const
 {
   if (wrapper.getCodecID() != AV_CODEC_ID_NONE)
     return wrapper.getCodecID();
@@ -239,7 +232,7 @@ AVCodecID FFmpegVersionHandler::getCodecIDFromWrapper(AVCodecIDWrapper &wrapper)
   QString codecName;
   do
   {
-    auto codecName = QString(this->lib.avcodec.avcodec_get_name(AVCodecID(codecID)));
+    auto codecName = std::string(this->lib.avcodec.avcodec_get_name(AVCodecID(codecID)));
     if (codecName == wrapper.getCodecName())
     {
       wrapper.setCodecID(AVCodecID(codecID));
@@ -263,10 +256,8 @@ bool FFmpegVersionHandler::configureDecoder(AVCodecContextWrapper &   decCtx,
     auto ret = this->lib.avcodec.avcodec_parameters_to_context(decCtx.getCodec(), origin_par);
     if (ret < 0)
     {
-      this->log(
-          QString(
-              "Could not copy codec parameters (avcodec_parameters_to_context). Return code %1.")
-              .arg(ret));
+      this->log("Could not copy codec parameters (avcodec_parameters_to_context). Return code " +
+                std::to_string(ret));
       return false;
     }
   }
@@ -302,7 +293,7 @@ void FFmpegVersionHandler::flush_buffers(AVCodecContextWrapper &decCtx)
   lib.avcodec.avcodec_flush_buffers(decCtx.getCodec());
 }
 
-QStringList FFmpegVersionHandler::logListFFmpeg;
+StringVec FFmpegVersionHandler::logListFFmpeg;
 
 FFmpegVersionHandler::FFmpegVersionHandler()
 {
@@ -312,11 +303,12 @@ FFmpegVersionHandler::FFmpegVersionHandler()
 
 void FFmpegVersionHandler::avLogCallback(void *, int level, const char *fmt, va_list vargs)
 {
-  QString msg;
-  msg.vasprintf(fmt, vargs);
-  auto now = QDateTime::currentDateTime();
-  FFmpegVersionHandler::logListFFmpeg.append(now.toString("hh:mm:ss.zzz") +
-                                             QString(" - L%1 - ").arg(level) + msg);
+  std::stringstream stream;
+  auto              currentTime = std::time(NULL);
+  stream << std::put_time(std::localtime(&currentTime), "%X");
+  stream << " - L" << level << " - ";
+  stream << functions::vstring(fmt, vargs);
+  FFmpegVersionHandler::logListFFmpeg.push_back(stream.str());
 }
 
 void FFmpegVersionHandler::loadFFmpegLibraries()
@@ -330,18 +322,18 @@ void FFmpegVersionHandler::loadFFmpegLibraries()
   // First try the specific FFMpeg libraries (if set)
   QSettings settings;
   settings.beginGroup("Decoders");
-  auto avFormatLib   = settings.value("FFmpeg.avformat", "").toString();
-  auto avCodecLib    = settings.value("FFmpeg.avcodec", "").toString();
-  auto avUtilLib     = settings.value("FFmpeg.avutil", "").toString();
-  auto swResampleLib = settings.value("FFmpeg.swresample", "").toString();
-  if (!avFormatLib.isEmpty() && //
-      !avCodecLib.isEmpty() &&  //
-      !avUtilLib.isEmpty() &&   //
-      !swResampleLib.isEmpty())
+  auto avFormatLib   = settings.value("FFmpeg.avformat", "").toString().toStdString();
+  auto avCodecLib    = settings.value("FFmpeg.avcodec", "").toString().toStdString();
+  auto avUtilLib     = settings.value("FFmpeg.avutil", "").toString().toStdString();
+  auto swResampleLib = settings.value("FFmpeg.swresample", "").toString().toStdString();
+  if (!avFormatLib.empty() && //
+      !avCodecLib.empty() &&  //
+      !avUtilLib.empty() &&   //
+      !swResampleLib.empty())
   {
     this->log("Trying to load the libraries specified in the settings.");
     this->librariesLoaded =
-        loadFFMpegLibrarySpecific(avFormatLib, avCodecLib, avUtilLib, swResampleLib);
+        this->loadFFMpegLibrarySpecific(avFormatLib, avCodecLib, avUtilLib, swResampleLib);
   }
   else
     this->log("No ffmpeg libraries were specified in the settings.");

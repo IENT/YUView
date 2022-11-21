@@ -1,5 +1,6 @@
-#include <QtTest>
 #include <QTemporaryFile>
+#include <QtTest>
+
 
 #include <filesource/FileSourceAnnexBFile.h>
 
@@ -42,15 +43,22 @@ void FileSourceAnnexBTest::testNalUnitParsing_data()
   QTest::newRow("testNormalPosition8") << 3u << 10000u << QList<unsigned>({4, 80, 208, 9997});
 
   // Test cases where a buffer reload is needed (the buffer is 500k)
-  QTest::newRow("testBufferReload") << unsigned(3) << unsigned(1000000) << QList<unsigned>({80, 208, 500, 50000, 800000});
+  QTest::newRow("testBufferReload")
+      << unsigned(3) << unsigned(1000000) << QList<unsigned>({80, 208, 500, 50000, 800000});
 
   // The buffer is 500k in size. Test all variations with a start code around this position
-  QTest::newRow("testBufferEdge1") << 3u << 800000u << QList<unsigned>({80, 208, 500, 50000, 499997});
-  QTest::newRow("testBufferEdge2") << 3u << 800000u << QList<unsigned>({80, 208, 500, 50000, 499998});
-  QTest::newRow("testBufferEdge3") << 3u << 800000u << QList<unsigned>({80, 208, 500, 50000, 499999});
-  QTest::newRow("testBufferEdge4") << 3u << 800000u << QList<unsigned>({80, 208, 500, 50000, 500000});
-  QTest::newRow("testBufferEdge5") << 3u << 800000u << QList<unsigned>({80, 208, 500, 50000, 500001});
-  QTest::newRow("testBufferEdge6") << 3u << 800000u << QList<unsigned>({80, 208, 500, 50000, 500002});
+  QTest::newRow("testBufferEdge1")
+      << 3u << 800000u << QList<unsigned>({80, 208, 500, 50000, 499997});
+  QTest::newRow("testBufferEdge2")
+      << 3u << 800000u << QList<unsigned>({80, 208, 500, 50000, 499998});
+  QTest::newRow("testBufferEdge3")
+      << 3u << 800000u << QList<unsigned>({80, 208, 500, 50000, 499999});
+  QTest::newRow("testBufferEdge4")
+      << 3u << 800000u << QList<unsigned>({80, 208, 500, 50000, 500000});
+  QTest::newRow("testBufferEdge5")
+      << 3u << 800000u << QList<unsigned>({80, 208, 500, 50000, 500001});
+  QTest::newRow("testBufferEdge6")
+      << 3u << 800000u << QList<unsigned>({80, 208, 500, 50000, 500002});
 
   QTest::newRow("testBufferEnd1") << 3u << 10000u << QList<unsigned>({80, 208, 500, 9995});
   QTest::newRow("testBufferEnd2") << 3u << 10000u << QList<unsigned>({80, 208, 500, 9996});
@@ -65,15 +73,15 @@ void FileSourceAnnexBTest::testNalUnitParsing()
 
   QVERIFY(startCodeLength == 3 || startCodeLength == 4);
 
-  QByteArray data;
+  QByteArray              data;
   std::optional<unsigned> lastStartPos;
-  QList<unsigned> nalSizes;
+  QList<unsigned>         nalSizes;
   for (const auto pos : startCodePositions)
   {
     unsigned nonStartCodeBytesToAdd;
     if (lastStartPos)
     {
-      QVERIFY(pos > *lastStartPos + startCodeLength);  // Start codes can not be closer together
+      QVERIFY(pos > *lastStartPos + startCodeLength); // Start codes can not be closer together
       nonStartCodeBytesToAdd = pos - *lastStartPos - startCodeLength;
       nalSizes.append(nonStartCodeBytesToAdd + startCodeLength);
     }
@@ -82,7 +90,7 @@ void FileSourceAnnexBTest::testNalUnitParsing()
     lastStartPos = pos;
 
     data.append(int(nonStartCodeBytesToAdd), char(128));
-    
+
     // Append start code
     if (startCodeLength == 4)
       data.append(char(0));
@@ -103,11 +111,11 @@ void FileSourceAnnexBTest::testNalUnitParsing()
   FileSourceAnnexBFile annexBFile(f.fileName());
   QCOMPARE(unsigned(annexBFile.getNrBytesBeforeFirstNAL()), startCodePositions[0]);
 
-  auto nalData = annexBFile.getNextNALUnit();
+  auto     nalData = annexBFile.getNextNALUnit();
   unsigned counter = 0;
-  while (nalData.size() > 0)
+  while (nalData.data.size() > 0)
   {
-    QCOMPARE(nalSizes[counter++], unsigned(nalData.size()));
+    QCOMPARE(nalSizes[counter++], unsigned(nalData.data.size()));
     nalData = annexBFile.getNextNALUnit();
   }
 }

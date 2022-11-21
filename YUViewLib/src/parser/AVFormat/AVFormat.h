@@ -55,11 +55,9 @@ public:
   AVFormat(QObject *parent = nullptr) : Base(parent) {}
   ~AVFormat() {}
 
-  QList<QTreeWidgetItem *> getStreamInfo() override;
-  unsigned int             getNrStreams() override
-  {
-    return streamInfoAllStreams.empty() ? 0 : streamInfoAllStreams.length() - 1;
-  }
+  [[nodiscard]] StreamsInfo getStreamsInfo() const override;
+  [[nodiscard]] int        getNrStreams() const override;
+
   QString getShortStreamDescription(int streamIndex) const override;
 
   // This function can run in a separate thread

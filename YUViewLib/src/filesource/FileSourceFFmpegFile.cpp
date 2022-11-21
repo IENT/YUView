@@ -653,11 +653,15 @@ indexRange FileSourceFFmpegFile::getDecodableFrameLimits() const
   return range;
 }
 
-QList<QStringPairList> FileSourceFFmpegFile::getFileInfoForAllStreams()
+StringPairVec FileSourceFFmpegFile::getGeneralInfo() const
 {
-  QList<QStringPairList> info;
+  return this->formatCtx.getInfoText();
+}
 
-  info += formatCtx.getInfoText();
+StreamsInfo FileSourceFFmpegFile::getStreamsInfo(bool detailedInfo) const
+{
+  StreamsInfo info;
+
   for (unsigned i = 0; i < this->formatCtx.getNbStreams(); i++)
   {
     auto stream         = this->formatCtx.getStream(i);
@@ -668,14 +672,14 @@ QList<QStringPairList> FileSourceFFmpegFile::getFileInfoForAllStreams()
   return info;
 }
 
-QList<AVRational> FileSourceFFmpegFile::getTimeBaseAllStreams()
+std::vector<AVRational> FileSourceFFmpegFile::getTimeBaseAllStreams()
 {
-  QList<AVRational> timeBaseList;
+  std::vector<AVRational> timeBaseList;
 
   for (unsigned i = 0; i < this->formatCtx.getNbStreams(); i++)
   {
     auto stream = this->formatCtx.getStream(i);
-    timeBaseList.append(stream.getTimeBase());
+    timeBaseList.push_back(stream.getTimeBase());
   }
 
   return timeBaseList;
@@ -685,7 +689,7 @@ QList<QString> FileSourceFFmpegFile::getShortStreamDescriptionAllStreams()
 {
   QList<QString> descriptions;
 
-  for (unsigned i = 0; i < formatCtx.getNbStreams(); i++)
+  for (unsigned i = 0; i < this->formatCtx.getNbStreams(); i++)
   {
     QString description;
     auto    stream = this->formatCtx.getStream(i);

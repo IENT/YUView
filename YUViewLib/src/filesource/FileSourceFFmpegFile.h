@@ -37,8 +37,8 @@
 #include <ffmpeg/AVCodecParametersWrapper.h>
 #include <ffmpeg/AVPacketWrapper.h>
 #include <ffmpeg/FFmpegVersionHandler.h>
-#include <video/videoHandlerYUV.h>
 #include <video/videoHandlerRGB.h>
+#include <video/videoHandlerYUV.h>
 
 /* This class can use the ffmpeg libraries (libavcodec) to read from any packetized file.
  */
@@ -113,9 +113,10 @@ public:
   // Get more general information about the streams
   unsigned int getNumberOfStreams() { return this->formatCtx ? this->formatCtx.getNbStreams() : 0; }
   int          getVideoStreamIndex() { return video_stream.getIndex(); }
-  QList<QStringPairList>    getFileInfoForAllStreams();
-  QList<FFmpeg::AVRational> getTimeBaseAllStreams();
-  QList<QString>            getShortStreamDescriptionAllStreams();
+
+  [[nodiscard]] StreamsInfo       getStreamsInfo(bool detailedInfo = true) const;
+  [[nodiscard]] StringPairVec     getGeneralInfo() const;
+  std::vector<FFmpeg::AVRational> getTimeBaseAllStreams();
 
   // Look through the keyframes and find the closest one before (or equal)
   // the given frameIdx where we can start decoding

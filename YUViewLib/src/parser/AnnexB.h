@@ -67,9 +67,9 @@ public:
   // Clear all knowledge about the bitstream.
   void clearData();
 
-  QList<QTreeWidgetItem *> getStreamInfo() override { return this->streamInfo.getStreamInfo(); }
-  unsigned int             getNrStreams() override { return 1; }
-  QString                  getShortStreamDescription(int streamIndex) const override;
+  [[nodiscard]] StreamsInfo getStreamsInfo() const override;
+  [[nodiscard]] int         getNrStreams() const override { return 1; }
+  QString                   getShortStreamDescription(int streamIndex) const override;
 
   // Get some format properties
   virtual double                     getFramerate() const           = 0;

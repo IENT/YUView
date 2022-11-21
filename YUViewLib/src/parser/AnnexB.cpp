@@ -49,6 +49,11 @@
 namespace parser
 {
 
+StreamsInfo AnnexB::getStreamsInfo() const
+{
+  return {{"Stream 0", this->streamInfo.getStreamInfo()}};
+}
+
 QString AnnexB::getShortStreamDescription(int) const
 {
   QString info      = "Video";

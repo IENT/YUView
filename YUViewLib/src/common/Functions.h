@@ -65,6 +65,39 @@ QString formatDataSize(double size, bool isBits = false);
 QStringList toQStringList(const std::vector<std::string> &stringVec);
 std::string toLower(std::string str);
 
+template <typename T> std::string to_string(std::vector<T> items, std::string seperator = ", ")
+{
+  std::string str;
+  auto        it = items.begin();
+  while (it != items.end())
+  {
+    if (it != items.begin())
+      str += seperator;
+    str += std::to_string(*it);
+    ++it;
+  }
+  return str;
+}
+
+std::string vstring(const char *format, va_list vargs);
+
+std::string formatString(std::string format, std::initializer_list<std::string> arguments)
+{
+  int counter = 0;
+  for (auto argument : arguments)
+  {
+    const auto toReplace  = "%" + std::to_string(counter);
+    auto       replacePos = format.find(toReplace);
+    if (replacePos == std::string::npos)
+      return format;
+
+    format.replace(replacePos, 2, argument);
+
+    ++counter;
+  }
+  return format;
+}
+
 inline std::string boolToString(bool b)
 {
   return b ? "True" : "False";

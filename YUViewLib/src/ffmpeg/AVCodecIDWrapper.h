@@ -41,10 +41,13 @@ class AVCodecIDWrapper
 {
 public:
   AVCodecIDWrapper() {}
-  AVCodecIDWrapper(AVCodecID codecID, QString codecName) : codecID(codecID), codecName(codecName) {}
+  AVCodecIDWrapper(AVCodecID codecID, std::string codecName)
+      : codecID(codecID), codecName(codecName)
+  {
+  }
 
-  QString   getCodecName() const { return this->codecName; }
-  AVCodecID getCodecID() const { return this->codecID; }
+  std::string getCodecName() const { return this->codecName; }
+  AVCodecID   getCodecID() const { return this->codecID; }
 
   void setCodecID(AVCodecID id) { this->codecID = id; }
 
@@ -58,15 +61,15 @@ public:
 
   bool isNone() const
   {
-    return this->codecName.isEmpty() || this->codecName == "unknown_codec" ||
+    return this->codecName.empty() || this->codecName == "unknown_codec" ||
            this->codecName == "none";
   }
 
   bool operator==(const AVCodecIDWrapper &a) const { return codecID == a.codecID; }
 
 private:
-  AVCodecID codecID{AV_CODEC_ID_NONE};
-  QString   codecName;
+  AVCodecID   codecID{AV_CODEC_ID_NONE};
+  std::string codecName;
 };
 
 } // namespace FFmpeg

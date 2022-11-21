@@ -404,6 +404,6 @@ struct LibraryVersion
   Version swresample{};
 };
 
-QString timestampToString(int64_t timestamp, AVRational timebase);
+std::string formatWithReadableFormat(int64_t timestamp, AVRational timebase);
 
 } // namespace FFmpeg

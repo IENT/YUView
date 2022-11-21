@@ -207,6 +207,7 @@ typedef std::pair<int, int>                 IntPair;
 typedef std::pair<unsigned, unsigned>       UIntPair;
 typedef std::pair<std::string, std::string> StringPair;
 typedef std::vector<StringPair>             StringPairVec;
+typedef std::vector<std::string>            StringVec;
 
 /// ---- Legacy types that will be replaced
 typedef QPair<QString, QString>           QStringPair;
@@ -326,6 +327,8 @@ static std::string to_string(const FileStartEndPos &fileStartEndPos)
   ss << "(" << fileStartEndPos.start << ", " << fileStartEndPos.end << ")";
   return ss.str();
 }
+
+using StreamsInfo = std::map<std::string, StringPairVec>;
 
 // A list of value pair lists, where every list has a string (title)
 class ValuePairListSets : public QList<QPair<QString, QStringPairList>>

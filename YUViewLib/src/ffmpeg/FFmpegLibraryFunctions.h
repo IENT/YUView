@@ -46,14 +46,14 @@ public:
   ~FFmpegLibraryFunctions();
 
   // Load the FFmpeg libraries from the given path.
-  bool loadFFmpegLibraryInPath(QString path, LibraryVersion &libraryVersion);
+  bool loadFFmpegLibraryInPath(std::filesystem::path path, LibraryVersion &libraryVersion);
   // Try to load the 4 given specific libraries
-  bool loadFFMpegLibrarySpecific(QString avFormatLib,
-                                 QString avCodecLib,
-                                 QString avUtilLib,
-                                 QString swResampleLib);
+  bool loadFFMpegLibrarySpecific(std::string avFormatLib,
+                                 std::string avCodecLib,
+                                 std::string avUtilLib,
+                                 std::string swResampleLib);
 
-  QStringList getLibPaths() const;
+  StringVec getLibPaths() const;
 
   struct AvFormatFunctions
   {
@@ -104,7 +104,7 @@ public:
     std::function<unsigned()>            avutil_version;
     std::function<int(AVDictionary **pm, const char *key, const char *value, int flags)>
         av_dict_set;
-    std::function<AVDictionaryEntry*(
+    std::function<AVDictionaryEntry *(
         AVDictionary *m, const char *key, const AVDictionaryEntry *prev, int flags)>
         av_dict_get;
     std::function<AVFrameSideData *(const AVFrame *frame, AVFrameSideDataType type)>
@@ -124,14 +124,14 @@ public:
   };
   SwResampleFunction swresample{};
 
-  void setLogList(QStringList *l) { logList = l; }
+  void setLogList(StringVec *l) { logList = l; }
 
 private:
-  void addLibNamesToList(QString libName, QStringList &l, const QLibrary &lib) const;
+  void addLibNamesToList(StringVec &l, const std::string &libName, const QLibrary &lib) const;
   void unloadAllLibraries();
 
-  QStringList *logList{};
-  void         log(QString message);
+  StringVec *logList{};
+  void       log(std::string message);
 
   QLibrary libAvutil;
   QLibrary libSwresample;

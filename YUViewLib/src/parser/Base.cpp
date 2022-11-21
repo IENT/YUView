@@ -104,27 +104,23 @@ QString Base::convertSliceTypeMapToString(QMap<QString, unsigned int> &sliceType
   return text;
 }
 
-QList<QTreeWidgetItem *> Base::StreamInfo::getStreamInfo()
+StringPairVec Base::StreamInfo::getStreamInfo() const
 {
-  QList<QTreeWidgetItem *> infoList;
-  infoList.append(
-      new QTreeWidgetItem(QStringList() << "File size" << QString::number(this->fileSize)));
+  StringPairVec info;
+
+  info.push_back({"File size", std::to_string(this->fileSize)});
   if (this->parsing)
   {
-    infoList.append(new QTreeWidgetItem(QStringList() << "Number units"
-                                                      << "Parsing..."));
-    infoList.append(new QTreeWidgetItem(QStringList() << "Number Frames"
-                                                      << "Parsing..."));
+    info.push_back({"Number units", "Parsing..."});
+    info.push_back({"Number frames", "Parsing..."});
   }
   else
   {
-    infoList.append(
-        new QTreeWidgetItem(QStringList() << "Number units" << QString::number(this->nrUnits)));
-    infoList.append(
-        new QTreeWidgetItem(QStringList() << "Number Frames" << QString::number(this->nrFrames)));
+    info.push_back({"Number units", std::to_string(this->nrUnits)});
+    info.push_back({"Number frames", std::to_string(this->nrFrames)});
   }
 
-  return infoList;
+  return info;
 }
 
 } // namespace parser
