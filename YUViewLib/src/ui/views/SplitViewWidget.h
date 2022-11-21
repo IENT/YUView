@@ -46,6 +46,8 @@
 #include <QProgressDialog>
 #include <QTimer>
 
+#include <memory>
+
 class QDockWidget;
 class PlaybackController;
 class playlistItem;
