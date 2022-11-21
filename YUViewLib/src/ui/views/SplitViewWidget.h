@@ -145,6 +145,7 @@ private slots:
   void gridSet64(bool) { setRegularGridSize(64, true, true); }
   void gridSet128(bool) { setRegularGridSize(128, true, true); }
   void gridSetCustom(bool checked);
+  void gridSetColor(bool checked);
 
   void toggleZoomBox(bool checked);
   void toggleSeparateWindow(bool checked);
@@ -182,17 +183,17 @@ protected:
   virtual void onSwipeUp() override;
   virtual void onSwipeDown() override;
 
-  void                         createMenuActions();
-  virtual void                 addContextMenuActions(QMenu *menu) override;
-  QScopedPointer<QActionGroup> actionSplitViewGroup;
-  QScopedPointer<QActionGroup> actionGridGroup;
-  QAction                      actionSplitView[3];
-  QAction                      actionGrid[6];
-  QAction                      actionSeparateView;
-  QAction                      actionSeparateViewLink;
-  QAction                      actionSeparateViewPlaybackBoth;
-  QAction                      actionZoomBox;
-  QAction                      actionFullScreen;
+  void                          createMenuActions();
+  virtual void                  addContextMenuActions(QMenu *menu) override;
+  std::unique_ptr<QActionGroup> actionSplitViewGroup;
+  std::unique_ptr<QActionGroup> actionGridGroup;
+  QAction                       actionSplitView[3];
+  std::array<QAction, 7>        actionGrid;
+  QAction                       actionSeparateView;
+  QAction                       actionSeparateViewLink;
+  QAction                       actionSeparateViewPlaybackBoth;
+  QAction                       actionZoomBox;
+  QAction                       actionFullScreen;
 
   void         updateMouseTracking();
   virtual bool updateMouseCursor(const QPoint &srcMousePos) override;
@@ -261,8 +262,8 @@ protected:
 
   // Regular grid
   unsigned int regularGridSize{0}; //!< The size of each block in the regular grid in pixels
-  void
-         setRegularGridSize(unsigned int size, bool setOtherViewIfLinked = true, bool callUpdate = false);
+  void setRegularGridSize(unsigned size, bool setOtherViewIfLinked = true, bool callUpdate = false);
+
   QColor regularGridColor;
   void   paintRegularGrid(QPainter *painter, playlistItem *item); //!< paint the grid
 

@@ -46,6 +46,7 @@
 #if QT_VERSION >= QT_VERSION_CHECK(5, 15, 0)
 #include <QPainterPath>
 #endif
+#include <QColorDialog>
 #include <QPainter>
 #include <QSettings>
 #include <QTextDocument>
@@ -961,12 +962,12 @@ void splitViewWidget::mouseMoveEvent(QMouseEvent *mouse_event)
     // The user is currently dragging the splitter. Calculate the new splitter point.
 #if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
     auto xClip = functions::clip(mouse_event->position().x(),
-                      SPLITVIEWWIDGET_SPLITTER_CLIPX,
-                      (width() - 2 - SPLITVIEWWIDGET_SPLITTER_CLIPX));
+                                 SPLITVIEWWIDGET_SPLITTER_CLIPX,
+                                 (width() - 2 - SPLITVIEWWIDGET_SPLITTER_CLIPX));
 #else
     auto xClip = functions::clip(double(mouse_event->x()),
-                      SPLITVIEWWIDGET_SPLITTER_CLIPX,
-                      (double(width()) - 2.0 - SPLITVIEWWIDGET_SPLITTER_CLIPX));
+                                 SPLITVIEWWIDGET_SPLITTER_CLIPX,
+                                 (double(width()) - 2.0 - SPLITVIEWWIDGET_SPLITTER_CLIPX));
 #endif
     setSplittingPoint(xClip / (double(width()) - 2.0));
 
@@ -1028,12 +1029,12 @@ void splitViewWidget::mouseReleaseEvent(QMouseEvent *mouse_event)
     // Update current splitting position / update last time
 #if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
     auto xClip = functions::clip(mouse_event->position().x(),
-                      SPLITVIEWWIDGET_SPLITTER_CLIPX,
-                      (double(width()) - 2.0 - SPLITVIEWWIDGET_SPLITTER_CLIPX));
+                                 SPLITVIEWWIDGET_SPLITTER_CLIPX,
+                                 (double(width()) - 2.0 - SPLITVIEWWIDGET_SPLITTER_CLIPX));
 #else
     auto xClip = functions::clip(double(mouse_event->x()),
-                      SPLITVIEWWIDGET_SPLITTER_CLIPX,
-                      (double(width()) - 2.0 - SPLITVIEWWIDGET_SPLITTER_CLIPX));
+                                 SPLITVIEWWIDGET_SPLITTER_CLIPX,
+                                 (double(width()) - 2.0 - SPLITVIEWWIDGET_SPLITTER_CLIPX));
 #endif
     setSplittingPoint(xClip / (double(width()) - 2.0));
 
@@ -1199,6 +1200,18 @@ void splitViewWidget::gridSetCustom(bool)
   {
     regularGridSize = newValue;
     update();
+  }
+}
+
+void splitViewWidget::gridSetColor(bool)
+{
+  const auto newColor = QColorDialog::getColor(this->regularGridColor);
+  if (newColor.isValid() && newColor != this->regularGridColor)
+  {
+    QSettings settings;
+    settings.setValue("View/GridColor", newColor);
+    this->regularGridColor = newColor;
+    this->update();
   }
 }
 
@@ -1369,18 +1382,18 @@ void splitViewWidget::setRegularGridSize(unsigned int size,
 
   // Check if the actions are selected correctly since this function could be called by an action or
   // by some other source.
-  const unsigned int actionGridValues[] = {0, 16, 32, 64, 128};
-  bool               valueFound         = false;
-  for (size_t i = 0; i < 5; i++)
+  const std::array actionGridValues = {0, 16, 32, 64, 128};
+  bool             valueFound       = false;
+  for (int i = 0; i < 5; i++)
   {
-    QSignalBlocker actionSplitViewBlocker(actionGrid[i]);
-    actionGrid[i].setChecked(regularGridSize == actionGridValues[i]);
+    QSignalBlocker actionSplitViewBlocker(this->actionGrid[i]);
+    this->actionGrid[i].setChecked(regularGridSize == actionGridValues[i]);
     valueFound |= regularGridSize == actionGridValues[i];
   }
   if (!valueFound)
   {
-    QSignalBlocker actionSplitViewBlocker(actionGrid[5]);
-    actionGrid[5].setChecked(true);
+    QSignalBlocker actionSplitViewBlocker(this->actionGrid[5]);
+    this->actionGrid[5].setChecked(true);
   }
 
   if (callUpdate)
@@ -1644,19 +1657,19 @@ void splitViewWidget::onSwipeDown()
 
 void splitViewWidget::createMenuActions()
 {
-  const bool menuActionsNoteCreatedYet = actionSplitViewGroup.isNull();
-  Q_ASSERT_X(
-      menuActionsNoteCreatedYet, Q_FUNC_INFO, "Only call this initialization function once.");
+  const bool menuActionsNotCreatedYet = bool(this->actionSplitViewGroup);
+  Q_ASSERT_X(menuActionsNotCreatedYet, Q_FUNC_INFO, "Only call this initialization function once.");
 
-  auto configureCheckableAction = [this](QAction &     action,
-                                         QActionGroup *actionGroup,
-                                         QString       text,
-                                         bool          checked,
-                                         void (splitViewWidget::*func)(bool),
-                                         const QKeySequence &shortcut  = {},
-                                         bool                isEnabled = true) {
+  auto configureAction = [this](QAction &           action,
+                                QActionGroup *const actionGroup,
+                                const QString &     text,
+                                const bool          checkable,
+                                const bool          checked,
+                                void (splitViewWidget::*func)(bool),
+                                const QKeySequence &shortcut  = {},
+                                const bool          isEnabled = true) {
     action.setParent(this);
-    action.setCheckable(true);
+    action.setCheckable(checkable);
     action.setChecked(checked);
     action.setText(text);
     action.setShortcut(shortcut);
@@ -1667,103 +1680,131 @@ void splitViewWidget::createMenuActions()
     connect(&action, &QAction::triggered, this, func);
   };
 
-  actionSplitViewGroup.reset(new QActionGroup(this));
-  configureCheckableAction(actionSplitView[0],
-                           actionSplitViewGroup.data(),
-                           "Disabled",
-                           viewSplitMode == DISABLED,
-                           &splitViewWidget::splitViewDisable);
-  configureCheckableAction(actionSplitView[1],
-                           actionSplitViewGroup.data(),
-                           "Side-by-Side",
-                           viewSplitMode == SIDE_BY_SIDE,
-                           &splitViewWidget::splitViewSideBySide);
-  configureCheckableAction(actionSplitView[2],
-                           actionSplitViewGroup.data(),
-                           "Comparison",
-                           viewSplitMode == COMPARISON,
-                           &splitViewWidget::splitViewComparison);
-  actionSplitView[0].setToolTip("Show only one single Item.");
-  actionSplitView[1].setToolTip(
+  using Checkable = bool;
+  using Checked   = bool;
+
+  this->actionSplitViewGroup.reset(new QActionGroup(this));
+  configureAction(actionSplitView[0],
+                  this->actionSplitViewGroup.get(),
+                  "Disabled",
+                  Checkable(true),
+                  Checked(this->viewSplitMode == DISABLED),
+                  &splitViewWidget::splitViewDisable);
+  configureAction(actionSplitView[1],
+                  this->actionSplitViewGroup.get(),
+                  "Side-by-Side",
+                  Checkable(true),
+                  Checked(this->viewSplitMode == SIDE_BY_SIDE),
+                  &splitViewWidget::splitViewSideBySide);
+  configureAction(actionSplitView[2],
+                  this->actionSplitViewGroup.get(),
+                  "Comparison",
+                  Checkable(true),
+                  Checked(this->viewSplitMode == COMPARISON),
+                  &splitViewWidget::splitViewComparison);
+  this->actionSplitView[0].setToolTip("Show only one single Item.");
+  this->actionSplitView[1].setToolTip(
       "Show two items side-by-side so that the same part of each item is visible.");
-  actionSplitView[2].setToolTip("Show two items at the same position with a split line that can be "
-                                "moved to reveal either item.");
+  this->actionSplitView[2].setToolTip(
+      "Show two items at the same position with a split line that can be "
+      "moved to reveal either item.");
 
-  actionGridGroup.reset(new QActionGroup(this));
-  configureCheckableAction(actionGrid[0],
-                           actionGridGroup.data(),
-                           "Disabled",
-                           regularGridSize == 0,
-                           &splitViewWidget::gridDisable);
-  configureCheckableAction(actionGrid[1],
-                           actionGridGroup.data(),
-                           "16x16",
-                           regularGridSize == 16,
-                           &splitViewWidget::gridSet16);
-  configureCheckableAction(actionGrid[2],
-                           actionGridGroup.data(),
-                           "32x32",
-                           regularGridSize == 32,
-                           &splitViewWidget::gridSet32);
-  configureCheckableAction(actionGrid[3],
-                           actionGridGroup.data(),
-                           "64x64",
-                           regularGridSize == 64,
-                           &splitViewWidget::gridSet64);
-  configureCheckableAction(actionGrid[4],
-                           actionGridGroup.data(),
-                           "128x128",
-                           regularGridSize == 128,
-                           &splitViewWidget::gridSet128);
-  configureCheckableAction(actionGrid[5],
-                           actionGridGroup.data(),
-                           "Custom...",
-                           regularGridSize != 0 && regularGridSize != 16 && regularGridSize != 32 &&
-                               regularGridSize != 64 && regularGridSize != 128,
-                           &splitViewWidget::gridSetCustom);
+  this->actionGridGroup.reset(new QActionGroup(this));
+  configureAction(this->actionGrid[0],
+                  this->actionGridGroup.get(),
+                  "Disabled",
+                  Checkable(true),
+                  Checked(this->regularGridSize == 0),
+                  &splitViewWidget::gridDisable);
+  configureAction(this->actionGrid[1],
+                  this->actionGridGroup.get(),
+                  "16x16",
+                  Checkable(true),
+                  Checked(this->regularGridSize == 16),
+                  &splitViewWidget::gridSet16);
+  configureAction(this->actionGrid[2],
+                  this->actionGridGroup.get(),
+                  "32x32",
+                  Checkable(true),
+                  Checked(this->regularGridSize == 32),
+                  &splitViewWidget::gridSet32);
+  configureAction(this->actionGrid[3],
+                  this->actionGridGroup.get(),
+                  "64x64",
+                  Checkable(true),
+                  Checked(this->regularGridSize == 64),
+                  &splitViewWidget::gridSet64);
+  configureAction(this->actionGrid[4],
+                  this->actionGridGroup.get(),
+                  "128x128",
+                  Checkable(true),
+                  Checked(this->regularGridSize == 128),
+                  &splitViewWidget::gridSet128);
+  configureAction(this->actionGrid[5],
+                  this->actionGridGroup.get(),
+                  "Custom...",
+                  Checkable(true),
+                  this->regularGridSize != 0 && this->regularGridSize != 16 &&
+                      this->regularGridSize != 32 && this->regularGridSize != 64 &&
+                      this->regularGridSize != 128,
+                  &splitViewWidget::gridSetCustom);
+  configureAction(this->actionGrid[6],
+                  this->actionGridGroup.get(),
+                  "Color...",
+                  Checkable(false),
+                  false,
+                  &splitViewWidget::gridSetColor);
 
-  configureCheckableAction(
-      actionZoomBox, nullptr, "Zoom Box", drawZoomBox, &splitViewWidget::toggleZoomBox);
+  configureAction(this->actionZoomBox,
+                  nullptr,
+                  "Zoom Box",
+                  Checkable(true),
+                  Checkable(this->drawZoomBox),
+                  &splitViewWidget::toggleZoomBox);
   actionZoomBox.setToolTip("Activate the Zoom Box which renders a zoomed portion of the screen and "
                            "shows pixel information.");
 
   if (this->isMasterView)
   {
-    configureCheckableAction(actionSeparateView,
-                             nullptr,
-                             "&Show Separate Window",
-                             false,
-                             &splitViewWidget::toggleSeparateWindow,
-                             Qt::CTRL | Qt::Key_W);
-    configureCheckableAction(actionSeparateViewLink,
-                             nullptr,
-                             "Link Views",
-                             false,
-                             &MoveAndZoomableView::setLinkState,
-                             {},
-                             false);
-    configureCheckableAction(actionSeparateViewPlaybackBoth,
-                             nullptr,
-                             "Playback in both Views",
-                             false,
-                             &splitViewWidget::toggleSeparateWindowPlaybackBoth,
-                             {},
-                             false);
-    actionSeparateView.setToolTip("Show a second window with another view to the same item. "
-                                  "Especially helpful for multi screen setups.");
-    actionSeparateViewLink.setToolTip(
+    configureAction(this->actionSeparateView,
+                    nullptr,
+                    "&Show Separate Window",
+                    Checkable(true),
+                    Checked(false),
+                    &splitViewWidget::toggleSeparateWindow,
+                    Qt::CTRL | Qt::Key_W);
+    configureAction(this->actionSeparateViewLink,
+                    nullptr,
+                    "Link Views",
+                    Checkable(true),
+                    Checked(false),
+                    &MoveAndZoomableView::setLinkState,
+                    {},
+                    false);
+    configureAction(this->actionSeparateViewPlaybackBoth,
+                    nullptr,
+                    "Playback in both Views",
+                    Checkable(true),
+                    Checked(false),
+                    &splitViewWidget::toggleSeparateWindowPlaybackBoth,
+                    {},
+                    false);
+    this->actionSeparateView.setToolTip("Show a second window with another view to the same item. "
+                                        "Especially helpful for multi screen setups.");
+    this->actionSeparateViewLink.setToolTip(
         "Link the second view so that any change in one view is also applied in the other view.");
-    actionSeparateViewPlaybackBoth.setToolTip(
+    this->actionSeparateViewPlaybackBoth.setToolTip(
         "For performance reasons playback only runs in one (the second) view. Activate this to run "
         "playback in both views siultaneously.");
   }
 
-  configureCheckableAction(actionFullScreen,
-                           nullptr,
-                           "&Fullscreen Mode",
-                           false,
-                           &splitViewWidget::toggleFullScreen,
-                           Qt::CTRL | Qt::Key_F);
+  configureAction(this->actionFullScreen,
+                  nullptr,
+                  "&Fullscreen Mode",
+                  Checkable(true),
+                  Checked(false),
+                  &splitViewWidget::toggleFullScreen,
+                  Qt::CTRL | Qt::Key_F);
 }
 
 void splitViewWidget::addContextMenuActions(QMenu *menu)
@@ -1941,18 +1982,18 @@ void splitViewWidget::testDrawingSpeed()
 
 void splitViewWidget::addMenuActions(QMenu *menu)
 {
-  QMenu *splitViewMenu = menu->addMenu("Split View");
-  for (size_t i = 0; i < 3; i++)
+  auto splitViewMenu = menu->addMenu("Split View");
+  for (int i = 0; i < 3; i++)
     splitViewMenu->addAction(&actionSplitView[i]);
   splitViewMenu->setToolTipsVisible(true);
 
-  QMenu *drawGridMenu = menu->addMenu("Draw Grid");
-  for (size_t i = 0; i < 6; i++)
-    drawGridMenu->addAction(&actionGrid[i]);
+  auto drawGridMenu = menu->addMenu("Draw Grid");
+  for (auto &action : this->actionGrid)
+    drawGridMenu->addAction(&action);
 
   menu->addAction(&actionZoomBox);
 
-  QMenu *separateViewMenu = menu->addMenu("Separate View");
+  auto separateViewMenu = menu->addMenu("Separate View");
   separateViewMenu->addAction(!isMasterView ? &this->getOtherWidget()->actionSeparateView
                                             : &actionSeparateView);
   separateViewMenu->addAction(!isMasterView ? &this->getOtherWidget()->actionSeparateViewLink
