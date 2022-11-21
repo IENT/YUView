@@ -263,8 +263,10 @@ protected:
                                      //!< pixel under the cursor (per item))
 
   // Regular grid
-  unsigned int regularGridSize{0}; //!< The size of each block in the regular grid in pixels
-  void setRegularGridSize(unsigned size, bool setOtherViewIfLinked = true, bool callUpdate = false);
+  int  regularGridSize{0}; //!< The size of each block in the regular grid in pixels
+  void setRegularGridSize(const int  size,
+                          const bool setOtherViewIfLinked = true,
+                          const bool callUpdate           = false);
 
   QColor regularGridColor;
   void   paintRegularGrid(QPainter *painter, playlistItem *item); //!< paint the grid

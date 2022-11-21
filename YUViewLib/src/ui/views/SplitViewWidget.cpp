@@ -777,16 +777,16 @@ void splitViewWidget::setDrawZoomBox(bool drawZoomBox, bool setOtherViewIfLinked
 
 void splitViewWidget::paintRegularGrid(QPainter *painter, playlistItem *item)
 {
-  if (regularGridSize == 0)
+  if (this->regularGridSize == 0)
     return;
 
-  QSize itemSize = item->getSize() * this->zoomFactor;
+  auto itemSize = item->getSize() * this->zoomFactor;
   painter->setPen(regularGridColor);
 
   // Draw horizontal lines
-  const int    xMin     = -itemSize.width() / 2;
-  const int    xMax     = itemSize.width() / 2;
-  const double gridZoom = regularGridSize * this->zoomFactor;
+  const auto xMin     = -itemSize.width() / 2;
+  const auto xMax     = itemSize.width() / 2;
+  const auto gridZoom = this->regularGridSize * this->zoomFactor;
   for (int y = 1; y <= (itemSize.height() - 1) / gridZoom; y++)
   {
     int yPos = (-itemSize.height() / 2) + y * gridZoom;
@@ -794,8 +794,8 @@ void splitViewWidget::paintRegularGrid(QPainter *painter, playlistItem *item)
   }
 
   // Draw vertical lines
-  const int yMin = -itemSize.height() / 2;
-  const int yMax = itemSize.height() / 2;
+  const auto yMin = -itemSize.height() / 2;
+  const auto yMax = itemSize.height() / 2;
   for (int x = 1; x <= (itemSize.width() - 1) / gridZoom; x++)
   {
     int xPos = (-itemSize.width() / 2) + x * gridZoom;
@@ -1198,7 +1198,7 @@ void splitViewWidget::gridSetCustom(bool)
       this, "Custom grid", "Please select a grid size value in pixels", 64, 1, 2147483647, 1, &ok);
   if (ok)
   {
-    regularGridSize = newValue;
+    this->regularGridSize = newValue;
     update();
   }
 }
@@ -1368,17 +1368,17 @@ void splitViewWidget::setViewSplitMode(ViewSplitMode mode,
     update();
 }
 
-void splitViewWidget::setRegularGridSize(unsigned int size,
-                                         bool         setOtherViewIfLinked,
-                                         bool         callUpdate)
+void splitViewWidget::setRegularGridSize(const int  size,
+                                         const bool setOtherViewIfLinked,
+                                         const bool callUpdate)
 {
   if (this->enableLink && setOtherViewIfLinked)
     this->getOtherWidget()->setRegularGridSize(size, false, callUpdate);
 
-  if (regularGridSize == size)
+  if (this->regularGridSize == size)
     return;
 
-  regularGridSize = size;
+  this->regularGridSize = size;
 
   // Check if the actions are selected correctly since this function could be called by an action or
   // by some other source.
@@ -1387,8 +1387,8 @@ void splitViewWidget::setRegularGridSize(unsigned int size,
   for (int i = 0; i < 5; i++)
   {
     QSignalBlocker actionSplitViewBlocker(this->actionGrid[i]);
-    this->actionGrid[i].setChecked(regularGridSize == actionGridValues[i]);
-    valueFound |= regularGridSize == actionGridValues[i];
+    this->actionGrid[i].setChecked(this->regularGridSize == actionGridValues[i]);
+    valueFound |= this->regularGridSize == actionGridValues[i];
   }
   if (!valueFound)
   {
