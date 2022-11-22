@@ -1657,8 +1657,8 @@ void splitViewWidget::onSwipeDown()
 
 void splitViewWidget::createMenuActions()
 {
-  const bool menuActionsNotCreatedYet = bool(this->actionSplitViewGroup);
-  Q_ASSERT_X(menuActionsNotCreatedYet, Q_FUNC_INFO, "Only call this initialization function once.");
+  const bool menuActionsCreatedYet = bool(this->actionSplitViewGroup);
+  Q_ASSERT_X(!menuActionsCreatedYet, Q_FUNC_INFO, "Only call this initialization function once.");
 
   auto configureAction = [this](QAction &           action,
                                 QActionGroup *const actionGroup,
