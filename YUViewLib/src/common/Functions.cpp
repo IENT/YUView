@@ -212,7 +212,7 @@ std::string vstring(const char *format, va_list vargs)
   return result;
 }
 
-std::string formatString(std::string format, std::initializer_list<std::string> arguments)
+std::string formatString(std::string format, const std::initializer_list<std::string> &arguments)
 {
   int counter = 0;
   for (auto argument : arguments)

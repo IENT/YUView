@@ -63,11 +63,11 @@ QStringList getThemeColors(QString themeName);
 QString formatDataSize(double size, bool isBits = false);
 
 QStringList               toQStringList(const std::vector<std::string> &stringVec);
-[[nodiscard]] std::string toLower(const std::string &str);
+[[nodiscard]] std::string toLower(std::string str);
 [[nodiscard]] std::string to_string(const Size &size);
 [[nodiscard]] std::string to_string(const StringVec &items, const std::string &seperator = ", ");
 [[nodiscard]] std::string vstring(const char *format, va_list vargs);
-[[nodiscard]] std::string formatString(const std::string &                       format,
+[[nodiscard]] std::string formatString(std::string                               format,
                                        const std::initializer_list<std::string> &arguments);
 
 template <typename T>
