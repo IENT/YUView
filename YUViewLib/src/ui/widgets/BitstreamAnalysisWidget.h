@@ -74,6 +74,8 @@ private:
 
   // -1: No Item selected, 0-99: parsing in progress, 100: parsing done
   void updateParsingStatusText(int progressValue);
+  void setInfoFromParserInStreamInfoTreeWidget();
+  void updateShowStreamComboBoxFromParserInfo();
 
   void stopAndDeleteParserBlocking();
 

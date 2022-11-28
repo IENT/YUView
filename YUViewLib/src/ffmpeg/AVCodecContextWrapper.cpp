@@ -61,7 +61,7 @@ typedef struct AVCodecContext_56
   int                     flags2;
   uint8_t *               extradata;
   int                     extradata_size;
-  AVRational              time_base;
+  Rational                time_base;
   int                     ticks_per_frame;
   int                     delay;
   int                     width, height;
@@ -93,7 +93,7 @@ typedef struct AVCodecContext_56
   int                           slice_count;
   int                           prediction_method;
   int *                         slice_offset;
-  AVRational                    sample_aspect_ratio;
+  Rational                      sample_aspect_ratio;
   int                           me_cmp;
   int                           me_sub_cmp;
   int                           mb_cmp;
@@ -162,7 +162,7 @@ typedef struct AVCodecContext_57
   int                     flags2;
   uint8_t *               extradata;
   int                     extradata_size;
-  AVRational              time_base;
+  Rational                time_base;
   int                     ticks_per_frame;
   int                     delay;
   int                     width, height;
@@ -194,7 +194,7 @@ typedef struct AVCodecContext_57
   int                           slice_count;
   int                           prediction_method;
   int *                         slice_offset;
-  AVRational                    sample_aspect_ratio;
+  Rational                      sample_aspect_ratio;
   int                           me_cmp;
   int                           me_sub_cmp;
   int                           mb_cmp;
@@ -261,7 +261,7 @@ typedef struct AVCodecContext_58
   int                     flags2;
   uint8_t *               extradata;
   int                     extradata_size;
-  AVRational              time_base;
+  Rational                time_base;
   int                     ticks_per_frame;
   int                     delay;
   int                     width, height;
@@ -291,7 +291,7 @@ typedef struct AVCodecContext_58
   int                                slice_count;
   int                                prediction_method;
   int *                              slice_offset;
-  AVRational                         sample_aspect_ratio;
+  Rational                           sample_aspect_ratio;
   int                                me_cmp;
   int                                me_sub_cmp;
   int                                mb_cmp;
@@ -351,7 +351,7 @@ typedef struct AVCodecContext_59
   int                     flags2;
   uint8_t *               extradata;
   int                     extradata_size;
-  AVRational              time_base;
+  Rational                time_base;
   int                     ticks_per_frame;
   int                     delay;
   int                     width, height;
@@ -378,7 +378,7 @@ typedef struct AVCodecContext_59
   float                              dark_masking;
   int                                slice_count;
   int *                              slice_offset;
-  AVRational                         sample_aspect_ratio;
+  Rational                           sample_aspect_ratio;
   int                                me_cmp;
   int                                me_sub_cmp;
   int                                mb_cmp;
@@ -461,7 +461,7 @@ AVColorSpace AVCodecContextWrapper::getColorspace()
   return this->colorspace;
 }
 
-AVRational AVCodecContextWrapper::getTimeBase()
+Rational AVCodecContextWrapper::getTimeBase()
 {
   this->update();
   return this->time_base;

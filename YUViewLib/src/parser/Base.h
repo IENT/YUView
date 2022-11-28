@@ -36,9 +36,10 @@
 #include <QString>
 #include <QTreeWidgetItem>
 
-#include "common/BitratePlotModel.h"
-#include "common/HRDPlotModel.h"
-#include "common/PacketItemModel.h"
+#include <filesource/FileSource.h>
+#include <parser/common/BitratePlotModel.h>
+#include <parser/common/HRDPlotModel.h>
+#include <parser/common/PacketItemModel.h>
 
 // If the file parsing limit is enabled (setParsingLimitEnabled) parsing will be aborted after
 // 500 frames have been parsed. This should be enough in most situations and full parsing can be
@@ -67,8 +68,9 @@ public:
   void enableModel();
 
   // Get info about the stream organized in a tree
-  [[nodiscard]] virtual StreamsInfo getStreamsInfo() const = 0;
-  [[nodiscard]] virtual int         getNrStreams() const   = 0;
+  [[nodiscard]] virtual StreamsInfo   getStreamsInfo() const = 0;
+  [[nodiscard]] virtual StringPairVec getGeneralInfo() const = 0;
+  [[nodiscard]] virtual int           getNrStreams() const   = 0;
 
   /* Parse the NAL unit / OBU and what it contains
    *
@@ -89,12 +91,11 @@ public:
   };
 
   // For parsing files in the background (threading) in the bitstream analysis dialog:
-  virtual bool runParsingOfFile(QString fileName) = 0;
+  virtual bool runParsingOfFile(std::string fileName) = 0;
   int          getParsingProgressPercent() { return progressPercentValue; }
   void         setAbortParsing() { cancelBackgroundParser = true; }
 
-  virtual int     getVideoStreamIndex() { return -1; }
-  virtual QString getShortStreamDescription(int streamIndex) const = 0;
+  virtual int getVideoStreamIndex() { return -1; }
 
   void setStreamColorCoding(bool colorCoding) { packetModel->setUseColorCoding(colorCoding); }
   void setFilterStreamIndex(int streamIndex)
@@ -121,7 +122,8 @@ protected:
   QScopedPointer<FilterByStreamIndexProxyModel> streamIndexFilter;
   QScopedPointer<BitratePlotModel>              bitratePlotModel;
 
-  static QString convertSliceTypeMapToString(QMap<QString, unsigned int> &currentAUSliceTypes);
+  static std::string
+  convertSliceTypeMapToString(std::map<std::string, unsigned int> &currentAUSliceTypes);
 
   // If this variable is set (from an external thread), the parsing process should cancel
   // immediately
@@ -129,8 +131,7 @@ protected:
   int  progressPercentValue{0};
   bool parsingLimitEnabled{false};
 
-  // Save general information about the file here
-  struct StreamInfo
+  struct ParsingStats
   {
     [[nodiscard]] StringPairVec getStreamInfo() const;
 
@@ -139,7 +140,7 @@ protected:
     unsigned nrFrames{0};
     bool     parsing{false};
   };
-  StreamInfo streamInfo;
+  ParsingStats parsingInfo;
 
 private:
   QScopedPointer<HRDPlotModel> hrdPlotModel;

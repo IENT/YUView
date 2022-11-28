@@ -33,6 +33,7 @@
 #include "AnnexB.h"
 
 #include "parser/common/SubByteReaderLogging.h"
+#include <parser/common/Functions.h>
 
 #include <QElapsedTimer>
 #include <QProgressDialog>
@@ -51,16 +52,21 @@ namespace parser
 
 StreamsInfo AnnexB::getStreamsInfo() const
 {
-  return {{"Stream 0", this->streamInfo.getStreamInfo()}};
+  StreamInfo streamInfo;
+  streamInfo.streamName = "Steam 0";
+  streamInfo.infoItems  = this->parsingInfo.getStreamInfo();
+
+  streamInfo.shortInfo = "Video";
+  auto frameSize       = this->getSequenceSizeSamples();
+  if (frameSize.isValid())
+    streamInfo.shortInfo += "(" + functions::to_string(frameSize) + ")";
+
+  return {streamInfo};
 }
 
-QString AnnexB::getShortStreamDescription(int) const
+StringPairVec AnnexB::getGeneralInfo() const
 {
-  QString info      = "Video";
-  auto    frameSize = this->getSequenceSizeSamples();
-  if (frameSize.isValid())
-    info += QString(" (%1x%2)").arg(frameSize.width).arg(frameSize.height);
-  return info;
+  return {{"Filesize", std::to_string(this->parsingInfo.fileSize)}};
 }
 
 bool AnnexB::addFrameToList(int                            poc,
@@ -172,8 +178,8 @@ bool AnnexB::parseAnnexBFile(std::unique_ptr<FileSourceAnnexBFile> &file, QWidge
     progressDialog->setWindowModality(Qt::WindowModal);
   }
 
-  this->streamInfo.fileSize = file->getFileSize();
-  this->streamInfo.parsing  = true;
+  this->parsingInfo.fileSize = file->getFileSize();
+  this->parsingInfo.parsing  = true;
   emit streamInfoUpdated();
 
   // Just push all NAL units from the annexBFile into the annexBParser
@@ -185,8 +191,8 @@ bool AnnexB::parseAnnexBFile(std::unique_ptr<FileSourceAnnexBFile> &file, QWidge
   {
     // Update the progress dialog
     int64_t pos = file->pos();
-    if (this->streamInfo.fileSize > 0)
-      progressPercentValue = functions::clip((int)(pos * 100 / this->streamInfo.fileSize), 0, 100);
+    if (this->parsingInfo.fileSize > 0)
+      progressPercentValue = functions::clip((int)(pos * 100 / this->parsingInfo.fileSize), 0, 100);
 
     try
     {
@@ -273,19 +279,19 @@ bool AnnexB::parseAnnexBFile(std::unique_ptr<FileSourceAnnexBFile> &file, QWidge
   if (packetModel)
     emit modelDataUpdated();
 
-  this->streamInfo.parsing  = false;
-  this->streamInfo.nrUnits  = nalID;
-  this->streamInfo.nrFrames = unsigned(this->frameListCodingOrder.size());
+  this->parsingInfo.parsing  = false;
+  this->parsingInfo.nrUnits  = nalID;
+  this->parsingInfo.nrFrames = unsigned(this->frameListCodingOrder.size());
   emit streamInfoUpdated();
   emit backgroundParsingDone("");
 
   return !cancelBackgroundParser;
 }
 
-bool AnnexB::runParsingOfFile(QString compressedFilePath)
+bool AnnexB::runParsingOfFile(std::string compressedFilePath)
 {
   DEBUG_ANNEXB("playlistItemCompressedVideo::runParsingOfFile");
-  auto file = std::make_unique<FileSourceAnnexBFile>(compressedFilePath);
+  auto file = std::make_unique<FileSourceAnnexBFile>(QString::fromStdString(compressedFilePath));
   return this->parseAnnexBFile(file);
 }
 

@@ -485,7 +485,7 @@ decoderDav1d::decoderDav1d(int signalID, bool cachingDecoder) : decoderBaseSingl
 
   QSettings settings;
   settings.beginGroup("Decoders");
-  this->loadDecoderLibrary(settings.value("libDav1dFile", "").toString());
+  this->loadDecoderLibrary(settings.value("libDav1dFile", "").toString().toStdString());
   settings.endGroup();
 
   bool resetDecoder;
@@ -525,11 +525,9 @@ bool decoderDav1d::isSignalDifference(int signalID) const
   return signalID == 2 || signalID == 3;
 }
 
-QStringList decoderDav1d::getSignalNames() const
+StringVec decoderDav1d::getSignalNames() const
 {
-  return QStringList() << "Reconstruction"
-                       << "Prediction"
-                       << "Reconstruction pre-filter";
+  return {"Reconstruction", "Prediction", "Reconstruction pre-filter"};
 }
 
 void decoderDav1d::setDecodeSignal(int signalID, bool &decoderResetNeeded)
@@ -586,8 +584,8 @@ template <typename T> T decoderDav1d::resolve(T &fun, const char *symbol, bool o
   if (!ptr)
   {
     if (!optional)
-      this->setError(QStringLiteral("Error loading the libde265 library: Can't find function %1.")
-                         .arg(symbol));
+      this->setError("Error loading the libde265 library: Can't find function " +
+                     std::string(symbol));
     return nullptr;
   }
 
@@ -852,12 +850,12 @@ bool decoderDav1d::pushData(QByteArray &data)
   return true;
 }
 
-bool decoderDav1d::checkLibraryFile(QString libFilePath, QString &error)
+bool decoderDav1d::checkLibraryFile(const std::string &libFilePath, std::string &error)
 {
   decoderDav1d testDecoder;
 
   // Try to load the library file
-  testDecoder.library.setFileName(libFilePath);
+  testDecoder.library.setFileName(QString::fromStdString(libFilePath));
   if (!testDecoder.library.load())
   {
     error = "Error opening QLibrary.";
@@ -872,31 +870,28 @@ bool decoderDav1d::checkLibraryFile(QString libFilePath, QString &error)
   return testDecoder.state() != DecoderState::Error;
 }
 
-QString decoderDav1d::getDecoderName() const
+std::string decoderDav1d::getDecoderName() const
 {
   if (decoder)
   {
-    QString ver = QString(this->lib.dav1d_version());
+    auto ver = std::string(this->lib.dav1d_version());
     return "Dav1d deoder Version " + ver;
   }
   return "Dav1d decoder";
 }
 
-QStringList decoderDav1d::getLibraryNames() const
+StringVec decoderDav1d::getLibraryNames() const
 {
   // If the file name is not set explicitly, QLibrary will try to open
   // the libde265.so file first. Since this has been compiled for linux
   // it will fail and not even try to open the libde265.dylib.
   // On windows and linux ommitting the extension works
   if (is_Q_OS_MAC)
-    return QStringList() << "libdav1d-internals.dylib"
-                         << "libdav1d.dylib";
+    return {"libdav1d-internals.dylib", "libdav1d.dylib"};
   if (is_Q_OS_WIN)
-    return QStringList() << "dav1d-internals"
-                         << "dav1d";
+    return {"dav1d-internals", "dav1d"};
   if (is_Q_OS_LINUX)
-    return QStringList() << "libdav1d-internals"
-                         << "libdav1d";
+    return {"libdav1d-internals", "libdav1d"};
 }
 
 void decoderDav1d::fillStatisticList(stats::StatisticsData &statisticsData) const

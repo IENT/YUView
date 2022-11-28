@@ -230,7 +230,7 @@ playlistItemCompressedVideo::playlistItemCompressedVideo(const QString &compress
                      << ")");
     this->ffmpegCodec = inputFileFFmpegLoading->getVideoStreamCodecID();
     DEBUG_COMPRESSED("playlistItemCompressedVideo::playlistItemCompressedVideo ffmpeg codec "
-                     << this->ffmpegCodec.getCodecName());
+                     << QString::fromStdString(this->ffmpegCodec.getCodecName()));
     this->prop.sampleAspectRatio =
         this->inputFileFFmpegLoading->getVideoCodecPar().getSampleAspectRatio();
     DEBUG_COMPRESSED(
@@ -474,11 +474,13 @@ InfoData playlistItemCompressedVideo::getInfo() const
       InfoItem("Reader", QString::fromStdString(InputFormatMapper.getName(this->inputFormat))));
   if (this->inputFileFFmpegLoading)
   {
-    auto l = this->inputFileFFmpegLoading->getLibraryPaths();
-    if (l.length() % 3 == 0)
+    auto paths = this->inputFileFFmpegLoading->getLibraryPaths();
+    if (paths.size() % 3 == 0)
     {
-      for (int i = 0; i < l.length() / 3; i++)
-        info.items.append(InfoItem(l[i * 3], l[i * 3 + 1], l[i * 3 + 2]));
+      for (int i = 0; i < paths.size() / 3; i++)
+        info.items.append(InfoItem(QString::fromStdString(paths[i * 3]),
+                                   QString::fromStdString(paths[i * 3 + 1]),
+                                   QString::fromStdString(paths[i * 3 + 2])));
     }
   }
   if (!this->unresolvableError)
@@ -493,14 +495,18 @@ InfoData playlistItemCompressedVideo::getInfo() const
         InfoItem("Num POCs", QString::number(nrFrames), "The number of pictures in the stream."));
     if (this->decodingEnabled)
     {
-      auto l = loadingDecoder->getLibraryPaths();
-      if (l.length() % 3 == 0)
+      auto paths = loadingDecoder->getLibraryPaths();
+      if (paths.size() % 3 == 0)
       {
-        for (int i = 0; i < l.length() / 3; i++)
-          info.items.append(InfoItem(l[i * 3], l[i * 3 + 1], l[i * 3 + 2]));
+        for (int i = 0; i < paths.size() / 3; i++)
+          info.items.append(InfoItem(QString::fromStdString(paths[i * 3]),
+                                     QString::fromStdString(paths[i * 3 + 1]),
+                                     QString::fromStdString(paths[i * 3 + 2])));
       }
-      info.items.append(InfoItem("Decoder", this->loadingDecoder->getDecoderName()));
-      info.items.append(InfoItem("Decoder", this->loadingDecoder->getCodecName()));
+      info.items.append(
+          InfoItem("Decoder", QString::fromStdString(this->loadingDecoder->getDecoderName())));
+      info.items.append(
+          InfoItem("Decoder", QString::fromStdString(this->loadingDecoder->getCodecName())));
       info.items.append(InfoItem("Statistics",
                                  this->loadingDecoder->statisticsSupported() ? "Yes" : "No",
                                  "Is the decoder able to provide internals (statistics)?"));
@@ -530,8 +536,8 @@ void playlistItemCompressedVideo::infoListButtonPressed(int buttonID)
     // Get the ffmpeg log
     auto    logFFmpeg = decoder::decoderFFmpeg::getLogMessages();
     QString logFFmpegString;
-    for (const auto &l : logFFmpeg)
-      logFFmpegString.append(l);
+    for (const auto &log : logFFmpeg)
+      logFFmpegString.append(QString::fromStdString(log));
     uiDialog.ffmpegLogEdit->setPlainText(logFFmpegString);
 
     // Get the loading log
@@ -539,8 +545,8 @@ void playlistItemCompressedVideo::infoListButtonPressed(int buttonID)
     {
       auto    logLoading = this->inputFileFFmpegLoading->getFFmpegLoadingLog();
       QString logLoadingString;
-      for (const auto &l : logLoading)
-        logLoadingString.append(l + "\n");
+      for (const auto &log : logLoading)
+        logLoadingString.append(QString::fromStdString(log + "\n"));
       uiDialog.libraryLogEdit->setPlainText(logLoadingString);
     }
 
@@ -821,7 +827,7 @@ void playlistItemCompressedVideo::loadRawData(int frameIdx, bool caching)
   else if (this->loadingDecoder->state() == decoder::DecoderState::Error)
   {
     this->infoText = "There was an error in the decoder: \n";
-    this->infoText += this->loadingDecoder->decoderErrorString();
+    this->infoText += QString::fromStdString(this->loadingDecoder->decoderErrorString());
     this->infoText += "\n";
 
     this->decodingEnabled = false;
@@ -937,7 +943,8 @@ void playlistItemCompressedVideo::createPropertiesWidget()
   // Set the components that we can display
   if (loadingDecoder)
   {
-    ui.comboBoxDisplaySignal->addItems(loadingDecoder->getSignalNames());
+    ui.comboBoxDisplaySignal->addItems(
+        functions::toQStringList(this->loadingDecoder->getSignalNames()));
     ui.comboBoxDisplaySignal->setCurrentIndex(loadingDecoder->getDecodeSignal());
   }
   // Add decoders we can use
@@ -1075,7 +1082,7 @@ bool playlistItemCompressedVideo::allocateDecoder(int displayComponent)
   if (!decodingEnabled)
   {
     this->infoText = "There was an error allocating the new decoder: \n";
-    this->infoText += loadingDecoder->decoderErrorString();
+    this->infoText += QString::fromStdString(loadingDecoder->decoderErrorString());
     this->infoText += "\n";
     return false;
   }
@@ -1335,7 +1342,8 @@ void playlistItemCompressedVideo::decoderComboxBoxChanged(int idx)
     {
       QSignalBlocker block(ui.comboBoxDisplaySignal);
       ui.comboBoxDisplaySignal->clear();
-      ui.comboBoxDisplaySignal->addItems(this->loadingDecoder->getSignalNames());
+      ui.comboBoxDisplaySignal->addItems(
+          functions::toQStringList(this->loadingDecoder->getSignalNames()));
       ui.comboBoxDisplaySignal->setCurrentIndex(this->loadingDecoder->getDecodeSignal());
     }
 

@@ -62,10 +62,17 @@ QStringList getThemeColors(QString themeName);
 // compatible.
 QString formatDataSize(double size, bool isBits = false);
 
-QStringList toQStringList(const std::vector<std::string> &stringVec);
-std::string toLower(std::string str);
+QStringList               toQStringList(const std::vector<std::string> &stringVec);
+[[nodiscard]] std::string toLower(const std::string &str);
+[[nodiscard]] std::string to_string(const Size &size);
+[[nodiscard]] std::string to_string(const StringVec &items, const std::string &seperator = ", ");
+[[nodiscard]] std::string vstring(const char *format, va_list vargs);
+[[nodiscard]] std::string formatString(const std::string &                       format,
+                                       const std::initializer_list<std::string> &arguments);
 
-template <typename T> std::string to_string(std::vector<T> items, std::string seperator = ", ")
+template <typename T>
+[[nodiscard]] std::string to_string(const std::vector<T> &items,
+                                    const std::string &   seperator = ", ")
 {
   std::string str;
   auto        it = items.begin();
@@ -77,25 +84,6 @@ template <typename T> std::string to_string(std::vector<T> items, std::string se
     ++it;
   }
   return str;
-}
-
-std::string vstring(const char *format, va_list vargs);
-
-std::string formatString(std::string format, std::initializer_list<std::string> arguments)
-{
-  int counter = 0;
-  for (auto argument : arguments)
-  {
-    const auto toReplace  = "%" + std::to_string(counter);
-    auto       replacePos = format.find(toReplace);
-    if (replacePos == std::string::npos)
-      return format;
-
-    format.replace(replacePos, 2, argument);
-
-    ++counter;
-  }
-  return format;
 }
 
 inline std::string boolToString(bool b)

@@ -481,8 +481,6 @@ void FileSourceFFmpegFile::openFileAndFindVideoStream(QString fileName)
   if (!this->ff.openInput(this->formatCtx, fileName))
     return;
 
-  this->formatCtx.getInputFormat();
-
   for (unsigned idx = 0; idx < this->formatCtx.getNbStreams(); idx++)
   {
     auto stream     = this->formatCtx.getStream(idx);
@@ -658,51 +656,26 @@ StringPairVec FileSourceFFmpegFile::getGeneralInfo() const
   return this->formatCtx.getInfoText();
 }
 
-StreamsInfo FileSourceFFmpegFile::getStreamsInfo(bool detailedInfo) const
+StreamsInfo FileSourceFFmpegFile::getStreamsInfo() const
 {
   StreamsInfo info;
 
   for (unsigned i = 0; i < this->formatCtx.getNbStreams(); i++)
   {
-    auto stream         = this->formatCtx.getStream(i);
-    auto codecIdWrapper = this->ff.getCodecIDWrapper(stream.getCodecID());
-    info += stream.getInfoText(codecIdWrapper);
+    StreamInfo streamInfo;
+    auto       stream  = this->formatCtx.getStream(i);
+    auto       codecID = this->ff.getCodecIDWrapper(stream.getCodecID());
+
+    streamInfo.streamName = "Stream " + std::to_string(i);
+    streamInfo.infoItems  = stream.getInfoText(codecID);
+    streamInfo.timebase   = stream.getTimeBase();
+
+    streamInfo.shortInfo = stream.getCodecTypeName();
+    streamInfo.shortInfo += " " + codecID.getCodecName();
+
+    streamInfo.shortInfo += " (" + std::to_string(stream.getFrameSize().width) + "x" +
+                            std::to_string(stream.getFrameSize().height) + ")";
   }
 
   return info;
-}
-
-std::vector<AVRational> FileSourceFFmpegFile::getTimeBaseAllStreams()
-{
-  std::vector<AVRational> timeBaseList;
-
-  for (unsigned i = 0; i < this->formatCtx.getNbStreams(); i++)
-  {
-    auto stream = this->formatCtx.getStream(i);
-    timeBaseList.push_back(stream.getTimeBase());
-  }
-
-  return timeBaseList;
-}
-
-QList<QString> FileSourceFFmpegFile::getShortStreamDescriptionAllStreams()
-{
-  QList<QString> descriptions;
-
-  for (unsigned i = 0; i < this->formatCtx.getNbStreams(); i++)
-  {
-    QString description;
-    auto    stream = this->formatCtx.getStream(i);
-    description    = stream.getCodecTypeName();
-
-    auto codecID = this->ff.getCodecIDWrapper(stream.getCodecID());
-    description += " " + codecID.getCodecName();
-
-    description +=
-        QString(" (%1x%2)").arg(stream.getFrameSize().width).arg(stream.getFrameSize().height);
-
-    descriptions.append(description);
-  }
-
-  return descriptions;
 }

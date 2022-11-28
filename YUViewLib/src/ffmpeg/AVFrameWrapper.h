@@ -72,7 +72,7 @@ private:
   int           format{};
   int           key_frame{};
   AVPictureType pict_type{};
-  AVRational    sample_aspect_ratio{};
+  Rational      sample_aspect_ratio{};
   int64_t       pts{};
   int64_t       pkt_pts{};
   int64_t       pkt_dts{};

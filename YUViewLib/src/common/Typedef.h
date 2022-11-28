@@ -315,6 +315,19 @@ struct Offset
   int  y{};
 };
 
+struct Rational
+{
+  bool operator!=(const Rational &second) const
+  {
+    const auto a = int64_t(this->num) * int64_t(second.den);
+    const auto b = int64_t(this->den) * int64_t(second.num);
+    return a != b;
+  }
+
+  int num{};
+  int den{};
+};
+
 struct FileStartEndPos
 {
   int64_t start{};
@@ -327,8 +340,6 @@ static std::string to_string(const FileStartEndPos &fileStartEndPos)
   ss << "(" << fileStartEndPos.start << ", " << fileStartEndPos.end << ")";
   return ss.str();
 }
-
-using StreamsInfo = std::map<std::string, StringPairVec>;
 
 // A list of value pair lists, where every list has a string (title)
 class ValuePairListSets : public QList<QPair<QString, QStringPairList>>

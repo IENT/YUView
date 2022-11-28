@@ -35,6 +35,7 @@
 #include "FFMpegLibrariesTypes.h"
 #include <QLibrary>
 #include <common/Typedef.h>
+#include <filesystem>
 
 namespace FFmpeg
 {

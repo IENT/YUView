@@ -112,11 +112,11 @@ public:
 
   static AVPixelFormat convertYUVAVPixelFormat(video::yuv::PixelFormatYUV fmt);
   // Check if the given four files can be used to open FFmpeg.
-  static bool checkLibraryFiles(std::string avCodecLib,
-                                std::string avFormatLib,
-                                std::string avUtilLib,
-                                std::string swResampleLib,
-                                StringVec & logging);
+  static bool checkLibraryFiles(const std::string &avCodecLib,
+                                const std::string &avFormatLib,
+                                const std::string &avUtilLib,
+                                const std::string &swResampleLib,
+                                StringVec &        logging);
 
   // Logging. By default we set the logging level of ffmpeg to AV_LOG_ERROR (Log errors and
   // everything worse)
@@ -128,12 +128,12 @@ public:
 private:
   // Try to load the FFmpeg libraries from the given path.
   // Try the system paths if no path is provided. This function can be called multiple times.
-  bool loadFFmpegLibraryInPath(std::string path);
+  bool loadFFmpegLibraryInPath(const std::string &path);
   // Try to load the four specific library files
-  bool loadFFMpegLibrarySpecific(std::string avFormatLib,
-                                 std::string avCodecLib,
-                                 std::string avUtilLib,
-                                 std::string swResampleLib);
+  bool loadFFMpegLibrarySpecific(const std::string &avFormatLib,
+                                 const std::string &avCodecLib,
+                                 const std::string &avUtilLib,
+                                 const std::string &swResampleLib);
   bool librariesLoaded{};
 
   // Log what is happening when loading the libraries / opening files.

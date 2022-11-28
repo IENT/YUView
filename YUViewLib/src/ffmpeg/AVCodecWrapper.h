@@ -69,7 +69,7 @@ private:
   AVMediaType                 type;
   AVCodecID                   id{AV_CODEC_ID_NONE};
   int                         capabilities{0};
-  std::vector<AVRational>     supported_framerates;
+  std::vector<Rational>       supported_framerates;
   std::vector<AVPixelFormat>  pix_fmts;
   std::vector<int>            supported_samplerates;
   std::vector<AVSampleFormat> sample_fmts;

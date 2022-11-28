@@ -69,11 +69,11 @@ public:
   // What statistics do we support?
   void fillStatisticList(stats::StatisticsData &statisticsData) const override;
 
-  QStringList getLibraryPaths() const override { return ff.getLibPaths(); }
-  QString     getDecoderName() const override { return "FFmpeg"; }
-  QString     getCodecName() const override { return this->codecName; }
+  StringVec   getLibraryPaths() const override { return ff.getLibPaths(); }
+  std::string getDecoderName() const override { return "FFmpeg"; }
+  std::string getCodecName() const override { return this->codecName; }
 
-  static QStringList getLogMessages() { return FFmpeg::FFmpegVersionHandler::getFFmpegLog(); }
+  static StringVec getLogMessages() { return FFmpeg::FFmpegVersionHandler::getFFmpegLog(); }
 
 protected:
   FFmpeg::FFmpegVersionHandler ff;
@@ -107,7 +107,7 @@ protected:
   // An array of AV_INPUT_BUFFER_PADDING_SIZE zeros to be added as padding in pushData
   QByteArray avPacketPaddingData;
 
-  QString codecName{};
+  std::string codecName{};
 };
 
 } // namespace decoder

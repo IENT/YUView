@@ -53,15 +53,15 @@ public:
                              std::optional<FileStartEndPos> obuFileStartEndPos = {},
                              std::shared_ptr<TreeItem>      parent             = nullptr);
 
-  bool runParsingOfFile(QString) override
+  bool runParsingOfFile(std::string) override
   {
     assert(false);
     return false;
   }
 
-  [[nodiscard]] StreamsInfo getStreamsInfo() const override { return {}; }
-  [[nodiscard]] int         getNrStreams() const override { return 1; }
-  QString                   getShortStreamDescription(int) const override { return "Video"; }
+  [[nodiscard]] StreamsInfo   getStreamsInfo() const override { return {}; }
+  [[nodiscard]] StringPairVec getGeneralInfo() const override { return {}; }
+  [[nodiscard]] int           getNrStreams() const override { return 1; }
 
 protected:
   av1::GlobalDecodingValues                 decValues;

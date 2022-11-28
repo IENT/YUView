@@ -90,21 +90,21 @@ void Base::updateNumberModelItems()
   this->packetModel->updateNumberModelItems();
 }
 
-QString Base::convertSliceTypeMapToString(QMap<QString, unsigned int> &sliceTypes)
+std::string
+Base::convertSliceTypeMapToString(std::map<std::string, unsigned int> &sliceTypeCounters)
 {
-  QString text;
-  for (auto key : sliceTypes.keys())
+  std::string text;
+  for (auto &[silceTypeName, count] : sliceTypeCounters)
   {
-    text += key;
-    const auto value = sliceTypes.value(key);
-    if (value > 1)
-      text += QString("(%1x)").arg(value);
+    text += silceTypeName;
+    if (count > 1)
+      text += "(" + std::to_string(count) + ")";
     text += " ";
   }
   return text;
 }
 
-StringPairVec Base::StreamInfo::getStreamInfo() const
+StringPairVec Base::ParsingStats::getStreamInfo() const
 {
   StringPairVec info;
 

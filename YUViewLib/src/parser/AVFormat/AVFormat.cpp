@@ -63,43 +63,19 @@ const ByteVector startCode({0, 0, 1});
 
 using namespace reader;
 
-Base::StreamsInfo AVFormat::getStreamsInfo() const
+StreamsInfo AVFormat::getStreamsInfo() const
 {
-  if (this->streamInfoAllStreams.count() == 0)
-    return {};
+  return this->streamsInfo;
+}
 
-  StreamsInfo info;
-
-  
-
-  QStringPairList  generalInfo = this->streamInfoAllStreams[0];
-  QTreeWidgetItem *general     = new QTreeWidgetItem(QStringList() << "General");
-  for (QStringPair p : generalInfo)
-    new QTreeWidgetItem(general, QStringList() << p.first << p.second);
-  info.append(general);
-
-  for (int i = 1; i < this->streamInfoAllStreams.count(); i++)
-  {
-    QTreeWidgetItem *streamInfo =
-        new QTreeWidgetItem(QStringList() << QString("Stream %1").arg(i - 1));
-    for (QStringPair p : this->streamInfoAllStreams[i])
-      new QTreeWidgetItem(streamInfo, QStringList() << p.first << p.second);
-    info.append(streamInfo);
-  }
-
-  return info;
+StringPairVec AVFormat::getGeneralInfo() const
+{
+  return this->generalInfo;
 }
 
 int AVFormat::getNrStreams() const
 {
-  return streamInfoAllStreams.empty() ? 0 : streamInfoAllStreams.length() - 1;
-}
-
-QString AVFormat::getShortStreamDescription(int streamIndex) const
-{
-  if (streamIndex >= this->shortStreamInfoAllStreams.count())
-    return {};
-  return this->shortStreamInfoAllStreams[streamIndex];
+  return static_cast<int>(this->streamsInfo.size());
 }
 
 bool AVFormat::parseExtradata(ByteVector &extradata)
@@ -335,9 +311,14 @@ bool AVFormat::parseAVPacket(unsigned packetID, unsigned streamPacketID, AVPacke
   }
   bool addBitrateEntryForPacket = true;
 
-  auto timeBase = timeBaseAllStreams[packet.getStreamIndex()];
+  if (packet.getStreamIndex() >= this->getNrStreams())
+  {
+    DEBUG_AVFORMAT("AVFormat::parseAVPacket Got packet with invalid stream index");
+    return false;
+  }
+  const auto timeBase = this->streamsInfo[packet.getStreamIndex()].timebase;
 
-  auto formatTimestamp = [](int64_t timestamp, AVRational timebase) -> std::string {
+  auto formatTimestamp = [](int64_t timestamp, Rational timebase) -> std::string {
     std::ostringstream ss;
     ss << timestamp << " (";
     if (timestamp < 0)
@@ -545,10 +526,9 @@ bool AVFormat::parseAVPacket(unsigned packetID, unsigned streamPacketID, AVPacke
     {
       // Unknown. We have to guess.
       entry.duration = 10; // The backup guess
-      if (this->framerate > 0 && this->videoStreamIndex >= 0 &&
-          this->videoStreamIndex < this->timeBaseAllStreams.size())
+      if (this->framerate > 0 && this->videoStreamIndex >= 0)
       {
-        auto videoTimeBase = this->timeBaseAllStreams[this->videoStreamIndex];
+        const auto videoTimeBase = this->streamsInfo[this->videoStreamIndex].timebase;
         if (videoTimeBase.num > 0)
         {
           auto duration  = 1.0 / this->framerate * videoTimeBase.den / videoTimeBase.num;
@@ -568,11 +548,11 @@ bool AVFormat::parseAVPacket(unsigned packetID, unsigned streamPacketID, AVPacke
   return true;
 }
 
-bool AVFormat::runParsingOfFile(QString compressedFilePath)
+bool AVFormat::runParsingOfFile(std::string compressedFilePath)
 {
   // Open the file but don't parse it yet.
   QScopedPointer<FileSourceFFmpegFile> ffmpegFile(new FileSourceFFmpegFile());
-  if (!ffmpegFile->openFile(compressedFilePath, nullptr, nullptr, false))
+  if (!ffmpegFile->openFile(QString::fromStdString(compressedFilePath), nullptr, nullptr, false))
   {
     emit backgroundParsingDone("Error opening the ffmpeg file.");
     return false;
@@ -589,7 +569,8 @@ bool AVFormat::runParsingOfFile(QString compressedFilePath)
     this->obuParser.reset(new ParserAV1OBU());
   else if (this->codecID.isNone())
   {
-    emit backgroundParsingDone("Unknown codec ID " + this->codecID.getCodecName());
+    auto message = "Unknown codec ID " + this->codecID.getCodecName();
+    emit backgroundParsingDone(QString::fromStdString(message));
     return false;
   }
 
@@ -623,12 +604,11 @@ bool AVFormat::runParsingOfFile(QString compressedFilePath)
     return false;
   }
 
-  int max_ts                      = ffmpegFile->getMaxTS();
-  this->videoStreamIndex          = ffmpegFile->getVideoStreamIndex();
-  this->framerate                 = ffmpegFile->getFramerate();
-  this->streamInfoAllStreams      = ffmpegFile->getFileInfoForAllStreams();
-  this->timeBaseAllStreams        = ffmpegFile->getTimeBaseAllStreams();
-  this->shortStreamInfoAllStreams = ffmpegFile->getShortStreamDescriptionAllStreams();
+  int max_ts             = ffmpegFile->getMaxTS();
+  this->videoStreamIndex = ffmpegFile->getVideoStreamIndex();
+  this->framerate        = ffmpegFile->getFramerate();
+  this->streamsInfo      = ffmpegFile->getStreamsInfo();
+  this->generalInfo      = ffmpegFile->getGeneralInfo();
 
   emit streamInfoUpdated();
 
@@ -694,7 +674,8 @@ bool AVFormat::runParsingOfFile(QString compressedFilePath)
   if (packetModel)
     emit modelDataUpdated();
 
-  this->streamInfoAllStreams = ffmpegFile->getFileInfoForAllStreams();
+  this->streamsInfo = ffmpegFile->getStreamsInfo();
+  this->generalInfo = ffmpegFile->getGeneralInfo();
   emit streamInfoUpdated();
   emit backgroundParsingDone("");
 

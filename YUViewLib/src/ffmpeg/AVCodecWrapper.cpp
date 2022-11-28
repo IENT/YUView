@@ -88,6 +88,19 @@ template <typename T> std::vector<T> convertRawListToVec(const T *rawValues, T t
   return values;
 }
 
+std::vector<Rational> convertRawAVRationalList(const AVRational *rawValues)
+{
+  std::vector<Rational> values;
+  int                   i   = 0;
+  auto                  val = rawValues[i++];
+  while (val.num == 0 && val.den == 0)
+  {
+    values.push_back(Rational({val.num, val.den}));
+    val = rawValues[i++];
+  }
+  return values;
+}
+
 } // namespace
 
 void AVCodecWrapper::update()
@@ -103,7 +116,7 @@ void AVCodecWrapper::update()
     this->type                  = p->type;
     this->id                    = p->id;
     this->capabilities          = p->capabilities;
-    this->supported_framerates  = convertRawListToVec(p->supported_framerates, AVRational({0, 0}));
+    this->supported_framerates  = convertRawAVRationalList(p->supported_framerates);
     this->pix_fmts              = convertRawListToVec(p->pix_fmts, AVPixelFormat(-1));
     this->supported_samplerates = convertRawListToVec(p->supported_samplerates, 0);
     this->sample_fmts           = convertRawListToVec(p->sample_fmts, AVSampleFormat(-1));
@@ -118,7 +131,7 @@ void AVCodecWrapper::update()
     this->type                  = p->type;
     this->id                    = p->id;
     this->capabilities          = p->capabilities;
-    this->supported_framerates  = convertRawListToVec(p->supported_framerates, AVRational({0, 0}));
+    this->supported_framerates  = convertRawAVRationalList(p->supported_framerates);
     this->pix_fmts              = convertRawListToVec(p->pix_fmts, AVPixelFormat(-1));
     this->supported_samplerates = convertRawListToVec(p->supported_samplerates, 0);
     this->sample_fmts           = convertRawListToVec(p->sample_fmts, AVSampleFormat(-1));

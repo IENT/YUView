@@ -168,6 +168,25 @@ std::string toLower(std::string str)
   return str;
 }
 
+std::string to_string(const Size &size)
+{
+  return std::to_string(size.width) + "x" + std::to_string(size.height);
+}
+
+std::string to_string(const StringVec &items, const std::string &seperator)
+{
+  std::string str;
+  auto        it = items.begin();
+  while (it != items.end())
+  {
+    if (it != items.begin())
+      str += seperator;
+    str += *it;
+    ++it;
+  }
+  return str;
+}
+
 std::string vstring(const char *format, va_list vargs)
 {
   std::string result;
@@ -191,6 +210,23 @@ std::string vstring(const char *format, va_list vargs)
   va_end(args_copy);
 
   return result;
+}
+
+std::string formatString(std::string format, std::initializer_list<std::string> arguments)
+{
+  int counter = 0;
+  for (auto argument : arguments)
+  {
+    const auto toReplace  = "%" + std::to_string(counter);
+    auto       replacePos = format.find(toReplace);
+    if (replacePos == std::string::npos)
+      return format;
+
+    format.replace(replacePos, 2, argument);
+
+    ++counter;
+  }
+  return format;
 }
 
 std::optional<unsigned long> toUnsigned(const std::string &text)

@@ -107,7 +107,7 @@ decoderHM::decoderHM(int, bool cachingDecoder) : decoderBaseSingleLib(cachingDec
   // Try to load the decoder library (.dll on Windows, .so on Linux, .dylib on Mac)
   QSettings settings;
   settings.beginGroup("Decoders");
-  loadDecoderLibrary(settings.value("libHMFile", "").toString());
+  loadDecoderLibrary(settings.value("libHMFile", "").toString().toStdString());
   settings.endGroup();
 
   if (decoderState != DecoderState::Error)
@@ -120,15 +120,14 @@ decoderHM::~decoderHM()
     this->lib.libHMDec_free_decoder(decoder);
 }
 
-QStringList decoderHM::getLibraryNames() const
+StringVec decoderHM::getLibraryNames() const
 {
   // If the file name is not set explicitly, QLibrary will try to open the .so file first.
   // Since this has been compiled for linux it will fail and not even try to open the .dylib.
   // On windows and linux ommitting the extension works
-  auto names =
-      is_Q_OS_MAC ? QStringList() << "libHMDecoder.dylib" : QStringList() << "libHMDecoder";
-
-  return names;
+  if (is_Q_OS_MAC)
+    return {"libHMDecoder.dylib"};
+  return {"libHMDecoder"};
 }
 
 void decoderHM::resolveLibraryFunctionPointers()
@@ -199,8 +198,8 @@ template <typename T> T decoderHM::resolve(T &fun, const char *symbol, bool opti
   if (!ptr)
   {
     if (!optional)
-      setError(QStringLiteral("Error loading the libde265 library: Can't find function %1.")
-                   .arg(symbol));
+      this->setError("Error loading the libde265 library: Can't find function " +
+                     std::string(symbol));
     return nullptr;
   }
 
@@ -328,8 +327,8 @@ bool decoderHM::pushData(QByteArray &data)
   auto err                 = this->lib.libHMDec_push_nal_unit(
       decoder, data, data.length(), endOfFile, bNewPicture, checkOutputPictures);
   if (err != LIBHMDEC_OK)
-    return setErrorB(QString("Error pushing data to decoder (libHMDec_push_nal_unit) length %1")
-                         .arg(data.length()));
+    return setErrorB("Error pushing data to decoder (libHMDec_push_nal_unit) length " +
+                     std::to_string(data.length()));
   DEBUG_DECHM("decoderHM::pushData pushed NAL length %d%s%s",
               data.length(),
               bNewPicture ? " bNewPicture" : "",
@@ -584,17 +583,17 @@ void decoderHM::fillStatisticList(stats::StatisticsData &statisticsData) const
   }
 }
 
-QString decoderHM::getDecoderName() const
+std::string decoderHM::getDecoderName() const
 {
   return (decoderState == DecoderState::Error) ? "HM" : this->lib.libHMDec_get_version();
 }
 
-bool decoderHM::checkLibraryFile(QString libFilePath, QString &error)
+bool decoderHM::checkLibraryFile(const std::string &libFilePath, std::string &error)
 {
   decoderHM testDecoder;
 
   // Try to load the library file
-  testDecoder.library.setFileName(libFilePath);
+  testDecoder.library.setFileName(QString::fromStdString(libFilePath));
   if (!testDecoder.library.load())
   {
     error = "Error opening QLibrary.";

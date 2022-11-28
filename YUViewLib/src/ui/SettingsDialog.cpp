@@ -47,6 +47,8 @@
 #include <QSettings>
 #include <QTextStream>
 
+#include <fstream>
+
 #define MIN_CACHE_SIZE_IN_MB (20u)
 
 SettingsDialog::SettingsDialog(QWidget *parent) : QDialog(parent)
@@ -272,12 +274,13 @@ void SettingsDialog::on_pushButtonLibde265SelectFile_clicked()
                                               "Please select the libde265 library file to use.");
   if (newFiles.count() != 1)
     return;
-  QString error;
-  if (!decoder::decoderLibde265::checkLibraryFile(newFiles[0], error))
+  std::string error;
+  if (!decoder::decoderLibde265::checkLibraryFile(newFiles[0].toStdString(), error))
     QMessageBox::critical(
         this,
         "Error testing the library",
-        "The selected file does not appear to be a usable libde265 library. Error: " + error);
+        "The selected file does not appear to be a usable libde265 library. Error: " +
+            QString::fromStdString(error));
   else
     ui.lineEditLibde265File->setText(newFiles[0]);
 }
@@ -288,12 +291,13 @@ void SettingsDialog::on_pushButtonlibHMSelectFile_clicked()
       ui.lineEditLibHMFile->text(), "Please select the libHMDecoder library file to use.");
   if (newFiles.count() != 1)
     return;
-  QString error;
-  if (!decoder::decoderHM::checkLibraryFile(newFiles[0], error))
+  std::string error;
+  if (!decoder::decoderHM::checkLibraryFile(newFiles[0].toStdString(), error))
     QMessageBox::critical(
         this,
         "Error testing the library",
-        "The selected file does not appear to be a usable libHMDecoder library. Error: " + error);
+        "The selected file does not appear to be a usable libHMDecoder library. Error: " +
+            QString::fromStdString(error));
   else
     ui.lineEditLibHMFile->setText(newFiles[0]);
 }
@@ -304,12 +308,13 @@ void SettingsDialog::on_pushButtonLibDav1dSelectFile_clicked()
                                               "Please select the libDav1d library file to use.");
   if (newFiles.count() != 1)
     return;
-  QString error;
-  if (!decoder::decoderDav1d::checkLibraryFile(newFiles[0], error))
+  std::string error;
+  if (!decoder::decoderDav1d::checkLibraryFile(newFiles[0].toStdString(), error))
     QMessageBox::critical(
         this,
         "Error testing the library",
-        "The selected file does not appear to be a usable libDav1d library. Error: " + error);
+        "The selected file does not appear to be a usable libDav1d library. Error: " +
+            QString::fromStdString(error));
   else
     ui.lineEditLibDav1d->setText(newFiles[0]);
 }
@@ -320,12 +325,13 @@ void SettingsDialog::on_pushButtonLibVTMSelectFile_clicked()
       ui.lineEditLibVTMFile->text(), "Please select the libVTMDecoder library file to use.");
   if (newFiles.count() != 1)
     return;
-  QString error;
-  if (!decoder::decoderVTM::checkLibraryFile(newFiles[0], error))
+  std::string error;
+  if (!decoder::decoderVTM::checkLibraryFile(newFiles[0].toStdString(), error))
     QMessageBox::critical(
         this,
         "Error testing the library",
-        "The selected file does not appear to be a usable libVTMDecoder library. Error: " + error);
+        "The selected file does not appear to be a usable libVTMDecoder library. Error: " +
+            QString::fromStdString(error));
   else
     ui.lineEditLibVTMFile->setText(newFiles[0]);
 }
@@ -336,13 +342,13 @@ void SettingsDialog::on_pushButtonLibVVDecSelectFile_clicked()
       ui.lineEditLibVVDecFile->text(), "Please select the libVVDec decoder library file to use.");
   if (newFiles.count() != 1)
     return;
-  QString error;
-  if (!decoder::decoderVVDec::checkLibraryFile(newFiles[0], error))
+  std::string error;
+  if (!decoder::decoderVVDec::checkLibraryFile(newFiles[0].toStdString(), error))
     QMessageBox::critical(
         this,
         "Error testing the library",
         "The selected file does not appear to be a usable libVVDec decoder library. Error: " +
-            error);
+            QString::fromStdString(error));
   else
     ui.lineEditLibVVDecFile->setText(newFiles[0]);
 }
@@ -384,26 +390,28 @@ void SettingsDialog::on_pushButtonFFMpegSelectFile_clicked()
   }
 
   // Try to open ffmpeg using the four libraries
-  QStringList logList;
-  if (!FFmpeg::FFmpegVersionHandler::checkLibraryFiles(
-          avCodecLib, avFormatLib, avUtilLib, swResampleLib, logList))
+  StringVec logList;
+  if (!FFmpeg::FFmpegVersionHandler::checkLibraryFiles(avCodecLib.toStdString(),
+                                                       avFormatLib.toStdString(),
+                                                       avUtilLib.toStdString(),
+                                                       swResampleLib.toStdString(),
+                                                       logList))
   {
-    QMessageBox::StandardButton b = QMessageBox::question(
+    auto response = QMessageBox::question(
         this,
         "Error opening the library",
         "The selected file does not appear to be a usable ffmpeg avFormat library. \nWe have "
         "collected a more detailed log. Do you want to save it to disk?");
-    if (b == QMessageBox::Yes)
+    if (response == QMessageBox::Yes)
     {
       const auto filePath =
           QFileDialog::getSaveFileName(this, "Select a destination for the log file.");
-      QFile logFile(filePath);
-      logFile.open(QIODevice::WriteOnly);
-      if (logFile.isOpen())
+      std::ofstream outfile;
+      outfile.open(filePath.toStdString(), std::ios::out | std::ios::trunc);
+      if (outfile.is_open())
       {
-        QTextStream outputStream(&logFile);
-        for (auto l : logList)
-          outputStream << l << "\n";
+        for (auto log : logList)
+          outfile << log << "\n";
       }
       else
         QMessageBox::information(

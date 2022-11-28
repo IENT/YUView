@@ -55,13 +55,12 @@ public:
   AVFormat(QObject *parent = nullptr) : Base(parent) {}
   ~AVFormat() {}
 
-  [[nodiscard]] StreamsInfo getStreamsInfo() const override;
-  [[nodiscard]] int        getNrStreams() const override;
-
-  QString getShortStreamDescription(int streamIndex) const override;
+  [[nodiscard]] StreamsInfo   getStreamsInfo() const override;
+  [[nodiscard]] StringPairVec getGeneralInfo() const override;
+  [[nodiscard]] int           getNrStreams() const override;
 
   // This function can run in a separate thread
-  bool runParsingOfFile(QString compressedFilePath) override;
+  bool runParsingOfFile(std::string compressedFilePath) override;
 
   int getVideoStreamIndex() override { return this->videoStreamIndex; }
 
@@ -91,9 +90,8 @@ private:
 
   // When the parser is used in the bitstream analysis window, the runParsingOfFile is used and
   // we update this list while parsing the file.
-  QList<QStringPairList>    streamInfoAllStreams;
-  QList<FFmpeg::AVRational> timeBaseAllStreams;
-  QList<QString>            shortStreamInfoAllStreams;
+  StreamsInfo   streamsInfo;
+  StringPairVec generalInfo;
 
   int    videoStreamIndex{-1};
   double framerate{-1.0};

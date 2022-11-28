@@ -42,8 +42,8 @@ class AVCodecParametersWrapper
 public:
   AVCodecParametersWrapper() = default;
   AVCodecParametersWrapper(AVCodecParameters *p, LibraryVersion v);
-  explicit        operator bool() const { return this->param != nullptr; }
-  QStringPairList getInfoText();
+  explicit      operator bool() const { return this->param != nullptr; }
+  StringPairVec getInfoText() const;
 
   AVMediaType   getCodecType();
   AVCodecID     getCodecID();
@@ -83,7 +83,7 @@ private:
   int                           level{};
   int                           width{};
   int                           height{};
-  AVRational                    sample_aspect_ratio{};
+  Rational                      sample_aspect_ratio{};
   AVFieldOrder                  field_order{};
   AVColorRange                  color_range{};
   AVColorPrimaries              color_primaries{};

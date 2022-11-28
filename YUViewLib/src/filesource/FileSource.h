@@ -60,6 +60,15 @@ const auto InputFormatMapper = EnumMapper<InputFormat>({{InputFormat::Invalid, "
                                                         {InputFormat::OBUAV1, "OBUAV1"},
                                                         {InputFormat::Libav, "Libav"}});
 
+struct StreamInfo
+{
+  std::string   streamName;
+  Rational      timebase{};
+  StringPairVec infoItems;
+  std::string   shortInfo;
+};
+using StreamsInfo = std::vector<StreamInfo>;
+
 struct DataAndStartEndPos
 {
   QByteArray      data{};

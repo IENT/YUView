@@ -205,20 +205,17 @@ AVFormatContextWrapper::operator bool() const
 
 unsigned AVFormatContextWrapper::getNbStreams() const
 {
+
   switch (this->libVer.avformat.major)
   {
   case 56:
-    auto p = reinterpret_cast<AVFormatContext_56 *>(this->ctx);
-    return p->nb_streams;
+    return reinterpret_cast<AVFormatContext_56 *>(this->ctx)->nb_streams;
   case 57:
-    auto p = reinterpret_cast<AVFormatContext_57 *>(this->ctx);
-    return p->nb_streams;
+    return reinterpret_cast<AVFormatContext_57 *>(this->ctx)->nb_streams;
   case 58:
-    auto p = reinterpret_cast<AVFormatContext_58 *>(this->ctx);
-    return p->nb_streams;
+    return reinterpret_cast<AVFormatContext_58 *>(this->ctx)->nb_streams;
   case 59:
-    auto p = reinterpret_cast<AVFormatContext_59 *>(this->ctx);
-    return p->nb_streams;
+    return reinterpret_cast<AVFormatContext_59 *>(this->ctx)->nb_streams;
 
   default:
     throw std::runtime_error("Invalid library version");
@@ -227,23 +224,23 @@ unsigned AVFormatContextWrapper::getNbStreams() const
 
 AVStreamWrapper AVFormatContextWrapper::getStream(int idx) const
 {
-  if (idx >= this->getNbStreams())
+  if (idx < 0 || static_cast<unsigned>(idx) >= this->getNbStreams())
     throw std::runtime_error("Invalid stream index");
 
   switch (this->libVer.avformat.major)
   {
   case 56:
-    auto p = reinterpret_cast<AVFormatContext_56 *>(this->ctx);
-    return AVStreamWrapper(p->streams[idx], this->libVer);
+    return AVStreamWrapper(reinterpret_cast<AVFormatContext_56 *>(this->ctx)->streams[idx],
+                           this->libVer);
   case 57:
-    auto p = reinterpret_cast<AVFormatContext_57 *>(this->ctx);
-    return AVStreamWrapper(p->streams[idx], this->libVer);
+    return AVStreamWrapper(reinterpret_cast<AVFormatContext_57 *>(this->ctx)->streams[idx],
+                           this->libVer);
   case 58:
-    auto p = reinterpret_cast<AVFormatContext_58 *>(this->ctx);
-    return AVStreamWrapper(p->streams[idx], this->libVer);
+    return AVStreamWrapper(reinterpret_cast<AVFormatContext_58 *>(this->ctx)->streams[idx],
+                           this->libVer);
   case 59:
-    auto p = reinterpret_cast<AVFormatContext_59 *>(this->ctx);
-    return AVStreamWrapper(p->streams[idx], this->libVer);
+    return AVStreamWrapper(reinterpret_cast<AVFormatContext_59 *>(this->ctx)->streams[idx],
+                           this->libVer);
 
   default:
     throw std::runtime_error("Invalid library version");
@@ -255,17 +252,13 @@ AVInputFormatWrapper AVFormatContextWrapper::getInputFormat() const
   switch (this->libVer.avformat.major)
   {
   case 56:
-    auto p = reinterpret_cast<AVFormatContext_56 *>(this->ctx);
-    return AVInputFormatWrapper(p->iformat, libVer);
+    return AVInputFormatWrapper(reinterpret_cast<AVFormatContext_56 *>(this->ctx)->iformat, libVer);
   case 57:
-    auto p = reinterpret_cast<AVFormatContext_57 *>(this->ctx);
-    return AVInputFormatWrapper(p->iformat, libVer);
+    return AVInputFormatWrapper(reinterpret_cast<AVFormatContext_57 *>(this->ctx)->iformat, libVer);
   case 58:
-    auto p = reinterpret_cast<AVFormatContext_58 *>(this->ctx);
-    return AVInputFormatWrapper(p->iformat, libVer);
+    return AVInputFormatWrapper(reinterpret_cast<AVFormatContext_58 *>(this->ctx)->iformat, libVer);
   case 59:
-    auto p = reinterpret_cast<AVFormatContext_59 *>(this->ctx);
-    return AVInputFormatWrapper(p->iformat, libVer);
+    return AVInputFormatWrapper(reinterpret_cast<AVFormatContext_59 *>(this->ctx)->iformat, libVer);
 
   default:
     throw std::runtime_error("Invalid library version");
@@ -277,17 +270,13 @@ int64_t AVFormatContextWrapper::getStartTime() const
   switch (this->libVer.avformat.major)
   {
   case 56:
-    auto p = reinterpret_cast<AVFormatContext_56 *>(this->ctx);
-    return p->start_time;
+    return reinterpret_cast<AVFormatContext_56 *>(this->ctx)->start_time;
   case 57:
-    auto p = reinterpret_cast<AVFormatContext_57 *>(this->ctx);
-    return p->start_time;
+    return reinterpret_cast<AVFormatContext_57 *>(this->ctx)->start_time;
   case 58:
-    auto p = reinterpret_cast<AVFormatContext_58 *>(this->ctx);
-    return p->start_time;
+    return reinterpret_cast<AVFormatContext_58 *>(this->ctx)->start_time;
   case 59:
-    auto p = reinterpret_cast<AVFormatContext_59 *>(this->ctx);
-    return p->start_time;
+    return reinterpret_cast<AVFormatContext_59 *>(this->ctx)->start_time;
 
   default:
     throw std::runtime_error("Invalid library version");
@@ -299,17 +288,13 @@ int64_t AVFormatContextWrapper::getDuration() const
   switch (this->libVer.avformat.major)
   {
   case 56:
-    auto p = reinterpret_cast<AVFormatContext_56 *>(this->ctx);
-    return p->duration;
+    return reinterpret_cast<AVFormatContext_56 *>(this->ctx)->duration;
   case 57:
-    auto p = reinterpret_cast<AVFormatContext_57 *>(this->ctx);
-    return p->duration;
+    return reinterpret_cast<AVFormatContext_57 *>(this->ctx)->duration;
   case 58:
-    auto p = reinterpret_cast<AVFormatContext_58 *>(this->ctx);
-    return p->duration;
+    return reinterpret_cast<AVFormatContext_58 *>(this->ctx)->duration;
   case 59:
-    auto p = reinterpret_cast<AVFormatContext_59 *>(this->ctx);
-    return p->duration;
+    return reinterpret_cast<AVFormatContext_59 *>(this->ctx)->duration;
 
   default:
     throw std::runtime_error("Invalid library version");
@@ -326,17 +311,13 @@ AVDictionaryWrapper AVFormatContextWrapper::getMetadata() const
   switch (this->libVer.avformat.major)
   {
   case 56:
-    auto p = reinterpret_cast<AVFormatContext_56 *>(this->ctx);
-    return AVDictionaryWrapper(p->metadata);
+    return AVDictionaryWrapper(reinterpret_cast<AVFormatContext_56 *>(this->ctx)->metadata);
   case 57:
-    auto p = reinterpret_cast<AVFormatContext_57 *>(this->ctx);
-    return AVDictionaryWrapper(p->metadata);
+    return AVDictionaryWrapper(reinterpret_cast<AVFormatContext_57 *>(this->ctx)->metadata);
   case 58:
-    auto p = reinterpret_cast<AVFormatContext_58 *>(this->ctx);
-    return AVDictionaryWrapper(p->metadata);
+    return AVDictionaryWrapper(reinterpret_cast<AVFormatContext_58 *>(this->ctx)->metadata);
   case 59:
-    auto p = reinterpret_cast<AVFormatContext_59 *>(this->ctx);
-    return AVDictionaryWrapper(p->metadata);
+    return AVDictionaryWrapper(reinterpret_cast<AVFormatContext_59 *>(this->ctx)->metadata);
 
   default:
     throw std::runtime_error("Invalid library version");
@@ -485,7 +466,7 @@ StringPairVec AVFormatContextWrapper::getInfoText() const
     info.push_back({"Flags", functions::to_string(flags)});
   }
 
-  AVRational time_base;
+  Rational time_base;
   time_base.num = 1;
   time_base.den = AV_TIME_BASE;
 

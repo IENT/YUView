@@ -142,7 +142,7 @@ decoderVVDec::decoderVVDec(int signalID, bool cachingDecoder) : decoderBaseSingl
   // Try to load the decoder library (.dll on Windows, .so on Linux, .dylib on Mac)
   QSettings settings;
   settings.beginGroup("Decoders");
-  this->loadDecoderLibrary(settings.value("libVVDecFile", "").toString());
+  this->loadDecoderLibrary(settings.value("libVVDecFile", "").toString().toStdString());
   settings.endGroup();
 
   if (this->decoderState != DecoderState::Error)
@@ -165,20 +165,16 @@ decoderVVDec::~decoderVVDec()
   }
 }
 
-QStringList decoderVVDec::getLibraryNames() const
+StringVec decoderVVDec::getLibraryNames() const
 {
   // If the file name is not set explicitly, QLibrary will try to open the .so file first.
   // Since this has been compiled for linux it will fail and not even try to open the .dylib.
   // On windows and linux ommitting the extension works
-  QStringList names;
   if (is_Q_OS_LINUX)
-    names << "libvvdecLib";
+    return {"libvvdecLib"};
   if (is_Q_OS_MAC)
-    names << "libvvdecLib.dylib";
-  if (is_Q_OS_WIN)
-    names << "vvdecLib";
-
-  return names;
+    return {"libvvdecLib.dylib"};
+  return {"vvdecLib"};
 }
 
 void decoderVVDec::resolveLibraryFunctionPointers()
@@ -238,8 +234,8 @@ template <typename T> T decoderVVDec::resolve(T &fun, const char *symbol, bool o
   if (!ptr)
   {
     if (!optional)
-      this->setError(QStringLiteral("Error loading the libvvDeC library: Can't find function %1.")
-                         .arg(symbol));
+      this->setError("Error loading the libvvDeC library: Can't find function " +
+                     std::string(symbol));
     return nullptr;
   }
 
@@ -442,12 +438,10 @@ bool decoderVVDec::pushData(QByteArray &data)
       endOfFile = true;
     else if (ret != VVDEC_TRY_AGAIN && ret != VVDEC_OK)
     {
-      auto cErr    = this->lib.vvdec_get_last_error(this->decoder);
-      auto cErrAdd = this->lib.vvdec_get_last_additional_error(this->decoder);
-      return setErrorB(QString("Error pushing data to decoder length %1 - %2 - %3")
-                           .arg(data.length())
-                           .arg(cErr)
-                           .arg(cErrAdd));
+      auto cErr    = std::string(this->lib.vvdec_get_last_error(this->decoder));
+      auto cErrAdd = std::string(this->lib.vvdec_get_last_additional_error(this->decoder));
+      return this->setErrorB("Error pushing data to decoder length " +
+                             std::to_string(data.length()) + " error " + cErr + " " + cErrAdd);
     }
 
     DEBUG_vvdec("decoderVVDec::pushData pushed NAL length %d%s",
@@ -533,17 +527,17 @@ void decoderVVDec::copyImgToByteArray(QByteArray &dst)
   }
 }
 
-QString decoderVVDec::getDecoderName() const
+std::string decoderVVDec::getDecoderName() const
 {
   return (decoderState == DecoderState::Error) ? "vvdec" : this->lib.vvdec_get_version();
 }
 
-bool decoderVVDec::checkLibraryFile(QString libFilePath, QString &error)
+bool decoderVVDec::checkLibraryFile(const std::string &libFilePath, std::string &error)
 {
   decoderVVDec testDecoder;
 
   // Try to load the library file
-  testDecoder.library.setFileName(libFilePath);
+  testDecoder.library.setFileName(QString::fromStdString(libFilePath));
   if (!testDecoder.library.load())
   {
     error = "Error opening QLibrary.";

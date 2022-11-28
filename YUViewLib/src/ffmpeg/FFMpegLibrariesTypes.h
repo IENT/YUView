@@ -32,6 +32,8 @@
 
 #pragma once
 
+#include <common/Typedef.h>
+
 #include <QString>
 #include <errno.h>
 #include <optional>
@@ -122,24 +124,17 @@ struct AVPixFmtDescriptor;
 
 #define AV_NOPTS_VALUE ((int64_t)UINT64_C(0x8000000000000000))
 
-struct AVRational
-{
-  bool operator!=(const AVRational &second) const
-  {
-    const auto a = int64_t(this->num) * int64_t(second.den);
-    const auto b = int64_t(this->den) * int64_t(second.num);
-    return a != b;
-  }
-
-  int num; ///< Numerator
-  int den; ///< Denominator
-};
-
 // The exact value of the fractional number is: 'val + num / den'. num is assumed to be 0 <= num <
 // den.
 struct AVFrac
 {
   int64_t val, num, den;
+};
+
+struct AVRational
+{
+  int num;
+  int den;
 };
 
 struct AVDictionaryEntry
@@ -404,6 +399,6 @@ struct LibraryVersion
   Version swresample{};
 };
 
-std::string formatWithReadableFormat(int64_t timestamp, AVRational timebase);
+std::string formatWithReadableFormat(int64_t timestamp, Rational timebase);
 
 } // namespace FFmpeg

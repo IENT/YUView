@@ -67,9 +67,9 @@ public:
   // Clear all knowledge about the bitstream.
   void clearData();
 
-  [[nodiscard]] StreamsInfo getStreamsInfo() const override;
-  [[nodiscard]] int         getNrStreams() const override { return 1; }
-  QString                   getShortStreamDescription(int streamIndex) const override;
+  [[nodiscard]] StreamsInfo   getStreamsInfo() const override;
+  [[nodiscard]] StringPairVec getGeneralInfo() const override;
+  [[nodiscard]] int           getNrStreams() const override { return 1; }
 
   // Get some format properties
   virtual double                     getFramerate() const           = 0;
@@ -108,7 +108,7 @@ public:
   bool parseAnnexBFile(std::unique_ptr<FileSourceAnnexBFile> &file, QWidget *mainWindow = nullptr);
 
   // Called from the bitstream analyzer. This function can run in a background process.
-  bool runParsingOfFile(QString compressedFilePath) override;
+  bool runParsingOfFile(std::string compressedFilePath) override;
 
   virtual ParseResult parseAndAddNALUnit(int                                           unitID,
                                          const ByteVector &                            data,

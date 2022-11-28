@@ -38,26 +38,26 @@
 namespace FFmpeg
 {
 
-std::string formatWithReadableFormat(int64_t timestamp, AVRational timebase)
+std::string formatWithReadableFormat(int64_t timestamp, Rational timebase)
 {
   std::stringstream stream;
   stream << timestamp << " (";
 
   auto       remainder = static_cast<double>(timestamp) * timebase.num / timebase.den;
   const auto hours     = static_cast<int>(remainder / 60 / 60);
-  stream << std::setw(2) << std::setfill("0") << hours << ":";
+  stream << std::setw(2) << std::setfill('0') << hours << ":";
 
   remainder -= hours * 60 * 60;
   const auto minutes = static_cast<int>(remainder / 60);
-  stream << std::setw(2) << std::setfill("0") << minutes << ":";
+  stream << std::setw(2) << std::setfill('0') << minutes << ":";
 
   remainder -= minutes * 60;
   const auto seconds = static_cast<int>(remainder);
-  stream << std::setw(2) << std::setfill("0") << seconds << ".";
+  stream << std::setw(2) << std::setfill('0') << seconds << ".";
 
   remainder -= seconds;
   auto milliseconds = static_cast<int>(remainder * 1000);
-  stream << std::setw(3) << std::setfill("0") << milliseconds;
+  stream << std::setw(3) << std::setfill('0') << milliseconds;
 
   stream << ")";
 
