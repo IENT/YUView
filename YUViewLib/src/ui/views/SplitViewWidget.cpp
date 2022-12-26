@@ -1477,11 +1477,8 @@ void splitViewWidget::playbackStarted(int nextFrameIdx)
 {
   if (!this->isMasterView)
     return;
-  if (nextFrameIdx == -1)
-    // The next frame is not within the currently selected item.
-    // TODO: Maybe this can also be optimized. We could look for the next item and doubel buffer the
-    // first frame there.
-    return;
+
+  assert(nextFrameIdx >= 0);
 
   auto item     = playlist->getSelectedItems();
   int  frameIdx = playback->getCurrentFrame();
