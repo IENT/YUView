@@ -102,7 +102,6 @@ signals:
   void signalPlaybackStarting();
 
 public slots:
-  // The video cache calls this if caching of the item is finished
   void itemCachingFinished(playlistItem *item);
 
 private slots:
@@ -169,7 +168,6 @@ private:
   virtual void
   timerEvent(QTimerEvent *event) override; // Overloaded from QObject. Called when the timer fires.
 
-  // We keep a pointer to the currently selected item(s)
   QPointer<playlistItem> currentItem[2];
 
   // The playback controller has a pointer to the split view so it can toggle a redraw event when a
@@ -179,8 +177,6 @@ private:
   QPointer<splitViewWidget> splitViewPrimary;
   QPointer<splitViewWidget> splitViewSeparate;
 
-  // We keep a pointer to the playlist tree so we can select the next item, see if there is a next
-  // item and so on.
   QPointer<PlaylistTreeWidget> playlist;
 
   Ui::PlaybackController ui;

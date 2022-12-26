@@ -59,9 +59,9 @@ PlaybackController::PlaybackController()
   this->ui.fpsLabel->setText("0");
   this->ui.fpsLabel->setStyleSheet("");
 
-  QSettings settings;
-  auto      repeatModeIdx =
-      settings.value("RepeatMode", RepeatModeMapper.indexOf(RepeatMode::Off)).toInt();
+  QSettings  settings;
+  const auto repeatModeOffIndex = static_cast<int>(RepeatModeMapper.indexOf(RepeatMode::Off));
+  auto       repeatModeIdx      = settings.value("RepeatMode", repeatModeOffIndex).toInt();
   if (auto newRepeatMode = RepeatModeMapper.at(repeatModeIdx))
     this->repeatMode = newRepeatMode.value();
 
