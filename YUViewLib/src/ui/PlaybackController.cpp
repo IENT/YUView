@@ -38,6 +38,8 @@
 #include <common/Typedef.h>
 #include <playlistitem/playlistItem.h>
 
+using namespace std::chrono_literals;
+
 // Activate this if you want to know when which buffer is loaded/converted to image and so on.
 #define PLAYBACKCONTROLLER_DEBUG 0
 #if PLAYBACKCONTROLLER_DEBUG && !NDEBUG
@@ -213,19 +215,19 @@ void PlaybackController::startOrUpdateTimer()
     if (frameRate < 0.01)
       frameRate = 0.01;
     this->timerStaticItemCountDown = -1;
-    this->timerInterval            = 1000.0 / frameRate;
+    this->timerInterval = std::chrono::duration_cast<std::chrono::milliseconds>(1000ms / frameRate);
     DEBUG_PLAYBACK("PlaybackController::startOrUpdateTimer framerate %f", frameRate);
   }
   else
   {
     // The item (or both items) are not indexed by frame.
     // Use the duration of item 0
-    this->timerInterval            = int(1000 / 10);
+    this->timerInterval            = 100ms;
     this->timerStaticItemCountDown = this->currentItem[0]->properties().duration * 10;
     DEBUG_PLAYBACK("PlaybackController::startOrUpdateTimer duration %d", this->timerInterval);
   }
 
-  this->timer.start(this->timerInterval, Qt::PreciseTimer, this);
+  this->timer.start(this->timerInterval.count(), Qt::PreciseTimer, this);
   this->playbackMode     = PlaybackMode::Running;
   this->timerLastFPSTime = QTime::currentTime();
   this->timerFPSCounter  = 0;
@@ -605,7 +607,8 @@ void PlaybackController::timerEvent(QTimerEvent *event)
       if (frameRate < 0.01)
         frameRate = 0.01;
 
-      const auto newtimerInterval = static_cast<int>(1000.0 / frameRate);
+      const auto newtimerInterval =
+          std::chrono::duration_cast<std::chrono::milliseconds>(1000ms / frameRate);
       if (this->timerInterval != newtimerInterval)
         this->startOrUpdateTimer();
     }
@@ -620,13 +623,11 @@ void PlaybackController::currentSelectedItemsDoubleBufferLoad(int itemID)
     this->waitingForItem[itemID] = false;
     if (!this->waitingForItem[0] && !this->waitingForItem[1])
     {
-      // Playback was stalled because we were waiting for the double buffer to load.
-      // We can go on now.
-      DEBUG_PLAYBACK("PlaybackController::currentSelectedItemsDoubleBufferLoad - timer interval %d",
-                     timerInterval);
-      this->timer.start(timerInterval, Qt::PreciseTimer, this);
+      DEBUG_PLAYBACK(
+          "PlaybackController::currentSelectedItemsDoubleBufferLoad - timer interval %dms",
+          this->timerInterval.count());
+      this->timer.start(this->timerInterval.count(), Qt::PreciseTimer, this);
       this->timerEvent(nullptr);
-      // Playback is not stalled anymore
       this->playbackMode = PlaybackMode::Running;
     }
   }

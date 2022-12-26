@@ -32,10 +32,11 @@
 
 #pragma once
 
-#include <common/Typedef.h>
+#include <chrono>
 
-#include "views/SplitViewWidget.h"
-#include "widgets/PlaylistTreeWidget.h"
+#include <common/Typedef.h>
+#include <ui/views/SplitViewWidget.h>
+#include <ui/widgets/PlaylistTreeWidget.h>
 
 #include <QBasicTimer>
 #include <QPointer>
@@ -159,10 +160,10 @@ private:
   bool playbackWasStalled{false};
   bool waitForCachingOfItem{};
 
-  QBasicTimer timer;
-  int         timerInterval{-1};
-  int         timerFPSCounter{}; // Every time the timer is toggled count this up. If it reaches 50,
-                                 // calculate FPS.
+  QBasicTimer               timer;
+  std::chrono::milliseconds timerInterval{};
+  int timerFPSCounter{};  // Every time the timer is toggled count this up. If it reaches 50,
+                          // calculate FPS.
   QTime timerLastFPSTime; // The last time we updated the FPS counter. Used to calculate new FPS.
   int   timerStaticItemCountDown{}; // Also for static items we run the timer to update the slider.
   virtual void
