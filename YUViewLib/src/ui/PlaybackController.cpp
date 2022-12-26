@@ -111,7 +111,7 @@ int PlaybackController::getCurrentFrame() const
 void PlaybackController::setRepeatModeAndUpdateIcons(const RepeatMode mode)
 {
   QSettings settings;
-  settings.setValue("RepeatMode", RepeatModeMapper.indexOf(mode));
+  settings.setValue("RepeatMode", static_cast<int>(RepeatModeMapper.indexOf(mode)));
   this->repeatMode = mode;
 
   if (mode == RepeatMode::Off)
