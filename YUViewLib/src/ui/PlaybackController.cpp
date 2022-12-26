@@ -63,7 +63,7 @@ PlaybackController::PlaybackController()
   const auto repeatModeOffIndex = static_cast<int>(RepeatModeMapper.indexOf(RepeatMode::Off));
   auto       repeatModeIdx      = settings.value("RepeatMode", repeatModeOffIndex).toInt();
   if (auto newRepeatMode = RepeatModeMapper.at(repeatModeIdx))
-    this->repeatMode = newRepeatMode.value();
+    this->repeatMode = *newRepeatMode;
 
   this->timerLastFPSTime = QTime::currentTime();
 
@@ -199,7 +199,7 @@ void PlaybackController::startPlayback()
   // Tell the primary split view that playback just started. This will toggle loading
   // of the double buffer of the currently visible items (if required).
   if (auto nextFrameIndex = this->getNextFrameIndexInCurrentItem())
-    this->splitViewPrimary->playbackStarted(nextFrameIndex.value());
+    this->splitViewPrimary->playbackStarted(*nextFrameIndex);
 }
 
 void PlaybackController::startOrUpdateTimer()
@@ -253,9 +253,6 @@ void PlaybackController::on_frameSlider_valueChanged(int value)
   this->setCurrentFrameAndUpdate(value);
 }
 
-/** Toggle the repeat mode (loop through the list)
- * The signal repeatModeButton->clicked() is connected to this slot
- */
 void PlaybackController::on_repeatModeButton_clicked()
 {
   if (this->repeatMode == RepeatMode::Off)
@@ -666,5 +663,5 @@ void PlaybackController::updateFrameSliderAndSpinBoxWithoutSignals(
   this->ui.frameSpinBox->setValue(value);
   this->ui.frameSlider->setValue(value);
   if (sliderMaximum)
-    this->ui.frameSlider->setMaximum(sliderMaximum.value());
+    this->ui.frameSlider->setMaximum(*sliderMaximum);
 }
