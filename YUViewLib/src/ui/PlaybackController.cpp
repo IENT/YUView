@@ -48,6 +48,28 @@ using namespace std::chrono_literals;
 #define DEBUG_PLAYBACK(fmt, ...) ((void)0)
 #endif
 
+CountDown::CountDown(const int ticks)
+{
+  this->tick         = ticks;
+  this->initialTicks = ticks;
+  if (ticks == 0)
+  {
+    this->tick         = 1;
+    this->initialTicks = 1;
+  }
+}
+
+bool CountDown::tickAndGetIsExpired()
+{
+  if (this->tick <= 1)
+  {
+    this->tick = this->initialTicks;
+    return true;
+  }
+  this->tick--;
+  return false;
+}
+
 PlaybackController::PlaybackController()
 {
   this->ui.setupUi(this);
@@ -65,7 +87,7 @@ PlaybackController::PlaybackController()
   if (auto newRepeatMode = RepeatModeMapper.at(repeatModeIdx))
     this->repeatMode = *newRepeatMode;
 
-  this->timerLastFPSTime = QTime::currentTime();
+  this->timerLastFPSTime = std::chrono::high_resolution_clock::now();
 
   this->loadButtonIcons();
   this->updatePlayPauseButtonIcon();
@@ -204,33 +226,26 @@ void PlaybackController::startPlayback()
 
 void PlaybackController::startOrUpdateTimer()
 {
-  // Get the frame rate of the current item. Lower limit is 0.01 fps (100 seconds per frame).
-  if (this->currentItem[0]->properties().isIndexedByFrame() ||
-      (this->currentItem[1] && this->currentItem[1]->properties().isIndexedByFrame()))
+  if (this->anyItemIndexedByFrame())
   {
-    // One (of the possibly two items) is indexed by frame. Get and set the frame rate
-    auto frameRate = this->currentItem[0]->properties().isIndexedByFrame()
-                         ? this->currentItem[0]->properties().frameRate
-                         : this->currentItem[1]->properties().frameRate;
-    if (frameRate < 0.01)
-      frameRate = 0.01;
-    this->timerStaticItemCountDown = -1;
+    const auto frameRate = this->getCurrentItemsFrameRate();
     this->timerInterval = std::chrono::duration_cast<std::chrono::milliseconds>(1000ms / frameRate);
+    const auto ticksToUpdateEachSecond = static_cast<int>(frameRate);
+    this->countdownForFPSUpdate        = CountDown(ticksToUpdateEachSecond);
     DEBUG_PLAYBACK("PlaybackController::startOrUpdateTimer framerate %f", frameRate);
   }
   else
   {
-    // The item (or both items) are not indexed by frame.
-    // Use the duration of item 0
-    this->timerInterval            = 100ms;
-    this->timerStaticItemCountDown = this->currentItem[0]->properties().duration * 10;
+    this->timerInterval = 100ms;
+    const auto ticksForStaticItem =
+        static_cast<int>(this->currentItem[0]->properties().duration * 10);
+    this->countDownForStaticItem = CountDown(ticksForStaticItem);
     DEBUG_PLAYBACK("PlaybackController::startOrUpdateTimer duration %d", this->timerInterval);
   }
 
   this->timer.start(this->timerInterval.count(), Qt::PreciseTimer, this);
   this->playbackMode     = PlaybackMode::Running;
-  this->timerLastFPSTime = QTime::currentTime();
-  this->timerFPSCounter  = 0;
+  this->timerLastFPSTime = std::chrono::high_resolution_clock::now();
 }
 
 void PlaybackController::nextFrame()
@@ -276,10 +291,7 @@ void PlaybackController::currentSelectedItemsChanged(playlistItem *item1,
   this->currentItem[0] = item1;
   this->currentItem[1] = item2;
 
-  const auto item1IndexedByFrame   = item1 && item1->properties().isIndexedByFrame();
-  const auto item2IndexedByFrame   = item2 && item2->properties().isIndexedByFrame();
-  const auto anyItemIndexedByFrame = (item1IndexedByFrame || item2IndexedByFrame);
-  if (!anyItemIndexedByFrame)
+  if (!this->anyItemIndexedByFrame())
   {
     this->enableControls(false);
 
@@ -455,6 +467,99 @@ void PlaybackController::updateFrameRange()
                  this->frameSlider->maximum());
 }
 
+void PlaybackController::goToNextItem()
+{
+  if (this->waitForCachingOfItem)
+  {
+    // Set this before the next item is selected so that the timer is not updated
+    this->playbackMode = PlaybackMode::WaitingForCache;
+    // The event itemCachingFinished will restart the timer.
+    this->timer.stop();
+  }
+
+  const auto wrapAround  = (this->repeatMode == RepeatMode::All);
+  const auto hasNextItem = this->playlist->selectNextItem(wrapAround, true);
+  if (!hasNextItem)
+  {
+    DEBUG_PLAYBACK("PlaybackController::goToNextItem no next item. Stopping.");
+    this->on_playPauseButton_clicked();
+  }
+  else
+  {
+    DEBUG_PLAYBACK("PlaybackController::goToNextItem next item first frame %d",
+                   this->frameSlider->minimum());
+    this->setCurrentFrameAndUpdate(this->ui.frameSlider->minimum());
+
+    if (this->waitForCachingOfItem)
+    {
+      DEBUG_PLAYBACK("PlaybackController::goToNextItem waiting for caching...");
+      emit(waitForItemCaching(this->currentItem[0]));
+
+      if (this->playbackMode == PlaybackMode::WaitingForCache)
+      {
+        // Update the views so that the "caching loading" hourglass indicator is drawn.
+        this->splitViewPrimary->update(false, false);
+        this->splitViewSeparate->update(false, false);
+      }
+    }
+  }
+}
+
+void PlaybackController::goToNextFrame(const int nextFrameIndex)
+{
+  this->waitingForItem[0] =
+      this->currentItem[0]->isLoading() || this->currentItem[0]->isLoadingDoubleBuffer();
+  this->waitingForItem[1] =
+      this->splitViewPrimary->isSplitting() && this->currentItem[1] &&
+      (this->currentItem[1]->isLoading() || this->currentItem[1]->isLoadingDoubleBuffer());
+  if (this->waitingForItem[0] || this->waitingForItem[1])
+  {
+    // The double buffer of the current item or the second item is still loading. Playback is not
+    // fast enough. We must wait until the next frame was loaded (in both items) successfully
+    // until we can display it. We must pause the timer until this happens.
+    this->timer.stop();
+    this->playbackMode       = PlaybackMode::Stalled;
+    this->playbackWasStalled = true;
+    DEBUG_PLAYBACK("PlaybackController::goToNextFrame playback stalled");
+    return;
+  }
+
+  DEBUG_PLAYBACK("PlaybackController::goToNextFrame next frame %d", nextFrameIndex);
+  this->setCurrentFrameAndUpdate(nextFrameIndex);
+
+  if (this->countdownForFPSUpdate.tickAndGetIsExpired())
+  {
+    const auto newFrameTime         = std::chrono::high_resolution_clock::now();
+    const auto nanoseconds          = newFrameTime - this->timerLastFPSTime;
+    const auto msecsSinceLastUpdate = std::chrono::duration_cast<std::chrono::milliseconds>(
+        newFrameTime - this->timerLastFPSTime);
+
+    // Print the frames per second as float with one digit after the decimal dot.
+    const auto actualFramesPerSec = (static_cast<double>(this->countdownForFPSUpdate.getTicks()) /
+                                     (msecsSinceLastUpdate.count() / 1000.0));
+    if (actualFramesPerSec > 0)
+      this->ui.fpsLabel->setText(QString::number(actualFramesPerSec, 'f', 1));
+    if (this->playbackWasStalled)
+      this->ui.fpsLabel->setStyleSheet("QLabel { background-color: yellow }");
+    else
+      this->ui.fpsLabel->setStyleSheet("");
+    this->playbackWasStalled = false;
+
+    this->timerLastFPSTime = std::chrono::high_resolution_clock::now();
+  }
+
+  // Check if the time interval changed (the user changed the rate of the item)
+  if (this->anyItemIndexedByFrame())
+  {
+    const auto frameRate = this->getCurrentItemsFrameRate();
+
+    const auto newtimerInterval =
+        std::chrono::duration_cast<std::chrono::milliseconds>(1000ms / frameRate);
+    if (this->timerInterval != newtimerInterval)
+      this->startOrUpdateTimer();
+  }
+}
+
 void PlaybackController::enableControls(bool enable)
 {
   this->ui.frameSlider->setEnabled(enable);
@@ -475,13 +580,9 @@ void PlaybackController::enableControls(bool enable)
 
 std::optional<int> PlaybackController::getNextFrameIndexInCurrentItem()
 {
-  const auto isSliderAtEnd           = this->currentFrameIdx >= this->ui.frameSlider->maximum();
-  const auto firstItemIndexedByFrame = this->currentItem[0]->properties().isIndexedByFrame();
-  const auto secondItemSetAndIndexedByFrame =
-      this->currentItem[1] && this->currentItem[1]->properties().isIndexedByFrame();
-  const auto anyItemIndexedByFrame = firstItemIndexedByFrame || secondItemSetAndIndexedByFrame;
+  const auto isSliderAtEnd = this->currentFrameIdx >= this->ui.frameSlider->maximum();
 
-  if (isSliderAtEnd || !anyItemIndexedByFrame)
+  if (isSliderAtEnd || !this->anyItemIndexedByFrame())
   {
     if (this->repeatMode == RepeatMode::One)
       return this->ui.frameSlider->minimum();
@@ -500,116 +601,25 @@ void PlaybackController::timerEvent(QTimerEvent *event)
     return;
   }
 
-  const auto isCurrentItemStaticItem = this->timerStaticItemCountDown > 0;
-  if (isCurrentItemStaticItem)
+  if (!this->anyItemIndexedByFrame())
   {
     DEBUG_PLAYBACK("PlaybackController::timerEvent Showing Static Item");
     const QSignalBlocker blocker1(this->ui.frameSlider);
     const QSignalBlocker blocker2(this->ui.frameSpinBox);
-    this->timerStaticItemCountDown--;
-    this->ui.frameSlider->setValue(this->ui.frameSlider->value() + 1);
-    this->ui.frameSpinBox->setValue((this->timerStaticItemCountDown / 10 + 1));
+    if (this->countDownForStaticItem.tickAndGetIsExpired())
+      this->goToNextItem();
+    else
+    {
+      this->ui.frameSlider->setValue(this->ui.frameSlider->value() + 1);
+      this->ui.frameSpinBox->setValue((this->countDownForStaticItem.getCurrentTick() / 10 + 1));
+    }
     return;
   }
 
-  auto nextFrameIdx = this->getNextFrameIndexInCurrentItem();
-  if (!nextFrameIdx)
-  {
-    if (this->waitForCachingOfItem)
-    {
-      // Set this before the next item is selected so that the timer is not updated
-      this->playbackMode = PlaybackMode::WaitingForCache;
-      // The event itemCachingFinished will restart the timer.
-      this->timer.stop();
-    }
-
-    const auto wrapAround  = (this->repeatMode == RepeatMode::All);
-    const auto hasNextItem = this->playlist->selectNextItem(wrapAround, true);
-    if (!hasNextItem)
-    {
-      DEBUG_PLAYBACK("PlaybackController::timerEvent no next item. Stopping.");
-      this->on_playPauseButton_clicked();
-    }
-    else
-    {
-      DEBUG_PLAYBACK("PlaybackController::timerEvent next item first frame %d",
-                     this->frameSlider->minimum());
-      this->setCurrentFrameAndUpdate(this->ui.frameSlider->minimum());
-
-      if (this->waitForCachingOfItem)
-      {
-        DEBUG_PLAYBACK("PlaybackController::timerEvent waiting for caching...");
-        emit(waitForItemCaching(this->currentItem[0]));
-
-        if (this->playbackMode == PlaybackMode::WaitingForCache)
-        {
-          // Update the views so that the "caching loading" hourglass indicator is drawn.
-          this->splitViewPrimary->update(false, false);
-          this->splitViewSeparate->update(false, false);
-        }
-      }
-    }
-  }
+  if (auto nextFrameIdx = this->getNextFrameIndexInCurrentItem())
+    this->goToNextFrame(*nextFrameIdx);
   else
-  {
-    this->waitingForItem[0] =
-        this->currentItem[0]->isLoading() || this->currentItem[0]->isLoadingDoubleBuffer();
-    this->waitingForItem[1] =
-        this->splitViewPrimary->isSplitting() && this->currentItem[1] &&
-        (this->currentItem[1]->isLoading() || this->currentItem[1]->isLoadingDoubleBuffer());
-    if (this->waitingForItem[0] || this->waitingForItem[1])
-    {
-      // The double buffer of the current item or the second item is still loading. Playback is not
-      // fast enough. We must wait until the next frame was loaded (in both items) successfully
-      // until we can display it. We must pause the timer until this happens.
-      this->timer.stop();
-      this->playbackMode       = PlaybackMode::Stalled;
-      this->playbackWasStalled = true;
-      DEBUG_PLAYBACK("PlaybackController::timerEvent playback stalled");
-      return;
-    }
-
-    DEBUG_PLAYBACK("PlaybackController::timerEvent next frame %d", *nextFrameIdx);
-    this->setCurrentFrameAndUpdate(*nextFrameIdx);
-
-    // Update the FPS counter every 50 frames
-    this->timerFPSCounter++;
-    if (this->timerFPSCounter >= 50)
-    {
-      const auto newFrameTime         = QTime::currentTime();
-      const auto msecsSinceLastUpdate = static_cast<double>(timerLastFPSTime.msecsTo(newFrameTime));
-
-      // Print the frames per second as float with one digit after the decimal dot.
-      auto framesPerSec = (50.0 / (msecsSinceLastUpdate / 1000.0));
-      if (framesPerSec > 0)
-        this->ui.fpsLabel->setText(QString::number(framesPerSec, 'f', 1));
-      if (this->playbackWasStalled)
-        this->ui.fpsLabel->setStyleSheet("QLabel { background-color: yellow }");
-      else
-        this->ui.fpsLabel->setStyleSheet("");
-      this->playbackWasStalled = false;
-
-      this->timerLastFPSTime = QTime::currentTime();
-      this->timerFPSCounter  = 0;
-    }
-
-    // Check if the time interval changed (the user changed the rate of the item)
-    if (this->currentItem[0]->properties().isIndexedByFrame() ||
-        (this->currentItem[1] && this->currentItem[1]->properties().isIndexedByFrame()))
-    {
-      // One (of the possibly two items) is indexed by frame. Get and set the frame rate
-      auto frameRate = this->currentItem[0]->properties().isIndexedByFrame()
-                           ? this->currentItem[0]->properties().frameRate
-                           : this->currentItem[1]->properties().frameRate;
-      if (frameRate < 0.01)
-        frameRate = 0.01;
-
-      const auto newtimerInterval =
-          std::chrono::duration_cast<std::chrono::milliseconds>(1000ms / frameRate);
-      if (this->timerInterval != newtimerInterval)
-        this->startOrUpdateTimer();
-    }
-  }
+    this->goToNextItem();
 }
 
 void PlaybackController::currentSelectedItemsDoubleBufferLoad(int itemID)
@@ -634,10 +644,7 @@ bool PlaybackController::setCurrentFrameAndUpdate(int frame, bool updateView)
 {
   if (frame == this->currentFrameIdx)
     return false;
-  if (!this->currentItem[0] ||
-      (!this->currentItem[0]->properties().isIndexedByFrame() &&
-       (!this->currentItem[1] || !this->currentItem[1]->properties().isIndexedByFrame())))
-    // Both items (that are selcted) are not indexed by frame.
+  if (!this->anyItemIndexedByFrame())
     return false;
 
   DEBUG_PLAYBACK("PlaybackController::setCurrentFrameAndUpdate %d", frame);
@@ -664,4 +671,25 @@ void PlaybackController::updateFrameSliderAndSpinBoxWithoutSignals(
   this->ui.frameSlider->setValue(value);
   if (sliderMaximum)
     this->ui.frameSlider->setMaximum(*sliderMaximum);
+}
+
+bool PlaybackController::anyItemIndexedByFrame() const
+{
+  const auto item1IndexedByFrame =
+      this->currentItem[0] && this->currentItem[0]->properties().isIndexedByFrame();
+  const auto item2IndexedByFrame =
+      this->currentItem[1] && this->currentItem[1]->properties().isIndexedByFrame();
+  return (item1IndexedByFrame || item2IndexedByFrame);
+}
+
+double PlaybackController::getCurrentItemsFrameRate() const
+{
+  auto frameRate = this->currentItem[0]->properties().isIndexedByFrame()
+                       ? this->currentItem[0]->properties().frameRate
+                       : this->currentItem[1]->properties().frameRate;
+
+  const auto lowestPossibleFps = 0.01;
+  if (frameRate < lowestPossibleFps)
+    frameRate = lowestPossibleFps;
+  return frameRate;
 }

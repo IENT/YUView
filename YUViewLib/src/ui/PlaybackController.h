@@ -48,6 +48,20 @@
 class playlistItem;
 class PlaylistTreeWidget;
 
+class CountDown
+{
+public:
+  CountDown() = default;
+  CountDown(const int ticks);
+  bool tickAndGetIsExpired();
+  int  getTicks() const { return this->initialTicks; }
+  int  getCurrentTick() const { return this->tick; }
+
+private:
+  int tick{};
+  int initialTicks{};
+};
+
 class PlaybackController : public QWidget
 {
   Q_OBJECT
@@ -115,6 +129,8 @@ private:
   bool controlsEnabled{};
 
   void updateFrameRange();
+  void goToNextItem();
+  void goToNextFrame(const int nextFrameIndex);
 
   // The current frame index. -1 means the frame index is invalid. In this case, lastValidFrameIdx
   // contains the last valid frame index which will be restored if a valid indexed item is selected.
@@ -159,16 +175,17 @@ private:
   bool playbackWasStalled{false};
   bool waitForCachingOfItem{};
 
-  QBasicTimer               timer;
-  std::chrono::milliseconds timerInterval{};
-  int timerFPSCounter{};  // Every time the timer is toggled count this up. If it reaches 50,
-                          // calculate FPS.
-  QTime timerLastFPSTime; // The last time we updated the FPS counter. Used to calculate new FPS.
-  int   timerStaticItemCountDown{}; // Also for static items we run the timer to update the slider.
+  QBasicTimer                           timer;
+  std::chrono::milliseconds             timerInterval{};
+  CountDown                             countdownForFPSUpdate;
+  std::chrono::steady_clock::time_point timerLastFPSTime;
+  CountDown                             countDownForStaticItem;
   virtual void
   timerEvent(QTimerEvent *event) override; // Overloaded from QObject. Called when the timer fires.
 
   QPointer<playlistItem> currentItem[2];
+  bool                   anyItemIndexedByFrame() const;
+  double                 getCurrentItemsFrameRate() const;
 
   // The playback controller has a pointer to the split view so it can toggle a redraw event when a
   // new frame is selected. This could also be done using signals/slots but the problem is that
