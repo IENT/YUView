@@ -70,6 +70,19 @@ bool CountDown::tickAndGetIsExpired()
   return false;
 }
 
+StopWatch::StopWatch()
+{
+  this->creationTimePoint = std::chrono::high_resolution_clock::now();
+}
+
+int StopWatch::getMsSinceCreation() const
+{
+  const auto newTimePoint = std::chrono::high_resolution_clock::now();
+  const auto msecsSinceCreation =
+      std::chrono::duration_cast<std::chrono::milliseconds>(newTimePoint - this->creationTimePoint);
+  return msecsSinceCreation.count();
+}
+
 PlaybackController::PlaybackController()
 {
   this->ui.setupUi(this);
@@ -86,8 +99,6 @@ PlaybackController::PlaybackController()
   auto       repeatModeIdx      = settings.value("RepeatMode", repeatModeOffIndex).toInt();
   if (auto newRepeatMode = RepeatModeMapper.at(repeatModeIdx))
     this->repeatMode = *newRepeatMode;
-
-  this->timerLastFPSTime = std::chrono::high_resolution_clock::now();
 
   this->loadButtonIcons();
   this->updatePlayPauseButtonIcon();
@@ -244,8 +255,8 @@ void PlaybackController::startOrUpdateTimer()
   }
 
   this->timer.start(this->timerInterval.count(), Qt::PreciseTimer, this);
-  this->playbackMode     = PlaybackMode::Running;
-  this->timerLastFPSTime = std::chrono::high_resolution_clock::now();
+  this->playbackMode       = PlaybackMode::Running;
+  this->fpsUpdateStopWatch = StopWatch();
 }
 
 void PlaybackController::nextFrame()
@@ -529,14 +540,11 @@ void PlaybackController::goToNextFrame(const int nextFrameIndex)
 
   if (this->countdownForFPSUpdate.tickAndGetIsExpired())
   {
-    const auto newFrameTime         = std::chrono::high_resolution_clock::now();
-    const auto nanoseconds          = newFrameTime - this->timerLastFPSTime;
-    const auto msecsSinceLastUpdate = std::chrono::duration_cast<std::chrono::milliseconds>(
-        newFrameTime - this->timerLastFPSTime);
+    const auto msecsSinceLastUpdate = this->fpsUpdateStopWatch.getMsSinceCreation();
 
     // Print the frames per second as float with one digit after the decimal dot.
     const auto actualFramesPerSec = (static_cast<double>(this->countdownForFPSUpdate.getTicks()) /
-                                     (msecsSinceLastUpdate.count() / 1000.0));
+                                     (msecsSinceLastUpdate / 1000.0));
     if (actualFramesPerSec > 0)
       this->ui.fpsLabel->setText(QString::number(actualFramesPerSec, 'f', 1));
     if (this->playbackWasStalled)
@@ -545,7 +553,7 @@ void PlaybackController::goToNextFrame(const int nextFrameIndex)
       this->ui.fpsLabel->setStyleSheet("");
     this->playbackWasStalled = false;
 
-    this->timerLastFPSTime = std::chrono::high_resolution_clock::now();
+    this->fpsUpdateStopWatch = StopWatch();
   }
 
   // Check if the time interval changed (the user changed the rate of the item)

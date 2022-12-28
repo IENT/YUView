@@ -62,6 +62,16 @@ private:
   int initialTicks{};
 };
 
+class StopWatch
+{
+public:
+  StopWatch();
+  int getMsSinceCreation() const;
+
+private:
+  std::chrono::high_resolution_clock::time_point creationTimePoint{};
+};
+
 class PlaybackController : public QWidget
 {
   Q_OBJECT
@@ -175,11 +185,11 @@ private:
   bool playbackWasStalled{false};
   bool waitForCachingOfItem{};
 
-  QBasicTimer                           timer;
-  std::chrono::milliseconds             timerInterval{};
-  CountDown                             countdownForFPSUpdate;
-  std::chrono::steady_clock::time_point timerLastFPSTime;
-  CountDown                             countDownForStaticItem;
+  QBasicTimer               timer;
+  std::chrono::milliseconds timerInterval{};
+  CountDown                 countdownForFPSUpdate;
+  StopWatch                 fpsUpdateStopWatch;
+  CountDown                 countDownForStaticItem;
   virtual void
   timerEvent(QTimerEvent *event) override; // Overloaded from QObject. Called when the timer fires.
 
