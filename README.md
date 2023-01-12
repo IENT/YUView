@@ -37,7 +37,7 @@ You can download precompiled binaries for Windows and MAC from the [release site
  - Mac OS Application
  - Linux Appimage
 
-For the Linux based platforms we are also on [flathub](https://flathub.org/apps/details/de.rwth_aachen.ient.YUView). More information on YUView on Linux can be found in out wiki page ["YUView on Linux"](https://github.com/IENT/YUView/wiki/YUView-on-Linux). 
+If you have Ubuntu 22.04 or newer, you can get YUView from the official repo: `sudo apt install yuview`. For other Linux based platforms we are also on [flathub](https://flathub.org/apps/details/de.rwth_aachen.ient.YUView). More information on YUView on Linux can be found in out wiki page ["YUView on Linux"](https://github.com/IENT/YUView/wiki/YUView-on-Linux). 
 
 If none of these apply to you, you can easily [build YUView yourself](https://github.com/IENT/YUView/wiki/Compile-YUView).
 
