@@ -33,6 +33,9 @@
 #include "AVStreamWrapper.h"
 #include "AVPacketWrapper.h"
 
+#include <iomanip>
+#include <sstream>
+
 namespace FFmpeg
 {
 
@@ -205,6 +208,17 @@ typedef struct AVStream_59
   int                pts_wrap_bits;
 } AVStream_59;
 
+std::string formatFramerate(Rational frameRate)
+{
+  std::stringstream stream;
+  auto              divFrameRate = 0.0;
+  if (frameRate.den > 0)
+    divFrameRate = static_cast<double>(frameRate.num) / static_cast<double>(frameRate.den);
+  stream << frameRate.num << "/" << frameRate.den << " (" << std::setprecision(2) << divFrameRate
+         << ")";
+  return stream.str();
+}
+
 } // namespace
 
 AVStreamWrapper::AVStreamWrapper(AVStream *src_str, LibraryVersion v)
@@ -222,19 +236,13 @@ AVMediaType AVStreamWrapper::getCodecType()
   return this->codecpar.getCodecType();
 }
 
-QString AVStreamWrapper::getCodecTypeName()
+std::string AVStreamWrapper::getCodecTypeName()
 {
   auto type = this->codecpar.getCodecType();
   if (type > AVMEDIA_TYPE_NB)
     return {};
 
-  auto names = QStringList() << "Unknown"
-                             << "Video"
-                             << "Audio"
-                             << "Data"
-                             << "Subtitle"
-                             << "Attachment"
-                             << "NB";
+  std::array names = {"Unknown", "Video", "Audio", "Data", "Subtitle", "Attachment", "NB"};
   return names[type + 1];
 }
 
@@ -256,13 +264,13 @@ AVCodecContextWrapper &AVStreamWrapper::getCodec()
   return this->codec;
 };
 
-AVRational AVStreamWrapper::getAvgFrameRate()
+Rational AVStreamWrapper::getAvgFrameRate()
 {
   this->update();
   return this->avg_frame_rate;
 }
 
-AVRational AVStreamWrapper::getTimeBase()
+Rational AVStreamWrapper::getTimeBase()
 {
   this->update();
   if (this->time_base.den == 0 || this->time_base.num == 0)
@@ -323,156 +331,161 @@ void AVStreamWrapper::update()
   // Copy values from the source pointer
   if (libVer.avformat.major == 56)
   {
-    auto p                    = reinterpret_cast<AVStream_56 *>(this->stream);
-    this->index               = p->index;
-    this->id                  = p->id;
-    this->codec               = AVCodecContextWrapper(p->codec, libVer);
-    this->time_base           = p->time_base;
-    this->start_time          = p->start_time;
-    this->duration            = p->duration;
-    this->nb_frames           = p->nb_frames;
-    this->disposition         = p->nb_frames;
-    this->discard             = p->discard;
-    this->sample_aspect_ratio = p->sample_aspect_ratio;
-    this->avg_frame_rate      = p->avg_frame_rate;
-    this->nb_side_data        = p->nb_side_data;
-    this->event_flags         = p->event_flags;
+    auto p                        = reinterpret_cast<AVStream_56 *>(this->stream);
+    this->index                   = p->index;
+    this->id                      = p->id;
+    this->codec                   = AVCodecContextWrapper(p->codec, libVer);
+    this->time_base.num           = p->time_base.num;
+    this->time_base.den           = p->time_base.den;
+    this->start_time              = p->start_time;
+    this->duration                = p->duration;
+    this->nb_frames               = p->nb_frames;
+    this->disposition             = p->nb_frames;
+    this->discard                 = p->discard;
+    this->sample_aspect_ratio.num = p->sample_aspect_ratio.num;
+    this->sample_aspect_ratio.den = p->sample_aspect_ratio.den;
+    this->avg_frame_rate.num      = p->avg_frame_rate.num;
+    this->avg_frame_rate.den      = p->avg_frame_rate.den;
+    this->nb_side_data            = p->nb_side_data;
+    this->event_flags             = p->event_flags;
   }
   else if (libVer.avformat.major == 57)
   {
-    auto p                    = reinterpret_cast<AVStream_57 *>(this->stream);
-    this->index               = p->index;
-    this->id                  = p->id;
-    this->codec               = AVCodecContextWrapper(p->codec, libVer);
-    this->time_base           = p->time_base;
-    this->start_time          = p->start_time;
-    this->duration            = p->duration;
-    this->nb_frames           = p->nb_frames;
-    this->disposition         = p->nb_frames;
-    this->discard             = p->discard;
-    this->sample_aspect_ratio = p->sample_aspect_ratio;
-    this->avg_frame_rate      = p->avg_frame_rate;
-    this->nb_side_data        = p->nb_side_data;
-    this->event_flags         = p->event_flags;
-    this->codecpar            = AVCodecParametersWrapper(p->codecpar, libVer);
+    auto p                        = reinterpret_cast<AVStream_57 *>(this->stream);
+    this->index                   = p->index;
+    this->id                      = p->id;
+    this->codec                   = AVCodecContextWrapper(p->codec, libVer);
+    this->time_base.num           = p->time_base.num;
+    this->time_base.den           = p->time_base.den;
+    this->start_time              = p->start_time;
+    this->duration                = p->duration;
+    this->nb_frames               = p->nb_frames;
+    this->disposition             = p->nb_frames;
+    this->discard                 = p->discard;
+    this->sample_aspect_ratio.num = p->sample_aspect_ratio.num;
+    this->sample_aspect_ratio.den = p->sample_aspect_ratio.den;
+    this->avg_frame_rate.num      = p->avg_frame_rate.num;
+    this->avg_frame_rate.den      = p->avg_frame_rate.den;
+    this->nb_side_data            = p->nb_side_data;
+    this->event_flags             = p->event_flags;
+    this->codecpar                = AVCodecParametersWrapper(p->codecpar, libVer);
   }
   else if (libVer.avformat.major == 58)
   {
-    auto p                    = reinterpret_cast<AVStream_58 *>(this->stream);
-    this->index               = p->index;
-    this->id                  = p->id;
-    this->codec               = AVCodecContextWrapper(p->codec, libVer);
-    this->time_base           = p->time_base;
-    this->start_time          = p->start_time;
-    this->duration            = p->duration;
-    this->nb_frames           = p->nb_frames;
-    this->disposition         = p->nb_frames;
-    this->discard             = p->discard;
-    this->sample_aspect_ratio = p->sample_aspect_ratio;
-    this->avg_frame_rate      = p->avg_frame_rate;
-    this->nb_side_data        = p->nb_side_data;
-    this->event_flags         = p->event_flags;
-    this->codecpar            = AVCodecParametersWrapper(p->codecpar, libVer);
+    auto p                        = reinterpret_cast<AVStream_58 *>(this->stream);
+    this->index                   = p->index;
+    this->id                      = p->id;
+    this->codec                   = AVCodecContextWrapper(p->codec, libVer);
+    this->time_base.num           = p->time_base.num;
+    this->time_base.den           = p->time_base.den;
+    this->start_time              = p->start_time;
+    this->duration                = p->duration;
+    this->nb_frames               = p->nb_frames;
+    this->disposition             = p->nb_frames;
+    this->discard                 = p->discard;
+    this->sample_aspect_ratio.num = p->sample_aspect_ratio.num;
+    this->sample_aspect_ratio.den = p->sample_aspect_ratio.den;
+    this->avg_frame_rate.num      = p->avg_frame_rate.num;
+    this->avg_frame_rate.den      = p->avg_frame_rate.den;
+    this->nb_side_data            = p->nb_side_data;
+    this->event_flags             = p->event_flags;
+    this->codecpar                = AVCodecParametersWrapper(p->codecpar, libVer);
   }
   else if (libVer.avformat.major == 59)
   {
-    auto p                    = reinterpret_cast<AVStream_59 *>(this->stream);
-    this->index               = p->index;
-    this->id                  = p->id;
-    this->time_base           = p->time_base;
-    this->start_time          = p->start_time;
-    this->duration            = p->duration;
-    this->nb_frames           = p->nb_frames;
-    this->disposition         = p->nb_frames;
-    this->discard             = p->discard;
-    this->sample_aspect_ratio = p->sample_aspect_ratio;
-    this->avg_frame_rate      = p->avg_frame_rate;
-    this->nb_side_data        = p->nb_side_data;
-    this->event_flags         = p->event_flags;
-    this->codecpar            = AVCodecParametersWrapper(p->codecpar, libVer);
+    auto p                        = reinterpret_cast<AVStream_59 *>(this->stream);
+    this->index                   = p->index;
+    this->id                      = p->id;
+    this->time_base.num           = p->time_base.num;
+    this->time_base.den           = p->time_base.den;
+    this->start_time              = p->start_time;
+    this->duration                = p->duration;
+    this->nb_frames               = p->nb_frames;
+    this->disposition             = p->nb_frames;
+    this->discard                 = p->discard;
+    this->sample_aspect_ratio.num = p->sample_aspect_ratio.num;
+    this->sample_aspect_ratio.den = p->sample_aspect_ratio.den;
+    this->avg_frame_rate.num      = p->avg_frame_rate.num;
+    this->avg_frame_rate.den      = p->avg_frame_rate.den;
+    this->nb_side_data            = p->nb_side_data;
+    this->event_flags             = p->event_flags;
+    this->codecpar                = AVCodecParametersWrapper(p->codecpar, libVer);
   }
   else
     throw std::runtime_error("Invalid library version");
 }
 
-QStringPairList AVStreamWrapper::getInfoText(AVCodecIDWrapper &codecIdWrapper)
+StringPairVec AVStreamWrapper::getInfoText(const AVCodecIDWrapper &codecIdWrapper) const
 {
   if (this->stream == nullptr)
-    return {QStringPair("Error stream is null", "")};
+    return {{"Error stream is null", ""}};
 
-  this->update();
+  AVStreamWrapper wrapper(this->stream, this->libVer);
 
-  QStringPairList info;
-  info.append(QStringPair("Index", QString::number(this->index)));
-  info.append(QStringPair("ID", QString::number(this->id)));
+  StringPairVec info;
+  info.push_back({"Index", std::to_string(wrapper.index)});
+  info.push_back({"ID", std::to_string(wrapper.id)});
 
-  info.append(QStringPair("Codec Type", getCodecTypeName()));
-  info.append(QStringPair("Codec ID", QString::number((int)getCodecID())));
-  info.append(QStringPair("Codec Name", codecIdWrapper.getCodecName()));
-  info.append(
-      QStringPair("Time base", QString("%1/%2").arg(this->time_base.num).arg(this->time_base.den)));
-  info.append(QStringPair("Start Time",
-                          QString("%1 (%2)")
-                              .arg(this->start_time)
-                              .arg(timestampToString(this->start_time, this->time_base))));
-  info.append(QStringPair("Duration",
-                          QString("%1 (%2)")
-                              .arg(this->duration)
-                              .arg(timestampToString(this->duration, this->time_base))));
-  info.append(QStringPair("Number Frames", QString::number(this->nb_frames)));
+  info.push_back({"Codec Type", wrapper.getCodecTypeName()});
+  info.push_back({"Codec ID", std::to_string(wrapper.getCodecID())});
+  info.push_back({"Codec Name", codecIdWrapper.getCodecName()});
+  info.push_back(
+      {"Time base",
+       std::to_string(wrapper.time_base.num) + "/" + std::to_string(wrapper.time_base.den)});
+  info.push_back({"Start Time",
+                  std::to_string(wrapper.start_time) + " (" +
+                      formatWithReadableFormat(wrapper.start_time, wrapper.time_base) + ")"});
+  info.push_back({"Duration",
+                  std::to_string(wrapper.duration) + " (" +
+                      formatWithReadableFormat(wrapper.duration, wrapper.time_base) + ")"});
+  info.push_back({"Number Frames", std::to_string(wrapper.nb_frames)});
 
-  if (this->disposition != 0)
+  if (wrapper.disposition != 0)
   {
-    QString dispText;
-    if (this->disposition & 0x0001)
-      dispText += QString("Default ");
-    if (this->disposition & 0x0002)
-      dispText += QString("Dub ");
-    if (this->disposition & 0x0004)
-      dispText += QString("Original ");
-    if (this->disposition & 0x0008)
-      dispText += QString("Comment ");
-    if (this->disposition & 0x0010)
-      dispText += QString("Lyrics ");
-    if (this->disposition & 0x0020)
-      dispText += QString("Karaoke ");
-    if (this->disposition & 0x0040)
-      dispText += QString("Forced ");
-    if (this->disposition & 0x0080)
-      dispText += QString("Hearing_Imparied ");
-    if (this->disposition & 0x0100)
-      dispText += QString("Visual_Impaired ");
-    if (this->disposition & 0x0200)
-      dispText += QString("Clean_Effects ");
-    if (this->disposition & 0x0400)
-      dispText += QString("Attached_Pic ");
-    if (this->disposition & 0x0800)
-      dispText += QString("Timed_Thumbnails ");
-    if (this->disposition & 0x1000)
-      dispText += QString("Captions ");
-    if (this->disposition & 0x2000)
-      dispText += QString("Descriptions ");
-    if (this->disposition & 0x4000)
-      dispText += QString("Metadata ");
-    if (this->disposition & 0x8000)
-      dispText += QString("Dependent ");
-    info.append(QStringPair("Disposition", dispText));
+    std::string dispText;
+    if (wrapper.disposition & 0x0001)
+      dispText += "Default ";
+    if (wrapper.disposition & 0x0002)
+      dispText += "Dub ";
+    if (wrapper.disposition & 0x0004)
+      dispText += "Original ";
+    if (wrapper.disposition & 0x0008)
+      dispText += "Comment ";
+    if (wrapper.disposition & 0x0010)
+      dispText += "Lyrics ";
+    if (wrapper.disposition & 0x0020)
+      dispText += "Karaoke ";
+    if (wrapper.disposition & 0x0040)
+      dispText += "Forced ";
+    if (wrapper.disposition & 0x0080)
+      dispText += "Hearing_Imparied ";
+    if (wrapper.disposition & 0x0100)
+      dispText += "Visual_Impaired ";
+    if (wrapper.disposition & 0x0200)
+      dispText += "Clean_Effects ";
+    if (wrapper.disposition & 0x0400)
+      dispText += "Attached_Pic ";
+    if (wrapper.disposition & 0x0800)
+      dispText += "Timed_Thumbnails ";
+    if (wrapper.disposition & 0x1000)
+      dispText += "Captions ";
+    if (wrapper.disposition & 0x2000)
+      dispText += "Descriptions ";
+    if (wrapper.disposition & 0x4000)
+      dispText += "Metadata ";
+    if (wrapper.disposition & 0x8000)
+      dispText += "Dependent ";
+    info.push_back({"Disposition", dispText});
   }
 
-  info.append(QStringPair(
-      "Sample Aspect Ratio",
-      QString("%1:%2").arg(this->sample_aspect_ratio.num).arg(this->sample_aspect_ratio.den)));
+  info.push_back({"Sample Aspect Ratio",
+                  std::to_string(wrapper.sample_aspect_ratio.num) + ":" +
+                      std::to_string(wrapper.sample_aspect_ratio.den)});
 
-  auto divFrameRate = 0.0;
-  if (this->avg_frame_rate.den > 0)
-    divFrameRate = double(this->avg_frame_rate.num) / double(this->avg_frame_rate.den);
-  info.append(QStringPair("Average Frame Rate",
-                          QString("%1/%2 (%3)")
-                              .arg(this->avg_frame_rate.num)
-                              .arg(this->avg_frame_rate.den)
-                              .arg(divFrameRate, 0, 'f', 2)));
+  info.push_back({"Average Frame Rate", formatFramerate(wrapper.avg_frame_rate)});
 
-  info += this->codecpar.getInfoText();
+  const auto codecparInfo = wrapper.codecpar.getInfoText();
+  info.insert(info.end(), codecparInfo.begin(), codecparInfo.end());
   return info;
 }
 

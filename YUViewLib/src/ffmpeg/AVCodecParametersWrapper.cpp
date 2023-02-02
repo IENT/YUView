@@ -55,7 +55,7 @@ typedef struct AVCodecParameters_57_58_59
   int                           level;
   int                           width;
   int                           height;
-  AVRational                    sample_aspect_ratio;
+  Rational                      sample_aspect_ratio;
   AVFieldOrder                  field_order;
   AVColorRange                  color_range;
   AVColorPrimaries              color_primaries;
@@ -118,111 +118,117 @@ Ratio AVCodecParametersWrapper::getSampleAspectRatio()
   return {this->sample_aspect_ratio.num, this->sample_aspect_ratio.den};
 }
 
-QStringPairList AVCodecParametersWrapper::getInfoText()
+StringPairVec AVCodecParametersWrapper::getInfoText() const
 {
-  QStringPairList info;
-
   if (this->param == nullptr)
-  {
-    info.append(QStringPair("Codec parameters are nullptr", ""));
-    return info;
-  }
-  this->update();
+    return {{"Codec parameters are nullptr", ""}};
 
-  info.append({"Codec Tag", QString::number(this->codec_tag)});
-  info.append({"Format", QString::number(this->format)});
-  info.append({"Bitrate", QString::number(this->bit_rate)});
-  info.append({"Bits per coded sample", QString::number(this->bits_per_coded_sample)});
-  info.append({"Bits per Raw sample", QString::number(this->bits_per_raw_sample)});
-  info.append({"Profile", QString::number(this->profile)});
-  info.append({"Level", QString::number(this->level)});
-  info.append({"Width/Height", QString("%1/%2").arg(this->width).arg(this->height)});
-  info.append(
-      {"Sample aspect ratio",
-       QString("%1:%2").arg(this->sample_aspect_ratio.num).arg(this->sample_aspect_ratio.den)});
-  auto fieldOrders = QStringList() << "Unknown"
-                                   << "Progressive"
-                                   << "Top coded_first, top displayed first"
-                                   << "Bottom coded first, bottom displayed first"
-                                   << "Top coded first, bottom displayed first"
-                                   << "Bottom coded first, top displayed first";
-  info.append(
-      {"Field Order",
-       fieldOrders.at(functions::clip(int(this->codec_type), 0, int(fieldOrders.count())))});
-  auto colorRanges = QStringList() << "Unspecified"
-                                   << "The normal 219*2^(n-8) MPEG YUV ranges"
-                                   << "The normal 2^n-1 JPEG YUV ranges"
-                                   << "Not part of ABI";
-  info.append(
-      {"Color Range",
-       colorRanges.at(functions::clip(int(this->color_range), 0, int(colorRanges.count())))});
-  auto colorPrimaries =
-      QStringList()
-      << "Reserved"
-      << "BT709 / ITU-R BT1361 / IEC 61966-2-4 / SMPTE RP177 Annex B"
-      << "Unspecified"
-      << "Reserved"
-      << "BT470M / FCC Title 47 Code of Federal Regulations 73.682 (a)(20)"
-      << "BT470BG / ITU-R BT601-6 625 / ITU-R BT1358 625 / ITU-R BT1700 625 PAL & SECAM"
-      << "SMPTE170M / also ITU-R BT601-6 525 / ITU-R BT1358 525 / ITU-R BT1700 NTSC"
-      << "SMPTE240M"
-      << "FILM - colour filters using Illuminant C"
-      << "ITU-R BT2020"
-      << "SMPTE ST 428-1 (CIE 1931 XYZ)"
-      << "SMPTE ST 431-2 (2011)"
-      << "SMPTE ST 432-1 D65 (2010)"
-      << "Not part of ABI";
-  info.append(QStringPair("Color Primaries", colorPrimaries.at((int)this->color_primaries)));
-  auto colorTransfers =
-      QStringList()
-      << "Reserved"
-      << "BT709 / ITU-R BT1361"
-      << "Unspecified"
-      << "Reserved"
-      << "Gamma22 / ITU-R BT470M / ITU-R BT1700 625 PAL & SECAM"
-      << "Gamma28 / ITU-R BT470BG"
-      << "SMPTE170M / ITU-R BT601-6 525 or 625 / ITU-R BT1358 525 or 625 / ITU-R BT1700 NTSC"
-      << "SMPTE240M"
-      << "Linear transfer characteristics"
-      << "Logarithmic transfer characteristic (100:1 range)"
-      << "Logarithmic transfer characteristic (100 * Sqrt(10) : 1 range)"
-      << "IEC 61966-2-4"
-      << "ITU-R BT1361 Extended Colour Gamut"
-      << "IEC 61966-2-1 (sRGB or sYCC)"
-      << "ITU-R BT2020 for 10-bit system"
-      << "ITU-R BT2020 for 12-bit system"
-      << "SMPTE ST 2084 for 10-, 12-, 14- and 16-bit systems"
-      << "SMPTE ST 428-1"
-      << "ARIB STD-B67, known as Hybrid log-gamma"
-      << "Not part of ABI";
-  info.append({"Color Transfer", colorTransfers.at((int)this->color_trc)});
-  auto colorSpaces = QStringList()
-                     << "RGB - order of coefficients is actually GBR, also IEC 61966-2-1 (sRGB)"
-                     << "BT709 / ITU-R BT1361 / IEC 61966-2-4 xvYCC709 / SMPTE RP177 Annex B"
-                     << "Unspecified"
-                     << "Reserved"
-                     << "FCC Title 47 Code of Federal Regulations 73.682 (a)(20)"
-                     << "BT470BG / ITU-R BT601-6 625 / ITU-R BT1358 625 / ITU-R BT1700 625 PAL & "
-                        "SECAM / IEC 61966-2-4 xvYCC601"
-                     << "SMPTE170M / ITU-R BT601-6 525 / ITU-R BT1358 525 / ITU-R BT1700 NTSC"
-                     << "SMPTE240M"
-                     << "YCOCG - Used by Dirac / VC-2 and H.264 FRext, see ITU-T SG16"
-                     << "ITU-R BT2020 non-constant luminance system"
-                     << "ITU-R BT2020 constant luminance system"
-                     << "SMPTE 2085, Y'D'zD'x"
-                     << "Not part of ABI";
-  info.append({"Color Space", colorSpaces.at((int)this->color_space)});
-  auto chromaLocations = QStringList()
-                         << "Unspecified"
-                         << "Left / MPEG-2/4 4:2:0, H.264 default for 4:2:0"
-                         << "Center / MPEG-1 4:2:0, JPEG 4:2:0, H.263 4:2:0"
-                         << "Top Left / ITU-R 601, SMPTE 274M 296M S314M(DV 4:1:1), mpeg2 4:2:2"
-                         << "Top"
-                         << "Bottom Left"
-                         << "Bottom"
-                         << "Not part of ABI";
-  info.append({"Chroma Location", chromaLocations.at((int)this->chroma_location)});
-  info.append({"Video Delay", QString::number(this->video_delay)});
+  AVCodecParametersWrapper wrapper(this->param, this->libVer);
+
+  StringPairVec info;
+  info.push_back({"Codec Tag", std::to_string(wrapper.codec_tag)});
+  info.push_back({"Format", std::to_string(wrapper.format)});
+  info.push_back({"Bitrate", std::to_string(wrapper.bit_rate)});
+  info.push_back({"Bits per coded sample", std::to_string(wrapper.bits_per_coded_sample)});
+  info.push_back({"Bits per Raw sample", std::to_string(wrapper.bits_per_raw_sample)});
+  info.push_back({"Profile", std::to_string(wrapper.profile)});
+  info.push_back({"Level", std::to_string(wrapper.level)});
+  info.push_back(
+      {"Width/Height", std::to_string(this->width) + "/" + std::to_string(this->height)});
+  info.push_back({"Sample aspect ratio",
+                  std::to_string(wrapper.sample_aspect_ratio.num) + ":" +
+                      std::to_string(wrapper.sample_aspect_ratio.den)});
+  std::array fieldOrders = {"Unknown",
+                            "Progressive",
+                            "Top coded_first, top displayed first",
+                            "Bottom coded first, bottom displayed first",
+                            "Top coded first, bottom displayed first",
+                            "Bottom coded first, top displayed first"};
+  info.push_back({"Field Order",
+                  fieldOrders.at(functions::clip(
+                      static_cast<size_t>(this->codec_type), size_t(0), fieldOrders.size()))});
+  std::array colorRanges = {"Unspecified",
+                            "The normal 219*2^(n-8) MPEG YUV ranges",
+                            "The normal 2^n-1 JPEG YUV ranges",
+                            "Not part of ABI"};
+  info.push_back({"Color Range",
+                  colorRanges.at(functions::clip(
+                      static_cast<size_t>(this->color_range), size_t(0), colorRanges.size()))});
+  std::array colorPrimaries = {
+      "Reserved",
+      "BT709 / ITU-R BT1361 / IEC 61966-2-4 / SMPTE RP177 Annex B",
+      "Unspecified",
+      "Reserved",
+      "BT470M / FCC Title 47 Code of Federal Regulations 73.682 (a)(20)",
+      "BT470BG / ITU-R BT601-6 625 / ITU-R BT1358 625 / ITU-R BT1700 625 PAL & SECAM",
+      "SMPTE170M / also ITU-R BT601-6 525 / ITU-R BT1358 525 / ITU-R BT1700 NTSC",
+      "SMPTE240M",
+      "FILM - colour filters using Illuminant C",
+      "ITU-R BT2020",
+      "SMPTE ST 428-1 (CIE 1931 XYZ)",
+      "SMPTE ST 431-2 (2011)",
+      "SMPTE ST 432-1 D65 (2010)",
+      "Not part of ABI"};
+  info.push_back(
+      {"Color Primaries",
+       colorPrimaries.at(functions::clip(
+           static_cast<size_t>(wrapper.color_primaries), size_t(0), colorPrimaries.size()))});
+  std::array colorTransfers = {
+      "Reserved",
+      "BT709 / ITU-R BT1361",
+      "Unspecified",
+      "Reserved",
+      "Gamma22 / ITU-R BT470M / ITU-R BT1700 625 PAL & SECAM",
+      "Gamma28 / ITU-R BT470BG",
+      "SMPTE170M / ITU-R BT601-6 525 or 625 / ITU-R BT1358 525 or 625 / ITU-R BT1700 NTSC",
+      "SMPTE240M",
+      "Linear transfer characteristics",
+      "Logarithmic transfer characteristic (100:1 range)",
+      "Logarithmic transfer characteristic (100 * Sqrt(10) : 1 range)",
+      "IEC 61966-2-4",
+      "ITU-R BT1361 Extended Colour Gamut",
+      "IEC 61966-2-1 (sRGB or sYCC)",
+      "ITU-R BT2020 for 10-bit system",
+      "ITU-R BT2020 for 12-bit system",
+      "SMPTE ST 2084 for 10-, 12-, 14- and 16-bit systems",
+      "SMPTE ST 428-1",
+      "ARIB STD-B67, known as Hybrid log-gamma",
+      "Not part of ABI"};
+  info.push_back({"Color Transfer",
+                  colorTransfers.at(functions::clip(
+                      static_cast<size_t>(wrapper.color_trc), size_t(0), colorTransfers.size()))});
+  std::array colorSpaces = {
+      "RGB - order of coefficients is actually GBR, also IEC 61966-2-1 (sRGB)",
+      "BT709 / ITU-R BT1361 / IEC 61966-2-4 xvYCC709 / SMPTE RP177 Annex B",
+      "Unspecified",
+      "Reserved",
+      "FCC Title 47 Code of Federal Regulations 73.682 (a)(20)",
+      "BT470BG / ITU-R BT601-6 625 / ITU-R BT1358 625 / ITU-R BT1700 625 PAL & "
+      "SECAM / IEC 61966-2-4 xvYCC601",
+      "SMPTE170M / ITU-R BT601-6 525 / ITU-R BT1358 525 / ITU-R BT1700 NTSC",
+      "SMPTE240M",
+      "YCOCG - Used by Dirac / VC-2 and H.264 FRext, see ITU-T SG16",
+      "ITU-R BT2020 non-constant luminance system",
+      "ITU-R BT2020 constant luminance system",
+      "SMPTE 2085, Y'D'zD'x",
+      "Not part of ABI"};
+  info.push_back({"Color Space",
+                  colorSpaces.at(functions::clip(
+                      static_cast<size_t>(wrapper.color_space), size_t(0), colorSpaces.size()))});
+  std::array chromaLocations = {
+      "Unspecified",
+      "Left / MPEG-2/4 4:2:0, H.264 default for 4:2:0",
+      "Center / MPEG-1 4:2:0, JPEG 4:2:0, H.263 4:2:0",
+      "Top Left / ITU-R 601, SMPTE 274M 296M S314M(DV 4:1:1), mpeg2 4:2:2",
+      "Top",
+      "Bottom Left",
+      "Bottom",
+      "Not part of ABI"};
+  info.push_back(
+      {"Chroma Location",
+       chromaLocations.at(functions::clip(
+           static_cast<size_t>(wrapper.chroma_location), size_t(0), chromaLocations.size()))});
+  info.push_back({"Video Delay", std::to_string(wrapper.video_delay)});
 
   return info;
 }
@@ -247,7 +253,7 @@ void AVCodecParametersWrapper::setClearValues()
     p->width                 = 0;
     p->height                = 0;
     {
-      AVRational ratio;
+      Rational ratio;
       ratio.num              = 1;
       ratio.den              = 1;
       p->sample_aspect_ratio = ratio;
@@ -339,8 +345,8 @@ void AVCodecParametersWrapper::setSampleAspectRatio(int num, int den)
   if (this->libVer.avformat.major == 57 || this->libVer.avformat.major == 58 ||
       this->libVer.avformat.major == 59)
   {
-    auto       p = reinterpret_cast<AVCodecParameters_57_58_59 *>(param);
-    AVRational ratio;
+    auto     p = reinterpret_cast<AVCodecParameters_57_58_59 *>(param);
+    Rational ratio;
     ratio.num                 = num;
     ratio.den                 = den;
     p->sample_aspect_ratio    = ratio;

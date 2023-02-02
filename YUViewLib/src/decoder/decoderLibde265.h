@@ -96,14 +96,11 @@ public:
 
   void resetDecoder() override;
 
-  int  nrSignalsSupported() const override { return nrSignals; }
+  int  nrSignalsSupported() const override { return this->nrSignals; }
   bool isSignalDifference(int signalID) const override { return signalID == 2 || signalID == 3; }
-  QStringList getSignalNames() const override
+  StringVec getSignalNames() const override
   {
-    return QStringList() << "Reconstruction"
-                         << "Prediction"
-                         << "Residual"
-                         << "Transform Coefficients";
+    return {"Reconstruction", "Prediction", "Residual", "Transform Coefficients"};
   }
   void setDecodeSignal(int signalID, bool &decoderResetNeeded) override;
 
@@ -116,10 +113,10 @@ public:
   void fillStatisticList(stats::StatisticsData &statisticsData) const override;
 
   // Check if the given library file is an existing libde265 decoder that we can use.
-  static bool checkLibraryFile(QString libFilePath, QString &error);
+  static bool checkLibraryFile(const std::string &libFilePath, std::string &error);
 
-  QString getDecoderName() const override { return "libDe265"; }
-  QString getCodecName() const override { return "hevc"; }
+  std::string getDecoderName() const override { return "libDe265"; }
+  std::string getCodecName() const override { return "hevc"; }
 
 private:
   // A private constructor that creates an uninitialized decoder library.
@@ -130,7 +127,7 @@ private:
   void resolveLibraryFunctionPointers() override;
 
   // Return the possible names of the libde265 library
-  QStringList getLibraryNames() const override;
+  StringVec getLibraryNames() const override;
 
   // The function template for resolving the functions.
   // This can not go into the base class because then the template

@@ -35,8 +35,42 @@
 #include <QDir>
 #include <QSettings>
 
+using namespace std::string_literals;
+
 namespace decoder
 {
+
+namespace
+{
+
+std::string getLibSearchPathFromSettings()
+{
+  QSettings settings;
+  settings.beginGroup("Decoders");
+  auto searchPath = settings.value("SearchPath", "").toString().toStdString();
+  if (searchPath.back() != '/')
+    searchPath += "/";
+  settings.endGroup();
+  return searchPath;
+}
+
+StringVec getPathsToTry(const std::string &libName)
+{
+  const auto currentPath    = std::filesystem::absolute(std::filesystem::current_path()).string();
+  const auto currentAppPath = QCoreApplication::applicationDirPath().toStdString();
+
+  return {getLibSearchPathFromSettings() + libName,
+          currentPath + "/" + libName,
+          currentPath + "/decoder/" + libName,
+          currentPath + "/libde265/" + libName, // for legacy installations before the decoders were
+                                                // moved to the "decoders" folder
+          currentAppPath + "/" + libName,
+          currentAppPath + "/decoder/" + libName,
+          currentAppPath + "/libde265/" + libName,
+          libName}; // Try the system directories.
+}
+
+} // namespace
 
 // Debug the decoder ( 0:off 1:interactive decoder only 2:caching decoder only 3:both)
 #define DECODERBASE_DEBUG_OUTPUT 0
@@ -97,18 +131,28 @@ stats::FrameTypeData decoderBase::getCurrentFrameStatsForType(int typeId) const
   return statisticsData->getFrameTypeData(typeId);
 }
 
-void decoderBaseSingleLib::loadDecoderLibrary(QString specificLibrary)
+void decoderBase::setError(const std::string &reason)
+{
+  this->decoderState = DecoderState::Error;
+  this->errorString  = reason;
+}
+
+bool decoderBase::setErrorB(const std::string &reason)
+{
+  this->setError(reason);
+  return false;
+}
+
+void decoderBaseSingleLib::loadDecoderLibrary(const std::string &specificLibrary)
 {
   // Try to load the HM library from the current working directory
   // Unfortunately relative paths like this do not work: (at least on windows)
   // library.setFileName(".\\libde265");
 
-  bool libLoaded = false;
-
   // Try the specific library first
-  this->library.setFileName(specificLibrary);
+  this->library.setFileName(QString::fromStdString(specificLibrary));
   this->libraryPath = specificLibrary;
-  libLoaded         = this->library.load();
+  auto libLoaded    = this->library.load();
 
   if (!libLoaded)
   {
@@ -117,34 +161,13 @@ void decoderBaseSingleLib::loadDecoderLibrary(QString specificLibrary)
     // the decLibXXX.so file first. Since this has been compiled for linux
     // it will fail and not even try to open the decLixXXX.dylib.
     // On windows and linux ommitting the extension works
-    auto libNames = getLibraryNames();
 
-    // Get the additional search path from the settings
-    QSettings settings;
-    settings.beginGroup("Decoders");
-    auto searchPath = settings.value("SearchPath", "").toString();
-    if (!searchPath.endsWith("/"))
-      searchPath.append("/");
-    searchPath.append("%1");
-    settings.endGroup();
-
-    auto const libPaths = QStringList()
-                          << searchPath << QDir::currentPath() + "/%1"
-                          << QDir::currentPath() + "/decoder/%1"
-                          << QDir::currentPath() +
-                                 "/libde265/%1" // for legacy installations before the decoders were
-                                                // moved to the "decoders" folder
-                          << QCoreApplication::applicationDirPath() + "/%1"
-                          << QCoreApplication::applicationDirPath() + "/decoder/%1"
-                          << QCoreApplication::applicationDirPath() + "/libde265/%1"
-                          << "%1"; // Try the system directories.
-
-    for (auto &libName : libNames)
+    for (const auto &libName : this->getLibraryNames())
     {
-      for (auto &libPath : libPaths)
+      for (auto &libPath : getPathsToTry(libName))
       {
-        this->library.setFileName(libPath.arg(libName));
-        this->libraryPath = libPath.arg(libName);
+        this->library.setFileName(QString::fromStdString(libPath));
+        this->libraryPath = libPath;
         libLoaded         = library.load();
         if (libLoaded)
           break;
@@ -157,21 +180,15 @@ void decoderBaseSingleLib::loadDecoderLibrary(QString specificLibrary)
   if (!libLoaded)
   {
     this->libraryPath.clear();
-    auto error = "Error loading library: " + this->library.errorString() + "\n";
+    auto error = "Error loading library: "s + this->library.errorString().toStdString() + "\n";
     error += "We could not load one of the supported decoder library (";
     auto libNames = this->getLibraryNames();
-    for (int i = 0; i < libNames.count(); i++)
-    {
-      if (i == 0)
-        error += libNames[0];
-      else
-        error += ", " + libNames[i];
-    }
-    error += ").\n";
+    error += to_string(libNames);
     error += "\n";
     error += "We do not ship all of the decoder libraries.\n";
     error += "You can find download links in Help->Downloads.";
-    return this->setError(error);
+    this->setError(error);
+    return;
   }
 
   this->resolveLibraryFunctionPointers();

@@ -231,7 +231,7 @@ void StatisticsFileCSV::readFrameAndTypePositionsFromFile(std::atomic_bool &brea
 
 void StatisticsFileCSV::loadStatisticData(StatisticsData &statisticsData, int poc, int typeID)
 {
-  if (!this->file.isOk())
+  if (!this->file.isOpen())
     return;
 
   try
@@ -348,7 +348,7 @@ void StatisticsFileCSV::readHeaderFromFile(StatisticsData &statisticsData)
   //       We should get rid of this and just set an error and return on failure.
   try
   {
-    if (!this->file.isOk())
+    if (!this->file.isOpen())
       return;
 
     statisticsData.clear();

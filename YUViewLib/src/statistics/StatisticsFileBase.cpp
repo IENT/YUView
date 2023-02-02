@@ -37,15 +37,17 @@ namespace stats
 
 StatisticsFileBase::StatisticsFileBase(const QString &filename)
 {
-  this->file.openFile(filename);
-  if (!this->file.isOk())
+  if (!this->file.openFile(filename))
   {
     this->errorMessage = "Error opening file " + filename;
     this->error        = true;
   }
 }
 
-StatisticsFileBase::~StatisticsFileBase() { this->abortParsingDestroy = true; }
+StatisticsFileBase::~StatisticsFileBase()
+{
+  this->abortParsingDestroy = true;
+}
 
 InfoData StatisticsFileBase::getInfo() const
 {

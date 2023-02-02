@@ -184,7 +184,7 @@ void StatisticsFileVTMBMS::readFrameAndTypePositionsFromFile(std::atomic_bool &b
 
 void StatisticsFileVTMBMS::loadStatisticData(StatisticsData &statisticsData, int poc, int typeID)
 {
-  if (!this->file.isOk())
+  if (!this->file.isOpen())
     return;
 
   try
@@ -417,7 +417,7 @@ void StatisticsFileVTMBMS::readHeaderFromFile(StatisticsData &statisticsData)
 {
   try
   {
-    if (!this->file.isOk())
+    if (!this->file.isOpen())
       return;
 
     statisticsData.clear();

@@ -49,6 +49,7 @@ enum class InputFormat
   AnnexBHEVC, // Raw HEVC annex B file
   AnnexBAVC,  // Raw AVC annex B file
   AnnexBVVC,  // Raw VVC annex B file
+  OBUAV1,     // Raw OBU file with AV1
   Libav       // This is some sort of container file which we will read using libavformat
 };
 
@@ -56,7 +57,23 @@ const auto InputFormatMapper = EnumMapper<InputFormat>({{InputFormat::Invalid, "
                                                         {InputFormat::AnnexBHEVC, "AnnexBHEVC"},
                                                         {InputFormat::AnnexBAVC, "AnnexBAVC"},
                                                         {InputFormat::AnnexBVVC, "AnnexBVVC"},
+                                                        {InputFormat::OBUAV1, "OBUAV1"},
                                                         {InputFormat::Libav, "Libav"}});
+
+struct StreamInfo
+{
+  std::string   streamName;
+  Rational      timebase{};
+  StringPairVec infoItems;
+  std::string   shortInfo;
+};
+using StreamsInfo = std::vector<StreamInfo>;
+
+struct DataAndStartEndPos
+{
+  QByteArray      data{};
+  FileStartEndPos startEnd{};
+};
 
 /* The FileSource class provides functions for accessing files. Besides the reading of
  * certain blocks of the file, it also directly provides information on the file for the
@@ -71,29 +88,29 @@ public:
 
   virtual bool openFile(const QString &filePath);
 
-  virtual QList<InfoItem> getFileInfoList() const;
-  int64_t                 getFileSize() const { return !isFileOpened ? -1 : fileInfo.size(); }
-  QString                 getAbsoluteFilePath() const;
-  QFileInfo               getFileInfo() const { return this->fileInfo; }
-  QFile *                 getQFile() { return &this->srcFile; }
-  bool                    getAndResetFileChangedFlag();
+  [[nodiscard]] virtual QList<InfoItem> getFileInfoList() const;
+  [[nodiscard]] int64_t                 getFileSize() const;
+  [[nodiscard]] QString                 getAbsoluteFilePath() const;
+  [[nodiscard]] QFileInfo               getFileInfo() const { return this->fileInfo; }
+  [[nodiscard]] QFile *                 getQFile() { return &this->srcFile; }
+  [[nodiscard]] bool                    getAndResetFileChangedFlag();
 
   // Return true if the file could be opened and is ready for use.
-  bool isOk() const { return this->isFileOpened; }
+  [[nodiscard]] bool         isOpen() const { return this->srcFile.isOpen(); }
+  [[nodiscard]] virtual bool atEnd() const;
+  [[nodiscard]] int64_t      pos() const { return this->srcFile.pos(); }
 
-  virtual bool atEnd() const { return !this->isFileOpened ? true : this->srcFile.atEnd(); }
-  QByteArray   readLine() { return !this->isFileOpened ? QByteArray() : this->srcFile.readLine(); }
-  virtual bool seek(int64_t pos) { return !this->isFileOpened ? false : this->srcFile.seek(pos); }
-  int64_t      pos() { return !this->isFileOpened ? 0 : this->srcFile.pos(); }
+  QByteArray   readLine() { return this->srcFile.readLine(); }
+  virtual bool seek(int64_t pos) { return this->srcFile.seek(pos); }
 
-  struct fileFormat_t
+  struct FileFormat
   {
     Size     frameSize;
     int      frameRate{-1};
     unsigned bitDepth{};
     bool     packed{false};
   };
-  fileFormat_t guessFormatFromFilename() const;
+  FileFormat guessFormatFromFilename() const;
 
   // Get the file size in bytes
 
@@ -118,7 +135,6 @@ protected:
   QString   fullFilePath{};
   QFileInfo fileInfo;
   QFile     srcFile;
-  bool      isFileOpened{};
 
 private:
   QFileSystemWatcher fileWatcher{};

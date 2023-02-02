@@ -62,8 +62,29 @@ QStringList getThemeColors(QString themeName);
 // compatible.
 QString formatDataSize(double size, bool isBits = false);
 
-QStringList toQStringList(const std::vector<std::string> &stringVec);
-std::string toLower(std::string str);
+QStringList               toQStringList(const std::vector<std::string> &stringVec);
+[[nodiscard]] std::string toLower(std::string str);
+[[nodiscard]] std::string to_string(const Size &size);
+[[nodiscard]] std::string to_string(const StringVec &items, const std::string &seperator = ", ");
+[[nodiscard]] std::string vstring(const char *format, va_list vargs);
+[[nodiscard]] std::string formatString(std::string                               format,
+                                       const std::initializer_list<std::string> &arguments);
+
+template <typename T>
+[[nodiscard]] std::string to_string(const std::vector<T> &items,
+                                    const std::string &   seperator = ", ")
+{
+  std::string str;
+  auto        it = items.begin();
+  while (it != items.end())
+  {
+    if (it != items.begin())
+      str += seperator;
+    str += std::to_string(*it);
+    ++it;
+  }
+  return str;
+}
 
 inline std::string boolToString(bool b)
 {

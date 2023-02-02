@@ -31,7 +31,9 @@
  */
 
 #include "AVFormatContextWrapper.h"
+
 #include "AVStreamWrapper.h"
+#include <common/Functions.h>
 
 namespace FFmpeg
 {
@@ -201,34 +203,102 @@ AVFormatContextWrapper::operator bool() const
   return this->ctx;
 };
 
-unsigned AVFormatContextWrapper::getNbStreams()
+unsigned AVFormatContextWrapper::getNbStreams() const
 {
-  this->update();
-  return this->nb_streams;
+
+  switch (this->libVer.avformat.major)
+  {
+  case 56:
+    return reinterpret_cast<AVFormatContext_56 *>(this->ctx)->nb_streams;
+  case 57:
+    return reinterpret_cast<AVFormatContext_57 *>(this->ctx)->nb_streams;
+  case 58:
+    return reinterpret_cast<AVFormatContext_58 *>(this->ctx)->nb_streams;
+  case 59:
+    return reinterpret_cast<AVFormatContext_59 *>(this->ctx)->nb_streams;
+
+  default:
+    throw std::runtime_error("Invalid library version");
+  }
 }
 
-AVStreamWrapper AVFormatContextWrapper::getStream(int idx)
+AVStreamWrapper AVFormatContextWrapper::getStream(int idx) const
 {
-  this->update();
-  return this->streams[idx];
+  if (idx < 0 || static_cast<unsigned>(idx) >= this->getNbStreams())
+    throw std::runtime_error("Invalid stream index");
+
+  switch (this->libVer.avformat.major)
+  {
+  case 56:
+    return AVStreamWrapper(reinterpret_cast<AVFormatContext_56 *>(this->ctx)->streams[idx],
+                           this->libVer);
+  case 57:
+    return AVStreamWrapper(reinterpret_cast<AVFormatContext_57 *>(this->ctx)->streams[idx],
+                           this->libVer);
+  case 58:
+    return AVStreamWrapper(reinterpret_cast<AVFormatContext_58 *>(this->ctx)->streams[idx],
+                           this->libVer);
+  case 59:
+    return AVStreamWrapper(reinterpret_cast<AVFormatContext_59 *>(this->ctx)->streams[idx],
+                           this->libVer);
+
+  default:
+    throw std::runtime_error("Invalid library version");
+  }
 }
 
-AVInputFormatWrapper AVFormatContextWrapper::getInputFormat()
+AVInputFormatWrapper AVFormatContextWrapper::getInputFormat() const
 {
-  this->update();
-  return this->iformat;
+  switch (this->libVer.avformat.major)
+  {
+  case 56:
+    return AVInputFormatWrapper(reinterpret_cast<AVFormatContext_56 *>(this->ctx)->iformat, libVer);
+  case 57:
+    return AVInputFormatWrapper(reinterpret_cast<AVFormatContext_57 *>(this->ctx)->iformat, libVer);
+  case 58:
+    return AVInputFormatWrapper(reinterpret_cast<AVFormatContext_58 *>(this->ctx)->iformat, libVer);
+  case 59:
+    return AVInputFormatWrapper(reinterpret_cast<AVFormatContext_59 *>(this->ctx)->iformat, libVer);
+
+  default:
+    throw std::runtime_error("Invalid library version");
+  }
 }
 
-int64_t AVFormatContextWrapper::getStartTime()
+int64_t AVFormatContextWrapper::getStartTime() const
 {
-  this->update();
-  return this->start_time;
+  switch (this->libVer.avformat.major)
+  {
+  case 56:
+    return reinterpret_cast<AVFormatContext_56 *>(this->ctx)->start_time;
+  case 57:
+    return reinterpret_cast<AVFormatContext_57 *>(this->ctx)->start_time;
+  case 58:
+    return reinterpret_cast<AVFormatContext_58 *>(this->ctx)->start_time;
+  case 59:
+    return reinterpret_cast<AVFormatContext_59 *>(this->ctx)->start_time;
+
+  default:
+    throw std::runtime_error("Invalid library version");
+  }
 }
 
-int64_t AVFormatContextWrapper::getDuration()
+int64_t AVFormatContextWrapper::getDuration() const
 {
-  this->update();
-  return this->duration;
+  switch (this->libVer.avformat.major)
+  {
+  case 56:
+    return reinterpret_cast<AVFormatContext_56 *>(this->ctx)->duration;
+  case 57:
+    return reinterpret_cast<AVFormatContext_57 *>(this->ctx)->duration;
+  case 58:
+    return reinterpret_cast<AVFormatContext_58 *>(this->ctx)->duration;
+  case 59:
+    return reinterpret_cast<AVFormatContext_59 *>(this->ctx)->duration;
+
+  default:
+    throw std::runtime_error("Invalid library version");
+  }
 }
 
 AVFormatContext *AVFormatContextWrapper::getFormatCtx() const
@@ -236,10 +306,22 @@ AVFormatContext *AVFormatContextWrapper::getFormatCtx() const
   return this->ctx;
 }
 
-AVDictionaryWrapper AVFormatContextWrapper::getMetadata()
+AVDictionaryWrapper AVFormatContextWrapper::getMetadata() const
 {
-  this->update();
-  return this->metadata;
+  switch (this->libVer.avformat.major)
+  {
+  case 56:
+    return AVDictionaryWrapper(reinterpret_cast<AVFormatContext_56 *>(this->ctx)->metadata);
+  case 57:
+    return AVDictionaryWrapper(reinterpret_cast<AVFormatContext_57 *>(this->ctx)->metadata);
+  case 58:
+    return AVDictionaryWrapper(reinterpret_cast<AVFormatContext_58 *>(this->ctx)->metadata);
+  case 59:
+    return AVDictionaryWrapper(reinterpret_cast<AVFormatContext_59 *>(this->ctx)->metadata);
+
+  default:
+    throw std::runtime_error("Invalid library version");
+  }
 }
 
 void AVFormatContextWrapper::update()
@@ -256,8 +338,8 @@ void AVFormatContextWrapper::update()
     this->ctx_flags  = p->ctx_flags;
     this->nb_streams = p->nb_streams;
     for (unsigned i = 0; i < this->nb_streams; i++)
-      this->streams.append(AVStreamWrapper(p->streams[i], this->libVer));
-    this->filename             = QString(p->filename);
+      this->streams.push_back(AVStreamWrapper(p->streams[i], this->libVer));
+    this->filename             = std::string(p->filename);
     this->start_time           = p->start_time;
     this->duration             = p->duration;
     this->bit_rate             = p->bit_rate;
@@ -266,7 +348,7 @@ void AVFormatContextWrapper::update()
     this->flags                = p->flags;
     this->probesize            = p->probesize;
     this->max_analyze_duration = p->max_analyze_duration;
-    this->key                  = QString::fromLatin1((const char *)p->key, p->keylen);
+    this->key                  = std::string(reinterpret_cast<const char *>(p->key), p->keylen);
     this->nb_programs          = p->nb_programs;
     this->video_codec_id       = p->video_codec_id;
     this->audio_codec_id       = p->audio_codec_id;
@@ -284,8 +366,8 @@ void AVFormatContextWrapper::update()
     this->ctx_flags  = p->ctx_flags;
     this->nb_streams = p->nb_streams;
     for (unsigned i = 0; i < nb_streams; i++)
-      this->streams.append(AVStreamWrapper(p->streams[i], this->libVer));
-    this->filename             = QString(p->filename);
+      this->streams.push_back(AVStreamWrapper(p->streams[i], this->libVer));
+    this->filename             = std::string(p->filename);
     this->start_time           = p->start_time;
     this->duration             = p->duration;
     this->bit_rate             = p->bit_rate;
@@ -294,7 +376,7 @@ void AVFormatContextWrapper::update()
     this->flags                = p->flags;
     this->probesize            = p->probesize;
     this->max_analyze_duration = p->max_analyze_duration;
-    this->key                  = QString::fromLatin1((const char *)p->key, p->keylen);
+    this->key                  = std::string(reinterpret_cast<const char *>(p->key), p->keylen);
     this->nb_programs          = p->nb_programs;
     this->video_codec_id       = p->video_codec_id;
     this->audio_codec_id       = p->audio_codec_id;
@@ -312,8 +394,8 @@ void AVFormatContextWrapper::update()
     this->ctx_flags  = p->ctx_flags;
     this->nb_streams = p->nb_streams;
     for (unsigned i = 0; i < nb_streams; i++)
-      this->streams.append(AVStreamWrapper(p->streams[i], this->libVer));
-    this->filename             = QString(p->filename);
+      this->streams.push_back(AVStreamWrapper(p->streams[i], this->libVer));
+    this->filename             = std::string(p->filename);
     this->start_time           = p->start_time;
     this->duration             = p->duration;
     this->bit_rate             = p->bit_rate;
@@ -322,7 +404,7 @@ void AVFormatContextWrapper::update()
     this->flags                = p->flags;
     this->probesize            = p->probesize;
     this->max_analyze_duration = p->max_analyze_duration;
-    this->key                  = QString::fromLatin1((const char *)p->key, p->keylen);
+    this->key                  = std::string(reinterpret_cast<const char *>(p->key), p->keylen);
     this->nb_programs          = p->nb_programs;
     this->video_codec_id       = p->video_codec_id;
     this->audio_codec_id       = p->audio_codec_id;
@@ -340,8 +422,8 @@ void AVFormatContextWrapper::update()
     this->ctx_flags  = p->ctx_flags;
     this->nb_streams = p->nb_streams;
     for (unsigned i = 0; i < nb_streams; i++)
-      this->streams.append(AVStreamWrapper(p->streams[i], this->libVer));
-    this->filename             = QString(p->url);
+      this->streams.push_back(AVStreamWrapper(p->streams[i], this->libVer));
+    this->filename             = std::string(p->url);
     this->start_time           = p->start_time;
     this->duration             = p->duration;
     this->bit_rate             = p->bit_rate;
@@ -350,7 +432,7 @@ void AVFormatContextWrapper::update()
     this->flags                = p->flags;
     this->probesize            = p->probesize;
     this->max_analyze_duration = p->max_analyze_duration;
-    this->key                  = QString::fromLatin1((const char *)p->key, p->keylen);
+    this->key                  = std::string(reinterpret_cast<const char *>(p->key), p->keylen);
     this->nb_programs          = p->nb_programs;
     this->video_codec_id       = p->video_codec_id;
     this->audio_codec_id       = p->audio_codec_id;
@@ -366,43 +448,38 @@ void AVFormatContextWrapper::update()
     throw std::runtime_error("Invalid library version");
 }
 
-QStringPairList AVFormatContextWrapper::getInfoText()
+StringPairVec AVFormatContextWrapper::getInfoText() const
 {
   if (this->ctx == nullptr)
-    return {QStringPair("Format context not initialized", "")};
+    return {};
 
-  this->update();
+  AVFormatContextWrapper formatContext(this->ctx, this->libVer);
+  StringPairVec          info;
 
-  QStringPairList info;
-  if (this->ctx_flags != 0)
+  if (formatContext.ctx_flags != 0)
   {
-    QString flags;
-    if (this->ctx_flags & 1)
-      flags += QString("No-Header");
-    if (this->ctx_flags & 2)
-      flags += QString("Un-seekable");
-    info.append(QStringPair("Flags", flags));
+    std::vector<std::string> flags;
+    if (formatContext.ctx_flags & 1)
+      flags.push_back("No-Header");
+    if (formatContext.ctx_flags & 2)
+      flags.push_back("Un-seekable");
+    info.push_back({"Flags", functions::to_string(flags)});
   }
 
-  AVRational time_base;
+  Rational time_base;
   time_base.num = 1;
   time_base.den = AV_TIME_BASE;
 
-  info.append(QStringPair("Number streams", QString::number(this->nb_streams)));
-  info.append(QStringPair("File name", this->filename));
-  info.append(QStringPair("Start time",
-                          QString("%1 (%2)")
-                              .arg(this->start_time)
-                              .arg(timestampToString(this->start_time, time_base))));
-  info.append(QStringPair(
-      "Duration",
-      QString("%1 (%2)").arg(this->duration).arg(timestampToString(duration, time_base))));
+  info.push_back({"Number streams", std::to_string(formatContext.nb_streams)});
+  info.push_back({"File name", this->filename});
+  info.push_back({"Start time", formatWithReadableFormat(formatContext.start_time, time_base)});
+  info.push_back({"Duration", formatWithReadableFormat(formatContext.duration, time_base)});
   if (bit_rate > 0)
-    info.append(QStringPair("Bitrate", QString::number(this->bit_rate)));
-  info.append(QStringPair("Packet size", QString::number(this->packet_size)));
-  info.append(QStringPair("Max delay", QString::number(this->max_delay)));
-  info.append(QStringPair("Number programs", QString::number(this->nb_programs)));
-  info.append(QStringPair("Number chapters", QString::number(this->nb_chapters)));
+    info.push_back({"Bitrate", std::to_string(formatContext.bit_rate)});
+  info.push_back({"Packet size", std::to_string(formatContext.packet_size)});
+  info.push_back({"Max delay", std::to_string(formatContext.max_delay)});
+  info.push_back({"Number programs", std::to_string(formatContext.nb_programs)});
+  info.push_back({"Number chapters", std::to_string(formatContext.nb_chapters)});
 
   return info;
 }

@@ -364,7 +364,7 @@ bool decoderFFmpeg::pushAVPacket(FFmpeg::AVPacketWrapper &pkt)
       qDebug() << meaning;
     }
 #endif
-    this->setError(QStringLiteral("Error sending packet (avcodec_send_packet)"));
+    this->setError("Error sending packet (avcodec_send_packet)");
     return false;
   }
   else
@@ -405,7 +405,7 @@ bool decoderFFmpeg::decodeFrame()
   {
     // An error occurred
     DEBUG_FFMPEG("decoderFFmpeg::decodeFrame Error reading frame.");
-    return this->setErrorB(QStringLiteral("Error recieving frame (avcodec_receive_frame)"));
+    return this->setErrorB("Error recieving frame (avcodec_receive_frame)");
   }
   else if (retRecieve == AVERROR(EAGAIN))
   {
@@ -440,21 +440,20 @@ bool decoderFFmpeg::createDecoder(FFmpeg::AVCodecIDWrapper         codecID,
 {
   // Allocate the decoder context
   if (this->videoCodec)
-    return this->setErrorB(QStringLiteral("Video codec already allocated."));
+    return this->setErrorB("Video codec already allocated.");
   this->videoCodec = this->ff.findDecoder(codecID);
   if (!this->videoCodec)
-    return this->setErrorB(QStringLiteral("Could not find a video decoder for the given codec ") +
+    return this->setErrorB("Could not find a video decoder for the given codec " +
                            codecID.getCodecName());
 
   if (this->decCtx)
-    return this->setErrorB(QStringLiteral("Decoder context already allocated."));
+    return this->setErrorB("Decoder context already allocated.");
   this->decCtx = this->ff.allocDecoder(this->videoCodec);
   if (!this->decCtx)
-    return this->setErrorB(
-        QStringLiteral("Could not allocate video decoder (avcodec_alloc_context3)"));
+    return this->setErrorB("Could not allocate video decoder (avcodec_alloc_context3)");
 
   if (codecpar && !this->ff.configureDecoder(decCtx, codecpar))
-    return this->setErrorB(QStringLiteral("Unable to configure decoder from codecpar"));
+    return this->setErrorB("Unable to configure decoder from codecpar");
 
   // Get some parameters from the decoder context
   this->frameSize = decCtx.getSize();
@@ -470,18 +469,18 @@ bool decoderFFmpeg::createDecoder(FFmpeg::AVCodecIDWrapper         codecID,
   FFmpeg::AVDictionaryWrapper opts;
   int                         ret = this->ff.dictSet(opts, "flags2", "+export_mvs", 0);
   if (ret < 0)
-    return this->setErrorB(
-        QStringLiteral("Could not request motion vector retrieval. Return code %1").arg(ret));
+    return this->setErrorB("Could not request motion vector retrieval. Return code" +
+                           std::to_string(ret));
 
   // Open codec
   ret = this->ff.avcodecOpen2(decCtx, videoCodec, opts);
   if (ret < 0)
-    return this->setErrorB(
-        QStringLiteral("Could not open the video codec (avcodec_open2). Return code %1.").arg(ret));
+    return this->setErrorB("Could not open the video codec (avcodec_open2). Return code " +
+                           std::to_string(ret));
 
   this->frame = ff.allocateFrame();
   if (!this->frame)
-    return this->setErrorB(QStringLiteral("Could not allocate frame (av_frame_alloc)."));
+    return this->setErrorB("Could not allocate frame (av_frame_alloc).");
 
   return true;
 }

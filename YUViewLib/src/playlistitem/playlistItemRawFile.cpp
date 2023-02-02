@@ -60,9 +60,7 @@ playlistItemRawFile::playlistItemRawFile(const QString &rawFilePath,
   this->prop.isFileSource          = true;
   this->prop.propertiesWidgetTitle = "Raw File Properties";
 
-  this->dataSource.openFile(rawFilePath);
-
-  if (!this->dataSource.isOk())
+  if (!this->dataSource.openFile(rawFilePath))
   {
     // Opening the file failed.
     this->setError("Error opening the input file.");
@@ -148,7 +146,7 @@ playlistItemRawFile::playlistItemRawFile(const QString &rawFilePath,
 
 void playlistItemRawFile::updateStartEndRange()
 {
-  if (!this->dataSource.isOk() || !this->video->isFormatValid())
+  if (!this->dataSource.isOpen() || !this->video->isFormatValid())
   {
     this->prop.startEndRange = indexRange(-1, -1);
     return;
@@ -184,7 +182,7 @@ InfoData playlistItemRawFile::getInfo() const
   info.items.append(
       InfoItem("Bytes per Frame", QString("%1").arg(this->video->getBytesPerFrame())));
 
-  if (this->dataSource.isOk() && this->video->isFormatValid() && !this->isY4MFile)
+  if (this->dataSource.isOpen() && this->video->isFormatValid() && !this->isY4MFile)
   {
     // Check if the size of the file and the number of bytes per frame can be divided
     // without any remainder. If not, then there is probably something wrong with the
@@ -566,10 +564,7 @@ void playlistItemRawFile::getSupportedFileExtensions(QStringList &allExtensions,
 
 void playlistItemRawFile::reloadItemSource()
 {
-  // Reopen the file
-  this->dataSource.openFile(this->properties().name);
-  if (!this->dataSource.isOk())
-    // Opening the file failed.
+  if (!this->dataSource.openFile(this->properties().name))
     return;
 
   this->video->invalidateAllBuffers();

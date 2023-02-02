@@ -63,19 +63,16 @@ bool FileSource::openFile(const QString &filePath)
   if (!this->fileInfo.exists() || !this->fileInfo.isFile())
     return false;
 
-  if (this->isFileOpened && this->srcFile.isOpen())
+  if (this->srcFile.isOpen())
     this->srcFile.close();
 
-  // open file for reading
   this->srcFile.setFileName(filePath);
-  this->isFileOpened = this->srcFile.open(QIODevice::ReadOnly);
-  if (!this->isFileOpened)
+  this->srcFile.open(QIODevice::ReadOnly);
+  if (!this->srcFile.isOpen())
     return false;
 
-  // Save the full file path
   this->fullFilePath = filePath;
 
-  // Install a watcher for the file (if file watching is active)
   this->updateFileWatchSetting();
   this->fileChanged = false;
 
@@ -100,7 +97,7 @@ void FileSource::readBytes(byteArrayAligned &targetBuffer, int64_t startPos, int
 // Resize the target array if necessary and read the given number of bytes to the data array
 int64_t FileSource::readBytes(QByteArray &targetBuffer, int64_t startPos, int64_t nrBytes)
 {
-  if (!this->isOk())
+  if (!this->srcFile.isOpen())
     return 0;
 
   if (targetBuffer.size() < nrBytes)
@@ -120,7 +117,7 @@ QList<InfoItem> FileSource::getFileInfoList() const
 {
   QList<InfoItem> infoList;
 
-  if (!this->isFileOpened)
+  if (!this->srcFile.isOpen())
     return infoList;
 
   infoList.append(InfoItem("File Path", this->fileInfo.absoluteFilePath()));
@@ -137,14 +134,19 @@ QList<InfoItem> FileSource::getFileInfoList() const
   return infoList;
 }
 
-QString FileSource::getAbsoluteFilePath() const
+int64_t FileSource::getFileSize() const
 {
-  return this->isFileOpened ? this->fileInfo.absoluteFilePath() : QString();
+  return !this->srcFile.isOpen() ? -1 : this->fileInfo.size();
 }
 
-FileSource::fileFormat_t FileSource::guessFormatFromFilename() const
+QString FileSource::getAbsoluteFilePath() const
 {
-  FileSource::fileFormat_t format;
+  return this->srcFile.isOpen() ? this->fileInfo.absoluteFilePath() : QString();
+}
+
+FileSource::FileFormat FileSource::guessFormatFromFilename() const
+{
+  FileSource::FileFormat format;
 
   // We are going to check two strings (one after the other) for indicators on the frames size, fps
   // and bit depth. 1: The file name, 2: The folder name that the file is contained in.
@@ -332,6 +334,11 @@ bool FileSource::getAndResetFileChangedFlag()
   return b;
 }
 
+bool FileSource::atEnd() const
+{
+  return !this->srcFile.isOpen() ? true : this->srcFile.atEnd();
+}
+
 void FileSource::updateFileWatchSetting()
 {
   // Install a file watcher if file watching is active in the settings.
@@ -345,7 +352,7 @@ void FileSource::updateFileWatchSetting()
 
 void FileSource::clearFileCache()
 {
-  if (!this->isFileOpened)
+  if (!this->srcFile.isOpen())
     return;
 
 #ifdef Q_OS_WIN

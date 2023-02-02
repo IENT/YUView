@@ -37,8 +37,8 @@
 #include <ffmpeg/AVCodecParametersWrapper.h>
 #include <ffmpeg/AVPacketWrapper.h>
 #include <ffmpeg/FFmpegVersionHandler.h>
-#include <video/videoHandlerYUV.h>
 #include <video/videoHandlerRGB.h>
+#include <video/videoHandlerYUV.h>
 
 /* This class can use the ffmpeg libraries (libavcodec) to read from any packetized file.
  */
@@ -60,17 +60,17 @@ public:
 
   // Is the file at the end?
   // TODO: How do we do this?
-  bool atEnd() const { return endOfFile; }
+  bool atEnd() const { return this->endOfFile; }
 
   // Return the name, filename and full path of every library loaded
-  QStringList getLibraryPaths() const { return ff.getLibPaths(); }
+  StringVec getLibraryPaths() const { return this->ff.getLibPaths(); }
 
   // Get properties of the bitstream
-  double                     getFramerate() const { return frameRate; }
-  Size                       getSequenceSizeSamples() const { return frameSize; }
-  video::RawFormat           getRawFormat() const { return rawFormat; }
-  video::yuv::PixelFormatYUV getPixelFormatYUV() const { return pixelFormat_yuv; }
-  video::rgb::PixelFormatRGB getPixelFormatRGB() const { return pixelFormat_rgb; }
+  double                     getFramerate() const { return this->frameRate; }
+  Size                       getSequenceSizeSamples() const { return this->frameSize; }
+  video::RawFormat           getRawFormat() const { return this->rawFormat; }
+  video::yuv::PixelFormatYUV getPixelFormatYUV() const { return this->pixelFormat_yuv; }
+  video::rgb::PixelFormatRGB getPixelFormatRGB() const { return this->pixelFormat_rgb; }
 
   /* Get data from the file source. You can either retrive full AVPackets or single units
    * from the bitstream using these functions. The important thing is to not mix calls to these
@@ -106,26 +106,26 @@ public:
 
   FFmpeg::AVCodecIDWrapper getVideoStreamCodecID()
   {
-    return ff.getCodecIDWrapper(video_stream.getCodecID());
+    return this->ff.getCodecIDWrapper(video_stream.getCodecID());
   }
   FFmpeg::AVCodecParametersWrapper getVideoCodecPar() { return video_stream.getCodecpar(); }
 
   // Get more general information about the streams
   unsigned int getNumberOfStreams() { return this->formatCtx ? this->formatCtx.getNbStreams() : 0; }
-  int          getVideoStreamIndex() { return video_stream.getIndex(); }
-  QList<QStringPairList>    getFileInfoForAllStreams();
-  QList<FFmpeg::AVRational> getTimeBaseAllStreams();
-  QList<QString>            getShortStreamDescriptionAllStreams();
+  int          getVideoStreamIndex() { return this->video_stream.getIndex(); }
+
+  [[nodiscard]] StreamsInfo   getStreamsInfo() const;
+  [[nodiscard]] StringPairVec getGeneralInfo() const;
 
   // Look through the keyframes and find the closest one before (or equal)
   // the given frameIdx where we can start decoding
   // Return: POC and frame index
   std::pair<int64_t, size_t> getClosestSeekableFrameBefore(int frameIdx) const;
 
-  QStringList getFFmpegLoadingLog() const { return ff.getLog(); }
+  StringVec getFFmpegLoadingLog() const { return this->ff.getLog(); }
 
 private slots:
-  void fileSystemWatcherFileChanged(const QString &) { fileChanged = true; }
+  void fileSystemWatcherFileChanged(const QString &) { this->fileChanged = true; }
 
 protected:
   FFmpeg::FFmpegVersionHandler   ff; //< Access to the libraries independent of their version
@@ -138,7 +138,7 @@ protected:
   // Seek the stream to the given pts value, flush the decoder and load the first packet so
   // that we are ready to start decoding from this pts.
   int64_t                 duration{-1}; //< duration / AV_TIME_BASE is the duration in seconds
-  FFmpeg::AVRational      timeBase{0, 0};
+  Rational                timeBase{};
   FFmpeg::AVStreamWrapper video_stream;
   double                  frameRate{-1};
   Size                    frameSize;

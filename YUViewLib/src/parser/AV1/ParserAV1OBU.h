@@ -32,37 +32,40 @@
 
 #pragma once
 
-#include <common/Typedef.h>
+#include "GlobalDecodingValues.h"
+#include "parser/Base.h"
+#include "sequence_header_obu.h"
+#include "video/videoHandlerYUV.h"
 
-#include <optional>
-
-#include "obu_header.h"
-
-namespace parser::av1
+namespace parser
 {
 
-class ObuPayload
+class ParserAV1OBU : public Base
 {
+  Q_OBJECT
+
 public:
-  ObuPayload()          = default;
-  virtual ~ObuPayload() = default;
-};
+  ParserAV1OBU(QObject *parent = nullptr);
+  ~ParserAV1OBU() {}
 
-class OpenBitstreamUnit
-{
-public:
-  OpenBitstreamUnit(int obu_idx, std::optional<FileStartEndPos> filePosStartEnd) : obu_idx(obu_idx)
+  ParseResult parseAndAddOBU(int                            obuID,
+                             const ByteVector &             data,
+                             std::optional<FileStartEndPos> obuFileStartEndPos = {},
+                             std::shared_ptr<TreeItem>      parent             = nullptr);
+
+  bool runParsingOfFile(std::string) override
   {
-    if (filePosStartEnd)
-      this->filePosStartEnd = *filePosStartEnd;
+    assert(false);
+    return false;
   }
 
-  obu_header                  header;
-  std::shared_ptr<ObuPayload> payload;
+  [[nodiscard]] StreamsInfo   getStreamsInfo() const override { return {}; }
+  [[nodiscard]] StringPairVec getGeneralInfo() const override { return {}; }
+  [[nodiscard]] int           getNrStreams() const override { return 1; }
 
-  // Pointer to the first byte of the start code of the NAL unit
-  FileStartEndPos filePosStartEnd;
-  int             obu_idx{};
+protected:
+  av1::GlobalDecodingValues                 decValues;
+  std::shared_ptr<av1::sequence_header_obu> active_sequence_header;
 };
 
-} // namespace parser::av1
+} // namespace parser

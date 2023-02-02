@@ -211,19 +211,20 @@ void AVFrameWrapper::update()
       this->data[i]     = p->data[i];
       this->linesize[i] = p->linesize[i];
     }
-    this->width                  = p->width;
-    this->height                 = p->height;
-    this->nb_samples             = p->nb_samples;
-    this->format                 = p->format;
-    this->key_frame              = p->key_frame;
-    this->pict_type              = p->pict_type;
-    this->sample_aspect_ratio    = p->sample_aspect_ratio;
-    this->pts                    = p->pts;
-    this->pkt_pts                = p->pkt_pts;
-    this->pkt_dts                = p->pkt_dts;
-    this->coded_picture_number   = p->coded_picture_number;
-    this->display_picture_number = p->display_picture_number;
-    this->quality                = p->quality;
+    this->width                   = p->width;
+    this->height                  = p->height;
+    this->nb_samples              = p->nb_samples;
+    this->format                  = p->format;
+    this->key_frame               = p->key_frame;
+    this->pict_type               = p->pict_type;
+    this->sample_aspect_ratio.num = p->sample_aspect_ratio.num;
+    this->sample_aspect_ratio.den = p->sample_aspect_ratio.den;
+    this->pts                     = p->pts;
+    this->pkt_pts                 = p->pkt_pts;
+    this->pkt_dts                 = p->pkt_dts;
+    this->coded_picture_number    = p->coded_picture_number;
+    this->display_picture_number  = p->display_picture_number;
+    this->quality                 = p->quality;
   }
   else if (this->libVer.avutil.major == 55 || //
            this->libVer.avutil.major == 56)
@@ -234,19 +235,20 @@ void AVFrameWrapper::update()
       this->data[i]     = p->data[i];
       this->linesize[i] = p->linesize[i];
     }
-    this->width                  = p->width;
-    this->height                 = p->height;
-    this->nb_samples             = p->nb_samples;
-    this->format                 = p->format;
-    this->key_frame              = p->key_frame;
-    this->pict_type              = p->pict_type;
-    this->sample_aspect_ratio    = p->sample_aspect_ratio;
-    this->pts                    = p->pts;
-    this->pkt_pts                = p->pkt_pts;
-    this->pkt_dts                = p->pkt_dts;
-    this->coded_picture_number   = p->coded_picture_number;
-    this->display_picture_number = p->display_picture_number;
-    this->quality                = p->quality;
+    this->width                   = p->width;
+    this->height                  = p->height;
+    this->nb_samples              = p->nb_samples;
+    this->format                  = p->format;
+    this->key_frame               = p->key_frame;
+    this->pict_type               = p->pict_type;
+    this->sample_aspect_ratio.num = p->sample_aspect_ratio.num;
+    this->sample_aspect_ratio.den = p->sample_aspect_ratio.den;
+    this->pts                     = p->pts;
+    this->pkt_pts                 = p->pkt_pts;
+    this->pkt_dts                 = p->pkt_dts;
+    this->coded_picture_number    = p->coded_picture_number;
+    this->display_picture_number  = p->display_picture_number;
+    this->quality                 = p->quality;
   }
   else if (this->libVer.avutil.major == 57)
   {
@@ -256,20 +258,21 @@ void AVFrameWrapper::update()
       this->data[i]     = p->data[i];
       this->linesize[i] = p->linesize[i];
     }
-    this->width                  = p->width;
-    this->height                 = p->height;
-    this->nb_samples             = p->nb_samples;
-    this->format                 = p->format;
-    this->key_frame              = p->key_frame;
-    this->pict_type              = p->pict_type;
-    this->sample_aspect_ratio    = p->sample_aspect_ratio;
-    this->pts                    = p->pts;
-    this->pkt_pts                = -1;
-    this->pkt_dts                = p->pkt_dts;
-    this->coded_picture_number   = p->coded_picture_number;
-    this->display_picture_number = p->display_picture_number;
-    this->quality                = p->quality;
-    this->metadata               = p->metadata;
+    this->width                   = p->width;
+    this->height                  = p->height;
+    this->nb_samples              = p->nb_samples;
+    this->format                  = p->format;
+    this->key_frame               = p->key_frame;
+    this->pict_type               = p->pict_type;
+    this->sample_aspect_ratio.num = p->sample_aspect_ratio.num;
+    this->sample_aspect_ratio.den = p->sample_aspect_ratio.den;
+    this->pts                     = p->pts;
+    this->pkt_pts                 = -1;
+    this->pkt_dts                 = p->pkt_dts;
+    this->coded_picture_number    = p->coded_picture_number;
+    this->display_picture_number  = p->display_picture_number;
+    this->quality                 = p->quality;
+    this->metadata                = p->metadata;
   }
   else
     throw std::runtime_error("Invalid library version");

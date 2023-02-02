@@ -99,11 +99,11 @@ public:
 
   // Does the loaded library support the extraction of prediction/residual data?
   // These are the default implementations. Overload if a decoder can support more signals.
-  virtual int         nrSignalsSupported() const { return 1; }
-  virtual QStringList getSignalNames() const { return QStringList() << "Reconstruction"; }
-  virtual bool        isSignalDifference(int signalID) const;
-  virtual void        setDecodeSignal(int signalID, bool &decoderResetNeeded);
-  int                 getDecodeSignal() const { return this->decodeSignal; }
+  virtual int       nrSignalsSupported() const { return 1; }
+  virtual StringVec getSignalNames() const { return {"Reconstruction"}; }
+  virtual bool      isSignalDifference(int signalID) const;
+  virtual void      setDecodeSignal(int signalID, bool &decoderResetNeeded);
+  int               getDecodeSignal() const { return this->decodeSignal; }
 
   // -- The decoding interface
   // If the current frame is valid, the current frame can be retrieved using getRawFrameData.
@@ -124,24 +124,24 @@ public:
 
   // Get the statistics values for the current frame. In order to enable statistics retrievel,
   // activate it, reset the decoder and decode to the current frame again.
-  bool statisticsSupported() const { return internalsSupported; }
-  bool statisticsEnabled() const { return statisticsData != nullptr; }
+  bool statisticsSupported() const { return this->internalsSupported; }
+  bool statisticsEnabled() const { return this->statisticsData != nullptr; }
   void enableStatisticsRetrieval(stats::StatisticsData *s) { this->statisticsData = s; }
   stats::FrameTypeData getCurrentFrameStatsForType(int typeIdx) const;
   virtual void         fillStatisticList(stats::StatisticsData &) const {};
 
   // Error handling
-  bool    errorInDecoder() const { return decoderState == DecoderState::Error; }
-  QString decoderErrorString() const { return errorString; }
+  bool        errorInDecoder() const { return this->decoderState == DecoderState::Error; }
+  std::string decoderErrorString() const { return this->errorString; }
 
   // Get the name, filename and full path to the decoder library(s) that is/are being used.
   // The length of the list must be a multiple of 3 (name, libName, fullPath)
-  virtual QStringList getLibraryPaths() const = 0;
+  virtual StringVec getLibraryPaths() const = 0;
 
   // Get the decoder name (everyting that is needed to identify the decoder library) and the codec
   // that is being decoded. If needed, also version information (like HM 16.4)
-  virtual QString getDecoderName() const = 0;
-  virtual QString getCodecName() const   = 0;
+  virtual std::string getDecoderName() const = 0;
+  virtual std::string getCodecName() const   = 0;
 
 protected:
   DecoderState decoderState{DecoderState::NeedsMoreData};
@@ -157,18 +157,10 @@ protected:
   video::yuv::PixelFormatYUV formatYUV{};
   video::rgb::PixelFormatRGB formatRGB{};
 
-  // Error handling
-  void setError(const QString &reason)
-  {
-    decoderState = DecoderState::Error;
-    errorString  = reason;
-  }
-  bool setErrorB(const QString &reason)
-  {
-    setError(reason);
-    return false;
-  }
-  QString errorString{};
+  void setError(const std::string &reason);
+  bool setErrorB(const std::string &reason);
+
+  std::string errorString{};
 
   // If set, fill it (if possible). The playlistItem has ownership of this.
   stats::StatisticsData *statisticsData{};
@@ -182,20 +174,20 @@ public:
   decoderBaseSingleLib(bool cachingDecoder = false) : decoderBase(cachingDecoder){};
   virtual ~decoderBaseSingleLib(){};
 
-  QStringList getLibraryPaths() const override
+  StringVec getLibraryPaths() const override
   {
-    return QStringList() << getDecoderName() << library.fileName() << library.fileName();
+    return {this->getDecoderName(), this->library.fileName().toStdString()};
   }
 
 protected:
   virtual void resolveLibraryFunctionPointers() = 0;
-  void         loadDecoderLibrary(QString specificLibrary);
+  void         loadDecoderLibrary(const std::string &specificLibrary);
 
   // Get all possible names of the library that we will load
-  virtual QStringList getLibraryNames() const = 0;
+  virtual StringVec getLibraryNames() const = 0;
 
-  QLibrary library;
-  QString  libraryPath{};
+  QLibrary    library;
+  std::string libraryPath{};
 };
 
 } // namespace decoder

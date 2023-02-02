@@ -1,6 +1,6 @@
 /*  This file is part of YUView - The YUV player with advanced analytics toolset
  *   <https://github.com/IENT/YUView>
- *   Copyright (C) 2015  Institut f�r Nachrichtentechnik, RWTH Aachen University, GERMANY
+ *   Copyright (C) 2015  Institut für Nachrichtentechnik, RWTH Aachen University, GERMANY
  *
  *   This program is free software; you can redistribute it and/or modify
  *   it under the terms of the GNU General Public License as published by
@@ -32,41 +32,27 @@
 
 #pragma once
 
-#include "GlobalDecodingValues.h"
-#include "parser/Base.h"
-#include "sequence_header_obu.h"
-#include "video/videoHandlerYUV.h"
+#include <common/Typedef.h>
+#include <filesource/FileSource.h>
 
-namespace parser
-{
-
-class ParserAV1OBU : public Base
+/*
+ */
+class FileSourceOBUFile : public FileSource
 {
   Q_OBJECT
 
 public:
-  ParserAV1OBU(QObject *parent = nullptr);
-  ~ParserAV1OBU() {}
+  FileSourceOBUFile() = default;
+  FileSourceOBUFile(const QString &filePath) : FileSource() { this->openFile(filePath); }
+  ~FileSourceOBUFile() = default;
 
-  std::pair<size_t, std::string> parseAndAddOBU(int                       obuID,
-                                                ByteVector &              data,
-                                                std::shared_ptr<TreeItem> parent,
-                                                pairUint64 obuStartEndPosFile = pairUint64(-1, -1));
+  bool openFile(const QString &filePath) override;
 
-  // So far, we only parse AV1 Obu files from the AVFormat parser so we don't need this (yet).
-  // When parsing of raw OBU files is added, we will need this.
-  bool runParsingOfFile(QString) override
-  {
-    assert(false);
-    return false;
-  }
-  QList<QTreeWidgetItem *> getStreamInfo() override { return {}; }
-  unsigned int             getNrStreams() override { return 1; }
-  QString                  getShortStreamDescription(int) const override { return "Video"; }
+  // Get the next OBU. Also return the start and end position of the OBU in the file so
+  // you can seek to it.
+  DataAndStartEndPos getNextOBU(bool getLastDataAgain = false);
 
 protected:
-  av1::GlobalDecodingValues                 decValues;
-  std::shared_ptr<av1::sequence_header_obu> active_sequence_header;
+  // We will keep the last buffer in case the reader wants to get it again
+  QByteArray lastReturnArray;
 };
-
-} // namespace parser

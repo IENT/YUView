@@ -207,6 +207,7 @@ typedef std::pair<int, int>                 IntPair;
 typedef std::pair<unsigned, unsigned>       UIntPair;
 typedef std::pair<std::string, std::string> StringPair;
 typedef std::vector<StringPair>             StringPairVec;
+typedef std::vector<std::string>            StringVec;
 
 /// ---- Legacy types that will be replaced
 typedef QPair<QString, QString>           QStringPair;
@@ -313,6 +314,32 @@ struct Offset
   int  x{};
   int  y{};
 };
+
+struct Rational
+{
+  bool operator!=(const Rational &second) const
+  {
+    const auto a = int64_t(this->num) * int64_t(second.den);
+    const auto b = int64_t(this->den) * int64_t(second.num);
+    return a != b;
+  }
+
+  int num{};
+  int den{};
+};
+
+struct FileStartEndPos
+{
+  int64_t start{};
+  int64_t end{};
+};
+
+static std::string to_string(const FileStartEndPos &fileStartEndPos)
+{
+  std::ostringstream ss;
+  ss << "(" << fileStartEndPos.start << ", " << fileStartEndPos.end << ")";
+  return ss.str();
+}
 
 // A list of value pair lists, where every list has a string (title)
 class ValuePairListSets : public QList<QPair<QString, QStringPairList>>

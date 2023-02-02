@@ -93,10 +93,12 @@ void BitstreamAnalysisWidget::updateParserItemModel()
 
 void BitstreamAnalysisWidget::updateStreamInfo()
 {
-  this->ui.streamInfoTreeWidget->clear();
-  this->ui.streamInfoTreeWidget->addTopLevelItems(this->parser->getStreamInfo());
-  this->ui.streamInfoTreeWidget->expandAll();
+  this->setInfoFromParserInStreamInfoTreeWidget();
+  this->updateShowStreamComboBoxFromParserInfo();
+}
 
+void BitstreamAnalysisWidget::updateShowStreamComboBoxFromParserInfo()
+{
   DEBUG_ANALYSIS("BitstreamAnalysisWidget::updateStreamInfo comboBox entries "
                  << this->ui.showStreamComboBox->count() << " parser->getNrStreams "
                  << this->parser->getNrStreams());
@@ -115,13 +117,41 @@ void BitstreamAnalysisWidget::updateStreamInfo()
     {
       this->ui.showStreamComboBox->setEnabled(true);
       this->ui.showStreamComboBox->addItem("Show all streams");
-      for (unsigned i = 0; i < this->parser->getNrStreams(); i++)
+
+      for (auto &streamInfo : this->parser->getStreamsInfo())
       {
-        QString info = this->parser->getShortStreamDescription(i);
-        this->ui.showStreamComboBox->addItem(QString("Stream %1 - ").arg(i) + info);
+        auto itemText = streamInfo.streamName + " - " + streamInfo.shortInfo;
+        this->ui.showStreamComboBox->addItem(QString::fromStdString(itemText));
       }
     }
   }
+}
+
+void BitstreamAnalysisWidget::setInfoFromParserInStreamInfoTreeWidget()
+{
+  this->ui.streamInfoTreeWidget->clear();
+
+  {
+    auto generalTreeItem = new QTreeWidgetItem(this->ui.streamInfoTreeWidget, {"General"});
+    for (const auto &[itemName, itemValue] : this->parser->getGeneralInfo())
+    {
+      new QTreeWidgetItem(generalTreeItem,
+                          {QString::fromStdString(itemName), QString::fromStdString(itemValue)});
+    }
+  }
+
+  for (const auto &streamInfo : this->parser->getStreamsInfo())
+  {
+    auto streamTreeItem = new QTreeWidgetItem(this->ui.streamInfoTreeWidget,
+                                              {QString::fromStdString(streamInfo.streamName)});
+    for (const auto &[itemName, itemValue] : streamInfo.infoItems)
+    {
+      new QTreeWidgetItem(streamTreeItem,
+                          {QString::fromStdString(itemName), QString::fromStdString(itemValue)});
+    }
+  }
+
+  this->ui.streamInfoTreeWidget->expandAll();
 }
 
 void BitstreamAnalysisWidget::backgroundParsingDone(QString error)
@@ -194,7 +224,7 @@ void BitstreamAnalysisWidget::stopAndDeleteParserBlocking()
 void BitstreamAnalysisWidget::backgroundParsingFunction()
 {
   if (this->parser)
-    this->parser->runParsingOfFile(this->currentCompressedVideo->properties().name);
+    this->parser->runParsingOfFile(this->currentCompressedVideo->properties().name.toStdString());
 }
 
 void BitstreamAnalysisWidget::currentSelectedItemsChanged(playlistItem *item1, playlistItem *, bool)

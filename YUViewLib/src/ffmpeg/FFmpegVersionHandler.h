@@ -57,13 +57,13 @@ public:
   void loadFFmpegLibraries();
   bool loadingSuccessfull() const;
 
-  QStringList getLibPaths() const { return lib.getLibPaths(); }
-  QString     getLibVersionString() const;
+  StringVec   getLibPaths() const { return lib.getLibPaths(); }
+  std::string getLibVersionFormatted() const;
 
   // Only these functions can be used to get valid versions of these wrappers (they have to use
   // ffmpeg functions to retrieve the needed information)
-  AVCodecIDWrapper          getCodecIDWrapper(AVCodecID id);
-  AVCodecID                 getCodecIDFromWrapper(AVCodecIDWrapper &wrapper);
+  AVCodecIDWrapper          getCodecIDWrapper(AVCodecID id) const;
+  AVCodecID                 getCodecIDFromWrapper(AVCodecIDWrapper &wrapper) const;
   AVPixFmtDescriptorWrapper getAvPixFmtDescriptionFromAvPixelFormat(AVPixelFormat pixFmt);
   AVPixelFormat             getAVPixelFormatFromPixelFormatYUV(video::yuv::PixelFormatYUV pixFmt);
 
@@ -112,37 +112,37 @@ public:
 
   static AVPixelFormat convertYUVAVPixelFormat(video::yuv::PixelFormatYUV fmt);
   // Check if the given four files can be used to open FFmpeg.
-  static bool checkLibraryFiles(QString      avCodecLib,
-                                QString      avFormatLib,
-                                QString      avUtilLib,
-                                QString      swResampleLib,
-                                QStringList &logging);
+  static bool checkLibraryFiles(const std::string &avCodecLib,
+                                const std::string &avFormatLib,
+                                const std::string &avUtilLib,
+                                const std::string &swResampleLib,
+                                StringVec &        logging);
 
   // Logging. By default we set the logging level of ffmpeg to AV_LOG_ERROR (Log errors and
   // everything worse)
-  static QStringList getFFmpegLog() { return logListFFmpeg; }
-  void               enableLoggingWarning();
+  static StringVec getFFmpegLog() { return logListFFmpeg; }
+  void             enableLoggingWarning();
 
-  QStringList getLog() const { return logList; }
+  StringVec getLog() const { return this->logList; }
 
 private:
   // Try to load the FFmpeg libraries from the given path.
   // Try the system paths if no path is provided. This function can be called multiple times.
-  bool loadFFmpegLibraryInPath(QString path);
+  bool loadFFmpegLibraryInPath(const std::string &path);
   // Try to load the four specific library files
-  bool loadFFMpegLibrarySpecific(QString avFormatLib,
-                                 QString avCodecLib,
-                                 QString avUtilLib,
-                                 QString swResampleLib);
+  bool loadFFMpegLibrarySpecific(const std::string &avFormatLib,
+                                 const std::string &avCodecLib,
+                                 const std::string &avUtilLib,
+                                 const std::string &swResampleLib);
   bool librariesLoaded{};
 
   // Log what is happening when loading the libraries / opening files.
-  void        log(QString message) { logList.append(message); }
-  QStringList logList{};
+  void      log(std::string message) { this->logList.push_back(message); }
+  StringVec logList{};
 
   // FFmpeg has a callback where it loggs stuff. This log goes here.
-  static QStringList logListFFmpeg;
-  static void        avLogCallback(void *ptr, int level, const char *fmt, va_list vargs);
+  static StringVec logListFFmpeg;
+  static void      avLogCallback(void *ptr, int level, const char *fmt, va_list vargs);
 };
 
 } // namespace FFmpeg

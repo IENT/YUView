@@ -47,15 +47,15 @@ public:
   AVStreamWrapper() {}
   AVStreamWrapper(AVStream *src_str, LibraryVersion v);
 
-  explicit        operator bool() const { return this->stream != nullptr; };
-  QStringPairList getInfoText(AVCodecIDWrapper &codecIdWrapper);
+  explicit      operator bool() const { return this->stream != nullptr; };
+  StringPairVec getInfoText(const AVCodecIDWrapper &codecIdWrapper) const;
 
   AVMediaType              getCodecType();
-  QString                  getCodecTypeName();
+  std::string              getCodecTypeName();
   AVCodecID                getCodecID();
   AVCodecContextWrapper &  getCodec();
-  AVRational               getAvgFrameRate();
-  AVRational               getTimeBase();
+  Rational                 getAvgFrameRate();
+  Rational                 getTimeBase();
   Size                     getFrameSize();
   AVColorSpace             getColorspace();
   AVPixelFormat            getPixelFormat();
@@ -70,7 +70,7 @@ private:
   int                   index{};
   int                   id{};
   AVCodecContextWrapper codec{};
-  AVRational            time_base{};
+  Rational              time_base{};
   int64_t               start_time{};
   int64_t               duration{};
   int64_t               nb_frames{};
@@ -78,10 +78,10 @@ private:
   enum AVDiscard        discard
   {
   };
-  AVRational sample_aspect_ratio{};
-  AVRational avg_frame_rate{};
-  int        nb_side_data{};
-  int        event_flags{};
+  Rational sample_aspect_ratio{};
+  Rational avg_frame_rate{};
+  int      nb_side_data{};
+  int      event_flags{};
 
   // The AVCodecParameters are present from avformat major version 57 and up.
   AVCodecParametersWrapper codecpar{};

@@ -111,7 +111,7 @@ decoderVTM::decoderVTM(int, bool cachingDecoder) : decoderBaseSingleLib(cachingD
   // Try to load the decoder library (.dll on Windows, .so on Linux, .dylib on Mac)
   QSettings settings;
   settings.beginGroup("Decoders");
-  loadDecoderLibrary(settings.value("libVTMFile", "").toString());
+  loadDecoderLibrary(settings.value("libVTMFile", "").toString().toStdString());
   settings.endGroup();
 
   if (decoderState != DecoderState::Error)
@@ -124,15 +124,14 @@ decoderVTM::~decoderVTM()
     this->lib.libVTMDec_free_decoder(decoder);
 }
 
-QStringList decoderVTM::getLibraryNames() const
+StringVec decoderVTM::getLibraryNames() const
 {
   // If the file name is not set explicitly, QLibrary will try to open the .so file first.
   // Since this has been compiled for linux it will fail and not even try to open the .dylib.
   // On windows and linux ommitting the extension works
-  QStringList names =
-      is_Q_OS_MAC ? QStringList() << "libVTMDecoder.dylib" : QStringList() << "libVTMDecoder";
-
-  return names;
+  if (is_Q_OS_MAC)
+    return {"libVTMDecoder.dylib"};
+  return {"libVTMDecoder"};
 }
 
 void decoderVTM::resolveLibraryFunctionPointers()
@@ -190,12 +189,12 @@ void decoderVTM::resolveLibraryFunctionPointers()
 
 template <typename T> T decoderVTM::resolve(T &fun, const char *symbol, bool optional)
 {
-  QFunctionPointer ptr = this->library.resolve(symbol);
+  auto ptr = this->library.resolve(symbol);
   if (!ptr)
   {
     if (!optional)
-      setError(QStringLiteral("Error loading the VTM decoder library: Can't find function %1.")
-                   .arg(symbol));
+      this->setError("Error loading the VTM decoder library: Can't find function " +
+                     std::string(symbol));
     return nullptr;
   }
 
@@ -322,8 +321,8 @@ bool decoderVTM::pushData(QByteArray &data)
   auto err                 = this->lib.libVTMDec_push_nal_unit(
       decoder, data, data.length(), endOfFile, bNewPicture, checkOutputPictures);
   if (err != LIBVTMDEC_OK)
-    return setErrorB(QString("Error pushing data to decoder (libVTMDec_push_nal_unit) length %1")
-                         .arg(data.length()));
+    return this->setErrorB("Error pushing data to decoder (libVTMDec_push_nal_unit) length " +
+                           std::to_string(data.length()));
   DEBUG_DECVTM("decoderVTM::pushData pushed NAL length %d%s%s",
                data.length(),
                bNewPicture ? " bNewPicture" : "",
@@ -608,17 +607,17 @@ void decoderVTM::fillStatisticList(stats::StatisticsData &) const
   //}
 }
 
-QString decoderVTM::getDecoderName() const
+std::string decoderVTM::getDecoderName() const
 {
   return (decoderState == DecoderState::Error) ? "VTM" : this->lib.libVTMDec_get_version();
 }
 
-bool decoderVTM::checkLibraryFile(QString libFilePath, QString &error)
+bool decoderVTM::checkLibraryFile(const std::string &libFilePath, std::string &error)
 {
   decoderVTM testDecoder;
 
   // Try to load the library file
-  testDecoder.library.setFileName(libFilePath);
+  testDecoder.library.setFileName(QString::fromStdString(libFilePath));
   if (!testDecoder.library.load())
   {
     error = "Error opening QLibrary.";

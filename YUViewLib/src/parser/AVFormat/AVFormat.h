@@ -32,11 +32,11 @@
 
 #pragma once
 
-#include "../AV1/AV1OBU.h"
-#include "../AnnexB.h"
-#include "../Base.h"
 #include <ffmpeg/FFmpegVersionHandler.h>
 #include <filesource/FileSourceFFmpegFile.h>
+#include <parser/AV1/ParserAV1OBU.h>
+#include <parser/AnnexB.h>
+#include <parser/Base.h>
 
 #include <queue>
 
@@ -55,20 +55,17 @@ public:
   AVFormat(QObject *parent = nullptr) : Base(parent) {}
   ~AVFormat() {}
 
-  QList<QTreeWidgetItem *> getStreamInfo() override;
-  unsigned int             getNrStreams() override
-  {
-    return streamInfoAllStreams.empty() ? 0 : streamInfoAllStreams.length() - 1;
-  }
-  QString getShortStreamDescription(int streamIndex) const override;
+  [[nodiscard]] StreamsInfo   getStreamsInfo() const override;
+  [[nodiscard]] StringPairVec getGeneralInfo() const override;
+  [[nodiscard]] int           getNrStreams() const override;
 
   // This function can run in a separate thread
-  bool runParsingOfFile(QString compressedFilePath) override;
+  bool runParsingOfFile(std::string compressedFilePath) override;
 
-  int getVideoStreamIndex() override { return videoStreamIndex; }
+  int getVideoStreamIndex() override { return this->videoStreamIndex; }
 
 private:
-  FFmpeg::AVCodecIDWrapper codecID;
+  FFmpeg::AVCodecIDWrapper codecID{};
 
   bool parseExtradata(ByteVector &extradata);
   void parseMetadata(const StringPairVec &metadata);
@@ -93,9 +90,8 @@ private:
 
   // When the parser is used in the bitstream analysis window, the runParsingOfFile is used and
   // we update this list while parsing the file.
-  QList<QStringPairList>    streamInfoAllStreams;
-  QList<FFmpeg::AVRational> timeBaseAllStreams;
-  QList<QString>            shortStreamInfoAllStreams;
+  StreamsInfo   streamsInfo;
+  StringPairVec generalInfo;
 
   int    videoStreamIndex{-1};
   double framerate{-1.0};

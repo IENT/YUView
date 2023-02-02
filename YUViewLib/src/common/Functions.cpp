@@ -168,6 +168,67 @@ std::string toLower(std::string str)
   return str;
 }
 
+std::string to_string(const Size &size)
+{
+  return std::to_string(size.width) + "x" + std::to_string(size.height);
+}
+
+std::string to_string(const StringVec &items, const std::string &seperator)
+{
+  std::string str;
+  auto        it = items.begin();
+  while (it != items.end())
+  {
+    if (it != items.begin())
+      str += seperator;
+    str += *it;
+    ++it;
+  }
+  return str;
+}
+
+std::string vstring(const char *format, va_list vargs)
+{
+  std::string result;
+  va_list     args_copy;
+
+  va_copy(args_copy, vargs);
+
+  int len = vsnprintf(nullptr, 0, format, vargs);
+  if (len < 0)
+  {
+    va_end(args_copy);
+    throw std::runtime_error("vsnprintf error");
+  }
+
+  if (len > 0)
+  {
+    result.resize(len);
+    vsnprintf(result.data(), len + 1, format, args_copy);
+  }
+
+  va_end(args_copy);
+
+  return result;
+}
+
+std::string formatString(std::string format, const std::initializer_list<std::string> &arguments)
+{
+  int counter = 0;
+  for (auto argument : arguments)
+  {
+    const auto toReplace  = "%" + std::to_string(counter);
+    auto       replacePos = format.find(toReplace);
+    if (replacePos == std::string::npos)
+      return format;
+
+    format.replace(replacePos, 2, argument);
+
+    ++counter;
+  }
+  return format;
+}
+
 std::optional<unsigned long> toUnsigned(const std::string &text)
 {
   try

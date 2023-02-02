@@ -31,7 +31,12 @@
  */
 
 #include "FFmpegLibraryFunctions.h"
-#include <QDir>
+
+#include <common/Functions.h>
+
+#include <filesystem>
+
+using namespace std::string_literals;
 
 namespace FFmpeg
 {
@@ -42,14 +47,14 @@ namespace
 template <typename T>
 bool resolveFunction(QLibrary &        lib,
                      std::function<T> &function,
-                     const char *      symbolName,
-                     QStringList *     logList)
+                     std::string       symbolName,
+                     StringVec *       logList)
 {
-  auto ptr = lib.resolve(symbolName);
+  auto ptr = lib.resolve(symbolName.c_str());
   if (!ptr)
   {
     if (logList)
-      logList->append(QString("Function %1 not found.").arg(symbolName));
+      logList->push_back("Function " + symbolName + " not found.");
     return false;
   }
 
@@ -59,7 +64,7 @@ bool resolveFunction(QLibrary &        lib,
 
 bool bindLibraryFunctions(QLibrary &                                 lib,
                           FFmpegLibraryFunctions::AvFormatFunctions &functions,
-                          QStringList *                              log)
+                          StringVec *                                log)
 {
   if (!resolveFunction(lib, functions.avformat_version, "avformat_version", log))
     return false;
@@ -86,7 +91,7 @@ bool bindLibraryFunctions(QLibrary &                                 lib,
 
 bool bindLibraryFunctions(QLibrary &                                lib,
                           FFmpegLibraryFunctions::AvCodecFunctions &functions,
-                          QStringList *                             log)
+                          StringVec *                               log)
 {
   if (!resolveFunction(lib, functions.avcodec_find_decoder, "avcodec_find_decoder", log))
     return false;
@@ -132,7 +137,7 @@ bool bindLibraryFunctions(QLibrary &                                lib,
 
 bool bindLibraryFunctions(QLibrary &                               lib,
                           FFmpegLibraryFunctions::AvUtilFunctions &functions,
-                          QStringList *                            log)
+                          StringVec *                              log)
 {
   if (!resolveFunction(lib, functions.avutil_version, "avutil_version", log))
     return false;
@@ -170,7 +175,7 @@ bool bindLibraryFunctions(QLibrary &                               lib,
 
 bool bindLibraryFunctions(QLibrary &                                  lib,
                           FFmpegLibraryFunctions::SwResampleFunction &functions,
-                          QStringList *                               log)
+                          StringVec *                                 log)
 {
   return resolveFunction(lib, functions.swresample_version, "swresample_version", log);
 }
@@ -182,23 +187,23 @@ FFmpegLibraryFunctions::~FFmpegLibraryFunctions()
   this->unloadAllLibraries();
 }
 
-bool FFmpegLibraryFunctions::loadFFmpegLibraryInPath(QString path, LibraryVersion &libraryVersion)
+bool FFmpegLibraryFunctions::loadFFmpegLibraryInPath(std::filesystem::path path,
+                                                     LibraryVersion &      libraryVersion)
 {
   // We will load the following libraries (in this order):
   // avutil, swresample, avcodec, avformat.
 
-  if (!path.isEmpty())
+  if (!path.empty())
   {
-    QDir givenPath(path);
-    if (!givenPath.exists())
+    if (!std::filesystem::exists(path))
     {
       this->log("The given path is invalid");
       return false;
     }
 
     // Get the absolute path
-    path = givenPath.absolutePath() + "/";
-    this->log("Absolute path " + path);
+    path = std::filesystem::absolute(path);
+    this->log("Absolute path " + path.string());
   }
 
   // The ffmpeg libraries are named using a major version number. E.g: avutil-55.dll on windows.
@@ -213,7 +218,7 @@ bool FFmpegLibraryFunctions::loadFFmpegLibraryInPath(QString path, LibraryVersio
     this->unloadAllLibraries();
 
     // This is how we the library name is constructed per platform
-    QString constructLibName;
+    std::string constructLibName;
     if (is_Q_OS_WIN)
       constructLibName = "%1-%2";
     if (is_Q_OS_LINUX && i == 0)
@@ -223,14 +228,14 @@ bool FFmpegLibraryFunctions::loadFFmpegLibraryInPath(QString path, LibraryVersio
     if (is_Q_OS_MAC)
       constructLibName = "lib%1.%2.dylib";
 
-    auto loadLibrary =
-        [this, &constructLibName, &path](QLibrary &lib, QString libName, unsigned version) {
-          auto filename = constructLibName.arg(libName).arg(version);
-          lib.setFileName(path + filename);
-          auto success = lib.load();
-          this->log("Loading library " + filename + (success ? " succeded" : " failed"));
-          return success;
-        };
+    auto loadLibrary = [this, &constructLibName, &path](
+                           QLibrary &lib, std::string libName, unsigned version) {
+      auto filename = functions::formatString(constructLibName, {libName, std::to_string(version)});
+      lib.setFileName(QString::fromStdString(path.string() + filename));
+      auto success = lib.load();
+      this->log("Loading library " + filename + (success ? " succeded" : " failed"));
+      return success;
+    };
 
     if (!loadLibrary(this->libAvutil, "avutil", libraryVersion.avutil.major))
       continue;
@@ -255,20 +260,20 @@ bool FFmpegLibraryFunctions::loadFFmpegLibraryInPath(QString path, LibraryVersio
              bindLibraryFunctions(this->libAvcodec, this->avcodec, this->logList) &&
              bindLibraryFunctions(this->libAvutil, this->avutil, this->logList) &&
              bindLibraryFunctions(this->libSwresample, this->swresample, this->logList));
-  this->log(QString("Binding functions ") + (success ? "successfull" : "failed"));
+  this->log("Binding functions "s + (success ? "successfull" : "failed"));
 
   return success;
 }
 
-bool FFmpegLibraryFunctions::loadFFMpegLibrarySpecific(QString avFormatLib,
-                                                       QString avCodecLib,
-                                                       QString avUtilLib,
-                                                       QString swResampleLib)
+bool FFmpegLibraryFunctions::loadFFMpegLibrarySpecific(std::string avFormatLib,
+                                                       std::string avCodecLib,
+                                                       std::string avUtilLib,
+                                                       std::string swResampleLib)
 {
   this->unloadAllLibraries();
 
-  auto loadLibrary = [this](QLibrary &lib, QString libPath) {
-    lib.setFileName(libPath);
+  auto loadLibrary = [this](QLibrary &lib, std::string libPath) {
+    lib.setFileName(QString::fromStdString(libPath));
     auto success = lib.load();
     this->log("Loading library " + libPath + (success ? " succeded" : " failed"));
     return success;
@@ -289,25 +294,25 @@ bool FFmpegLibraryFunctions::loadFFMpegLibrarySpecific(QString avFormatLib,
              bindLibraryFunctions(this->libAvcodec, this->avcodec, this->logList) &&
              bindLibraryFunctions(this->libAvutil, this->avutil, this->logList) &&
              bindLibraryFunctions(this->libSwresample, this->swresample, this->logList));
-  this->log(QString("Binding functions ") + (success ? "successfull" : "failed"));
+  this->log("Binding functions "s + (success ? "successfull" : "failed"));
 
   return success;
 }
 
-void FFmpegLibraryFunctions::addLibNamesToList(QString         libName,
-                                               QStringList &   l,
-                                               const QLibrary &lib) const
+void FFmpegLibraryFunctions::addLibNamesToList(StringVec &        list,
+                                               const std::string &libName,
+                                               const QLibrary &   lib) const
 {
-  l.append(libName);
+  list.push_back(libName);
   if (lib.isLoaded())
   {
-    l.append(lib.fileName());
-    l.append(lib.fileName());
+    list.push_back(lib.fileName().toStdString());
+    list.push_back(lib.fileName().toStdString());
   }
   else
   {
-    l.append("None");
-    l.append("None");
+    list.push_back("None");
+    list.push_back("None");
   }
 }
 
@@ -320,21 +325,21 @@ void FFmpegLibraryFunctions::unloadAllLibraries()
   this->libAvformat.unload();
 }
 
-QStringList FFmpegLibraryFunctions::getLibPaths() const
+StringVec FFmpegLibraryFunctions::getLibPaths() const
 {
-  QStringList libPaths;
+  StringVec libPaths;
 
-  auto addName = [&libPaths](QString name, const QLibrary &lib) {
-    libPaths.append(name);
+  auto addName = [&libPaths](std::string name, const QLibrary &lib) {
+    libPaths.push_back(name);
     if (lib.isLoaded())
     {
-      libPaths.append(lib.fileName());
-      libPaths.append(lib.fileName());
+      libPaths.push_back(lib.fileName().toStdString());
+      libPaths.push_back(lib.fileName().toStdString());
     }
     else
     {
-      libPaths.append("None");
-      libPaths.append("None");
+      libPaths.push_back("None");
+      libPaths.push_back("None");
     }
   };
 
@@ -346,10 +351,10 @@ QStringList FFmpegLibraryFunctions::getLibPaths() const
   return libPaths;
 }
 
-void FFmpegLibraryFunctions::log(QString message)
+void FFmpegLibraryFunctions::log(std::string message)
 {
   if (this->logList)
-    this->logList->append(message);
+    this->logList->push_back(message);
 }
 
 } // namespace FFmpeg

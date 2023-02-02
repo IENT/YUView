@@ -67,32 +67,9 @@ public:
   // Clear all knowledge about the bitstream.
   void clearData();
 
-  QList<QTreeWidgetItem *> getStreamInfo() override { return stream_info.getStreamInfo(); }
-  unsigned int             getNrStreams() override { return 1; }
-  QString                  getShortStreamDescription(int streamIndex) const override;
-
-  /* Parse the NAL unit and what it contains
-   *
-   * It also adds the unit to the nalUnitList (if it is a parameter set or an RA point).
-   * When there are no more NAL units in the file (the file ends), call this function one last time
-   * with empty data and a nalID of -1. \nalID A counter (ID) of the nal \data The raw data of the
-   * NAL. May include the start code or not. \bitrateEntry Pass the bitrate entry data into the
-   * function that may already be known. E.g. the ffmpeg parser already decodes the DTS/PTS values
-   * from the container. \parent The tree item of the parent where the items will be appended.
-   * \nalStartEndPosFile The position of the first and last byte of the NAL.
-   */
-  struct ParseResult
-  {
-    ParseResult() = default;
-    bool                                          success{false};
-    std::optional<std::string>                    nalTypeName;
-    std::optional<BitratePlotModel::BitrateEntry> bitrateEntry;
-  };
-  virtual ParseResult parseAndAddNALUnit(int                                           nalID,
-                                         const ByteVector &                            data,
-                                         std::optional<BitratePlotModel::BitrateEntry> bitrateEntry,
-                                         std::optional<pairUint64> nalStartEndPosFile = {},
-                                         std::shared_ptr<TreeItem> parent = nullptr) = 0;
+  [[nodiscard]] StreamsInfo   getStreamsInfo() const override;
+  [[nodiscard]] StringPairVec getGeneralInfo() const override;
+  [[nodiscard]] int           getNrStreams() const override { return 1; }
 
   // Get some format properties
   virtual double                     getFramerate() const           = 0;
@@ -126,19 +103,25 @@ public:
   virtual IntPair getProfileLevel()      = 0;
   virtual Ratio   getSampleAspectRatio() = 0;
 
-  std::optional<pairUint64> getFrameStartEndPos(FrameIndexCodingOrder idx);
+  std::optional<FileStartEndPos> getFrameStartEndPos(FrameIndexCodingOrder idx);
 
   bool parseAnnexBFile(std::unique_ptr<FileSourceAnnexBFile> &file, QWidget *mainWindow = nullptr);
 
   // Called from the bitstream analyzer. This function can run in a background process.
-  bool runParsingOfFile(QString compressedFilePath) override;
+  bool runParsingOfFile(std::string compressedFilePath) override;
+
+  virtual ParseResult parseAndAddNALUnit(int                                           unitID,
+                                         const ByteVector &                            data,
+                                         std::optional<BitratePlotModel::BitrateEntry> bitrateEntry,
+                                         std::optional<FileStartEndPos> nalStartEndPosFile = {},
+                                         std::shared_ptr<TreeItem>      parent = nullptr) = 0;
 
 protected:
   struct AnnexBFrame
   {
     AnnexBFrame() = default;
     int poc{-1}; //< The poc of this frame
-    std::optional<pairUint64>
+    std::optional<FileStartEndPos>
          fileStartEndPos;          //< The start and end position of all slice NAL units (if known)
     bool randomAccessPoint{false}; //< Can we start decoding here?
 
@@ -147,25 +130,14 @@ protected:
   };
 
   // Returns false if the POC was already present int the list
-  bool addFrameToList(int poc, std::optional<pairUint64> fileStartEndPos, bool randomAccessPoint);
+  bool
+  addFrameToList(int poc, std::optional<FileStartEndPos> fileStartEndPos, bool randomAccessPoint);
 
-  static void logNALSize(const ByteVector &        data,
-                         std::shared_ptr<TreeItem> root,
-                         std::optional<pairUint64> nalStartEndPos);
+  static void logNALSize(const ByteVector &             data,
+                         std::shared_ptr<TreeItem>      root,
+                         std::optional<FileStartEndPos> nalStartEndPos);
 
   int pocOfFirstRandomAccessFrame{-1};
-
-  // Save general information about the file here
-  struct stream_info_type
-  {
-    QList<QTreeWidgetItem *> getStreamInfo();
-
-    size_t   file_size;
-    unsigned nr_nal_units{0};
-    unsigned nr_frames{0};
-    bool     parsing{false};
-  };
-  stream_info_type stream_info;
 
   int getFramePOC(FrameIndexDisplayOrder frameIdx);
 

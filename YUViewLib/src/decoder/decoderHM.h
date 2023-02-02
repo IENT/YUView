@@ -97,10 +97,10 @@ public:
   bool       pushData(QByteArray &data) override;
 
   // Check if the given library file is an existing libde265 decoder that we can use.
-  static bool checkLibraryFile(QString libFilePath, QString &error);
+  static bool checkLibraryFile(const std::string &libFilePath, std::string &error);
 
-  QString getDecoderName() const override;
-  QString getCodecName() const override { return "hevc"; }
+  std::string getDecoderName() const override;
+  std::string getCodecName() const override { return "hevc"; }
 
   int nrSignalsSupported() const override { return nrSignals; }
 
@@ -110,7 +110,7 @@ private:
   decoderHM(){};
 
   // Return the possible names of the HM library
-  QStringList getLibraryNames() const override;
+  StringVec getLibraryNames() const override;
 
   // Try to resolve all the required function pointers from the library
   void resolveLibraryFunctionPointers() override;

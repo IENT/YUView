@@ -98,7 +98,7 @@ decoderLibde265::decoderLibde265(int signalID, bool cachingDecoder)
 
   QSettings settings;
   settings.beginGroup("Decoders");
-  this->loadDecoderLibrary(settings.value("libde265File", "").toString());
+  this->loadDecoderLibrary(settings.value("libde265File", "").toString().toStdString());
   settings.endGroup();
 
   bool resetDecoder;
@@ -236,8 +236,8 @@ template <typename T> T decoderLibde265::resolve(T &fun, const char *symbol, boo
   if (!ptr)
   {
     if (!optional)
-      setError(QStringLiteral("Error loading the libde265 library: Can't find function %1.")
-                   .arg(symbol));
+      this->setError("Error loading the libde265 library: Can't find function " +
+                     std::string(symbol));
     return nullptr;
   }
 
@@ -445,7 +445,7 @@ bool decoderLibde265::pushData(QByteArray &data)
                    err != DE265_OK ? this->lib.de265_get_error_text(err) : "");
     if (err != DE265_OK)
       return setErrorB("Error pushing data to decoder (de265_push_NAL): " +
-                       QString(this->lib.de265_get_error_text(err)));
+                       std::string(this->lib.de265_get_error_text(err)));
   }
   else
   {
@@ -991,12 +991,12 @@ void decoderLibde265::fillStatisticList(stats::StatisticsData &statisticsData) c
   statisticsData.addStatType(transformDepth);
 }
 
-bool decoderLibde265::checkLibraryFile(QString libFilePath, QString &error)
+bool decoderLibde265::checkLibraryFile(const std::string &libFilePath, std::string &error)
 {
   decoderLibde265 testDecoder;
 
   // Try to load the library file
-  testDecoder.library.setFileName(libFilePath);
+  testDecoder.library.setFileName(QString::fromStdString(libFilePath));
   if (!testDecoder.library.load())
   {
     error = "Error opening QLibrary.";
@@ -1010,7 +1010,7 @@ bool decoderLibde265::checkLibraryFile(QString libFilePath, QString &error)
   return testDecoder.state() != DecoderState::Error;
 }
 
-QStringList decoderLibde265::getLibraryNames() const
+StringVec decoderLibde265::getLibraryNames() const
 {
   // If the file name is not set explicitly, QLibrary will try to open
   // the libde265.so file first. Since this has been compiled for linux
@@ -1021,7 +1021,9 @@ QStringList decoderLibde265::getLibraryNames() const
                                      : QStringList() << "libde265-internals"
                                                      << "libde265";
 
-  return libNames;
+  if (is_Q_OS_MAC)
+    return {"libde265-internals.dylib", "libde265.dylib"};
+  return {"libde265-internals", "libde265"};
 }
 
 } // namespace decoder

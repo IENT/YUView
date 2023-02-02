@@ -32,25 +32,36 @@
 
 #include "FFMpegLibrariesTypes.h"
 
+#include <iomanip>
+#include <sstream>
+
 namespace FFmpeg
 {
 
-QString timestampToString(int64_t timestamp, AVRational timebase)
+std::string formatWithReadableFormat(int64_t timestamp, Rational timebase)
 {
-  auto d_seconds = (double)timestamp * timebase.num / timebase.den;
-  auto hours     = (int)(d_seconds / 60 / 60);
-  d_seconds -= hours * 60 * 60;
-  auto minutes = (int)(d_seconds / 60);
-  d_seconds -= minutes * 60;
-  auto seconds = (int)d_seconds;
-  d_seconds -= seconds;
-  auto milliseconds = (int)(d_seconds * 1000);
+  std::stringstream stream;
+  stream << timestamp << " (";
 
-  return QString("%1:%2:%3.%4")
-      .arg(hours, 2, 10, QChar('0'))
-      .arg(minutes, 2, 10, QChar('0'))
-      .arg(seconds, 2, 10, QChar('0'))
-      .arg(milliseconds, 3, 10, QChar('0'));
+  auto       remainder = static_cast<double>(timestamp) * timebase.num / timebase.den;
+  const auto hours     = static_cast<int>(remainder / 60 / 60);
+  stream << std::setw(2) << std::setfill('0') << hours << ":";
+
+  remainder -= hours * 60 * 60;
+  const auto minutes = static_cast<int>(remainder / 60);
+  stream << std::setw(2) << std::setfill('0') << minutes << ":";
+
+  remainder -= minutes * 60;
+  const auto seconds = static_cast<int>(remainder);
+  stream << std::setw(2) << std::setfill('0') << seconds << ".";
+
+  remainder -= seconds;
+  auto milliseconds = static_cast<int>(remainder * 1000);
+  stream << std::setw(3) << std::setfill('0') << milliseconds;
+
+  stream << ")";
+
+  return stream.str();
 }
 
 } // namespace FFmpeg
