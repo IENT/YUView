@@ -93,6 +93,7 @@ private:
 
   // When the parser is used in the bitstream analysis window, the runParsingOfFile is used and
   // we update this list while parsing the file.
+  std::mutex                streamInfoMutex;
   QList<QStringPairList>    streamInfoAllStreams;
   QList<FFmpeg::AVRational> timeBaseAllStreams;
   QList<QString>            shortStreamInfoAllStreams;
