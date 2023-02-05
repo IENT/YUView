@@ -68,21 +68,22 @@ QList<QTreeWidgetItem *> AVFormat::getStreamInfo()
   // streamInfoAllStreams containse all the info for all streams.
   // The first QStringPairList contains the general info, next all infos for each stream follows
 
-  QList<QTreeWidgetItem *> info;
   if (this->streamInfoAllStreams.count() == 0)
-    return info;
+    return {};
 
-  QStringPairList  generalInfo = this->streamInfoAllStreams[0];
-  QTreeWidgetItem *general     = new QTreeWidgetItem(QStringList() << "General");
-  for (QStringPair p : generalInfo)
+  QList<QTreeWidgetItem *> info;
+  std::unique_lock         lock(this->streamInfoMutex);
+
+  auto generalInfo = this->streamInfoAllStreams[0];
+  auto general     = new QTreeWidgetItem(QStringList() << "General");
+  for (auto p : generalInfo)
     new QTreeWidgetItem(general, QStringList() << p.first << p.second);
   info.append(general);
 
   for (int i = 1; i < this->streamInfoAllStreams.count(); i++)
   {
-    QTreeWidgetItem *streamInfo =
-        new QTreeWidgetItem(QStringList() << QString("Stream %1").arg(i - 1));
-    for (QStringPair p : this->streamInfoAllStreams[i])
+    auto streamInfo = new QTreeWidgetItem(QStringList() << QString("Stream %1").arg(i - 1));
+    for (auto p : this->streamInfoAllStreams[i])
       new QTreeWidgetItem(streamInfo, QStringList() << p.first << p.second);
     info.append(streamInfo);
   }
@@ -606,12 +607,16 @@ bool AVFormat::runParsingOfFile(QString compressedFilePath)
     return false;
   }
 
-  int max_ts                      = ffmpegFile->getMaxTS();
-  this->videoStreamIndex          = ffmpegFile->getVideoStreamIndex();
-  this->framerate                 = ffmpegFile->getFramerate();
-  this->streamInfoAllStreams      = ffmpegFile->getFileInfoForAllStreams();
-  this->timeBaseAllStreams        = ffmpegFile->getTimeBaseAllStreams();
-  this->shortStreamInfoAllStreams = ffmpegFile->getShortStreamDescriptionAllStreams();
+  int max_ts             = ffmpegFile->getMaxTS();
+  this->videoStreamIndex = ffmpegFile->getVideoStreamIndex();
+  this->framerate        = ffmpegFile->getFramerate();
+
+  {
+    std::unique_lock lock(this->streamInfoMutex);
+    this->streamInfoAllStreams      = ffmpegFile->getFileInfoForAllStreams();
+    this->timeBaseAllStreams        = ffmpegFile->getTimeBaseAllStreams();
+    this->shortStreamInfoAllStreams = ffmpegFile->getShortStreamDescriptionAllStreams();
+  }
 
   emit streamInfoUpdated();
 
@@ -677,7 +682,10 @@ bool AVFormat::runParsingOfFile(QString compressedFilePath)
   if (packetModel)
     emit modelDataUpdated();
 
-  this->streamInfoAllStreams = ffmpegFile->getFileInfoForAllStreams();
+  {
+    std::unique_lock lock(this->streamInfoMutex);
+    this->streamInfoAllStreams = ffmpegFile->getFileInfoForAllStreams();
+  }
   emit streamInfoUpdated();
   emit backgroundParsingDone("");
 

@@ -99,7 +99,7 @@ void PlotViewWidget::modelNrStreamsChanged()
     for (unsigned int i = 0; i < model->getNrStreams(); i++)
       this->showStreamList.append(i);
   }
-  DEBUG_PLOT("PlotViewWidget::updateStreamInfo showStreamList " << this->showStreamList);
+  DEBUG_PLOT("PlotViewWidget::modelNrStreamsChanged showStreamList " << this->showStreamList);
 }
 
 void PlotViewWidget::zoomToFitInternal()
