@@ -38,6 +38,7 @@
 #include <ffmpeg/FFmpegVersionHandler.h>
 #include <filesource/FileSourceFFmpegFile.h>
 
+#include <mutex>
 #include <queue>
 
 namespace parser

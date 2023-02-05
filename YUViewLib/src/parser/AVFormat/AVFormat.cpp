@@ -35,7 +35,6 @@
 #include <QElapsedTimer>
 #include <cmath>
 #include <iomanip>
-#include <mutex>
 
 #include "../AVC/AnnexBAVC.h"
 #include "../HEVC/AnnexBHEVC.h"
