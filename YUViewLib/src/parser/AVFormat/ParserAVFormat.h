@@ -32,9 +32,9 @@
 
 #pragma once
 
-#include "../AV1/AV1OBU.h"
-#include "../AnnexB.h"
-#include "../Base.h"
+#include "../AV1/ParserAV1OBU.h"
+#include "../Parser.h"
+#include "../ParserAnnexB.h"
 #include <ffmpeg/FFmpegVersionHandler.h>
 #include <filesource/FileSourceFFmpegFile.h>
 
@@ -47,13 +47,13 @@ namespace parser
  * libavformat. If the bitstream within the container is a supported annexB bitstream, this parser
  * can use that parser to even parser deeper.
  */
-class AVFormat : public Base
+class ParserAVFormat : public Parser
 {
   Q_OBJECT
 
 public:
-  AVFormat(QObject *parent = nullptr) : Base(parent) {}
-  ~AVFormat() {}
+  ParserAVFormat(QObject *parent = nullptr) : Parser(parent) {}
+  ~ParserAVFormat() {}
 
   QList<QTreeWidgetItem *> getStreamInfo() override;
   unsigned int             getNrStreams() override
@@ -75,7 +75,7 @@ private:
   bool parseAVPacket(unsigned packetID, unsigned streamPacketID, FFmpeg::AVPacketWrapper &packet);
 
   // Used for parsing if the packets contain an annexB file that we can parse.
-  std::unique_ptr<AnnexB> annexBParser;
+  std::unique_ptr<ParserAnnexB> annexBParser;
   // Used for parsing if the packets contain an obu file that we can parse.
   std::unique_ptr<ParserAV1OBU> obuParser;
 

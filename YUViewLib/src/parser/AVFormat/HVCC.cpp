@@ -39,7 +39,7 @@ using namespace reader;
 
 void HVCCNalUnit::parse(unsigned              unitID,
                         SubByteReaderLogging &reader,
-                        AnnexBHEVC *          hevcParser,
+                        ParserAnnexBHEVC *    hevcParser,
                         BitratePlotModel *    bitrateModel)
 {
   SubByteReaderLoggingSubLevel subLevel(reader, "nal unit " + std::to_string(unitID));
@@ -58,7 +58,7 @@ void HVCCNalUnit::parse(unsigned              unitID,
 
 void HVCCNalArray::parse(unsigned              arrayID,
                          SubByteReaderLogging &reader,
-                         AnnexBHEVC *          hevcParser,
+                         ParserAnnexBHEVC *    hevcParser,
                          BitratePlotModel *    bitrateModel)
 {
   SubByteReaderLoggingSubLevel subLevel(reader, "nal unit array " + std::to_string(arrayID));
@@ -79,7 +79,7 @@ void HVCCNalArray::parse(unsigned              arrayID,
 
 void HVCC::parse(ByteVector &              data,
                  std::shared_ptr<TreeItem> root,
-                 AnnexBHEVC *              hevcParser,
+                 ParserAnnexBHEVC *        hevcParser,
                  BitratePlotModel *        bitrateModel)
 {
   SubByteReaderLogging reader(data, root, "Extradata (HEVC hvcC format)");

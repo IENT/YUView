@@ -33,7 +33,7 @@
 #pragma once
 
 #include <common/Typedef.h>
-#include <parser/Base.h>
+#include <parser/Parser.h>
 #include <playlistitem/playlistItem.h>
 #include <playlistitem/playlistItemCompressedVideo.h>
 
@@ -80,9 +80,9 @@ private:
   void restartParsingOfCurrentItem();
   void createAndConnectNewParser(InputFormat inputFormatType);
 
-  QScopedPointer<parser::Base> parser;
-  QFuture<void>                backgroundParserFuture;
-  void                         backgroundParsingFunction();
+  QScopedPointer<parser::Parser> parser;
+  QFuture<void>                  backgroundParserFuture;
+  void                           backgroundParsingFunction();
 
   QPointer<playlistItemCompressedVideo> currentCompressedVideo;
 

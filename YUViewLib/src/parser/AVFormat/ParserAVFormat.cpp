@@ -30,15 +30,15 @@
  *   along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "AVFormat.h"
+#include "ParserAVFormat.h"
 
 #include <QElapsedTimer>
 #include <cmath>
 #include <iomanip>
 
-#include "../AVC/AnnexBAVC.h"
-#include "../HEVC/AnnexBHEVC.h"
-#include "../Mpeg2/AnnexBMpeg2.h"
+#include "../AVC/ParserAnnexBAVC.h"
+#include "../HEVC/ParserAnnexBHEVC.h"
+#include "../Mpeg2/ParserAnnexBMpeg2.h"
 #include "../Subtitles/Subtitle608.h"
 #include "../Subtitles/SubtitleDVB.h"
 #include "HVCC.h"
@@ -63,7 +63,7 @@ const ByteVector startCode({0, 0, 1});
 
 using namespace reader;
 
-QList<QTreeWidgetItem *> AVFormat::getStreamInfo()
+QList<QTreeWidgetItem *> ParserAVFormat::getStreamInfo()
 {
   // streamInfoAllStreams containse all the info for all streams.
   // The first QStringPairList contains the general info, next all infos for each stream follows
@@ -90,14 +90,14 @@ QList<QTreeWidgetItem *> AVFormat::getStreamInfo()
   return info;
 }
 
-QString AVFormat::getShortStreamDescription(int streamIndex) const
+QString ParserAVFormat::getShortStreamDescription(int streamIndex) const
 {
   if (streamIndex >= this->shortStreamInfoAllStreams.count())
     return {};
   return this->shortStreamInfoAllStreams[streamIndex];
 }
 
-bool AVFormat::parseExtradata(ByteVector &extradata)
+bool ParserAVFormat::parseExtradata(ByteVector &extradata)
 {
   if (extradata.empty())
     return true;
@@ -112,7 +112,7 @@ bool AVFormat::parseExtradata(ByteVector &extradata)
     return this->parseExtradata_generic(extradata);
 }
 
-void AVFormat::parseMetadata(const StringPairVec &metadata)
+void ParserAVFormat::parseMetadata(const StringPairVec &metadata)
 {
   if (metadata.size() == 0 || !packetModel->rootItem)
     return;
@@ -123,7 +123,7 @@ void AVFormat::parseMetadata(const StringPairVec &metadata)
     metadataRoot->createChildItem(p.first, p.second);
 }
 
-bool AVFormat::parseExtradata_generic(ByteVector &extradata)
+bool ParserAVFormat::parseExtradata_generic(ByteVector &extradata)
 {
   if (extradata.empty() || !packetModel->rootItem)
     return true;
@@ -137,7 +137,7 @@ bool AVFormat::parseExtradata_generic(ByteVector &extradata)
   return true;
 }
 
-bool AVFormat::parseExtradata_AVC(ByteVector &extradata)
+bool ParserAVFormat::parseExtradata_AVC(ByteVector &extradata)
 {
   if (extradata.empty() || !packetModel->rootItem)
     return true;
@@ -186,14 +186,14 @@ bool AVFormat::parseExtradata_AVC(ByteVector &extradata)
   return true;
 }
 
-bool AVFormat::parseExtradata_hevc(ByteVector &extradata)
+bool ParserAVFormat::parseExtradata_hevc(ByteVector &extradata)
 {
   if (extradata.empty() || !packetModel->rootItem)
     return true;
 
   if (extradata.at(0) == 1)
   {
-    auto hevcParser = dynamic_cast<AnnexBHEVC *>(this->annexBParser.get());
+    auto hevcParser = dynamic_cast<ParserAnnexBHEVC *>(this->annexBParser.get());
     if (!hevcParser)
       return false;
 
@@ -204,7 +204,7 @@ bool AVFormat::parseExtradata_hevc(ByteVector &extradata)
     }
     catch (...)
     {
-      DEBUG_AVFORMAT("AVFormat::parseExtradata_hevc Error parsing HEVC Extradata");
+      DEBUG_AVFORMAT("ParserAVFormat::parseExtradata_hevc Error parsing HEVC Extradata");
       return false;
     }
   }
@@ -223,7 +223,7 @@ bool AVFormat::parseExtradata_hevc(ByteVector &extradata)
   return true;
 }
 
-bool AVFormat::parseExtradata_mpeg2(ByteVector &extradata)
+bool ParserAVFormat::parseExtradata_mpeg2(ByteVector &extradata)
 {
   if (extradata.empty() || !packetModel->rootItem)
     return true;
@@ -244,14 +244,14 @@ bool AVFormat::parseExtradata_mpeg2(ByteVector &extradata)
 }
 
 std::map<std::string, unsigned>
-AVFormat::parseByteVectorAnnexBStartCodes(ByteVector &                   data,
-                                          PacketDataFormat               dataFormat,
-                                          BitratePlotModel::BitrateEntry packetBitrateEntry,
-                                          std::shared_ptr<TreeItem>      item)
+ParserAVFormat::parseByteVectorAnnexBStartCodes(ByteVector &                   data,
+                                                PacketDataFormat               dataFormat,
+                                                BitratePlotModel::BitrateEntry packetBitrateEntry,
+                                                std::shared_ptr<TreeItem>      item)
 {
   if (dataFormat != PacketDataFormat::RawNAL && dataFormat != PacketDataFormat::MP4)
   {
-    DEBUG_AVFORMAT("AVFormat::parseByteVectorAnnexBStartCodes Unsupported data format");
+    DEBUG_AVFORMAT("ParserAVFormat::parseByteVectorAnnexBStartCodes Unsupported data format");
     return {};
   }
 
@@ -286,8 +286,9 @@ AVFormat::parseByteVectorAnnexBStartCodes(ByteVector &                   data,
     itStartCode = getNextNalStart(itStartCode);
     if (itStartCode == data.end())
     {
-      DEBUG_AVFORMAT("AVFormat::parseByteVectorAnnexBStartCodes Not a single start code could be "
-                     "found in the data. Are you sure the data format is correct?");
+      DEBUG_AVFORMAT(
+          "ParserAVFormat::parseByteVectorAnnexBStartCodes Not a single start code could be "
+          "found in the data. Are you sure the data format is correct?");
       return {};
     }
   }
@@ -311,7 +312,9 @@ AVFormat::parseByteVectorAnnexBStartCodes(ByteVector &                   data,
   return naNames;
 }
 
-bool AVFormat::parseAVPacket(unsigned packetID, unsigned streamPacketID, AVPacketWrapper &packet)
+bool ParserAVFormat::parseAVPacket(unsigned         packetID,
+                                   unsigned         streamPacketID,
+                                   AVPacketWrapper &packet)
 {
   if (!packetModel->rootItem)
     return true;
@@ -409,7 +412,7 @@ bool AVFormat::parseAVPacket(unsigned packetID, unsigned streamPacketID, AVPacke
           auto [nrBytesRead, obuTypeName] =
               this->obuParser->parseAndAddOBU(obuID, data, itemTree, obuStartEndPosFile);
           DEBUG_AVFORMAT(
-              "AVFormat::parseAVPacket parsed OBU %d header %d bytes", obuID, nrBytesRead);
+              "ParserAVFormat::parseAVPacket parsed OBU %d header %d bytes", obuID, nrBytesRead);
 
           if (!obuTypeName.empty())
             unitNames[obuTypeName]++;
@@ -430,8 +433,9 @@ bool AVFormat::parseAVPacket(unsigned packetID, unsigned streamPacketID, AVPacke
 
         if (obuID > 200)
         {
-          DEBUG_AVFORMAT("AVFormat::parseAVPacket We encountered more than 200 OBUs in one packet. "
-                         "This is probably an error.");
+          DEBUG_AVFORMAT(
+              "ParserAVFormat::parseAVPacket We encountered more than 200 OBUs in one packet. "
+              "This is probably an error.");
           return false;
         }
       }
@@ -459,7 +463,7 @@ bool AVFormat::parseAVPacket(unsigned packetID, unsigned streamPacketID, AVPacke
         auto [nrBytesRead, name] = subtitle::dvb::parseDVBSubtitleSegment(data, itemTree);
         (void)name;
         DEBUG_AVFORMAT(
-            "AVFormat::parseAVPacket parsed DVB segment %d - %d bytes", obuID, nrBytesRead);
+            "ParserAVFormat::parseAVPacket parsed DVB segment %d - %d bytes", obuID, nrBytesRead);
 
         constexpr auto minDVBSegmentSize = 6u;
         auto           remaining         = std::distance(posInData, avpacketData.end());
@@ -471,7 +475,7 @@ bool AVFormat::parseAVPacket(unsigned packetID, unsigned streamPacketID, AVPacke
       catch (...)
       {
         DEBUG_AVFORMAT(
-            "AVFormat::parseAVPacket Exception occured while parsing DBV subtitle segment.");
+            "ParserAVFormat::parseAVPacket Exception occured while parsing DBV subtitle segment.");
         break;
       }
 
@@ -479,8 +483,9 @@ bool AVFormat::parseAVPacket(unsigned packetID, unsigned streamPacketID, AVPacke
 
       if (segmentID > 200)
       {
-        DEBUG_AVFORMAT("AVFormat::parseAVPacket We encountered more than 200 DVB segments in one "
-                       "packet. This is probably an error.");
+        DEBUG_AVFORMAT(
+            "ParserAVFormat::parseAVPacket We encountered more than 200 DVB segments in one "
+            "packet. This is probably an error.");
         return false;
       }
     }
@@ -494,7 +499,7 @@ bool AVFormat::parseAVPacket(unsigned packetID, unsigned streamPacketID, AVPacke
     catch (...)
     {
       DEBUG_AVFORMAT(
-          "AVFormat::parseAVPacket Exception occured while parsing 608 subtitle segment.");
+          "ParserAVFormat::parseAVPacket Exception occured while parsing 608 subtitle segment.");
     }
   }
   else
@@ -510,8 +515,9 @@ bool AVFormat::parseAVPacket(unsigned packetID, unsigned streamPacketID, AVPacke
     catch (const std::exception &e)
     {
       (void)e;
-      DEBUG_AVFORMAT("AVFormat::parseAVPacket Exception occured while parsing generic packet data: "
-                     << e.what());
+      DEBUG_AVFORMAT(
+          "ParserAVFormat::parseAVPacket Exception occured while parsing generic packet data: "
+          << e.what());
     }
   }
 
@@ -551,7 +557,7 @@ bool AVFormat::parseAVPacket(unsigned packetID, unsigned streamPacketID, AVPacke
   return true;
 }
 
-bool AVFormat::runParsingOfFile(QString compressedFilePath)
+bool ParserAVFormat::runParsingOfFile(QString compressedFilePath)
 {
   // Open the file but don't parse it yet.
   QScopedPointer<FileSourceFFmpegFile> ffmpegFile(new FileSourceFFmpegFile());
@@ -563,11 +569,11 @@ bool AVFormat::runParsingOfFile(QString compressedFilePath)
 
   this->codecID = ffmpegFile->getVideoStreamCodecID();
   if (this->codecID.isAVC())
-    this->annexBParser.reset(new AnnexBAVC());
+    this->annexBParser.reset(new ParserAnnexBAVC());
   else if (this->codecID.isHEVC())
-    this->annexBParser.reset(new AnnexBHEVC());
+    this->annexBParser.reset(new ParserAnnexBHEVC());
   else if (this->codecID.isMpeg2())
-    this->annexBParser.reset(new AnnexBMpeg2());
+    this->annexBParser.reset(new ParserAnnexBMpeg2());
   else if (this->codecID.isAV1())
     this->obuParser.reset(new ParserAV1OBU());
   else if (this->codecID.isNone())
@@ -639,11 +645,11 @@ bool AVFormat::runParsingOfFile(QString compressedFilePath)
     auto streamPacketID = packetCounterPerStream[packet.getStreamIndex()];
     if (!this->parseAVPacket(packetID, streamPacketID, packet))
     {
-      DEBUG_AVFORMAT("AVFormat::runParsingOfFile error parsing Packet %d", packetID);
+      DEBUG_AVFORMAT("ParserAVFormat::runParsingOfFile error parsing Packet %d", packetID);
     }
     else
     {
-      DEBUG_AVFORMAT("AVFormat::runParsingOfFile Packet %d", packetID);
+      DEBUG_AVFORMAT("ParserAVFormat::runParsingOfFile Packet %d", packetID);
     }
 
     packetID++;
@@ -662,11 +668,12 @@ bool AVFormat::runParsingOfFile(QString compressedFilePath)
     if (cancelBackgroundParser)
     {
       abortParsing = true;
-      DEBUG_AVFORMAT("AVFormat::runParsingOfFile Abort parsing by user request");
+      DEBUG_AVFORMAT("ParserAVFormat::runParsingOfFile Abort parsing by user request");
     }
     if (parsingLimitEnabled && videoFrameCounter > PARSER_FILE_FRAME_NR_LIMIT)
     {
-      DEBUG_AVFORMAT("AVFormat::runParsingOfFile Abort parsing because frame limit was reached.");
+      DEBUG_AVFORMAT(
+          "ParserAVFormat::runParsingOfFile Abort parsing because frame limit was reached.");
       abortParsing = true;
     }
   }

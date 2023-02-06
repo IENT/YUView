@@ -30,7 +30,7 @@
  *   along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "AnnexB.h"
+#include "ParserAnnexB.h"
 
 #include "parser/common/SubByteReaderLogging.h"
 
@@ -49,7 +49,7 @@
 namespace parser
 {
 
-QString AnnexB::getShortStreamDescription(int) const
+QString ParserAnnexB::getShortStreamDescription(int) const
 {
   QString info      = "Video";
   auto    frameSize = this->getSequenceSizeSamples();
@@ -58,9 +58,9 @@ QString AnnexB::getShortStreamDescription(int) const
   return info;
 }
 
-bool AnnexB::addFrameToList(int                       poc,
-                            std::optional<pairUint64> fileStartEndPos,
-                            bool                      randomAccessPoint)
+bool ParserAnnexB::addFrameToList(int                       poc,
+                                  std::optional<pairUint64> fileStartEndPos,
+                                  bool                      randomAccessPoint)
 {
   for (const auto &f : this->frameListCodingOrder)
     if (f.poc == poc)
@@ -81,9 +81,9 @@ bool AnnexB::addFrameToList(int                       poc,
   return true;
 }
 
-void AnnexB::logNALSize(const ByteVector &        data,
-                        std::shared_ptr<TreeItem> root,
-                        std::optional<pairUint64> nalStartEndPos)
+void ParserAnnexB::logNALSize(const ByteVector &        data,
+                              std::shared_ptr<TreeItem> root,
+                              std::optional<pairUint64> nalStartEndPos)
 {
   size_t startCodeSize = 0;
   if (data[0] == char(0) && data[1] == char(0) && data[2] == char(0) && data[3] == char(1))
@@ -99,8 +99,8 @@ void AnnexB::logNALSize(const ByteVector &        data,
     root->createChildItem("Start/End pos", to_string(*nalStartEndPos));
 }
 
-auto AnnexB::getClosestSeekPoint(FrameIndexDisplayOrder targetFrame,
-                                 FrameIndexDisplayOrder currentFrame) -> SeekPointInfo
+auto ParserAnnexB::getClosestSeekPoint(FrameIndexDisplayOrder targetFrame,
+                                       FrameIndexDisplayOrder currentFrame) -> SeekPointInfo
 {
   if (targetFrame >= this->frameListCodingOrder.size())
     return {};
@@ -131,14 +131,14 @@ auto AnnexB::getClosestSeekPoint(FrameIndexDisplayOrder targetFrame,
         std::distance(itCurrentFrameCodingOrder, bestSeekFrame);
   }
 
-  DEBUG_ANNEXB("AnnexB::getClosestSeekPoint targetFrame "
+  DEBUG_ANNEXB("ParserAnnexB::getClosestSeekPoint targetFrame "
                << targetFrame << "(POC " << frameTarget.poc << " seek to "
                << seekPointInfo.frameIndex << " (POC " << bestSeekFrame->poc
                << ") distance in coding order " << seekPointInfo.frameDistanceInCodingOrder);
   return seekPointInfo;
 }
 
-std::optional<pairUint64> AnnexB::getFrameStartEndPos(FrameIndexCodingOrder idx)
+std::optional<pairUint64> ParserAnnexB::getFrameStartEndPos(FrameIndexCodingOrder idx)
 {
   if (idx >= this->frameListCodingOrder.size())
     return {};
@@ -146,9 +146,9 @@ std::optional<pairUint64> AnnexB::getFrameStartEndPos(FrameIndexCodingOrder idx)
   return this->frameListCodingOrder[idx].fileStartEndPos;
 }
 
-bool AnnexB::parseAnnexBFile(std::unique_ptr<FileSourceAnnexBFile> &file, QWidget *mainWindow)
+bool ParserAnnexB::parseAnnexBFile(std::unique_ptr<FileSourceAnnexBFile> &file, QWidget *mainWindow)
 {
-  DEBUG_ANNEXB("AnnexB::parseAnnexBFile");
+  DEBUG_ANNEXB("ParserAnnexB::parseAnnexBFile");
 
   int64_t                         maxPos = file->getFileSize();
   QScopedPointer<QProgressDialog> progressDialog;
@@ -192,7 +192,7 @@ bool AnnexB::parseAnnexBFile(std::unique_ptr<FileSourceAnnexBFile> &file, QWidge
           this->parseAndAddNALUnit(nalID, nalData, {}, nalStartEndPosFile, nullptr);
       if (!parsingResult.success)
       {
-        DEBUG_ANNEXB("AnnexB::parseAndAddNALUnit Error parsing NAL " << nalID);
+        DEBUG_ANNEXB("ParserAnnexB::parseAndAddNALUnit Error parsing NAL " << nalID);
       }
       else if (parsingResult.bitrateEntry)
       {
@@ -204,12 +204,12 @@ bool AnnexB::parseAnnexBFile(std::unique_ptr<FileSourceAnnexBFile> &file, QWidge
       (void)exc;
       // Reading a NAL unit failed at some point.
       // This is not too bad. Just don't use this NAL unit and continue with the next one.
-      DEBUG_ANNEXB("AnnexB::parseAndAddNALUnit Exception thrown parsing NAL " << nalID << " - "
-                                                                              << exc.what());
+      DEBUG_ANNEXB("ParserAnnexB::parseAndAddNALUnit Exception thrown parsing NAL "
+                   << nalID << " - " << exc.what());
     }
     catch (...)
     {
-      DEBUG_ANNEXB("AnnexB::parseAndAddNALUnit Exception thrown parsing NAL " << nalID);
+      DEBUG_ANNEXB("ParserAnnexB::parseAndAddNALUnit Exception thrown parsing NAL " << nalID);
     }
 
     nalID++;
@@ -238,12 +238,13 @@ bool AnnexB::parseAnnexBFile(std::unique_ptr<FileSourceAnnexBFile> &file, QWidge
 
     if (cancelBackgroundParser)
     {
-      DEBUG_ANNEXB("AnnexB::parseAndAddNALUnit Abort parsing by user request.");
+      DEBUG_ANNEXB("ParserAnnexB::parseAndAddNALUnit Abort parsing by user request.");
       abortParsing = true;
     }
     if (this->parsingLimitEnabled && this->frameListCodingOrder.size() > PARSER_FILE_FRAME_NR_LIMIT)
     {
-      DEBUG_ANNEXB("AnnexB::parseAndAddNALUnit Abort parsing because frame limit was reached.");
+      DEBUG_ANNEXB(
+          "ParserAnnexB::parseAndAddNALUnit Abort parsing because frame limit was reached.");
       abortParsing = true;
     }
   }
@@ -252,14 +253,16 @@ bool AnnexB::parseAnnexBFile(std::unique_ptr<FileSourceAnnexBFile> &file, QWidge
   {
     auto parseResult = this->parseAndAddNALUnit(-1, {}, {}, {});
     if (!parseResult.success)
-      DEBUG_ANNEXB("AnnexB::parseAndAddNALUnit Error finalizing parsing. This should not happen.");
+      DEBUG_ANNEXB(
+          "ParserAnnexB::parseAndAddNALUnit Error finalizing parsing. This should not happen.");
   }
   catch (...)
   {
-    DEBUG_ANNEXB("AnnexB::parseAndAddNALUnit Error finalizing parsing. This should not happen.");
+    DEBUG_ANNEXB(
+        "ParserAnnexB::parseAndAddNALUnit Error finalizing parsing. This should not happen.");
   }
 
-  DEBUG_ANNEXB("AnnexB::parseAndAddNALUnit Parsing done. Found "
+  DEBUG_ANNEXB("ParserAnnexB::parseAndAddNALUnit Parsing done. Found "
                << this->frameListCodingOrder.size() << " POCs");
 
   if (packetModel)
@@ -274,14 +277,14 @@ bool AnnexB::parseAnnexBFile(std::unique_ptr<FileSourceAnnexBFile> &file, QWidge
   return !cancelBackgroundParser;
 }
 
-bool AnnexB::runParsingOfFile(QString compressedFilePath)
+bool ParserAnnexB::runParsingOfFile(QString compressedFilePath)
 {
   DEBUG_ANNEXB("playlistItemCompressedVideo::runParsingOfFile");
   auto file = std::make_unique<FileSourceAnnexBFile>(compressedFilePath);
   return this->parseAnnexBFile(file);
 }
 
-QList<QTreeWidgetItem *> AnnexB::stream_info_type::getStreamInfo()
+QList<QTreeWidgetItem *> ParserAnnexB::stream_info_type::getStreamInfo()
 {
   QList<QTreeWidgetItem *> infoList;
   infoList.append(new QTreeWidgetItem(QStringList() << "File size" << QString::number(file_size)));
@@ -303,13 +306,13 @@ QList<QTreeWidgetItem *> AnnexB::stream_info_type::getStreamInfo()
   return infoList;
 }
 
-int AnnexB::getFramePOC(FrameIndexDisplayOrder frameIdx)
+int ParserAnnexB::getFramePOC(FrameIndexDisplayOrder frameIdx)
 {
   this->updateFrameListDisplayOrder();
   return this->frameListDisplayOder[frameIdx].poc;
 }
 
-void AnnexB::updateFrameListDisplayOrder()
+void ParserAnnexB::updateFrameListDisplayOrder()
 {
   if (this->frameListCodingOrder.size() == 0 || this->frameListDisplayOder.size() > 0)
     return;
