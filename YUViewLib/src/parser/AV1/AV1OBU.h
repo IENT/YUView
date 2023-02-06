@@ -33,14 +33,14 @@
 #pragma once
 
 #include "GlobalDecodingValues.h"
-#include "parser/Base.h"
+#include "parser/Parser.h"
 #include "sequence_header_obu.h"
 #include "video/videoHandlerYUV.h"
 
 namespace parser
 {
 
-class ParserAV1OBU : public Base
+class ParserAV1OBU : public Parser
 {
   Q_OBJECT
 

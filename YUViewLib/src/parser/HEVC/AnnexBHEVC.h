@@ -34,7 +34,7 @@
 
 #include <QSharedPointer>
 
-#include "../AnnexB.h"
+#include "../ParserAnnexB.h"
 #include "AUDelimiterDetector.h"
 #include "SEI/sei_message.h"
 #include "commonMaps.h"
@@ -55,12 +55,12 @@ class pic_timing;
 } // namespace hevc
 
 // This class knows how to parse the bitrstream of HEVC annexB files
-class AnnexBHEVC : public AnnexB
+class AnnexBHEVC : public ParserAnnexB
 {
   Q_OBJECT
 
 public:
-  AnnexBHEVC(QObject *parent = nullptr) : AnnexB(parent)
+  AnnexBHEVC(QObject *parent = nullptr) : ParserAnnexB(parent)
   {
     curFrameFileStartEndPos = pairUint64(-1, -1);
   }

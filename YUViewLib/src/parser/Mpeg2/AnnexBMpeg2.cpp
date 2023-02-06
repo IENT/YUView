@@ -35,11 +35,12 @@
 #include "NalUnitMpeg2.h"
 #include "group_of_pictures_header.h"
 #include "nal_extension.h"
-#include <parser/common/Functions.h>
 #include "picture_header.h"
 #include "sequence_extension.h"
 #include "sequence_header.h"
 #include "user_data.h"
+#include <parser/common/Functions.h>
+
 
 #include <algorithm>
 
@@ -56,14 +57,14 @@ namespace parser
 
 using namespace mpeg2;
 
-AnnexB::ParseResult
+ParserAnnexB::ParseResult
 AnnexBMpeg2::parseAndAddNALUnit(int                                           nalID,
                                 const ByteVector &                            data,
                                 std::optional<BitratePlotModel::BitrateEntry> bitrateEntry,
                                 std::optional<pairUint64>                     nalStartEndPosFile,
                                 std::shared_ptr<TreeItem>                     parent)
 {
-  AnnexB::ParseResult parseResult;
+  ParserAnnexB::ParseResult parseResult;
 
   // Skip the NAL unit header
   unsigned readOffset = 0;
@@ -96,7 +97,7 @@ AnnexBMpeg2::parseAndAddNALUnit(int                                           na
   reader::SubByteReaderLogging reader(data, nalRoot, "", readOffset);
 
   if (nalRoot)
-    AnnexB::logNALSize(data, nalRoot, nalStartEndPosFile);
+    ParserAnnexB::logNALSize(data, nalRoot, nalStartEndPosFile);
 
   // Create a nal_unit and read the header
   NalUnitMpeg2 nal_mpeg2(nalID, nalStartEndPosFile);

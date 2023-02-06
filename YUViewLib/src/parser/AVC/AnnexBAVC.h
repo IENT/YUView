@@ -38,7 +38,7 @@
 #include "HRD.h"
 #include "SEI/sei_message.h"
 #include "commonMaps.h"
-#include "parser/AnnexB.h"
+#include "parser/ParserAnnexB.h"
 #include "video/videoHandlerYUV.h"
 
 #include <queue>
@@ -67,12 +67,12 @@ struct FrameParsingData
 } // namespace avc
 
 // This class knows how to parse the bitrstream of HEVC annexB files
-class AnnexBAVC : public AnnexB
+class AnnexBAVC : public ParserAnnexB
 {
   Q_OBJECT
 
 public:
-  AnnexBAVC(QObject *parent = nullptr) : AnnexB(parent){};
+  AnnexBAVC(QObject *parent = nullptr) : ParserAnnexB(parent){};
   ~AnnexBAVC() = default;
 
   // Get properties

@@ -169,15 +169,15 @@ void BitstreamAnalysisWidget::stopAndDeleteParserBlocking()
     return;
 
   this->disconnect(this->parser.data(),
-                   &parser::Base::modelDataUpdated,
+                   &parser::Parser::modelDataUpdated,
                    this,
                    &BitstreamAnalysisWidget::updateParserItemModel);
   this->disconnect(this->parser.data(),
-                   &parser::Base::streamInfoUpdated,
+                   &parser::Parser::streamInfoUpdated,
                    this,
                    &BitstreamAnalysisWidget::updateStreamInfo);
   this->disconnect(this->parser.data(),
-                   &parser::Base::backgroundParsingDone,
+                   &parser::Parser::backgroundParsingDone,
                    this,
                    &BitstreamAnalysisWidget::backgroundParsingDone);
 
@@ -273,15 +273,15 @@ void BitstreamAnalysisWidget::createAndConnectNewParser(InputFormat inputFormat)
   this->parser->setParsingLimitEnabled(parsingLimitSet);
 
   this->connect(this->parser.data(),
-                &parser::Base::modelDataUpdated,
+                &parser::Parser::modelDataUpdated,
                 this,
                 &BitstreamAnalysisWidget::updateParserItemModel);
   this->connect(this->parser.data(),
-                &parser::Base::streamInfoUpdated,
+                &parser::Parser::streamInfoUpdated,
                 this,
                 &BitstreamAnalysisWidget::updateStreamInfo);
   this->connect(this->parser.data(),
-                &parser::Base::backgroundParsingDone,
+                &parser::Parser::backgroundParsingDone,
                 this,
                 &BitstreamAnalysisWidget::backgroundParsingDone);
 }

@@ -35,7 +35,7 @@
 #include <common/Typedef.h>
 #include <decoder/decoderBase.h>
 #include <filesource/FileSourceFFmpegFile.h>
-#include <parser/AnnexB.h>
+#include <parser/ParserAnnexB.h>
 #include <statistics/StatisticUIHandler.h>
 #include <statistics/StatisticsData.h>
 #include <ui_playlistItemCompressedFile.h>
@@ -139,7 +139,7 @@ protected:
   // can be used for both loading and caching tasks.
   std::unique_ptr<FileSourceAnnexBFile> inputFileAnnexBLoading;
   std::unique_ptr<FileSourceAnnexBFile> inputFileAnnexBCaching;
-  std::unique_ptr<parser::AnnexB>       inputFileAnnexBParser;
+  std::unique_ptr<parser::ParserAnnexB> inputFileAnnexBParser;
   // When reading annex B data using the FileSourceAnnexBFile::getFrameData function, we need to
   // count how many frames we already read.
   int readAnnexBFrameCounterCodingOrder{-1};

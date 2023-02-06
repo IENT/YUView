@@ -151,7 +151,7 @@ video::yuv::PixelFormatYUV AnnexBVVC::getPixelFormat() const
   return {};
 }
 
-std::optional<AnnexB::SeekData> AnnexBVVC::getSeekData(int iFrameNr)
+std::optional<ParserAnnexB::SeekData> AnnexBVVC::getSeekData(int iFrameNr)
 {
   if (iFrameNr >= int(this->getNumberPOCs()) || iFrameNr < 0)
     return {};
@@ -182,7 +182,7 @@ std::optional<AnnexB::SeekData> AnnexBVVC::getSeekData(int iFrameNr)
       if (seekPOC >= 0 && picHeader->globalPOC == unsigned(seekPOC))
       {
         // Seek here
-        AnnexB::SeekData seekData;
+        ParserAnnexB::SeekData seekData;
         if (nal->filePosStartEnd)
           seekData.filePos = nal->filePosStartEnd->first;
 
@@ -266,14 +266,14 @@ Ratio AnnexBVVC::getSampleAspectRatio()
   return Ratio({1, 1});
 }
 
-AnnexB::ParseResult
+ParserAnnexB::ParseResult
 AnnexBVVC::parseAndAddNALUnit(int                                           nalID,
                               const ByteVector &                            data,
                               std::optional<BitratePlotModel::BitrateEntry> bitrateEntry,
                               std::optional<pairUint64>                     nalStartEndPosFile,
                               std::shared_ptr<TreeItem>                     parent)
 {
-  AnnexB::ParseResult parseResult;
+  ParserAnnexB::ParseResult parseResult;
   parseResult.success = true;
 
   if (nalID == -1 && data.empty())
@@ -308,7 +308,7 @@ AnnexBVVC::parseAndAddNALUnit(int                                           nalI
     nalRoot = packetModel->rootItem->createChildItem();
 
   if (nalRoot)
-    AnnexB::logNALSize(data, nalRoot, nalStartEndPosFile);
+    ParserAnnexB::logNALSize(data, nalRoot, nalStartEndPosFile);
 
   reader::SubByteReaderLogging reader(data, nalRoot, "", readOffset);
 
