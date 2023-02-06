@@ -461,6 +461,7 @@ AnnexBAVC::parseAndAddNALUnit(int                                           nalI
   {
     specificDescription += " ERROR " + std::string(e.what());
     parseResult.success = false;
+    DEBUG_AVC("AnnexBAVC::parseAndAddNALUnit " << e.what());
   }
 
   std::optional<int> curSlicePoc;
