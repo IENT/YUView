@@ -67,13 +67,13 @@ struct FrameParsingData
 } // namespace avc
 
 // This class knows how to parse the bitrstream of HEVC annexB files
-class AnnexBAVC : public ParserAnnexB
+class ParserAnnexBAVC : public ParserAnnexB
 {
   Q_OBJECT
 
 public:
-  AnnexBAVC(QObject *parent = nullptr) : ParserAnnexB(parent){};
-  ~AnnexBAVC() = default;
+  ParserAnnexBAVC(QObject *parent = nullptr) : ParserAnnexB(parent){};
+  ~ParserAnnexBAVC() = default;
 
   // Get properties
   double                     getFramerate() const override;

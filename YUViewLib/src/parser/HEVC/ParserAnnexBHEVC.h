@@ -55,16 +55,16 @@ class pic_timing;
 } // namespace hevc
 
 // This class knows how to parse the bitrstream of HEVC annexB files
-class AnnexBHEVC : public ParserAnnexB
+class ParserAnnexBHEVC : public ParserAnnexB
 {
   Q_OBJECT
 
 public:
-  AnnexBHEVC(QObject *parent = nullptr) : ParserAnnexB(parent)
+  ParserAnnexBHEVC(QObject *parent = nullptr) : ParserAnnexB(parent)
   {
     curFrameFileStartEndPos = pairUint64(-1, -1);
   }
-  ~AnnexBHEVC(){};
+  ~ParserAnnexBHEVC(){};
 
   // Get some properties
   double                     getFramerate() const override;

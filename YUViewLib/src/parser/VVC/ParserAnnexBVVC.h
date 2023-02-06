@@ -76,13 +76,13 @@ struct ParsingState
 } // namespace vvc
 
 // This class knows how to parse the bitrstream of VVC annexB files
-class AnnexBVVC : public ParserAnnexB
+class ParserAnnexBVVC : public ParserAnnexB
 {
   Q_OBJECT
 
 public:
-  AnnexBVVC(QObject *parent = nullptr) : ParserAnnexB(parent){};
-  ~AnnexBVVC() = default;
+  ParserAnnexBVVC(QObject *parent = nullptr) : ParserAnnexB(parent){};
+  ~ParserAnnexBVVC() = default;
 
   // Get some properties
   double                     getFramerate() const override;

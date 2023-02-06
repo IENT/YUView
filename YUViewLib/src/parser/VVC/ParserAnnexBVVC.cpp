@@ -30,7 +30,7 @@
  *   along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "AnnexBVVC.h"
+#include "ParserAnnexBVVC.h"
 
 #include <algorithm>
 #include <cmath>
@@ -91,13 +91,13 @@ createBitrateEntryForAU(ParsingState &                                parsingSta
 
 } // namespace
 
-double AnnexBVVC::getFramerate() const
+double ParserAnnexBVVC::getFramerate() const
 {
   // Parsing of VUI not implemented yet
   return DEFAULT_FRAMERATE;
 }
 
-Size AnnexBVVC::getSequenceSizeSamples() const
+Size ParserAnnexBVVC::getSequenceSizeSamples() const
 {
   for (const auto &nal : this->nalUnitsForSeeking)
   {
@@ -111,7 +111,7 @@ Size AnnexBVVC::getSequenceSizeSamples() const
   return {};
 }
 
-video::yuv::PixelFormatYUV AnnexBVVC::getPixelFormat() const
+video::yuv::PixelFormatYUV ParserAnnexBVVC::getPixelFormat() const
 {
   using Subsampling = video::yuv::Subsampling;
 
@@ -151,7 +151,7 @@ video::yuv::PixelFormatYUV AnnexBVVC::getPixelFormat() const
   return {};
 }
 
-std::optional<ParserAnnexB::SeekData> AnnexBVVC::getSeekData(int iFrameNr)
+std::optional<ParserAnnexB::SeekData> ParserAnnexBVVC::getSeekData(int iFrameNr)
 {
   if (iFrameNr >= int(this->getNumberPOCs()) || iFrameNr < 0)
     return {};
@@ -224,12 +224,12 @@ std::optional<ParserAnnexB::SeekData> AnnexBVVC::getSeekData(int iFrameNr)
   return {};
 }
 
-QByteArray AnnexBVVC::getExtradata()
+QByteArray ParserAnnexBVVC::getExtradata()
 {
   return {};
 }
 
-IntPair AnnexBVVC::getProfileLevel()
+IntPair ParserAnnexBVVC::getProfileLevel()
 {
   for (const auto &nal : this->nalUnitsForSeeking)
   {
@@ -243,7 +243,7 @@ IntPair AnnexBVVC::getProfileLevel()
   return {};
 }
 
-Ratio AnnexBVVC::getSampleAspectRatio()
+Ratio ParserAnnexBVVC::getSampleAspectRatio()
 {
   for (const auto &nal : this->nalUnitsForSeeking)
   {
@@ -267,11 +267,11 @@ Ratio AnnexBVVC::getSampleAspectRatio()
 }
 
 ParserAnnexB::ParseResult
-AnnexBVVC::parseAndAddNALUnit(int                                           nalID,
-                              const ByteVector &                            data,
-                              std::optional<BitratePlotModel::BitrateEntry> bitrateEntry,
-                              std::optional<pairUint64>                     nalStartEndPosFile,
-                              std::shared_ptr<TreeItem>                     parent)
+ParserAnnexBVVC::parseAndAddNALUnit(int                                           nalID,
+                                    const ByteVector &                            data,
+                                    std::optional<BitratePlotModel::BitrateEntry> bitrateEntry,
+                                    std::optional<pairUint64> nalStartEndPosFile,
+                                    std::shared_ptr<TreeItem> parent)
 {
   ParserAnnexB::ParseResult parseResult;
   parseResult.success = true;
@@ -540,7 +540,8 @@ AnnexBVVC::parseAndAddNALUnit(int                                           nalI
     parseResult.success = false;
   }
 
-  DEBUG_VVC("AnnexBVVC::parseAndAddNALUnit NAL " + QString::fromStdString(specificDescription));
+  DEBUG_VVC("ParserAnnexBVVC::parseAndAddNALUnit NAL " +
+            QString::fromStdString(specificDescription));
 
   if (this->auDelimiterDetector.isStartOfNewAU(nalVVC,
                                                updatedParsingState.currentPictureHeaderStructure))
@@ -580,7 +581,7 @@ AnnexBVVC::parseAndAddNALUnit(int                                           nalI
   return parseResult;
 }
 
-int AnnexBVVC::calculateAndUpdateGlobalPOC(bool isIRAP, unsigned PicOrderCntVal)
+int ParserAnnexBVVC::calculateAndUpdateGlobalPOC(bool isIRAP, unsigned PicOrderCntVal)
 {
   if (isIRAP && this->maxPOCCount > 0 && PicOrderCntVal == 0)
   {
@@ -593,7 +594,7 @@ int AnnexBVVC::calculateAndUpdateGlobalPOC(bool isIRAP, unsigned PicOrderCntVal)
   return poc;
 }
 
-bool AnnexBVVC::handleNewAU(ParsingState &parsingState)
+bool ParserAnnexBVVC::handleNewAU(ParsingState &parsingState)
 {
   DEBUG_VVC("Start of new AU. Adding bitrate " << parsingState.currentAU.sizeBytes << " POC "
                                                << parsingState.currentAU.poc << " AU "
@@ -617,7 +618,7 @@ bool AnnexBVVC::handleNewAU(ParsingState &parsingState)
 }
 
 // 7.4.2.4.3
-bool AnnexBVVC::auDelimiterDetector_t::isStartOfNewAU(
+bool ParserAnnexBVVC::auDelimiterDetector_t::isStartOfNewAU(
     std::shared_ptr<vvc::NalUnitVVC> nal, std::shared_ptr<vvc::picture_header_structure> ph)
 {
   if (!nal || !ph)

@@ -30,7 +30,7 @@
  *   along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "AnnexBAVC.h"
+#include "ParserAnnexBAVC.h"
 
 #include <cmath>
 
@@ -92,7 +92,7 @@ getFrameDataWithUpdatedPosition(std::optional<FrameParsingData> data,
 
 } // namespace
 
-double AnnexBAVC::getFramerate() const
+double ParserAnnexBAVC::getFramerate() const
 {
   // Find the first SPS and return the framerate (if signaled)
   for (auto &nal : this->nalUnitsForSeeking)
@@ -109,7 +109,7 @@ double AnnexBAVC::getFramerate() const
   return 0.0;
 }
 
-Size AnnexBAVC::getSequenceSizeSamples() const
+Size ParserAnnexBAVC::getSequenceSizeSamples() const
 {
   // Find the first SPS and return the size
   for (auto &nal : this->nalUnitsForSeeking)
@@ -136,7 +136,7 @@ Size AnnexBAVC::getSequenceSizeSamples() const
   return {};
 }
 
-video::yuv::PixelFormatYUV AnnexBAVC::getPixelFormat() const
+video::yuv::PixelFormatYUV ParserAnnexBAVC::getPixelFormat() const
 {
   using Subsampling = video::yuv::Subsampling;
 
@@ -178,11 +178,11 @@ video::yuv::PixelFormatYUV AnnexBAVC::getPixelFormat() const
 }
 
 ParserAnnexB::ParseResult
-AnnexBAVC::parseAndAddNALUnit(int                                           nalID,
-                              const ByteVector &                            data,
-                              std::optional<BitratePlotModel::BitrateEntry> bitrateEntry,
-                              std::optional<pairUint64>                     nalStartEndPosFile,
-                              std::shared_ptr<TreeItem>                     parent)
+ParserAnnexBAVC::parseAndAddNALUnit(int                                           nalID,
+                                    const ByteVector &                            data,
+                                    std::optional<BitratePlotModel::BitrateEntry> bitrateEntry,
+                                    std::optional<pairUint64> nalStartEndPosFile,
+                                    std::shared_ptr<TreeItem> parent)
 {
   ParserAnnexB::ParseResult parseResult;
 
@@ -201,13 +201,13 @@ AnnexBAVC::parseAndAddNALUnit(int                                           nalI
         return parseResult;
       }
       if (this->curFrameData->fileStartEndPos)
-        DEBUG_AVC("AnnexBAVC::parseAndAddNALUnit Adding start/end "
+        DEBUG_AVC("ParserAnnexBAVC::parseAndAddNALUnit Adding start/end "
                   << this->curFrameData->fileStartEndPos->first << "/"
                   << this->curFrameData->fileStartEndPos->second << " - POC "
                   << *this->curFrameData->poc
                   << (this->curFrameData->isRandomAccess ? " - ra" : ""));
       else
-        DEBUG_AVC("AnnexBAVC::parseAndAddNALUnit Adding start/end NA/NA - POC "
+        DEBUG_AVC("ParserAnnexBAVC::parseAndAddNALUnit Adding start/end NA/NA - POC "
                   << *this->curFrameData->poc
                   << (this->curFrameData->isRandomAccess ? " - ra" : ""));
     }
@@ -263,7 +263,7 @@ AnnexBAVC::parseAndAddNALUnit(int                                           nalI
             newSPS->seqParameterSetData.vuiParameters.nalHrdParameters.CpbSize[0]);
       }
 
-      DEBUG_AVC("AnnexBAVC::parseAndAddNALUnit Parse SPS ID "
+      DEBUG_AVC("ParserAnnexBAVC::parseAndAddNALUnit Parse SPS ID "
                 << newSPS->seqParameterSetData.seq_parameter_set_id);
 
       nalAVC->rbsp    = newSPS;
@@ -282,7 +282,8 @@ AnnexBAVC::parseAndAddNALUnit(int                                           nalI
 
       specificDescription += " ID " + std::to_string(newPPS->pic_parameter_set_id);
 
-      DEBUG_AVC("AnnexBAVC::parseAndAddNALUnit Parse PPS ID " << newPPS->pic_parameter_set_id);
+      DEBUG_AVC("ParserAnnexBAVC::parseAndAddNALUnit Parse PPS ID "
+                << newPPS->pic_parameter_set_id);
 
       nalAVC->rbsp    = newPPS;
       nalAVC->rawData = data;
@@ -363,7 +364,8 @@ AnnexBAVC::parseAndAddNALUnit(int                                           nalI
       currentSliceIntra = isRandomAccess;
       currentSliceType  = to_string(newSliceHeader->slice_type);
 
-      DEBUG_AVC("AnnexBAVC::parseAndAddNALUnit Parsed Slice POC " << newSliceHeader->globalPOC);
+      DEBUG_AVC("ParserAnnexBAVC::parseAndAddNALUnit Parsed Slice POC "
+                << newSliceHeader->globalPOC);
       parseResult.nalTypeName = "Slice(POC " + std::to_string(newSliceHeader->globalPOC) + ") ";
     }
     else if (nalAVC->header.nal_unit_type == NalType::CODED_SLICE_DATA_PARTITION_B)
@@ -418,20 +420,20 @@ AnnexBAVC::parseAndAddNALUnit(int                                           nalI
 
       nalAVC->rbsp = newSEI;
       specificDescription += "(x" + std::to_string(newSEI->seis.size()) + ")";
-      DEBUG_AVC("AnnexBAVC::parseAndAddNALUnit Parsed SEI (" << newSEI->seis.size()
-                                                             << " messages)");
+      DEBUG_AVC("ParserAnnexBAVC::parseAndAddNALUnit Parsed SEI (" << newSEI->seis.size()
+                                                                   << " messages)");
       parseResult.nalTypeName = "SEI(x" + std::to_string(newSEI->seis.size()) + ") ";
     }
     else if (nalAVC->header.nal_unit_type == NalType::FILLER)
     {
       specificDescription = " Filler";
-      DEBUG_AVC("AnnexBAVC::parseAndAddNALUnit Parsed Filler data");
+      DEBUG_AVC("ParserAnnexBAVC::parseAndAddNALUnit Parsed Filler data");
       parseResult.nalTypeName = "Filler ";
     }
     else if (nalAVC->header.nal_unit_type == NalType::AUD)
     {
       specificDescription = " AUD";
-      DEBUG_AVC("AnnexBAVC::parseAndAddNALUnit Parsed AUD");
+      DEBUG_AVC("ParserAnnexBAVC::parseAndAddNALUnit Parsed AUD");
       parseResult.nalTypeName = "AUD ";
     }
 
@@ -452,7 +454,7 @@ AnnexBAVC::parseAndAddNALUnit(int                                           nalI
         catch (const std::exception &e)
         {
           (void)e;
-          DEBUG_AVC("AnnexBAVC::parseAndAddNALUnit Error reparsing SEI");
+          DEBUG_AVC("ParserAnnexBAVC::parseAndAddNALUnit Error reparsing SEI");
         }
       }
     }
@@ -461,7 +463,7 @@ AnnexBAVC::parseAndAddNALUnit(int                                           nalI
   {
     specificDescription += " ERROR " + std::string(e.what());
     parseResult.success = false;
-    DEBUG_AVC("AnnexBAVC::parseAndAddNALUnit " << e.what());
+    DEBUG_AVC("ParserAnnexBAVC::parseAndAddNALUnit " << e.what());
   }
 
   std::optional<int> curSlicePoc;
@@ -478,17 +480,17 @@ AnnexBAVC::parseAndAddNALUnit(int                                           nalI
                              " already in the POC list");
     }
     if (this->curFrameData->fileStartEndPos)
-      DEBUG_AVC("AnnexBAVC::parseAndAddNALUnit Adding start/end "
+      DEBUG_AVC("ParserAnnexBAVC::parseAndAddNALUnit Adding start/end "
                 << this->curFrameData->fileStartEndPos->first << "/"
                 << this->curFrameData->fileStartEndPos->second << " - POC "
                 << *this->curFrameData->poc << (this->curFrameData->isRandomAccess ? " - ra" : ""));
     else
-      DEBUG_AVC("AnnexBAVC::parseAndAddNALUnit Adding start/end NA/NA - POC "
+      DEBUG_AVC("ParserAnnexBAVC::parseAndAddNALUnit Adding start/end NA/NA - POC "
                 << *this->curFrameData->poc << (this->curFrameData->isRandomAccess ? " - ra" : ""));
 
     if (this->sizeCurrentAU > 0)
     {
-      DEBUG_AVC("AnnexBAVC::parseAndAddNALUnit Start of new AU. Adding bitrate "
+      DEBUG_AVC("ParserAnnexBAVC::parseAndAddNALUnit Start of new AU. Adding bitrate "
                 << this->sizeCurrentAU);
 
       BitratePlotModel::BitrateEntry entry;
@@ -573,7 +575,7 @@ AnnexBAVC::parseAndAddNALUnit(int                                           nalI
   return parseResult;
 }
 
-std::optional<ParserAnnexB::SeekData> AnnexBAVC::getSeekData(int iFrameNr)
+std::optional<ParserAnnexB::SeekData> ParserAnnexBAVC::getSeekData(int iFrameNr)
 {
   if (iFrameNr >= int(this->getNumberPOCs()) || iFrameNr < 0)
     return {};
@@ -638,7 +640,7 @@ std::optional<ParserAnnexB::SeekData> AnnexBAVC::getSeekData(int iFrameNr)
   return {};
 }
 
-QByteArray AnnexBAVC::getExtradata()
+QByteArray ParserAnnexBAVC::getExtradata()
 {
   // Convert the SPS and PPS that we found in the bitstream to the libavformat avcc format (see
   // avc.c)
@@ -713,7 +715,7 @@ QByteArray AnnexBAVC::getExtradata()
   return reader::SubByteReaderLogging::convertToQByteArray(e);
 }
 
-IntPair AnnexBAVC::getProfileLevel()
+IntPair ParserAnnexBAVC::getProfileLevel()
 {
   for (auto nal : this->nalUnitsForSeeking)
   {
@@ -726,7 +728,7 @@ IntPair AnnexBAVC::getProfileLevel()
   return {};
 }
 
-Ratio AnnexBAVC::getSampleAspectRatio()
+Ratio ParserAnnexBAVC::getSampleAspectRatio()
 {
   for (auto nal : this->nalUnitsForSeeking)
   {

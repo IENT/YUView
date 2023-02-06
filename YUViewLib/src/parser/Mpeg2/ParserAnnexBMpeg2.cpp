@@ -30,7 +30,7 @@
  *   along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "AnnexBMpeg2.h"
+#include "ParserAnnexBMpeg2.h"
 
 #include "NalUnitMpeg2.h"
 #include "group_of_pictures_header.h"
@@ -40,7 +40,6 @@
 #include "sequence_header.h"
 #include "user_data.h"
 #include <parser/common/Functions.h>
-
 
 #include <algorithm>
 
@@ -58,11 +57,11 @@ namespace parser
 using namespace mpeg2;
 
 ParserAnnexB::ParseResult
-AnnexBMpeg2::parseAndAddNALUnit(int                                           nalID,
-                                const ByteVector &                            data,
-                                std::optional<BitratePlotModel::BitrateEntry> bitrateEntry,
-                                std::optional<pairUint64>                     nalStartEndPosFile,
-                                std::shared_ptr<TreeItem>                     parent)
+ParserAnnexBMpeg2::parseAndAddNALUnit(int                                           nalID,
+                                      const ByteVector &                            data,
+                                      std::optional<BitratePlotModel::BitrateEntry> bitrateEntry,
+                                      std::optional<pairUint64> nalStartEndPosFile,
+                                      std::shared_ptr<TreeItem> parent)
 {
   ParserAnnexB::ParseResult parseResult;
 
@@ -107,7 +106,7 @@ AnnexBMpeg2::parseAndAddNALUnit(int                                           na
   std::string currentSliceType;
   if (nal_mpeg2.header.nal_unit_type == NalType::SEQUENCE_HEADER)
   {
-    DEBUG_MPEG2("AnnexBMpeg2::parseAndAddNALUnit Sequence header");
+    DEBUG_MPEG2("ParserAnnexBMpeg2::parseAndAddNALUnit Sequence header");
 
     auto newSequenceHeader = std::make_shared<sequence_header>();
     newSequenceHeader->parse(reader);
@@ -121,7 +120,7 @@ AnnexBMpeg2::parseAndAddNALUnit(int                                           na
   }
   else if (nal_mpeg2.header.nal_unit_type == NalType::PICTURE)
   {
-    DEBUG_MPEG2("AnnexBMpeg2::parseAndAddNALUnit Picture Header");
+    DEBUG_MPEG2("ParserAnnexBMpeg2::parseAndAddNALUnit Picture Header");
 
     auto newPictureHeader = std::make_shared<picture_header>();
     newPictureHeader->parse(reader);
@@ -142,7 +141,7 @@ AnnexBMpeg2::parseAndAddNALUnit(int                                           na
   }
   else if (nal_mpeg2.header.nal_unit_type == NalType::GROUP_START)
   {
-    DEBUG_MPEG2("AnnexBMpeg2::parseAndAddNALUnit Group Start");
+    DEBUG_MPEG2("ParserAnnexBMpeg2::parseAndAddNALUnit Group Start");
 
     auto newGroupOfPictureHeader = std::make_shared<group_of_pictures_header>();
     newGroupOfPictureHeader->parse(reader);
@@ -153,7 +152,7 @@ AnnexBMpeg2::parseAndAddNALUnit(int                                           na
   }
   else if (nal_mpeg2.header.nal_unit_type == NalType::USER_DATA)
   {
-    DEBUG_MPEG2("AnnexBMpeg2::parseAndAddNALUnit User Data");
+    DEBUG_MPEG2("ParserAnnexBMpeg2::parseAndAddNALUnit User Data");
 
     auto newUserData = std::make_shared<user_data>();
     newUserData->parse(reader);
@@ -164,7 +163,7 @@ AnnexBMpeg2::parseAndAddNALUnit(int                                           na
   }
   else if (nal_mpeg2.header.nal_unit_type == NalType::EXTENSION_START)
   {
-    DEBUG_MPEG2("AnnexBMpeg2::parseAndAddNALUnit Extension Start");
+    DEBUG_MPEG2("ParserAnnexBMpeg2::parseAndAddNALUnit Extension Start");
 
     auto newExtension = std::make_shared<nal_extension>();
     newExtension->parse(reader);
@@ -243,7 +242,7 @@ AnnexBMpeg2::parseAndAddNALUnit(int                                           na
   return parseResult;
 }
 
-IntPair AnnexBMpeg2::getProfileLevel()
+IntPair ParserAnnexBMpeg2::getProfileLevel()
 {
   if (firstSequenceExtension)
     return {firstSequenceExtension->profile_identification,
@@ -251,7 +250,7 @@ IntPair AnnexBMpeg2::getProfileLevel()
   return {};
 }
 
-double AnnexBMpeg2::getFramerate() const
+double ParserAnnexBMpeg2::getFramerate() const
 {
   double frame_rate = 0.0;
   if (firstSequenceHeader && firstSequenceHeader->frame_rate_code > 0 &&
@@ -271,7 +270,7 @@ double AnnexBMpeg2::getFramerate() const
   return frame_rate;
 }
 
-Size AnnexBMpeg2::getSequenceSizeSamples() const
+Size ParserAnnexBMpeg2::getSequenceSizeSamples() const
 {
   if (!firstSequenceHeader)
     return {};
@@ -287,7 +286,7 @@ Size AnnexBMpeg2::getSequenceSizeSamples() const
   return Size(w, h);
 }
 
-video::yuv::PixelFormatYUV AnnexBMpeg2::getPixelFormat() const
+video::yuv::PixelFormatYUV ParserAnnexBMpeg2::getPixelFormat() const
 {
   if (firstSequenceExtension)
   {
@@ -302,7 +301,7 @@ video::yuv::PixelFormatYUV AnnexBMpeg2::getPixelFormat() const
   return {};
 }
 
-Ratio AnnexBMpeg2::getSampleAspectRatio()
+Ratio ParserAnnexBMpeg2::getSampleAspectRatio()
 {
   if (firstSequenceHeader)
   {

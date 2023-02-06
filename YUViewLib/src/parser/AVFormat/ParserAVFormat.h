@@ -32,7 +32,7 @@
 
 #pragma once
 
-#include "../AV1/AV1OBU.h"
+#include "../AV1/ParserAV1OBU.h"
 #include "../Parser.h"
 #include "../ParserAnnexB.h"
 #include <ffmpeg/FFmpegVersionHandler.h>
@@ -47,13 +47,13 @@ namespace parser
  * libavformat. If the bitstream within the container is a supported annexB bitstream, this parser
  * can use that parser to even parser deeper.
  */
-class AVFormat : public Parser
+class ParserAVFormat : public Parser
 {
   Q_OBJECT
 
 public:
-  AVFormat(QObject *parent = nullptr) : Parser(parent) {}
-  ~AVFormat() {}
+  ParserAVFormat(QObject *parent = nullptr) : Parser(parent) {}
+  ~ParserAVFormat() {}
 
   QList<QTreeWidgetItem *> getStreamInfo() override;
   unsigned int             getNrStreams() override

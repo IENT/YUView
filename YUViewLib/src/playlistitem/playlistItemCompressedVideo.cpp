@@ -47,9 +47,9 @@
 #include <decoder/decoderLibde265.h>
 #include <decoder/decoderVTM.h>
 #include <decoder/decoderVVDec.h>
-#include <parser/AVC/AnnexBAVC.h>
-#include <parser/HEVC/AnnexBHEVC.h>
-#include <parser/VVC/AnnexBVVC.h>
+#include <parser/AVC/ParserAnnexBAVC.h>
+#include <parser/HEVC/ParserAnnexBHEVC.h>
+#include <parser/VVC/ParserAnnexBVVC.h>
 #include <parser/common/SubByteReaderLogging.h>
 #include <statistics/StatisticsDataPainting.h>
 #include <ui/Mainwindow.h>
@@ -149,20 +149,20 @@ playlistItemCompressedVideo::playlistItemCompressedVideo(const QString &compress
     if (this->inputFormat == InputFormat::AnnexBHEVC)
     {
       DEBUG_COMPRESSED("playlistItemCompressedVideo::playlistItemCompressedVideo Type is HEVC");
-      this->inputFileAnnexBParser = std::make_unique<parser::AnnexBHEVC>();
+      this->inputFileAnnexBParser = std::make_unique<parser::ParserAnnexBHEVC>();
       this->ffmpegCodec.setTypeHEVC();
       codec = Codec::HEVC;
     }
     else if (this->inputFormat == InputFormat::AnnexBVVC)
     {
       DEBUG_COMPRESSED("playlistItemCompressedVideo::playlistItemCompressedVideo Type is VVC");
-      this->inputFileAnnexBParser = std::make_unique<parser::AnnexBVVC>();
+      this->inputFileAnnexBParser = std::make_unique<parser::ParserAnnexBVVC>();
       codec                       = Codec::VVC;
     }
     else if (this->inputFormat == InputFormat::AnnexBAVC)
     {
       DEBUG_COMPRESSED("playlistItemCompressedVideo::playlistItemCompressedVideo Type is AVC");
-      this->inputFileAnnexBParser = std::make_unique<parser::AnnexBAVC>();
+      this->inputFileAnnexBParser = std::make_unique<parser::ParserAnnexBAVC>();
       this->ffmpegCodec.setTypeAVC();
       codec = Codec::Other;
     }

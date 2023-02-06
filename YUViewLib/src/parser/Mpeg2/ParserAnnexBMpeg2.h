@@ -45,13 +45,13 @@ class sequence_header;
 class picture_header;
 } // namespace mpeg2
 
-class AnnexBMpeg2 : public ParserAnnexB
+class ParserAnnexBMpeg2 : public ParserAnnexB
 {
   Q_OBJECT
 
 public:
-  AnnexBMpeg2(QObject *parent = nullptr) : ParserAnnexB(parent){};
-  ~AnnexBMpeg2(){};
+  ParserAnnexBMpeg2(QObject *parent = nullptr) : ParserAnnexB(parent){};
+  ~ParserAnnexBMpeg2(){};
 
   // Get properties
   double                     getFramerate() const override;
