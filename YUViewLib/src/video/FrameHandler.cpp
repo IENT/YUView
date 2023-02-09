@@ -34,7 +34,7 @@
 
 #include <QPainter>
 
-#include <common/FunctionsGui.h>>
+#include <common/FunctionsGui.h>
 #include <decoder/decoderTarga.h>
 #include <playlistitem/playlistItem.h>
 
