@@ -1,7 +1,6 @@
 #include <QtTest>
 
-#include <video/PixelFormatRGB.h>
-#include <video/PixelFormatRGBGuess.h>
+#include <video/rgb/PixelFormatRGBGuess.h>
 
 #include <iostream>
 

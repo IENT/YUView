@@ -1,6 +1,6 @@
 #include <QtTest>
 
-#include <video/PixelFormatRGB.h>
+#include <video/rgb/PixelFormatRGB.h>
 
 using namespace video;
 using namespace video::rgb;
