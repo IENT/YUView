@@ -282,26 +282,27 @@ struct Ratio
 
 struct Size
 {
-  Size(unsigned width, unsigned height) : width(width), height(height) {}
-  Size(int w, int h)
+  constexpr Size(unsigned width, unsigned height) : width(width), height(height) {}
+  constexpr Size(int w, int h)
   {
     if (w > 0)
       this->width = unsigned(w);
     if (h > 0)
       this->height = unsigned(h);
   }
-  Size() = default;
-  bool operator==(const Size &other) const
+  constexpr Size() = default;
+
+  constexpr bool operator==(const Size &other) const
   {
     return this->width == other.width && this->height == other.height;
   }
-  bool operator!=(const Size &other) const
+  constexpr bool operator!=(const Size &other) const
   {
     return this->width != other.width || this->height != other.height;
   }
-  bool     isValid() const { return this->width != 0 && this->height != 0; }
-  unsigned width{};
-  unsigned height{};
+  constexpr bool isValid() const { return this->width != 0 && this->height != 0; }
+  unsigned       width{};
+  unsigned       height{};
 };
 
 struct Offset

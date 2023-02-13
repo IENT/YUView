@@ -32,7 +32,7 @@
 
 #include "ConversionRGB.h"
 
-#include <video/videoHandler.h>
+#include <video/LimitedRangeToFullRange.h>
 
 namespace video::rgb
 {
@@ -124,9 +124,9 @@ void convertRGBToRGBA(const QByteArray &    sourceBuffer,
 
     if (limitedRange)
     {
-      valR = videoHandler::convScaleLimitedRange(valR);
-      valG = videoHandler::convScaleLimitedRange(valG);
-      valB = videoHandler::convScaleLimitedRange(valB);
+      valR = LimitedRangeToFullRange.at(valR);
+      valG = LimitedRangeToFullRange.at(valG);
+      valB = LimitedRangeToFullRange.at(valB);
       // No limited range for alpha
     }
 
@@ -189,7 +189,7 @@ void convertRGBPlaneToRGBA(const QByteArray &    sourceBuffer,
     if (invert)
       val = 255 - val;
     if (limitedRange)
-      val = videoHandler::convScaleLimitedRange(val);
+      val = LimitedRangeToFullRange.at(val);
     targetBuffer[0] = val;
     targetBuffer[1] = val;
     targetBuffer[2] = val;
