@@ -56,10 +56,10 @@ public:
   AVCodecContextWrapper &  getCodec();
   AVRational               getAvgFrameRate();
   AVRational               getTimeBase();
-  int                      getFrameWidth();
-  int                      getFrameHeight();
+  Size                     getFrameSize();
   AVColorSpace             getColorspace();
   AVPixelFormat            getPixelFormat();
+  QByteArray               getExtradata();
   int                      getIndex();
   AVCodecParametersWrapper getCodecpar();
 

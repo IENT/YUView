@@ -5,7 +5,7 @@ CONFIG -= debug_and_release
 CONFIG -= app_bundled
 CONFIG += c++1z
 
-TARGET = tst_FilesourceAnnexB
+TARGET = FilesourceTest
 
 QT += testlib
 QT -= gui
@@ -13,4 +13,4 @@ QT -= gui
 INCLUDEPATH += $$top_srcdir/YUViewLib/src
 LIBS += -L$$top_builddir/YUViewLib -lYUViewLib
 
-SOURCES += tst_FilesourceAnnexB.cpp
+SOURCES += FilesourceTest.cpp

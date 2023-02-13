@@ -319,50 +319,40 @@ video::rgb::PixelFormatRGB AVPixFmtDescriptorWrapper::getRGBPixelFormat() const
 
 bool AVPixFmtDescriptorWrapper::setValuesFromPixelFormatYUV(PixelFormatYUV fmt)
 {
-  if (fmt.getPlaneOrder() == PlaneOrder::YVU || fmt.getPlaneOrder() == PlaneOrder::YVUA)
+  const auto planeOrder = fmt.getPlaneOrder();
+  if (planeOrder == PlaneOrder::YVU || planeOrder == PlaneOrder::YVUA)
     return false;
 
-  if (fmt.getSubsampling() == Subsampling::YUV_422)
+  const auto subsampling = fmt.getSubsampling();
+  switch (subsampling)
   {
+  case Subsampling::YUV_422:
     this->log2_chroma_w = 1;
     this->log2_chroma_h = 0;
-  }
-  else if (fmt.getSubsampling() == Subsampling::YUV_422)
-  {
-    this->log2_chroma_w = 1;
-    this->log2_chroma_h = 0;
-  }
-  else if (fmt.getSubsampling() == Subsampling::YUV_420)
-  {
+    break;
+  case Subsampling::YUV_420:
     this->log2_chroma_w = 1;
     this->log2_chroma_h = 1;
-  }
-  else if (fmt.getSubsampling() == Subsampling::YUV_440)
-  {
+    break;
+  case Subsampling::YUV_440:
     this->log2_chroma_w = 0;
     this->log2_chroma_h = 1;
-  }
-  else if (fmt.getSubsampling() == Subsampling::YUV_410)
-  {
+    break;
+  case Subsampling::YUV_410:
     this->log2_chroma_w = 2;
     this->log2_chroma_h = 2;
-  }
-  else if (fmt.getSubsampling() == Subsampling::YUV_411)
-  {
+    break;
+  case Subsampling::YUV_411:
     this->log2_chroma_w = 0;
     this->log2_chroma_h = 2;
+    break;
   }
-  else if (fmt.getSubsampling() == Subsampling::YUV_400)
-    this->nb_components = 1;
-  else
-    return false;
 
-  this->nb_components = fmt.getSubsampling() == Subsampling::YUV_400 ? 1 : 3;
+  this->nb_components = (subsampling == Subsampling::YUV_400 ? 1 : 3);
 
-  this->flags.bigEndian = fmt.isBigEndian();
-  this->flags.planar    = fmt.isPlanar();
-  if (fmt.getPlaneOrder() == PlaneOrder::YUVA)
-    this->flags.hasAlphaPlane = true;
+  this->flags.bigEndian     = fmt.isBigEndian();
+  this->flags.planar        = fmt.isPlanar();
+  this->flags.hasAlphaPlane = (planeOrder == PlaneOrder::YUVA);
 
   for (int i = 0; i < this->nb_components; i++)
   {

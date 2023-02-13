@@ -32,10 +32,11 @@
 
 #pragma once
 
-#include <common/Typedef.h>
+#include <chrono>
 
-#include "views/SplitViewWidget.h"
-#include "widgets/PlaylistTreeWidget.h"
+#include <common/Typedef.h>
+#include <ui/views/SplitViewWidget.h>
+#include <ui/widgets/PlaylistTreeWidget.h>
 
 #include <QBasicTimer>
 #include <QPointer>
@@ -47,49 +48,53 @@
 class playlistItem;
 class PlaylistTreeWidget;
 
-class PlaybackController : public QWidget, private Ui::PlaybackController
+class CountDown
+{
+public:
+  CountDown() = default;
+  CountDown(const int ticks);
+  bool tickAndGetIsExpired();
+  int  getTicks() const { return this->initialTicks; }
+  int  getCurrentTick() const { return this->tick; }
+
+private:
+  int tick{};
+  int initialTicks{};
+};
+
+class StopWatch
+{
+public:
+  StopWatch();
+  int getMsSinceCreation() const;
+
+private:
+  std::chrono::high_resolution_clock::time_point creationTimePoint{};
+};
+
+class PlaybackController : public QWidget
 {
   Q_OBJECT
 
 public:
   PlaybackController();
 
-  void setSplitViews(splitViewWidget *primary, splitViewWidget *separate)
-  {
-    splitViewPrimary  = primary;
-    splitViewSeparate = separate;
-  }
-  void setPlaylist(PlaylistTreeWidget *playlistWidget) { playlist = playlistWidget; }
+  void setSplitViews(splitViewWidget *primary, splitViewWidget *separate);
+  void setPlaylist(PlaylistTreeWidget *playlistWidget);
 
-  // If playback is running, stop it by pressing the playPauseButton.
-  void pausePlayback()
-  {
-    if (playing())
-      on_playPauseButton_clicked();
-  }
+  void pausePlayback();
 
-  // What is the sate of the playback?
-  bool playing() const { return playbackMode != PlaybackStopped; }
-  bool isWaitingForCaching() const { return playbackMode == PlaybackWaitingForCache; }
+  bool playing() const;
+  bool isWaitingForCaching() const;
+  int  getCurrentFrame() const;
 
-  // Get the currently shown frame index
-  int getCurrentFrame() const { return currentFrameIdx; }
-  // Set the current frame in the controls and update the splitView without invoking more events
-  // from the controls. Return if an update was performed.
-  bool setCurrentFrame(int frame, bool updateView = true);
-
-  // Using the currentFrameIdx and the repreat mode, calculate the next frame index.
-  // -1: The next frame is the first fame of the next item.
-  int getNextFrameIndex();
+  bool setCurrentFrameAndUpdate(int frame, bool updateView = true);
 
 public slots:
-  // Slots for the play/stop/toggleRepera buttons (these are automatically connected by the UI file
-  // (connectSlotsByName))
   void on_playPauseButton_clicked();
   void on_stopButton_clicked();
   void on_repeatModeButton_clicked();
 
-  // Slots for skipping to the next/previous frame. There could be buttons connected to these.
   void nextFrame();
   void previousFrame();
 
@@ -106,8 +111,9 @@ public slots:
   // an update() in the splitView if necessary.
   void selectionPropertiesChanged(bool redraw);
 
-  // Update the current settings fomr the QSettings
   void updateSettings();
+  void loadButtonIcons();
+  void updatePlayPauseButtonIcon();
 
 signals:
   void ControllerStartCachingCurrentSelection(indexRange range);
@@ -117,48 +123,46 @@ signals:
   // finished.
   void waitForItemCaching(playlistItem *item);
 
-  // The playback is now going to start
   void signalPlaybackStarting();
 
 public slots:
-  // The video cache calls this if caching of the item is finished
   void itemCachingFinished(playlistItem *item);
 
 private slots:
-  // The user is fiddeling with the slider/spinBox controls (automatically connected)
   void on_frameSlider_valueChanged(int val);
-  void on_frameSpinBox_valueChanged(int val) { on_frameSlider_valueChanged(val); }
+  void on_frameSpinBox_valueChanged(int val) { this->on_frameSlider_valueChanged(val); }
 
 private:
-  // Enable/disable all controls
-  void enableControls(bool enable);
-  bool controlsEnabled;
+  std::optional<int> getNextFrameIndexInCurrentItem();
 
-  // Update the frame range (minimum/maximum frame number)
+  void enableControls(bool enable);
+  bool controlsEnabled{};
+
   void updateFrameRange();
+  void goToNextItem();
+  void goToNextFrame(const int nextFrameIndex);
 
   // The current frame index. -1 means the frame index is invalid. In this case, lastValidFrameIdx
   // contains the last valid frame index which will be restored if a valid indexed item is selected.
-  int currentFrameIdx;
-  int lastValidFrameIdx;
+  int currentFrameIdx{-1};
+  int lastValidFrameIdx{-1};
 
-  // Start the time if not running or update the timer interval. This is called when we jump to the
-  // next item, when the user presses play or when the rate of the current item changes.
   void startOrUpdateTimer();
-  // Start playback. Start the timer (startOrUpdateTimer()), set the icons, inform the split
-  // views...
   void startPlayback();
 
-  // Set the new repeat mode and save it into the settings. Update the control.
-  // Always use this function to set the new repeat mode.
-  typedef enum
+  enum class RepeatMode
   {
-    RepeatModeOff,
-    RepeatModeOne,
-    RepeatModeAll
-  } RepeatMode;
-  RepeatMode repeatMode;
-  void       setRepeatMode(RepeatMode mode);
+    Off,
+    One,
+    All
+  };
+  EnumMapper<RepeatMode> RepeatModeMapper{
+      {{RepeatMode::Off, "Off"}, {RepeatMode::One, "One"}, {RepeatMode::All, "All"}}};
+  RepeatMode repeatMode{RepeatMode::Off};
+  void       setRepeatModeAndUpdateIcons(const RepeatMode mode);
+
+  void updateFrameSliderAndSpinBoxWithoutSignals(const int                value,
+                                                 const std::optional<int> sliderMaximum = {});
 
   QIcon iconPlay;
   QIcon iconStop;
@@ -168,37 +172,30 @@ private:
   QIcon iconRepeatOne;
 
   // Is playback currently running?
-  typedef enum
+  enum class PlaybackMode
   {
-    PlaybackStopped,
-    PlaybackRunning,
-    PlaybackStalled,
-    PlaybackWaitingForCache,
-  } PlaybackMode;
-  PlaybackMode playbackMode;
+    Stopped,
+    Running,
+    Stalled,
+    WaitingForCache,
+  };
+  PlaybackMode playbackMode{PlaybackMode::Stopped};
 
-  // If playback mode is PlaybackStalled, which items are we waiting for?
-  bool waitingForItem[2];
+  bool waitingForItem[2]{false, false};
+  bool playbackWasStalled{false};
+  bool waitForCachingOfItem{};
 
-  // Was playback stalled recently? This is used to indicate stalling in the fps label.
-  bool playbackWasStalled;
-
-  // Before starting playback of an item, do we wait until caching is complete?
-  bool waitForCachingOfItem;
-
-  // The timer for playback
-  QBasicTimer timer;
-  int timerInterval;   // The current timer interval in milli seconds. If it changes, update the
-                       // running timer.
-  int timerFPSCounter; // Every time the timer is toggled count this up. If it reaches 50, calculate
-                       // FPS.
-  QTime timerLastFPSTime; // The last time we updated the FPS counter. Used to calculate new FPS.
-  int   timerStaticItemCountDown; // Also for static items we run the timer to update the slider.
+  QBasicTimer               timer;
+  std::chrono::milliseconds timerInterval{};
+  CountDown                 countdownForFPSUpdate;
+  StopWatch                 fpsUpdateStopWatch;
+  CountDown                 countDownForStaticItem;
   virtual void
   timerEvent(QTimerEvent *event) override; // Overloaded from QObject. Called when the timer fires.
 
-  // We keep a pointer to the currently selected item(s)
   QPointer<playlistItem> currentItem[2];
+  bool                   anyItemIndexedByFrame() const;
+  double                 getCurrentItemsFrameRate() const;
 
   // The playback controller has a pointer to the split view so it can toggle a redraw event when a
   // new frame is selected. This could also be done using signals/slots but the problem is that
@@ -207,7 +204,7 @@ private:
   QPointer<splitViewWidget> splitViewPrimary;
   QPointer<splitViewWidget> splitViewSeparate;
 
-  // We keep a pointer to the playlist tree so we can select the next item, see if there is a next
-  // item and so on.
   QPointer<PlaylistTreeWidget> playlist;
+
+  Ui::PlaybackController ui;
 };

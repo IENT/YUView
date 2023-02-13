@@ -30,7 +30,7 @@
  *   along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "AnnexBAVC.h"
+#include "ParserAnnexBAVC.h"
 
 #include <cmath>
 
@@ -41,11 +41,11 @@
 #include "nal_unit_header.h"
 #include "parser/Subtitles/AnnexBItuTT35.h"
 #include "parser/common/SubByteReaderLogging.h"
-#include <parser/common/Functions.h>
 #include "pic_parameter_set_rbsp.h"
 #include "seq_parameter_set_rbsp.h"
 #include "slice_header.h"
 #include "slice_rbsp.h"
+#include <parser/common/Functions.h>
 
 #define PARSER_AVC_DEBUG_OUTPUT 0
 #if PARSER_AVC_DEBUG_OUTPUT && !NDEBUG
@@ -60,7 +60,39 @@ namespace parser
 
 using namespace avc;
 
-double AnnexBAVC::getFramerate() const
+namespace
+{
+
+struct CurrentSliceData
+{
+  int  poc{};
+  bool isRandomAccess{};
+};
+
+std::optional<FrameParsingData>
+getFrameDataWithUpdatedPosition(std::optional<FrameParsingData> data,
+                                std::optional<pairUint64>       nalStartEndPosFile,
+                                std::optional<CurrentSliceData> currentSliceData)
+{
+  auto newData = data.value_or(FrameParsingData());
+  if (nalStartEndPosFile)
+  {
+    if (!newData.fileStartEndPos)
+      newData.fileStartEndPos = nalStartEndPosFile;
+    else
+      newData.fileStartEndPos->second = nalStartEndPosFile->second;
+  }
+  if (currentSliceData)
+  {
+    newData.poc            = currentSliceData->poc;
+    newData.isRandomAccess = currentSliceData->isRandomAccess;
+  }
+  return newData;
+}
+
+} // namespace
+
+double ParserAnnexBAVC::getFramerate() const
 {
   // Find the first SPS and return the framerate (if signaled)
   for (auto &nal : this->nalUnitsForSeeking)
@@ -77,7 +109,7 @@ double AnnexBAVC::getFramerate() const
   return 0.0;
 }
 
-Size AnnexBAVC::getSequenceSizeSamples() const
+Size ParserAnnexBAVC::getSequenceSizeSamples() const
 {
   // Find the first SPS and return the size
   for (auto &nal : this->nalUnitsForSeeking)
@@ -104,7 +136,7 @@ Size AnnexBAVC::getSequenceSizeSamples() const
   return {};
 }
 
-video::yuv::PixelFormatYUV AnnexBAVC::getPixelFormat() const
+video::yuv::PixelFormatYUV ParserAnnexBAVC::getPixelFormat() const
 {
   using Subsampling = video::yuv::Subsampling;
 
@@ -145,36 +177,39 @@ video::yuv::PixelFormatYUV AnnexBAVC::getPixelFormat() const
   return {};
 }
 
-AnnexB::ParseResult
-AnnexBAVC::parseAndAddNALUnit(int                                           nalID,
-                              const ByteVector &                            data,
-                              std::optional<BitratePlotModel::BitrateEntry> bitrateEntry,
-                              std::optional<pairUint64>                     nalStartEndPosFile,
-                              std::shared_ptr<TreeItem>                     parent)
+ParserAnnexB::ParseResult
+ParserAnnexBAVC::parseAndAddNALUnit(int                                           nalID,
+                                    const ByteVector &                            data,
+                                    std::optional<BitratePlotModel::BitrateEntry> bitrateEntry,
+                                    std::optional<pairUint64> nalStartEndPosFile,
+                                    std::shared_ptr<TreeItem> parent)
 {
-  AnnexB::ParseResult parseResult;
+  ParserAnnexB::ParseResult parseResult;
 
   if (nalID == -1 && data.empty())
   {
-    if (this->curFramePOC != -1)
+    if (this->curFrameData && this->curFrameData->poc)
     {
       // Save the info of the last frame
-      if (!this->addFrameToList(
-              this->curFramePOC, this->curFrameFileStartEndPos, this->curFrameIsRandomAccess))
+      if (!this->addFrameToList(*this->curFrameData->poc,
+                                this->curFrameData->fileStartEndPos,
+                                this->curFrameData->isRandomAccess))
       {
         if (parent)
-          parent->createChildItem("Error - POC " + std::to_string(this->curFramePOC) +
+          parent->createChildItem("Error - POC " + std::to_string(*this->curFrameData->poc) +
                                   "alread in the POC list.");
         return parseResult;
       }
-      if (this->curFrameFileStartEndPos)
-        DEBUG_AVC("AnnexBAVC::parseAndAddNALUnit Adding start/end "
-                  << curFrameFileStartEndPos->first << "/" << this->curFrameFileStartEndPos->second
-                  << " - POC " << this->curFramePOC
-                  << (this->curFrameIsRandomAccess ? " - ra" : ""));
+      if (this->curFrameData->fileStartEndPos)
+        DEBUG_AVC("ParserAnnexBAVC::parseAndAddNALUnit Adding start/end "
+                  << this->curFrameData->fileStartEndPos->first << "/"
+                  << this->curFrameData->fileStartEndPos->second << " - POC "
+                  << *this->curFrameData->poc
+                  << (this->curFrameData->isRandomAccess ? " - ra" : ""));
       else
-        DEBUG_AVC("AnnexBAVC::parseAndAddNALUnit Adding start/end NA/NA - POC "
-                  << this->curFramePOC << (this->curFrameIsRandomAccess ? " - ra" : ""));
+        DEBUG_AVC("ParserAnnexBAVC::parseAndAddNALUnit Adding start/end NA/NA - POC "
+                  << *this->curFrameData->poc
+                  << (this->curFrameData->isRandomAccess ? " - ra" : ""));
     }
     // The file ended
     this->hrd.endOfFile(this->getHRDPlotModel());
@@ -191,12 +226,14 @@ AnnexBAVC::parseAndAddNALUnit(int                                           nalI
     nalRoot = packetModel->rootItem->createChildItem();
 
   if (nalRoot)
-    AnnexB::logNALSize(data, nalRoot, nalStartEndPosFile);
+    ParserAnnexB::logNALSize(data, nalRoot, nalStartEndPosFile);
 
   reader::SubByteReaderLogging reader(data, nalRoot, "", getStartCodeOffset(data));
 
   std::string specificDescription;
   auto        nalAVC = std::make_shared<NalUnitAVC>(nalID, nalStartEndPosFile);
+
+  std::optional<CurrentSliceData> currentSliceData;
 
   bool        currentSliceIntra = false;
   std::string currentSliceType;
@@ -226,7 +263,7 @@ AnnexBAVC::parseAndAddNALUnit(int                                           nalI
             newSPS->seqParameterSetData.vuiParameters.nalHrdParameters.CpbSize[0]);
       }
 
-      DEBUG_AVC("AnnexBAVC::parseAndAddNALUnit Parse SPS ID "
+      DEBUG_AVC("ParserAnnexBAVC::parseAndAddNALUnit Parse SPS ID "
                 << newSPS->seqParameterSetData.seq_parameter_set_id);
 
       nalAVC->rbsp    = newSPS;
@@ -245,7 +282,8 @@ AnnexBAVC::parseAndAddNALUnit(int                                           nalI
 
       specificDescription += " ID " + std::to_string(newPPS->pic_parameter_set_id);
 
-      DEBUG_AVC("AnnexBAVC::parseAndAddNALUnit Parse PPS ID " << newPPS->pic_parameter_set_id);
+      DEBUG_AVC("ParserAnnexBAVC::parseAndAddNALUnit Parse PPS ID "
+                << newPPS->pic_parameter_set_id);
 
       nalAVC->rbsp    = newPPS;
       nalAVC->rawData = data;
@@ -302,58 +340,32 @@ AnnexBAVC::parseAndAddNALUnit(int                                           nalI
       else if (newSliceHeader->slice_type == SliceType::SLICE_I)
         specificDescription += " I-Slice";
 
-      auto isRandomAccess = (nalAVC->header.nal_unit_type == NalType::CODED_SLICE_IDR ||
-                             newSliceHeader->slice_type == SliceType::SLICE_I);
+      const auto isRandomAccess = (nalAVC->header.nal_unit_type == NalType::CODED_SLICE_IDR ||
+                                   newSliceHeader->slice_type == SliceType::SLICE_I);
+      const auto isFirstSlice   = (newSliceHeader->first_mb_in_slice == 0);
       if (!newSliceHeader->bottom_field_flag &&
           (!this->last_picture_first_slice ||
            newSliceHeader->TopFieldOrderCnt != this->last_picture_first_slice->TopFieldOrderCnt ||
            isRandomAccess) &&
-          newSliceHeader->first_mb_in_slice == 0)
+          isFirstSlice)
         this->last_picture_first_slice = newSliceHeader;
 
       specificDescription += " POC " + std::to_string(newSliceHeader->globalPOC);
 
-      if (newSliceHeader->first_mb_in_slice == 0)
+      if (isFirstSlice)
       {
-        // This slice NAL is the start of a new frame
-        if (this->curFramePOC != -1)
-        {
-          // Save the info of the last frame
-          if (!this->addFrameToList(
-                  this->curFramePOC, this->curFrameFileStartEndPos, this->curFrameIsRandomAccess))
-          {
-            throw std::logic_error("Error - POC " + std::to_string(this->curFramePOC) +
-                                   " already in the POC list");
-          }
-          if (this->curFrameFileStartEndPos)
-            DEBUG_AVC("AnnexBAVC::parseAndAddNALUnit Adding start/end "
-                      << this->curFrameFileStartEndPos->first << "/"
-                      << this->curFrameFileStartEndPos->second << " - POC " << this->curFramePOC
-                      << (this->curFrameIsRandomAccess ? " - ra" : ""));
-          else
-            DEBUG_AVC("AnnexBAVC::parseAndAddNALUnit Adding start/end NA/NA - POC "
-                      << this->curFramePOC << (this->curFrameIsRandomAccess ? " - ra" : ""));
-        }
-        this->curFrameFileStartEndPos = nalStartEndPosFile;
-        this->curFramePOC             = newSliceHeader->globalPOC;
-        this->curFrameIsRandomAccess  = isRandomAccess;
-        this->currentAUAssociatedSPS  = refSPS;
+        currentSliceData = CurrentSliceData({newSliceHeader->globalPOC, isRandomAccess});
+        this->currentAUAssociatedSPS = refSPS;
       }
-      else if (this->curFrameFileStartEndPos && nalStartEndPosFile)
-        // Another slice NAL which belongs to the last frame
-        // Update the end position
-        this->curFrameFileStartEndPos->second = nalStartEndPosFile->second;
 
-      if (isRandomAccess && newSliceHeader->first_mb_in_slice == 0)
-      {
-        // This is the first slice of a random access point. Add it to the list.
+      if (isRandomAccess && isFirstSlice)
         this->nalUnitsForSeeking.push_back(nalAVC);
-      }
 
       currentSliceIntra = isRandomAccess;
       currentSliceType  = to_string(newSliceHeader->slice_type);
 
-      DEBUG_AVC("AnnexBAVC::parseAndAddNALUnit Parsed Slice POC " << newSliceHeader->globalPOC);
+      DEBUG_AVC("ParserAnnexBAVC::parseAndAddNALUnit Parsed Slice POC "
+                << newSliceHeader->globalPOC);
       parseResult.nalTypeName = "Slice(POC " + std::to_string(newSliceHeader->globalPOC) + ") ";
     }
     else if (nalAVC->header.nal_unit_type == NalType::CODED_SLICE_DATA_PARTITION_B)
@@ -408,20 +420,20 @@ AnnexBAVC::parseAndAddNALUnit(int                                           nalI
 
       nalAVC->rbsp = newSEI;
       specificDescription += "(x" + std::to_string(newSEI->seis.size()) + ")";
-      DEBUG_AVC("AnnexBAVC::parseAndAddNALUnit Parsed SEI (" << newSEI->seis.size()
-                                                             << " messages)");
+      DEBUG_AVC("ParserAnnexBAVC::parseAndAddNALUnit Parsed SEI (" << newSEI->seis.size()
+                                                                   << " messages)");
       parseResult.nalTypeName = "SEI(x" + std::to_string(newSEI->seis.size()) + ") ";
     }
     else if (nalAVC->header.nal_unit_type == NalType::FILLER)
     {
       specificDescription = " Filler";
-      DEBUG_AVC("AnnexBAVC::parseAndAddNALUnit Parsed Filler data");
+      DEBUG_AVC("ParserAnnexBAVC::parseAndAddNALUnit Parsed Filler data");
       parseResult.nalTypeName = "Filler ";
     }
     else if (nalAVC->header.nal_unit_type == NalType::AUD)
     {
       specificDescription = " AUD";
-      DEBUG_AVC("AnnexBAVC::parseAndAddNALUnit Parsed AUD");
+      DEBUG_AVC("ParserAnnexBAVC::parseAndAddNALUnit Parsed AUD");
       parseResult.nalTypeName = "AUD ";
     }
 
@@ -442,7 +454,7 @@ AnnexBAVC::parseAndAddNALUnit(int                                           nalI
         catch (const std::exception &e)
         {
           (void)e;
-          DEBUG_AVC("AnnexBAVC::parseAndAddNALUnit Error reparsing SEI");
+          DEBUG_AVC("ParserAnnexBAVC::parseAndAddNALUnit Error reparsing SEI");
         }
       }
     }
@@ -451,13 +463,34 @@ AnnexBAVC::parseAndAddNALUnit(int                                           nalI
   {
     specificDescription += " ERROR " + std::string(e.what());
     parseResult.success = false;
+    DEBUG_AVC("ParserAnnexBAVC::parseAndAddNALUnit " << e.what());
   }
 
-  if (this->auDelimiterDetector.isStartOfNewAU(nalAVC, this->curFramePOC))
+  std::optional<int> curSlicePoc;
+  if (currentSliceData)
+    curSlicePoc = currentSliceData->poc;
+  if (this->curFrameData && this->auDelimiterDetector.isStartOfNewAU(nalAVC, curSlicePoc))
   {
+    // Save the info of the last frame
+    if (!this->addFrameToList(*this->curFrameData->poc,
+                              this->curFrameData->fileStartEndPos,
+                              this->curFrameData->isRandomAccess))
+    {
+      throw std::logic_error("Error - POC " + std::to_string(*this->curFrameData->poc) +
+                             " already in the POC list");
+    }
+    if (this->curFrameData->fileStartEndPos)
+      DEBUG_AVC("ParserAnnexBAVC::parseAndAddNALUnit Adding start/end "
+                << this->curFrameData->fileStartEndPos->first << "/"
+                << this->curFrameData->fileStartEndPos->second << " - POC "
+                << *this->curFrameData->poc << (this->curFrameData->isRandomAccess ? " - ra" : ""));
+    else
+      DEBUG_AVC("ParserAnnexBAVC::parseAndAddNALUnit Adding start/end NA/NA - POC "
+                << *this->curFrameData->poc << (this->curFrameData->isRandomAccess ? " - ra" : ""));
+
     if (this->sizeCurrentAU > 0)
     {
-      DEBUG_AVC("AnnexBAVC::parseAndAddNALUnit Start of new AU. Adding bitrate "
+      DEBUG_AVC("ParserAnnexBAVC::parseAndAddNALUnit Start of new AU. Adding bitrate "
                 << this->sizeCurrentAU);
 
       BitratePlotModel::BitrateEntry entry;
@@ -469,9 +502,10 @@ AnnexBAVC::parseAndAddNALUnit(int                                           nalI
       }
       else
       {
-        entry.pts      = this->lastFramePOC;
-        entry.dts      = this->counterAU;
-        entry.duration = 1;
+        entry.pts          = this->lastFramePOC;
+        entry.dts          = this->counterAU;
+        entry.duration     = 1;
+        this->lastFramePOC = *this->curFrameData->poc;
       }
       entry.bitrate  = this->sizeCurrentAU;
       entry.keyframe = this->currentAUAllSlicesIntra;
@@ -485,7 +519,7 @@ AnnexBAVC::parseAndAddNALUnit(int                                           nalI
         {
           if (this->activeParameterSets.spsMap.size() > 0)
             this->hrd.addAU(this->sizeCurrentAU * 8,
-                            curFramePOC,
+                            *this->curFrameData->poc,
                             this->activeParameterSets.spsMap[0],
                             this->lastBufferingPeriodSEI,
                             this->lastPicTimingSEI,
@@ -503,13 +537,15 @@ AnnexBAVC::parseAndAddNALUnit(int                                           nalI
     this->currentAUSliceTypes.clear();
     this->currentAUAssociatedSPS.reset();
     this->currentAUPartitionASPS.reset();
+    this->curFrameData.reset();
   }
+  curFrameData =
+      getFrameDataWithUpdatedPosition(curFrameData, nalStartEndPosFile, currentSliceData);
+
   if (this->newBufferingPeriodSEI)
     this->lastBufferingPeriodSEI = this->newBufferingPeriodSEI;
   if (this->newPicTimingSEI)
     this->lastPicTimingSEI = this->newPicTimingSEI;
-  if (this->lastFramePOC != curFramePOC)
-    this->lastFramePOC = curFramePOC;
   this->sizeCurrentAU += data.size();
 
   if (this->nextAUIsFirstAUInBufferingPeriod)
@@ -539,7 +575,7 @@ AnnexBAVC::parseAndAddNALUnit(int                                           nalI
   return parseResult;
 }
 
-std::optional<AnnexB::SeekData> AnnexBAVC::getSeekData(int iFrameNr)
+std::optional<ParserAnnexB::SeekData> ParserAnnexBAVC::getSeekData(int iFrameNr)
 {
   if (iFrameNr >= int(this->getNumberPOCs()) || iFrameNr < 0)
     return {};
@@ -573,7 +609,7 @@ std::optional<AnnexB::SeekData> AnnexBAVC::getSeekData(int iFrameNr)
       if (globalPOC == seekPOC)
       {
         // Seek here
-        AnnexB::SeekData seekData;
+        ParserAnnexB::SeekData seekData;
         if (nal->filePosStartEnd)
           seekData.filePos = nal->filePosStartEnd->first;
 
@@ -604,7 +640,7 @@ std::optional<AnnexB::SeekData> AnnexBAVC::getSeekData(int iFrameNr)
   return {};
 }
 
-QByteArray AnnexBAVC::getExtradata()
+QByteArray ParserAnnexBAVC::getExtradata()
 {
   // Convert the SPS and PPS that we found in the bitstream to the libavformat avcc format (see
   // avc.c)
@@ -679,7 +715,7 @@ QByteArray AnnexBAVC::getExtradata()
   return reader::SubByteReaderLogging::convertToQByteArray(e);
 }
 
-IntPair AnnexBAVC::getProfileLevel()
+IntPair ParserAnnexBAVC::getProfileLevel()
 {
   for (auto nal : this->nalUnitsForSeeking)
   {
@@ -692,7 +728,7 @@ IntPair AnnexBAVC::getProfileLevel()
   return {};
 }
 
-Ratio AnnexBAVC::getSampleAspectRatio()
+Ratio ParserAnnexBAVC::getSampleAspectRatio()
 {
   for (auto nal : this->nalUnitsForSeeking)
   {

@@ -176,4 +176,4 @@ void FileSourceTest::testFormatFromFilename()
 
 QTEST_MAIN(FileSourceTest)
 
-#include "tst_Filesource.moc"
+#include "FilesourceTest.moc"

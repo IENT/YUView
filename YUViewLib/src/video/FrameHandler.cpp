@@ -158,7 +158,7 @@ void FrameHandler::setFrameSize(Size newSize)
   if (newSize != this->frameSize)
   {
     // Set the new size
-    DEBUG_FRAME("FrameHandler::setFrameSize %dx%d", newSize.width(), newSize.height());
+    DEBUG_FRAME("FrameHandler::setFrameSize %dx%d", newSize.width, newSize.height);
     this->frameSize = newSize;
   }
 }
@@ -221,7 +221,7 @@ void FrameHandler::slotVideoControlChanged()
   // Update the controls and get the new selected size
   auto newSize = getNewSizeFromControls();
   DEBUG_FRAME(
-      "FrameHandler::slotVideoControlChanged new size %dx%d", newSize.width(), newSize.height());
+      "FrameHandler::slotVideoControlChanged new size %dx%d", newSize.width, newSize.height);
 
   if (newSize != frameSize && newSize.isValid())
   {

@@ -41,7 +41,7 @@
 #include "common/BitratePlotModel.h"
 #include "common/TreeItem.h"
 #include "filesource/FileSourceAnnexBFile.h"
-#include "parser/Base.h"
+#include "parser/Parser.h"
 #include "video/videoHandlerYUV.h"
 
 namespace parser
@@ -53,13 +53,13 @@ using FrameIndexCodingOrder  = unsigned;
 /* The (abstract) base class for the various types of AnnexB files (AVC, HEVC, VVC) that we can
  * parse.
  */
-class AnnexB : public Base
+class ParserAnnexB : public Parser
 {
   Q_OBJECT
 
 public:
-  AnnexB(QObject *parent = nullptr) : Base(parent){};
-  virtual ~AnnexB(){};
+  ParserAnnexB(QObject *parent = nullptr) : Parser(parent){};
+  virtual ~ParserAnnexB(){};
 
   // How many POC's have been found in the file
   size_t getNumberPOCs() const { return this->frameListCodingOrder.size(); }

@@ -293,10 +293,8 @@ bool playlistItemRawFile::parseY4MFile()
     else if (parameterIndicator == 'C')
     {
       // Get 3 bytes and check them
-      QByteArray formatName;
-      formatName.append(rawData.at(offset++));
-      formatName.append(rawData.at(offset++));
-      formatName.append(rawData.at(offset++));
+      auto formatName = rawData.mid(offset, 3);
+      offset += 3;
 
       // The YUV format. By default, YUV420 is setup.
       // TDOO: What is the difference between these two formats?
@@ -310,11 +308,34 @@ bool playlistItemRawFile::parseY4MFile()
         subsampling = video::yuv::Subsampling::YUV_444;
 
       unsigned bitsPerSample = 8;
-      if (rawData.at(offset) == 'p' && rawData.at(offset + 1) == '1' &&
-          rawData.at(offset + 2) == '0')
+
+      if (rawData.at(offset) == 'p')
       {
-        bitsPerSample = 10;
-        offset += 3;
+        offset++;
+        if (rawData.at(offset) == '1')
+        {
+          offset++;
+          if (rawData.at(offset) == '0')
+          {
+            bitsPerSample = 10;
+            offset++;
+          }
+          else if (rawData.at(offset) == '2')
+          {
+            bitsPerSample = 12;
+            offset++;
+          }
+          else if (rawData.at(offset) == '4')
+          {
+            bitsPerSample = 14;
+            offset++;
+          }
+          else if (rawData.at(offset) == '6')
+          {
+            bitsPerSample = 16;
+            offset++;
+          }
+        }
       }
 
       format = video::yuv::PixelFormatYUV(subsampling, bitsPerSample);

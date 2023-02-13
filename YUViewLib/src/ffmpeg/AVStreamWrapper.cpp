@@ -271,20 +271,12 @@ AVRational AVStreamWrapper::getTimeBase()
   return this->time_base;
 }
 
-int AVStreamWrapper::getFrameWidth()
+Size AVStreamWrapper::getFrameSize()
 {
   this->update();
   if (this->libVer.avformat.major <= 56 || !this->codecpar)
-    return this->codec.getWidth();
-  return this->codecpar.getWidth();
-}
-
-int AVStreamWrapper::getFrameHeight()
-{
-  this->update();
-  if (this->libVer.avformat.major <= 56 || !this->codecpar)
-    return this->codec.getHeight();
-  return this->codecpar.getHeight();
+    return this->codec.getSize();
+  return this->codecpar.getSize();
 }
 
 AVColorSpace AVStreamWrapper::getColorspace()
@@ -301,6 +293,14 @@ AVPixelFormat AVStreamWrapper::getPixelFormat()
   if (this->libVer.avformat.major <= 56 || !this->codecpar)
     return this->codec.getPixelFormat();
   return this->codecpar.getPixelFormat();
+}
+
+QByteArray AVStreamWrapper::getExtradata()
+{
+  this->update();
+  if (this->libVer.avformat.major <= 56 || !this->codecpar)
+    return this->codec.getExtradata();
+  return this->codecpar.getExtradata();
 }
 
 int AVStreamWrapper::getIndex()

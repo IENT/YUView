@@ -33,7 +33,7 @@
 #pragma once
 
 #include <common/Typedef.h>
-#include <parser/HEVC/AnnexBHEVC.h>
+#include <parser/HEVC/ParserAnnexBHEVC.h>
 #include <parser/common/BitratePlotModel.h>
 #include <parser/common/SubByteReaderLogging.h>
 #include <parser/common/TreeItem.h>
@@ -48,7 +48,7 @@ public:
 
   void parse(unsigned                      unitID,
              reader::SubByteReaderLogging &reader,
-             AnnexBHEVC *                  hevcParser,
+             ParserAnnexBHEVC *            hevcParser,
              BitratePlotModel *            bitrateModel);
 
   unsigned nalUnitLength{};
@@ -61,7 +61,7 @@ public:
 
   void parse(unsigned                      arrayID,
              reader::SubByteReaderLogging &reader,
-             AnnexBHEVC *                  hevcParser,
+             ParserAnnexBHEVC *            hevcParser,
              BitratePlotModel *            bitrateModel);
 
   bool                array_completeness{};
@@ -77,7 +77,7 @@ public:
 
   void parse(ByteVector &              data,
              std::shared_ptr<TreeItem> root,
-             AnnexBHEVC *              hevcParser,
+             ParserAnnexBHEVC *        hevcParser,
              BitratePlotModel *        bitrateModel);
 
   unsigned configurationVersion{};

@@ -42,13 +42,13 @@ class AVCodecParametersWrapper
 public:
   AVCodecParametersWrapper() = default;
   AVCodecParametersWrapper(AVCodecParameters *p, LibraryVersion v);
-  explicit        operator bool() const { return param != nullptr; }
+  explicit        operator bool() const { return this->param != nullptr; }
   QStringPairList getInfoText();
 
   AVMediaType   getCodecType();
   AVCodecID     getCodecID();
-  int           getWidth();
-  int           getHeight();
+  QByteArray    getExtradata();
+  Size          getSize();
   AVColorSpace  getColorspace();
   AVPixelFormat getPixelFormat();
   Ratio         getSampleAspectRatio();
@@ -64,7 +64,7 @@ public:
   void setProfileLevel(int profile, int level);
   void setSampleAspectRatio(int num, int den);
 
-  AVCodecParameters *getCodecParameters() { return param; }
+  AVCodecParameters *getCodecParameters() const { return this->param; }
 
 private:
   // Update all private values from the AVCodecParameters
@@ -74,8 +74,7 @@ private:
   AVMediaType                   codec_type{};
   AVCodecID                     codec_id{};
   uint32_t                      codec_tag{};
-  uint8_t *                     extradata{};
-  int                           extradata_size{};
+  QByteArray                    extradata{};
   int                           format{};
   int64_t                       bit_rate{};
   int                           bits_per_coded_sample{};
@@ -92,9 +91,6 @@ private:
   AVColorSpace                  color_space{};
   AVChromaLocation              chroma_location{};
   int                           video_delay{};
-
-  // When setting custom metadata, we keep a reference to it here.
-  QByteArray set_extradata{};
 
   AVCodecParameters *param{};
   LibraryVersion     libVer{};

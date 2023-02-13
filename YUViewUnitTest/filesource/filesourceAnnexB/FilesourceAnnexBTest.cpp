@@ -114,4 +114,4 @@ void FileSourceAnnexBTest::testNalUnitParsing()
 
 QTEST_MAIN(FileSourceAnnexBTest)
 
-#include "tst_FilesourceAnnexB.moc"
+#include "FilesourceAnnexBTest.moc"

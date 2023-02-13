@@ -1,4 +1,5 @@
 TEMPLATE = subdirs
 
-SUBDIRS = Filesource
-SUBDIRS += FilesourceAnnexB
+SUBDIRS = filesource/Filesource.pro \
+          filesourceAnnexB/FilesourceAnnexB.pro
+        

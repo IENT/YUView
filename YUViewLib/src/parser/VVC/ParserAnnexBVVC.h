@@ -32,7 +32,7 @@
 
 #pragma once
 
-#include "../AnnexB.h"
+#include "../ParserAnnexB.h"
 #include "NalUnitVVC.h"
 #include "commonMaps.h"
 #include "video/videoHandlerYUV.h"
@@ -76,13 +76,13 @@ struct ParsingState
 } // namespace vvc
 
 // This class knows how to parse the bitrstream of VVC annexB files
-class AnnexBVVC : public AnnexB
+class ParserAnnexBVVC : public ParserAnnexB
 {
   Q_OBJECT
 
 public:
-  AnnexBVVC(QObject *parent = nullptr) : AnnexB(parent){};
-  ~AnnexBVVC() = default;
+  ParserAnnexBVVC(QObject *parent = nullptr) : ParserAnnexB(parent){};
+  ~ParserAnnexBVVC() = default;
 
   // Get some properties
   double                     getFramerate() const override;

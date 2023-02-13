@@ -39,7 +39,7 @@ using namespace reader;
 
 void HVCCNalUnit::parse(unsigned              unitID,
                         SubByteReaderLogging &reader,
-                        AnnexBHEVC *          hevcParser,
+                        ParserAnnexBHEVC *    hevcParser,
                         BitratePlotModel *    bitrateModel)
 {
   SubByteReaderLoggingSubLevel subLevel(reader, "nal unit " + std::to_string(unitID));
@@ -58,14 +58,14 @@ void HVCCNalUnit::parse(unsigned              unitID,
 
 void HVCCNalArray::parse(unsigned              arrayID,
                          SubByteReaderLogging &reader,
-                         AnnexBHEVC *          hevcParser,
+                         ParserAnnexBHEVC *    hevcParser,
                          BitratePlotModel *    bitrateModel)
 {
   SubByteReaderLoggingSubLevel subLevel(reader, "nal unit array " + std::to_string(arrayID));
 
   // The next 3 bytes contain info about the array
   this->array_completeness = reader.readFlag("array_completeness");
-  reader.readFlag("reserved_flag_false", Options().withCheckEqualTo(0));
+  reader.readFlag("reserved_flag_false", Options().withCheckEqualTo(0, CheckLevel::Warning));
   this->nal_unit_type = reader.readBits("nal_unit_type", 6);
   this->numNalus      = reader.readBits("numNalus", 16);
 
@@ -79,13 +79,14 @@ void HVCCNalArray::parse(unsigned              arrayID,
 
 void HVCC::parse(ByteVector &              data,
                  std::shared_ptr<TreeItem> root,
-                 AnnexBHEVC *              hevcParser,
+                 ParserAnnexBHEVC *        hevcParser,
                  BitratePlotModel *        bitrateModel)
 {
   SubByteReaderLogging reader(data, root, "Extradata (HEVC hvcC format)");
   reader.disableEmulationPrevention();
 
   // The first 22 bytes are the hvcC header
+  // ISO/IEC 14496-15, 8.3.3.1.2
   this->configurationVersion =
       reader.readBits("configurationVersion", 8, Options().withCheckEqualTo(1));
   this->general_profile_space = reader.readBits("general_profile_space", 2);

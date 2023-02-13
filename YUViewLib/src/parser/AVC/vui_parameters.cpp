@@ -157,19 +157,19 @@ void vui_parameters::parse(reader::SubByteReaderLogging &reader,
     }
   }
   this->chroma_loc_info_present_flag = reader.readFlag("chroma_loc_info_present_flag");
-  if (chroma_format_idc != 1 && !chroma_loc_info_present_flag)
+  if (chroma_format_idc != 1 && this->chroma_loc_info_present_flag)
     throw std::logic_error("When chroma_format_idc is not equal to 1, "
                            "chroma_loc_info_present_flag should be equal to 0.");
-  if (chroma_loc_info_present_flag)
+  if (this->chroma_loc_info_present_flag)
   {
-    auto meaningChromaLoc =
-        std::vector<std::string>({"Left", "Center", "Top Left", "Top", "Bottom Left", "Bottom"});
+    const auto chromaOptions =
+        Options()
+            .withMeaningVector({"Left", "Center", "Top Left", "Top", "Bottom Left", "Bottom"})
+            .withCheckRange({0, 5});
     this->chroma_sample_loc_type_top_field =
-        reader.readUEV("chroma_sample_loc_type_top_field",
-                       Options().withMeaningVector(meaningChromaLoc).withCheckRange({0, 5}));
+        reader.readUEV("chroma_sample_loc_type_top_field", chromaOptions);
     this->chroma_sample_loc_type_bottom_field =
-        reader.readUEV("chroma_sample_loc_type_bottom_field",
-                       Options().withMeaningVector(meaningChromaLoc).withCheckRange({0, 5}));
+        reader.readUEV("chroma_sample_loc_type_bottom_field", chromaOptions);
   }
   this->timing_info_present_flag = reader.readFlag("timing_info_present_flag");
   if (timing_info_present_flag)

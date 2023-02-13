@@ -2,6 +2,6 @@ TEMPLATE = subdirs
 
 requires(qtHaveModule(testlib))
 
-SUBDIRS = StatisticsFileCSVTest.pro \
-          StatisticsFileVTMBMSTest.pro \
-          StatisticsDataTest.pro
+SUBDIRS = statisticsFileCSV/StatisticsFileCSVTest.pro \
+          statisticsFileVTMBMS/StatisticsFileVTMBMSTest.pro \
+          statisticsData/StatisticsDataTest.pro

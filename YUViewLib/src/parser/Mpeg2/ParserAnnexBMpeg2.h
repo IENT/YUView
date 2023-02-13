@@ -32,7 +32,7 @@
 
 #pragma once
 
-#include "parser/AnnexB.h"
+#include "parser/ParserAnnexB.h"
 #include "parser/common/SubByteReaderLogging.h"
 
 namespace parser
@@ -45,13 +45,13 @@ class sequence_header;
 class picture_header;
 } // namespace mpeg2
 
-class AnnexBMpeg2 : public AnnexB
+class ParserAnnexBMpeg2 : public ParserAnnexB
 {
   Q_OBJECT
 
 public:
-  AnnexBMpeg2(QObject *parent = nullptr) : AnnexB(parent){};
-  ~AnnexBMpeg2(){};
+  ParserAnnexBMpeg2(QObject *parent = nullptr) : ParserAnnexB(parent){};
+  ~ParserAnnexBMpeg2(){};
 
   // Get properties
   double                     getFramerate() const override;

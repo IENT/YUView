@@ -37,7 +37,9 @@
 #include "playlistitem/playlistItem.h"
 #include "ui/PlaybackController.h"
 
-ViewStateHandler::ViewStateHandler() {}
+ViewStateHandler::ViewStateHandler()
+{
+}
 
 int ViewStateHandler::playbackStateFrameIdx(int i) const
 {
@@ -128,7 +130,7 @@ void ViewStateHandler::loadViewState(int slot, bool loadOnSeparateView)
   playlist->setSelectedItems(selectionStates[slot][0], selectionStates[slot][1]);
 
   // Then load the correct frame index
-  playback->setCurrentFrame(playbackStateFrameIdx(slot));
+  playback->setCurrentFrameAndUpdate(playbackStateFrameIdx(slot));
 
   if (loadOnSeparateView)
     splitView[1]->setViewState(viewStates[slot].centerOffset,
@@ -275,7 +277,7 @@ void ViewStateHandler::loadPlaylist(const QDomElement &viewStateNode)
       playlist->setSelectedItems(item1, item2);
 
       // Then load the correct frame index
-      playback->setCurrentFrame(frameIdx);
+      playback->setCurrentFrameAndUpdate(frameIdx);
 
       // Set the values for the split view
       splitView[0]->setViewState(

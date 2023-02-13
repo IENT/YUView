@@ -30,7 +30,7 @@
  *   along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "AV1OBU.h"
+#include "ParserAV1OBU.h"
 
 #include "OpenBitstreamUnit.h"
 #include "frame_header_obu.h"
@@ -42,7 +42,7 @@ namespace parser
 using namespace reader;
 using namespace av1;
 
-ParserAV1OBU::ParserAV1OBU(QObject *parent) : Base(parent)
+ParserAV1OBU::ParserAV1OBU(QObject *parent) : Parser(parent)
 {
   decValues.PrevFrameID = -1;
 }
@@ -76,7 +76,7 @@ std::pair<size_t, std::string> ParserAV1OBU::parseAndAddOBU(int                 
     if (obu.header.obu_type == ObuType::OBU_TEMPORAL_DELIMITER)
     {
       decValues.SeenFrameHeader = false;
-      obuTypeName = "Temporal Delimiter";
+      obuTypeName               = "Temporal Delimiter";
     }
     else if (obu.header.obu_type == ObuType::OBU_SEQUENCE_HEADER)
     {
@@ -104,7 +104,7 @@ std::pair<size_t, std::string> ParserAV1OBU::parseAndAddOBU(int                 
   }
   catch (const std::exception &e)
   {
-    errorText = " ERROR " + std::string(e.what());
+    errorText   = " ERROR " + std::string(e.what());
     obuTypeName = "Error";
   }
 

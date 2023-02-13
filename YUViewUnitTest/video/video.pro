@@ -2,8 +2,5 @@ TEMPLATE = subdirs
 
 requires(qtHaveModule(testlib))
 
-SUBDIRS = PixelFormatYUVTest.pro \
-          PixelFormatRGBTest.pro \
-          PixelFormatYUVGuessTest.pro \
-          PixelFormatRGBGuessTest.pro \
-          VideoHandlerDifferenceTest.pro
+SUBDIRS = pixelFormat\pixelFormat.pro \
+          videoHandler\videoHandler.pro
