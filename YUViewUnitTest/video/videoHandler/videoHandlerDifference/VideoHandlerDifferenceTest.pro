@@ -12,6 +12,6 @@ QT += gui widgets xml
 
 INCLUDEPATH += $$top_srcdir/YUViewLib/src \
                $$top_srcdir/YUViewUnitTest
-LIBS += -L$$top_builddir/YUViewLib -lYUViewLib -L$$top_builddir/YUViewUnitTest/helper -lYUViewUnitTestHelperLib
+LIBS += -L$$top_builddir/YUViewLib -lYUViewLib -L$$top_builddir/YUViewUnitTest/helper -lhelperLib
 
 SOURCES += VideoHandlerDifferenceTest.cpp

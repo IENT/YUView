@@ -1,6 +1,6 @@
 #include <QtTest>
 
-#include <helper/YUVFramesProvider.h>
+#include <helper2/YUVFramesProvider.h>
 
 using namespace video::yuv;
 

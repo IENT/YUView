@@ -8,7 +8,7 @@ CONFIG -= app_bundled
 TARGET = VideoHandlerYUVTest
 
 QT += testlib
-QT += gui widgets
+QT += gui widgets xml
 
 INCLUDEPATH += $$top_srcdir/YUViewLib/src \
                $$top_srcdir/YUViewUnitTest

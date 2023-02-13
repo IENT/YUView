@@ -30,9 +30,31 @@
  *   along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "SomeHelper.h"
+#pragma once
 
-SomeHelper::SomeHelper()
+#include <video/PixelFormatYUV.h>
+#include <video/videoHandler.h>
+
+#include <QByteArray>
+#include <QObject>
+
+namespace helper
 {
-  this->testVal = 2344;
-}
+
+class YUVFramesProvider : public QObject
+{
+  Q_OBJECT
+
+public:
+  YUVFramesProvider() = delete;
+  YUVFramesProvider(video::videoHandler *videoHandler);
+
+public slots:
+  void onSignalRequestFrame(int frameIndex, bool caching);
+  void onSignalRequestRawData(int frameIndex, bool caching);
+
+private:
+  video::videoHandler *videoHandler{};
+};
+
+} // namespace helper
