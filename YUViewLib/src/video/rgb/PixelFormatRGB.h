@@ -34,8 +34,7 @@
 
 #include <common/EnumMapper.h>
 #include <common/Typedef.h>
-
-#include "PixelFormat.h"
+#include <video/PixelFormat.h>
 
 #include <string>
 

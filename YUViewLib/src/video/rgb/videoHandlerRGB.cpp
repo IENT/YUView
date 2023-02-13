@@ -36,8 +36,8 @@
 #include <common/FileInfo.h>
 #include <common/Functions.h>
 #include <common/FunctionsGui.h>
-#include <video/PixelFormatRGBGuess.h>
-#include <video/videoHandlerRGBCustomFormatDialog.h>
+#include <video/rgb/PixelFormatRGBGuess.h>
+#include <video/rgb/videoHandlerRGBCustomFormatDialog.h>
 
 #include <QPainter>
 #include <QtGlobal>

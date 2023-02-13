@@ -32,10 +32,11 @@
 
 #pragma once
 
+#include <parser/Parser.h>
+#include <video/yuv/videoHandlerYUV.h>
+
 #include "GlobalDecodingValues.h"
-#include "parser/Parser.h"
 #include "sequence_header_obu.h"
-#include "video/videoHandlerYUV.h"
 
 namespace parser
 {

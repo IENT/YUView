@@ -47,8 +47,8 @@
 #include <common/FileInfo.h>
 #include <common/Functions.h>
 #include <common/FunctionsGui.h>
-#include <video/PixelFormatYUVGuess.h>
-#include <video/videoHandlerYUVCustomFormatDialog.h>
+#include <video/yuv/PixelFormatYUVGuess.h>
+#include <video/yuv/videoHandlerYUVCustomFormatDialog.h>
 
 namespace video::yuv
 {
