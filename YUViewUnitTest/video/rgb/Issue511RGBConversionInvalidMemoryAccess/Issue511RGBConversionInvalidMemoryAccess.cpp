@@ -7,6 +7,14 @@
 using namespace video;
 using namespace video::rgb;
 
+/* The Issue was that the conversion function reads from the input buffer at
+ * a negative offset in case of planar if the input has no alpha channel.
+ * Unfortunately, catching this invalid access is a bit hard. Here, I just
+ * try to recreate this by using a big artificial frame size.
+ * I don't see any other way currently to test for the bug. I was also only
+ * able to see this fail on Windows. On mac and ubuntu it always succeeds.
+ */
+
 namespace
 {
 
@@ -64,10 +72,6 @@ void Issue511RGBConversionInvalidMemoryAccess::testBasicConvertInputRGBToRGBA()
                         limitedRange,
                         convertAlpha,
                         premultiplyAlpha);
-
-  // Todo: Check the output
-  int debugStop  = data.capacity();
-  int debugStop2 = 234;
 }
 
 QTEST_MAIN(Issue511RGBConversionInvalidMemoryAccess)
