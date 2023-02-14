@@ -63,13 +63,13 @@
 #ifdef Q_OS_MAC
 const bool is_Q_OS_MAC = true;
 #else
-const bool is_Q_OS_MAC = false;
+const bool is_Q_OS_MAC   = false;
 #endif
 
 #ifdef Q_OS_WIN
 const bool is_Q_OS_WIN = true;
 #else
-const bool is_Q_OS_WIN = false;
+const bool is_Q_OS_WIN   = false;
 #endif
 
 #ifdef Q_OS_LINUX
@@ -283,12 +283,9 @@ struct Ratio
 struct Size
 {
   constexpr Size(unsigned width, unsigned height) : width(width), height(height) {}
-  constexpr Size(int w, int h)
+  constexpr Size(int width, int height)
+      : width(static_cast<unsigned>(width)), height(static_cast<unsigned>(height))
   {
-    if (w > 0)
-      this->width = unsigned(w);
-    if (h > 0)
-      this->height = unsigned(h);
   }
   constexpr Size() = default;
 

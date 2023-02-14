@@ -21,7 +21,7 @@ auto createRandomRawRGBData() -> QByteArray
   std::uniform_int_distribution<std::mt19937::result_type> distribution(0, 255);
 
   constexpr auto NR_RGB_BYTES = TEST_FRAME_SIZE.width * TEST_FRAME_SIZE.height * 3;
-  for (int i = 0; i < NR_RGB_BYTES; i++)
+  for (unsigned i = 0; i < NR_RGB_BYTES; i++)
     data.push_back(distribution(randomNumberGenerator));
 
   data.squeeze();

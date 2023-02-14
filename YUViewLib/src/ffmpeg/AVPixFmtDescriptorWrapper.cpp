@@ -346,6 +346,8 @@ bool AVPixFmtDescriptorWrapper::setValuesFromPixelFormatYUV(PixelFormatYUV fmt)
     this->log2_chroma_w = 0;
     this->log2_chroma_h = 2;
     break;
+  default:
+    break;
   }
 
   this->nb_components = (subsampling == Subsampling::YUV_400 ? 1 : 3);
