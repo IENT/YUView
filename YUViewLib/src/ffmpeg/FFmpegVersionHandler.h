@@ -53,6 +53,8 @@ class FFmpegVersionHandler
 public:
   FFmpegVersionHandler();
 
+  virtual ~FFmpegVersionHandler();
+
   // Try to load the ffmpeg libraries and get all the function pointers.
   void loadFFmpegLibraries();
   bool loadingSuccessfull() const;
