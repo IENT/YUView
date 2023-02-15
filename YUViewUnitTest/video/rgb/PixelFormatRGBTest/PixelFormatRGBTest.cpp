@@ -49,10 +49,10 @@ void PixelFormatRGBTest::testFormatFromToString()
       auto errorStr = "Comparison failed. Names: " + name;
       QFAIL(errorStr.c_str());
     }
-    if (fmt.getComponentPosition(Channel::Red) != fmtNew.getComponentPosition(Channel::Red) ||
-        fmt.getComponentPosition(Channel::Green) != fmtNew.getComponentPosition(Channel::Green) ||
-        fmt.getComponentPosition(Channel::Blue) != fmtNew.getComponentPosition(Channel::Blue) ||
-        fmt.getComponentPosition(Channel::Alpha) != fmtNew.getComponentPosition(Channel::Alpha) ||
+    if (fmt.getChannelPosition(Channel::Red) != fmtNew.getChannelPosition(Channel::Red) ||
+        fmt.getChannelPosition(Channel::Green) != fmtNew.getChannelPosition(Channel::Green) ||
+        fmt.getChannelPosition(Channel::Blue) != fmtNew.getChannelPosition(Channel::Blue) ||
+        fmt.getChannelPosition(Channel::Alpha) != fmtNew.getChannelPosition(Channel::Alpha) ||
         fmt.getBitsPerSample() != fmtNew.getBitsPerSample() ||
         fmt.getDataLayout() != fmtNew.getDataLayout())
     {

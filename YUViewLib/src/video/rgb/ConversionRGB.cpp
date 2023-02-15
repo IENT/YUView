@@ -63,10 +63,10 @@ void convertRGBToRGBA(const QByteArray &    sourceBuffer,
 
   typedef typename std::conditional<bitDepth == 8, uint8_t *, uint16_t *>::type InValueType;
 
-  auto offsetR = srcPixelFormat.getComponentPosition(Channel::Red);
-  auto offsetG = srcPixelFormat.getComponentPosition(Channel::Green);
-  auto offsetB = srcPixelFormat.getComponentPosition(Channel::Blue);
-  auto offsetA = srcPixelFormat.getComponentPosition(Channel::Alpha);
+  auto offsetR = srcPixelFormat.getChannelPosition(Channel::Red);
+  auto offsetG = srcPixelFormat.getChannelPosition(Channel::Green);
+  auto offsetB = srcPixelFormat.getChannelPosition(Channel::Blue);
+  auto offsetA = srcPixelFormat.getChannelPosition(Channel::Alpha);
   if (srcPixelFormat.getDataLayout() == DataLayout::Planar)
   {
     offsetR *= frameSize.width * frameSize.height;
@@ -221,7 +221,7 @@ rgba_t getPixelValue(const QByteArray &    sourceBuffer,
   rgba_t value;
   for (auto channel : {Channel::Red, Channel::Green, Channel::Blue, Channel::Alpha})
   {
-    auto offset = srcPixelFormat.getComponentPosition(channel);
+    auto offset = srcPixelFormat.getChannelPosition(channel);
     if (srcPixelFormat.getDataLayout() == DataLayout::Planar)
       offset *= frameSize.width * frameSize.height;
     auto src = ((InValueType)sourceBuffer.data()) + offset + offsetCoordinate * offsetToNextValue;

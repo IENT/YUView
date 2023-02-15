@@ -702,7 +702,7 @@ void videoHandlerRGB::convertSourceToRGBA32Bit(const QByteArray &sourceBuffer,
          {ComponentDisplayMode::B, rgb::Channel::Blue},
          {ComponentDisplayMode::A, rgb::Channel::Alpha}});
     const auto displayComponentOffset =
-        this->srcPixelFormat.getComponentPosition(componentToChannel[this->componentDisplayMode]);
+        this->srcPixelFormat.getChannelPosition(componentToChannel[this->componentDisplayMode]);
 
     convertSinglePlaneOfRGBToGreyscaleRGBA(sourceBuffer,
                                            this->srcPixelFormat,
@@ -896,9 +896,9 @@ QImage videoHandlerRGB::calculateDifference(FrameHandler *   item2,
   unsigned char *restrict dst = outputImage.bits();
 
   const auto bitDepth = srcPixelFormat.getBitsPerSample();
-  const auto posR     = srcPixelFormat.getComponentPosition(Channel::Red);
-  const auto posG     = srcPixelFormat.getComponentPosition(Channel::Green);
-  const auto posB     = srcPixelFormat.getComponentPosition(Channel::Blue);
+  const auto posR     = srcPixelFormat.getChannelPosition(Channel::Red);
+  const auto posG     = srcPixelFormat.getChannelPosition(Channel::Green);
+  const auto posB     = srcPixelFormat.getChannelPosition(Channel::Blue);
 
   if (bitDepth >= 8 && bitDepth <= 16)
   {

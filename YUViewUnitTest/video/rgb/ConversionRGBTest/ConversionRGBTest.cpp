@@ -9,21 +9,21 @@ namespace
 {
 
 constexpr std::array<rgba_t, 16> TEST_VALUES_8BIT = {{{0, 0, 0, 0},
-                                                      {0, 0, 0, 0},
-                                                      {0, 0, 0, 0},
-                                                      {0, 0, 0, 0},
-                                                      {0, 0, 0, 0},
-                                                      {0, 0, 0, 0},
-                                                      {0, 0, 0, 0},
-                                                      {0, 0, 0, 0},
-                                                      {0, 0, 0, 0},
-                                                      {0, 0, 0, 0},
-                                                      {0, 0, 0, 0},
-                                                      {0, 0, 0, 0},
-                                                      {0, 0, 0, 0},
-                                                      {0, 0, 0, 0},
-                                                      {0, 0, 0, 0},
-                                                      {0, 0, 0, 0}}};
+                                                      {33, 0, 0, 0},
+                                                      {178, 0, 0, 22},
+                                                      {255, 0, 0, 88},
+                                                      {0, 33, 0, 123},
+                                                      {0, 178, 0, 0},
+                                                      {0, 255, 0, 89},
+                                                      {0, 0, 33, 0},
+                                                      {0, 0, 178, 0},
+                                                      {0, 0, 255, 0},
+                                                      {45, 43, 34, 255},
+                                                      {255, 24, 129, 255},
+                                                      {255, 255, 3, 0},
+                                                      {3, 255, 22, 0},
+                                                      {255, 255, 255, 0},
+                                                      {255, 255, 255, 255}}};
 constexpr Size                   TEST_FRAME_SIZE  = {4, 4};
 
 auto createRawRGBData(const PixelFormatRGB &format) -> QByteArray
@@ -34,28 +34,58 @@ auto createRawRGBData(const PixelFormatRGB &format) -> QByteArray
   {
     for (const auto value : TEST_VALUES_8BIT)
     {
-      data.push_back(value.R);
-      data.push_back(value.G);
-      data.push_back(value.B);
-      if (format.hasAlpha())
-        data.push_back(value.A);
+      for (int channelPosition = 0; channelPosition < static_cast<int>(format.nrChannels());
+           channelPosition++)
+      {
+        const auto channel = format.getChannelAtPosition(channelPosition);
+        switch (channel)
+        {
+        case Channel::Red:
+          data.push_back(value.R);
+          break;
+        case Channel::Green:
+          data.push_back(value.G);
+          break;
+        case Channel::Blue:
+          data.push_back(value.B);
+          break;
+        case Channel::Alpha:
+          data.push_back(value.A);
+          break;
+        }
+      }
     }
   }
   else
   {
-    for (const auto value : TEST_VALUES_8BIT)
-      data.push_back(value.R);
-    for (const auto value : TEST_VALUES_8BIT)
-      data.push_back(value.G);
-    for (const auto value : TEST_VALUES_8BIT)
-      data.push_back(value.B);
-    if (format.hasAlpha())
-      for (const auto value : TEST_VALUES_8BIT)
-        data.push_back(value.A);
+    for (int channelPosition = 0; channelPosition < static_cast<int>(format.nrChannels());
+         channelPosition++)
+    {
+      const auto channel = format.getChannelAtPosition(channelPosition);
+      if (channel == Channel::Red)
+      {
+        for (const auto value : TEST_VALUES_8BIT)
+          data.push_back(value.R);
+      }
+      else if (channel == Channel::Green)
+      {
+        for (const auto value : TEST_VALUES_8BIT)
+          data.push_back(value.G);
+      }
+      else if (channel == Channel::Blue)
+      {
+        for (const auto value : TEST_VALUES_8BIT)
+          data.push_back(value.B);
+      }
+      else if (channel == Channel::Alpha)
+      {
+        for (const auto value : TEST_VALUES_8BIT)
+          data.push_back(value.A);
+      }
+    }
   }
 
   data.squeeze();
-
   return data;
 }
 

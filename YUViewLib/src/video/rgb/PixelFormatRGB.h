@@ -120,7 +120,8 @@ public:
   void setDataLayout(DataLayout dataLayout) { this->dataLayout = dataLayout; }
 
   std::size_t bytesPerFrame(Size frameSize) const;
-  int         getComponentPosition(Channel channel) const;
+  int         getChannelPosition(Channel channel) const;
+  Channel     getChannelAtPosition(int position) const;
 
   bool operator==(const PixelFormatRGB &a) const { return getName() == a.getName(); }
   bool operator!=(const PixelFormatRGB &a) const { return getName() != a.getName(); }
