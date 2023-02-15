@@ -108,7 +108,8 @@ void checkThatOutputIsIdenticalToOriginal(const std::vector<unsigned char> &data
     if (!convertAlpha)
       expectedValue.A = 255;
 
-    QVERIFY2(expectedValue == actualValue, qPrintable(QString("comparing value %1 failed").arg(i)));
+    if (expectedValue != actualValue)
+      throw std::runtime_error("Value " + std::to_string(i));
   }
 }
 
@@ -119,36 +120,56 @@ class ConversionRGBTest : public QObject
   Q_OBJECT
 
 private slots:
-  void testBasicConvertInputRGBToRGBA();
+  void testBasicConvertInputRGB8BitToRGBA_AllValuesShouldBeIdentical();
 };
 
-void ConversionRGBTest::testBasicConvertInputRGBToRGBA()
+void ConversionRGBTest::testBasicConvertInputRGB8BitToRGBA_AllValuesShouldBeIdentical()
 {
-  PixelFormatRGB format(8, DataLayout::Planar, ChannelOrder::RGB);
-  const auto     data = createRawRGBData(format);
+  constexpr auto BIT_DEPTH = 8;
 
-  constexpr auto nrBytes = TEST_FRAME_SIZE.width * TEST_FRAME_SIZE.height * 4;
+  for (const auto hasAlpha : {false, true})
+  {
+    for (const auto dataLayout : DataLayoutMapper.entries())
+    {
+      for (const auto channelOrder : ChannelOrderMapper.entries())
+      {
+        PixelFormatRGB format(BIT_DEPTH, dataLayout.value, channelOrder.value);
+        const auto     data = createRawRGBData(format);
 
-  std::vector<unsigned char> outputBuffer;
-  outputBuffer.resize(nrBytes);
+        constexpr auto nrBytes = TEST_FRAME_SIZE.width * TEST_FRAME_SIZE.height * 4;
 
-  const std::array<bool, 4> componentInvert  = {false};
-  const std::array<int, 4>  componentScale   = {1, 1, 1, 1};
-  const auto                limitedRange     = false;
-  const auto                convertAlpha     = false;
-  const auto                premultiplyAlpha = false;
+        std::vector<unsigned char> outputBuffer;
+        outputBuffer.resize(nrBytes);
 
-  convertInputRGBToARGB(data,
-                        format,
-                        outputBuffer.data(),
-                        TEST_FRAME_SIZE,
-                        componentInvert.data(),
-                        componentScale.data(),
-                        limitedRange,
-                        convertAlpha,
-                        premultiplyAlpha);
+        const std::array<bool, 4> componentInvert  = {false};
+        const std::array<int, 4>  componentScale   = {1, 1, 1, 1};
+        const auto                limitedRange     = false;
+        const auto                premultiplyAlpha = false;
 
-  checkThatOutputIsIdenticalToOriginal(outputBuffer, convertAlpha);
+        convertInputRGBToARGB(data,
+                              format,
+                              outputBuffer.data(),
+                              TEST_FRAME_SIZE,
+                              componentInvert.data(),
+                              componentScale.data(),
+                              limitedRange,
+                              hasAlpha,
+                              premultiplyAlpha);
+
+        try
+        {
+          checkThatOutputIsIdenticalToOriginal(outputBuffer, hasAlpha);
+        }
+        catch (const std::exception &e)
+        {
+          const auto errorMessage = "Error checking " + std::string(e.what()) + " for alpha " +
+                                    std::to_string(hasAlpha) + " dataLayout " + dataLayout.name +
+                                    " channelOrder " + channelOrder.name;
+          QFAIL(errorMessage.c_str());
+        }
+      }
+    }
+  }
 }
 
 QTEST_MAIN(ConversionRGBTest)

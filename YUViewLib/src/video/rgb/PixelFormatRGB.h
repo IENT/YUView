@@ -71,6 +71,10 @@ struct rgba_t
   {
     return this->R == other.R && this->G == other.G && this->B == other.B && this->A == other.A;
   };
+  bool operator!=(const rgba_t &other)
+  {
+    return this->R != other.R || this->G != other.G || this->B != other.B || this->A != other.A;
+  };
 };
 
 enum class ChannelOrder
