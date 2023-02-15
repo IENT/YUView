@@ -39,7 +39,7 @@
 namespace video::rgb
 {
 
-void convertInputRGBToRGBA(const QByteArray &    sourceBuffer,
+void convertInputRGBToARGB(const QByteArray &    sourceBuffer,
                            const PixelFormatRGB &srcPixelFormat,
                            unsigned char *       targetBuffer,
                            const Size            frameSize,
@@ -49,7 +49,7 @@ void convertInputRGBToRGBA(const QByteArray &    sourceBuffer,
                            const bool            convertAlpha,
                            const bool            premultiplyAlpha);
 
-void convertSinglePlaneOfRGBToGreyscaleRGBA(const QByteArray &    sourceBuffer,
+void convertSinglePlaneOfRGBToGreyscaleARGB(const QByteArray &    sourceBuffer,
                                             const PixelFormatRGB &srcPixelFormat,
                                             unsigned char *       targetBuffer,
                                             const Size            frameSize,

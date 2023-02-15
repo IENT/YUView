@@ -66,6 +66,11 @@ struct rgba_t
 
     throw std::out_of_range("Unsupported channel for value access");
   }
+
+  bool operator==(const rgba_t &other)
+  {
+    return this->R == other.R && this->G == other.G && this->B == other.B && this->A == other.A;
+  };
 };
 
 enum class ChannelOrder

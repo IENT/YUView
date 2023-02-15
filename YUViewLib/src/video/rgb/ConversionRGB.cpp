@@ -47,7 +47,7 @@ template <typename T> T swapLowestBytes(const T &val)
 
 // Convert the input raw RGB(A) format to the output RGBA format. The bit depth is either
 template <int bitDepth>
-void convertRGBToRGBA(const QByteArray &    sourceBuffer,
+void convertRGBToARGB(const QByteArray &    sourceBuffer,
                       const PixelFormatRGB &srcPixelFormat,
                       unsigned char *       targetBuffer,
                       const Size            frameSize,
@@ -154,7 +154,7 @@ void convertRGBToRGBA(const QByteArray &    sourceBuffer,
 
 // Convert the input raw RGB(A) format to the output RGBA format. The bit depth is either
 template <int bitDepth>
-void convertRGBPlaneToRGBA(const QByteArray &    sourceBuffer,
+void convertRGBPlaneToARGB(const QByteArray &    sourceBuffer,
                            const PixelFormatRGB &srcPixelFormat,
                            unsigned char *       targetBuffer,
                            const Size            frameSize,
@@ -236,7 +236,7 @@ rgba_t getPixelValue(const QByteArray &    sourceBuffer,
 
 } // namespace
 
-void convertInputRGBToRGBA(const QByteArray &    sourceBuffer,
+void convertInputRGBToARGB(const QByteArray &    sourceBuffer,
                            const PixelFormatRGB &srcPixelFormat,
                            unsigned char *       targetBuffer,
                            const Size            frameSize,
@@ -251,7 +251,7 @@ void convertInputRGBToRGBA(const QByteArray &    sourceBuffer,
     throw std::invalid_argument("Invalid bit depth in pixel format for conversion");
 
   if (bitsPerSample == 8)
-    convertRGBToRGBA<8>(sourceBuffer,
+    convertRGBToARGB<8>(sourceBuffer,
                         srcPixelFormat,
                         targetBuffer,
                         frameSize,
@@ -261,7 +261,7 @@ void convertInputRGBToRGBA(const QByteArray &    sourceBuffer,
                         convertAlpha,
                         premultiplyAlpha);
   else
-    convertRGBToRGBA<16>(sourceBuffer,
+    convertRGBToARGB<16>(sourceBuffer,
                          srcPixelFormat,
                          targetBuffer,
                          frameSize,
@@ -272,7 +272,7 @@ void convertInputRGBToRGBA(const QByteArray &    sourceBuffer,
                          premultiplyAlpha);
 }
 
-void convertSinglePlaneOfRGBToGreyscaleRGBA(const QByteArray &    sourceBuffer,
+void convertSinglePlaneOfRGBToGreyscaleARGB(const QByteArray &    sourceBuffer,
                                             const PixelFormatRGB &srcPixelFormat,
                                             unsigned char *       targetBuffer,
                                             const Size            frameSize,
@@ -286,7 +286,7 @@ void convertSinglePlaneOfRGBToGreyscaleRGBA(const QByteArray &    sourceBuffer,
     throw std::invalid_argument("Invalid bit depth in pixel format for conversion");
 
   if (bitsPerSample == 8)
-    convertRGBPlaneToRGBA<8>(sourceBuffer,
+    convertRGBPlaneToARGB<8>(sourceBuffer,
                              srcPixelFormat,
                              targetBuffer,
                              frameSize,
@@ -295,7 +295,7 @@ void convertSinglePlaneOfRGBToGreyscaleRGBA(const QByteArray &    sourceBuffer,
                              displayComponentOffset,
                              limitedRange);
   else
-    convertRGBPlaneToRGBA<16>(sourceBuffer,
+    convertRGBPlaneToARGB<16>(sourceBuffer,
                               srcPixelFormat,
                               targetBuffer,
                               frameSize,

@@ -89,6 +89,29 @@ auto createRawRGBData(const PixelFormatRGB &format) -> QByteArray
   return data;
 }
 
+void checkThatOutputIsIdenticalToOriginal(const std::vector<unsigned char> &data,
+                                          const bool                        convertAlpha)
+{
+  constexpr auto nrValues = TEST_FRAME_SIZE.width * TEST_FRAME_SIZE.height;
+
+  for (int i = 0; i < nrValues; ++i)
+  {
+    const auto pixelOffset   = i * 4;
+    auto       expectedValue = TEST_VALUES_8BIT.at(i);
+
+    // Conversion output is ARGB Little Endian
+    const rgba_t actualValue = {data.at(pixelOffset + 2),
+                                data.at(pixelOffset + 1),
+                                data.at(pixelOffset),
+                                data.at(pixelOffset + 3)};
+
+    if (!convertAlpha)
+      expectedValue.A = 255;
+
+    QVERIFY2(expectedValue == actualValue, qPrintable(QString("comparing value %1 failed").arg(i)));
+  }
+}
+
 } // namespace
 
 class ConversionRGBTest : public QObject
@@ -115,7 +138,7 @@ void ConversionRGBTest::testBasicConvertInputRGBToRGBA()
   const auto                convertAlpha     = false;
   const auto                premultiplyAlpha = false;
 
-  convertInputRGBToRGBA(data,
+  convertInputRGBToARGB(data,
                         format,
                         outputBuffer.data(),
                         TEST_FRAME_SIZE,
@@ -125,9 +148,7 @@ void ConversionRGBTest::testBasicConvertInputRGBToRGBA()
                         convertAlpha,
                         premultiplyAlpha);
 
-  // Todo: Check the output
-  int debugStop  = data.capacity();
-  int debugStop2 = 234;
+  checkThatOutputIsIdenticalToOriginal(outputBuffer, convertAlpha);
 }
 
 QTEST_MAIN(ConversionRGBTest)

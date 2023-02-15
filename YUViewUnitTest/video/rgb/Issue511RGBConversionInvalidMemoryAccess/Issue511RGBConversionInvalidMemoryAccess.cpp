@@ -63,7 +63,7 @@ void Issue511RGBConversionInvalidMemoryAccess::testBasicConvertInputRGBToRGBA()
   const auto                convertAlpha     = false;
   const auto                premultiplyAlpha = false;
 
-  convertInputRGBToRGBA(data,
+  convertInputRGBToARGB(data,
                         format,
                         outputBuffer.data(),
                         TEST_FRAME_SIZE,
