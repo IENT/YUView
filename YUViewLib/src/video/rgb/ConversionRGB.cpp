@@ -45,7 +45,9 @@ template <typename T> T swapLowestBytes(const T &val)
   return ((val & 0xff) << 8) + ((val & 0xff00) >> 8);
 };
 
-// Convert the input raw RGB(A) format to the output RGBA format. The bit depth is either
+// Convert the input format to the output RGBA format. Apply inversion, scaling,
+// limited range conversion and alpha multiplication. The input can be any supported
+// format. The output is always 8 bit ARGB little endian.
 template <int bitDepth>
 void convertRGBToARGB(const QByteArray &    sourceBuffer,
                       const PixelFormatRGB &srcPixelFormat,
@@ -62,67 +64,50 @@ void convertRGBToARGB(const QByteArray &    sourceBuffer,
       srcPixelFormat.getDataLayout() == DataLayout::Planar ? 1 : srcPixelFormat.nrChannels();
 
   typedef typename std::conditional<bitDepth == 8, uint8_t *, uint16_t *>::type InValueType;
+  const auto setAlpha = outputHasAlpha && srcPixelFormat.hasAlpha();
 
   auto offsetR = srcPixelFormat.getChannelPosition(Channel::Red);
   auto offsetG = srcPixelFormat.getChannelPosition(Channel::Green);
   auto offsetB = srcPixelFormat.getChannelPosition(Channel::Blue);
-  auto offsetA = srcPixelFormat.getChannelPosition(Channel::Alpha);
+
   if (srcPixelFormat.getDataLayout() == DataLayout::Planar)
   {
     offsetR *= frameSize.width * frameSize.height;
     offsetG *= frameSize.width * frameSize.height;
     offsetB *= frameSize.width * frameSize.height;
-    offsetA *= frameSize.width * frameSize.height;
   }
 
   auto srcR = ((InValueType)sourceBuffer.data()) + offsetR;
   auto srcG = ((InValueType)sourceBuffer.data()) + offsetG;
   auto srcB = ((InValueType)sourceBuffer.data()) + offsetB;
-  auto srcA = ((InValueType)sourceBuffer.data()) + offsetA;
 
-  const auto setAlpha = outputHasAlpha && srcPixelFormat.hasAlpha();
+  InValueType srcA = nullptr;
+  if (setAlpha)
+  {
+    auto offsetA = srcPixelFormat.getChannelPosition(Channel::Alpha);
+    if (srcPixelFormat.getDataLayout() == DataLayout::Planar)
+      offsetA *= frameSize.width * frameSize.height;
+    srcA = ((InValueType)sourceBuffer.data()) + offsetA;
+  }
 
-  // Now we just have to iterate over all values and always skip "offsetToNextValue" values in
-  // the sources and write 4 values in dst.
   for (unsigned i = 0; i < frameSize.width * frameSize.height; i++)
   {
-    int valR = (int)srcR[0];
-    int valG = (int)srcG[0];
-    int valB = (int)srcB[0];
-    int valA = (int)srcA[0];
+    const auto isBigEndian  = bitDepth > 8 && srcPixelFormat.getEndianess() == Endianness::Big;
+    auto       convertValue = [&isBigEndian, &rightShift](
+                            const InValueType sourceData, const int scale, const bool invert) {
+      auto value = static_cast<int>(sourceData[0]);
+      if (isBigEndian)
+        value = swapLowestBytes(value);
+      value = ((value * scale) >> rightShift);
+      value = functions::clip(value, 0, 255);
+      if (invert)
+        value = 255 - value;
+      return value;
+    };
 
-    if (bitDepth > 8 && srcPixelFormat.getEndianess() == Endianness::Big)
-    {
-      valR = swapLowestBytes(valR);
-      valG = swapLowestBytes(valG);
-      valB = swapLowestBytes(valB);
-      valA = swapLowestBytes(valA);
-    }
-
-    valR = (valR * componentScale[0]) >> rightShift;
-    valR = functions::clip(valR, 0, 255);
-    if (componentInvert[0])
-      valR = 255 - valR;
-
-    valG = (valG * componentScale[1]) >> rightShift;
-    valG = functions::clip(valG, 0, 255);
-    if (componentInvert[1])
-      valG = 255 - valG;
-
-    valB = (valB * componentScale[2]) >> rightShift;
-    valB = functions::clip(valB, 0, 255);
-    if (componentInvert[2])
-      valB = 255 - valB;
-
-    if (setAlpha)
-    {
-      valA = (valA * componentScale[3]) >> rightShift;
-      valA = functions::clip(valA, 0, 255);
-      if (componentInvert[3])
-        valA = 255 - valA;
-    }
-    else
-      valA = 255;
+    auto valR = convertValue(srcR, componentScale[0], componentInvert[0]);
+    auto valG = convertValue(srcG, componentScale[1], componentInvert[1]);
+    auto valB = convertValue(srcB, componentScale[2], componentInvert[2]);
 
     if (limitedRange)
     {
@@ -132,18 +117,23 @@ void convertRGBToARGB(const QByteArray &    sourceBuffer,
       // No limited range for alpha
     }
 
-    if (setAlpha && premultiplyAlpha)
+    int valA = 255;
+    if (setAlpha)
     {
-      valR = ((valR * 255) * valA) / (255 * 255);
-      valG = ((valG * 255) * valA) / (255 * 255);
-      valB = ((valB * 255) * valA) / (255 * 255);
+      valA = convertValue(srcA, componentScale[3], componentInvert[3]);
+      srcA += offsetToNextValue;
+
+      if (premultiplyAlpha)
+      {
+        valR = ((valR * 255) * valA) / (255 * 255);
+        valG = ((valG * 255) * valA) / (255 * 255);
+        valB = ((valB * 255) * valA) / (255 * 255);
+      }
     }
 
     srcR += offsetToNextValue;
     srcG += offsetToNextValue;
     srcB += offsetToNextValue;
-    if (setAlpha)
-      srcA += offsetToNextValue;
 
     targetBuffer[0] = valB;
     targetBuffer[1] = valG;
