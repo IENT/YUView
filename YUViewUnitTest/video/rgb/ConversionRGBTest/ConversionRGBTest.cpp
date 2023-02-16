@@ -8,51 +8,55 @@ using namespace video::rgb;
 namespace
 {
 
-constexpr std::array<rgba_t, 16> TEST_VALUES_8BIT = {{{0, 0, 0, 0},
-                                                      {33, 0, 0, 0},
-                                                      {178, 0, 0, 22},
-                                                      {255, 0, 0, 88},
-                                                      {0, 33, 0, 123},
-                                                      {0, 178, 0, 0},
-                                                      {0, 255, 0, 89},
-                                                      {0, 0, 33, 0},
-                                                      {0, 0, 178, 0},
-                                                      {0, 0, 255, 0},
-                                                      {45, 43, 34, 255},
-                                                      {255, 24, 129, 255},
-                                                      {255, 255, 3, 0},
-                                                      {3, 255, 22, 0},
-                                                      {255, 255, 255, 0},
-                                                      {255, 255, 255, 255}}};
-constexpr Size                   TEST_FRAME_SIZE  = {4, 4};
+constexpr std::array<rgba_t, 16> TEST_VALUES_12BIT = {{{0, 0, 0, 0},
+                                                       {156, 0, 0, 0},
+                                                       {560, 0, 0, 98},
+                                                       {1023, 0, 0, 700},
+                                                       {0, 156, 0, 852},
+                                                       {0, 760, 0, 0},
+                                                       {0, 1023, 0, 230},
+                                                       {0, 0, 156, 0},
+                                                       {0, 0, 576, 0},
+                                                       {0, 0, 1023, 0},
+                                                       {213, 214, 265, 1023},
+                                                       {1023, 78, 234, 1023},
+                                                       {1023, 1023, 3, 0},
+                                                       {16, 1023, 22, 0},
+                                                       {1023, 1023, 1023, 0},
+                                                       {1023, 1023, 1023, 1023}}};
+constexpr Size                   TEST_FRAME_SIZE   = {4, 4};
+
+void scaleValueToBitDepthAndPushIntoArrayLittleEndian(QByteArray &   data,
+                                                      const unsigned value,
+                                                      const int      bitDepth)
+{
+  const auto shift = 12 - bitDepth;
+  if (bitDepth == 8)
+    data.push_back(value >> shift);
+  else
+  {
+    const auto scaledValue = (value >> shift);
+    const auto upperByte   = ((scaledValue & 0xff00) >> 8);
+    const auto lowerByte   = (scaledValue & 0xff);
+    data.push_back(lowerByte);
+    data.push_back(upperByte);
+  }
+}
 
 auto createRawRGBData(const PixelFormatRGB &format) -> QByteArray
 {
   QByteArray data;
+  const auto bitDepth = format.getBitsPerSample();
 
   if (format.getDataLayout() == DataLayout::Packed)
   {
-    for (const auto value : TEST_VALUES_8BIT)
+    for (auto value : TEST_VALUES_12BIT)
     {
       for (int channelPosition = 0; channelPosition < static_cast<int>(format.nrChannels());
            channelPosition++)
       {
         const auto channel = format.getChannelAtPosition(channelPosition);
-        switch (channel)
-        {
-        case Channel::Red:
-          data.push_back(value.R);
-          break;
-        case Channel::Green:
-          data.push_back(value.G);
-          break;
-        case Channel::Blue:
-          data.push_back(value.B);
-          break;
-        case Channel::Alpha:
-          data.push_back(value.A);
-          break;
-        }
+        scaleValueToBitDepthAndPushIntoArrayLittleEndian(data, value[channel], bitDepth);
       }
     }
   }
@@ -62,26 +66,8 @@ auto createRawRGBData(const PixelFormatRGB &format) -> QByteArray
          channelPosition++)
     {
       const auto channel = format.getChannelAtPosition(channelPosition);
-      if (channel == Channel::Red)
-      {
-        for (const auto value : TEST_VALUES_8BIT)
-          data.push_back(value.R);
-      }
-      else if (channel == Channel::Green)
-      {
-        for (const auto value : TEST_VALUES_8BIT)
-          data.push_back(value.G);
-      }
-      else if (channel == Channel::Blue)
-      {
-        for (const auto value : TEST_VALUES_8BIT)
-          data.push_back(value.B);
-      }
-      else if (channel == Channel::Alpha)
-      {
-        for (const auto value : TEST_VALUES_8BIT)
-          data.push_back(value.A);
-      }
+      for (auto value : TEST_VALUES_12BIT)
+        scaleValueToBitDepthAndPushIntoArrayLittleEndian(data, value[channel], bitDepth);
     }
   }
 
@@ -89,15 +75,20 @@ auto createRawRGBData(const PixelFormatRGB &format) -> QByteArray
   return data;
 }
 
-void checkThatOutputIsIdenticalToOriginal(const std::vector<unsigned char> &data,
-                                          const bool                        alphaShouldBeSet)
+void checkOutputValues(const std::vector<unsigned char> &data, const bool alphaShouldBeSet)
 {
   constexpr auto nrValues = TEST_FRAME_SIZE.width * TEST_FRAME_SIZE.height;
 
   for (int i = 0; i < nrValues; ++i)
   {
-    const auto pixelOffset   = i * 4;
-    auto       expectedValue = TEST_VALUES_8BIT.at(i);
+    const auto pixelOffset = i * 4;
+
+    const auto originalValue       = TEST_VALUES_12BIT.at(i);
+    const auto bitDepthShiftTo8Bit = 4;
+    rgba_t     expectedValue({originalValue.R >> bitDepthShiftTo8Bit,
+                          originalValue.G >> bitDepthShiftTo8Bit,
+                          originalValue.B >> bitDepthShiftTo8Bit,
+                          originalValue.A >> bitDepthShiftTo8Bit});
 
     // Conversion output is ARGB Little Endian
     const rgba_t actualValue = {data.at(pixelOffset + 2),
@@ -120,56 +111,59 @@ class ConversionRGBTest : public QObject
   Q_OBJECT
 
 private slots:
-  void testBasicConvertInputRGB8BitToRGBA_AllValuesShouldBeIdentical();
+  void testBasicConvertInputRGBToARGB_AllValuesShouldBeIdentical();
 };
 
-void ConversionRGBTest::testBasicConvertInputRGB8BitToRGBA_AllValuesShouldBeIdentical()
+void ConversionRGBTest::testBasicConvertInputRGBToARGB_AllValuesShouldBeIdentical()
 {
-  constexpr auto BIT_DEPTH = 8;
 
-  for (const auto alphaMode : AlphaModeMapper.entries())
+  for (auto bitDepth : {8, 10, 12})
   {
-    for (const auto dataLayout : DataLayoutMapper.entries())
+    for (const auto alphaMode : AlphaModeMapper.entries())
     {
-      for (const auto channelOrder : ChannelOrderMapper.entries())
+      for (const auto dataLayout : DataLayoutMapper.entries())
       {
-        PixelFormatRGB format(BIT_DEPTH, dataLayout.value, channelOrder.value, alphaMode.value);
-        const auto     data = createRawRGBData(format);
-
-        for (const auto outputHasAlpha : {false, true})
+        for (const auto channelOrder : ChannelOrderMapper.entries())
         {
-          constexpr auto nrBytes = TEST_FRAME_SIZE.width * TEST_FRAME_SIZE.height * 4;
+          PixelFormatRGB format(bitDepth, dataLayout.value, channelOrder.value, alphaMode.value);
+          const auto     data = createRawRGBData(format);
 
-          std::vector<unsigned char> outputBuffer;
-          outputBuffer.resize(nrBytes);
-
-          const std::array<bool, 4> componentInvert  = {false};
-          const std::array<int, 4>  componentScale   = {1, 1, 1, 1};
-          const auto                limitedRange     = false;
-          const auto                premultiplyAlpha = false;
-
-          convertInputRGBToARGB(data,
-                                format,
-                                outputBuffer.data(),
-                                TEST_FRAME_SIZE,
-                                componentInvert.data(),
-                                componentScale.data(),
-                                limitedRange,
-                                outputHasAlpha,
-                                premultiplyAlpha);
-
-          try
+          for (const auto outputHasAlpha : {false, true})
           {
-            const auto alphaShouldBeSet = (outputHasAlpha && alphaMode.value != AlphaMode::None);
-            checkThatOutputIsIdenticalToOriginal(outputBuffer, alphaShouldBeSet);
-          }
-          catch (const std::exception &e)
-          {
-            const auto errorMessage = "Error checking " + std::string(e.what()) +
-                                      " for outputHasAlpga " + std::to_string(outputHasAlpha) +
-                                      " alphaMode " + alphaMode.name + " dataLayout " +
-                                      dataLayout.name + " channelOrder " + channelOrder.name;
-            QFAIL(errorMessage.c_str());
+            constexpr auto nrBytes = TEST_FRAME_SIZE.width * TEST_FRAME_SIZE.height * 4;
+
+            std::vector<unsigned char> outputBuffer;
+            outputBuffer.resize(nrBytes);
+
+            const std::array<bool, 4> componentInvert  = {false};
+            const std::array<int, 4>  componentScale   = {1, 1, 1, 1};
+            const auto                limitedRange     = false;
+            const auto                premultiplyAlpha = false;
+
+            convertInputRGBToARGB(data,
+                                  format,
+                                  outputBuffer.data(),
+                                  TEST_FRAME_SIZE,
+                                  componentInvert.data(),
+                                  componentScale.data(),
+                                  limitedRange,
+                                  outputHasAlpha,
+                                  premultiplyAlpha);
+
+            try
+            {
+              const auto alphaShouldBeSet = (outputHasAlpha && alphaMode.value != AlphaMode::None);
+              checkOutputValues(outputBuffer, alphaShouldBeSet);
+            }
+            catch (const std::exception &e)
+            {
+              const auto errorMessage = "Error checking " + std::string(e.what()) +
+                                        " for bitDepth " + std::to_string(bitDepth) +
+                                        " outputHasAlpga " + std::to_string(outputHasAlpha) +
+                                        " alphaMode " + alphaMode.name + " dataLayout " +
+                                        dataLayout.name + " channelOrder " + channelOrder.name;
+              QFAIL(errorMessage.c_str());
+            }
           }
         }
       }
