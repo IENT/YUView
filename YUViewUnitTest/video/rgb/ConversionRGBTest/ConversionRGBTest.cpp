@@ -1,5 +1,6 @@
 #include <QtTest>
 
+#include <video/LimitedRangeToFullRange.h>
 #include <video/rgb/ConversionRGB.h>
 
 using namespace video;
@@ -95,6 +96,7 @@ auto createRawRGBData(const PixelFormatRGB &format) -> QByteArray
 void checkOutputValues(const std::vector<unsigned char> &data,
                        const int                         bitDepth,
                        const ScalingPerComponent &       scaling,
+                       const bool                        limitedRange,
                        const InversionPerComponent &     inversion,
                        const bool                        alphaShouldBeSet)
 {
@@ -120,6 +122,14 @@ void checkOutputValues(const std::vector<unsigned char> &data,
     expectedValue.B = scaleShiftClipInvertValue(expectedValue.B, scaling[2], inversion[2]);
     expectedValue.A = scaleShiftClipInvertValue(expectedValue.A, scaling[3], inversion[3]);
 
+    if (limitedRange)
+    {
+      expectedValue.R = LimitedRangeToFullRange.at(expectedValue.R);
+      expectedValue.G = LimitedRangeToFullRange.at(expectedValue.G);
+      expectedValue.B = LimitedRangeToFullRange.at(expectedValue.B);
+      // No limited range for alpha
+    }
+
     // Conversion output is ARGB Little Endian
     const rgba_t actualValue = {data.at(pixelOffset + 2),
                                 data.at(pixelOffset + 1),
@@ -134,6 +144,49 @@ void checkOutputValues(const std::vector<unsigned char> &data,
   }
 }
 
+void runTest(const QByteArray &           sourceBuffer,
+             const PixelFormatRGB &       srcPixelFormat,
+             const InversionPerComponent &inversion,
+             const ScalingPerComponent &  componentScale,
+             const bool                   limitedRange,
+             const bool                   outputHasAlpha)
+{
+  constexpr auto nrBytes = TEST_FRAME_SIZE.width * TEST_FRAME_SIZE.height * 4;
+
+  std::vector<unsigned char> outputBuffer;
+  outputBuffer.resize(nrBytes);
+
+  convertInputRGBToARGB(sourceBuffer,
+                        srcPixelFormat,
+                        outputBuffer.data(),
+                        TEST_FRAME_SIZE,
+                        inversion.data(),
+                        componentScale.data(),
+                        limitedRange,
+                        outputHasAlpha,
+                        PremultiplyAlpha(false));
+
+  try
+  {
+    const auto alphaShouldBeSet = (outputHasAlpha && srcPixelFormat.hasAlpha());
+    checkOutputValues(outputBuffer,
+                      srcPixelFormat.getBitsPerSample(),
+                      componentScale,
+                      limitedRange,
+                      inversion,
+                      alphaShouldBeSet);
+  }
+  catch (const std::exception &e)
+  {
+    const auto errorMessage = "Error checking " + std::string(e.what()) + " for " +
+                              srcPixelFormat.getName() + " outputHasAlpha " +
+                              std::to_string(outputHasAlpha) + " scaling " +
+                              to_string(componentScale) + " inversion " + to_string(inversion) +
+                              " limitedRange " + std::to_string(limitedRange);
+    throw std::exception(errorMessage.c_str());
+  }
+}
+
 } // namespace
 
 class ConversionRGBTest : public QObject
@@ -142,8 +195,6 @@ class ConversionRGBTest : public QObject
 
 private slots:
   void testBasicConvertsion();
-  void testConversionWithInversion();
-  void testConversionWithLimitedToFullRange();
 };
 
 void ConversionRGBTest::testBasicConvertsion()
@@ -175,39 +226,9 @@ void ConversionRGBTest::testBasicConvertsion()
                                            InversionPerComponent({false, false, false, true}),
                                            InversionPerComponent({true, true, true, true})})
               {
-                constexpr auto nrBytes = TEST_FRAME_SIZE.width * TEST_FRAME_SIZE.height * 4;
-
-                std::vector<unsigned char> outputBuffer;
-                outputBuffer.resize(nrBytes);
-
-                convertInputRGBToARGB(data,
-                                      format,
-                                      outputBuffer.data(),
-                                      TEST_FRAME_SIZE,
-                                      inversion.data(),
-                                      componentScale.data(),
-                                      LimitedRange(false),
-                                      outputHasAlpha,
-                                      PremultiplyAlpha(false));
-
-                try
-                {
-                  const auto alphaShouldBeSet =
-                      (outputHasAlpha && alphaMode.value != AlphaMode::None);
-                  checkOutputValues(
-                      outputBuffer, bitDepth, componentScale, inversion, alphaShouldBeSet);
-                }
-                catch (const std::exception &e)
-                {
-                  const auto errorMessage = "Error checking " + std::string(e.what()) +
-                                            " for bitDepth " + std::to_string(bitDepth) +
-                                            " outputHasAlpga " + std::to_string(outputHasAlpha) +
-                                            " alphaMode " + alphaMode.name + " dataLayout " +
-                                            dataLayout.name + " channelOrder " + channelOrder.name +
-                                            " scaling " + to_string(componentScale) +
-                                            " inversion " + to_string(inversion);
-                  QFAIL(errorMessage.c_str());
-                }
+                for (const auto limitedRange : {false, true})
+                  QVERIFY_THROWS_NO_EXCEPTION(runTest(
+                      data, format, inversion, componentScale, limitedRange, outputHasAlpha));
               }
             }
           }
@@ -215,14 +236,6 @@ void ConversionRGBTest::testBasicConvertsion()
       }
     }
   }
-}
-
-void ConversionRGBTest::testConversionWithInversion()
-{
-}
-
-void ConversionRGBTest::testConversionWithLimitedToFullRange()
-{
 }
 
 QTEST_MAIN(ConversionRGBTest)
