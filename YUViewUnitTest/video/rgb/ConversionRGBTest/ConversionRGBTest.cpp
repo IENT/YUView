@@ -26,6 +26,19 @@ constexpr std::array<rgba_t, 16> TEST_VALUES_12BIT = {{{0, 0, 0, 0},
                                                        {1023, 1023, 1023, 1023}}};
 constexpr Size                   TEST_FRAME_SIZE   = {4, 4};
 
+using LimitedRange        = bool;
+using PremultiplyAlpha    = bool;
+using ScalingPerComponent = std::array<int, 4>;
+
+constexpr std::array<bool, 4> NO_INVERSION = {false};
+constexpr ScalingPerComponent NO_SCALING   = {1, 1, 1, 1};
+
+std::string to_string(ScalingPerComponent scaling)
+{
+  return "[" + std::to_string(scaling.at(0)) + "," + std::to_string(scaling.at(1)) + "," +
+         std::to_string(scaling.at(2)) + "," + std::to_string(scaling.at(3)) + "]";
+}
+
 void scaleValueToBitDepthAndPushIntoArrayLittleEndian(QByteArray &   data,
                                                       const unsigned value,
                                                       const int      bitDepth)
@@ -75,7 +88,10 @@ auto createRawRGBData(const PixelFormatRGB &format) -> QByteArray
   return data;
 }
 
-void checkOutputValues(const std::vector<unsigned char> &data, const bool alphaShouldBeSet)
+void checkOutputValues(const std::vector<unsigned char> &data,
+                       const int                         bitDepth,
+                       const ScalingPerComponent         scaling,
+                       const bool                        alphaShouldBeSet)
 {
   constexpr auto nrValues = TEST_FRAME_SIZE.width * TEST_FRAME_SIZE.height;
 
@@ -83,12 +99,19 @@ void checkOutputValues(const std::vector<unsigned char> &data, const bool alphaS
   {
     const auto pixelOffset = i * 4;
 
-    const auto originalValue       = TEST_VALUES_12BIT.at(i);
-    const auto bitDepthShiftTo8Bit = 4;
-    rgba_t     expectedValue({originalValue.R >> bitDepthShiftTo8Bit,
-                          originalValue.G >> bitDepthShiftTo8Bit,
-                          originalValue.B >> bitDepthShiftTo8Bit,
-                          originalValue.A >> bitDepthShiftTo8Bit});
+    auto expectedValue = TEST_VALUES_12BIT.at(i);
+
+    auto scaleShiftAndClipValue = [&bitDepth](const int value, const int scale) {
+      const auto valueOriginalDepth = (value >> (12 - bitDepth));
+      const auto valueScaled        = valueOriginalDepth * scale;
+      const auto value8BitDepth     = (valueScaled >> (bitDepth - 8));
+      return functions::clip(value8BitDepth, 0, 255);
+    };
+
+    expectedValue.R = scaleShiftAndClipValue(expectedValue.R, scaling[0]);
+    expectedValue.G = scaleShiftAndClipValue(expectedValue.G, scaling[1]);
+    expectedValue.B = scaleShiftAndClipValue(expectedValue.B, scaling[2]);
+    expectedValue.A = scaleShiftAndClipValue(expectedValue.A, scaling[3]);
 
     // Conversion output is ARGB Little Endian
     const rgba_t actualValue = {data.at(pixelOffset + 2),
@@ -111,12 +134,13 @@ class ConversionRGBTest : public QObject
   Q_OBJECT
 
 private slots:
-  void testBasicConvertInputRGBToARGB_AllValuesShouldBeIdentical();
+  void testBasicConvertsion();
+  void testConversionWithInversion();
+  void testConversionWithLimitedToFullRange();
 };
 
-void ConversionRGBTest::testBasicConvertInputRGBToARGB_AllValuesShouldBeIdentical()
+void ConversionRGBTest::testBasicConvertsion()
 {
-
   for (auto bitDepth : {8, 10, 12})
   {
     for (const auto alphaMode : AlphaModeMapper.entries())
@@ -130,45 +154,57 @@ void ConversionRGBTest::testBasicConvertInputRGBToARGB_AllValuesShouldBeIdentica
 
           for (const auto outputHasAlpha : {false, true})
           {
-            constexpr auto nrBytes = TEST_FRAME_SIZE.width * TEST_FRAME_SIZE.height * 4;
-
-            std::vector<unsigned char> outputBuffer;
-            outputBuffer.resize(nrBytes);
-
-            const std::array<bool, 4> componentInvert  = {false};
-            const std::array<int, 4>  componentScale   = {1, 1, 1, 1};
-            const auto                limitedRange     = false;
-            const auto                premultiplyAlpha = false;
-
-            convertInputRGBToARGB(data,
-                                  format,
-                                  outputBuffer.data(),
-                                  TEST_FRAME_SIZE,
-                                  componentInvert.data(),
-                                  componentScale.data(),
-                                  limitedRange,
-                                  outputHasAlpha,
-                                  premultiplyAlpha);
-
-            try
+            for (const auto componentScale : {ScalingPerComponent({1, 1, 1, 1}),
+                                              ScalingPerComponent({2, 1, 1, 1}),
+                                              ScalingPerComponent({1, 2, 1, 1}),
+                                              ScalingPerComponent({1, 1, 2, 1}),
+                                              ScalingPerComponent({1, 1, 1, 2}),
+                                              ScalingPerComponent({1, 8, 1, 1})})
             {
-              const auto alphaShouldBeSet = (outputHasAlpha && alphaMode.value != AlphaMode::None);
-              checkOutputValues(outputBuffer, alphaShouldBeSet);
-            }
-            catch (const std::exception &e)
-            {
-              const auto errorMessage = "Error checking " + std::string(e.what()) +
-                                        " for bitDepth " + std::to_string(bitDepth) +
-                                        " outputHasAlpga " + std::to_string(outputHasAlpha) +
-                                        " alphaMode " + alphaMode.name + " dataLayout " +
-                                        dataLayout.name + " channelOrder " + channelOrder.name;
-              QFAIL(errorMessage.c_str());
+              constexpr auto nrBytes = TEST_FRAME_SIZE.width * TEST_FRAME_SIZE.height * 4;
+
+              std::vector<unsigned char> outputBuffer;
+              outputBuffer.resize(nrBytes);
+
+              convertInputRGBToARGB(data,
+                                    format,
+                                    outputBuffer.data(),
+                                    TEST_FRAME_SIZE,
+                                    NO_INVERSION.data(),
+                                    componentScale.data(),
+                                    LimitedRange(false),
+                                    outputHasAlpha,
+                                    PremultiplyAlpha(false));
+
+              try
+              {
+                const auto alphaShouldBeSet =
+                    (outputHasAlpha && alphaMode.value != AlphaMode::None);
+                checkOutputValues(outputBuffer, bitDepth, componentScale, alphaShouldBeSet);
+              }
+              catch (const std::exception &e)
+              {
+                const auto errorMessage =
+                    "Error checking " + std::string(e.what()) + " for bitDepth " +
+                    std::to_string(bitDepth) + " outputHasAlpga " + std::to_string(outputHasAlpha) +
+                    " alphaMode " + alphaMode.name + " dataLayout " + dataLayout.name +
+                    " channelOrder " + channelOrder.name + " scaling " + to_string(componentScale);
+                QFAIL(errorMessage.c_str());
+              }
             }
           }
         }
       }
     }
   }
+}
+
+void ConversionRGBTest::testConversionWithInversion()
+{
+}
+
+void ConversionRGBTest::testConversionWithLimitedToFullRange()
+{
 }
 
 QTEST_MAIN(ConversionRGBTest)
