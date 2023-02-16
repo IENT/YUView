@@ -90,7 +90,7 @@ auto createRawRGBData(const PixelFormatRGB &format) -> QByteArray
 }
 
 void checkThatOutputIsIdenticalToOriginal(const std::vector<unsigned char> &data,
-                                          const bool                        convertAlpha)
+                                          const bool                        alphaShouldBeSet)
 {
   constexpr auto nrValues = TEST_FRAME_SIZE.width * TEST_FRAME_SIZE.height;
 
@@ -105,7 +105,7 @@ void checkThatOutputIsIdenticalToOriginal(const std::vector<unsigned char> &data
                                 data.at(pixelOffset),
                                 data.at(pixelOffset + 3)};
 
-    if (!convertAlpha)
+    if (!alphaShouldBeSet)
       expectedValue.A = 255;
 
     if (expectedValue != actualValue)
@@ -127,45 +127,50 @@ void ConversionRGBTest::testBasicConvertInputRGB8BitToRGBA_AllValuesShouldBeIden
 {
   constexpr auto BIT_DEPTH = 8;
 
-  for (const auto hasAlpha : {false, true})
+  for (const auto alphaMode : AlphaModeMapper.entries())
   {
     for (const auto dataLayout : DataLayoutMapper.entries())
     {
       for (const auto channelOrder : ChannelOrderMapper.entries())
       {
-        PixelFormatRGB format(BIT_DEPTH, dataLayout.value, channelOrder.value);
+        PixelFormatRGB format(BIT_DEPTH, dataLayout.value, channelOrder.value, alphaMode.value);
         const auto     data = createRawRGBData(format);
 
-        constexpr auto nrBytes = TEST_FRAME_SIZE.width * TEST_FRAME_SIZE.height * 4;
-
-        std::vector<unsigned char> outputBuffer;
-        outputBuffer.resize(nrBytes);
-
-        const std::array<bool, 4> componentInvert  = {false};
-        const std::array<int, 4>  componentScale   = {1, 1, 1, 1};
-        const auto                limitedRange     = false;
-        const auto                premultiplyAlpha = false;
-
-        convertInputRGBToARGB(data,
-                              format,
-                              outputBuffer.data(),
-                              TEST_FRAME_SIZE,
-                              componentInvert.data(),
-                              componentScale.data(),
-                              limitedRange,
-                              hasAlpha,
-                              premultiplyAlpha);
-
-        try
+        for (const auto outputHasAlpha : {false, true})
         {
-          checkThatOutputIsIdenticalToOriginal(outputBuffer, hasAlpha);
-        }
-        catch (const std::exception &e)
-        {
-          const auto errorMessage = "Error checking " + std::string(e.what()) + " for alpha " +
-                                    std::to_string(hasAlpha) + " dataLayout " + dataLayout.name +
-                                    " channelOrder " + channelOrder.name;
-          QFAIL(errorMessage.c_str());
+          constexpr auto nrBytes = TEST_FRAME_SIZE.width * TEST_FRAME_SIZE.height * 4;
+
+          std::vector<unsigned char> outputBuffer;
+          outputBuffer.resize(nrBytes);
+
+          const std::array<bool, 4> componentInvert  = {false};
+          const std::array<int, 4>  componentScale   = {1, 1, 1, 1};
+          const auto                limitedRange     = false;
+          const auto                premultiplyAlpha = false;
+
+          convertInputRGBToARGB(data,
+                                format,
+                                outputBuffer.data(),
+                                TEST_FRAME_SIZE,
+                                componentInvert.data(),
+                                componentScale.data(),
+                                limitedRange,
+                                outputHasAlpha,
+                                premultiplyAlpha);
+
+          try
+          {
+            const auto alphaShouldBeSet = (outputHasAlpha && alphaMode.value != AlphaMode::None);
+            checkThatOutputIsIdenticalToOriginal(outputBuffer, alphaShouldBeSet);
+          }
+          catch (const std::exception &e)
+          {
+            const auto errorMessage = "Error checking " + std::string(e.what()) +
+                                      " for outputHasAlpga " + std::to_string(outputHasAlpha) +
+                                      " alphaMode " + alphaMode.name + " dataLayout " +
+                                      dataLayout.name + " channelOrder " + channelOrder.name;
+            QFAIL(errorMessage.c_str());
+          }
         }
       }
     }

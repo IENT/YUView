@@ -87,6 +87,13 @@ enum class ChannelOrder
   BGR
 };
 
+const auto ChannelOrderMapper = EnumMapper<ChannelOrder>({{ChannelOrder::RGB, "RGB"},
+                                                          {ChannelOrder::RBG, "RBG"},
+                                                          {ChannelOrder::GRB, "GRB"},
+                                                          {ChannelOrder::GBR, "GBR"},
+                                                          {ChannelOrder::BRG, "BRG"},
+                                                          {ChannelOrder::BGR, "BGR"}});
+
 enum class AlphaMode
 {
   None,
@@ -94,12 +101,8 @@ enum class AlphaMode
   Last
 };
 
-const auto ChannelOrderMapper = EnumMapper<ChannelOrder>({{ChannelOrder::RGB, "RGB"},
-                                                          {ChannelOrder::RBG, "RBG"},
-                                                          {ChannelOrder::GRB, "GRB"},
-                                                          {ChannelOrder::GBR, "GBR"},
-                                                          {ChannelOrder::BRG, "BRG"},
-                                                          {ChannelOrder::BGR, "BGR"}});
+const auto AlphaModeMapper = EnumMapper<AlphaMode>(
+    {{AlphaMode::None, "None"}, {AlphaMode::First, "First"}, {AlphaMode::Last, "Last"}});
 
 // This class defines a specific RGB format with all properties like order of R/G/B, bitsPerValue,
 // planarity...

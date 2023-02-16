@@ -54,7 +54,7 @@ void convertRGBToARGB(const QByteArray &    sourceBuffer,
                       const bool            componentInvert[4],
                       const int             componentScale[4],
                       const bool            limitedRange,
-                      const bool            convertAlpha,
+                      const bool            outputHasAlpha,
                       const bool            premultiplyAlpha)
 {
   const int  rightShift = bitDepth == 8 ? 0 : (srcPixelFormat.getBitsPerSample() - 8);
@@ -79,6 +79,8 @@ void convertRGBToARGB(const QByteArray &    sourceBuffer,
   auto srcG = ((InValueType)sourceBuffer.data()) + offsetG;
   auto srcB = ((InValueType)sourceBuffer.data()) + offsetB;
   auto srcA = ((InValueType)sourceBuffer.data()) + offsetA;
+
+  const auto setAlpha = outputHasAlpha && srcPixelFormat.hasAlpha();
 
   // Now we just have to iterate over all values and always skip "offsetToNextValue" values in
   // the sources and write 4 values in dst.
@@ -112,7 +114,7 @@ void convertRGBToARGB(const QByteArray &    sourceBuffer,
     if (componentInvert[2])
       valB = 255 - valB;
 
-    if (convertAlpha)
+    if (setAlpha)
     {
       valA = (valA * componentScale[3]) >> rightShift;
       valA = functions::clip(valA, 0, 255);
@@ -130,7 +132,7 @@ void convertRGBToARGB(const QByteArray &    sourceBuffer,
       // No limited range for alpha
     }
 
-    if (convertAlpha && premultiplyAlpha)
+    if (setAlpha && premultiplyAlpha)
     {
       valR = ((valR * 255) * valA) / (255 * 255);
       valG = ((valG * 255) * valA) / (255 * 255);
@@ -140,7 +142,7 @@ void convertRGBToARGB(const QByteArray &    sourceBuffer,
     srcR += offsetToNextValue;
     srcG += offsetToNextValue;
     srcB += offsetToNextValue;
-    if (convertAlpha)
+    if (setAlpha)
       srcA += offsetToNextValue;
 
     targetBuffer[0] = valB;
@@ -243,7 +245,7 @@ void convertInputRGBToARGB(const QByteArray &    sourceBuffer,
                            const bool            componentInvert[4],
                            const int             componentScale[4],
                            const bool            limitedRange,
-                           const bool            convertAlpha,
+                           const bool            outputHasAlpha,
                            const bool            premultiplyAlpha)
 {
   const auto bitsPerSample = srcPixelFormat.getBitsPerSample();
@@ -258,7 +260,7 @@ void convertInputRGBToARGB(const QByteArray &    sourceBuffer,
                         componentInvert,
                         componentScale,
                         limitedRange,
-                        convertAlpha,
+                        outputHasAlpha,
                         premultiplyAlpha);
   else
     convertRGBToARGB<16>(sourceBuffer,
@@ -268,7 +270,7 @@ void convertInputRGBToARGB(const QByteArray &    sourceBuffer,
                          componentInvert,
                          componentScale,
                          limitedRange,
-                         convertAlpha,
+                         outputHasAlpha,
                          premultiplyAlpha);
 }
 
