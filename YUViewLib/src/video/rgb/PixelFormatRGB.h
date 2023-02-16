@@ -53,7 +53,7 @@ struct rgba_t
 {
   unsigned R{0}, G{0}, B{0}, A{0};
 
-  unsigned &operator[](Channel channel)
+  unsigned &operator[](const Channel channel)
   {
     if (channel == Channel::Red)
       return this->R;
@@ -67,11 +67,26 @@ struct rgba_t
     throw std::out_of_range("Unsupported channel for value access");
   }
 
-  bool operator==(const rgba_t &other)
+  unsigned at(const Channel channel) const
+  {
+    if (channel == Channel::Red)
+      return this->R;
+    if (channel == Channel::Green)
+      return this->G;
+    if (channel == Channel::Blue)
+      return this->B;
+    if (channel == Channel::Alpha)
+      return this->A;
+
+    throw std::out_of_range("Unsupported channel for value access");
+  }
+
+  bool operator==(const rgba_t &other) const
   {
     return this->R == other.R && this->G == other.G && this->B == other.B && this->A == other.A;
   };
-  bool operator!=(const rgba_t &other)
+
+  bool operator!=(const rgba_t &other) const
   {
     return this->R != other.R || this->G != other.G || this->B != other.B || this->A != other.A;
   };

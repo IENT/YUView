@@ -45,6 +45,16 @@ template <typename T> T swapLowestBytes(const T &val)
   return ((val & 0xff) << 8) + ((val & 0xff00) >> 8);
 };
 
+int getOffsetToFirstByteOfComponent(const Channel         channel,
+                                    const PixelFormatRGB &pixelFormat,
+                                    const Size            frameSize)
+{
+  auto offset = pixelFormat.getChannelPosition(channel);
+  if (pixelFormat.getDataLayout() == DataLayout::Planar)
+    offset *= frameSize.width * frameSize.height;
+  return offset;
+}
+
 // Convert the input format to the output RGBA format. Apply inversion, scaling,
 // limited range conversion and alpha multiplication. The input can be any supported
 // format. The output is always 8 bit ARGB little endian.
@@ -66,20 +76,11 @@ void convertRGBToARGB(const QByteArray &    sourceBuffer,
   typedef typename std::conditional<bitDepth == 8, uint8_t *, uint16_t *>::type InValueType;
   const auto setAlpha = outputHasAlpha && srcPixelFormat.hasAlpha();
 
-  auto offsetR = srcPixelFormat.getChannelPosition(Channel::Red);
-  auto offsetG = srcPixelFormat.getChannelPosition(Channel::Green);
-  auto offsetB = srcPixelFormat.getChannelPosition(Channel::Blue);
+  const auto rawData = (InValueType)sourceBuffer.data();
 
-  if (srcPixelFormat.getDataLayout() == DataLayout::Planar)
-  {
-    offsetR *= frameSize.width * frameSize.height;
-    offsetG *= frameSize.width * frameSize.height;
-    offsetB *= frameSize.width * frameSize.height;
-  }
-
-  auto srcR = ((InValueType)sourceBuffer.data()) + offsetR;
-  auto srcG = ((InValueType)sourceBuffer.data()) + offsetG;
-  auto srcB = ((InValueType)sourceBuffer.data()) + offsetB;
+  auto srcR = rawData + getOffsetToFirstByteOfComponent(Channel::Red, srcPixelFormat, frameSize);
+  auto srcG = rawData + getOffsetToFirstByteOfComponent(Channel::Green, srcPixelFormat, frameSize);
+  auto srcB = rawData + getOffsetToFirstByteOfComponent(Channel::Blue, srcPixelFormat, frameSize);
 
   InValueType srcA = nullptr;
   if (setAlpha)
@@ -144,7 +145,8 @@ void convertRGBToARGB(const QByteArray &    sourceBuffer,
   }
 }
 
-// Convert the input raw RGB(A) format to the output RGBA format. The bit depth is either
+// Convert one single plane of the input format to RGBA. This is used to visualize the individual
+// components.
 template <int bitDepth>
 void convertRGBPlaneToARGB(const QByteArray &    sourceBuffer,
                            const PixelFormatRGB &srcPixelFormat,
@@ -155,28 +157,24 @@ void convertRGBPlaneToARGB(const QByteArray &    sourceBuffer,
                            const int             displayComponentOffset,
                            const bool            limitedRange)
 {
-  // The source values have to be shifted left by this many bits to get 8 bit output
-  const auto rightShift = srcPixelFormat.getBitsPerSample() - 8;
+  const auto shiftTo8Bit = srcPixelFormat.getBitsPerSample() - 8;
   const auto offsetToNextValue =
       srcPixelFormat.getDataLayout() == DataLayout::Planar ? 1 : srcPixelFormat.nrChannels();
 
   typedef typename std::conditional<bitDepth == 8, uint8_t *, uint16_t *>::type InValueType;
 
-  // First get the pointer to the first value that we will need.
   auto src = (InValueType)sourceBuffer.data();
   if (srcPixelFormat.getDataLayout() == DataLayout::Planar)
     src += displayComponentOffset * frameSize.width * frameSize.height;
   else
     src += displayComponentOffset;
 
-  // Now we just have to iterate over all values and always skip "offsetToNextValue" values in
-  // src and write 4 values in dst.
   for (unsigned i = 0; i < frameSize.width * frameSize.height; i++)
   {
     auto val = (int)src[0];
     if (bitDepth > 8 && srcPixelFormat.getEndianess() == Endianness::Big)
       val = swapLowestBytes(val);
-    val = (val * scale) >> rightShift;
+    val = (val * scale) >> shiftTo8Bit;
     val = functions::clip(val, 0, 255);
     if (invert)
       val = 255 - val;
