@@ -701,16 +701,15 @@ void videoHandlerRGB::convertSourceToRGBA32Bit(const QByteArray &sourceBuffer,
          {ComponentDisplayMode::G, rgb::Channel::Green},
          {ComponentDisplayMode::B, rgb::Channel::Blue},
          {ComponentDisplayMode::A, rgb::Channel::Alpha}});
-    const auto displayComponentOffset =
-        this->srcPixelFormat.getChannelPosition(componentToChannel[this->componentDisplayMode]);
+    const auto displayChannel = componentToChannel[this->componentDisplayMode];
 
     convertSinglePlaneOfRGBToGreyscaleARGB(sourceBuffer,
                                            this->srcPixelFormat,
                                            targetBuffer,
                                            this->frameSize,
+                                           displayChannel,
                                            scale,
                                            invert,
-                                           displayComponentOffset,
                                            this->limitedRange);
   }
 }

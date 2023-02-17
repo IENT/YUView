@@ -120,7 +120,7 @@ auto createRawRGBData(const PixelFormatRGB &format) -> QByteArray
   return data;
 }
 
-rgba_t getARGBValueFromDataLittleEndian(const UChaVector &data, const int i)
+rgba_t getARGBValueFromDataLittleEndian(const UChaVector &data, const size_t i)
 {
   const auto pixelOffset = i * 4;
   return rgba_t({data.at(pixelOffset + 2),
@@ -253,14 +253,13 @@ void testConversionToRGBASinglePlane(const QByteArray &           sourceBuffer,
     UChaVector outputBuffer;
     outputBuffer.resize(TEST_FRAME_NR_VALUES * 4);
 
-    const auto displayComponentOffset = srcPixelFormat.getChannelPosition(channel.first);
     convertSinglePlaneOfRGBToGreyscaleARGB(sourceBuffer,
                                            srcPixelFormat,
                                            outputBuffer.data(),
                                            TEST_FRAME_SIZE,
+                                           channel.first,
                                            componentScale[channel.second],
                                            inversion[channel.second],
-                                           displayComponentOffset,
                                            limitedRange);
 
     try

@@ -53,9 +53,9 @@ void convertSinglePlaneOfRGBToGreyscaleARGB(const QByteArray &    sourceBuffer,
                                             const PixelFormatRGB &srcPixelFormat,
                                             unsigned char *       targetBuffer,
                                             const Size            frameSize,
+                                            const Channel         displayChannel,
                                             const int             scale,
                                             const bool            invert,
-                                            const int             displayComponentOffset,
                                             const bool            limitedRange);
 
 rgba_t getPixelValueFromBuffer(const QByteArray &    sourceBuffer,

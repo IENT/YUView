@@ -152,9 +152,9 @@ void convertRGBPlaneToARGB(const QByteArray &    sourceBuffer,
                            const PixelFormatRGB &srcPixelFormat,
                            unsigned char *       targetBuffer,
                            const Size            frameSize,
+                           const Channel         displayChannel,
                            const int             scale,
                            const bool            invert,
-                           const int             displayComponentOffset,
                            const bool            limitedRange)
 {
   const auto shiftTo8Bit = srcPixelFormat.getBitsPerSample() - 8;
@@ -163,15 +163,16 @@ void convertRGBPlaneToARGB(const QByteArray &    sourceBuffer,
 
   typedef typename std::conditional<bitDepth == 8, uint8_t *, uint16_t *>::type InValueType;
 
-  auto src = (InValueType)sourceBuffer.data();
+  auto       src                    = (InValueType)sourceBuffer.data();
+  const auto displayComponentOffset = srcPixelFormat.getChannelPosition(displayChannel);
   if (srcPixelFormat.getDataLayout() == DataLayout::Planar)
     src += displayComponentOffset * frameSize.width * frameSize.height;
   else
     src += displayComponentOffset;
 
-  for (unsigned i = 0; i < frameSize.width * frameSize.height; i++)
+  for (size_t i = 0; i < frameSize.width * frameSize.height; i++)
   {
-    auto val = (int)src[0];
+    auto val = static_cast<int>(src[0]);
     if (bitDepth > 8 && srcPixelFormat.getEndianess() == Endianness::Big)
       val = swapLowestBytes(val);
     val = (val * scale) >> shiftTo8Bit;
@@ -180,6 +181,7 @@ void convertRGBPlaneToARGB(const QByteArray &    sourceBuffer,
       val = 255 - val;
     if (limitedRange)
       val = LimitedRangeToFullRange.at(val);
+
     targetBuffer[0] = val;
     targetBuffer[1] = val;
     targetBuffer[2] = val;
@@ -198,9 +200,12 @@ rgba_t getPixelValue(const QByteArray &    sourceBuffer,
 {
   const auto offsetToNextValue =
       srcPixelFormat.getDataLayout() == DataLayout::Planar ? 1 : srcPixelFormat.nrChannels();
-  const auto offsetCoordinate = frameSize.width * pixelPos.y() + pixelPos.x();
+  const auto offsetPixelPos = frameSize.width * pixelPos.y() + pixelPos.x();
 
   typedef typename std::conditional<bitDepth == 8, uint8_t *, uint16_t *>::type InValueType;
+
+  const auto rawData  = (InValueType)sourceBuffer.data();
+  auto       srcPixel = rawData + offsetPixelPos * offsetToNextValue;
 
   rgba_t value{};
   for (auto channel : {Channel::Red, Channel::Green, Channel::Blue, Channel::Alpha})
@@ -210,7 +215,7 @@ rgba_t getPixelValue(const QByteArray &    sourceBuffer,
 
     const auto offset = getOffsetToFirstByteOfComponent(channel, srcPixelFormat, frameSize);
 
-    auto src = ((InValueType)sourceBuffer.data()) + offset + offsetCoordinate * offsetToNextValue;
+    auto src = srcPixel + offset;
     auto val = (unsigned)src[0];
     if (bitDepth > 8 && srcPixelFormat.getEndianess() == Endianness::Big)
       val = swapLowestBytes(val);
@@ -262,9 +267,9 @@ void convertSinglePlaneOfRGBToGreyscaleARGB(const QByteArray &    sourceBuffer,
                                             const PixelFormatRGB &srcPixelFormat,
                                             unsigned char *       targetBuffer,
                                             const Size            frameSize,
+                                            const Channel         displayChannel,
                                             const int             scale,
                                             const bool            invert,
-                                            const int             displayComponentOffset,
                                             const bool            limitedRange)
 {
   const auto bitsPerSample = srcPixelFormat.getBitsPerSample();
@@ -276,18 +281,18 @@ void convertSinglePlaneOfRGBToGreyscaleARGB(const QByteArray &    sourceBuffer,
                              srcPixelFormat,
                              targetBuffer,
                              frameSize,
+                             displayChannel,
                              scale,
                              invert,
-                             displayComponentOffset,
                              limitedRange);
   else
     convertRGBPlaneToARGB<16>(sourceBuffer,
                               srcPixelFormat,
                               targetBuffer,
                               frameSize,
+                              displayChannel,
                               scale,
                               invert,
-                              displayComponentOffset,
                               limitedRange);
 }
 
