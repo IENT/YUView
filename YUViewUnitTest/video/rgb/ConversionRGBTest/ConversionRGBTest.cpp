@@ -61,9 +61,10 @@ int scaleShiftClipInvertValue(const int  value,
   return invert ? (255 - valueClipped) : valueClipped;
 };
 
-void scaleValueToBitDepthAndPushIntoArrayLittleEndian(QByteArray &   data,
-                                                      const unsigned value,
-                                                      const int      bitDepth)
+void scaleValueToBitDepthAndPushIntoArra(QByteArray &     data,
+                                         const unsigned   value,
+                                         const int        bitDepth,
+                                         const Endianness endianness)
 {
   const auto shift = 12 - bitDepth;
   if (bitDepth == 8)
@@ -73,15 +74,24 @@ void scaleValueToBitDepthAndPushIntoArrayLittleEndian(QByteArray &   data,
     const auto scaledValue = (value >> shift);
     const auto upperByte   = ((scaledValue & 0xff00) >> 8);
     const auto lowerByte   = (scaledValue & 0xff);
-    data.push_back(lowerByte);
-    data.push_back(upperByte);
+    if (endianness == Endianness::Little)
+    {
+      data.push_back(lowerByte);
+      data.push_back(upperByte);
+    }
+    else
+    {
+      data.push_back(upperByte);
+      data.push_back(lowerByte);
+    }
   }
 }
 
 auto createRawRGBData(const PixelFormatRGB &format) -> QByteArray
 {
   QByteArray data;
-  const auto bitDepth = format.getBitsPerSample();
+  const auto bitDepth   = format.getBitsPerSample();
+  const auto endianness = format.getEndianess();
 
   if (format.getDataLayout() == DataLayout::Packed)
   {
@@ -91,7 +101,7 @@ auto createRawRGBData(const PixelFormatRGB &format) -> QByteArray
            channelPosition++)
       {
         const auto channel = format.getChannelAtPosition(channelPosition);
-        scaleValueToBitDepthAndPushIntoArrayLittleEndian(data, value[channel], bitDepth);
+        scaleValueToBitDepthAndPushIntoArra(data, value[channel], bitDepth, endianness);
       }
     }
   }
@@ -102,7 +112,7 @@ auto createRawRGBData(const PixelFormatRGB &format) -> QByteArray
     {
       const auto channel = format.getChannelAtPosition(channelPosition);
       for (auto value : TEST_VALUES_12BIT)
-        scaleValueToBitDepthAndPushIntoArrayLittleEndian(data, value[channel], bitDepth);
+        scaleValueToBitDepthAndPushIntoArra(data, value[channel], bitDepth, endianness);
     }
   }
 
@@ -270,6 +280,37 @@ void testConversionToRGBASinglePlane(const QByteArray &           sourceBuffer,
   }
 }
 
+void testGetPixelValueFromBuffer(const QByteArray &    sourceBuffer,
+                                 const PixelFormatRGB &srcPixelFormat)
+{
+  const auto bitDepth = srcPixelFormat.getBitsPerSample();
+  const auto shift    = 12 - bitDepth;
+
+  int testValueIndex = 0;
+  for (int y : {0, 1, 2, 3})
+  {
+    for (int x : {0, 1, 2, 3})
+    {
+      const QPoint pixelPos(x, y);
+      const auto   actualValue =
+          getPixelValueFromBuffer(sourceBuffer, srcPixelFormat, TEST_FRAME_SIZE, pixelPos);
+
+      const auto testValue     = TEST_VALUES_12BIT[testValueIndex++];
+      auto       expectedValue = rgba_t(
+          {testValue.R >> shift, testValue.G >> shift, testValue.B >> shift, testValue.A >> shift});
+      if (!srcPixelFormat.hasAlpha())
+        expectedValue.A = 0;
+
+      if (actualValue != expectedValue)
+      {
+        const auto errorMessage = "Error checking pixel [" + std::to_string(x) + "," +
+                                  std::to_string(y) + " format " + srcPixelFormat.getName();
+        QFAIL(errorMessage.c_str());
+      }
+    }
+  }
+}
+
 using TestingFunction = std::function<void(const QByteArray &,
                                            const PixelFormatRGB &,
                                            const InversionPerComponent &,
@@ -279,36 +320,40 @@ using TestingFunction = std::function<void(const QByteArray &,
 
 void runTestForAllParameters(TestingFunction testingFunction)
 {
-  for (auto bitDepth : {8, 10, 12})
+  for (const auto endianness : {Endianness::Little, Endianness::Big})
   {
-    for (const auto alphaMode : AlphaModeMapper.entries())
+    for (const auto bitDepth : {8, 10, 12})
     {
-      for (const auto dataLayout : DataLayoutMapper.entries())
+      for (const auto alphaMode : AlphaModeMapper.entries())
       {
-        for (const auto channelOrder : ChannelOrderMapper.entries())
+        for (const auto dataLayout : DataLayoutMapper.entries())
         {
-          PixelFormatRGB format(bitDepth, dataLayout.value, channelOrder.value, alphaMode.value);
-          const auto     data = createRawRGBData(format);
-
-          for (const auto outputHasAlpha : {false, true})
+          for (const auto channelOrder : ChannelOrderMapper.entries())
           {
-            for (const auto componentScale : {ScalingPerComponent({1, 1, 1, 1}),
-                                              ScalingPerComponent({2, 1, 1, 1}),
-                                              ScalingPerComponent({1, 2, 1, 1}),
-                                              ScalingPerComponent({1, 1, 2, 1}),
-                                              ScalingPerComponent({1, 1, 1, 2}),
-                                              ScalingPerComponent({1, 8, 1, 1})})
+            const PixelFormatRGB format(
+                bitDepth, dataLayout.value, channelOrder.value, alphaMode.value, endianness);
+            const auto data = createRawRGBData(format);
+
+            for (const auto outputHasAlpha : {false, true})
             {
-              for (const auto inversion : {InversionPerComponent({false, false, false, false}),
-                                           InversionPerComponent({true, false, false, false}),
-                                           InversionPerComponent({false, true, false, false}),
-                                           InversionPerComponent({false, false, true, false}),
-                                           InversionPerComponent({false, false, false, true}),
-                                           InversionPerComponent({true, true, true, true})})
+              for (const auto componentScale : {ScalingPerComponent({1, 1, 1, 1}),
+                                                ScalingPerComponent({2, 1, 1, 1}),
+                                                ScalingPerComponent({1, 2, 1, 1}),
+                                                ScalingPerComponent({1, 1, 2, 1}),
+                                                ScalingPerComponent({1, 1, 1, 2}),
+                                                ScalingPerComponent({1, 8, 1, 1})})
               {
-                for (const auto limitedRange : {false, true})
-                  QVERIFY_THROWS_NO_EXCEPTION(testingFunction(
-                      data, format, inversion, componentScale, limitedRange, outputHasAlpha));
+                for (const auto inversion : {InversionPerComponent({false, false, false, false}),
+                                             InversionPerComponent({true, false, false, false}),
+                                             InversionPerComponent({false, true, false, false}),
+                                             InversionPerComponent({false, false, true, false}),
+                                             InversionPerComponent({false, false, false, true}),
+                                             InversionPerComponent({true, true, true, true})})
+                {
+                  for (const auto limitedRange : {false, true})
+                    QVERIFY_THROWS_NO_EXCEPTION(testingFunction(
+                        data, format, inversion, componentScale, limitedRange, outputHasAlpha));
+                }
               }
             }
           }
@@ -327,6 +372,7 @@ class ConversionRGBTest : public QObject
 private slots:
   void testBasicConvertsion();
   void testConversionSingleComponent();
+  void testGetPixelValue();
 };
 
 void ConversionRGBTest::testBasicConvertsion()
@@ -337,6 +383,30 @@ void ConversionRGBTest::testBasicConvertsion()
 void ConversionRGBTest::testConversionSingleComponent()
 {
   runTestForAllParameters(testConversionToRGBASinglePlane);
+}
+
+void ConversionRGBTest::testGetPixelValue()
+{
+  for (const auto endianness : {Endianness::Little, Endianness::Big})
+  {
+    for (auto bitDepth : {8, 10, 12})
+    {
+      for (const auto alphaMode : AlphaModeMapper.entries())
+      {
+        for (const auto dataLayout : DataLayoutMapper.entries())
+        {
+          for (const auto channelOrder : ChannelOrderMapper.entries())
+          {
+            const PixelFormatRGB format(
+                bitDepth, dataLayout.value, channelOrder.value, alphaMode.value, endianness);
+            const auto data = createRawRGBData(format);
+
+            testGetPixelValueFromBuffer(data, format);
+          }
+        }
+      }
+    }
+  }
 }
 
 QTEST_MAIN(ConversionRGBTest)
