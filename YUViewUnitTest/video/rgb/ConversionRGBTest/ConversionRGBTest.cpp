@@ -136,7 +136,7 @@ void checkOutputValues(const UChaVector &           data,
                        const InversionPerComponent &inversion,
                        const bool                   alphaShouldBeSet)
 {
-  for (int i = 0; i < TEST_FRAME_NR_VALUES; ++i)
+  for (size_t i = 0; i < TEST_FRAME_NR_VALUES; ++i)
   {
     auto expectedValue = TEST_VALUES_12BIT.at(i);
 
@@ -174,7 +174,7 @@ void checkOutputValuesForPlane(const UChaVector &           data,
                                const InversionPerComponent &inversion,
                                const Channel                channel)
 {
-  for (int i = 0; i < TEST_FRAME_NR_VALUES; ++i)
+  for (size_t i = 0; i < TEST_FRAME_NR_VALUES; ++i)
   {
     auto expectedPlaneValue = TEST_VALUES_12BIT[i].at(channel);
 
@@ -227,14 +227,14 @@ void testConversionToRGBA(const QByteArray &           sourceBuffer,
                       inversion,
                       alphaShouldBeSet);
   }
-  catch (const std::exception &e)
+  catch (const std::runtime_error &e)
   {
     const auto errorMessage = "Error checking " + std::string(e.what()) + " for " +
                               srcPixelFormat.getName() + " outputHasAlpha " +
                               std::to_string(outputHasAlpha) + " scaling " +
                               to_string(componentScale) + " inversion " + to_string(inversion) +
                               " limitedRange " + std::to_string(limitedRange);
-    throw std::exception(errorMessage.c_str());
+    throw std::runtime_error(errorMessage.c_str());
   }
 }
 
@@ -268,14 +268,14 @@ void testConversionToRGBASinglePlane(const QByteArray &           sourceBuffer,
       checkOutputValuesForPlane(
           outputBuffer, srcPixelFormat, componentScale, limitedRange, inversion, channel.first);
     }
-    catch (const std::exception &e)
+    catch (const std::runtime_error &e)
     {
       const auto errorMessage = "Error checking " + std::string(e.what()) + " for " +
                                 srcPixelFormat.getName() + " outputHasAlpha " +
                                 std::to_string(outputHasAlpha) + " scaling " +
                                 to_string(componentScale) + " inversion " + to_string(inversion) +
                                 " limitedRange " + std::to_string(limitedRange);
-      throw std::exception(errorMessage.c_str());
+      throw std::runtime_error(errorMessage.c_str());
     }
   }
 }
@@ -357,7 +357,7 @@ void runTestForAllParameters(TestingFunction testingFunction)
                       testingFunction(
                           data, format, inversion, componentScale, limitedRange, outputHasAlpha);
                     }
-                    catch (const std::exception &e)
+                    catch (const std::runtime_error &e)
                     {
                       QFAIL(e.what());
                     }
