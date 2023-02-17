@@ -351,8 +351,17 @@ void runTestForAllParameters(TestingFunction testingFunction)
                                              InversionPerComponent({true, true, true, true})})
                 {
                   for (const auto limitedRange : {false, true})
-                    QVERIFY_THROWS_NO_EXCEPTION(testingFunction(
-                        data, format, inversion, componentScale, limitedRange, outputHasAlpha));
+                  {
+                    try
+                    {
+                      testingFunction(
+                          data, format, inversion, componentScale, limitedRange, outputHasAlpha);
+                    }
+                    catch (const std::exception &e)
+                    {
+                      QFAIL(e.what());
+                    }
+                  }
                 }
               }
             }
