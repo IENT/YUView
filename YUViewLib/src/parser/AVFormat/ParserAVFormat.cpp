@@ -48,7 +48,7 @@
 #define PARSERAVCFORMAT_DEBUG_OUTPUT 0
 #if PARSERAVCFORMAT_DEBUG_OUTPUT && !NDEBUG
 #include <QDebug>
-#define DEBUG_AVFORMAT qDebug
+#define DEBUG_AVFORMAT(msg) qDebug() << msg
 #else
 #define DEBUG_AVFORMAT(fmt, ...) ((void)0)
 #endif
@@ -59,9 +59,34 @@ using namespace FFmpeg;
 namespace parser
 {
 
+using namespace reader;
+
+namespace
+{
+
 const ByteVector startCode({0, 0, 1});
 
-using namespace reader;
+void logFirst100BytesOfRawData(const ByteVector &               avpacketData,
+                               const std::shared_ptr<TreeItem> &itemTree)
+{
+  const auto nrBytesToLog = std::min(avpacketData.size(), size_t(100));
+
+  SubByteReaderLogging reader(avpacketData, itemTree, "Data");
+  reader.disableEmulationPrevention();
+  try
+  {
+    reader.readBytes("raw_byte", nrBytesToLog);
+  }
+  catch (const std::exception &e)
+  {
+    (void)e;
+    DEBUG_AVFORMAT(
+        "ParserAVFormat::parseAVPacket Exception occured while parsing generic packet data: "
+        << e.what());
+  }
+}
+
+} // namespace
 
 QList<QTreeWidgetItem *> ParserAVFormat::getStreamInfo()
 {
@@ -374,7 +399,11 @@ bool ParserAVFormat::parseAVPacket(unsigned         packetID,
 
   itemTree->setStreamIndex(packet.getStreamIndex());
 
-  if (packet.getPacketType() == PacketType::VIDEO && (this->annexBParser || this->obuParser))
+  const auto packetType = packet.getPacketType();
+  DEBUG_AVFORMAT("ParserAVFormat::parseAVPacket Got packet stream "
+                 << packet.getStreamIndex() << " packet type "
+                 << PacketTypeMapper.getName(packetType).c_str());
+  if (packetType == PacketType::VIDEO && (this->annexBParser || this->obuParser))
   {
     // Colloect the types of OBus/NALs to create a good name later
     std::map<std::string, unsigned> unitNames;
@@ -411,8 +440,8 @@ bool ParserAVFormat::parseAVPacket(unsigned         packetID,
           auto data = ByteVector(posInData, avpacketData.end());
           auto [nrBytesRead, obuTypeName] =
               this->obuParser->parseAndAddOBU(obuID, data, itemTree, obuStartEndPosFile);
-          DEBUG_AVFORMAT(
-              "ParserAVFormat::parseAVPacket parsed OBU %d header %d bytes", obuID, nrBytesRead);
+          DEBUG_AVFORMAT("ParserAVFormat::parseAVPacket parsed OBU " << obuID << " header "
+                                                                     << nrBytesRead << " bytes");
 
           if (!obuTypeName.empty())
             unitNames[obuTypeName]++;
@@ -450,7 +479,7 @@ bool ParserAVFormat::parseAVPacket(unsigned         packetID,
         specificDescription += "(x" + std::to_string(entry.second) + ")";
     }
   }
-  else if (packet.getPacketType() == PacketType::SUBTITLE_DVB)
+  else if (packetType == PacketType::SUBTITLE_DVB)
   {
     auto segmentID = 0u;
 
@@ -462,8 +491,8 @@ bool ParserAVFormat::parseAVPacket(unsigned         packetID,
         auto data                = ByteVector(posInData, avpacketData.end());
         auto [nrBytesRead, name] = subtitle::dvb::parseDVBSubtitleSegment(data, itemTree);
         (void)name;
-        DEBUG_AVFORMAT(
-            "ParserAVFormat::parseAVPacket parsed DVB segment %d - %d bytes", obuID, nrBytesRead);
+        DEBUG_AVFORMAT("ParserAVFormat::parseAVPacket parsed DVB segment "
+                       << segmentID << " with " << nrBytesRead << " bytes");
 
         constexpr auto minDVBSegmentSize = 6u;
         auto           remaining         = std::distance(posInData, avpacketData.end());
@@ -490,7 +519,7 @@ bool ParserAVFormat::parseAVPacket(unsigned         packetID,
       }
     }
   }
-  else if (packet.getPacketType() == PacketType::SUBTITLE_608)
+  else if (packetType == PacketType::SUBTITLE_608)
   {
     try
     {
@@ -500,25 +529,12 @@ bool ParserAVFormat::parseAVPacket(unsigned         packetID,
     {
       DEBUG_AVFORMAT(
           "ParserAVFormat::parseAVPacket Exception occured while parsing 608 subtitle segment.");
+      logFirst100BytesOfRawData(avpacketData, itemTree);
     }
   }
   else
   {
-    const auto nrBytesToLog = std::min(avpacketData.size(), size_t(100));
-
-    SubByteReaderLogging reader(avpacketData, itemTree, "Data");
-    reader.disableEmulationPrevention();
-    try
-    {
-      reader.readBytes("raw_byte", nrBytesToLog);
-    }
-    catch (const std::exception &e)
-    {
-      (void)e;
-      DEBUG_AVFORMAT(
-          "ParserAVFormat::parseAVPacket Exception occured while parsing generic packet data: "
-          << e.what());
-    }
+    logFirst100BytesOfRawData(avpacketData, itemTree);
   }
 
   if (addBitrateEntryForPacket)
@@ -645,11 +661,11 @@ bool ParserAVFormat::runParsingOfFile(QString compressedFilePath)
     auto streamPacketID = packetCounterPerStream[packet.getStreamIndex()];
     if (!this->parseAVPacket(packetID, streamPacketID, packet))
     {
-      DEBUG_AVFORMAT("ParserAVFormat::runParsingOfFile error parsing Packet %d", packetID);
+      DEBUG_AVFORMAT("ParserAVFormat::runParsingOfFile error parsing Packet " << packetID);
     }
     else
     {
-      DEBUG_AVFORMAT("ParserAVFormat::runParsingOfFile Packet %d", packetID);
+      DEBUG_AVFORMAT("ParserAVFormat::runParsingOfFile Packet " << packetID);
     }
 
     packetID++;
