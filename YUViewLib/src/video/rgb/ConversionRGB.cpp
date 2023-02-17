@@ -198,22 +198,18 @@ rgba_t getPixelValue(const QByteArray &    sourceBuffer,
 {
   const auto offsetToNextValue =
       srcPixelFormat.getDataLayout() == DataLayout::Planar ? 1 : srcPixelFormat.nrChannels();
-  const unsigned offsetCoordinate = frameSize.width * pixelPos.y() + pixelPos.x();
+  const auto offsetCoordinate = frameSize.width * pixelPos.y() + pixelPos.x();
 
   typedef typename std::conditional<bitDepth == 8, uint8_t *, uint16_t *>::type InValueType;
 
-  if (pixelPos.x() == 1 && pixelPos.y() == 0)
-  {
-    int debugSotp = 2344;
-    (void)debugSotp;
-  }
-
-  rgba_t value;
+  rgba_t value{};
   for (auto channel : {Channel::Red, Channel::Green, Channel::Blue, Channel::Alpha})
   {
-    auto offset = srcPixelFormat.getChannelPosition(channel);
-    if (srcPixelFormat.getDataLayout() == DataLayout::Planar)
-      offset *= frameSize.width * frameSize.height;
+    if (channel == Channel::Alpha && !srcPixelFormat.hasAlpha())
+      continue;
+
+    const auto offset = getOffsetToFirstByteOfComponent(channel, srcPixelFormat, frameSize);
+
     auto src = ((InValueType)sourceBuffer.data()) + offset + offsetCoordinate * offsetToNextValue;
     auto val = (unsigned)src[0];
     if (bitDepth > 8 && srcPixelFormat.getEndianess() == Endianness::Big)
