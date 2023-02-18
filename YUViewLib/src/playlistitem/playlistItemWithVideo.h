@@ -32,9 +32,9 @@
 
 #pragma once
 
-#include "playlistItem.h"
-#include "video/videoHandlerRGB.h"
-#include "video/videoHandlerYUV.h"
+#include <playlistitem/playlistItem.h>
+#include <video/rgb/videoHandlerRGB.h>
+#include <video/yuv/videoHandlerYUV.h>
 
 #include <memory>
 

@@ -34,8 +34,7 @@
 
 #include <common/EnumMapper.h>
 #include <common/Typedef.h>
-
-#include "PixelFormat.h"
+#include <video/PixelFormat.h>
 
 #include <string>
 
@@ -54,7 +53,7 @@ struct rgba_t
 {
   unsigned R{0}, G{0}, B{0}, A{0};
 
-  unsigned &operator[](Channel channel)
+  unsigned &operator[](const Channel channel)
   {
     if (channel == Channel::Red)
       return this->R;
@@ -67,6 +66,30 @@ struct rgba_t
 
     throw std::out_of_range("Unsupported channel for value access");
   }
+
+  unsigned at(const Channel channel) const
+  {
+    if (channel == Channel::Red)
+      return this->R;
+    if (channel == Channel::Green)
+      return this->G;
+    if (channel == Channel::Blue)
+      return this->B;
+    if (channel == Channel::Alpha)
+      return this->A;
+
+    throw std::out_of_range("Unsupported channel for value access");
+  }
+
+  bool operator==(const rgba_t &other) const
+  {
+    return this->R == other.R && this->G == other.G && this->B == other.B && this->A == other.A;
+  };
+
+  bool operator!=(const rgba_t &other) const
+  {
+    return this->R != other.R || this->G != other.G || this->B != other.B || this->A != other.A;
+  };
 };
 
 enum class ChannelOrder
@@ -79,6 +102,13 @@ enum class ChannelOrder
   BGR
 };
 
+const auto ChannelOrderMapper = EnumMapper<ChannelOrder>({{ChannelOrder::RGB, "RGB"},
+                                                          {ChannelOrder::RBG, "RBG"},
+                                                          {ChannelOrder::GRB, "GRB"},
+                                                          {ChannelOrder::GBR, "GBR"},
+                                                          {ChannelOrder::BRG, "BRG"},
+                                                          {ChannelOrder::BGR, "BGR"}});
+
 enum class AlphaMode
 {
   None,
@@ -86,12 +116,8 @@ enum class AlphaMode
   Last
 };
 
-const auto ChannelOrderMapper = EnumMapper<ChannelOrder>({{ChannelOrder::RGB, "RGB"},
-                                                          {ChannelOrder::RBG, "RBG"},
-                                                          {ChannelOrder::GRB, "GRB"},
-                                                          {ChannelOrder::GBR, "GBR"},
-                                                          {ChannelOrder::BRG, "BRG"},
-                                                          {ChannelOrder::BGR, "BGR"}});
+const auto AlphaModeMapper = EnumMapper<AlphaMode>(
+    {{AlphaMode::None, "None"}, {AlphaMode::First, "First"}, {AlphaMode::Last, "Last"}});
 
 // This class defines a specific RGB format with all properties like order of R/G/B, bitsPerValue,
 // planarity...
@@ -121,7 +147,8 @@ public:
   void setDataLayout(DataLayout dataLayout) { this->dataLayout = dataLayout; }
 
   std::size_t bytesPerFrame(Size frameSize) const;
-  int         getComponentPosition(Channel channel) const;
+  int         getChannelPosition(Channel channel) const;
+  Channel     getChannelAtPosition(int position) const;
 
   bool operator==(const PixelFormatRGB &a) const { return getName() == a.getName(); }
   bool operator!=(const PixelFormatRGB &a) const { return getName() != a.getName(); }

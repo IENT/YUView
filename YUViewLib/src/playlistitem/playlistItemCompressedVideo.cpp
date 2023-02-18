@@ -54,8 +54,8 @@
 #include <statistics/StatisticsDataPainting.h>
 #include <ui/Mainwindow.h>
 #include <ui_playlistItemCompressedFile_logDialog.h>
-#include <video/videoHandlerRGB.h>
-#include <video/videoHandlerYUV.h>
+#include <video/rgb/videoHandlerRGB.h>
+#include <video/yuv/videoHandlerYUV.h>
 
 using namespace functions;
 using namespace decoder;

@@ -34,8 +34,7 @@
 
 #include <common/EnumMapper.h>
 #include <common/Typedef.h>
-
-#include "PixelFormat.h"
+#include <video/PixelFormat.h>
 
 // The YUV_Internals namespace. We use this namespace because of the dialog. We want to be able to
 // pass a PixelFormatYUV to the dialog and keep the global namespace clean but we are not able to

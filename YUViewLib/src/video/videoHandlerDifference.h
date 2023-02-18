@@ -33,9 +33,8 @@
 #pragma once
 
 #include <common/FileInfo.h>
-
-#include "videoHandler.h"
-#include "videoHandlerYUV.h"
+#include <video/videoHandler.h>
+#include <video/yuv/videoHandlerYUV.h>
 
 #include <QPointer>
 

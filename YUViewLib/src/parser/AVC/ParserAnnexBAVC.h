@@ -34,12 +34,13 @@
 
 #include <QSharedPointer>
 
+#include <parser/ParserAnnexB.h>
+#include <video/yuv/videoHandlerYUV.h>
+
 #include "AUDelimiterDetector.h"
 #include "HRD.h"
 #include "SEI/sei_message.h"
 #include "commonMaps.h"
-#include "parser/ParserAnnexB.h"
-#include "video/videoHandlerYUV.h"
 
 #include <queue>
 #include <vector>

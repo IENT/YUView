@@ -137,9 +137,6 @@ public:
   QByteArray rawData;
   int        rawData_frameIndex{-1};
 
-  // Scale a value with limited mpeg range (16 ... 245) to the full range (0 ... 255) for output.
-  static int convScaleLimitedRange(int value);
-
   // Do we need to load the raw values (because they are drawn on screen?)
   // The videoHandler will draw the pixel values (drawPixelValues()) using the 8bit QImage
   // currentImage so no loading is needed. However, the videoHandlerRGB or YUV may have to load the

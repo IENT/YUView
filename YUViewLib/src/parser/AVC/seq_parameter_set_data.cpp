@@ -88,7 +88,8 @@ void seq_parameter_set_data::parse(reader::SubByteReaderLogging &reader)
     this->seq_scaling_matrix_present_flag = reader.readFlag("seq_scaling_matrix_present_flag");
     if (this->seq_scaling_matrix_present_flag)
     {
-      for (unsigned i = 0; i < ((this->chroma_format_idc != 3) ? 8 : 12); i++)
+      const auto nrMatrixEntries = ((this->chroma_format_idc != 3) ? 8 : 12);
+      for (int i = 0; i < nrMatrixEntries; i++)
       {
         this->seq_scaling_list_present_flag[i] =
             reader.readFlag(formatArray("seq_scaling_list_present_flag", i));
