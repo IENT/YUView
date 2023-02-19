@@ -311,6 +311,11 @@ FFmpegVersionHandler::FFmpegVersionHandler()
   this->lib.setLogList(&logList);
 }
 
+FFmpegVersionHandler::~FFmpegVersionHandler()
+{
+  this->lib.setLogList(nullptr);
+}
+
 void FFmpegVersionHandler::avLogCallback(void *, int level, const char *fmt, va_list vargs)
 {
   QString msg;

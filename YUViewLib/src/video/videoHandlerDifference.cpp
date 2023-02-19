@@ -36,7 +36,7 @@
 #include <algorithm>
 
 #include <common/Functions.h>
-#include <video/videoHandlerYUV.h>
+#include <video/yuv/videoHandlerYUV.h>
 
 #include "ui_FrameHandler.h"
 #include "ui_videoHandlerDifference.h"

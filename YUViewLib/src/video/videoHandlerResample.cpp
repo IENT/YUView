@@ -32,11 +32,11 @@
 
 #include "videoHandlerResample.h"
 
+#include <video/yuv/videoHandlerYUV.h>
+
 #include <QPainter>
 #include <QPushButton>
 #include <algorithm>
-
-#include <video/videoHandlerYUV.h>
 
 #include "ui_FrameHandler.h"
 

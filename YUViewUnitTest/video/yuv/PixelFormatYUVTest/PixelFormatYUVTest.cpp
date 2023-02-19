@@ -1,6 +1,6 @@
 #include <QtTest>
 
-#include <video/PixelFormatYUV.h>
+#include <video/yuv/PixelFormatYUV.h>
 
 using namespace video::yuv;
 
@@ -32,8 +32,7 @@ std::vector<PixelFormatYUV> getAllFormats()
       {
         for (auto bigEndian : endianList)
         {
-          auto pixelFormat =
-              PixelFormatYUV(subsampling, bitsPerSample, planeOrder, bigEndian);
+          auto pixelFormat = PixelFormatYUV(subsampling, bitsPerSample, planeOrder, bigEndian);
           allFormats.push_back(pixelFormat);
         }
       }
@@ -44,8 +43,8 @@ std::vector<PixelFormatYUV> getAllFormats()
         {
           for (auto bigEndian : endianList)
           {
-            auto pixelFormat = PixelFormatYUV(
-                subsampling, bitsPerSample, packingOrder, bytePacking, bigEndian);
+            auto pixelFormat =
+                PixelFormatYUV(subsampling, bitsPerSample, packingOrder, bytePacking, bigEndian);
             allFormats.push_back(pixelFormat);
           }
         }

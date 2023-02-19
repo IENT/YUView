@@ -36,8 +36,9 @@
 #include <common/FileInfo.h>
 #include <common/Functions.h>
 #include <common/FunctionsGui.h>
-#include <video/PixelFormatRGBGuess.h>
-#include <video/videoHandlerRGBCustomFormatDialog.h>
+#include <video/rgb/ConversionRGB.h>
+#include <video/rgb/PixelFormatRGBGuess.h>
+#include <video/rgb/videoHandlerRGBCustomFormatDialog.h>
 
 #include <QPainter>
 #include <QtGlobal>
@@ -58,200 +59,6 @@ const auto componentShowMapper =
                                       {ComponentDisplayMode::G, "G", "Green Only"},
                                       {ComponentDisplayMode::B, "B", "Blue Only"},
                                       {ComponentDisplayMode::A, "A", "Alpha Only"}});
-
-template <typename T> T swapLowestBytes(const T &val)
-{
-  return ((val & 0xff) << 8) + ((val & 0xff00) >> 8);
-};
-
-// Convert the input raw RGB(A) format to the output RGBA format. The bit depth is either
-template <int bitDepth>
-void convertInputRGBToRGBA(const QByteArray &    sourceBuffer,
-                           const PixelFormatRGB &srcPixelFormat,
-                           unsigned char *       targetBuffer,
-                           const Size            frameSize,
-                           const bool            componentInvert[4],
-                           const int             componentScale[4],
-                           const bool            limitedRange,
-                           const bool            hasAlpha,
-                           const bool            premultiplyAlpha)
-{
-  const int  rightShift = bitDepth == 8 ? 0 : (srcPixelFormat.getBitsPerSample() - 8);
-  const auto offsetToNextValue =
-      srcPixelFormat.getDataLayout() == DataLayout::Planar ? 1 : srcPixelFormat.nrChannels();
-
-  typedef typename std::conditional<bitDepth == 8, uint8_t *, uint16_t *>::type InValueType;
-
-  auto offsetR = srcPixelFormat.getComponentPosition(Channel::Red);
-  auto offsetG = srcPixelFormat.getComponentPosition(Channel::Green);
-  auto offsetB = srcPixelFormat.getComponentPosition(Channel::Blue);
-  auto offsetA = srcPixelFormat.getComponentPosition(Channel::Alpha);
-  if (srcPixelFormat.getDataLayout() == DataLayout::Planar)
-  {
-    offsetR *= frameSize.width * frameSize.height;
-    offsetG *= frameSize.width * frameSize.height;
-    offsetB *= frameSize.width * frameSize.height;
-    offsetA *= frameSize.width * frameSize.height;
-  }
-
-  auto srcR = ((InValueType)sourceBuffer.data()) + offsetR;
-  auto srcG = ((InValueType)sourceBuffer.data()) + offsetG;
-  auto srcB = ((InValueType)sourceBuffer.data()) + offsetB;
-  auto srcA = ((InValueType)sourceBuffer.data()) + offsetA;
-
-  // Now we just have to iterate over all values and always skip "offsetToNextValue" values in
-  // the sources and write 4 values in dst.
-  for (unsigned i = 0; i < frameSize.width * frameSize.height; i++)
-  {
-    int valR = (int)srcR[0];
-    int valG = (int)srcG[0];
-    int valB = (int)srcB[0];
-    int valA = (int)srcA[0];
-
-    if (bitDepth > 8 && srcPixelFormat.getEndianess() == Endianness::Big)
-    {
-      valR = swapLowestBytes(valR);
-      valG = swapLowestBytes(valG);
-      valB = swapLowestBytes(valB);
-      valA = swapLowestBytes(valA);
-    }
-
-    valR = (valR * componentScale[0]) >> rightShift;
-    valR = functions::clip(valR, 0, 255);
-    if (componentInvert[0])
-      valR = 255 - valR;
-
-    valG = (valG * componentScale[1]) >> rightShift;
-    valG = functions::clip(valG, 0, 255);
-    if (componentInvert[1])
-      valG = 255 - valG;
-
-    valB = (valB * componentScale[2]) >> rightShift;
-    valB = functions::clip(valB, 0, 255);
-    if (componentInvert[2])
-      valB = 255 - valB;
-
-    if (hasAlpha)
-    {
-      valA = (valA * componentScale[3]) >> rightShift;
-      valA = functions::clip(valA, 0, 255);
-      if (componentInvert[3])
-        valA = 255 - valA;
-    }
-    else
-      valA = 255;
-
-    if (limitedRange)
-    {
-      valR = videoHandler::convScaleLimitedRange(valR);
-      valG = videoHandler::convScaleLimitedRange(valG);
-      valB = videoHandler::convScaleLimitedRange(valB);
-      // No limited range for alpha
-    }
-
-    if (hasAlpha && premultiplyAlpha)
-    {
-      valR = ((valR * 255) * valA) / (255 * 255);
-      valG = ((valG * 255) * valA) / (255 * 255);
-      valB = ((valB * 255) * valA) / (255 * 255);
-    }
-
-    srcR += offsetToNextValue;
-    srcG += offsetToNextValue;
-    srcB += offsetToNextValue;
-    if (hasAlpha)
-      srcA += offsetToNextValue;
-
-    targetBuffer[0] = valB;
-    targetBuffer[1] = valG;
-    targetBuffer[2] = valR;
-    targetBuffer[3] = valA;
-
-    targetBuffer += 4;
-  }
-}
-
-// Convert the input raw RGB(A) format to the output RGBA format. The bit depth is either
-template <int bitDepth>
-void convertSinglePlaneRGBToGreyscaleRGBA(const QByteArray &    sourceBuffer,
-                                          const PixelFormatRGB &srcPixelFormat,
-                                          unsigned char *       targetBuffer,
-                                          const Size            frameSize,
-                                          const int             scale,
-                                          const bool            invert,
-                                          const int             displayComponentOffset,
-                                          const bool            limitedRange)
-{
-  // The source values have to be shifted left by this many bits to get 8 bit output
-  const auto rightShift = srcPixelFormat.getBitsPerSample() - 8;
-  const auto offsetToNextValue =
-      srcPixelFormat.getDataLayout() == DataLayout::Planar ? 1 : srcPixelFormat.nrChannels();
-
-  typedef typename std::conditional<bitDepth == 8, uint8_t *, uint16_t *>::type InValueType;
-
-  // First get the pointer to the first value that we will need.
-  auto src = (InValueType)sourceBuffer.data();
-  if (srcPixelFormat.getDataLayout() == DataLayout::Planar)
-    src += displayComponentOffset * frameSize.width * frameSize.height;
-  else
-    src += displayComponentOffset;
-
-  // Now we just have to iterate over all values and always skip "offsetToNextValue" values in
-  // src and write 4 values in dst.
-  for (unsigned i = 0; i < frameSize.width * frameSize.height; i++)
-  {
-    auto val = (int)src[0];
-    if (bitDepth > 8 && srcPixelFormat.getEndianess() == Endianness::Big)
-      val = swapLowestBytes(val);
-    val = (val * scale) >> rightShift;
-    val = functions::clip(val, 0, 255);
-    if (invert)
-      val = 255 - val;
-    if (limitedRange)
-      val = videoHandler::convScaleLimitedRange(val);
-    targetBuffer[0] = val;
-    targetBuffer[1] = val;
-    targetBuffer[2] = val;
-    targetBuffer[3] = 255;
-
-    src += offsetToNextValue;
-    targetBuffer += 4;
-  }
-}
-
-template <int bitDepth>
-rgba_t getPixelValueFromBuffer(const QByteArray &    sourceBuffer,
-                               const PixelFormatRGB &srcPixelFormat,
-                               const Size            frameSize,
-                               const QPoint &        pixelPos)
-{
-  const auto offsetToNextValue =
-      srcPixelFormat.getDataLayout() == DataLayout::Planar ? 1 : srcPixelFormat.nrChannels();
-  const unsigned offsetCoordinate = frameSize.width * pixelPos.y() + pixelPos.x();
-
-  typedef typename std::conditional<bitDepth == 8, uint8_t *, uint16_t *>::type InValueType;
-
-  if (pixelPos.x() == 1 && pixelPos.y() == 0)
-  {
-    int debugSotp = 2344;
-    (void)debugSotp;
-  }
-
-  rgba_t value;
-  for (auto channel : {Channel::Red, Channel::Green, Channel::Blue, Channel::Alpha})
-  {
-    auto offset = srcPixelFormat.getComponentPosition(channel);
-    if (srcPixelFormat.getDataLayout() == DataLayout::Planar)
-      offset *= frameSize.width * frameSize.height;
-    auto src = ((InValueType)sourceBuffer.data()) + offset + offsetCoordinate * offsetToNextValue;
-    auto val = (unsigned)src[0];
-    if (bitDepth > 8 && srcPixelFormat.getEndianess() == Endianness::Big)
-      val = swapLowestBytes(val);
-    value[channel] = val;
-  }
-
-  return value;
-}
 
 } // namespace
 
@@ -870,34 +677,22 @@ void videoHandlerRGB::convertSourceToRGBA32Bit(const QByteArray &sourceBuffer,
       imageFormat == QImage::Format_ARGB32 || imageFormat == QImage::Format_ARGB32_Premultiplied;
   const auto premultiplyAlpha = imageFormat == QImage::Format_ARGB32_Premultiplied;
   const auto inputHasAlpha    = srcPixelFormat.hasAlpha();
-  const auto bps              = this->srcPixelFormat.getBitsPerSample();
 
   if (this->componentDisplayMode == ComponentDisplayMode::RGB ||
       this->componentDisplayMode == ComponentDisplayMode::RGBA)
   {
-    const auto renderAlpha = this->componentDisplayMode == ComponentDisplayMode::RGBA &&
-                             outputSupportsAlpha && inputHasAlpha;
+    const auto convertAlpha = this->componentDisplayMode == ComponentDisplayMode::RGBA &&
+                              outputSupportsAlpha && inputHasAlpha;
 
-    if (bps == 8)
-      convertInputRGBToRGBA<8>(sourceBuffer,
-                               this->srcPixelFormat,
-                               targetBuffer,
-                               this->frameSize,
-                               this->componentInvert,
-                               this->componentScale,
-                               this->limitedRange,
-                               renderAlpha,
-                               premultiplyAlpha);
-    else
-      convertInputRGBToRGBA<16>(sourceBuffer,
-                                this->srcPixelFormat,
-                                targetBuffer,
-                                this->frameSize,
-                                this->componentInvert,
-                                this->componentScale,
-                                this->limitedRange,
-                                renderAlpha,
-                                premultiplyAlpha);
+    convertInputRGBToARGB(sourceBuffer,
+                          this->srcPixelFormat,
+                          targetBuffer,
+                          this->frameSize,
+                          this->componentInvert,
+                          this->componentScale,
+                          this->limitedRange,
+                          convertAlpha,
+                          premultiplyAlpha);
   }
   else // Single component
   {
@@ -915,41 +710,23 @@ void videoHandlerRGB::convertSourceToRGBA32Bit(const QByteArray &sourceBuffer,
          {ComponentDisplayMode::G, rgb::Channel::Green},
          {ComponentDisplayMode::B, rgb::Channel::Blue},
          {ComponentDisplayMode::A, rgb::Channel::Alpha}});
-    const auto displayComponentOffset =
-        this->srcPixelFormat.getComponentPosition(componentToChannel[this->componentDisplayMode]);
+    const auto displayChannel = componentToChannel[this->componentDisplayMode];
 
-    if (bps == 8)
-      convertSinglePlaneRGBToGreyscaleRGBA<8>(sourceBuffer,
-                                              this->srcPixelFormat,
-                                              targetBuffer,
-                                              this->frameSize,
-                                              scale,
-                                              invert,
-                                              displayComponentOffset,
-                                              this->limitedRange);
-    else
-      convertSinglePlaneRGBToGreyscaleRGBA<16>(sourceBuffer,
-                                               this->srcPixelFormat,
-                                               targetBuffer,
-                                               this->frameSize,
-                                               scale,
-                                               invert,
-                                               displayComponentOffset,
-                                               this->limitedRange);
+    convertSinglePlaneOfRGBToGreyscaleARGB(sourceBuffer,
+                                           this->srcPixelFormat,
+                                           targetBuffer,
+                                           this->frameSize,
+                                           displayChannel,
+                                           scale,
+                                           invert,
+                                           this->limitedRange);
   }
 }
 
 rgba_t videoHandlerRGB::getPixelValue(const QPoint &pixelPos) const
 {
-  const auto bps = this->srcPixelFormat.getBitsPerSample();
-  if (bps == 8)
-    return getPixelValueFromBuffer<8>(
-        this->currentFrameRawData, this->srcPixelFormat, this->frameSize, pixelPos);
-  else if (bps > 8 && bps <= 16)
-    return getPixelValueFromBuffer<16>(
-        this->currentFrameRawData, this->srcPixelFormat, this->frameSize, pixelPos);
-
-  return {0, 0, 0, 0};
+  return getPixelValueFromBuffer(
+      this->currentFrameRawData, this->srcPixelFormat, this->frameSize, pixelPos);
 }
 
 void videoHandlerRGB::setFormatFromSizeAndName(
@@ -1127,9 +904,9 @@ QImage videoHandlerRGB::calculateDifference(FrameHandler *   item2,
   unsigned char *restrict dst = outputImage.bits();
 
   const auto bitDepth = srcPixelFormat.getBitsPerSample();
-  const auto posR     = srcPixelFormat.getComponentPosition(Channel::Red);
-  const auto posG     = srcPixelFormat.getComponentPosition(Channel::Green);
-  const auto posB     = srcPixelFormat.getComponentPosition(Channel::Blue);
+  const auto posR     = srcPixelFormat.getChannelPosition(Channel::Red);
+  const auto posG     = srcPixelFormat.getChannelPosition(Channel::Green);
+  const auto posB     = srcPixelFormat.getChannelPosition(Channel::Blue);
 
   if (bitDepth >= 8 && bitDepth <= 16)
   {

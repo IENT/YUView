@@ -38,11 +38,11 @@
 #include <optional>
 #include <set>
 
-#include "common/BitratePlotModel.h"
-#include "common/TreeItem.h"
-#include "filesource/FileSourceAnnexBFile.h"
-#include "parser/Parser.h"
-#include "video/videoHandlerYUV.h"
+#include <filesource/FileSourceAnnexBFile.h>
+#include <parser/Parser.h>
+#include <parser/common/BitratePlotModel.h>
+#include <parser/common/TreeItem.h>
+#include <video/yuv/videoHandlerYUV.h>
 
 namespace parser
 {

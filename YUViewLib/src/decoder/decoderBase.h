@@ -35,8 +35,8 @@
 #include <common/EnumMapper.h>
 #include <filesource/FileSourceAnnexBFile.h>
 #include <statistics/StatisticsData.h>
-#include <video/videoHandlerRGB.h>
-#include <video/videoHandlerYUV.h>
+#include <video/rgb/videoHandlerRGB.h>
+#include <video/yuv/videoHandlerYUV.h>
 
 #include <QLibrary>
 

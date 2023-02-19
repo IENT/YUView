@@ -32,10 +32,11 @@
 
 #pragma once
 
-#include "../ParserAnnexB.h"
+#include <parser/ParserAnnexB.h>
+#include <video/yuv/videoHandlerYUV.h>
+
 #include "NalUnitVVC.h"
 #include "commonMaps.h"
-#include "video/videoHandlerYUV.h"
 
 #include <memory>
 

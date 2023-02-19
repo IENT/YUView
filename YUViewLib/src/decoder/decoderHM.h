@@ -36,9 +36,9 @@
 
 #include <common/FileInfo.h>
 #include <decoder/decoderBase.h>
-#include <video/videoHandlerYUV.h>
+#include <decoder/externalHeader/libHMDecoder.h>
+#include <video/yuv/videoHandlerYUV.h>
 
-#include "externalHeader/libHMDecoder.h"
 namespace decoder
 {
 

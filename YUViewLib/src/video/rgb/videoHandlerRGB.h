@@ -32,13 +32,10 @@
 
 #pragma once
 
-#include <video/PixelFormatRGB.h>
+#include <video/rgb/PixelFormatRGB.h>
 #include <video/videoHandler.h>
 
-namespace Ui
-{
-class videoHandlerRGB;
-}
+#include "ui_videoHandlerRGB.h"
 
 namespace video::rgb
 {
