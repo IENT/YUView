@@ -32,8 +32,7 @@
 
 #pragma once
 
-#include <video/PixelFormatYUV.h>
-#include <video/videoHandler.h>
+#include <video/yuv/videoHandlerYUV.h>
 
 #include <QByteArray>
 #include <QObject>

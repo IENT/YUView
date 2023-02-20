@@ -36,8 +36,6 @@
 
 #include <common/FunctionsGui.h>
 
-#include "ui_FrameHandler.h"
-
 namespace video
 {
 

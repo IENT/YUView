@@ -35,6 +35,8 @@
 #include <video/videoHandler.h>
 #include <video/yuv/PixelFormatYUV.h>
 
+#include "ui_videoHandlerYUV.h"
+
 #include <map>
 
 namespace Ui
@@ -242,7 +244,7 @@ private:
                           quint32 srgb);
 #endif
 
-  std::unique_ptr<SafeUi<Ui::videoHandlerYUV>> ui;
+  SafeUi<Ui::videoHandlerYUV> ui;
 
   bool           diffReady{};
   QByteArray     diffYUV;

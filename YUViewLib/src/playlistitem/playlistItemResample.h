@@ -35,11 +35,7 @@
 #include "playlistItemContainer.h"
 #include "video/videoHandlerResample.h"
 
-namespace Ui
-{
-class playlistItemResample;
-}
-
+#include "ui_playlistItemResample.h"
 class playlistItemResample : public playlistItemContainer
 {
   Q_OBJECT
@@ -64,7 +60,7 @@ public:
   // This is part of the caching interface. The loadFrame function is always called from a different
   // thread.
   virtual void
-  loadFrame(int frameIdx, bool playing, bool loadRawData, bool emitSignals = true) override;
+               loadFrame(int frameIdx, bool playing, bool loadRawData, bool emitSignals = true) override;
   virtual bool isLoading() const override { return this->isFrameLoading; }
   virtual bool isLoadingDoubleBuffer() const override { return this->isFrameLoadingDoubleBuffer; }
 
@@ -108,5 +104,5 @@ private:
   bool isFrameLoading{false};
   bool isFrameLoadingDoubleBuffer{false};
 
-  std::unique_ptr<SafeUi<Ui::playlistItemResample>> ui;
+  SafeUi<Ui::playlistItemResample> ui;
 };

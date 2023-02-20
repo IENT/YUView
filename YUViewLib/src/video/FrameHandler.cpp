@@ -38,8 +38,6 @@
 #include <decoder/decoderTarga.h>
 #include <playlistitem/playlistItem.h>
 
-#include "ui_FrameHandler.h"
-
 namespace video
 {
 
@@ -112,45 +110,40 @@ QStringList FrameHandler::frameSizePresetList::getFormattedNames() const
 
 FrameHandler::frameSizePresetList FrameHandler::presetFrameSizes;
 
-FrameHandler::FrameHandler()
-{
-  this->ui = std::make_unique<SafeUi<Ui::FrameHandler>>();
-}
-
 QLayout *FrameHandler::createFrameHandlerControls(bool isSizeFixed)
 {
   // Absolutely always only call this function once!
-  assert(!this->ui->created());
+  assert(!this->ui.created());
 
-  this->ui->setupUi();
+  this->ui.setupUi();
 
   // Set default values
-  this->ui->widthSpinBox->setMaximum(100000);
-  this->ui->widthSpinBox->setValue(frameSize.width);
-  this->ui->widthSpinBox->setEnabled(!isSizeFixed);
-  this->ui->heightSpinBox->setMaximum(100000);
-  this->ui->heightSpinBox->setValue(frameSize.height);
-  this->ui->heightSpinBox->setEnabled(!isSizeFixed);
-  this->ui->frameSizeComboBox->addItems(presetFrameSizes.getFormattedNames());
+  this->ui.widthSpinBox->setMaximum(100000);
+  this->ui.widthSpinBox->setValue(frameSize.width);
+  this->ui.widthSpinBox->setEnabled(!isSizeFixed);
+  this->ui.heightSpinBox->setMaximum(100000);
+  this->ui.heightSpinBox->setValue(frameSize.height);
+  this->ui.heightSpinBox->setEnabled(!isSizeFixed);
+  this->ui.frameSizeComboBox->addItems(presetFrameSizes.getFormattedNames());
   int idx = presetFrameSizes.findSize(frameSize);
-  this->ui->frameSizeComboBox->setCurrentIndex(idx);
-  this->ui->frameSizeComboBox->setEnabled(!isSizeFixed);
+  this->ui.frameSizeComboBox->setCurrentIndex(idx);
+  this->ui.frameSizeComboBox->setEnabled(!isSizeFixed);
 
   // Connect all the change signals from the controls to "connectWidgetSignals()"
-  connect(this->ui->widthSpinBox,
+  connect(this->ui.widthSpinBox,
           QOverload<int>::of(&QSpinBox::valueChanged),
           this,
           &FrameHandler::slotVideoControlChanged);
-  connect(this->ui->heightSpinBox,
+  connect(this->ui.heightSpinBox,
           QOverload<int>::of(&QSpinBox::valueChanged),
           this,
           &FrameHandler::slotVideoControlChanged);
-  connect(this->ui->frameSizeComboBox,
+  connect(this->ui.frameSizeComboBox,
           QOverload<int>::of(&QComboBox::currentIndexChanged),
           this,
           &FrameHandler::slotVideoControlChanged);
 
-  return this->ui->frameHandlerLayout;
+  return this->ui.frameHandlerLayout;
 }
 
 void FrameHandler::setFrameSize(Size newSize)
@@ -237,27 +230,27 @@ Size FrameHandler::getNewSizeFromControls()
   // The control that caused the slot to be called
   auto sender = QObject::sender();
 
-  if (sender == this->ui->widthSpinBox || sender == this->ui->heightSpinBox)
+  if (sender == this->ui.widthSpinBox || sender == this->ui.heightSpinBox)
   {
-    auto newSize = Size(this->ui->widthSpinBox->value(), this->ui->heightSpinBox->value());
+    auto newSize = Size(this->ui.widthSpinBox->value(), this->ui.heightSpinBox->value());
     if (newSize != frameSize)
     {
       // Set the comboBox index without causing another signal to be emitted.
-      const QSignalBlocker blocker(this->ui->frameSizeComboBox);
+      const QSignalBlocker blocker(this->ui.frameSizeComboBox);
       int                  idx = presetFrameSizes.findSize(newSize);
-      this->ui->frameSizeComboBox->setCurrentIndex(idx);
+      this->ui.frameSizeComboBox->setCurrentIndex(idx);
     }
     return newSize;
   }
-  else if (sender == this->ui->frameSizeComboBox)
+  else if (sender == this->ui.frameSizeComboBox)
   {
-    auto newSize = presetFrameSizes.getSize(this->ui->frameSizeComboBox->currentIndex());
+    auto newSize = presetFrameSizes.getSize(this->ui.frameSizeComboBox->currentIndex());
 
     // Set the width/height spin boxes without emitting another signal.
-    const QSignalBlocker blocker1(this->ui->widthSpinBox);
-    const QSignalBlocker blocker2(this->ui->heightSpinBox);
-    this->ui->widthSpinBox->setValue(int(newSize.width));
-    this->ui->heightSpinBox->setValue(int(newSize.height));
+    const QSignalBlocker blocker1(this->ui.widthSpinBox);
+    const QSignalBlocker blocker2(this->ui.heightSpinBox);
+    this->ui.widthSpinBox->setValue(int(newSize.width));
+    this->ui.heightSpinBox->setValue(int(newSize.height));
     return newSize;
   }
   return {};

@@ -38,10 +38,7 @@
 
 #include <QPointer>
 
-namespace Ui
-{
-class videoHandlerDifference;
-}
+#include "ui_videoHandlerDifference.h"
 
 namespace video
 {
@@ -108,7 +105,7 @@ private:
   // The two videos that the difference will be calculated from
   QPointer<FrameHandler> inputVideo[2];
 
-  std::unique_ptr<SafeUi<Ui::videoHandlerDifference>> ui;
+  SafeUi<Ui::videoHandlerDifference> ui;
 };
 
 } // namespace video

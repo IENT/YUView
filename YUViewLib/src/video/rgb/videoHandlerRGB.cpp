@@ -43,9 +43,6 @@
 #include <QPainter>
 #include <QtGlobal>
 
-#include "ui_FrameHandler.h"
-#include "ui_videoHandlerRGB.h"
-
 namespace video::rgb
 {
 
@@ -126,7 +123,6 @@ videoHandlerRGB::RGBFormatList videoHandlerRGB::rgbPresetList;
 videoHandlerRGB::videoHandlerRGB() : videoHandler()
 {
   // preset internal values
-  this->ui = std::make_unique<SafeUi<Ui::videoHandlerRGB>>();
   this->setSrcPixelFormat(PixelFormatRGB(8, DataLayout::Packed, ChannelOrder::RGB));
 }
 
@@ -239,7 +235,7 @@ bool videoHandlerRGB::setFormatFromString(QString format)
 QLayout *videoHandlerRGB::createVideoHandlerControls(bool isSizeFixed)
 {
   // Absolutely always only call this function once!
-  assert(!this->ui->created());
+  assert(!this->ui.created());
 
   QVBoxLayout *newVBoxLayout = nullptr;
   if (!isSizeFixed)
@@ -256,73 +252,72 @@ QLayout *videoHandlerRGB::createVideoHandlerControls(bool isSizeFixed)
     newVBoxLayout->addWidget(line);
   }
 
-  this->ui->setupUi();
+  this->ui.setupUi();
 
   // Set all the values of the properties widget to the values of this class
-  this->ui->rgbFormatComboBox->addItems(
-      functions::toQStringList(rgbPresetList.getFormattedNames()));
-  this->ui->rgbFormatComboBox->addItem("Custom...");
-  this->ui->rgbFormatComboBox->setEnabled(!isSizeFixed);
+  this->ui.rgbFormatComboBox->addItems(functions::toQStringList(rgbPresetList.getFormattedNames()));
+  this->ui.rgbFormatComboBox->addItem("Custom...");
+  this->ui.rgbFormatComboBox->setEnabled(!isSizeFixed);
   int idx = rgbPresetList.indexOf(srcPixelFormat);
   if (idx == -1 && srcPixelFormat.isValid())
   {
     // Custom pixel format (but a known pixel format). Add and select it.
     rgbPresetList.append(srcPixelFormat);
-    int nrItems = this->ui->rgbFormatComboBox->count();
-    this->ui->rgbFormatComboBox->insertItem(nrItems - 1,
-                                            QString::fromStdString(srcPixelFormat.getName()));
+    int nrItems = this->ui.rgbFormatComboBox->count();
+    this->ui.rgbFormatComboBox->insertItem(nrItems - 1,
+                                           QString::fromStdString(srcPixelFormat.getName()));
     idx = rgbPresetList.indexOf(srcPixelFormat);
-    this->ui->rgbFormatComboBox->setCurrentIndex(idx);
+    this->ui.rgbFormatComboBox->setCurrentIndex(idx);
   }
   else if (idx > 0)
-    this->ui->rgbFormatComboBox->setCurrentIndex(idx);
+    this->ui.rgbFormatComboBox->setCurrentIndex(idx);
 
-  this->ui->RScaleSpinBox->setValue(componentScale[0]);
-  this->ui->RScaleSpinBox->setMaximum(1000);
-  this->ui->GScaleSpinBox->setValue(componentScale[1]);
-  this->ui->GScaleSpinBox->setMaximum(1000);
-  this->ui->BScaleSpinBox->setValue(componentScale[2]);
-  this->ui->BScaleSpinBox->setMaximum(1000);
-  this->ui->AScaleSpinBox->setValue(componentScale[3]);
-  this->ui->AScaleSpinBox->setMaximum(1000);
+  this->ui.RScaleSpinBox->setValue(componentScale[0]);
+  this->ui.RScaleSpinBox->setMaximum(1000);
+  this->ui.GScaleSpinBox->setValue(componentScale[1]);
+  this->ui.GScaleSpinBox->setMaximum(1000);
+  this->ui.BScaleSpinBox->setValue(componentScale[2]);
+  this->ui.BScaleSpinBox->setMaximum(1000);
+  this->ui.AScaleSpinBox->setValue(componentScale[3]);
+  this->ui.AScaleSpinBox->setMaximum(1000);
 
-  this->ui->RInvertCheckBox->setChecked(this->componentInvert[0]);
-  this->ui->GInvertCheckBox->setChecked(this->componentInvert[1]);
-  this->ui->BInvertCheckBox->setChecked(this->componentInvert[2]);
-  this->ui->AInvertCheckBox->setChecked(this->componentInvert[3]);
+  this->ui.RInvertCheckBox->setChecked(this->componentInvert[0]);
+  this->ui.GInvertCheckBox->setChecked(this->componentInvert[1]);
+  this->ui.BInvertCheckBox->setChecked(this->componentInvert[2]);
+  this->ui.AInvertCheckBox->setChecked(this->componentInvert[3]);
 
-  this->ui->limitedRangeCheckBox->setChecked(this->limitedRange);
+  this->ui.limitedRangeCheckBox->setChecked(this->limitedRange);
 
-  connect(this->ui->rgbFormatComboBox,
+  connect(this->ui.rgbFormatComboBox,
           QOverload<int>::of(&QComboBox::currentIndexChanged),
           this,
           &videoHandlerRGB::slotRGBFormatControlChanged);
-  connect(this->ui->colorComponentsComboBox,
+  connect(this->ui.colorComponentsComboBox,
           QOverload<int>::of(&QComboBox::currentIndexChanged),
           this,
           &videoHandlerRGB::slotDisplayOptionsChanged);
-  for (auto spinBox : {this->ui->RScaleSpinBox,
-                       this->ui->GScaleSpinBox,
-                       this->ui->BScaleSpinBox,
-                       this->ui->AScaleSpinBox})
+  for (auto spinBox : {this->ui.RScaleSpinBox,
+                       this->ui.GScaleSpinBox,
+                       this->ui.BScaleSpinBox,
+                       this->ui.AScaleSpinBox})
     connect(spinBox,
             QOverload<int>::of(&QSpinBox::valueChanged),
             this,
             &videoHandlerRGB::slotDisplayOptionsChanged);
-  for (auto checkBox : {this->ui->RInvertCheckBox,
-                        this->ui->GInvertCheckBox,
-                        this->ui->BInvertCheckBox,
-                        this->ui->AInvertCheckBox,
-                        this->ui->limitedRangeCheckBox})
+  for (auto checkBox : {this->ui.RInvertCheckBox,
+                        this->ui.GInvertCheckBox,
+                        this->ui.BInvertCheckBox,
+                        this->ui.AInvertCheckBox,
+                        this->ui.limitedRangeCheckBox})
     connect(checkBox, &QCheckBox::stateChanged, this, &videoHandlerRGB::slotDisplayOptionsChanged);
 
   this->updateControlsForNewPixelFormat();
 
   if (!isSizeFixed && newVBoxLayout)
-    newVBoxLayout->addLayout(this->ui->topVerticalLayout);
+    newVBoxLayout->addLayout(this->ui.topVerticalLayout);
 
   if (isSizeFixed)
-    return this->ui->topVerticalLayout;
+    return this->ui.topVerticalLayout;
   else
     return newVBoxLayout;
 }
@@ -330,21 +325,21 @@ QLayout *videoHandlerRGB::createVideoHandlerControls(bool isSizeFixed)
 void videoHandlerRGB::slotDisplayOptionsChanged()
 {
   {
-    auto selection = this->ui->colorComponentsComboBox->currentText().toStdString();
+    auto selection = this->ui.colorComponentsComboBox->currentText().toStdString();
     if (auto c = componentShowMapper.getValue(selection,
                                               EnumMapper<ComponentDisplayMode>::StringType::Text))
       this->componentDisplayMode = *c;
   }
 
-  componentScale[0]  = this->ui->RScaleSpinBox->value();
-  componentScale[1]  = this->ui->GScaleSpinBox->value();
-  componentScale[2]  = this->ui->BScaleSpinBox->value();
-  componentScale[3]  = this->ui->AScaleSpinBox->value();
-  componentInvert[0] = this->ui->RInvertCheckBox->isChecked();
-  componentInvert[1] = this->ui->GInvertCheckBox->isChecked();
-  componentInvert[2] = this->ui->BInvertCheckBox->isChecked();
-  componentInvert[3] = this->ui->AInvertCheckBox->isChecked();
-  limitedRange       = this->ui->limitedRangeCheckBox->isChecked();
+  componentScale[0]  = this->ui.RScaleSpinBox->value();
+  componentScale[1]  = this->ui.GScaleSpinBox->value();
+  componentScale[2]  = this->ui.BScaleSpinBox->value();
+  componentScale[3]  = this->ui.AScaleSpinBox->value();
+  componentInvert[0] = this->ui.RInvertCheckBox->isChecked();
+  componentInvert[1] = this->ui.GInvertCheckBox->isChecked();
+  componentInvert[2] = this->ui.BInvertCheckBox->isChecked();
+  componentInvert[3] = this->ui.AInvertCheckBox->isChecked();
+  limitedRange       = this->ui.limitedRangeCheckBox->isChecked();
 
   // Set the current frame in the buffer to be invalid and clear the cache.
   // Emit that this item needs redraw and the cache needs updating.
@@ -355,25 +350,25 @@ void videoHandlerRGB::slotDisplayOptionsChanged()
 
 void videoHandlerRGB::updateControlsForNewPixelFormat()
 {
-  if (!this->ui->created())
+  if (!this->ui.created())
     return;
 
   auto valid         = this->srcPixelFormat.isValid();
   auto hasAlpha      = this->srcPixelFormat.hasAlpha();
   auto validAndAlpha = valid & hasAlpha;
 
-  this->ui->RScaleSpinBox->setEnabled(valid);
-  this->ui->GScaleSpinBox->setEnabled(valid);
-  this->ui->BScaleSpinBox->setEnabled(valid);
-  this->ui->AScaleSpinBox->setEnabled(validAndAlpha);
-  this->ui->RInvertCheckBox->setEnabled(valid);
-  this->ui->GInvertCheckBox->setEnabled(valid);
-  this->ui->BInvertCheckBox->setEnabled(valid);
-  this->ui->AInvertCheckBox->setEnabled(validAndAlpha);
+  this->ui.RScaleSpinBox->setEnabled(valid);
+  this->ui.GScaleSpinBox->setEnabled(valid);
+  this->ui.BScaleSpinBox->setEnabled(valid);
+  this->ui.AScaleSpinBox->setEnabled(validAndAlpha);
+  this->ui.RInvertCheckBox->setEnabled(valid);
+  this->ui.GInvertCheckBox->setEnabled(valid);
+  this->ui.BInvertCheckBox->setEnabled(valid);
+  this->ui.AInvertCheckBox->setEnabled(validAndAlpha);
 
-  QSignalBlocker block(this->ui->colorComponentsComboBox);
-  this->ui->colorComponentsComboBox->setEnabled(valid);
-  this->ui->colorComponentsComboBox->clear();
+  QSignalBlocker block(this->ui.colorComponentsComboBox);
+  this->ui.colorComponentsComboBox->setEnabled(valid);
+  this->ui.colorComponentsComboBox->clear();
   if (valid)
   {
     std::vector<ComponentDisplayMode> listItems;
@@ -397,16 +392,16 @@ void videoHandlerRGB::updateControlsForNewPixelFormat()
       this->componentDisplayMode = ComponentDisplayMode::RGBA;
 
     for (const auto &item : listItems)
-      this->ui->colorComponentsComboBox->addItem(
+      this->ui.colorComponentsComboBox->addItem(
           QString::fromStdString(componentShowMapper.getText(item)));
-    this->ui->colorComponentsComboBox->setCurrentText(
+    this->ui.colorComponentsComboBox->setCurrentText(
         QString::fromStdString(componentShowMapper.getText(this->componentDisplayMode)));
   }
 }
 
 void videoHandlerRGB::slotRGBFormatControlChanged()
 {
-  auto selectionIdx     = this->ui->rgbFormatComboBox->currentIndex();
+  auto selectionIdx     = this->ui.rgbFormatComboBox->currentIndex();
   auto nrBytesOldFormat = getBytesPerFrame();
 
   if (selectionIdx == this->rgbPresetList.count())
@@ -424,9 +419,9 @@ void videoHandlerRGB::slotRGBFormatControlChanged()
     {
       // Valid pixel format which is not in the list. Add it...
       this->rgbPresetList.append(this->srcPixelFormat);
-      int                  nrItems = this->ui->rgbFormatComboBox->count();
-      const QSignalBlocker blocker(this->ui->rgbFormatComboBox);
-      this->ui->rgbFormatComboBox->insertItem(
+      int                  nrItems = this->ui.rgbFormatComboBox->count();
+      const QSignalBlocker blocker(this->ui.rgbFormatComboBox);
+      this->ui.rgbFormatComboBox->insertItem(
           nrItems - 1, QString::fromStdString(this->srcPixelFormat.getName()));
       idx = this->rgbPresetList.indexOf(this->srcPixelFormat);
     }
@@ -434,8 +429,8 @@ void videoHandlerRGB::slotRGBFormatControlChanged()
     if (idx > 0)
     {
       // Format found. Set it without another call to this function.
-      const QSignalBlocker blocker(this->ui->rgbFormatComboBox);
-      this->ui->rgbFormatComboBox->setCurrentIndex(idx);
+      const QSignalBlocker blocker(this->ui.rgbFormatComboBox);
+      this->ui.rgbFormatComboBox->setCurrentIndex(idx);
     }
 
     selectionIdx = idx;

@@ -42,8 +42,6 @@
 
 #include "playlistItemWithVideo.h"
 
-class videoHandler;
-
 /* This playlist item encapsulates all compressed video sequences.
  * We can read the data from a plain binary file (we support various raw annexB formats) or we can
  * use ffmpeg to read from a container. For decoding, a range of different decoders is available.

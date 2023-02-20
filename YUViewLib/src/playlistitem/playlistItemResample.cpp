@@ -36,9 +36,6 @@
 
 #include <common/FunctionsGui.h>
 
-#include "ui_FrameHandler.h"
-#include "ui_playlistItemResample.h"
-
 // Activate this if you want to know when which difference is loaded
 #define PLAYLISTITEMRESAMPLE_DEBUG_LOADING 0
 #if PLAYLISTITEMRESAMPLE_DEBUG_LOADING && !NDEBUG
@@ -51,7 +48,6 @@
 
 playlistItemResample::playlistItemResample() : playlistItemContainer("Resample Item")
 {
-  this->ui = std::make_unique<SafeUi<Ui::playlistItemResample>>();
   this->setIcon(0, functionsGui::convertIcon(":img_resample.png"));
   this->setFlags(flags() | Qt::ItemIsDropEnabled);
 
@@ -116,36 +112,36 @@ void playlistItemResample::drawItem(QPainter *painter,
           this->sampling   = 1;
         }
 
-        if (this->ui->created())
+        if (this->ui.created())
         {
-          QSignalBlocker blockerWidth(this->ui->spinBoxWidth);
-          QSignalBlocker blockerHeight(this->ui->spinBoxHeight);
-          this->ui->spinBoxWidth->setValue(this->scaledSize.width);
-          this->ui->spinBoxHeight->setValue(this->scaledSize.height);
+          QSignalBlocker blockerWidth(this->ui.spinBoxWidth);
+          QSignalBlocker blockerHeight(this->ui.spinBoxHeight);
+          this->ui.spinBoxWidth->setValue(this->scaledSize.width);
+          this->ui.spinBoxHeight->setValue(this->scaledSize.height);
 
           auto nrFramesInput = this->cutRange.second - this->cutRange.first + 1;
 
-          QSignalBlocker blockerSampling(this->ui->spinBoxSampling);
-          this->ui->spinBoxSampling->setMinimum(1);
-          this->ui->spinBoxSampling->setMaximum(nrFramesInput);
-          this->ui->spinBoxSampling->setValue(this->sampling);
+          QSignalBlocker blockerSampling(this->ui.spinBoxSampling);
+          this->ui.spinBoxSampling->setMinimum(1);
+          this->ui.spinBoxSampling->setMaximum(nrFramesInput);
+          this->ui.spinBoxSampling->setValue(this->sampling);
 
-          QSignalBlocker blockerStart(this->ui->spinBoxStart);
-          this->ui->spinBoxStart->setMinimum(this->cutRange.first);
-          this->ui->spinBoxStart->setMaximum(this->cutRange.second);
-          this->ui->spinBoxStart->setValue(this->cutRange.first);
+          QSignalBlocker blockerStart(this->ui.spinBoxStart);
+          this->ui.spinBoxStart->setMinimum(this->cutRange.first);
+          this->ui.spinBoxStart->setMaximum(this->cutRange.second);
+          this->ui.spinBoxStart->setValue(this->cutRange.first);
 
-          QSignalBlocker blockerEnd(this->ui->spinBoxEnd);
-          this->ui->spinBoxEnd->setMinimum(this->cutRange.first);
-          this->ui->spinBoxEnd->setMaximum(this->cutRange.second);
-          this->ui->spinBoxEnd->setValue(this->cutRange.second);
+          QSignalBlocker blockerEnd(this->ui.spinBoxEnd);
+          this->ui.spinBoxEnd->setMinimum(this->cutRange.first);
+          this->ui.spinBoxEnd->setMaximum(this->cutRange.second);
+          this->ui.spinBoxEnd->setValue(this->cutRange.second);
 
           auto sampleAspectRatio = child->properties().sampleAspectRatio;
           auto sarEnabled        = sampleAspectRatio.num != 0 && sampleAspectRatio.den != 0 &&
                             sampleAspectRatio.num != sampleAspectRatio.den;
-          this->ui->labelSAR->setEnabled(sarEnabled);
-          this->ui->pushButtonSARWidth->setEnabled(sarEnabled);
-          this->ui->pushButtonSARHeight->setEnabled(sarEnabled);
+          this->ui.labelSAR->setEnabled(sarEnabled);
+          this->ui.pushButtonSARWidth->setEnabled(sarEnabled);
+          this->ui.pushButtonSARHeight->setEnabled(sarEnabled);
         }
 
         this->video.setScaledSize(this->scaledSize);
@@ -159,9 +155,9 @@ void playlistItemResample::drawItem(QPainter *painter,
       }
       else
       {
-        this->ui->labelSAR->setEnabled(false);
-        this->ui->pushButtonSARWidth->setEnabled(false);
-        this->ui->pushButtonSARHeight->setEnabled(false);
+        this->ui.labelSAR->setEnabled(false);
+        this->ui.pushButtonSARWidth->setEnabled(false);
+        this->ui.pushButtonSARHeight->setEnabled(false);
       }
     }
   }
@@ -194,50 +190,50 @@ void playlistItemResample::createPropertiesWidget()
   // On the top level everything is layout vertically
   auto vAllLaout = new QVBoxLayout(propertiesWidget.data());
 
-  this->ui->setupUi();
+  this->ui.setupUi();
 
-  this->ui->comboBoxInterpolation->addItems(QStringList() << "Bilinear"
+  this->ui.comboBoxInterpolation->addItems(QStringList() << "Bilinear"
                                                           << "Linear");
-  this->ui->comboBoxInterpolation->setCurrentIndex(this->interpolationIndex);
+  this->ui.comboBoxInterpolation->setCurrentIndex(this->interpolationIndex);
 
-  this->ui->labelSAR->setEnabled(false);
-  this->ui->pushButtonSARWidth->setEnabled(false);
-  this->ui->pushButtonSARHeight->setEnabled(false);
+  this->ui.labelSAR->setEnabled(false);
+  this->ui.pushButtonSARWidth->setEnabled(false);
+  this->ui.pushButtonSARHeight->setEnabled(false);
 
-  this->connect(this->ui->spinBoxWidth,
+  this->connect(this->ui.spinBoxWidth,
                 QOverload<int>::of(&QSpinBox::valueChanged),
                 this,
                 &playlistItemResample::slotResampleControlChanged);
-  this->connect(this->ui->spinBoxHeight,
+  this->connect(this->ui.spinBoxHeight,
                 QOverload<int>::of(&QSpinBox::valueChanged),
                 this,
                 &playlistItemResample::slotResampleControlChanged);
-  this->connect(this->ui->comboBoxInterpolation,
+  this->connect(this->ui.comboBoxInterpolation,
                 QOverload<int>::of(&QComboBox::currentIndexChanged),
                 this,
                 &playlistItemResample::slotInterpolationModeChanged);
-  this->connect(this->ui->spinBoxStart,
+  this->connect(this->ui.spinBoxStart,
                 QOverload<int>::of(&QSpinBox::valueChanged),
                 this,
                 &playlistItemResample::slotCutAndSampleControlChanged);
-  this->connect(this->ui->spinBoxEnd,
+  this->connect(this->ui.spinBoxEnd,
                 QOverload<int>::of(&QSpinBox::valueChanged),
                 this,
                 &playlistItemResample::slotCutAndSampleControlChanged);
-  this->connect(this->ui->spinBoxSampling,
+  this->connect(this->ui.spinBoxSampling,
                 QOverload<int>::of(&QSpinBox::valueChanged),
                 this,
                 &playlistItemResample::slotCutAndSampleControlChanged);
-  this->connect(this->ui->pushButtonSARWidth,
+  this->connect(this->ui.pushButtonSARWidth,
                 &QPushButton::clicked,
                 this,
                 &playlistItemResample::slotButtonSARWidth);
-  this->connect(this->ui->pushButtonSARHeight,
+  this->connect(this->ui.pushButtonSARHeight,
                 &QPushButton::clicked,
                 this,
                 &playlistItemResample::slotButtonSARHeight);
 
-  vAllLaout->addLayout(this->ui->topVBoxLayout);
+  vAllLaout->addLayout(this->ui.topVBoxLayout);
 }
 
 void playlistItemResample::savePlaylist(QDomElement &root, const QDir &playlistDir) const
@@ -344,23 +340,23 @@ void playlistItemResample::childChanged(bool redraw, recacheIndicator recache)
 
 void playlistItemResample::slotResampleControlChanged(int)
 {
-  this->scaledSize = Size(this->ui->spinBoxWidth->value(), this->ui->spinBoxHeight->value());
+  this->scaledSize = Size(this->ui.spinBoxWidth->value(), this->ui.spinBoxHeight->value());
   this->video.setScaledSize(this->scaledSize);
 }
 
 void playlistItemResample::slotInterpolationModeChanged(int)
 {
-  this->interpolationIndex = this->ui->comboBoxInterpolation->currentIndex();
+  this->interpolationIndex = this->ui.comboBoxInterpolation->currentIndex();
   auto interpolation       = (this->interpolationIndex == 0)
-                                 ? video::videoHandlerResample::Interpolation::Bilinear
-                                 : video::videoHandlerResample::Interpolation::Fast;
+                           ? video::videoHandlerResample::Interpolation::Bilinear
+                           : video::videoHandlerResample::Interpolation::Fast;
   this->video.setInterpolation(interpolation);
 }
 
 void playlistItemResample::slotCutAndSampleControlChanged(int)
 {
-  this->cutRange = indexRange(this->ui->spinBoxStart->value(), this->ui->spinBoxEnd->value());
-  this->sampling = std::max(this->ui->spinBoxSampling->value(), 1);
+  this->cutRange = indexRange(this->ui.spinBoxStart->value(), this->ui.spinBoxEnd->value());
+  this->sampling = std::max(this->ui.spinBoxSampling->value(), 1);
 
   auto nrFrames            = (this->cutRange.second - this->cutRange.first) / this->sampling;
   this->prop.startEndRange = indexRange(0, nrFrames);

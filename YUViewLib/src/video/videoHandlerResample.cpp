@@ -38,8 +38,6 @@
 #include <QPushButton>
 #include <algorithm>
 
-#include "ui_FrameHandler.h"
-
 namespace video
 {
 

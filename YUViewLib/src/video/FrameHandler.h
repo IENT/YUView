@@ -41,10 +41,7 @@
 #include <QObject>
 #include <QSettings>
 
-namespace Ui
-{
-class FrameHandler;
-}
+#include "ui_FrameHandler.h"
 
 namespace video
 {
@@ -60,10 +57,6 @@ class FrameHandler : public QObject
   Q_OBJECT
 
 public:
-  // Create a new blank FrameHandler. Don't forget to load an image from file
-  // (loadCurrentImageFromFile).
-  FrameHandler();
-
   // Get the size/bit depth of the (current) frame
   Size getFrameSize() const { return frameSize; }
   int  getImageBitDepth() const { return currentImage.depth(); }
@@ -159,7 +152,7 @@ private:
   // The (static) list of frame size presets (like CIF, QCIF, 4k ...)
   static frameSizePresetList presetFrameSizes;
 
-  std::unique_ptr<SafeUi<Ui::FrameHandler>> ui;
+  SafeUi<Ui::FrameHandler> ui;
 
 protected slots:
 

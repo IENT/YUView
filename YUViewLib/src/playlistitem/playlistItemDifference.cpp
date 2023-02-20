@@ -36,9 +36,6 @@
 
 #include <common/FunctionsGui.h>
 
-#include "ui_FrameHandler.h"
-#include "ui_videoHandlerDifference.h"
-
 // Activate this if you want to know when which difference is loaded
 #define PLAYLISTITEMDIFFERENCE_DEBUG_LOADING 0
 #if PLAYLISTITEMDIFFERENCE_DEBUG_LOADING && !NDEBUG

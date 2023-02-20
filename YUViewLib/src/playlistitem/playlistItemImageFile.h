@@ -32,12 +32,16 @@
 
 #pragma once
 
-#include "playlistItem.h"
-
+#include <playlistitem/playlistItem.h>
 #include <video/FrameHandler.h>
 
 #include <QFileSystemWatcher>
 #include <QFuture>
+
+namespace video
+{
+class FrameHandler;
+}
 
 class playlistItemImageFile : public playlistItem
 {
