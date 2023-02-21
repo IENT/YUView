@@ -34,6 +34,7 @@
 
 #include <QPoint>
 #include <QPointer>
+#include <QObject>
 
 class QDomElement;
 class QKeyEvent;
