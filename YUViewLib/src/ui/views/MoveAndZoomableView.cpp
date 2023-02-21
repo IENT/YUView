@@ -73,15 +73,23 @@ void MoveAndZoomableView::addSlaveView(MoveAndZoomableView *view)
 
 void MoveAndZoomableView::addContextMenuActions(QMenu *menu)
 {
-  menu->addAction("Zoom to 1:1", this, &MoveAndZoomableView::resetView, Qt::CTRL | Qt::Key_0);
-  menu->addAction("Zoom to Fit", this, &MoveAndZoomableView::zoomToFit, Qt::CTRL | Qt::Key_9);
-  menu->addAction("Zoom in", this, &MoveAndZoomableView::zoomIn, Qt::CTRL | Qt::Key_Plus);
-  menu->addAction("Zoom out", this, &MoveAndZoomableView::zoomOut, Qt::CTRL | Qt::Key_Minus);
+  auto addActionToMenu =
+      [this, &menu](QString name, auto functionPointer, const QKeySequence shortcut = {}) {
+        auto action = new QAction(name, menu);
+        action->setShortcut(shortcut);
+        QObject::connect(action, &QAction::triggered, this, functionPointer);
+        menu->addAction(action);
+      };
+
+  addActionToMenu("Zoom to 1:1", &MoveAndZoomableView::resetView, Qt::CTRL | Qt::Key_0);
+  addActionToMenu("Zoom to Fit", &MoveAndZoomableView::zoomToFit, Qt::CTRL | Qt::Key_9);
+  addActionToMenu("Zoom in", &MoveAndZoomableView::zoomIn, Qt::CTRL | Qt::Key_Plus);
+  addActionToMenu("Zoom out", &MoveAndZoomableView::zoomOut, Qt::CTRL | Qt::Key_Minus);
   menu->addSeparator();
-  menu->addAction("Zoom to 50%", this, &MoveAndZoomableView::zoomTo50);
-  menu->addAction("Zoom to 100%", this, &MoveAndZoomableView::zoomTo100);
-  menu->addAction("Zoom to 200%", this, &MoveAndZoomableView::zoomTo200);
-  menu->addAction("Zoom to ...", this, &MoveAndZoomableView::zoomToCustom);
+  addActionToMenu("Zoom to 50%", &MoveAndZoomableView::zoomTo50);
+  addActionToMenu("Zoom to 100%", &MoveAndZoomableView::zoomTo100);
+  addActionToMenu("Zoom to 200%", &MoveAndZoomableView::zoomTo200);
+  addActionToMenu("Zoom to ...", &MoveAndZoomableView::zoomToCustom);
 }
 
 // Handle the key press event (if this widgets handles it). If not, return false.
@@ -259,7 +267,10 @@ void MoveAndZoomableView::keyPressEvent(QKeyEvent *event)
     QWidget::keyPressEvent(event);
 }
 
-void MoveAndZoomableView::resizeEvent(QResizeEvent *) { this->update(); }
+void MoveAndZoomableView::resizeEvent(QResizeEvent *)
+{
+  this->update();
+}
 
 void MoveAndZoomableView::updateMouseCursor()
 {
@@ -461,7 +472,7 @@ bool MoveAndZoomableView::event(QEvent *event)
 #if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
     isTouchScreenEvent = (device->type() == QInputDevice::DeviceType::TouchScreen);
 #else
-    isTouchScreenEvent      = (device->type() == QTouchDevice::TouchScreen);
+    isTouchScreenEvent = (device->type() == QTouchDevice::TouchScreen);
 #endif
   }
 
