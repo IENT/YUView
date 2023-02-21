@@ -13,11 +13,11 @@ jobs:
       matrix:
         include: 
           #- os: ubuntu-18.04
-             INSTALL_LIBS: libgl1-mesa-dev libxkbcommon-x11-0 libpcre2-16-0 qt5-default
-             QMAKE_COMMAND: qmake
+          #   INSTALL_LIBS: libgl1-mesa-dev libxkbcommon-x11-0 libpcre2-16-0 qt5-default
+          #   QMAKE_COMMAND: qmake
           #- os: ubuntu-20.04
-             INSTALL_LIBS: libgl1-mesa-dev libxkbcommon-x11-0 libpcre2-16-0 qt5-default
-             QMAKE_COMMAND: qmake
+          #   INSTALL_LIBS: libgl1-mesa-dev libxkbcommon-x11-0 libpcre2-16-0 qt5-default
+          #   QMAKE_COMMAND: qmake
           - os: ubuntu-22.04
             INSTALL_LIBS: qt6-base-dev
             QMAKE_COMMAND: qmake6
