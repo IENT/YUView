@@ -239,73 +239,125 @@ void MainWindow::loadFiles(const QStringList &files)
 
 void MainWindow::createMenusAndActions()
 {
-  // File menu
-  QMenu *fileMenu = menuBar()->addMenu(tr("&File"));
-  fileMenu->addAction("&Open File...", this, &MainWindow::showFileOpenDialog, Qt::CTRL | Qt::Key_O);
-  QMenu *recentFileMenu = fileMenu->addMenu("Recent Files");
+  auto addActionToMenu = [this](QMenu *            menu,
+                                QString            name,
+                                auto               reciever,
+                                auto               functionPointer,
+                                const QKeySequence shortcut = {}) {
+    auto action = new QAction(name, menu);
+    action->setShortcut(shortcut);
+    QObject::connect(action, &QAction::triggered, reciever, functionPointer);
+    menu->addAction(action);
+  };
+
+  auto fileMenu = menuBar()->addMenu(tr("&File"));
+  addActionToMenu(
+      fileMenu, "&Open File...", this, &MainWindow::showFileOpenDialog, Qt::CTRL | Qt::Key_O);
+
+  auto recentFileMenu = fileMenu->addMenu("Recent Files");
   for (int i = 0; i < MAX_RECENT_FILES; i++)
   {
-    recentFileActions[i] = new QAction(this);
-    connect(recentFileActions[i].data(), &QAction::triggered, this, &MainWindow::openRecentFile);
-    recentFileMenu->addAction(recentFileActions[i]);
+    this->recentFileActions[i] = new QAction(this);
+    connect(
+        this->recentFileActions[i].data(), &QAction::triggered, this, &MainWindow::openRecentFile);
+    recentFileMenu->addAction(this->recentFileActions[i]);
   }
+
   fileMenu->addSeparator();
-  fileMenu->addAction("&Add Text Frame", ui.playlistTreeWidget, &PlaylistTreeWidget::addTextItem);
-  fileMenu->addAction(
-      "&Add Difference Sequence", ui.playlistTreeWidget, &PlaylistTreeWidget::addDifferenceItem);
-  fileMenu->addAction("&Add Overlay", ui.playlistTreeWidget, &PlaylistTreeWidget::addOverlayItem);
+  addActionToMenu(
+      fileMenu, "&Add Text Frame", ui.playlistTreeWidget, &PlaylistTreeWidget::addTextItem);
+  addActionToMenu(fileMenu,
+                  "&Add Difference Sequence",
+                  ui.playlistTreeWidget,
+                  &PlaylistTreeWidget::addDifferenceItem);
+  addActionToMenu(
+      fileMenu, "&Add Overlay", ui.playlistTreeWidget, &PlaylistTreeWidget::addOverlayItem);
   fileMenu->addSeparator();
-  fileMenu->addAction("&Delete Item", this, &MainWindow::deleteSelectedItems, Qt::Key_Delete);
+  addActionToMenu(fileMenu, "&Delete Item", this, &MainWindow::deleteSelectedItems, Qt::Key_Delete);
   fileMenu->addSeparator();
-  fileMenu->addAction("&Save Playlist...",
-                      ui.playlistTreeWidget,
-                      &PlaylistTreeWidget::savePlaylistToFile,
-                      Qt::CTRL | Qt::Key_S);
+  addActionToMenu(fileMenu,
+                  "&Save Playlist...",
+                  ui.playlistTreeWidget,
+                  &PlaylistTreeWidget::savePlaylistToFile,
+                  Qt::CTRL | Qt::Key_S);
   fileMenu->addSeparator();
-  fileMenu->addAction("&Save Screenshot...", this, &MainWindow::saveScreenshot);
+  addActionToMenu(fileMenu, "&Save Screenshot...", this, &MainWindow::saveScreenshot);
   fileMenu->addSeparator();
-  fileMenu->addAction("&Settings...", this, &MainWindow::showSettingsWindow);
+  addActionToMenu(fileMenu, "&Settings...", this, &MainWindow::showSettingsWindow);
   fileMenu->addSeparator();
-  fileMenu->addAction("Exit", this, &MainWindow::close);
+  addActionToMenu(fileMenu, "Exit", this, &MainWindow::close);
 
   // On Mac, the key to delete an item is backspace. We will add this for all platforms
-  QShortcut *backSpaceDelete = new QShortcut(QKeySequence(Qt::Key_Backspace), this);
-  connect(backSpaceDelete, &QShortcut::activated, this, &MainWindow::deleteSelectedItems);
+  auto backSpaceDelete = new QShortcut(QKeySequence(Qt::Key_Backspace), this);
+  QObject::connect(backSpaceDelete, &QShortcut::activated, this, &MainWindow::deleteSelectedItems);
 
-  // View menu
-  QMenu *viewMenu = menuBar()->addMenu(tr("&View"));
+  auto viewMenu = menuBar()->addMenu(tr("&View"));
   // Sub menu save/load state
-  QMenu *saveStateMenu = viewMenu->addMenu("Save View State");
-  saveStateMenu->addAction(
-      "Slot 1", &stateHandler, &ViewStateHandler::saveViewState1, Qt::CTRL | Qt::Key_1);
-  saveStateMenu->addAction(
-      "Slot 2", &stateHandler, &ViewStateHandler::saveViewState2, Qt::CTRL | Qt::Key_2);
-  saveStateMenu->addAction(
-      "Slot 3", &stateHandler, &ViewStateHandler::saveViewState3, Qt::CTRL | Qt::Key_3);
-  saveStateMenu->addAction(
-      "Slot 4", &stateHandler, &ViewStateHandler::saveViewState4, Qt::CTRL | Qt::Key_4);
-  saveStateMenu->addAction(
-      "Slot 5", &stateHandler, &ViewStateHandler::saveViewState5, Qt::CTRL | Qt::Key_5);
-  saveStateMenu->addAction(
-      "Slot 6", &stateHandler, &ViewStateHandler::saveViewState6, Qt::CTRL | Qt::Key_6);
-  saveStateMenu->addAction(
-      "Slot 7", &stateHandler, &ViewStateHandler::saveViewState7, Qt::CTRL | Qt::Key_7);
-  saveStateMenu->addAction(
-      "Slot 8", &stateHandler, &ViewStateHandler::saveViewState8, Qt::CTRL | Qt::Key_8);
-  QMenu *loadStateMenu = viewMenu->addMenu("Restore View State");
-  loadStateMenu->addAction("Slot 1", &stateHandler, &ViewStateHandler::loadViewState1, Qt::Key_1);
-  loadStateMenu->addAction("Slot 2", &stateHandler, &ViewStateHandler::loadViewState2, Qt::Key_2);
-  loadStateMenu->addAction("Slot 3", &stateHandler, &ViewStateHandler::loadViewState3, Qt::Key_3);
-  loadStateMenu->addAction("Slot 4", &stateHandler, &ViewStateHandler::loadViewState4, Qt::Key_4);
-  loadStateMenu->addAction("Slot 5", &stateHandler, &ViewStateHandler::loadViewState5, Qt::Key_5);
-  loadStateMenu->addAction("Slot 6", &stateHandler, &ViewStateHandler::loadViewState6, Qt::Key_6);
-  loadStateMenu->addAction("Slot 7", &stateHandler, &ViewStateHandler::loadViewState7, Qt::Key_7);
-  loadStateMenu->addAction("Slot 8", &stateHandler, &ViewStateHandler::loadViewState8, Qt::Key_8);
+  auto saveStateMenu = viewMenu->addMenu("Save View State");
+  addActionToMenu(saveStateMenu,
+                  "Slot 1",
+                  &stateHandler,
+                  &ViewStateHandler::saveViewState1,
+                  Qt::CTRL | Qt::Key_1);
+  addActionToMenu(saveStateMenu,
+                  "Slot 2",
+                  &stateHandler,
+                  &ViewStateHandler::saveViewState2,
+                  Qt::CTRL | Qt::Key_2);
+  addActionToMenu(saveStateMenu,
+                  "Slot 3",
+                  &stateHandler,
+                  &ViewStateHandler::saveViewState3,
+                  Qt::CTRL | Qt::Key_3);
+  addActionToMenu(saveStateMenu,
+                  "Slot 4",
+                  &stateHandler,
+                  &ViewStateHandler::saveViewState4,
+                  Qt::CTRL | Qt::Key_4);
+  addActionToMenu(saveStateMenu,
+                  "Slot 5",
+                  &stateHandler,
+                  &ViewStateHandler::saveViewState5,
+                  Qt::CTRL | Qt::Key_5);
+  addActionToMenu(saveStateMenu,
+                  "Slot 6",
+                  &stateHandler,
+                  &ViewStateHandler::saveViewState6,
+                  Qt::CTRL | Qt::Key_6);
+  addActionToMenu(saveStateMenu,
+                  "Slot 7",
+                  &stateHandler,
+                  &ViewStateHandler::saveViewState7,
+                  Qt::CTRL | Qt::Key_7);
+  addActionToMenu(saveStateMenu,
+                  "Slot 8",
+                  &stateHandler,
+                  &ViewStateHandler::saveViewState8,
+                  Qt::CTRL | Qt::Key_8);
+
+  auto loadStateMenu = viewMenu->addMenu("Restore View State");
+  addActionToMenu(
+      loadStateMenu, "Slot 1", &stateHandler, &ViewStateHandler::loadViewState1, Qt::Key_1);
+  addActionToMenu(
+      loadStateMenu, "Slot 2", &stateHandler, &ViewStateHandler::loadViewState2, Qt::Key_2);
+  addActionToMenu(
+      loadStateMenu, "Slot 3", &stateHandler, &ViewStateHandler::loadViewState3, Qt::Key_3);
+  addActionToMenu(
+      loadStateMenu, "Slot 4", &stateHandler, &ViewStateHandler::loadViewState4, Qt::Key_4);
+  addActionToMenu(
+      loadStateMenu, "Slot 5", &stateHandler, &ViewStateHandler::loadViewState5, Qt::Key_5);
+  addActionToMenu(
+      loadStateMenu, "Slot 6", &stateHandler, &ViewStateHandler::loadViewState6, Qt::Key_6);
+  addActionToMenu(
+      loadStateMenu, "Slot 7", &stateHandler, &ViewStateHandler::loadViewState7, Qt::Key_7);
+  addActionToMenu(
+      loadStateMenu, "Slot 8", &stateHandler, &ViewStateHandler::loadViewState8, Qt::Key_8);
   viewMenu->addSeparator();
-  QMenu *dockPanelsMenu = viewMenu->addMenu("Dock Panels");
-  auto   addDockViewAction =
+
+  auto dockPanelsMenu = viewMenu->addMenu("Dock Panels");
+  auto addDockViewAction =
       [dockPanelsMenu](QDockWidget *dockWidget, QString text, const QKeySequence &shortcut = {}) {
-        QAction *action = dockWidget->toggleViewAction();
+        auto action = dockWidget->toggleViewAction();
         action->setText(text);
         action->setShortcut(shortcut);
         dockPanelsMenu->addAction(action);
@@ -317,72 +369,90 @@ void MainWindow::createMenusAndActions()
   viewMenu->addSeparator();
   addDockViewAction(ui.playbackControllerDock, "Show Playback &Controls", Qt::CTRL | Qt::Key_D);
 
-  QMenu *splitViewMenu = viewMenu->addMenu("Split View");
+  auto splitViewMenu = viewMenu->addMenu("Split View");
   ui.displaySplitView->addMenuActions(splitViewMenu);
 
-  QMenu *zoomMenu = viewMenu->addMenu("Zoom");
-  zoomMenu->addAction("Zoom to 1:1", this, &MainWindow::onMenuResetView, Qt::CTRL | Qt::Key_0);
-  zoomMenu->addAction("Zoom to Fit", this, &MainWindow::onMenuZoomToFit, Qt::CTRL | Qt::Key_9);
-  zoomMenu->addAction("Zoom in", this, &MainWindow::onMenuZoomIn, Qt::CTRL | Qt::Key_Plus);
-  zoomMenu->addAction("Zoom out", this, &MainWindow::onMenuZoomOut, Qt::CTRL | Qt::Key_Minus);
+  auto zoomMenu = viewMenu->addMenu("Zoom");
+  addActionToMenu(
+      zoomMenu, "Zoom to 1:1", this, &MainWindow::onMenuResetView, Qt::CTRL | Qt::Key_0);
+  addActionToMenu(
+      zoomMenu, "Zoom to Fit", this, &MainWindow::onMenuZoomToFit, Qt::CTRL | Qt::Key_9);
+  addActionToMenu(zoomMenu, "Zoom in", this, &MainWindow::onMenuZoomIn, Qt::CTRL | Qt::Key_Plus);
+  addActionToMenu(zoomMenu, "Zoom out", this, &MainWindow::onMenuZoomOut, Qt::CTRL | Qt::Key_Minus);
   zoomMenu->addSeparator();
-  zoomMenu->addAction("Zoom to 50%", this, &MainWindow::onMenuZoomTo50);
-  zoomMenu->addAction("Zoom to 100%", this, &MainWindow::onMenuZoomTo100);
-  zoomMenu->addAction("Zoom to 200%", this, &MainWindow::onMenuZoomTo200);
-  zoomMenu->addAction("Zoom to ...", this, &MainWindow::onMenuZoomToCustom);
+  addActionToMenu(zoomMenu, "Zoom to 50%", this, &MainWindow::onMenuZoomTo50);
+  addActionToMenu(zoomMenu, "Zoom to 100%", this, &MainWindow::onMenuZoomTo100);
+  addActionToMenu(zoomMenu, "Zoom to 200%", this, &MainWindow::onMenuZoomTo200);
+  addActionToMenu(zoomMenu, "Zoom to ...", this, &MainWindow::onMenuZoomToCustom);
 
-  // The playback menu
-  QMenu *playbackMenu = menuBar()->addMenu(tr("&Playback"));
-  playbackMenu->addAction("Play/Pause",
-                          ui.playbackController,
-                          &PlaybackController::on_playPauseButton_clicked,
-                          Qt::Key_Space);
-  playbackMenu->addAction("Next Playlist Item",
-                          ui.playlistTreeWidget,
-                          &PlaylistTreeWidget::onSelectNextItem,
-                          Qt::Key_Down);
-  playbackMenu->addAction("Previous Playlist Item",
-                          ui.playlistTreeWidget,
-                          &PlaylistTreeWidget::selectPreviousItem,
-                          Qt::Key_Up);
-  playbackMenu->addAction(
-      "Next Frame", ui.playbackController, &PlaybackController::nextFrame, Qt::Key_Right);
-  playbackMenu->addAction(
-      "Previous Frame", ui.playbackController, &PlaybackController::previousFrame, Qt::Key_Left);
+  auto playbackMenu = menuBar()->addMenu(tr("&Playback"));
+  addActionToMenu(playbackMenu,
+                  "Play/Pause",
+                  ui.playbackController,
+                  &PlaybackController::on_playPauseButton_clicked,
+                  Qt::Key_Space);
+  addActionToMenu(playbackMenu,
+                  "Next Playlist Item",
+                  ui.playlistTreeWidget,
+                  &PlaylistTreeWidget::onSelectNextItem,
+                  Qt::Key_Down);
+  addActionToMenu(playbackMenu,
+                  "Previous Playlist Item",
+                  ui.playlistTreeWidget,
+                  &PlaylistTreeWidget::selectPreviousItem,
+                  Qt::Key_Up);
+  addActionToMenu(playbackMenu,
+                  "Next Frame",
+                  ui.playbackController,
+                  &PlaybackController::nextFrame,
+                  Qt::Key_Right);
+  addActionToMenu(playbackMenu,
+                  "Previous Frame",
+                  ui.playbackController,
+                  &PlaybackController::previousFrame,
+                  Qt::Key_Left);
 
-  // The Help menu
-  QMenu *helpMenu = menuBar()->addMenu(tr("&Help"));
-  helpMenu->addAction("About YUView", this, &MainWindow::showAbout);
-  helpMenu->addAction("Help", this, &MainWindow::showHelp);
+  auto addLambdaActionToMenu = [this](QMenu *menu, QString name, auto lambda) {
+    auto action = new QAction(name, menu);
+    QObject::connect(action, &QAction::triggered, lambda);
+    menu->addAction(action);
+  };
+
+  auto helpMenu = menuBar()->addMenu(tr("&Help"));
+  addActionToMenu(helpMenu, "About YUView", this, &MainWindow::showAbout);
+  addActionToMenu(helpMenu, "Help", this, &MainWindow::showHelp);
   helpMenu->addSeparator();
-  helpMenu->addAction("Open Project Website...",
-                      []() { QDesktopServices::openUrl(QUrl("https://github.com/IENT/YUView")); });
-  helpMenu->addAction("Check for new version",
-                      [this]() { this->updater->startCheckForNewVersion(); });
-  QMenu *downloadsMenu = helpMenu->addMenu("Downloads");
-  downloadsMenu->addAction("libde265 HEVC decoder", []() {
+  addLambdaActionToMenu(helpMenu, "Open Project Website...", []() {
+    QDesktopServices::openUrl(QUrl("https://github.com/IENT/YUView"));
+  });
+  addLambdaActionToMenu(
+      helpMenu, "Check for new version", [this]() { this->updater->startCheckForNewVersion(); });
+
+  auto downloadsMenu = helpMenu->addMenu("Downloads");
+  addLambdaActionToMenu(downloadsMenu, "libde265 HEVC decoder", []() {
     QDesktopServices::openUrl(QUrl("https://github.com/ChristianFeldmann/libde265/releases"));
   });
-  downloadsMenu->addAction("HM reference HEVC decoder", []() {
+  addLambdaActionToMenu(downloadsMenu, "HM reference HEVC decoder", []() {
     QDesktopServices::openUrl(QUrl("https://github.com/ChristianFeldmann/libHM/releases"));
   });
-  downloadsMenu->addAction("VTM VVC decoder", []() {
+  addLambdaActionToMenu(downloadsMenu, "VTM VVC decoder", []() {
     QDesktopServices::openUrl(QUrl("https://github.com/ChristianFeldmann/VTM/releases"));
   });
-  downloadsMenu->addAction("dav1d AV1 decoder", []() {
+  addLambdaActionToMenu(downloadsMenu, "dav1d AV1 decoder", []() {
     QDesktopServices::openUrl(QUrl("https://github.com/ChristianFeldmann/dav1d/releases"));
   });
-  downloadsMenu->addAction("FFmpeg libraries",
-                           []() { QDesktopServices::openUrl(QUrl("https://ffmpeg.org/")); });
-  downloadsMenu->addAction("VVDec libraries", []() {
+  addLambdaActionToMenu(downloadsMenu, "FFmpeg libraries", []() {
+    QDesktopServices::openUrl(QUrl("https://ffmpeg.org/"));
+  });
+  addLambdaActionToMenu(downloadsMenu, "VVDec libraries", []() {
     QDesktopServices::openUrl(QUrl("https://github.com/ChristianFeldmann/vvdec/releases"));
   });
   helpMenu->addSeparator();
-  helpMenu->addAction("Performance Tests", [this]() { this->performanceTest(); });
-  helpMenu->addAction("Reset Window Layout", this, &MainWindow::resetWindowLayout);
-  helpMenu->addAction("Clear Settings", this, &MainWindow::closeAndClearSettings);
+  addLambdaActionToMenu(downloadsMenu, "Performance Tests", [this]() { this->performanceTest(); });
+  addActionToMenu(helpMenu, "Reset Window Layout", this, &MainWindow::resetWindowLayout);
+  addActionToMenu(helpMenu, "Clear Settings", this, &MainWindow::closeAndClearSettings);
 
-  updateRecentFileActions();
+  this->updateRecentFileActions();
 }
 
 void MainWindow::updateRecentFileActions()
