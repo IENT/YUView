@@ -244,6 +244,7 @@ void MainWindow::createMenusAndActions()
                                 auto               reciever,
                                 auto               functionPointer,
                                 const QKeySequence shortcut = {}) {
+    (void)this; // QObject::connect uses this
     auto action = new QAction(name, menu);
     action->setShortcut(shortcut);
     QObject::connect(action, &QAction::triggered, reciever, functionPointer);
