@@ -125,7 +125,7 @@ jobs:
         mkdir build
         cd build
         qmake CONFIG+=UNITTESTS ..
-        make -j ${{matrix.CPU_COUNT_COMMAND}}
+        make -j $(${{matrix.CPU_COUNT_COMMAND}})
         make check
     - name: Build App (Mac)
       run: |
