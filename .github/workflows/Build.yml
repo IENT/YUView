@@ -44,11 +44,11 @@ jobs:
             LIBDE265_REMOTE: libde265.dylib
             LIBDE265_LOCAL: libde265-internals.dylib
             ARTIFACT_NAME: YUView-Mac.zip
-          # - os: macos-11.0
-          #   QT_FILE: qtBase_5.15.1_mac.zip
-          #   LIBDE265_REMOTE: libde265.dylib
-          #   LIBDE265_LOCAL: libde265-internals.dylib
-          #   ARTIFACT_NAME: YUView-Mac-BigSur.zip
+          - os: macos-11.0
+            QT_FILE: qtBase_5.15.1_mac.zip
+            LIBDE265_REMOTE: libde265.dylib
+            LIBDE265_LOCAL: libde265-internals.dylib
+            ARTIFACT_NAME: YUView-Mac-BigSur.zip
     steps:
     - uses: actions/checkout@v2
     - run: git fetch --prune --unshallow
