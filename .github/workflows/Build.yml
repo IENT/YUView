@@ -13,21 +13,27 @@ jobs:
       matrix:
         include: 
           #- os: ubuntu-18.04
+             INSTALL_LIBS: libgl1-mesa-dev libxkbcommon-x11-0 libpcre2-16-0 qt5-default
+             QMAKE_COMMAND: qmake
           #- os: ubuntu-20.04
+             INSTALL_LIBS: libgl1-mesa-dev libxkbcommon-x11-0 libpcre2-16-0 qt5-default
+             QMAKE_COMMAND: qmake
           - os: ubuntu-22.04
+            INSTALL_LIBS: qt6-base-dev
+            QMAKE_COMMAND: qmake6
     steps:
     - uses: actions/checkout@v2
     - run: git fetch --prune --unshallow
     - name: Install Linux packages
       run: |
         sudo apt-get update
-        sudo apt-get install libgl1-mesa-dev libxkbcommon-x11-0 libpcre2-16-0 qt5-default
+        sudo apt-get install ${{matrix.INSTALL_LIBS}}
     - name: Build
       run: |
         cd $GITHUB_WORKSPACE
         mkdir build
         cd build
-        qmake CONFIG+=UNITTESTS ..
+        ${{matrix.QMAKE_COMMAND}} CONFIG+=UNITTESTS ..
         make -j 2
         make check
   # build-unix:
