@@ -7,34 +7,54 @@ on:
       - created
 
 jobs:
-  build-unix-native:
+  # build-unix-native:
+  #   runs-on: ${{ matrix.os }}
+  #   strategy:
+  #     matrix:
+  #       include: 
+  #         - os: ubuntu-18.04
+  #           INSTALL_LIBS: libgl1-mesa-dev libxkbcommon-x11-0 libpcre2-16-0 qt5-default
+  #           QMAKE_COMMAND: qmake
+  #         - os: ubuntu-20.04
+  #           INSTALL_LIBS: libgl1-mesa-dev libxkbcommon-x11-0 libpcre2-16-0 qt5-default
+  #           QMAKE_COMMAND: qmake
+  #         - os: ubuntu-22.04
+  #           INSTALL_LIBS: qt6-base-dev
+  #           QMAKE_COMMAND: qmake6
+  #   steps:
+  #   - uses: actions/checkout@v2
+  #   - run: git fetch --prune --unshallow
+  #   - name: Install Linux packages
+  #     run: |
+  #       sudo apt-get update
+  #       sudo apt-get install ${{matrix.INSTALL_LIBS}}
+  #   - name: Build
+  #     run: |
+  #       cd $GITHUB_WORKSPACE
+  #       mkdir build
+  #       cd build
+  #       ${{matrix.QMAKE_COMMAND}} CONFIG+=UNITTESTS ..
+  #       make -j 2
+  #       make check
+  build-mac-native:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
         include: 
-          #- os: ubuntu-18.04
-          #   INSTALL_LIBS: libgl1-mesa-dev libxkbcommon-x11-0 libpcre2-16-0 qt5-default
-          #   QMAKE_COMMAND: qmake
-          #- os: ubuntu-20.04
-          #   INSTALL_LIBS: libgl1-mesa-dev libxkbcommon-x11-0 libpcre2-16-0 qt5-default
-          #   QMAKE_COMMAND: qmake
-          - os: ubuntu-22.04
-            INSTALL_LIBS: qt6-base-dev
-            QMAKE_COMMAND: qmake6
+          - os: macos-12
     steps:
     - uses: actions/checkout@v2
     - run: git fetch --prune --unshallow
-    - name: Install Linux packages
+    - name: Install packages
       run: |
-        sudo apt-get update
-        sudo apt-get install ${{matrix.INSTALL_LIBS}}
+        brew install qt
     - name: Build
       run: |
         cd $GITHUB_WORKSPACE
         mkdir build
         cd build
-        ${{matrix.QMAKE_COMMAND}} CONFIG+=UNITTESTS ..
-        make -j 2
+        qmake CONFIG+=UNITTESTS ..
+        make -j $(sysctl -n hw.logicalcpu)
         make check
   # build-unix:
   #   runs-on: ${{ matrix.os }}
