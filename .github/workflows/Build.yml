@@ -22,7 +22,7 @@ jobs:
   #           INSTALL_LIBS: qt6-base-dev
   #           QMAKE_COMMAND: qmake6
   #   steps:
-  #   - uses: actions/checkout@v2
+  #   - uses: actions/checkout@v3
   #   - run: git fetch --prune --unshallow
   #   - name: Install Linux packages
   #     run: |
@@ -34,7 +34,7 @@ jobs:
   #       mkdir build
   #       cd build
   #       ${{matrix.QMAKE_COMMAND}} CONFIG+=UNITTESTS ..
-  #       make -j 2
+  #       make -j$(nproc)
   #       make check
   build-mac-native:
     runs-on: ${{ matrix.os }}
@@ -43,7 +43,7 @@ jobs:
         include: 
           - os: macos-12
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
     - run: git fetch --prune --unshallow
     - name: Install packages
       run: |
@@ -53,7 +53,7 @@ jobs:
         cd $GITHUB_WORKSPACE
         mkdir build
         cd build
-        qmake CONFIG+=UNITTESTS ..
+        qmake6 CONFIG+=UNITTESTS ..
         make -j $(sysctl -n hw.logicalcpu)
         make check
   # build-unix:
@@ -77,7 +77,7 @@ jobs:
   #           LIBDE265_LOCAL: libde265-internals.dylib
   #           ARTIFACT_NAME: YUView-Mac-BigSur.zip
   #   steps:
-  #   - uses: actions/checkout@v2
+  #   - uses: actions/checkout@v3
   #   - run: git fetch --prune --unshallow
   #   - name: Install Qt base
   #     run: |
@@ -174,7 +174,7 @@ jobs:
   #           auto_update: false
   #           ARTIFACT_NAME: YUView-Win-noautoupdate.zip
   #   steps:
-  #   - uses: actions/checkout@v2
+  #   - uses: actions/checkout@v3
   #   - run: git fetch --prune --unshallow
   #   - name: Install Qt base
   #     run: |
