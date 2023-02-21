@@ -347,8 +347,7 @@ bool playlistItemRawFile::parseY4MFile()
     while (rawData.at(offset) != ' ' && rawData.at(offset) != 10)
     {
       offset++;
-      if (offset >= rawData.count())
-        // End of bufer
+      if (offset >= rawData.size())
         break;
     }
 

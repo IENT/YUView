@@ -100,7 +100,7 @@ void playlistItemImageFileSequence::fillImageFileList(QStringList &  imageFiles,
   QString   base     = fi.baseName();
 
   int lastN = 0;
-  for (int i = base.count() - 1; i >= 0; i--)
+  for (auto i = base.size() - 1; i >= 0; i--)
   {
     // Get the char and see if it is a number
     if (base[i].isDigit())
@@ -117,7 +117,7 @@ void playlistItemImageFileSequence::fillImageFileList(QStringList &  imageFiles,
   }
 
   // The base name without the indexing number at the end
-  QString absBaseName = base.left(base.count() - lastN);
+  QString absBaseName = base.left(base.size() - lastN);
 
   // List all files in the directory and get all that have the same pattern.
   QDir                currentDir(fi.path());
@@ -171,7 +171,7 @@ InfoData playlistItemImageFileSequence::getInfo() const
   if (this->video->isFormatValid())
   {
     auto videoSize = this->video->getFrameSize();
-    auto  nrFrames  = this->imageFiles.size();
+    auto nrFrames  = this->imageFiles.size();
     info.items.append(InfoItem("Num Frames", QString::number(nrFrames)));
     info.items.append(InfoItem("Resolution",
                                QString("%1x%2").arg(videoSize.width).arg(videoSize.height),
@@ -305,7 +305,7 @@ void playlistItemImageFileSequence::setInternals(const QString &filePath)
   // Open frame 0 and set the size of it
   {
     QImage frame0 = QImage(imageFiles[0]);
-    auto s = frame0.size();
+    auto   s      = frame0.size();
     video->setFrameSize(Size(s.width(), s.height()));
   }
 
@@ -316,7 +316,7 @@ void playlistItemImageFileSequence::setInternals(const QString &filePath)
   QString   fileName = fi.fileName();
   QString   base     = fi.baseName();
 
-  for (int i = base.count() - 1; i >= 0; i--)
+  for (int i = base.size() - 1; i >= 0; i--)
   {
     // Get the char and see if it is a number
     if (base[i].isDigit())

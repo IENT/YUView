@@ -323,11 +323,11 @@ void runTestForAllParameters(TestingFunction testingFunction)
   {
     for (const auto bitDepth : {8, 10, 12})
     {
-      for (const auto alphaMode : AlphaModeMapper.entries())
+      for (const auto &alphaMode : AlphaModeMapper.entries())
       {
-        for (const auto dataLayout : DataLayoutMapper.entries())
+        for (const auto &dataLayout : DataLayoutMapper.entries())
         {
-          for (const auto channelOrder : ChannelOrderMapper.entries())
+          for (const auto &channelOrder : ChannelOrderMapper.entries())
           {
             const PixelFormatRGB format(
                 bitDepth, dataLayout.value, channelOrder.value, alphaMode.value, endianness);
@@ -335,19 +335,19 @@ void runTestForAllParameters(TestingFunction testingFunction)
 
             for (const auto outputHasAlpha : {false, true})
             {
-              for (const auto componentScale : {ScalingPerComponent({1, 1, 1, 1}),
-                                                ScalingPerComponent({2, 1, 1, 1}),
-                                                ScalingPerComponent({1, 2, 1, 1}),
-                                                ScalingPerComponent({1, 1, 2, 1}),
-                                                ScalingPerComponent({1, 1, 1, 2}),
-                                                ScalingPerComponent({1, 8, 1, 1})})
+              for (const auto &componentScale : {ScalingPerComponent({1, 1, 1, 1}),
+                                                 ScalingPerComponent({2, 1, 1, 1}),
+                                                 ScalingPerComponent({1, 2, 1, 1}),
+                                                 ScalingPerComponent({1, 1, 2, 1}),
+                                                 ScalingPerComponent({1, 1, 1, 2}),
+                                                 ScalingPerComponent({1, 8, 1, 1})})
               {
-                for (const auto inversion : {InversionPerComponent({false, false, false, false}),
-                                             InversionPerComponent({true, false, false, false}),
-                                             InversionPerComponent({false, true, false, false}),
-                                             InversionPerComponent({false, false, true, false}),
-                                             InversionPerComponent({false, false, false, true}),
-                                             InversionPerComponent({true, true, true, true})})
+                for (const auto &inversion : {InversionPerComponent({false, false, false, false}),
+                                              InversionPerComponent({true, false, false, false}),
+                                              InversionPerComponent({false, true, false, false}),
+                                              InversionPerComponent({false, false, true, false}),
+                                              InversionPerComponent({false, false, false, true}),
+                                              InversionPerComponent({true, true, true, true})})
                 {
                   for (const auto limitedRange : {false, true})
                   {
@@ -399,11 +399,11 @@ void ConversionRGBTest::testGetPixelValue()
   {
     for (auto bitDepth : {8, 10, 12})
     {
-      for (const auto alphaMode : AlphaModeMapper.entries())
+      for (const auto &alphaMode : AlphaModeMapper.entries())
       {
-        for (const auto dataLayout : DataLayoutMapper.entries())
+        for (const auto &dataLayout : DataLayoutMapper.entries())
         {
-          for (const auto channelOrder : ChannelOrderMapper.entries())
+          for (const auto &channelOrder : ChannelOrderMapper.entries())
           {
             const PixelFormatRGB format(
                 bitDepth, dataLayout.value, channelOrder.value, alphaMode.value, endianness);
