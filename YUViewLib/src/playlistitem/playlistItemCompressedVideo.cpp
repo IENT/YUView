@@ -204,9 +204,9 @@ playlistItemCompressedVideo::playlistItemCompressedVideo(const QString &compress
     // Is this file RGB or YUV?
     this->rawFormat = this->inputFileFFmpegLoading->getRawFormat();
     DEBUG_COMPRESSED("playlistItemCompressedVideo::playlistItemCompressedVideo Raw format "
-                     << (this->rawFormat == raw_YUV                 ? "YUV"
-                         : this->rawFormat == video::RawFormat::RGB ? "RGB"
-                                                                    : "Unknown"));
+                     << (this->rawFormat == raw_YUV
+                             ? "YUV"
+                             : this->rawFormat == video::RawFormat::RGB ? "RGB" : "Unknown"));
     if (this->rawFormat == video::RawFormat::YUV)
       formatYuv = this->inputFileFFmpegLoading->getPixelFormatYUV();
     else if (this->rawFormat == video::RawFormat::RGB)
@@ -681,8 +681,8 @@ void playlistItemCompressedVideo::loadRawData(int frameIdx, bool caching)
       {
         // In this scenario, we can read and push AVPackets
         // from the FFmpeg file and pass them to the FFmpeg decoder directly.
-        auto pkt   = caching ? this->inputFileFFmpegCaching->getNextPacket(repushData)
-                             : this->inputFileFFmpegLoading->getNextPacket(repushData);
+        auto pkt = caching ? this->inputFileFFmpegCaching->getNextPacket(repushData)
+                           : this->inputFileFFmpegLoading->getNextPacket(repushData);
         repushData = false;
         if (pkt)
           DEBUG_COMPRESSED("playlistItemCompressedVideo::loadRawData retrived packet PTS "

@@ -57,10 +57,6 @@ class FrameHandler : public QObject
   Q_OBJECT
 
 public:
-  // Create a new blank FrameHandler. Don't forget to load an image from file
-  // (loadCurrentImageFromFile).
-  FrameHandler();
-
   // Get the size/bit depth of the (current) frame
   Size getFrameSize() const { return frameSize; }
   int  getImageBitDepth() const { return currentImage.depth(); }

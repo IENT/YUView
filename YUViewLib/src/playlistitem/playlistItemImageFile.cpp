@@ -32,13 +32,14 @@
 
 #include "playlistItemImageFile.h"
 
+#include <common/FunctionsGui.h>
+#include <filesource/FileSource.h>
+#include <video/FrameHandler.h>
+
 #include <QImageReader>
 #include <QPainter>
 #include <QSettings>
 #include <QUrl>
-
-#include <common/FunctionsGui.h>
-#include <filesource/FileSource.h>
 
 #define IMAGEFILE_ERROR_TEXT "The given image file could not be loaded."
 
@@ -122,7 +123,7 @@ playlistItemImageFile::newplaylistItemImageFile(const YUViewDomElement &root,
 
 void playlistItemImageFile::drawItem(QPainter *painter, int, double zoomFactor, bool drawRawData)
 {
-  if (!frame.isFormatValid())
+  if (!this->frame.isFormatValid())
   {
     // The image could not be loaded. Draw a text instead.
     // Get the size of the text and create a QRect of that size which is centered at (0,0)
@@ -137,7 +138,7 @@ void playlistItemImageFile::drawItem(QPainter *painter, int, double zoomFactor, 
     painter->drawText(textRect, IMAGEFILE_ERROR_TEXT);
   }
   else if (!this->imageLoading)
-    frame.drawFrame(painter, zoomFactor, drawRawData);
+    this->frame.drawFrame(painter, zoomFactor, drawRawData);
 }
 
 ItemLoadingState playlistItemImageFile::needsLoading(int, bool)
@@ -177,7 +178,7 @@ void playlistItemImageFile::getSupportedFileExtensions(QStringList &allExtension
 ValuePairListSets playlistItemImageFile::getPixelValues(const QPoint &pixelPos, int)
 {
   ValuePairListSets newSet;
-  newSet.append("RGB", frame.getPixelValues(pixelPos, -1));
+  newSet.append("RGB", this->frame.getPixelValues(pixelPos, -1));
   return newSet;
 }
 
@@ -186,14 +187,15 @@ InfoData playlistItemImageFile::getInfo() const
   InfoData info("Image Info");
 
   info.items.append(InfoItem("File", this->properties().name));
-  if (frame.isFormatValid())
+  if (this->frame.isFormatValid())
   {
-    auto frameSize = frame.getFrameSize();
+    const auto frameSize = this->frame.getFrameSize();
     info.items.append(InfoItem("Resolution",
                                QString("%1x%2").arg(frameSize.width).arg(frameSize.height),
                                "The video resolution in pixel (width x height)"));
-    info.items.append(InfoItem(
-        "Bit depth", QString::number(frame.getImageBitDepth()), "The bit depth of the image."));
+    info.items.append(InfoItem("Bit depth",
+                               QString::number(this->frame.getImageBitDepth()),
+                               "The bit depth of the image."));
   }
   else if (isLoading())
     info.items.append(InfoItem("Status", "Loading...", "The image is being loaded. Please wait."));
@@ -205,8 +207,8 @@ InfoData playlistItemImageFile::getInfo() const
 
 QSize playlistItemImageFile::getSize() const
 {
-  auto s = frame.getFrameSize();
-  return QSize(s.width, s.height);
+  const auto size = this->frame.getFrameSize();
+  return QSize(size.width, size.height);
 }
 
 void playlistItemImageFile::updateSettings()

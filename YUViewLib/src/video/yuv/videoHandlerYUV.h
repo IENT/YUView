@@ -39,6 +39,11 @@
 
 #include <map>
 
+namespace Ui
+{
+class videoHandlerYUV;
+}
+
 namespace video::yuv
 {
 

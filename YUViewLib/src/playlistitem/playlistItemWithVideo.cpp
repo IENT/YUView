@@ -32,6 +32,9 @@
 
 #include "playlistItemWithVideo.h"
 
+#include <video/rgb/videoHandlerRGB.h>
+#include <video/yuv/videoHandlerYUV.h>
+
 // Activate this if you want to know when which buffer is loaded/converted to image and so on.
 #define PLAYLISTITEMWITHVIDEO_DEBUG_LOADING 0
 #if PLAYLISTITEMWITHVIDEO_DEBUG_LOADING && !NDEBUG

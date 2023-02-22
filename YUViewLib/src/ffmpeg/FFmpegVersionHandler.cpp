@@ -31,6 +31,7 @@
  */
 
 #include "FFmpegVersionHandler.h"
+#include <QCoreApplication>
 #include <QDateTime>
 #include <QDir>
 

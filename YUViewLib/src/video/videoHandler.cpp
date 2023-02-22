@@ -178,31 +178,32 @@ ItemLoadingState videoHandler::needsLoading(int frameIdx, bool loadRawValues)
 void videoHandler::drawFrame(QPainter *painter, int frameIdx, double zoomFactor, bool drawRawValues)
 {
   // Check if the frameIdx changed and if we have to load a new frame
-  if (frameIdx != currentImageIndex)
+  if (frameIdx != this->currentImageIndex)
   {
     // The current buffer is out of date. Update it.
 
     // Check the double buffer
     if (frameIdx == doubleBufferImageFrameIndex)
     {
-      currentImage      = doubleBufferImage;
-      currentImageIndex = frameIdx;
+      this->currentImage      = this->doubleBufferImage;
+      this->currentImageIndex = frameIdx;
       DEBUG_VIDEO("videoHandler::drawFrame %d loaded from double buffer", frameIdx);
     }
     else
     {
       QMutexLocker lock(&imageCacheAccess);
-      if (cacheValid && imageCache.contains(frameIdx))
+      if (this->cacheValid && this->imageCache.contains(frameIdx))
       {
-        currentImage      = imageCache[frameIdx];
-        currentImageIndex = frameIdx;
+        this->currentImage      = this->imageCache[frameIdx];
+        this->currentImageIndex = frameIdx;
         DEBUG_VIDEO("videoHandler::drawFrame %d loaded from cache", frameIdx);
       }
     }
   }
 
-  DEBUG_VIDEO(
-      "videoHandler::drawFrame frameIdx %d currentImageIndex %d", frameIdx, currentImageIndex);
+  DEBUG_VIDEO("videoHandler::drawFrame frameIdx %d currentImageIndex %d",
+              frameIdx,
+              this->currentImageIndex);
 
   // Create the video QRect with the size of the sequence and center it.
   QRect videoRect;
@@ -210,9 +211,10 @@ void videoHandler::drawFrame(QPainter *painter, int frameIdx, double zoomFactor,
   videoRect.moveCenter(QPoint(0, 0));
 
   // Draw the current image (currentImage)
-  currentImageSetMutex.lock();
-  painter->drawImage(videoRect, currentImage);
-  currentImageSetMutex.unlock();
+  {
+    QMutexLocker lock(&this->currentImageSetMutex);
+    painter->drawImage(videoRect, currentImage);
+  }
 
   if (drawRawValues && zoomFactor >= SPLITVIEW_DRAW_VALUES_ZOOMFACTOR)
   {
