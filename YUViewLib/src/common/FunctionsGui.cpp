@@ -65,7 +65,7 @@ QIcon functionsGui::convertIcon(QString iconPath)
   // Get the active and inactive colors
   QStringList colors = functions::getThemeColors(themeName);
   QRgb        activeColor, inActiveColor;
-  if (colors.count() == 4)
+  if (colors.size() == 4)
   {
     QColor active(colors[1]);
     QColor inactive(colors[2]);
@@ -116,7 +116,7 @@ QPixmap functionsGui::convertPixmap(QString pixmapPath)
   // Get the active and inactive colors
   QStringList colors = functions::getThemeColors(themeName);
   QRgb        activeColor;
-  if (colors.count() == 4)
+  if (colors.size() == 4)
   {
     QColor active(colors[1]);
     activeColor = active.rgb();
