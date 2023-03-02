@@ -180,6 +180,17 @@ const auto PlaneOrderMapper = EnumMapper<PlaneOrder>({{PlaneOrder::YUV, "YUV"},
                                                       {PlaneOrder::YUVA, "YUVA"},
                                                       {PlaneOrder::YVUA, "YVUA"}});
 
+enum class ChromaPacking
+{
+  Planar,   // UV(A) values are in seperate planes
+  PerValue, // UV(A) are packed: UVUVUV
+  PerLine,  // UV(A) are packed per line: UUUUVVVVUUUUVVVV
+};
+
+const auto ChromaPackingMapper = EnumMapper<ChromaPacking>({{ChromaPacking::Planar, "Planar"},
+                                                            {ChromaPacking::PerValue, "Per Value"},
+                                                            {ChromaPacking::PerLine, "Per Lien"}});
+
 const auto BitDepthList = std::vector<unsigned>({8, 9, 10, 12, 14, 16});
 
 // This class defines a specific YUV format with all properties like pixels per sample, subsampling
@@ -190,12 +201,12 @@ public:
   PixelFormatYUV() = default;
   PixelFormatYUV(const std::string &name); // Set the pixel format by name. The name should have the
                                            // format that is returned by getName().
-  PixelFormatYUV(Subsampling subsampling,
-                 unsigned    bitsPerSample,
-                 PlaneOrder  planeOrder    = PlaneOrder::YUV,
-                 bool        bigEndian     = false,
-                 Offset      chromaOffset  = {},
-                 bool        uvInterleaved = false);
+  PixelFormatYUV(Subsampling   subsampling,
+                 unsigned      bitsPerSample,
+                 PlaneOrder    planeOrder    = PlaneOrder::YUV,
+                 bool          bigEndian     = false,
+                 Offset        chromaOffset  = {},
+                 ChromaPacking chromaPacking = ChromaPacking::Planar);
   PixelFormatYUV(Subsampling  subsampling,
                  unsigned     bitsPerSample,
                  PackingOrder packingOrder,
@@ -225,8 +236,8 @@ public:
 
   Offset getChromaOffset() const;
 
-  PlaneOrder getPlaneOrder() const { return this->planeOrder; }
-  bool       isUVInterleaved() const { return this->uvInterleaved; }
+  PlaneOrder    getPlaneOrder() const { return this->planeOrder; }
+  ChromaPacking getChromaPacking() const { return this->chromaPacking; }
 
   PackingOrder getPackingOrder() const { return this->packingOrder; }
   bool         isBytePacking() const;
@@ -251,8 +262,8 @@ private:
   // samples towards the right and bottom.
   Offset chromaOffset;
 
-  PlaneOrder planeOrder{PlaneOrder::YUV};
-  bool       uvInterleaved{}; //< If set, the UV (and A if present) planes are interleaved
+  PlaneOrder    planeOrder{PlaneOrder::YUV};
+  ChromaPacking chromaPacking{ChromaPacking::Planar};
 
   // if planar is not set
   PackingOrder packingOrder{PackingOrder::YUV};

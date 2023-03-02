@@ -78,8 +78,9 @@ videoHandlerYUVCustomFormatDialog::videoHandlerYUVCustomFormatDialog(
   this->ui.comboBoxChromaOffsetX->setCurrentIndex(yuvFormat.getChromaOffset().x);
   this->ui.comboBoxChromaOffsetY->setCurrentIndex(yuvFormat.getChromaOffset().y);
 
-  // Plane order
   this->ui.comboBoxPlaneOrder->addItems(functions::toQStringList(PlaneOrderMapper.getNames()));
+  this->ui.comboBoxPlanarChromaPacking->addItems(
+      functions::toQStringList(ChromaPackingMapper.getNames()));
 
   if (yuvFormat.isPlanar())
   {
@@ -87,8 +88,8 @@ videoHandlerYUVCustomFormatDialog::videoHandlerYUVCustomFormatDialog(
     this->ui.groupBoxPlanar->setChecked(true);
     this->ui.comboBoxPlaneOrder->setCurrentIndex(
         int(PlaneOrderMapper.indexOf(yuvFormat.getPlaneOrder())));
-    // Set UV(A) interleaved
-    this->ui.checkBoxUVInterleaved->setChecked(yuvFormat.isUVInterleaved());
+    this->ui.comboBoxPlanarChromaPacking->setCurrentIndex(
+        int(ChromaPackingMapper.indexOf(yuvFormat.getChromaPacking())));
   }
   else
   {
@@ -197,10 +198,17 @@ PixelFormatYUV videoHandlerYUVCustomFormatDialog::getSelectedYUVFormat() const
     if (!planeOrder)
       return {};
 
+    idx = this->ui.comboBoxPlanarChromaPacking->currentIndex();
+    if (idx < 0)
+      return {};
+    const auto chromaPacking = ChromaPackingMapper.at(unsigned(index));
+    if (!chromaPacking)
+      return {};
+
     auto uvInterleaved = this->ui.checkBoxUVInterleaved->isChecked();
 
     return PixelFormatYUV(
-        *subsampling, bitsPerSample, *planeOrder, bigEndian, chromaOffset, uvInterleaved);
+        *subsampling, bitsPerSample, *planeOrder, bigEndian, chromaOffset, *chromaPacking);
   }
   else
   {

@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>236</width>
-    <height>335</height>
+    <height>355</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -217,19 +217,6 @@ How is the chroma component subsampled? Various subsamplings are supported:&lt;b
         </property>
        </widget>
       </item>
-      <item row="1" column="1">
-       <widget class="QCheckBox" name="checkBoxUVInterleaved">
-        <property name="toolTip">
-         <string>Are only the UV (and A if present) planes interleaved?</string>
-        </property>
-        <property name="whatsThis">
-         <string>Are only the UV (and A if present) planes interleaved?</string>
-        </property>
-        <property name="text">
-         <string/>
-        </property>
-       </widget>
-      </item>
       <item row="1" column="0">
        <widget class="QLabel" name="labelUVInterleaved">
         <property name="toolTip">
@@ -239,9 +226,12 @@ How is the chroma component subsampled? Various subsamplings are supported:&lt;b
          <string>Are only the UV (and A if present) planes interleaved?</string>
         </property>
         <property name="text">
-         <string>UV(A) Interleaved</string>
+         <string>Chroma Packing</string>
         </property>
        </widget>
+      </item>
+      <item row="1" column="1">
+       <widget class="QComboBox" name="comboBoxPlanarChromaPacking"/>
       </item>
      </layout>
     </widget>
@@ -346,7 +336,6 @@ How is the chroma component subsampled? Various subsamplings are supported:&lt;b
   <tabstop>comboBoxChromaOffsetY</tabstop>
   <tabstop>groupBoxPlanar</tabstop>
   <tabstop>comboBoxPlaneOrder</tabstop>
-  <tabstop>checkBoxUVInterleaved</tabstop>
   <tabstop>groupBoxPacked</tabstop>
   <tabstop>comboBoxPackingOrder</tabstop>
   <tabstop>checkBoxBytePacking</tabstop>

@@ -132,14 +132,15 @@ PixelFormatYUV testFormatFromSizeAndNamePlanar(std::string name,
         {
           for (std::string interlacedString : {"uvi", "interlaced", ""})
           {
-            const bool interlaced = !interlacedString.empty();
+            const auto chromaPacking =
+                (interlacedString.empty() ? ChromaPacking::PerValue : ChromaPacking::Planar);
             {
               auto formatName = entry.first + SubsamplingMapper.getName(subsampling) + "p";
               if (bitDepth > 8)
                 formatName += std::to_string(bitDepth) + endianness;
               formatName += interlacedString;
               auto fmt = PixelFormatYUV(
-                  subsampling, bitDepth, entry.second, endianness == "be", {}, interlaced);
+                  subsampling, bitDepth, entry.second, endianness == "be", {}, chromaPacking);
               if (name.find(formatName) != std::string::npos && checkFormat(fmt, size, fileSize))
                 return fmt;
             }
@@ -152,7 +153,7 @@ PixelFormatYUV testFormatFromSizeAndNamePlanar(std::string name,
                 formatName += std::to_string(bitDepth) + endianness;
               formatName += interlacedString;
               auto fmt = PixelFormatYUV(
-                  subsampling, bitDepth, entry.second, endianness == "be", {}, interlaced);
+                  subsampling, bitDepth, entry.second, endianness == "be", {}, chromaPacking);
               if (name.find(formatName) != std::string::npos && checkFormat(fmt, size, fileSize))
                 return fmt;
             }
@@ -256,7 +257,8 @@ PixelFormatYUV guessFormatFromSizeAndName(const Size       size,
     {
       // This should be a 8 bit semi-planar yuv 4:2:0 file with interleaved UV components and YYYYUV
       // order
-      auto fmt = PixelFormatYUV(Subsampling::YUV_420, 8, PlaneOrder::YUV, false, {}, true);
+      auto fmt = PixelFormatYUV(
+          Subsampling::YUV_420, 8, PlaneOrder::YUV, false, {}, ChromaPacking::PerValue);
       if (checkFormat(fmt, size, fileSize))
         return fmt;
     }
@@ -266,7 +268,8 @@ PixelFormatYUV guessFormatFromSizeAndName(const Size       size,
     {
       // This should be a 8 bit semi-planar yuv 4:2:0 file with interleaved UV components and YYYYVU
       // order
-      auto fmt = PixelFormatYUV(Subsampling::YUV_420, 8, PlaneOrder::YVU, false, {}, true);
+      auto fmt = PixelFormatYUV(
+          Subsampling::YUV_420, 8, PlaneOrder::YVU, false, {}, ChromaPacking::PerValue);
       if (checkFormat(fmt, size, fileSize))
         return fmt;
     }

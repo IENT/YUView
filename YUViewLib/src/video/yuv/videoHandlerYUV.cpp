@@ -280,7 +280,7 @@ std::pair<bool, PixelFormatYUV> convertYUVPackedToPlanar(const QByteArray &    s
                                   PlaneOrder::YUV,
                                   format.isBigEndian(),
                                   format.getChromaOffset(),
-                                  format.isUVInterleaved());
+                                  format.getChromaPacking());
 
   return {true, newFormat};
 }

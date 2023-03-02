@@ -132,8 +132,14 @@ PixelFormatYUV::PixelFormatYUV(const std::string &name)
       auto yuvName = sm.str(1);
       if (yuvName.size() >= 4 && yuvName.substr(yuvName.size() - 4, 4) == "(IL)")
       {
-        newFormat.uvInterleaved = true;
+        newFormat.chromaPacking = ChromaPacking::PerValue;
         yuvName.erase(yuvName.size() - 4, 4);
+      }
+
+      if (yuvName.size() >= 5 && yuvName.substr(yuvName.size() - 5, 5) == "(ILL)")
+      {
+        newFormat.chromaPacking = ChromaPacking::PerLine;
+        yuvName.erase(yuvName.size() - 5, 5);
       }
 
       if (auto po = PlaneOrderMapper.getValue(yuvName))
@@ -193,7 +199,7 @@ PixelFormatYUV::PixelFormatYUV(const std::string &name)
       this->bigEndian     = newFormat.bigEndian;
       this->planar        = newFormat.planar;
       this->planeOrder    = newFormat.planeOrder;
-      this->uvInterleaved = newFormat.uvInterleaved;
+      this->chromaPacking = newFormat.chromaPacking;
       this->packingOrder  = newFormat.packingOrder;
       this->bytePacking   = newFormat.bytePacking;
       this->chromaOffset  = newFormat.chromaOffset;
@@ -204,14 +210,14 @@ PixelFormatYUV::PixelFormatYUV(const std::string &name)
   }
 }
 
-PixelFormatYUV::PixelFormatYUV(Subsampling subsampling,
-                               unsigned    bitsPerSample,
-                               PlaneOrder  planeOrder,
-                               bool        bigEndian,
-                               Offset      chromaOffset,
-                               bool        uvInterleaved)
+PixelFormatYUV::PixelFormatYUV(Subsampling   subsampling,
+                               unsigned      bitsPerSample,
+                               PlaneOrder    planeOrder,
+                               bool          bigEndian,
+                               Offset        chromaOffset,
+                               ChromaPacking chromaPacking)
     : subsampling(subsampling), bitsPerSample(bitsPerSample), bigEndian(bigEndian), planar(true),
-      chromaOffset(chromaOffset), planeOrder(planeOrder), uvInterleaved(uvInterleaved)
+      chromaOffset(chromaOffset), planeOrder(planeOrder), chromaPacking(chromaPacking)
 {
   this->setDefaultChromaOffset();
 }
@@ -223,8 +229,7 @@ PixelFormatYUV::PixelFormatYUV(Subsampling  subsampling,
                                bool         bigEndian,
                                Offset       chromaOffset)
     : subsampling(subsampling), bitsPerSample(bitsPerSample), bigEndian(bigEndian), planar(false),
-      chromaOffset(chromaOffset), uvInterleaved(false), packingOrder(packingOrder),
-      bytePacking(bytePacking)
+      chromaOffset(chromaOffset), packingOrder(packingOrder), bytePacking(bytePacking)
 {
   this->setDefaultChromaOffset();
 }
@@ -266,7 +271,7 @@ bool PixelFormatYUV::isValid() const
         this->subsampling == Subsampling::YUV_400)
       // No support for packed formats with this subsampling (yet)
       return false;
-    if (this->uvInterleaved)
+    if (this->chromaPacking != ChromaPacking::Planar)
       // This can only be set for planar formats
       return false;
   }
@@ -457,8 +462,10 @@ std::string PixelFormatYUV::getName() const
   {
     ss << PlaneOrderMapper.getName(this->planeOrder);
 
-    if (this->uvInterleaved)
+    if (this->chromaPacking == ChromaPacking::PerValue)
       ss << "(IL)";
+    else if (this->chromaPacking == ChromaPacking::PerLine)
+      ss << "(ILL)";
   }
   else
     ss << PackingOrderMapper.getName(this->packingOrder);
