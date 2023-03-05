@@ -37,22 +37,11 @@
 namespace video::yuv
 {
 
-void getColorConversionCoefficients(ColorConversion colorConversion, int RGBConv[5])
+bool isFullRange(const ColorConversion colorConversion)
 {
-  // The conversion parameters for the components of the different supported YUV->RGB conversions
-  // The first index is the index of the ColorConversion enum. The second index is [Y, cRV, cGU,
-  // cGV, cBU].
-  const int yuvRgbConvCoeffs[6][5] = {
-      {76309, 117489, -13975, -34925, 138438}, // BT709_LimitedRange
-      {65536, 103206, -12276, -30679, 121608}, // BT709_FullRange
-      {76309, 104597, -25675, -53279, 132201}, // BT601_LimitedRange
-      {65536, 91881, -22553, -46802, 116129},  // BT601_FullRange
-      {76309, 110013, -12276, -42626, 140363}, // BT2020_LimitedRange
-      {65536, 96638, -10783, -37444, 123299}   // BT2020_FullRange
-  };
-  const auto index = ColorConversionMapper.indexOf(colorConversion);
-  for (unsigned i = 0; i < 5; i++)
-    RGBConv[i] = yuvRgbConvCoeffs[index][i];
+  return colorConversion == ColorConversion::BT709_FullRange ||
+         colorConversion == ColorConversion::BT601_FullRange ||
+         colorConversion == ColorConversion::BT2020_FullRange;
 }
 
 // All values between 0 and this value are possible for the subsampling.
@@ -517,11 +506,11 @@ Subsampling PixelFormatYUV::getSubsampling() const
   return this->subsampling;
 }
 
-int PixelFormatYUV::getSubsamplingHor(Component component) const
+int PixelFormatYUV::getSubsamplingHor(Channel channel) const
 {
   auto sub = this->getSubsampling();
 
-  if (component == Component::Luma)
+  if (channel == Channel::Luma)
     return 1;
   if (sub == Subsampling::YUV_410 || sub == Subsampling::YUV_411)
     return 4;
@@ -530,11 +519,11 @@ int PixelFormatYUV::getSubsamplingHor(Component component) const
   return 1;
 }
 
-int PixelFormatYUV::getSubsamplingVer(Component component) const
+int PixelFormatYUV::getSubsamplingVer(Channel channel) const
 {
   auto sub = this->getSubsampling();
 
-  if (component == Component::Luma)
+  if (channel == Channel::Luma)
     return 1;
   if (sub == Subsampling::YUV_410)
     return 4;
@@ -566,6 +555,13 @@ unsigned PixelFormatYUV::getBitsPerSample() const
   }
 
   return this->bitsPerSample;
+}
+
+int PixelFormatYUV::getBytesPerSample() const
+{
+  if (this->getBitsPerSample() > 8)
+    return 2;
+  return 1;
 }
 
 bool PixelFormatYUV::isBigEndian() const

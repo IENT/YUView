@@ -33,6 +33,7 @@
 #pragma once
 
 #include <video/videoHandler.h>
+#include <video/yuv/ConversionSettings.h>
 #include <video/yuv/PixelFormatYUV.h>
 
 #include "ui_videoHandlerYUV.h"
@@ -41,35 +42,6 @@
 
 namespace video::yuv
 {
-
-struct yuv_t
-{
-  unsigned int Y, U, V;
-};
-
-enum class ComponentDisplayMode
-{
-  DisplayAll,
-  DisplayY,
-  DisplayCb,
-  DisplayCr
-};
-
-const auto ComponentDisplayModeMapper =
-    EnumMapper<ComponentDisplayMode>({{ComponentDisplayMode::DisplayAll, "Y'CbCr"},
-                                      {ComponentDisplayMode::DisplayY, "Luma (Y) Only"},
-                                      {ComponentDisplayMode::DisplayCb, "Cb only"},
-                                      {ComponentDisplayMode::DisplayCr, "Cr only"}});
-
-struct ConversionSettings
-{
-  ChromaInterpolation  chromaInterpolation{ChromaInterpolation::NearestNeighbor};
-  ComponentDisplayMode componentDisplayMode{ComponentDisplayMode::DisplayAll};
-  ColorConversion      colorConversion{ColorConversion::BT709_LimitedRange};
-  // Parameters for the YUV transformation (like scaling, invert, offset). For Luma ([0]) and
-  // chroma([1]).
-  std::map<Component, MathParameters> mathParameters;
-};
 
 /** The videoHandlerYUV can be used in any playlistItem to read/display YUV data. A playlistItem
  * could even provide multiple YUV videos. A videoHandlerYUV supports handling of YUV data and can
@@ -200,7 +172,7 @@ protected:
   // The currently selected YUV format
   PixelFormatYUV srcPixelFormat;
 
-  virtual yuv_t getPixelValue(const QPoint &pixelPos) const;
+  virtual yuva_t getPixelValue(const QPoint &pixelPos) const;
 
   // Load the given frame and return it for caching. The current buffers (currentFrameRawYUVData and
   // currentFrame) will not be modified.

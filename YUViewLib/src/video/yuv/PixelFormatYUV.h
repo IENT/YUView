@@ -43,10 +43,55 @@
 namespace video::yuv
 {
 
-enum class Component
+enum class Channel
 {
-  Luma   = 0,
-  Chroma = 1
+  Luma,
+  ChromaU,
+  ChromaV,
+  Alpha
+};
+
+struct yuva_t
+{
+  int Y{0}, U{0}, V{0}, A{0};
+
+  int &operator[](const Channel channel)
+  {
+    if (channel == Channel::Luma)
+      return this->Y;
+    if (channel == Channel::ChromaU)
+      return this->U;
+    if (channel == Channel::ChromaV)
+      return this->V;
+    if (channel == Channel::Alpha)
+      return this->A;
+
+    throw std::out_of_range("Unsupported channel for value access");
+  }
+
+  int at(const Channel channel) const
+  {
+    if (channel == Channel::Luma)
+      return this->Y;
+    if (channel == Channel::ChromaU)
+      return this->U;
+    if (channel == Channel::ChromaV)
+      return this->V;
+    if (channel == Channel::Alpha)
+      return this->A;
+
+    throw std::out_of_range("Unsupported channel for value access");
+  }
+
+  bool operator==(const yuva_t &other) const
+  {
+    return this->Y == other.Y && this->U == other.U && this->V == other.V && this->A == other.A;
+  };
+
+  bool operator!=(const yuva_t &other) const
+  {
+    return this->Y != other.Y || this->U != other.U || this->V != other.V || this->A != other.A;
+  };
 };
 
 /*
@@ -76,7 +121,7 @@ const auto ColorConversionMapper =
                                  {ColorConversion::BT2020_LimitedRange, "ITU-R.BT2020"},
                                  {ColorConversion::BT2020_FullRange, "ITU-R.BT2020 Full Range"}});
 
-void getColorConversionCoefficients(ColorConversion colorConversion, int RGBConv[5]);
+bool isFullRange(const ColorConversion colorConversion);
 
 // How to perform up-sampling (chroma subsampling)
 enum class ChromaInterpolation
@@ -225,11 +270,12 @@ public:
   void        setDefaultChromaOffset();
 
   Subsampling getSubsampling() const;
-  int         getSubsamplingHor(Component component = Component::Chroma) const;
-  int         getSubsamplingVer(Component component = Component::Chroma) const;
+  int         getSubsamplingHor(Channel channel = Channel::ChromaU) const;
+  int         getSubsamplingVer(Channel channel = Channel::ChromaU) const;
   bool        isChromaSubsampled() const;
 
   unsigned getBitsPerSample() const;
+  int      getBytesPerSample() const;
   bool     isBigEndian() const;
   bool     isPlanar() const;
   bool     hasAlpha() const;
@@ -238,6 +284,7 @@ public:
 
   PlaneOrder    getPlaneOrder() const { return this->planeOrder; }
   ChromaPacking getChromaPacking() const { return this->chromaPacking; }
+  void setChromaPacking(const ChromaPacking chromaPacking) { this->chromaPacking = chromaPacking; }
 
   PackingOrder getPackingOrder() const { return this->packingOrder; }
   bool         isBytePacking() const;

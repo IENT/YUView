@@ -63,13 +63,13 @@
 #ifdef Q_OS_MAC
 const bool is_Q_OS_MAC = true;
 #else
-const bool is_Q_OS_MAC   = false;
+const bool is_Q_OS_MAC = false;
 #endif
 
 #ifdef Q_OS_WIN
 const bool is_Q_OS_WIN = true;
 #else
-const bool is_Q_OS_WIN   = false;
+const bool is_Q_OS_WIN = false;
 #endif
 
 #ifdef Q_OS_LINUX
@@ -297,9 +297,10 @@ struct Size
   {
     return this->width != other.width || this->height != other.height;
   }
-  constexpr bool isValid() const { return this->width != 0 && this->height != 0; }
-  unsigned       width{};
-  unsigned       height{};
+  constexpr bool     isValid() const { return this->width != 0 && this->height != 0; }
+  constexpr unsigned area() const { return this->width * this->height; }
+  unsigned           width{};
+  unsigned           height{};
 };
 
 struct Offset
