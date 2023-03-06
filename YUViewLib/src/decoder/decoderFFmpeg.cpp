@@ -200,16 +200,16 @@ void decoderFFmpeg::copyCurImageToBuffer()
     // resolution may be larger than the output frame size.
     for (unsigned plane = 0; plane < pixFmt.getNrPlanes(); plane++)
     {
-      const auto component =
-          (plane == 0) ? video::yuv::Component::Luma : video::yuv::Component::Chroma;
+      const auto channel = video::yuv::ChannelMapper.at(plane);
+
       auto       src         = frame.getData(plane);
       const auto srcLinesize = frame.getLineSize(plane);
       auto       dst         = this->currentOutputBuffer.data();
       if (plane > 0)
         dst += (nrBytesY + (plane - 1) * nrBytesC);
       const auto dstLinesize =
-          this->frameSize.width / pixFmt.getSubsamplingHor(component) * nrBytesPerSample;
-      const auto height = this->frameSize.height / pixFmt.getSubsamplingVer(component);
+          this->frameSize.width / pixFmt.getSubsamplingHor(*channel) * nrBytesPerSample;
+      const auto height = this->frameSize.height / pixFmt.getSubsamplingVer(*channel);
       for (unsigned y = 0; y < height; y++)
       {
         memcpy(dst, src, dstLinesize);

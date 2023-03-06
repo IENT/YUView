@@ -51,6 +51,11 @@ enum class Channel
   Alpha
 };
 
+const auto ChannelMapper = EnumMapper<Channel>({{Channel::Luma, "Luma"},
+                                                {Channel::ChromaU, "Chroma U"},
+                                                {Channel::ChromaV, "Chroma V"},
+                                                {Channel::Alpha, "Alpha"}});
+
 struct yuva_t
 {
   int Y{0}, U{0}, V{0}, A{0};

@@ -347,9 +347,8 @@ std::pair<bool, PixelFormatYUV> convertV210PackedToPlanar(const QByteArray &sour
   return {true, newFormat};
 }
 
-yuv_t getPixelValueV210(const QByteArray &sourceBuffer,
-                        const Size &      curFrameSize,
-                        const QPoint &    pixelPos)
+yuva_t
+getPixelValueV210(const QByteArray &sourceBuffer, const Size &curFrameSize, const QPoint &pixelPos)
 {
   auto widthRoundUp = (((curFrameSize.width + 48 - 1) / 48) * 48);
   auto strideIn     = widthRoundUp / 6 * 16;
@@ -358,8 +357,8 @@ yuv_t getPixelValueV210(const QByteArray &sourceBuffer,
 
   const unsigned char *restrict src = (unsigned char *)sourceBuffer.data();
 
-  yuv_t ret;
-  auto  xSub = unsigned(pixelPos.x()) % 6;
+  yuva_t ret;
+  auto   xSub = unsigned(pixelPos.x()) % 6;
   if (xSub == 0)
     ret.Y = ((src[startInBuffer + 1] >> 2) & 0x3f) + ((src[startInBuffer + 2] & 0x0f) << 6);
   else if (xSub == 1)
@@ -870,112 +869,6 @@ inline int interpolateUVSample2D(const ChromaInterpolation mode,
     // Interpolate linearly between sample1 - sample 4
     return ((sample1 + sample2 + sample3 + sample4) + 2) >> 2;
   return sample1; // Sample and hold
-}
-
-inline void YUVPlaneToRGB_422(const int                     w,
-                              const int                     h,
-                              const MathParameters          mathY,
-                              const MathParameters          mathC,
-                              const unsigned char *restrict srcY,
-                              const unsigned char *restrict srcU,
-                              const unsigned char *restrict srcV,
-                              unsigned char *restrict       dst,
-                              const int                     RGBConv[5],
-                              const bool                    fullRange,
-                              const int                     inMax,
-                              const ChromaInterpolation     interpolation,
-                              const int                     bps,
-                              const bool                    bigEndian,
-                              const int                     inValSkip)
-{
-  const bool applyMathLuma   = mathY.mathRequired();
-  const bool applyMathChroma = mathC.mathRequired();
-  // Horizontal up-sampling is required. Process two Y values at a time
-  for (int y = 0; y < h; y++)
-  {
-    const int srcIdxUV   = y * w / 2;
-    int       curUSample = getValueFromSource(srcU, srcIdxUV * inValSkip, bps, bigEndian);
-    int       curVSample = getValueFromSource(srcV, srcIdxUV * inValSkip, bps, bigEndian);
-    if (applyMathChroma)
-    {
-      curUSample = transformYUV(mathC.invert, mathC.scale, mathC.offset, curUSample, inMax);
-      curVSample = transformYUV(mathC.invert, mathC.scale, mathC.offset, curVSample, inMax);
-    }
-
-    for (int x = 0; x < (w / 2) - 1; x++)
-    {
-      // Get the next U/V sample
-      const int srcPosLineUV = srcIdxUV + x + 1;
-      int       nextUSample  = getValueFromSource(srcU, srcPosLineUV * inValSkip, bps, bigEndian);
-      int       nextVSample  = getValueFromSource(srcV, srcPosLineUV * inValSkip, bps, bigEndian);
-      if (applyMathChroma)
-      {
-        nextUSample = transformYUV(mathC.invert, mathC.scale, mathC.offset, nextUSample, inMax);
-        nextVSample = transformYUV(mathC.invert, mathC.scale, mathC.offset, nextVSample, inMax);
-      }
-
-      // From the current and the next U/V sample, interpolate the UV sample in between
-      int interpolatedU = interpolateUVSample(interpolation, curUSample, nextUSample);
-      int interpolatedV = interpolateUVSample(interpolation, curVSample, nextVSample);
-
-      // Get the 2 Y samples
-      int valY1 = getValueFromSource(srcY, y * w + x * 2, bps, bigEndian);
-      int valY2 = getValueFromSource(srcY, y * w + x * 2 + 1, bps, bigEndian);
-      if (applyMathLuma)
-      {
-        valY1 = transformYUV(mathY.invert, mathY.scale, mathY.offset, valY1, inMax);
-        valY2 = transformYUV(mathY.invert, mathY.scale, mathY.offset, valY2, inMax);
-      }
-
-      // Convert to 2 RGB values and save them (BGRA)
-      int valR1, valR2, valG1, valG2, valB1, valB2;
-      convertYUVToRGB8Bit(
-          valY1, curUSample, curVSample, valR1, valG1, valB1, RGBConv, fullRange, bps);
-      convertYUVToRGB8Bit(
-          valY2, interpolatedU, interpolatedV, valR2, valG2, valB2, RGBConv, fullRange, bps);
-      const int pos = (y * w + x * 2) * 4;
-      dst[pos]      = valB1;
-      dst[pos + 1]  = valG1;
-      dst[pos + 2]  = valR1;
-      dst[pos + 3]  = 255;
-      dst[pos + 4]  = valB2;
-      dst[pos + 5]  = valG2;
-      dst[pos + 6]  = valR2;
-      dst[pos + 7]  = 255;
-
-      // The next one is now the current one
-      curUSample = nextUSample;
-      curVSample = nextVSample;
-    }
-
-    // For the last row, there is no next sample. Just reuse the current one again. No interpolation
-    // required either.
-
-    // Get the 2 Y samples
-    int valY1 = getValueFromSource(srcY, (y + 1) * w - 2, bps, bigEndian);
-    int valY2 = getValueFromSource(srcY, (y + 1) * w - 1, bps, bigEndian);
-    if (applyMathLuma)
-    {
-      valY1 = transformYUV(mathY.invert, mathY.scale, mathY.offset, valY1, inMax);
-      valY2 = transformYUV(mathY.invert, mathY.scale, mathY.offset, valY2, inMax);
-    }
-
-    // Convert to 2 RGB values and save them
-    int valR1, valR2, valG1, valG2, valB1, valB2;
-    convertYUVToRGB8Bit(
-        valY1, curUSample, curVSample, valR1, valG1, valB1, RGBConv, fullRange, bps);
-    convertYUVToRGB8Bit(
-        valY2, curUSample, curVSample, valR2, valG2, valB2, RGBConv, fullRange, bps);
-    const int pos = ((y + 1) * w) * 4;
-    dst[pos - 8]  = valB1;
-    dst[pos - 7]  = valG1;
-    dst[pos - 6]  = valR1;
-    dst[pos - 5]  = 255;
-    dst[pos - 4]  = valB2;
-    dst[pos - 3]  = valG2;
-    dst[pos - 2]  = valR2;
-    dst[pos - 1]  = 255;
-  }
 }
 
 inline void YUVPlaneToRGB_440(const int                     w,
