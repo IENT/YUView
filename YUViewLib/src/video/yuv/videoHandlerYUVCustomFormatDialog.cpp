@@ -201,7 +201,7 @@ PixelFormatYUV videoHandlerYUVCustomFormatDialog::getSelectedYUVFormat() const
     idx = this->ui.comboBoxPlanarChromaPacking->currentIndex();
     if (idx < 0)
       return {};
-    const auto chromaPacking = ChromaPackingMapper.at(unsigned(index));
+    const auto chromaPacking = ChromaPackingMapper.at(unsigned(idx));
     if (!chromaPacking)
       return {};
 
