@@ -221,6 +221,26 @@ inline int interpolateUVSample(const ChromaInterpolation mode, const int sample1
   return sample1; // Sample and hold
 }
 
+inline int interpolateUVSampleQ(const ChromaInterpolation mode,
+                                const int                 sample1,
+                                const int                 sample2,
+                                const int                 quarterPos)
+{
+  if (mode == ChromaInterpolation::Bilinear)
+  {
+    // Interpolate linearly between sample1 and sample2
+    if (quarterPos == 0)
+      return sample1;
+    if (quarterPos == 1)
+      return ((sample1 * 3 + sample2) + 1) >> 2;
+    if (quarterPos == 2)
+      return ((sample1 + sample2) + 1) >> 1;
+    if (quarterPos == 3)
+      return ((sample1 + sample2 * 3) + 1) >> 2;
+  }
+  return sample1; // Sample and hold
+}
+
 // TODO: Consider sample position
 inline int interpolateUVSample2D(const ChromaInterpolation mode,
                                  const int                 sample1,
@@ -858,6 +878,117 @@ inline void YUVPlaneToRGB_440(const DataPointerPerChannel &inputPlanes,
   }
 }
 
+inline void YUVPlaneToRGB_410(const DataPointerPerChannel &inputPlanes,
+                              const ConversionParameters & parameters,
+                              DataPointer                  output)
+{
+  const auto inputMax      = (1 << parameters.bitsPerSample) - 1;
+  const auto bps           = parameters.bitsPerSample;
+  const auto bigEndian     = parameters.bigEndian;
+  const auto mathLuma      = parameters.mathParameters.at(LUMA);
+  const auto mathChroma    = parameters.mathParameters.at(CHROMA);
+  const auto interpolation = parameters.chromaInterpolation;
+
+  const auto outputStride = parameters.frameSize.width * OFFSET_TO_NEXT_RGB_VALUE;
+
+  // Format is YUV 4:1:0. Horizontal and vertical up-sampling is required. Process 4 Y positions of
+  // 2 lines at a time. Horizontal subsampling by 4, vertical subsampling by 2
+  const int hh = parameters.frameSize.height / 2;
+  const int wq = parameters.frameSize.width / 4;
+
+  auto srcY    = inputPlanes.at(LUMA);
+  auto srcY_nl = srcY + parameters.stridePerComponent[LUMA];
+  auto srcU    = inputPlanes.at(CHROMA_U);
+  auto srcV    = inputPlanes.at(CHROMA_V);
+
+  // We fill 2 lines at once
+  auto output1 = output;
+  auto output2 = output + outputStride;
+
+  for (int y = 0; y < hh; y++)
+  {
+    // Get the current U/V samples for this y line and the next line (_nl)
+    auto srcU_nl = srcU + parameters.stridePerComponent[CHROMA];
+    auto srcV_nl = srcV + parameters.stridePerComponent[CHROMA];
+
+    const auto x      = 0;
+    auto       uValue = getValueFromSource(srcU, x, bps, bigEndian);
+    auto       vValue = getValueFromSource(srcV, x, bps, bigEndian);
+    uValue            = applyMathToValue(uValue, mathChroma, inputMax);
+    vValue            = applyMathToValue(vValue, mathChroma, inputMax);
+
+    auto uValue_nl = getValueFromSource(srcU_nl, x, bps, bigEndian);
+    auto vValue_nl = getValueFromSource(srcV_nl, x, bps, bigEndian);
+    uValue_nl      = applyMathToValue(uValue_nl, mathChroma, inputMax);
+    vValue_nl      = applyMathToValue(vValue_nl, mathChroma, inputMax);
+
+    for (int x = 0; x < wq; ++x)
+    {
+      // Get the next U/V sample for this line and the next one
+      auto uValueNext = getValueFromSource(srcU, x + 1, bps, bigEndian);
+      auto vValueNext = getValueFromSource(srcV, x + 1, bps, bigEndian);
+      uValueNext      = applyMathToValue(uValueNext, mathChroma, inputMax);
+      vValueNext      = applyMathToValue(vValueNext, mathChroma, inputMax);
+
+      auto uValueNext_nl = getValueFromSource(srcU_nl, x + 1, bps, bigEndian);
+      auto vValueNext_nl = getValueFromSource(srcV_nl, x + 1, bps, bigEndian);
+      uValueNext_nl      = applyMathToValue(uValueNext_nl, mathChroma, inputMax);
+      vValueNext_nl      = applyMathToValue(vValueNext_nl, mathChroma, inputMax);
+
+      auto interpolatedU = interpolateUVSample(interpolation, uValue, uValue_nl);
+      auto interpolatedV = interpolateUVSample(interpolation, vValue, vValue_nl);
+
+      auto interpolatedUNext = interpolateUVSample(interpolation, uValueNext, uValueNext_nl);
+      auto interpolatedVNext = interpolateUVSample(interpolation, vValueNext, vValueNext_nl);
+
+      for (int subX = 0; subX < 4; ++subX)
+      {
+        // We process two Y lines
+        const auto yIndex = x * 4 + subX;
+        const auto valY1  = getValueFromSource(srcY, yIndex, bps, bigEndian);
+        const auto valY2  = getValueFromSource(srcY_nl, yIndex, bps, bigEndian);
+
+        auto u1 = interpolateUVSampleQ(interpolation, uValue, uValueNext, subX);
+        auto v1 = interpolateUVSampleQ(interpolation, uValue_nl, uValueNext_nl, subX);
+        auto u2 = interpolateUVSampleQ(interpolation, uValue, uValueNext, subX);
+        auto v2 = interpolateUVSampleQ(interpolation, uValue_nl, uValueNext_nl, subX);
+
+        u1 = applyMathToValue(u1, mathChroma, inputMax);
+        v1 = applyMathToValue(v1, mathChroma, inputMax);
+        u2 = applyMathToValue(u2, mathChroma, inputMax);
+        v2 = applyMathToValue(v2, mathChroma, inputMax);
+
+        const auto rgb1 =
+            convertYUVToRGB8Bit({valY1, u1, v1},
+                                getColorConversionCoefficients(parameters.colorConversion),
+                                isFullRange(parameters.colorConversion),
+                                parameters.bitsPerSample);
+        const auto rgb2 =
+            convertYUVToRGB8Bit({valY2, u2, v2},
+                                getColorConversionCoefficients(parameters.colorConversion),
+                                isFullRange(parameters.colorConversion),
+                                parameters.bitsPerSample);
+
+        saveRGBValueToOutput(rgb1, output1);
+        output1 += OFFSET_TO_NEXT_RGB_VALUE;
+        saveRGBValueToOutput(rgb2, output2);
+        output2 += OFFSET_TO_NEXT_RGB_VALUE;
+      }
+
+      uValue    = uValueNext;
+      vValue    = vValueNext;
+      uValue_nl = uValueNext_nl;
+      vValue_nl = vValueNext_nl;
+    }
+
+    srcY += 2 * parameters.stridePerComponent[LUMA];
+    srcU += 2 * parameters.stridePerComponent[CHROMA];
+    srcV += 2 * parameters.stridePerComponent[CHROMA];
+    output1 += outputStride;
+    output2 += outputStride;
+  }
+}
+
 StridePerComponent getStridePerComponent(const PixelFormatYUV &pixelFormat, const Size frameSize)
 {
   StridePerComponent strides;
@@ -948,7 +1079,6 @@ void convertPlanarYUVToARGB(const QByteArray &        sourceBuffer,
   if (srcPixelFormat.getSubsampling() == Subsampling::YUV_444)
     PlanarYUV444ToRGB(inputPlanes, conversionParameters, targetBuffer);
   else if (srcPixelFormat.getSubsampling() == Subsampling::YUV_422)
-
     YUVPlaneToRGB_422(inputPlanes, conversionParameters, targetBuffer);
   else if (srcPixelFormat.getSubsampling() == Subsampling::YUV_420)
     YUVPlaneToRGB_420(inputPlanes, conversionParameters, targetBuffer);
@@ -958,8 +1088,6 @@ void convertPlanarYUVToARGB(const QByteArray &        sourceBuffer,
     YUVPlaneToRGB_410(inputPlanes, conversionParameters, targetBuffer);
   else if (srcPixelFormat.getSubsampling() == Subsampling::YUV_411)
     YUVPlaneToRGB_411(inputPlanes, conversionParameters, targetBuffer);
-  else
-    return false;
 }
 
 } // namespace video::yuv
