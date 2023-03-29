@@ -756,6 +756,108 @@ inline void YUVPlaneToRGB_420(const DataPointerPerChannel &inputPlanes,
   saveRGBValueToOutput(rgb4, outputLine2);
 }
 
+inline void YUVPlaneToRGB_440(const DataPointerPerChannel &inputPlanes,
+                              const ConversionParameters & parameters,
+                              DataPointer                  output)
+{
+  const auto inputMax      = (1 << parameters.bitsPerSample) - 1;
+  const auto bps           = parameters.bitsPerSample;
+  const auto bigEndian     = parameters.bigEndian;
+  const auto mathLuma      = parameters.mathParameters.at(LUMA);
+  const auto mathChroma    = parameters.mathParameters.at(CHROMA);
+  const auto interpolation = parameters.chromaInterpolation;
+
+  const auto outputStride = parameters.frameSize.width * OFFSET_TO_NEXT_RGB_VALUE;
+
+  // Vertical interpolation is required. Process two Y values at a time
+  const auto hh = parameters.frameSize.height / 2;
+  for (int x = 0; x < parameters.frameSize.width; ++x)
+  {
+    auto srcY = inputPlanes.at(LUMA);
+    auto srcU = inputPlanes.at(CHROMA_U);
+    auto srcV = inputPlanes.at(CHROMA_V);
+
+    auto outputColumn = output + x * OFFSET_TO_NEXT_RGB_VALUE;
+
+    auto uValue = getValueFromSource(srcU, x, bps, bigEndian);
+    auto vValue = getValueFromSource(srcV, x, bps, bigEndian);
+    uValue      = applyMathToValue(uValue, mathChroma, inputMax);
+    vValue      = applyMathToValue(vValue, mathChroma, inputMax);
+
+    for (int y = 0; y < hh - 1; y++)
+    {
+      // Get the next U/V sample
+      srcU += parameters.stridePerComponent[CHROMA];
+      srcV += parameters.stridePerComponent[CHROMA];
+
+      auto uValueNext = getValueFromSource(srcU, x, bps, bigEndian);
+      auto vValueNext = getValueFromSource(srcV, x, bps, bigEndian);
+      uValueNext      = applyMathToValue(uValueNext, mathChroma, inputMax);
+      vValueNext      = applyMathToValue(vValueNext, mathChroma, inputMax);
+
+      // From the current and the next U/V sample, interpolate the UV sample in between
+      auto interpolatedU = interpolateUVSample(interpolation, uValue, uValueNext);
+      auto interpolatedV = interpolateUVSample(interpolation, vValue, vValueNext);
+
+      // Get the 2 Y samples
+      auto valY1 = getValueFromSource(srcY, x, bps, bigEndian);
+      srcY += parameters.stridePerComponent[LUMA];
+      auto valY2 = getValueFromSource(srcY, x, bps, bigEndian);
+      srcY += parameters.stridePerComponent[LUMA];
+
+      valY1 = applyMathToValue(valY1, mathLuma, inputMax);
+      valY2 = applyMathToValue(valY2, mathLuma, inputMax);
+
+      const auto rgb1 =
+          convertYUVToRGB8Bit({valY1, uValue, vValue},
+                              getColorConversionCoefficients(parameters.colorConversion),
+                              isFullRange(parameters.colorConversion),
+                              parameters.bitsPerSample);
+      const auto rgb2 =
+          convertYUVToRGB8Bit({valY2, interpolatedU, interpolatedV},
+                              getColorConversionCoefficients(parameters.colorConversion),
+                              isFullRange(parameters.colorConversion),
+                              parameters.bitsPerSample);
+
+      saveRGBValueToOutput(rgb1, outputColumn);
+      outputColumn += outputStride;
+      saveRGBValueToOutput(rgb2, outputColumn);
+      outputColumn += outputStride;
+
+      // The next one is now the current one
+      uValue = uValueNext;
+      vValue = vValueNext;
+    }
+
+    // For the last column, there is no next sample. Just reuse the current one again. No
+    // interpolation required either.
+
+    // Get the 2 Y samples
+    auto valY1 = getValueFromSource(srcY, x, bps, bigEndian);
+    srcY += parameters.stridePerComponent[LUMA];
+    auto valY2 = getValueFromSource(srcY, x, bps, bigEndian);
+    srcY += parameters.stridePerComponent[LUMA];
+
+    valY1 = applyMathToValue(valY1, mathLuma, inputMax);
+    valY2 = applyMathToValue(valY2, mathLuma, inputMax);
+
+    const auto rgb1 =
+        convertYUVToRGB8Bit({valY1, uValue, vValue},
+                            getColorConversionCoefficients(parameters.colorConversion),
+                            isFullRange(parameters.colorConversion),
+                            parameters.bitsPerSample);
+    const auto rgb2 =
+        convertYUVToRGB8Bit({valY2, uValue, vValue},
+                            getColorConversionCoefficients(parameters.colorConversion),
+                            isFullRange(parameters.colorConversion),
+                            parameters.bitsPerSample);
+
+    saveRGBValueToOutput(rgb1, outputColumn);
+    outputColumn += outputStride;
+    saveRGBValueToOutput(rgb2, outputColumn);
+  }
+}
+
 StridePerComponent getStridePerComponent(const PixelFormatYUV &pixelFormat, const Size frameSize)
 {
   StridePerComponent strides;
