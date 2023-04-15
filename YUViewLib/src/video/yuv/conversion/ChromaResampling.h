@@ -33,17 +33,17 @@
 #pragma once
 
 #include <video/yuv/PixelFormatYUV.h>
-#include <video/yuv/Restrict.h>
+#include <video/yuv/conversion/Common.h>
 
-namespace video::yuv
+namespace video::yuv::conversion
 {
 
 // All possible packings of chroma are supported. The output will always be ChromaPacking::Planar.
-void resampleChromaComponentToPlanarOutput(const PixelFormatYUV &        pixelFormat,
-                                           const Size                    frameSize,
-                                           const unsigned char *restrict srcU,
-                                           const unsigned char *restrict srcV,
-                                           unsigned char *restrict       dstU,
-                                           unsigned char *restrict       dstV);
+void resampleChromaComponentToPlanarOutput(const PixelFormatYUV &pixelFormat,
+                                           const Size            frameSize,
+                                           ConstDataPointer      srcU,
+                                           ConstDataPointer      srcV,
+                                           DataPointer           dstU,
+                                           DataPointer           dstV);
 
-} // namespace video::yuv
+} // namespace video::yuv::conversion

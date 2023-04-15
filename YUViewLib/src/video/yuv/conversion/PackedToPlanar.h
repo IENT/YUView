@@ -32,32 +32,14 @@
 
 #pragma once
 
-#include <common/EnumMapper.h>
-#include <video/yuv/PixelFormatYUV.h>
+#include <video/yuv/conversion/Common.h>
 
-namespace video::yuv
+namespace video::yuv::conversion
 {
 
-enum class ComponentDisplayMode
-{
-  DisplayAll,
-  DisplayY,
-  DisplayCb,
-  DisplayCr
-};
+using PlanarDataAndFormat = std::pair<ByteVector, PixelFormatYUV>;
+PlanarDataAndFormat convertPackedToPlanar(ConstDataPointer      source,
+                                          const PixelFormatYUV &pixelFormat,
+                                          const Size            frameSize);
 
-const auto ComponentDisplayModeMapper =
-    EnumMapper<ComponentDisplayMode>({{ComponentDisplayMode::DisplayAll, "Y'CbCr"},
-                                      {ComponentDisplayMode::DisplayY, "Luma (Y) Only"},
-                                      {ComponentDisplayMode::DisplayCb, "Cb only"},
-                                      {ComponentDisplayMode::DisplayCr, "Cr only"}});
-
-struct ConversionSettings
-{
-  ChromaInterpolation           chromaInterpolation{ChromaInterpolation::NearestNeighbor};
-  ComponentDisplayMode          componentDisplayMode{ComponentDisplayMode::DisplayAll};
-  ColorConversion               colorConversion{ColorConversion::BT709_LimitedRange};
-  std::array<MathParameters, 2> mathParametersPerComponent;
-};
-
-} // namespace video::yuv
+} // namespace video::yuv::conversion

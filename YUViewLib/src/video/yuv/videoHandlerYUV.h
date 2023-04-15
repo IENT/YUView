@@ -33,8 +33,8 @@
 #pragma once
 
 #include <video/videoHandler.h>
-#include <video/yuv/ConversionSettings.h>
 #include <video/yuv/PixelFormatYUV.h>
+#include <video/yuv/conversion/Conversion.h>
 
 #include "ui_videoHandlerYUV.h"
 
@@ -167,7 +167,7 @@ public:
   virtual void loadPlaylist(const YUViewDomElement &root) override;
 
 protected:
-  ConversionSettings conversionSettings{};
+  conversion::ConversionSettings conversionSettings{};
 
   // The currently selected YUV format
   PixelFormatYUV srcPixelFormat;

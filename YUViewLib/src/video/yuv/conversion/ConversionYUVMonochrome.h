@@ -32,18 +32,37 @@
 
 #pragma once
 
-#include <video/yuv/ConversionSettings.h>
-#include <video/yuv/PixelFormatYUV.h>
+#include <video/yuv/conversion/Common.h>
 
-#include <QByteArray>
-
-namespace video::yuv
+namespace video::yuv::conversion
 {
 
-void convertPlanarYUVToARGB(const QByteArray &        sourceBuffer,
-                            const PixelFormatYUV &    srcPixelFormat,
-                            unsigned char *           targetBuffer,
-                            const Size                frameSize,
-                            const ConversionSettings &conversionSettings);
+void yPlaneToRGBMonochrome(ConstDataPointer            inputPlane,
+                           const ConversionParameters &parameters,
+                           DataPointer                 output);
 
-} // namespace video::yuv
+void uvPlaneToRGBMonochrome444(ConstDataPointer            inputPlane,
+                               const ConversionParameters &parameters,
+                               DataPointer                 output);
+
+void uvPlaneToRGBMonochrome422(ConstDataPointer            inputPlane,
+                               const ConversionParameters &parameters,
+                               DataPointer                 output);
+
+void uvPlaneToRGBMonochrome420(ConstDataPointer            inputPlane,
+                               const ConversionParameters &parameters,
+                               DataPointer                 output);
+
+void uvPlaneToRGBMonochrome440(ConstDataPointer            inputPlane,
+                               const ConversionParameters &parameters,
+                               DataPointer                 output);
+
+void uvPlaneToRGBMonochrome410(ConstDataPointer            inputPlane,
+                               const ConversionParameters &parameters,
+                               DataPointer                 output);
+
+void uvPlaneToRGBMonochrome411(ConstDataPointer            inputPlane,
+                               const ConversionParameters &parameters,
+                               DataPointer                 output);
+
+} // namespace video::yuv::conversion

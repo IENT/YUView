@@ -32,9 +32,7 @@
 
 #include "ChromaResampling.h"
 
-#include <video/yuv/Common.h>
-
-namespace video::yuv
+namespace video::yuv::conversion
 {
 
 namespace
@@ -66,12 +64,12 @@ inline int interpolateUV8Pos(int prev, int cur, const int offsetX8)
 
 // Re-sample the chroma component so that the chroma samples and the luma samples are aligned after
 // this operation.
-void UVPlaneResamplingChromaOffset(const PixelFormatYUV &        pixelFormat,
-                                   const Size                    frameSize,
-                                   const unsigned char *restrict srcU,
-                                   const unsigned char *restrict srcV,
-                                   unsigned char *restrict       dstU,
-                                   unsigned char *restrict       dstV)
+void UVPlaneResamplingChromaOffset(const PixelFormatYUV &pixelFormat,
+                                   const Size            frameSize,
+                                   ConstDataPointer      srcU,
+                                   ConstDataPointer      srcV,
+                                   DataPointer           dstU,
+                                   DataPointer           dstV)
 {
   const auto subsampling  = pixelFormat.getSubsampling();
   const auto chromaOffset = pixelFormat.getChromaOffset();
@@ -129,9 +127,9 @@ void UVPlaneResamplingChromaOffset(const PixelFormatYUV &        pixelFormat,
   }
 
   // For the second step, use the filtered values (or the source if no filtering was applied)
-  const unsigned char *restrict srcUStep2              = (offsetX8 == 0) ? srcU : dstU;
-  const unsigned char *restrict srcVStep2              = (offsetX8 == 0) ? srcV : dstV;
-  const auto                    offsetToNextValueStep2 = (offsetX8 == 0) ? offsetToNextValue : 1;
+  const auto srcUStep2              = (offsetX8 == 0) ? srcU : dstU;
+  const auto srcVStep2              = (offsetX8 == 0) ? srcV : dstV;
+  const auto offsetToNextValueStep2 = (offsetX8 == 0) ? offsetToNextValue : 1;
 
   if (offsetY8 != 0)
   {
@@ -169,4 +167,4 @@ void UVPlaneResamplingChromaOffset(const PixelFormatYUV &        pixelFormat,
   }
 }
 
-} // namespace video::yuv
+} // namespace video::yuv::conversion

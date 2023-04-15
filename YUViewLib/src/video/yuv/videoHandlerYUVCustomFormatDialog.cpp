@@ -205,8 +205,6 @@ PixelFormatYUV videoHandlerYUVCustomFormatDialog::getSelectedYUVFormat() const
     if (!chromaPacking)
       return {};
 
-    auto uvInterleaved = this->ui.checkBoxUVInterleaved->isChecked();
-
     return PixelFormatYUV(
         *subsampling, bitsPerSample, *planeOrder, bigEndian, chromaOffset, *chromaPacking);
   }

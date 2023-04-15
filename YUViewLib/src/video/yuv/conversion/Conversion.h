@@ -32,57 +32,39 @@
 
 #pragma once
 
-#include <video/yuv/Restrict.h>
+#include <common/EnumMapper.h>
+#include <video/yuv/PixelFormatYUV.h>
+#include <video/yuv/conversion/Common.h>
 
-namespace video::yuv
+namespace video::yuv::conversion
 {
 
-inline int getValueFromSource(const unsigned char *restrict src,
-                              const int                     idx,
-                              const int                     bitsPerSample,
-                              const bool                    bigEndian)
+enum class ComponentDisplayMode
 {
-  if (bitsPerSample > 8)
-    // Read two bytes in the right order
-    return (bigEndian) ? src[idx * 2] << 8 | src[idx * 2 + 1]
-                       : src[idx * 2] | src[idx * 2 + 1] << 8;
-  else
-    // Just read one byte
-    return src[idx];
-}
+  DisplayAll,
+  DisplayY,
+  DisplayCb,
+  DisplayCr
+};
 
-inline void setValueInBuffer(
-    unsigned char *restrict dst, const int val, const int idx, const int bps, const bool bigEndian)
+const auto ComponentDisplayModeMapper =
+    EnumMapper<ComponentDisplayMode>({{ComponentDisplayMode::DisplayAll, "Y'CbCr"},
+                                      {ComponentDisplayMode::DisplayY, "Luma (Y) Only"},
+                                      {ComponentDisplayMode::DisplayCb, "Cb only"},
+                                      {ComponentDisplayMode::DisplayCr, "Cr only"}});
+
+struct ConversionSettings
 {
-  if (bps > 8)
-  {
-    // Write two bytes
-    if (bigEndian)
-    {
-      dst[idx * 2]     = val >> 8;
-      dst[idx * 2 + 1] = val & 0xff;
-    }
-    else
-    {
-      dst[idx * 2]     = val & 0xff;
-      dst[idx * 2 + 1] = val >> 8;
-    }
-  }
-  else
-    // Write one byte
-    dst[idx] = val;
-}
+  Size                          frameSize;
+  PixelFormatYUV                pixelFormat;
+  ChromaInterpolation           chromaInterpolation{ChromaInterpolation::NearestNeighbor};
+  ComponentDisplayMode          componentDisplayMode{ComponentDisplayMode::DisplayAll};
+  ColorConversion               colorConversion{ColorConversion::BT709_LimitedRange};
+  std::array<MathParameters, 2> mathParametersPerComponent;
+};
 
-int getChromaStrideInSamples(const PixelFormatYUV &pixelFormat, const Size frameSize)
-{
-  switch (pixelFormat.getChromaPacking())
-  {
-  case ChromaPacking::Planar:
-    return (frameSize.width / pixelFormat.getSubsamplingHor());
-  case ChromaPacking::PerLine:
-  case ChromaPacking::PerValue:
-    return frameSize.width;
-  }
-}
+void convertYUVToARGB(ConstDataPointer          sourceBuffer,
+                      const ConversionSettings &conversionSettings,
+                      DataPointer               targetBuffer);
 
-} // namespace video::yuv
+} // namespace video::yuv::conversion

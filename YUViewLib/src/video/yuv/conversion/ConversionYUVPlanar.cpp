@@ -34,11 +34,8 @@
 
 #include <video/LimitedRangeToFullRange.h>
 #include <video/rgb/PixelFormatRGB.h>
-#include <video/yuv/ChromaResampling.h>
-#include <video/yuv/Common.h>
-#include <video/yuv/Restrict.h>
 
-namespace video::yuv
+namespace video::yuv::conversion
 {
 
 using rgba_t = video::rgb::rgba_t;
@@ -57,53 +54,6 @@ using DataPointer                 = unsigned char *restrict;
 using DataPointerPerChannel       = std::array<DataPointer, 4>;
 using StridePerComponent          = std::array<int, 2>;
 using NextValueOffsetPerComponent = std::array<int, 2>;
-
-struct ConversionParameters
-{
-  Size                        frameSize{};
-  StridePerComponent          stridePerComponent{};
-  NextValueOffsetPerComponent nextValueOffsets{};
-  MathParametersPerComponent  mathParameters{};
-  int                         bitsPerSample{};
-  bool                        bigEndian{};
-  ColorConversion             colorConversion{};
-  ChromaInterpolation         chromaInterpolation{};
-};
-
-std::array<int, 2> getNrSamplesPerPlane(const PixelFormatYUV &pixelFormat, const Size frameSize)
-{
-  auto nrSamplesLuma   = static_cast<int>(frameSize.area());
-  auto nrSamplesChroma = static_cast<int>((frameSize.width / pixelFormat.getSubsamplingHor()) *
-                                          (frameSize.height / pixelFormat.getSubsamplingVer()));
-  return {nrSamplesLuma, nrSamplesChroma};
-}
-
-std::array<int, 2> getNrBytesPerPlane(const PixelFormatYUV &pixelFormat, const Size frameSize)
-{
-  const auto nrSamplesPerPlane = getNrSamplesPerPlane(pixelFormat, frameSize);
-  if (pixelFormat.getBitsPerSample() > 8)
-    return {nrSamplesPerPlane[LUMA] * 2, nrSamplesPerPlane[CHROMA] * 2};
-  return nrSamplesPerPlane;
-}
-
-bool isResamplingOfChromaNeeded(const PixelFormatYUV &     srcPixelFormat,
-                                const ChromaInterpolation &chromaInterpolation)
-{
-  const auto hasChroma = (srcPixelFormat.getSubsampling() != Subsampling::YUV_400);
-  if (!hasChroma)
-    return false;
-
-  const auto useChromaInterpolation = (chromaInterpolation != ChromaInterpolation::NearestNeighbor);
-  if (!useChromaInterpolation)
-    return false;
-
-  const auto isChromaPositionTopLeft =
-      (srcPixelFormat.getChromaOffset().x == 0 && srcPixelFormat.getChromaOffset().y == 0);
-  if (!isChromaPositionTopLeft)
-    return false;
-
-  return true;
-}
 
 using ColorConversionCoefficients = std::array<int, 5>;
 ColorConversionCoefficients getColorConversionCoefficients(ColorConversion colorConversion)
@@ -127,90 +77,6 @@ ColorConversionCoefficients getColorConversionCoefficients(ColorConversion color
   default:
     return {};
   }
-}
-
-int getOffsetBetweenChromaPlanesInSamples(const ChromaPacking chromaPacking,
-                                          const int           chromaStrideInSamples,
-                                          const int           nrSamplesPerChromaPlane)
-{
-  if (chromaPacking == ChromaPacking::PerValue)
-    return 1;
-  if (chromaPacking == ChromaPacking::PerLine)
-    return (chromaStrideInSamples / 2);
-  if (chromaPacking == ChromaPacking::Planar)
-    return nrSamplesPerChromaPlane;
-}
-
-DataPointerPerChannel getPointersToComponents(DataPointer           arrayPointer,
-                                              const PixelFormatYUV &pixelFormat,
-                                              const Size            frameSize)
-{
-  const auto nrSamplesPerPlane     = getNrSamplesPerPlane(pixelFormat, frameSize);
-  const auto chromaStrideInSamples = getChromaStrideInSamples(pixelFormat, frameSize);
-
-  const auto bytesPerSample = pixelFormat.getBytesPerSample();
-
-  const auto offsetToNextChromaPlane = getOffsetBetweenChromaPlanesInSamples(
-      pixelFormat.getChromaPacking(), chromaStrideInSamples, nrSamplesPerPlane[CHROMA]);
-
-  const auto ptrY = arrayPointer;
-  const auto ptrU = ptrY + nrSamplesPerPlane[LUMA] * bytesPerSample;
-  const auto ptrV = ptrU + offsetToNextChromaPlane * bytesPerSample;
-
-  DataPointer ptrA{};
-  if (pixelFormat.hasAlpha())
-    ptrA = ptrU + offsetToNextChromaPlane * bytesPerSample;
-
-  const auto planeOrder = pixelFormat.getPlaneOrder();
-  if (planeOrder == PlaneOrder::YUV || planeOrder == PlaneOrder::YUVA)
-    return {ptrY, ptrU, ptrV, ptrA};
-  else
-    return {ptrY, ptrV, ptrU, ptrA};
-}
-
-/* Apply the given transformation to the YUV sample. If invert is true, the sample is inverted at
- * the value defined by offset. If the scale is greater one, the values will be amplified relative
- * to the offset value. The input can be 8 to 16 bit. The output will be of the same bit depth. The
- * output is clamped to (0...clipMax).
- */
-inline int applyMathToValue(const unsigned int value, const MathParameters &math, const int clipMax)
-{
-  if (!math.mathRequired())
-    return;
-
-  auto newValue = value;
-  if (math.invert)
-    newValue = -(newValue - math.offset) * math.scale + math.offset; // Scale + Offset + Invert
-  else
-    newValue = (newValue - math.offset) * math.scale + math.offset; // Scale + Offset
-
-  // Clip to 8 bit
-  if (newValue < 0)
-    newValue = 0;
-  if (newValue > clipMax)
-    newValue = clipMax;
-
-  return newValue;
-}
-
-inline yuva_t
-applyMathToValue(const yuva_t &value, const MathParametersPerComponent &math, const int clipMax)
-{
-  const auto y = applyMathToValue(value.Y, math.at(LUMA), clipMax);
-  const auto u = applyMathToValue(value.U, math.at(CHROMA), clipMax);
-  const auto v = applyMathToValue(value.V, math.at(CHROMA), clipMax);
-  const auto a = value.A;
-
-  return {y, u, v, a};
-}
-
-inline int clip8Bit(int val)
-{
-  if (val < 0)
-    return 0;
-  if (val > 255)
-    return 255;
-  return val;
 }
 
 inline int interpolateUVSample(const ChromaInterpolation mode, const int sample1, const int sample2)
@@ -335,47 +201,9 @@ inline rgba_t convertYUVToRGB8Bit(const yuva_t                       yuva,
   }
 }
 
-// For every input sample in src, apply YUV transformation, (scale to 8 bit if required) and set the
-// value as RGB (monochrome). inValSkip: skip this many values in the input for every value. For
-// pure planar formats, this 1. If the UV components are interleaved, this is 2 or 3.
-inline void yPlaneToRGBMonochrome(const DataPointerPerChannel &inputPlanes,
-                                  const ConversionParameters & parameters,
-                                  DataPointer                  output)
-{
-  const auto math      = parameters.mathParameters.at(LUMA);
-  auto       lumaPlane = inputPlanes.at(LUMA);
-
-  const auto shiftTo8Bit = parameters.bitsPerSample - 8;
-  const auto inputMax    = (1 << parameters.bitsPerSample) - 1;
-
-  for (int y = 0; y < parameters.frameSize.height; ++y)
-  {
-    for (int x = 0; x < parameters.frameSize.width; ++x)
-    {
-      auto yValue =
-          getValueFromSource(lumaPlane, x, parameters.bitsPerSample, parameters.bigEndian);
-      yValue = applyMathToValue(yValue, math, inputMax);
-
-      if (shiftTo8Bit > 0)
-        yValue = clip8Bit(yValue >> shiftTo8Bit);
-      if (!isFullRange(parameters.colorConversion))
-        yValue = LimitedRangeToFullRange.at(yValue);
-
-      // Set the value for R, G and B (BGRA)
-      output[0] = (unsigned char)yValue;
-      output[1] = (unsigned char)yValue;
-      output[2] = (unsigned char)yValue;
-      output[3] = (unsigned char)255;
-      output += OFFSET_TO_NEXT_RGB_VALUE;
-    }
-
-    lumaPlane += parameters.stridePerComponent.at(LUMA);
-  }
-}
-
-inline void PlanarYUV444ToRGB(DataPointerPerChannel       inputPlanes,
-                              const ConversionParameters &parameters,
-                              DataPointer                 output)
+void PlanarYUV444ToRGB(DataPointerPerChannel       inputPlanes,
+                       const ConversionParameters &parameters,
+                       DataPointer                 output)
 {
   const auto inputMax = (1 << parameters.bitsPerSample) - 1;
 
@@ -403,9 +231,9 @@ inline void PlanarYUV444ToRGB(DataPointerPerChannel       inputPlanes,
   }
 }
 
-inline void YUVPlaneToRGB_422(DataPointerPerChannel       inputPlanes,
-                              const ConversionParameters &parameters,
-                              DataPointer                 output)
+void YUVPlaneToRGB_422(DataPointerPerChannel       inputPlanes,
+                       const ConversionParameters &parameters,
+                       DataPointer                 output)
 {
   const auto inputMax   = (1 << parameters.bitsPerSample) - 1;
   const auto bps        = parameters.bitsPerSample;
@@ -491,9 +319,9 @@ inline void YUVPlaneToRGB_422(DataPointerPerChannel       inputPlanes,
   }
 }
 
-inline void YUVPlaneToRGB_420(const DataPointerPerChannel &inputPlanes,
-                              const ConversionParameters & parameters,
-                              DataPointer                  output)
+void YUVPlaneToRGB_420(const DataPointerPerChannel &inputPlanes,
+                       const ConversionParameters & parameters,
+                       DataPointer                  output)
 {
   // TODO: Use some lambdas in here to make this shorter and more readable.
   //       We are doing the same stuff over and over again just in blocks of 4x4.
@@ -776,9 +604,9 @@ inline void YUVPlaneToRGB_420(const DataPointerPerChannel &inputPlanes,
   saveRGBValueToOutput(rgb4, outputLine2);
 }
 
-inline void YUVPlaneToRGB_440(const DataPointerPerChannel &inputPlanes,
-                              const ConversionParameters & parameters,
-                              DataPointer                  output)
+void YUVPlaneToRGB_440(const DataPointerPerChannel &inputPlanes,
+                       const ConversionParameters & parameters,
+                       DataPointer                  output)
 {
   const auto inputMax      = (1 << parameters.bitsPerSample) - 1;
   const auto bps           = parameters.bitsPerSample;
@@ -878,9 +706,9 @@ inline void YUVPlaneToRGB_440(const DataPointerPerChannel &inputPlanes,
   }
 }
 
-inline void YUVPlaneToRGB_410(const DataPointerPerChannel &inputPlanes,
-                              const ConversionParameters & parameters,
-                              DataPointer                  output)
+void YUVPlaneToRGB_410(const DataPointerPerChannel &inputPlanes,
+                       const ConversionParameters & parameters,
+                       DataPointer                  output)
 {
   const auto inputMax      = (1 << parameters.bitsPerSample) - 1;
   const auto bps           = parameters.bitsPerSample;
@@ -989,9 +817,9 @@ inline void YUVPlaneToRGB_410(const DataPointerPerChannel &inputPlanes,
   }
 }
 
-inline void YUVPlaneToRGB_411(const DataPointerPerChannel &inputPlanes,
-                              const ConversionParameters & parameters,
-                              DataPointer                  output)
+void YUVPlaneToRGB_411(const DataPointerPerChannel &inputPlanes,
+                       const ConversionParameters & parameters,
+                       DataPointer                  output)
 {
   const auto inputMax      = (1 << parameters.bitsPerSample) - 1;
   const auto bps           = parameters.bitsPerSample;
@@ -1067,105 +895,6 @@ inline void YUVPlaneToRGB_411(const DataPointerPerChannel &inputPlanes,
   }
 }
 
-StridePerComponent getStridePerComponent(const PixelFormatYUV &pixelFormat, const Size frameSize)
-{
-  StridePerComponent strides;
-  strides[LUMA]   = frameSize.width;
-  strides[CHROMA] = getChromaStrideInSamples(pixelFormat, frameSize);
-  return strides;
-}
-
-NextValueOffsetPerComponent getNextValueOffsetPerComponent(const PixelFormatYUV &pixelFormat)
-{
-  const auto additionalSkipAlpha = pixelFormat.hasAlpha() ? 1 : 0;
-
-  auto nextValues = NextValueOffsetPerComponent({1, 1});
-  if (pixelFormat.isPlanar() && pixelFormat.getChromaPacking() == ChromaPacking::PerValue)
-  {
-    nextValues = {1, 2 + additionalSkipAlpha};
-  }
-  if (!pixelFormat.isPlanar())
-  {
-    // Later. But this should also work
-    assert(false);
-  }
-  return nextValues;
-}
-
-ConversionParameters getConversionParameters(const PixelFormatYUV &    pixelFormat,
-                                             const Size                frameSize,
-                                             const ConversionSettings &conversionSettings)
-{
-  ConversionParameters parameters;
-  parameters.frameSize          = frameSize;
-  parameters.stridePerComponent = getStridePerComponent(pixelFormat, frameSize);
-  parameters.nextValueOffsets   = getNextValueOffsetPerComponent(pixelFormat);
-  parameters.mathParameters     = conversionSettings.mathParametersPerComponent;
-  parameters.bitsPerSample      = pixelFormat.getBitsPerSample();
-  parameters.bigEndian          = pixelFormat.isBigEndian();
-  parameters.colorConversion    = conversionSettings.colorConversion;
-  return parameters;
-}
-
 } // namespace
 
-void convertPlanarYUVToARGB(const QByteArray &        sourceBuffer,
-                            PixelFormatYUV            srcPixelFormat,
-                            unsigned char *           targetBuffer,
-                            const Size                frameSize,
-                            const ConversionSettings &conversionSettings)
-{
-  auto inputPlanes =
-      getPointersToComponents((unsigned char *)sourceBuffer.data(), srcPixelFormat, frameSize);
-
-  if (srcPixelFormat.getSubsampling() == Subsampling::YUV_400)
-  {
-    const auto conversionParameters =
-        getConversionParameters(srcPixelFormat, frameSize, conversionSettings);
-
-    yPlaneToRGBMonochrome(inputPlanes, conversionParameters, targetBuffer);
-    return;
-  }
-
-  if (isResamplingOfChromaNeeded(srcPixelFormat, conversionSettings.chromaInterpolation))
-  {
-    // If there is a chroma offset, we must resample the chroma components before we convert them
-    // to RGB. If so, the resampled chroma values are saved in these arrays. We only ignore the
-    // chroma offset for other interpolations then nearest neighbor.
-
-    const auto nrBytesPerPlane = getNrBytesPerPlane(srcPixelFormat, frameSize);
-
-    QByteArray uvPlaneChromaResampled[2];
-    uvPlaneChromaResampled[0].resize(nrBytesPerPlane[CHROMA]);
-    uvPlaneChromaResampled[1].resize(nrBytesPerPlane[CHROMA]);
-
-    auto restrict dstU = (unsigned char *)uvPlaneChromaResampled[0].data();
-    auto restrict dstV = (unsigned char *)uvPlaneChromaResampled[1].data();
-
-    resampleChromaComponentToPlanarOutput(
-        srcPixelFormat, frameSize, inputPlanes.at(CHROMA_U), inputPlanes.at(CHROMA_V), dstU, dstV);
-
-    inputPlanes[CHROMA_U] = dstU;
-    inputPlanes[CHROMA_V] = dstV;
-
-    srcPixelFormat.setChromaPacking(ChromaPacking::Planar);
-  }
-
-  const auto conversionParameters =
-      getConversionParameters(srcPixelFormat, frameSize, conversionSettings);
-
-  if (srcPixelFormat.getSubsampling() == Subsampling::YUV_444)
-    PlanarYUV444ToRGB(inputPlanes, conversionParameters, targetBuffer);
-  else if (srcPixelFormat.getSubsampling() == Subsampling::YUV_422)
-    YUVPlaneToRGB_422(inputPlanes, conversionParameters, targetBuffer);
-  else if (srcPixelFormat.getSubsampling() == Subsampling::YUV_420)
-    YUVPlaneToRGB_420(inputPlanes, conversionParameters, targetBuffer);
-  else if (srcPixelFormat.getSubsampling() == Subsampling::YUV_440)
-    YUVPlaneToRGB_440(inputPlanes, conversionParameters, targetBuffer);
-  else if (srcPixelFormat.getSubsampling() == Subsampling::YUV_410)
-    YUVPlaneToRGB_410(inputPlanes, conversionParameters, targetBuffer);
-  else if (srcPixelFormat.getSubsampling() == Subsampling::YUV_411)
-    YUVPlaneToRGB_411(inputPlanes, conversionParameters, targetBuffer);
-}
-
-} // namespace video::yuv
+} // namespace video::yuv::conversion
