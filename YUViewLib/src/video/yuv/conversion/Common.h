@@ -100,7 +100,7 @@ setValueInBuffer(DataPointer dst, const int val, const int idx, const int bps, c
     dst[idx] = val;
 }
 
-int getChromaStrideInSamples(const PixelFormatYUV &pixelFormat, const Size frameSize)
+inline int getChromaStrideInSamples(const PixelFormatYUV &pixelFormat, const Size frameSize)
 {
   switch (pixelFormat.getChromaPacking())
   {
@@ -122,7 +122,7 @@ inline int applyMathToValue(const unsigned int value, const MathParameters &math
   if (!math.mathRequired())
     return value;
 
-  auto newValue = value;
+  auto newValue = static_cast<int>(value);
   if (math.invert)
     newValue = -(newValue - math.offset) * math.scale + math.offset; // Scale + Offset + Invert
   else

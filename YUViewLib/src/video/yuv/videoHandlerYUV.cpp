@@ -66,20 +66,6 @@ namespace video::yuv
 namespace
 {
 
-static unsigned char clp_buf[384 + 256 + 384];
-static bool          clp_buf_initialized = false;
-
-void initClippingTable()
-{
-  // Initialize clipping table. Because of the static bool, this will only be called once.
-  memset(clp_buf, 0, 384);
-  int i;
-  for (i = 0; i < 256; i++)
-    clp_buf[384 + i] = i;
-  memset(clp_buf + 384 + 256, 255, 384);
-  clp_buf_initialized = true;
-}
-
 // Compute the MSE between the given char sources for numPixels bytes
 template <typename T> double computeMSE(T ptr, T ptr2, int numPixels)
 {

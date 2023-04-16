@@ -38,10 +38,8 @@
 #include <video/yuv/conversion/PackedToPlanar.h>
 #include <video/yuv/conversion/SpecializedConversions.h>
 
-namespace video::yuv
+namespace video::yuv::conversion
 {
-
-using namespace video::yuv::conversion;
 
 namespace
 {
@@ -187,8 +185,8 @@ void convertPlanarYUVToARGB(DataPointerPerChannel inputPlanes,
     tempDataU.resize(nrBytesPerPlane[CHROMA]);
     tempDataV.resize(nrBytesPerPlane[CHROMA]);
 
-    auto restrict dstU = (unsigned char *)tempDataU.data();
-    auto restrict dstV = (unsigned char *)tempDataV.data();
+    auto dstU = reinterpret_cast<DataPointer>(tempDataU.data());
+    auto dstV = reinterpret_cast<DataPointer>(tempDataV.data());
 
     resampleChromaComponentToPlanarOutput(
         pixelFormat, frameSize, inputPlanes.at(CHROMA_U), inputPlanes.at(CHROMA_V), dstU, dstV);
@@ -287,4 +285,4 @@ void convertYUVToARGB(ConstDataPointer          sourceBuffer,
   }
 }
 
-} // namespace video::yuv
+} // namespace video::yuv::conversion

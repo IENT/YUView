@@ -34,6 +34,7 @@
 
 #include <video/LimitedRangeToFullRange.h>
 #include <video/rgb/PixelFormatRGB.h>
+#include <video/yuv/conversion/ColorConversionCoefficients.h>
 
 namespace video::yuv::conversion
 {
@@ -42,42 +43,6 @@ using rgba_t = video::rgb::rgba_t;
 
 namespace
 {
-
-constexpr auto LUMA                     = 0;
-constexpr auto CHROMA                   = 1;
-constexpr auto CHROMA_U                 = 1;
-constexpr auto CHROMA_V                 = 2;
-constexpr auto OFFSET_TO_NEXT_RGB_VALUE = 4;
-
-using MathParametersPerComponent  = std::array<MathParameters, 2>;
-using DataPointer                 = unsigned char *restrict;
-using DataPointerPerChannel       = std::array<DataPointer, 4>;
-using StridePerComponent          = std::array<int, 2>;
-using NextValueOffsetPerComponent = std::array<int, 2>;
-
-using ColorConversionCoefficients = std::array<int, 5>;
-ColorConversionCoefficients getColorConversionCoefficients(ColorConversion colorConversion)
-{
-  // The values are [Y, cRV, cGU, cGV, cBU]
-  switch (colorConversion)
-  {
-  case ColorConversion::BT709_LimitedRange:
-    return {76309, 117489, -13975, -34925, 138438};
-  case ColorConversion::BT709_FullRange:
-    return {65536, 103206, -12276, -30679, 121608};
-  case ColorConversion::BT601_LimitedRange:
-    return {76309, 104597, -25675, -53279, 132201};
-  case ColorConversion::BT601_FullRange:
-    return {65536, 91881, -22553, -46802, 116129};
-  case ColorConversion::BT2020_LimitedRange:
-    return {76309, 110013, -12276, -42626, 140363};
-  case ColorConversion::BT2020_FullRange:
-    return {65536, 96638, -10783, -37444, 123299};
-
-  default:
-    return {};
-  }
-}
 
 inline int interpolateUVSample(const ChromaInterpolation mode, const int sample1, const int sample2)
 {
@@ -136,6 +101,8 @@ yuva_t getYUVValuesFromSource(const DataPointerPerChannel &inputPlanes,
                                        valueIndex * parameters.nextValueOffsets.at(CHROMA),
                                        parameters.bitsPerSample,
                                        parameters.bigEndian);
+
+  return {valY, valU, valV};
 }
 
 void saveRGBValueToOutput(const rgba_t &rgbValue, DataPointer output)
@@ -201,19 +168,20 @@ inline rgba_t convertYUVToRGB8Bit(const yuva_t                       yuva,
   }
 }
 
-void PlanarYUV444ToRGB(DataPointerPerChannel       inputPlanes,
-                       const ConversionParameters &parameters,
-                       DataPointer                 output)
+} // namespace
+
+void yuvToRGB444(DataPointerPerChannel       inputPlanes,
+                 const ConversionParameters &parameters,
+                 DataPointer                 output)
 {
   const auto inputMax = (1 << parameters.bitsPerSample) - 1;
 
-  for (int y = 0; y < parameters.frameSize.height; ++y)
+  for (unsigned int y = 0; y < parameters.frameSize.height; ++y)
   {
-    for (int x = 0; x < parameters.frameSize.width; ++x)
+    for (unsigned int x = 0; x < parameters.frameSize.width; ++x)
     {
       auto yuvValue = getYUVValuesFromSource(inputPlanes, x, parameters);
-
-      yuvValue = applyMathToValue(yuvValue, parameters.mathParameters, inputMax);
+      yuvValue      = applyMathToValue(yuvValue, parameters.mathParameters, inputMax);
 
       const auto rgbValue =
           convertYUVToRGB8Bit(yuvValue,
@@ -231,9 +199,9 @@ void PlanarYUV444ToRGB(DataPointerPerChannel       inputPlanes,
   }
 }
 
-void YUVPlaneToRGB_422(DataPointerPerChannel       inputPlanes,
-                       const ConversionParameters &parameters,
-                       DataPointer                 output)
+void yuvToRGB422(DataPointerPerChannel       inputPlanes,
+                 const ConversionParameters &parameters,
+                 DataPointer                 output)
 {
   const auto inputMax   = (1 << parameters.bitsPerSample) - 1;
   const auto bps        = parameters.bitsPerSample;
@@ -241,7 +209,7 @@ void YUVPlaneToRGB_422(DataPointerPerChannel       inputPlanes,
   const auto mathLuma   = parameters.mathParameters.at(LUMA);
   const auto mathChroma = parameters.mathParameters.at(CHROMA);
 
-  for (int y = 0; y < parameters.frameSize.height; ++y)
+  for (unsigned y = 0; y < parameters.frameSize.height; ++y)
   {
     const auto srcY = inputPlanes.at(LUMA);
     const auto srcU = inputPlanes.at(CHROMA_U);
@@ -252,7 +220,7 @@ void YUVPlaneToRGB_422(DataPointerPerChannel       inputPlanes,
     uValue      = applyMathToValue(uValue, mathChroma, inputMax);
     vValue      = applyMathToValue(vValue, mathChroma, inputMax);
 
-    for (int x = 0; x < (parameters.frameSize.width / 2) - 1; ++x)
+    for (unsigned x = 0; x < (parameters.frameSize.width / 2) - 1; ++x)
     {
       auto uValueNext = getValueFromSource(srcU, x + 1, bps, bigEndian);
       auto vValueNext = getValueFromSource(srcV, x + 1, bps, bigEndian);
@@ -319,9 +287,9 @@ void YUVPlaneToRGB_422(DataPointerPerChannel       inputPlanes,
   }
 }
 
-void YUVPlaneToRGB_420(const DataPointerPerChannel &inputPlanes,
-                       const ConversionParameters & parameters,
-                       DataPointer                  output)
+void yuvToRGB420(const DataPointerPerChannel &inputPlanes,
+                 const ConversionParameters & parameters,
+                 DataPointer                  output)
 {
   // TODO: Use some lambdas in here to make this shorter and more readable.
   //       We are doing the same stuff over and over again just in blocks of 4x4.
@@ -349,7 +317,7 @@ void YUVPlaneToRGB_420(const DataPointerPerChannel &inputPlanes,
   // required. Process 4 Y positions at a time
   const auto hh = parameters.frameSize.height / 2;
   const auto wh = parameters.frameSize.width / 2;
-  for (auto y = 0; y < hh - 1; y++)
+  for (unsigned y = 0; y < hh - 1; y++)
   {
     // Get the current U/V samples for this y line and the one from the next line (_NL)
 
@@ -363,7 +331,7 @@ void YUVPlaneToRGB_420(const DataPointerPerChannel &inputPlanes,
     uValue_nl      = applyMathToValue(uValue_nl, mathChroma, inputMax);
     vValue_nl      = applyMathToValue(vValue_nl, mathChroma, inputMax);
 
-    for (auto x = 0; x < wh - 1; x++)
+    for (unsigned x = 0; x < wh - 1; x++)
     {
       // Get the next U/V sample for this line and the next one
       auto uValueNext = getValueFromSource(srcU, x + 1, bps, bigEndian);
@@ -502,7 +470,7 @@ void YUVPlaneToRGB_420(const DataPointerPerChannel &inputPlanes,
   uValue      = applyMathToValue(uValue, mathChroma, inputMax);
   vValue      = applyMathToValue(vValue, mathChroma, inputMax);
 
-  for (int x = 0; x < wh - 1; x++)
+  for (unsigned x = 0; x < wh - 1; x++)
   {
     // Get the next U/V sample for this line and the next one
     auto uValueNext = getValueFromSource(srcU, x + 1, bps, bigEndian);
@@ -604,9 +572,9 @@ void YUVPlaneToRGB_420(const DataPointerPerChannel &inputPlanes,
   saveRGBValueToOutput(rgb4, outputLine2);
 }
 
-void YUVPlaneToRGB_440(const DataPointerPerChannel &inputPlanes,
-                       const ConversionParameters & parameters,
-                       DataPointer                  output)
+void yuvToRGB440(const DataPointerPerChannel &inputPlanes,
+                 const ConversionParameters & parameters,
+                 DataPointer                  output)
 {
   const auto inputMax      = (1 << parameters.bitsPerSample) - 1;
   const auto bps           = parameters.bitsPerSample;
@@ -619,7 +587,7 @@ void YUVPlaneToRGB_440(const DataPointerPerChannel &inputPlanes,
 
   // Vertical interpolation is required. Process two Y values at a time
   const auto hh = parameters.frameSize.height / 2;
-  for (int x = 0; x < parameters.frameSize.width; ++x)
+  for (unsigned x = 0; x < parameters.frameSize.width; ++x)
   {
     auto srcY = inputPlanes.at(LUMA);
     auto srcU = inputPlanes.at(CHROMA_U);
@@ -632,7 +600,7 @@ void YUVPlaneToRGB_440(const DataPointerPerChannel &inputPlanes,
     uValue      = applyMathToValue(uValue, mathChroma, inputMax);
     vValue      = applyMathToValue(vValue, mathChroma, inputMax);
 
-    for (int y = 0; y < hh - 1; y++)
+    for (unsigned y = 0; y < hh - 1; y++)
     {
       // Get the next U/V sample
       srcU += parameters.stridePerComponent[CHROMA];
@@ -706,9 +674,9 @@ void YUVPlaneToRGB_440(const DataPointerPerChannel &inputPlanes,
   }
 }
 
-void YUVPlaneToRGB_410(const DataPointerPerChannel &inputPlanes,
-                       const ConversionParameters & parameters,
-                       DataPointer                  output)
+void yuvToRGB410(const DataPointerPerChannel &inputPlanes,
+                 const ConversionParameters & parameters,
+                 DataPointer                  output)
 {
   const auto inputMax      = (1 << parameters.bitsPerSample) - 1;
   const auto bps           = parameters.bitsPerSample;
@@ -817,9 +785,9 @@ void YUVPlaneToRGB_410(const DataPointerPerChannel &inputPlanes,
   }
 }
 
-void YUVPlaneToRGB_411(const DataPointerPerChannel &inputPlanes,
-                       const ConversionParameters & parameters,
-                       DataPointer                  output)
+void yuvToRGB411(const DataPointerPerChannel &inputPlanes,
+                 const ConversionParameters & parameters,
+                 DataPointer                  output)
 {
   const auto inputMax      = (1 << parameters.bitsPerSample) - 1;
   const auto bps           = parameters.bitsPerSample;
@@ -894,7 +862,5 @@ void YUVPlaneToRGB_411(const DataPointerPerChannel &inputPlanes,
     srcV += parameters.stridePerComponent[CHROMA];
   }
 }
-
-} // namespace
 
 } // namespace video::yuv::conversion

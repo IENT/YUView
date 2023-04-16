@@ -64,12 +64,12 @@ inline int interpolateUV8Pos(int prev, int cur, const int offsetX8)
 
 // Re-sample the chroma component so that the chroma samples and the luma samples are aligned after
 // this operation.
-void UVPlaneResamplingChromaOffset(const PixelFormatYUV &pixelFormat,
-                                   const Size            frameSize,
-                                   ConstDataPointer      srcU,
-                                   ConstDataPointer      srcV,
-                                   DataPointer           dstU,
-                                   DataPointer           dstV)
+void resampleChromaComponentToPlanarOutput(const PixelFormatYUV &pixelFormat,
+                                           const Size            frameSize,
+                                           ConstDataPointer      srcU,
+                                           ConstDataPointer      srcV,
+                                           DataPointer           dstU,
+                                           DataPointer           dstV)
 {
   const auto subsampling  = pixelFormat.getSubsampling();
   const auto chromaOffset = pixelFormat.getChromaOffset();

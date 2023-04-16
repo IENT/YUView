@@ -32,11 +32,26 @@
 
 #include "SpecializedConversions.h"
 
+#include <video/yuv/conversion/ColorConversionCoefficients.h>
 namespace video::yuv::conversion
 {
 
 namespace
 {
+
+static unsigned char clp_buf[384 + 256 + 384];
+static bool          clp_buf_initialized = false;
+
+void initClippingTable()
+{
+  // Initialize clipping table. Because of the static bool, this will only be called once.
+  memset(clp_buf, 0, 384);
+  int i;
+  for (i = 0; i < 256; i++)
+    clp_buf[384 + i] = i;
+  memset(clp_buf + 384 + 256, 255, 384);
+  clp_buf_initialized = true;
+}
 
 // This is a specialized function that can convert 8 - bit YUV 4 : 2 : 0 to RGB888 using
 // NearestNeighborInterpolation. The chroma must be 0 in x direction and 1 in y direction. No
@@ -51,16 +66,14 @@ bool convertYUV420ToRGB(DataPointerPerChannel       inputPlanes,
   static_assert(bitDepth == 8 || bitDepth == 10);
   constexpr auto rightShift = (bitDepth == 8) ? 0 : 2;
 
-  const auto frameWidth  = size.width;
-  const auto frameHeight = size.height;
+  const auto frameWidth  = parameters.frameSize.width;
+  const auto frameHeight = parameters.frameSize.height;
 
   // For 4:2:0, w and h must be dividible by 2
   assert(frameWidth % 2 == 0 && frameHeight % 2 == 0);
 
   int componentLenghtY  = frameWidth * frameHeight;
   int componentLengthUV = componentLenghtY >> 2;
-  Q_ASSERT(sourceBuffer.size() >= componentLenghtY + componentLengthUV +
-                                      componentLengthUV); // YUV 420 must be (at least) 1.5*Y-area
 
 #if SSE_CONVERSION_420_ALT
   quint8 *srcYRaw = (quint8 *)sourceBuffer.data();
@@ -163,24 +176,15 @@ bool convertYUV420ToRGB(DataPointerPerChannel       inputPlanes,
   if (!clp_buf_initialized)
     initClippingTable();
 
-  unsigned char *restrict dst = targetBuffer;
-
   // Get/set the parameters used for YUV -> RGB conversion
-  const bool fullRange = isFullRange(conversionSettings.colorConversion);
-  const int  yOffset   = (fullRange ? 0 : 16);
-  const int  cZero     = 128;
-  int        RGBConv[5];
-  getColorConversionCoefficients(conversionSettings.colorConversion, RGBConv);
+  const bool fullRange    = isFullRange(parameters.colorConversion);
+  const int  yOffset      = (fullRange ? 0 : 16);
+  const int  cZero        = 128;
+  const auto coefficienst = getColorConversionCoefficients(parameters.colorConversion);
 
-  // Get pointers to the source and the output array
-  const bool uPplaneFirst =
-      (format.getPlaneOrder() == PlaneOrder::YUV ||
-       format.getPlaneOrder() == PlaneOrder::YUVA); // Is the U plane the first or the second?
-  const auto *restrict srcY = InValueType(sourceBuffer.data());
-  const auto *restrict srcU =
-      uPplaneFirst ? srcY + componentLenghtY : srcY + componentLenghtY + componentLengthUV;
-  const auto *restrict srcV =
-      uPplaneFirst ? srcY + componentLenghtY + componentLengthUV : srcY + componentLenghtY;
+  auto srcY = inputPlanes.at(LUMA);
+  auto srcU = inputPlanes.at(CHROMA_U);
+  auto srcV = inputPlanes.at(CHROMA_V);
 
   for (unsigned yh = 0; yh < frameHeight / 2; yh++)
   {
@@ -197,65 +201,67 @@ bool convertYUV420ToRGB(DataPointerPerChannel       inputPlanes,
       // Process four pixels (the ones for which U/V are valid
 
       // Load UV and pre-multiply
-      const int U_tmp_G = (((int)srcU[srcAddrUV + xh] >> rightShift) - cZero) * RGBConv[2];
-      const int U_tmp_B = (((int)srcU[srcAddrUV + xh] >> rightShift) - cZero) * RGBConv[4];
-      const int V_tmp_R = (((int)srcV[srcAddrUV + xh] >> rightShift) - cZero) * RGBConv[1];
-      const int V_tmp_G = (((int)srcV[srcAddrUV + xh] >> rightShift) - cZero) * RGBConv[3];
+      const int U_tmp_G = (((int)srcU[srcAddrUV + xh] >> rightShift) - cZero) * coefficienst[2];
+      const int U_tmp_B = (((int)srcU[srcAddrUV + xh] >> rightShift) - cZero) * coefficienst[4];
+      const int V_tmp_R = (((int)srcV[srcAddrUV + xh] >> rightShift) - cZero) * coefficienst[1];
+      const int V_tmp_G = (((int)srcV[srcAddrUV + xh] >> rightShift) - cZero) * coefficienst[3];
 
       // Pixel top left
       {
-        const int Y_tmp = (((int)srcY[srcAddrY1 + x] >> rightShift) - yOffset) * RGBConv[0];
+        const int Y_tmp = (((int)srcY[srcAddrY1 + x] >> rightShift) - yOffset) * coefficienst[0];
 
         const int R_tmp = (Y_tmp + V_tmp_R) >> 16;
         const int G_tmp = (Y_tmp + U_tmp_G + V_tmp_G) >> 16;
         const int B_tmp = (Y_tmp + U_tmp_B) >> 16;
 
-        dst[dstAddr1]     = clip_buf[B_tmp];
-        dst[dstAddr1 + 1] = clip_buf[G_tmp];
-        dst[dstAddr1 + 2] = clip_buf[R_tmp];
-        dst[dstAddr1 + 3] = 255;
+        output[dstAddr1]     = clip_buf[B_tmp];
+        output[dstAddr1 + 1] = clip_buf[G_tmp];
+        output[dstAddr1 + 2] = clip_buf[R_tmp];
+        output[dstAddr1 + 3] = 255;
         dstAddr1 += 4;
       }
       // Pixel top right
       {
-        const int Y_tmp = (((int)srcY[srcAddrY1 + x + 1] >> rightShift) - yOffset) * RGBConv[0];
+        const int Y_tmp =
+            (((int)srcY[srcAddrY1 + x + 1] >> rightShift) - yOffset) * coefficienst[0];
 
         const int R_tmp = (Y_tmp + V_tmp_R) >> 16;
         const int G_tmp = (Y_tmp + U_tmp_G + V_tmp_G) >> 16;
         const int B_tmp = (Y_tmp + U_tmp_B) >> 16;
 
-        dst[dstAddr1]     = clip_buf[B_tmp];
-        dst[dstAddr1 + 1] = clip_buf[G_tmp];
-        dst[dstAddr1 + 2] = clip_buf[R_tmp];
-        dst[dstAddr1 + 3] = 255;
+        output[dstAddr1]     = clip_buf[B_tmp];
+        output[dstAddr1 + 1] = clip_buf[G_tmp];
+        output[dstAddr1 + 2] = clip_buf[R_tmp];
+        output[dstAddr1 + 3] = 255;
         dstAddr1 += 4;
       }
       // Pixel bottom left
       {
-        const int Y_tmp = (((int)srcY[srcAddrY2 + x] >> rightShift) - yOffset) * RGBConv[0];
+        const int Y_tmp = (((int)srcY[srcAddrY2 + x] >> rightShift) - yOffset) * coefficienst[0];
 
         const int R_tmp = (Y_tmp + V_tmp_R) >> 16;
         const int G_tmp = (Y_tmp + U_tmp_G + V_tmp_G) >> 16;
         const int B_tmp = (Y_tmp + U_tmp_B) >> 16;
 
-        dst[dstAddr2]     = clip_buf[B_tmp];
-        dst[dstAddr2 + 1] = clip_buf[G_tmp];
-        dst[dstAddr2 + 2] = clip_buf[R_tmp];
-        dst[dstAddr2 + 3] = 255;
+        output[dstAddr2]     = clip_buf[B_tmp];
+        output[dstAddr2 + 1] = clip_buf[G_tmp];
+        output[dstAddr2 + 2] = clip_buf[R_tmp];
+        output[dstAddr2 + 3] = 255;
         dstAddr2 += 4;
       }
       // Pixel bottom right
       {
-        const int Y_tmp = (((int)srcY[srcAddrY2 + x + 1] >> rightShift) - yOffset) * RGBConv[0];
+        const int Y_tmp =
+            (((int)srcY[srcAddrY2 + x + 1] >> rightShift) - yOffset) * coefficienst[0];
 
         const int R_tmp = (Y_tmp + V_tmp_R) >> 16;
         const int G_tmp = (Y_tmp + U_tmp_G + V_tmp_G) >> 16;
         const int B_tmp = (Y_tmp + U_tmp_B) >> 16;
 
-        dst[dstAddr2]     = clip_buf[B_tmp];
-        dst[dstAddr2 + 1] = clip_buf[G_tmp];
-        dst[dstAddr2 + 2] = clip_buf[R_tmp];
-        dst[dstAddr2 + 3] = 255;
+        output[dstAddr2]     = clip_buf[B_tmp];
+        output[dstAddr2 + 1] = clip_buf[G_tmp];
+        output[dstAddr2 + 2] = clip_buf[R_tmp];
+        output[dstAddr2 + 3] = 255;
         dstAddr2 += 4;
       }
     }

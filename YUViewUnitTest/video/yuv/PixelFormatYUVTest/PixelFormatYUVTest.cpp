@@ -78,7 +78,7 @@ void PixelFormatYUVTest::testFormatFromToString()
         fmt.getBitsPerSample() != fmtNew.getBitsPerSample() ||
         fmt.isPlanar() != fmtNew.isPlanar() || fmt.getChromaOffset() != fmtNew.getChromaOffset() ||
         fmt.getPlaneOrder() != fmtNew.getPlaneOrder() ||
-        fmt.isUVInterleaved() != fmtNew.isUVInterleaved() ||
+        fmt.getChromaPacking() != ChromaPacking::Planar ||
         fmt.getPackingOrder() != fmtNew.getPackingOrder() ||
         fmt.isBytePacking() != fmtNew.isBytePacking())
     {

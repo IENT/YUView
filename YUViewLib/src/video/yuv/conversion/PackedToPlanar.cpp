@@ -40,9 +40,7 @@ namespace video::yuv::conversion
 namespace
 {
 
-PlanarDataAndFormat convertV210PackedToPlanar(ConstDataPointer      src,
-                                              const PixelFormatYUV &pixelFormat,
-                                              const Size            frameSize)
+PlanarDataAndFormat convertV210PackedToPlanar(ConstDataPointer src, const Size frameSize)
 {
   // There are 6 pixels values per 16 bytes in the input.
   // 6 Values (6 Y, 3 U/V) are packed like this (highest to lowest bit, each value is 10 bit):
@@ -295,7 +293,7 @@ PlanarDataAndFormat convertPackedToPlanar(ConstDataPointer      source,
   if (const auto predefinedFormat = pixelFormat.getPredefinedFormat())
   {
     if (*predefinedFormat == PredefinedPixelFormat::V210)
-      return convertV210PackedToPlanar(source, pixelFormat, frameSize);
+      return convertV210PackedToPlanar(source, frameSize);
   }
   else
     return convertYUVPackedToPlanar(source, pixelFormat, frameSize);
