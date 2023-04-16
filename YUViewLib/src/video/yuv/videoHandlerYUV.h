@@ -166,11 +166,15 @@ public:
   virtual void savePlaylist(YUViewDomElement &root) const override;
   virtual void loadPlaylist(const YUViewDomElement &root) override;
 
-protected:
-  conversion::ConversionSettings conversionSettings{};
+private:
+  PixelFormatYUV                   srcPixelFormat;
+  std::array<MathParameters, 2>    mathParametersPerComponent;
+  conversion::ComponentDisplayMode componentDisplayMode{
+      conversion::ComponentDisplayMode::DisplayAll};
+  ColorConversion     colorConversion{};
+  ChromaInterpolation chromaInterpolation{};
 
-  // The currently selected YUV format
-  PixelFormatYUV srcPixelFormat;
+  conversion::ConversionSettings getConversionSettings();
 
   virtual yuva_t getPixelValue(const QPoint &pixelPos) const;
 
@@ -178,7 +182,6 @@ protected:
   // currentFrame) will not be modified.
   virtual void loadFrameForCaching(int frameIndex, QImage &frameToCache) override;
 
-private:
   // Load the raw YUV data for the given frame index into currentFrameRawYUVData.
   // Return false is loading failed.
   bool loadRawYUVData(int frameIndex);

@@ -199,10 +199,8 @@ void convertYUVToImage(const QByteArray &                    sourceBuffer,
 videoHandlerYUV::videoHandlerYUV() : videoHandler()
 {
   // Set the default YUV transformation parameters.
-  this->conversionSettings.mathParametersPerComponent[conversion::LUMA] =
-      MathParameters(1, 125, false);
-  this->conversionSettings.mathParametersPerComponent[conversion::CHROMA] =
-      MathParameters(1, 128, false);
+  this->mathParametersPerComponent[conversion::LUMA]   = MathParameters(1, 125, false);
+  this->mathParametersPerComponent[conversion::CHROMA] = MathParameters(1, 128, false);
 
   // If we know nothing about the YUV format, assume YUV 4:2:0 8 bit planar by default.
   this->srcPixelFormat = PixelFormatYUV(Subsampling::YUV_420, 8, PlaneOrder::YUV);
@@ -454,30 +452,24 @@ QLayout *videoHandlerYUV::createVideoHandlerControls(bool isSizeFixed)
   // Set all the values of the properties widget to the values of this class
   ui.colorComponentsComboBox->addItems(
       functions::toQStringList(conversion::ComponentDisplayModeMapper.getNames()));
-  ui.colorComponentsComboBox->setCurrentIndex(int(conversion::ComponentDisplayModeMapper.indexOf(
-      this->conversionSettings.componentDisplayMode)));
+  ui.colorComponentsComboBox->setCurrentIndex(
+      int(conversion::ComponentDisplayModeMapper.indexOf(this->componentDisplayMode)));
   ui.chromaInterpolationComboBox->addItems(
       functions::toQStringList(ChromaInterpolationMapper.getNames()));
   ui.chromaInterpolationComboBox->setCurrentIndex(
-      int(ChromaInterpolationMapper.indexOf(this->conversionSettings.chromaInterpolation)));
+      int(ChromaInterpolationMapper.indexOf(this->chromaInterpolation)));
   ui.chromaInterpolationComboBox->setEnabled(srcPixelFormat.isChromaSubsampled());
   ui.colorConversionComboBox->addItems(functions::toQStringList(ColorConversionMapper.getNames()));
   ui.colorConversionComboBox->setCurrentIndex(
-      int(ColorConversionMapper.indexOf(this->conversionSettings.colorConversion)));
-  ui.lumaScaleSpinBox->setValue(
-      this->conversionSettings.mathParametersPerComponent[conversion::LUMA].scale);
+      int(ColorConversionMapper.indexOf(this->colorConversion)));
+  ui.lumaScaleSpinBox->setValue(this->mathParametersPerComponent[conversion::LUMA].scale);
   ui.lumaOffsetSpinBox->setMaximum(1000);
-  ui.lumaOffsetSpinBox->setValue(
-      this->conversionSettings.mathParametersPerComponent[conversion::LUMA].offset);
-  ui.lumaInvertCheckBox->setChecked(
-      this->conversionSettings.mathParametersPerComponent[conversion::LUMA].invert);
-  ui.chromaScaleSpinBox->setValue(
-      this->conversionSettings.mathParametersPerComponent[conversion::CHROMA].scale);
+  ui.lumaOffsetSpinBox->setValue(this->mathParametersPerComponent[conversion::LUMA].offset);
+  ui.lumaInvertCheckBox->setChecked(this->mathParametersPerComponent[conversion::LUMA].invert);
+  ui.chromaScaleSpinBox->setValue(this->mathParametersPerComponent[conversion::CHROMA].scale);
   ui.chromaOffsetSpinBox->setMaximum(1000);
-  ui.chromaOffsetSpinBox->setValue(
-      this->conversionSettings.mathParametersPerComponent[conversion::CHROMA].offset);
-  ui.chromaInvertCheckBox->setChecked(
-      this->conversionSettings.mathParametersPerComponent[conversion::CHROMA].invert);
+  ui.chromaOffsetSpinBox->setValue(this->mathParametersPerComponent[conversion::CHROMA].offset);
+  ui.chromaInvertCheckBox->setChecked(this->mathParametersPerComponent[conversion::CHROMA].invert);
 
   // Connect all the change signals from the controls to "connectWidgetSignals()"
   connect(ui.yuvFormatComboBox,
@@ -589,11 +581,10 @@ void videoHandlerYUV::setSrcPixelFormat(PixelFormatYUV format, bool emitSignal)
   srcPixelFormat = format;
 
   // Update the math parameter offset (the default offset depends on the bit depth and the range)
-  int        shift     = format.getBitsPerSample() - 8;
-  const bool fullRange = isFullRange(this->conversionSettings.colorConversion);
-  this->conversionSettings.mathParametersPerComponent[conversion::LUMA].offset =
-      (fullRange ? 128 : 125) << shift;
-  this->conversionSettings.mathParametersPerComponent[conversion::CHROMA].offset = 128 << shift;
+  int        shift                                            = format.getBitsPerSample() - 8;
+  const bool fullRange                                        = isFullRange(this->colorConversion);
+  this->mathParametersPerComponent[conversion::LUMA].offset   = (fullRange ? 128 : 125) << shift;
+  this->mathParametersPerComponent[conversion::CHROMA].offset = 128 << shift;
 
   if (ui.created())
   {
@@ -602,10 +593,8 @@ void videoHandlerYUV::setSrcPixelFormat(PixelFormatYUV format, bool emitSignal)
     QSignalBlocker blocker2(ui.lumaOffsetSpinBox);
     QSignalBlocker blocker3(ui.chromaOffsetSpinBox);
     ui.chromaInterpolationComboBox->setEnabled(format.isChromaSubsampled());
-    ui.lumaOffsetSpinBox->setValue(
-        this->conversionSettings.mathParametersPerComponent[conversion::LUMA].offset);
-    ui.chromaOffsetSpinBox->setValue(
-        this->conversionSettings.mathParametersPerComponent[conversion::CHROMA].offset);
+    ui.lumaOffsetSpinBox->setValue(this->mathParametersPerComponent[conversion::LUMA].offset);
+    ui.chromaOffsetSpinBox->setValue(this->mathParametersPerComponent[conversion::CHROMA].offset);
   }
 
   if (emitSignal)
@@ -636,24 +625,18 @@ void videoHandlerYUV::slotYUVControlChanged()
       sender == ui.chromaScaleSpinBox || sender == ui.chromaOffsetSpinBox ||
       sender == ui.chromaInvertCheckBox)
   {
-    this->conversionSettings.chromaInterpolation =
+    this->chromaInterpolation =
         *ChromaInterpolationMapper.at(ui.chromaInterpolationComboBox->currentIndex());
-    this->conversionSettings.componentDisplayMode =
+    this->componentDisplayMode =
         *conversion::ComponentDisplayModeMapper.at(ui.colorComponentsComboBox->currentIndex());
-    this->conversionSettings.colorConversion =
-        *ColorConversionMapper.at(ui.colorConversionComboBox->currentIndex());
+    this->colorConversion = *ColorConversionMapper.at(ui.colorConversionComboBox->currentIndex());
 
-    this->conversionSettings.mathParametersPerComponent[conversion::LUMA].scale =
-        ui.lumaScaleSpinBox->value();
-    this->conversionSettings.mathParametersPerComponent[conversion::LUMA].offset =
-        ui.lumaOffsetSpinBox->value();
-    this->conversionSettings.mathParametersPerComponent[conversion::LUMA].invert =
-        ui.lumaInvertCheckBox->isChecked();
-    this->conversionSettings.mathParametersPerComponent[conversion::CHROMA].scale =
-        ui.chromaScaleSpinBox->value();
-    this->conversionSettings.mathParametersPerComponent[conversion::CHROMA].offset =
-        ui.chromaOffsetSpinBox->value();
-    this->conversionSettings.mathParametersPerComponent[conversion::CHROMA].invert =
+    this->mathParametersPerComponent[conversion::LUMA].scale   = ui.lumaScaleSpinBox->value();
+    this->mathParametersPerComponent[conversion::LUMA].offset  = ui.lumaOffsetSpinBox->value();
+    this->mathParametersPerComponent[conversion::LUMA].invert  = ui.lumaInvertCheckBox->isChecked();
+    this->mathParametersPerComponent[conversion::CHROMA].scale = ui.chromaScaleSpinBox->value();
+    this->mathParametersPerComponent[conversion::CHROMA].offset = ui.chromaOffsetSpinBox->value();
+    this->mathParametersPerComponent[conversion::CHROMA].invert =
         ui.chromaInvertCheckBox->isChecked();
 
     // Set the current frame in the buffer to be invalid and clear the cache.
@@ -897,7 +880,7 @@ void videoHandlerYUV::drawPixelValues(QPainter *    painter,
   // If 'showPixelValuesAsDiff' is set, this is the zero value
   const int differenceZeroValue = 1 << (srcPixelFormat.getBitsPerSample() - 1);
 
-  const auto math = this->conversionSettings.mathParametersPerComponent;
+  const auto math = this->mathParametersPerComponent;
 
   for (int x = xMin; x <= xMax; x++)
   {
@@ -1189,7 +1172,7 @@ void videoHandlerYUV::loadFrame(int frameIndex, bool loadToDoubleBuffer)
                       newImage,
                       this->srcPixelFormat,
                       this->frameSize,
-                      this->conversionSettings);
+                      this->getConversionSettings());
     doubleBufferImage           = newImage;
     doubleBufferImageFrameIndex = frameIndex;
   }
@@ -1200,7 +1183,7 @@ void videoHandlerYUV::loadFrame(int frameIndex, bool loadToDoubleBuffer)
                       newImage,
                       this->srcPixelFormat,
                       this->frameSize,
-                      this->conversionSettings);
+                      this->getConversionSettings());
     QMutexLocker setLock(&currentImageSetMutex);
     currentImage      = newImage;
     currentImageIndex = frameIndex;
@@ -1213,9 +1196,8 @@ void videoHandlerYUV::loadFrameForCaching(int frameIndex, QImage &frameToCache)
 
   // Get the YUV format and the size here, so that the caching process does not crash if this
   // changes.
-  const auto yuvFormat          = this->srcPixelFormat;
-  const auto curFrameSize       = this->frameSize;
-  const auto conversionSettings = this->conversionSettings;
+  const auto yuvFormat    = this->srcPixelFormat;
+  const auto curFrameSize = this->frameSize;
 
   requestDataMutex.lock();
   emit       signalRequestRawData(frameIndex, true);
@@ -1230,8 +1212,11 @@ void videoHandlerYUV::loadFrameForCaching(int frameIndex, QImage &frameToCache)
   }
 
   // Convert YUV to image. This can then be cached.
-  convertYUVToImage(
-      tmpBufferRawYUVDataCaching, frameToCache, yuvFormat, curFrameSize, conversionSettings);
+  convertYUVToImage(tmpBufferRawYUVDataCaching,
+                    frameToCache,
+                    yuvFormat,
+                    curFrameSize,
+                    this->getConversionSettings());
 }
 
 // Load the raw YUV data for the given frame index into currentFrameRawData.
@@ -1262,6 +1247,18 @@ bool videoHandlerYUV::loadRawYUVData(int frameIndex)
 
   DEBUG_YUV("videoHandlerYUV::loadRawYUVData " << frameIndex << " Done");
   return true;
+}
+
+conversion::ConversionSettings videoHandlerYUV::getConversionSettings()
+{
+  conversion::ConversionSettings settings;
+  settings.frameSize                  = this->frameSize;
+  settings.pixelFormat                = this->srcPixelFormat;
+  settings.chromaInterpolation        = this->chromaInterpolation;
+  settings.componentDisplayMode       = this->componentDisplayMode;
+  settings.colorConversion            = this->colorConversion;
+  settings.mathParametersPerComponent = this->mathParametersPerComponent;
+  return settings;
 }
 
 yuva_t videoHandlerYUV::getPixelValue(const QPoint &pixelPos) const
@@ -1880,13 +1877,13 @@ void videoHandlerYUV::setPixelFormatYUV(const PixelFormatYUV &newFormat, bool em
 
 void videoHandlerYUV::setYUVColorConversion(ColorConversion conversion)
 {
-  if (conversion != this->conversionSettings.colorConversion)
+  if (conversion != this->colorConversion)
   {
-    this->conversionSettings.colorConversion = conversion;
+    this->colorConversion = conversion;
 
     if (ui.created())
       ui.colorConversionComboBox->setCurrentIndex(
-          int(ColorConversionMapper.indexOf(this->conversionSettings.colorConversion)));
+          int(ColorConversionMapper.indexOf(this->colorConversion)));
   }
 }
 
@@ -1895,12 +1892,12 @@ void videoHandlerYUV::savePlaylist(YUViewDomElement &element) const
   FrameHandler::savePlaylist(element);
   element.appendProperiteChild("pixelFormat", this->getRawPixelFormatYUVName());
 
-  auto ml = this->conversionSettings.mathParametersPerComponent.at(conversion::LUMA);
+  auto ml = this->mathParametersPerComponent.at(conversion::LUMA);
   element.appendProperiteChild("math.luma.scale", QString::number(ml.scale));
   element.appendProperiteChild("math.luma.offset", QString::number(ml.offset));
   element.appendProperiteChild("math.luma.invert", functions::boolToString(ml.invert));
 
-  auto mc = this->conversionSettings.mathParametersPerComponent.at(conversion::CHROMA);
+  auto mc = this->mathParametersPerComponent.at(conversion::CHROMA);
   element.appendProperiteChild("math.chroma.scale", QString::number(mc.scale));
   element.appendProperiteChild("math.chroma.offset", QString::number(mc.offset));
   element.appendProperiteChild("math.chroma.invert", functions::boolToString(mc.invert));
@@ -1915,23 +1912,20 @@ void videoHandlerYUV::loadPlaylist(const YUViewDomElement &element)
 
   auto lumaScale = element.findChildValue("math.luma.scale");
   if (!lumaScale.isEmpty())
-    this->conversionSettings.mathParametersPerComponent[conversion::LUMA].scale = lumaScale.toInt();
+    this->mathParametersPerComponent[conversion::LUMA].scale = lumaScale.toInt();
   auto lumaOffset = element.findChildValue("math.luma.offset");
   if (!lumaOffset.isEmpty())
-    this->conversionSettings.mathParametersPerComponent[conversion::LUMA].offset =
-        lumaOffset.toInt();
-  this->conversionSettings.mathParametersPerComponent[conversion::LUMA].invert =
+    this->mathParametersPerComponent[conversion::LUMA].offset = lumaOffset.toInt();
+  this->mathParametersPerComponent[conversion::LUMA].invert =
       (element.findChildValue("math.luma.invert") == "True");
 
   auto chromaScale = element.findChildValue("math.chroma.scale");
   if (!chromaScale.isEmpty())
-    this->conversionSettings.mathParametersPerComponent[conversion::CHROMA].scale =
-        chromaScale.toInt();
+    this->mathParametersPerComponent[conversion::CHROMA].scale = chromaScale.toInt();
   auto chromaOffset = element.findChildValue("math.chroma.offset");
   if (!chromaOffset.isEmpty())
-    this->conversionSettings.mathParametersPerComponent[conversion::CHROMA].offset =
-        chromaOffset.toInt();
-  this->conversionSettings.mathParametersPerComponent[conversion::CHROMA].invert =
+    this->mathParametersPerComponent[conversion::CHROMA].offset = chromaOffset.toInt();
+  this->mathParametersPerComponent[conversion::CHROMA].invert =
       (element.findChildValue("math.chroma.invert") == "True");
 }
 
