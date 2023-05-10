@@ -153,7 +153,7 @@ protected:
                          std::shared_ptr<TreeItem> root,
                          std::optional<pairUint64> nalStartEndPos);
 
-  int pocOfFirstRandomAccessFrame{-1};
+  std::optional<int> pocOfFirstRandomAccessFrame{};
 
   // Save general information about the file here
   struct stream_info_type

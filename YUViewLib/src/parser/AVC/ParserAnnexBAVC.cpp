@@ -364,8 +364,9 @@ ParserAnnexBAVC::parseAndAddNALUnit(int                                         
       currentSliceIntra = isRandomAccess;
       currentSliceType  = to_string(newSliceHeader->slice_type);
 
-      DEBUG_AVC("ParserAnnexBAVC::parseAndAddNALUnit Parsed Slice POC "
-                << newSliceHeader->globalPOC);
+      DEBUG_AVC("ParserAnnexBAVC::parseAndAddNALUnit Parsed Slice ("
+                << QString::fromStdString(NalTypeMapper.getName(nalAVC->header.nal_unit_type))
+                << ") POC " << newSliceHeader->globalPOC);
       parseResult.nalTypeName = "Slice(POC " + std::to_string(newSliceHeader->globalPOC) + ") ";
     }
     else if (nalAVC->header.nal_unit_type == NalType::CODED_SLICE_DATA_PARTITION_B)
