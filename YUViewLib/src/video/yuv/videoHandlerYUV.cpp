@@ -2870,7 +2870,7 @@ void videoHandlerYUV::setSrcPixelFormat(PixelFormatYUV format, bool emitSignal)
 
   if (ui.created())
   {
-    // Every time the pixel format changed, see if the interpolation combo box is enabled/disabled
+    // Every time the pixel format changed, see if the chroma combo boxes are enabled/disabled
     const bool chromaPresent = (format.getSubsampling() != Subsampling::YUV_400);
     QSignalBlocker blocker1(ui.colorComponentsComboBox);
     QSignalBlocker blocker2(ui.chromaInterpolationComboBox);
