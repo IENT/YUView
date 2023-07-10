@@ -109,6 +109,8 @@ jobs:
       run: |
         sudo apt-get update
         sudo apt-get install libgl1-mesa-dev libxkbcommon-x11-0 libpcre2-16-0 '^libxcb.*-dev' libx11-xcb-dev libglu1-mesa-dev libxi-dev libxkbcommon-dev libxkbcommon-x11-dev libatspi2.0-dev
+        curl -L http://security.ubuntu.com/ubuntu/pool/main/i/icu/libicu60_60.2-3ubuntu3.2_amd64.deb -o libicu60_60.2-3ubuntu3.2_amd64.deb
+        sudo apt-get install ./libicu60_60.2-3ubuntu3.2_amd64.deb
       if: matrix.os == 'ubuntu-20.04'
     - name: Install libde265
       run: |
