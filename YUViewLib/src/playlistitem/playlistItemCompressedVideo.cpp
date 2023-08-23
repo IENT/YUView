@@ -60,7 +60,7 @@
 using namespace functions;
 using namespace decoder;
 
-#define COMPRESSED_VIDEO_DEBUG_OUTPUT 0
+#define COMPRESSED_VIDEO_DEBUG_OUTPUT 1
 #if COMPRESSED_VIDEO_DEBUG_OUTPUT
 #include <QDebug>
 #define DEBUG_COMPRESSED(f) qDebug() << f
@@ -177,7 +177,7 @@ playlistItemCompressedVideo::playlistItemCompressedVideo(const QString &compress
                      << frameSize.width << "x" << frameSize.height);
     formatYuv = this->inputFileAnnexBParser->getPixelFormat();
     DEBUG_COMPRESSED("playlistItemCompressedVideo::playlistItemCompressedVideo YUV format "
-                     << this->formatYuv.getName().c_str());
+                     << formatYuv.getName().c_str());
     this->rawFormat      = video::RawFormat::YUV;
     this->prop.frameRate = this->inputFileAnnexBParser->getFramerate();
     DEBUG_COMPRESSED("playlistItemCompressedVideo::playlistItemCompressedVideo framerate "
@@ -204,7 +204,7 @@ playlistItemCompressedVideo::playlistItemCompressedVideo(const QString &compress
     // Is this file RGB or YUV?
     this->rawFormat = this->inputFileFFmpegLoading->getRawFormat();
     DEBUG_COMPRESSED("playlistItemCompressedVideo::playlistItemCompressedVideo Raw format "
-                     << (this->rawFormat == raw_YUV                 ? "YUV"
+                     << (this->rawFormat == video::RawFormat::YUV   ? "YUV"
                          : this->rawFormat == video::RawFormat::RGB ? "RGB"
                                                                     : "Unknown"));
     if (this->rawFormat == video::RawFormat::YUV)
@@ -261,14 +261,14 @@ playlistItemCompressedVideo::playlistItemCompressedVideo(const QString &compress
     return;
   }
   if (this->rawFormat == video::RawFormat::Invalid ||
-      (this->rawFormat == video::RawFormat::YUV && !formatYuv.isValid()) ||
+      /* (this->rawFormat == video::RawFormat::YUV && !formatYuv.isValid()) || */
       (this->rawFormat == video::RawFormat::RGB && !formatRgb.isValid()))
   {
     this->setError("Error opening file: Unable to obtain a valid pixel format from file.");
     return;
   }
 
-  // Allocate the videoHander (RGB or YUV)
+  // Allocate the videoHandler (RGB or YUV)
   if (this->rawFormat == video::RawFormat::YUV)
   {
     this->video   = std::make_unique<video::yuv::videoHandlerYUV>();
@@ -685,10 +685,10 @@ void playlistItemCompressedVideo::loadRawData(int frameIdx, bool caching)
                              : this->inputFileFFmpegLoading->getNextPacket(repushData);
         repushData = false;
         if (pkt)
-          DEBUG_COMPRESSED("playlistItemCompressedVideo::loadRawData retrived packet PTS "
+          DEBUG_COMPRESSED("playlistItemCompressedVideo::loadRawData retrieved packet PTS "
                            << pkt.getPTS());
         else
-          DEBUG_COMPRESSED("playlistItemCompressedVideo::loadRawData retrived empty packet");
+          DEBUG_COMPRESSED("playlistItemCompressedVideo::loadRawData retrieved empty packet");
         auto ffmpegDec =
             (caching ? dynamic_cast<decoder::decoderFFmpeg *>(this->cachingDecoder.get())
                      : dynamic_cast<decoder::decoderFFmpeg *>(this->loadingDecoder.get()));
@@ -723,7 +723,7 @@ void playlistItemCompressedVideo::loadRawData(int frameIdx, bool caching)
 
           data = caching ? this->inputFileAnnexBCaching->getFrameData(*frameStartEndFilePos)
                          : this->inputFileAnnexBLoading->getFrameData(*frameStartEndFilePos);
-          DEBUG_COMPRESSED("playlistItemCompressedVideo::loadRawData retrived frame data from file "
+          DEBUG_COMPRESSED("playlistItemCompressedVideo::loadRawData retrieved frame data from file "
                            "- AnnexBCnt "
                            << this->readAnnexBFrameCounterCodingOrder << " startEnd "
                            << frameStartEndFilePos->first << "-" << frameStartEndFilePos->second
@@ -752,7 +752,7 @@ void playlistItemCompressedVideo::loadRawData(int frameIdx, bool caching)
         auto data = caching ? this->inputFileAnnexBCaching->getNextNALUnit(repushData)
                             : this->inputFileAnnexBLoading->getNextNALUnit(repushData);
         DEBUG_COMPRESSED(
-            "playlistItemCompressedVideo::loadRawData retrived nal unit from file - size "
+            "playlistItemCompressedVideo::loadRawData retrieved nal unit from file - size "
             << data.size());
         this->repushData = !dec->pushData(data);
       }
@@ -763,7 +763,7 @@ void playlistItemCompressedVideo::loadRawData(int frameIdx, bool caching)
         auto data = caching ? this->inputFileFFmpegCaching->getNextUnit(repushData)
                             : this->inputFileFFmpegLoading->getNextUnit(repushData);
         DEBUG_COMPRESSED(
-            "playlistItemCompressedVideo::loadRawData retrived nal unit from file - size "
+            "playlistItemCompressedVideo::loadRawData retrieved nal unit from file - size "
             << data.size());
         this->repushData = !dec->pushData(data);
       }

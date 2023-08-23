@@ -40,7 +40,7 @@
 #include <cstring>
 
 // Debug the decoder ( 0:off 1:interactive decoder only 2:caching decoder only 3:both)
-#define decoderVVDec_DEBUG_OUTPUT 0
+#define decoderVVDec_DEBUG_OUTPUT 3
 #if decoderVVDec_DEBUG_OUTPUT && !NDEBUG
 #include <QDebug>
 #if decoderVVDec_DEBUG_OUTPUT == 1
@@ -155,7 +155,9 @@ decoderVVDec::~decoderVVDec()
   {
     auto ret = this->lib.vvdec_decoder_close(this->decoder);
     if (ret != VVDEC_OK)
+    {
       DEBUG_vvdec("decoderVVDec::~decoderVVDec - error freeing decoder");
+    }
     this->decoder = nullptr;
   }
   if (this->accessUnit != nullptr)
@@ -285,7 +287,9 @@ void decoderVVDec::allocateNewDecoder()
 
   auto ret = this->lib.vvdec_set_logging_callback(this->decoder, loggingCallback);
   if (ret != VVDEC_OK)
+  {
     DEBUG_vvdec("decoderVVDec::allocateNewDecoder - error setting logging callback");
+  }
 
   if (this->accessUnit == nullptr)
   {
@@ -368,22 +372,32 @@ bool decoderVVDec::getNextFrameFromDecoder()
 
   // Check the validity of the picture
   if (!lumaSize.isValid())
+  {
     DEBUG_vvdec("decoderVVDec::getNextFrameFromDecoder got invalid size");
+  }
   auto subsampling = convertFromInternalSubsampling(this->currentFrame->colorFormat);
   if (subsampling == Subsampling::UNKNOWN)
+  {
     DEBUG_vvdec("decoderVVDec::getNextFrameFromDecoder got invalid chroma format");
+  }
   auto bitDepth = this->currentFrame->bitDepth;
   if (bitDepth < 8 || bitDepth > 16)
+  {
     DEBUG_vvdec("decoderVVDec::getNextFrameFromDecoder got invalid bit depth");
+  }
   if (nrPlanes != this->currentFrame->numPlanes)
+  {
     DEBUG_vvdec("decoderVVDec::getNextFrameFromDecoder got non expected number of planes");
+  }
 
   for (unsigned i = 1; i < this->currentFrame->numPlanes; i++)
   {
     const auto &plane        = this->currentFrame->planes[i];
     auto        expectedSize = calculateChromaSize(lumaSize, this->currentFrame->colorFormat);
     if (expectedSize.width != plane.width || expectedSize.height != plane.height)
-      DEBUG_vvdec("decoderVVDec::getNextFrameFromDecoder plane has different size then expected");
+    {
+      DEBUG_vvdec("decoderVVDec::getNextFrameFromDecoder plane has different size than expected");
+    }
   }
 
   if (!this->frameSize.isValid() && !this->formatYUV.isValid())

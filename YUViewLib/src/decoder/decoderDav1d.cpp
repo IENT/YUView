@@ -217,7 +217,7 @@ template <typename T> T decoderDav1d::resolve(T &fun, const char *symbol, bool o
   if (!ptr)
   {
     if (!optional)
-      setError(QStringLiteral("Error loading the libde265 library: Can't find function %1.")
+      setError(QStringLiteral("Error loading the libdav1d library: Can't find function %1.")
                    .arg(symbol));
     return nullptr;
   }

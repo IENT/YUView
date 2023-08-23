@@ -113,6 +113,24 @@ typedef struct AVPacket_59
   AVRational        time_base;
 } AVPacket_59;
 
+typedef struct AVPacket_60
+{
+  AVBufferRef *     buf;
+  int64_t           pts;
+  int64_t           dts;
+  uint8_t *         data;
+  int               size;
+  int               stream_index;
+  int               flags;
+  AVPacketSideData *side_data;
+  int               side_data_elems;
+  int64_t           duration;
+  int64_t           pos;
+  void *            opaque;
+  AVBufferRef *     opaque_ref;
+  AVRational        time_base;
+} AVPacket_60;
+
 // A wrapper around the different versions of the AVPacket versions.
 // It also adds some functions like automatic deletion when it goes out of scope.
 class AVPacketWrapper

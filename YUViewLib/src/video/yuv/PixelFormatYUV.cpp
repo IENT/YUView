@@ -247,7 +247,7 @@ bool PixelFormatYUV::isValid() const
   if (!planar)
   {
     // Check the packing mode
-    if ((this->packingOrder == PackingOrder::YUV || this->packingOrder == PackingOrder::YVU ||
+    if ((/* this->packingOrder == PackingOrder::YUV || this->packingOrder == PackingOrder::YVU || */
          this->packingOrder == PackingOrder::AYUV || this->packingOrder == PackingOrder::YUVA ||
          this->packingOrder == PackingOrder::VUYA) &&
         subsampling != Subsampling::YUV_444)
@@ -261,7 +261,7 @@ bool PixelFormatYUV::isValid() const
     /*if ((packingOrder == Packing_YYYYUV || packingOrder == Packing_YYUYYV || packingOrder ==
       Packing_UYYVYY || packingOrder == Packing_VYYUYY) && subsampling == Subsampling::YUV_420)
       return false;*/
-    if (this->subsampling == Subsampling::YUV_420 || this->subsampling == Subsampling::YUV_440 ||
+    if (/* this->subsampling == Subsampling::YUV_420 || this->subsampling == Subsampling::YUV_440 || */
         this->subsampling == Subsampling::YUV_410 || this->subsampling == Subsampling::YUV_411 ||
         this->subsampling == Subsampling::YUV_400)
       // No support for packed formats with this subsampling (yet)

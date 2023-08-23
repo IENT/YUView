@@ -178,26 +178,26 @@ void sei_message::parse(SubByteReaderLogging &                 reader,
   }
   else // Suffix SEI
   {
-    // if (this->payloadType == 3)
-    // {
-    //   this->filler_payload_instance.parse(reader, payloadSize);
-    // }
-    // else if (this->payloadType == 132)
-    // {
-    //   this->decoded_picture_hash_instance.parse(reader, payloadSize);
-    // }
-    if (this->payloadType == 133)
+    if (this->payloadType == 3)
+    {
+      // this->filler_payload_instance.parse(reader, payloadSize);
+    }
+    else if (this->payloadType == 132)
+    {
+      // this->decoded_picture_hash_instance.parse(reader, payloadSize);
+    }
+    else if (this->payloadType == 133)
     {
       auto newScalableNesting = std::make_shared<scalable_nesting>();
       newScalableNesting->parse(reader, nal_unit_type, nalTemporalID, lastBufferingPeriod);
       this->sei_payload_instance = newScalableNesting;
     }
-    // else
-    // {
-    //   // reserved_message
-    //   throw std::logic_error("Not implemented yet");
-    // }
-    throw std::logic_error("Not implemented yet");
+    else
+    {
+      // reserved_message
+      throw std::logic_error("Not implemented yet");
+    }
+    // throw std::logic_error("Not implemented yet");
   }
 
   auto more_data_in_payload = !(reader.byte_aligned() && reader.nrBytesRead() >= this->payloadSize);

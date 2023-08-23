@@ -84,6 +84,7 @@ private:
   int                           width{};
   int                           height{};
   AVRational                    sample_aspect_ratio{};
+  AVRational                    framerate{};
   AVFieldOrder                  field_order{};
   AVColorRange                  color_range{};
   AVColorPrimaries              color_primaries{};

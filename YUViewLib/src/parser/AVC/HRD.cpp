@@ -38,7 +38,7 @@
 
 #include <cmath>
 
-#define PARSER_AVC_HRD_DEBUG_OUTPUT 0
+#define PARSER_AVC_HRD_DEBUG_OUTPUT 1
 #if PARSER_AVC_HRD_DEBUG_OUTPUT && !NDEBUG
 #include <QDebug>
 #define DEBUG_AVC_HRD(msg) qDebug() << msg

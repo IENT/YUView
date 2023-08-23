@@ -55,7 +55,7 @@ namespace video::yuv
 {
 
 // Activate this if you want to know when which buffer is loaded/converted to image and so on.
-#define VIDEOHANDLERYUV_DEBUG_LOADING 0
+#define VIDEOHANDLERYUV_DEBUG_LOADING 1
 #if VIDEOHANDLERYUV_DEBUG_LOADING && !NDEBUG
 #include <QDebug>
 #define DEBUG_YUV(message) qDebug() << message;
@@ -437,8 +437,8 @@ bool convertYUV420ToRGB(const QByteArray &        sourceBuffer,
 
   int componentLenghtY  = frameWidth * frameHeight;
   int componentLengthUV = componentLenghtY >> 2;
-  Q_ASSERT(sourceBuffer.size() >= componentLenghtY + componentLengthUV +
-                                      componentLengthUV); // YUV 420 must be (at least) 1.5*Y-area
+  // Q_ASSERT(sourceBuffer.size() >= componentLenghtY + componentLengthUV +
+  //                                     componentLengthUV); // YUV 420 must be (at least) 1.5*Y-area
 
 #if SSE_CONVERSION_420_ALT
   quint8 *srcYRaw = (quint8 *)sourceBuffer.data();

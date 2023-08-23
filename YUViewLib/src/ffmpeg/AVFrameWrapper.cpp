@@ -81,7 +81,7 @@ typedef struct AVFrame_55_56
   // Actually, there is more here, but the variables above are the only we need.
 } AVFrame_55_56;
 
-typedef struct AVFrame_57
+typedef struct AVFrame_57_58
 {
   uint8_t *                          data[AV_NUM_DATA_POINTERS];
   int                                linesize[AV_NUM_DATA_POINTERS];
@@ -122,7 +122,7 @@ typedef struct AVFrame_57
   int64_t                            pkt_duration;
   AVDictionary *                     metadata;
   // Actually, there is more here, but the variables above are the only we need.
-} AVFrame_57;
+} AVFrame_57_58;
 
 } // namespace
 
@@ -248,9 +248,10 @@ void AVFrameWrapper::update()
     this->display_picture_number = p->display_picture_number;
     this->quality                = p->quality;
   }
-  else if (this->libVer.avutil.major == 57)
+  else if (this->libVer.avutil.major == 57 ||
+           this->libVer.avutil.major == 58)
   {
-    auto p = reinterpret_cast<AVFrame_57 *>(this->frame);
+    auto p = reinterpret_cast<AVFrame_57_58 *>(this->frame);
     for (unsigned i = 0; i < AV_NUM_DATA_POINTERS; i++)
     {
       this->data[i]     = p->data[i];

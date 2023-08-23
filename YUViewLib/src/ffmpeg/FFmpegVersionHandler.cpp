@@ -101,7 +101,8 @@ LibraryVersion addMinorAndMicroVersion(FFmpegLibraryFunctions &lib, LibraryVersi
 // These FFmpeg versions are supported. The numbers indicate the major version of
 // the following libraries in this order: Util, codec, format, swresample
 // The versions are sorted from newest to oldest, so that we try to open the newest ones first.
-auto SupportedLibraryVersionCombinations = {LibraryVersion(57, 59, 59, 4),
+auto SupportedLibraryVersionCombinations = {LibraryVersion(58, 60, 60, 4),
+                                            LibraryVersion(57, 59, 59, 4),
                                             LibraryVersion(56, 58, 58, 3),
                                             LibraryVersion(55, 57, 57, 2),
                                             LibraryVersion(54, 56, 56, 1)};
@@ -634,7 +635,7 @@ void FFmpegVersionHandler::freeFrame(AVFrameWrapper &frame)
   frame.clear();
 }
 
-AVPacketWrapper FFmpegVersionHandler::allocatePaket()
+AVPacketWrapper FFmpegVersionHandler::allocatePacket()
 {
   auto rawPacket = this->lib.avcodec.av_packet_alloc();
   this->lib.avcodec.av_init_packet(rawPacket);

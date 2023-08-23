@@ -60,7 +60,7 @@ const auto componentShowMapper =
 } // namespace
 
 // Activate this if you want to know when which buffer is loaded/converted to image and so on.
-#define VIDEOHANDLERRGB_DEBUG_LOADING 0
+#define VIDEOHANDLERRGB_DEBUG_LOADING 1
 #if VIDEOHANDLERRGB_DEBUG_LOADING && !NDEBUG
 #include <QDebug>
 #define DEBUG_RGB qDebug
@@ -215,7 +215,8 @@ void videoHandlerRGB::setFormatFromCorrelation(const QByteArray &, int64_t)
 
 bool videoHandlerRGB::setFormatFromString(QString format)
 {
-  DEBUG_RGB("videoHandlerRGB::setFormatFromString " << format << "\n");
+  // DEBUG_RGB("videoHandlerRGB::setFormatFromString " << format << "\n");
+  DEBUG_RGB("videoHandlerRGB::setFormatFromString");
 
   auto split = format.split(";");
   if (split.length() != 4 || split[2] != "RGB")
@@ -459,7 +460,7 @@ void videoHandlerRGB::loadFrame(int frameIndex, bool loadToDoubleBuffer)
   // Does the data in currentFrameRawData need to be updated?
   if (!loadRawRGBData(frameIndex) || currentFrameRawData.isEmpty())
   {
-    DEBUG_RGB("videoHandlerRGB::loadFrame Loading faile or is still running in the background");
+    DEBUG_RGB("videoHandlerRGB::loadFrame Loading failed or is still running in the background");
     return;
   }
 
