@@ -114,7 +114,7 @@ jobs:
     - name: Install Linux packages
       run: |
         sudo apt-get update
-        sudo apt-get install libgl1-mesa-dev libxkbcommon-x11-0 libpcre2-16-0 '^libxcb.*-dev' libx11-xcb-dev libglu1-mesa-dev libxi-dev libxkbcommon-dev libxkbcommon-x11-dev libatspi2.0-dev
+        sudo apt-get install libgl1-mesa-dev libxkbcommon-x11-0 libpcre2-16-0 '^libxcb.*-dev' libx11-xcb-dev libglu1-mesa-dev libxi-dev libxkbcommon-dev libxkbcommon-x11-dev libatspi2.0-dev libfuse2
       if: matrix.os == 'ubuntu-20.04' || matrix.os == 'ubuntu-22.04'
     - name: Install libde265
       run: |
@@ -183,6 +183,7 @@ jobs:
             QT_FILE: qtBase_6.5.2_win2019.zip
     steps:
     - uses: actions/checkout@v3
+    - uses: ilammy/msvc-dev-cmd@v1
     - run: git fetch --prune --unshallow
     - name: Install Qt base
       run: |
@@ -217,13 +218,12 @@ jobs:
       run: sed -i -- "s/#define UPDATE_FEATURE_ENABLE 0/#define UPDATE_FEATURE_ENABLE 1/g" YUViewLib/src/common/Typedef.h
       shell: bash
       if: matrix.auto_update == true
-    - name: Set up Visual Studio shell
-      uses: egor-tensin/vs-shell@v2
     - name: Build
       run: |
         mkdir build
         dir
         cd build
+        d:\a\YUViewQt\YUViewQt\Qt\bin\qmake --version
         dir
         d:\a\YUViewQt\YUViewQt\Qt\bin\qmake CONFIG+=UNITTESTS ..
         dir
