@@ -152,7 +152,7 @@ jobs:
         ls -l
         cd $GITHUB_WORKSPACE/artifacts
         ls -l
-      if: matrix.os == 'ubuntu-20.04' || matrix.os == "ubuntu-22.04"
+      if: matrix.os == 'ubuntu-20.04' || matrix.os == 'ubuntu-22.04'
     - name: Upload Artifact
       uses: actions/upload-artifact@v2
       with:
