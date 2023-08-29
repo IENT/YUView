@@ -59,19 +59,25 @@ jobs:
       matrix:
         include: 
           - os: ubuntu-20.04
-            QT_FILE: qtBase_5.15.1_bionic.zip
+            QT_FILE: qtBase_6.5.2_ubuntu20.zip
+            LIBDE265_REMOTE: libde265.so
+            LIBDE265_LOCAL: libde265-internals.so
+            ARTIFACT_NAME: YUView.AppImage
+            CPU_COUNT_COMMAND: nproc
+          - os: ubuntu-22.04
+            QT_FILE: qtBase_6.5.2_ubuntu22.zip
             LIBDE265_REMOTE: libde265.so
             LIBDE265_LOCAL: libde265-internals.so
             ARTIFACT_NAME: YUView.AppImage
             CPU_COUNT_COMMAND: nproc
           - os: macos-11
-            QT_FILE: qtBase_5.15.1_mac.zip
+            QT_FILE: qtBase_6.5.2_mac11.zip
             LIBDE265_REMOTE: libde265.dylib
             LIBDE265_LOCAL: libde265-internals.dylib
             ARTIFACT_NAME: YUView-Mac-BigSur.zip
             CPU_COUNT_COMMAND: sysctl -n hw.logicalcpu
           - os: macos-12
-            QT_FILE: qtBase_5.15.1_mac.zip
+            QT_FILE: qtBase_6.5.2_mac12.zip
             LIBDE265_REMOTE: libde265.dylib
             LIBDE265_LOCAL: libde265-internals.dylib
             ARTIFACT_NAME: YUView-Mac-Monterey.zip
@@ -84,7 +90,7 @@ jobs:
         cd ../../
         mkdir -p YUViewQt/YUViewQt
         cd YUViewQt/YUViewQt
-        curl -L https://github.com/ChristianFeldmann/YUViewQt/releases/download/QtBase-5.15.1/${{matrix.QT_FILE}} -o Qt.zip
+        curl -L https://github.com/ChristianFeldmann/YUViewQt/releases/download/QtBase-6.5.2/${{matrix.QT_FILE}} -o Qt.zip
         unzip -qa Qt.zip
         echo "$GITHUB_WORKSPACE/../../YUViewQt/YUViewQt/Qt/bin" >> $GITHUB_PATH
       shell: bash
@@ -170,9 +176,11 @@ jobs:
           - os: windows-2019
             auto_update: true
             ARTIFACT_NAME: YUView-Win.zip
+            QT_FILE: qtBase_6.5.2_win2019.zip
           - os: windows-2019
             auto_update: false
             ARTIFACT_NAME: YUView-Win-noautoupdate.zip
+            QT_FILE: qtBase_6.5.2_win2019.zip
     steps:
     - uses: actions/checkout@v3
     - run: git fetch --prune --unshallow
@@ -181,7 +189,7 @@ jobs:
         cd ../../
         mkdir -p YUViewQt/YUViewQt
         cd YUViewQt/YUViewQt
-        curl -L https://github.com/ChristianFeldmann/YUViewQt/releases/download/QtBase-5.15.1/qtBase_5.15.1_win.zip -o Qt.zip
+        curl -L https://github.com/ChristianFeldmann/YUViewQt/releases/download/QtBase-6.5.2/${{matrix.QT_FILE}} -o Qt.zip
         7z x  Qt.zip
         echo "${{ github.workspace }}\..\..\YUViewQt\YUViewQt\Qt\bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
     - name: Install Qt deploy tools
