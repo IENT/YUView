@@ -181,9 +181,7 @@ jobs:
         curl -L https://raw.githubusercontent.com/ChristianFeldmann/libde265/master/COPYING -o libde265License.txt
     - name: Install jom
       run: |
-        Get-Location
-        curl -L https://github.com/ChristianFeldmann/jom/releases/download/v1.1.3-build/jom.exe -o jom.exe
-        cp jom.exe ../../YUViewQt/YUViewQt/Qt/bin/
+        choco install jom
     - name: Install openSSL
       run: |
         mkdir openSSL
@@ -206,12 +204,11 @@ jobs:
         echo "Executing qmake..."
         d:\a\YUViewQt\YUViewQt\Qt\bin\qmake CONFIG+=UNITTESTS ..
         echo "Jom Version:"
-        d:\a\YUViewQt\YUViewQt\Qt\bin\jom.exe /VERSION
-        dir d:\a\YUViewQt\YUViewQt\Qt\bin\jom.exe
+        jom /VERSION
         echo "Jom Makefile info:"
-        d:\a\YUViewQt\YUViewQt\Qt\bin\jom.exe /D
+        jom /D
         echo "Executing jom:"
-        d:\a\YUViewQt\YUViewQt\Qt\bin\jom.exe
+        jom
     - name: Run tests
       run: |
         cd build
