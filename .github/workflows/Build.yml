@@ -64,12 +64,6 @@ jobs:
             LIBDE265_LOCAL: libde265-internals.so
             ARTIFACT_NAME: YUView.AppImage
             CPU_COUNT_COMMAND: nproc
-          - os: ubuntu-22.04
-            QT_FILE: qtBase_6.5.2_ubuntu22.zip
-            LIBDE265_REMOTE: libde265.so
-            LIBDE265_LOCAL: libde265-internals.so
-            ARTIFACT_NAME: YUView.AppImage
-            CPU_COUNT_COMMAND: nproc
           - os: macos-11
             QT_FILE: qtBase_6.5.2_mac11.zip
             LIBDE265_REMOTE: libde265.dylib
@@ -220,13 +214,18 @@ jobs:
       if: matrix.auto_update == true
     - name: Build
       run: |
+        echo "Creating Build dir"
         mkdir build
         dir
+        echo "Entering build dir"
         cd build
+        echo "Qmake Version:"
         d:\a\YUViewQt\YUViewQt\Qt\bin\qmake --version
         dir
+        echo "Executing qmake..."
         d:\a\YUViewQt\YUViewQt\Qt\bin\qmake CONFIG+=UNITTESTS ..
         dir
+        echo "Executing jom:"
         jom
     - name: Run tests
       run: |
