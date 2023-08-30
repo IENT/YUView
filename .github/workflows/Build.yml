@@ -199,17 +199,16 @@ jobs:
       run: |
         echo "Creating Build dir"
         mkdir build
-        dir
         echo "Entering build dir"
         cd build
         echo "Qmake Version:"
         d:\a\YUViewQt\YUViewQt\Qt\bin\qmake --version
-        dir
         echo "Executing qmake..."
         d:\a\YUViewQt\YUViewQt\Qt\bin\qmake CONFIG+=UNITTESTS ..
-        dir
-        echo "Executing namek:"
-        nmake
+        echo "Jom Version:"
+        d:\a\YUViewQt\YUViewQt\Qt\bin\jom.exe /VERSION
+        echo "Executing jom:"
+        d:\a\YUViewQt\YUViewQt\Qt\bin\jom.exe
     - name: Run tests
       run: |
         cd build
@@ -220,7 +219,7 @@ jobs:
         mkdir deploy
         cd deploy
         cp ../build/YUViewApp/YUView.exe .
-        d:\a\YUViewQt\YUViewQt\Qttools\bin\windeployqt.exe --release --no-compiler-runtime YUView.exe
+        d:\a\YUViewQt\YUViewQt\Qt\bin\windeployqt.exe --release --no-compiler-runtime YUView.exe
         cp ../openSSL/*.dll .
         mkdir decoder
         cp ..\libde265.dll decoder
