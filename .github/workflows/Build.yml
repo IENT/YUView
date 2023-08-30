@@ -130,26 +130,17 @@ jobs:
         mv YUView-*.AppImage YUView.AppImage
         mkdir $GITHUB_WORKSPACE/artifacts
         cp YUView.AppImage $GITHUB_WORKSPACE/artifacts/
-        cd $GITHUB_WORKSPACE
-        ls -l
-        cd $GITHUB_WORKSPACE/artifacts
-        ls -l
       if: matrix.os == 'ubuntu-20.04'
     - name: Upload Artifact
-      uses: actions/upload-artifact@v2
+      uses: actions/upload-artifact@v3
       with:
         name: ${{matrix.ARTIFACT_NAME}}
         path: artifacts
-    - name: Upload Release
-      uses: actions/upload-release-asset@v1.0.1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    - name: Release
+      uses: softprops/action-gh-release@v1
+      if: startsWith(github.ref, 'refs/tags/')
       with:
-        upload_url: ${{ github.event.release.upload_url }}
-        asset_path: artifacts/${{matrix.ARTIFACT_NAME}}
-        asset_name: ${{matrix.ARTIFACT_NAME}}
-        asset_content_type: application/zip
-      if: github.event_name == 'release'
+        files: artifacts/${{matrix.ARTIFACT_NAME}}
   build-windows:
     runs-on: ${{ matrix.os }}
     strategy:
@@ -195,18 +186,13 @@ jobs:
       if: matrix.auto_update == true
     - name: Build
       run: |
-        echo "Creating Build dir"
+        echo "Creating Build dir and entering it"
         mkdir build
-        echo "Entering build dir"
         cd build
         echo "Qmake Version:"
         d:\a\YUViewQt\YUViewQt\Qt\bin\qmake --version
         echo "Executing qmake..."
         d:\a\YUViewQt\YUViewQt\Qt\bin\qmake CONFIG+=UNITTESTS ..
-        echo "Jom Version:"
-        jom /VERSION
-        echo "Jom Makefile info:"
-        jom /D
         echo "Executing jom:"
         jom
     - name: Run tests
@@ -241,7 +227,7 @@ jobs:
         cp deployment/wix/bin/Release/YUViewSetup.msi ./
       if: matrix.auto_update == true
     - name: Upload Artifact
-      uses: actions/upload-artifact@v2
+      uses: actions/upload-artifact@v3
       with:
         name: ${{matrix.ARTIFACT_NAME}}
         path: artifacts
@@ -251,26 +237,16 @@ jobs:
         name: YUViewSetup.msi
         path: ./YUViewSetup.msi
       if: matrix.auto_update == true
-    - name: Upload Windows zip to Release
-      uses: actions/upload-release-asset@v1.0.1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    - name: Release Zip
+      uses: softprops/action-gh-release@v1
+      if: startsWith(github.ref, 'refs/tags/')
       with:
-        upload_url: ${{ github.event.release.upload_url }}
-        asset_path: artifacts/YUView-Win.zip
-        asset_name: ${{matrix.ARTIFACT_NAME}}
-        asset_content_type: application/zip
-      if: github.event_name == 'release'
-    - name: Upload Windows installer to Release
-      uses: actions/upload-release-asset@v1.0.1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        files: artifacts/YUView-Win.zip
+    - name: Release Installer
+      uses: softprops/action-gh-release@v1
+      if: startsWith(github.ref, 'refs/tags/') && matrix.auto_update == true
       with:
-        upload_url: ${{ github.event.release.upload_url }}
-        asset_path: YUViewSetup.msi
-        asset_name: YUViewSetup.msi
-        asset_content_type: application/zip
-      if: github.event_name == 'release' && matrix.auto_update == true
+        files: YUViewSetup.msi
     
   # How to upload files to the release:
   # https://github.com/Blacksmoke16/oq/pull/47/files#diff-082c28d748ad2e3eecc5508d740d9417R9-R29
