@@ -1,51 +1,46 @@
 /* -----------------------------------------------------------------------------
-The copyright in this software is being made available under the BSD
+The copyright in this software is being made available under the Clear BSD
 License, included below. No patent rights, trademark rights and/or 
 other Intellectual Property Rights other than the copyrights concerning 
 the Software are granted under this license.
 
-For any license concerning other Intellectual Property rights than the software, 
-especially patent licenses, a separate Agreement needs to be closed. 
-For more information please contact:
+The Clear BSD License
 
-Fraunhofer Heinrich Hertz Institute
-Einsteinufer 37
-10587 Berlin, Germany
-www.hhi.fraunhofer.de/vvc
-vvc@hhi.fraunhofer.de
-
-Copyright (c) 2018-2021, Fraunhofer-Gesellschaft zur Förderung der angewandten Forschung e.V. 
+Copyright (c) 2018-2023, Fraunhofer-Gesellschaft zur Förderung der angewandten Forschung e.V. & The VVdeC Authors.
 All rights reserved.
 
-Redistribution and use in source and binary forms, with or without
-modification, are permitted provided that the following conditions are met:
+Redistribution and use in source and binary forms, with or without modification,
+are permitted (subject to the limitations in the disclaimer below) provided that
+the following conditions are met:
 
- * Redistributions of source code must retain the above copyright notice,
-   this list of conditions and the following disclaimer.
- * Redistributions in binary form must reproduce the above copyright notice,
-   this list of conditions and the following disclaimer in the documentation
-   and/or other materials provided with the distribution.
- * Neither the name of Fraunhofer nor the names of its contributors may
-   be used to endorse or promote products derived from this software without
-   specific prior written permission.
+     * Redistributions of source code must retain the above copyright notice,
+     this list of conditions and the following disclaimer.
 
-THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
-AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
-IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
-ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS
-BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
-CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
-SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
-INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
-CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
-ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF
-THE POSSIBILITY OF SUCH DAMAGE.
+     * Redistributions in binary form must reproduce the above copyright
+     notice, this list of conditions and the following disclaimer in the
+     documentation and/or other materials provided with the distribution.
+
+     * Neither the name of the copyright holder nor the names of its
+     contributors may be used to endorse or promote products derived from this
+     software without specific prior written permission.
+
+NO EXPRESS OR IMPLIED LICENSES TO ANY PARTY'S PATENT RIGHTS ARE GRANTED BY
+THIS LICENSE. THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND
+CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A
+PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR
+CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
+EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR
+BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER
+IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+POSSIBILITY OF SUCH DAMAGE.
 
 
 ------------------------------------------------------------------------------------------- */
-
-#ifndef _VVDEC_H_
-#define _VVDEC_H_
+#ifndef VVDEC_VVDEC_H
+#define VVDEC_VVDEC_H
 
 #include "vvdecDecl.h"
 
@@ -64,6 +59,13 @@ extern "C" {
 
 VVDEC_NAMESPACE_BEGIN
 
+#if defined( __x86_64__ ) || defined( _M_X64 ) || defined( __i386__ ) || defined( __i386 ) || defined( _M_IX86 )
+# define VVDEC_ARCH_X86 1
+#elif defined( __aarch64__ ) || defined( _M_ARM64 ) || defined( __arm__ ) || defined( _M_ARM )
+# define VVDEC_ARCH_ARM 1
+#elif defined( __wasm__ ) || defined( __wasm32__ )
+# define VVDEC_ARCH_WASM 1
+#endif
 
 /* vvdecDecoder:
  * opaque handler for the decoder */
@@ -71,6 +73,10 @@ typedef struct vvdecDecoder vvdecDecoder;
 
 /* vvdecLoggingCallback:
    callback function to receive messages of the decoder library
+  \param[in]  void*  pointer to calling vvdec instance
+  \param[in]  int    verbosity level
+  \param[in]  const char* fmt
+  \param[in]  va_list arguments list
 */
 typedef void (*vvdecLoggingCallback)(void*, int, const char*, va_list);
 
@@ -117,11 +123,22 @@ typedef enum
 {
   VVDEC_SIMD_DEFAULT  = 0,
   VVDEC_SIMD_SCALAR   = 1,
+#if VVDEC_ARCH_X86
   VVDEC_SIMD_SSE41    = 2,
   VVDEC_SIMD_SSE42    = 3,
   VVDEC_SIMD_AVX      = 4,
   VVDEC_SIMD_AVX2     = 5,
-  VVDEC_SIMD_AVX512   = 6
+  VVDEC_SIMD_MAX      = VVDEC_SIMD_AVX2
+#elif VVDEC_ARCH_ARM
+  VVDEC_SIMD_NEON     = 3,
+  VVDEC_SIMD_MAX      = VVDEC_SIMD_NEON
+#elif VVDEC_ARCH_WASM
+  VVDEC_SIMD_WASM     = 3,
+  VVDEC_SIMD_MAX      = VVDEC_SIMD_WASM
+#else
+  VVDEC_SIMD_SIMDE_ANY= 3,
+  VVDEC_SIMD_MAX      = VVDEC_SIMD_SIMDE_ANY
+#endif
 }vvdecSIMD_Extension;
 
 /*
@@ -134,6 +151,16 @@ typedef enum
   VVDEC_UPSCALING_COPY_ONLY = 1,     // copy picture into target resolution only
   VVDEC_UPSCALING_RESCALE   = 2      // auto rescale RPR pictures into target resolution
 }vvdecRPRUpscaling;
+
+/*
+  \enum vvdecErrHandlingFlags
+  vvdecErrHandlingFlags defines different error-handling flags
+*/
+typedef enum
+{
+  VVDEC_ERR_HANDLING_OFF          = 0,   // no special internal error-handling besides tuning in to GDR streams
+  VVDEC_ERR_HANDLING_TRY_CONTINUE = 1,   // try to continue decoding after parsing errors or missing pictures
+} vvdecErrHandlingFlags;
 
 /*
   \enum ColorFormat
@@ -229,7 +256,8 @@ typedef enum
 {
   VVDEC_CT_Y = 0,                      // Y component
   VVDEC_CT_U = 1,                      // U component
-  VVDEC_CT_V = 2                       // V component
+  VVDEC_CT_V = 2,                      // V component
+  VVDEC_MAX_NUM_COMPONENT = 3
 }vvdecComponentType;
 
 
@@ -259,7 +287,7 @@ typedef struct vvdecAccessUnit
    The payload memory must be allocated seperately by using vvdec_accessUnit_alloc_payload.
    To free the memory use vvdecAccessUnit_free.
 */
-VVDEC_DECL vvdecAccessUnit* vvdec_accessUnit_alloc();
+VVDEC_DECL vvdecAccessUnit* vvdec_accessUnit_alloc( void );
 
 /* vvdec_accessUnit_free:
    release storage of an vvdecAccessUnit instance.
@@ -330,6 +358,29 @@ typedef struct vvdecHrd
   uint32_t   hrdCpbCnt;
 }vvdecHrd;
 
+typedef enum
+{
+  VVDEC_GENEREAL_NAL_HRD_PARAM = 0,
+  VVDEC_GENEREAL_VCL_HRD_PARAM = 1,
+  VVDEC_NUM_GENEREAL_HRD_PARAM = 2
+}vvdecGeneralHrdParamsType;
+
+/*
+  The struct vvdecOlsHrd contains information about the Output Layer Set HRD
+*/
+typedef struct vvdecOlsHrd
+{
+  bool     fixedPicRateGeneralFlag;
+  bool     fixedPicRateWithinCvsFlag;
+  uint32_t elementDurationInTc;
+  bool     lowDelayHrdFlag;
+
+  uint32_t bitRateValueMinus1  [32][VVDEC_NUM_GENEREAL_HRD_PARAM];
+  uint32_t cpbSizeValueMinus1  [32][VVDEC_NUM_GENEREAL_HRD_PARAM];
+  uint32_t ducpbSizeValueMinus1[32][VVDEC_NUM_GENEREAL_HRD_PARAM];
+  uint32_t duBitRateValueMinus1[32][VVDEC_NUM_GENEREAL_HRD_PARAM];
+  bool     cbrFlag             [32][VVDEC_NUM_GENEREAL_HRD_PARAM];
+}vvdecOlsHrd;
 
 /*
   The struct vvdecPicAttributes contains additional picture side information
@@ -340,10 +391,11 @@ typedef struct vvdecPicAttributes
   vvdecSliceType  sliceType;           // slice type (I/P/B) */
   bool            isRefPic;            // reference picture
   uint32_t        temporalLayer;       // temporal layer
-  uint64_t        poc;                 // picture order count
+  int64_t         poc;                 // picture order count
   uint32_t        bits;                // bits of the compr. image packet
   vvdecVui       *vui;                 // if available, pointer to VUI (Video Usability Information)
   vvdecHrd       *hrd;                 // if available, pointer to HRD (Hypothetical Reference Decoder)
+  vvdecOlsHrd    *olsHrd;              // if available, pointer to OLS HRD (Output Layer Set Hypothetical Reference Decoder)
 } vvdecPicAttributes;
 
 /*
@@ -352,11 +404,12 @@ typedef struct vvdecPicAttributes
 */
 typedef struct vvdecPlane
 {
-  unsigned char* ptr;                  // pointer to plane buffer
+  unsigned char *ptr;                  // pointer to plane buffer
   uint32_t       width;                // width of the plane
   uint32_t       height;               // height of the plane
-  uint32_t       stride;               // stride (width + left margin + right margins) of plane in samples
+  uint32_t       stride;               // stride (width + left margin + right margins) of plane in bytes
   uint32_t       bytesPerSample;       // number of bytes per sample
+  void          *allocator;            // opaque pointer to memory allocator (only valid, when memory is maintained by application)
 } vvdecPlane;
 
 /*
@@ -365,7 +418,7 @@ typedef struct vvdecPlane
 */
 typedef struct vvdecFrame
 {
-  vvdecPlane          planes[ 3 ];     // component plane for yuv
+  vvdecPlane          planes[ VVDEC_MAX_NUM_COMPONENT ]; // component plane for yuv
   uint32_t            numPlanes;       // number of color components
   uint32_t            width;           // width of the luminance plane
   uint32_t            height;          // height of the luminance plane
@@ -384,13 +437,41 @@ typedef struct vvdecFrame
 */
 typedef struct vvdecParams
 {
-  int                 threads;           // thread count        ( default: -1 )
-  int                 parseThreads;      // parser thread count ( default: -1 )
-  vvdecRPRUpscaling   upscaleOutput;     // do internal upscaling of rpl pictures to dest. resolution ( default: 0 )
-  vvdecLogLevel       logLevel;          // verbosity level
-  bool                verifyPictureHash; // verify picture, if digest is available, true: check hash in SEI messages if available, false: ignore SEI message
-  vvdecSIMD_Extension simd;              // set specific simd optimization (default: max. availalbe)
+  int                   threads;           // thread count        ( default: -1 )
+  int                   parseThreads;      // parser thread count ( default: -1 )
+  vvdecRPRUpscaling     upscaleOutput;     // do internal upscaling of rpl pictures to dest. resolution ( default: 0 )
+  vvdecLogLevel         logLevel;          // verbosity level
+  bool                  verifyPictureHash; // verify picture, if digest is available, true: check hash in SEI messages if available, false: ignore SEI message
+  bool                  removePadding;     // copy output pictures to new buffer to remove padding (stride==width) ( default: false )
+  vvdecSIMD_Extension   simd;              // set specific simd optimization (default: max. availalbe)
+  void                 *opaque;            // opaque pointer for private user data ( can be used to carry application specific data or contexts )
+  vvdecErrHandlingFlags errHandlingFlags;  // set of flags defining how to handle bitstream errors
+  int                   padding1;          // reserved space for future parameters
+  int                   padding2;
+  int                   padding3;
+  int                   padding4;
 } vvdecParams;
+
+/* vvdecCreateBufferCallback
+ callback to allocate picture buffer memory, if picture memory is maintained by the caller.
+ For each plane an own memory buffer is needed separatly
+ \param[in]  void*     pointer to private data of the user (defined in vvdecParams::opaque)
+ \param[in]  vvdecComponentType  plane type
+ \param[in]  uint32_t  memory size in bytes
+ \param[in]  uint32_t  alignement in bytes
+ \param[out] void**    address of opaque pointer to memory allocator
+ \retval[ ]  void*     pointer to the allocaded block, NULL if the block cannot be allocated.
+*/
+typedef void* (*vvdecCreateBufferCallback)(void*, vvdecComponentType , uint32_t , uint32_t , void ** );
+
+/* vvdecUnrefBufferCallback
+ callback to unreference picture buffer memory, if picture memory is maintained by the caller.
+ This callback is called, when a buffer reference is not needed anymore by the decoder.
+ When the buffer does not have references anymore it must be released/deallocated by the caller.
+ \param[in]  void*     pointer to private data of the user (defined in vvdecParams::opaque)
+ \param[in]  void*     opaque pointer to memory allocator
+*/
+typedef void (*vvdecUnrefBufferCallback)(void*, void * );
 
 /* vvdec_params_default:
   Initialize vvdec_params structure to default values
@@ -401,7 +482,7 @@ VVDEC_DECL void vvdec_params_default(vvdecParams *param);
    Allocates an vvdec_params_alloc instance.
    The returned params struct is set to default values.
 */
-VVDEC_DECL vvdecParams* vvdec_params_alloc();
+VVDEC_DECL vvdecParams* vvdec_params_alloc( void );
 
 /* vvdec_params_free:
    release storage of an vvdec_params instance.
@@ -413,7 +494,7 @@ VVDEC_DECL void vvdec_params_free(vvdecParams *params );
   \param[in]  none
   \retval[ ]  const char* version number as string
 */
-VVDEC_DECL const char* vvdec_get_version();
+VVDEC_DECL const char* vvdec_get_version( void );
 
 /* vvdec_decoder_open
   This method initializes the decoder instance.
@@ -422,10 +503,28 @@ VVDEC_DECL const char* vvdec_get_version();
   Other possibilities for an unsuccessful memory initialization, or an machine with
   insufficient CPU-capabilities.
   \param[in]  vvdec_params_t pointer of vvdec_params struct that holds initial decoder parameters.
-  \retval     vvdec_params_t pointer of the decoder handler if successful, otherwise NULL
+  \retval     vvdecDecoder   pointer of the decoder handler if successful, otherwise NULL
   \pre        The decoder must not be initialized (pointer of decoder handler must be null).
 */
 VVDEC_DECL vvdecDecoder* vvdec_decoder_open( vvdecParams *);
+
+/* vvdec_decoder_open_with_allocator
+  This method initializes the decoder instance, by using an external picture buffer manager.
+  This method is used to initially set up the decoder with the assigned decoder parameter struct
+  and the extern buffer allocator callbacks.
+  Be aware of a vvdecFrame may still be used internally after already returned to the caller.
+  That means a picture mustn´t be changed or removed till the vvdecUnrefBufferCallback of all plane buffers have been emitted.
+
+  The method fails if the assigned parameter struct does not pass the consistency check.
+  Other possibilities for an unsuccessful memory initialization, or an machine with
+  insufficient CPU-capabilities.
+  \param[in]  vvdec_params_t pointer of vvdec_params struct that holds initial decoder parameters.
+  \param[in]  vvdecCreateBufferCallback implementation of the callback that is called when picture buffer needs to be allocated
+  \param[in]  vvdecUnrefBufferCallback implementation of the callback that is called to unreference a picture buffer
+  \retval     vvdecDecoder pointer of the decoder handler if successful, otherwise NULL
+  \pre        The decoder must not be initialized (pointer of decoder handler must be null).
+*/
+VVDEC_DECL vvdecDecoder* vvdec_decoder_open_with_allocator ( vvdecParams *, vvdecCreateBufferCallback, vvdecUnrefBufferCallback );
 
 /* vvdec_decoder_close
  This method resets the decoder instance.
@@ -556,10 +655,17 @@ VVDEC_DECL const char* vvdec_get_nal_unit_type_name( vvdecNalType t );
 */
 VVDEC_DECL bool vvdec_is_nal_unit_slice ( vvdecNalType t );
 
+/* vvdec_set_tracing
+ Set the filename and rules for tracing
+ \param[in]  the string of trace filename and rules
+  \retval    VVDEC_ERR_INITIALIZE if ENABLE_TRACING off and file and rule not both empty, otherwise VVDEC_OK
+*/
+VVDEC_DECL int vvdec_set_tracing( const char* file, const char* rule );
+
 VVDEC_NAMESPACE_END
 
 #ifdef __cplusplus
 }
 #endif /*__cplusplus */
 
-#endif /*_VVDEC_H_*/
+#endif /*VVDEC_VVDEC_H*/
