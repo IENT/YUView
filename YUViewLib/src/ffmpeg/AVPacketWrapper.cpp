@@ -148,9 +148,10 @@ AVPacketWrapper::AVPacketWrapper(LibraryVersion libVersion, AVPacket *packet)
     p->size   = 0;
     this->pkt = reinterpret_cast<AVPacket *>(p);
   }
-  else if (this->libVer.avcodec.major == 59)
+  else if (this->libVer.avcodec.major == 59 || //
+           this->libVer.avcodec.major == 60)
   {
-    auto p    = reinterpret_cast<AVPacket_59 *>(packet);
+    auto p    = reinterpret_cast<AVPacket_59_60 *>(packet);
     p->data   = nullptr;
     p->size   = 0;
     this->pkt = reinterpret_cast<AVPacket *>(p);
@@ -183,9 +184,10 @@ void AVPacketWrapper::setData(QByteArray &set_data)
     data    = p->data;
     size    = p->size;
   }
-  else if (this->libVer.avcodec.major == 59)
+  else if (this->libVer.avcodec.major == 59 || //
+           this->libVer.avcodec.major == 60)
   {
-    auto p  = reinterpret_cast<AVPacket_59 *>(this->pkt);
+    auto p  = reinterpret_cast<AVPacket_59_60 *>(this->pkt);
     p->data = (uint8_t *)set_data.data();
     p->size = set_data.size();
     data    = p->data;
@@ -209,9 +211,10 @@ void AVPacketWrapper::setPTS(int64_t pts)
     p->pts    = pts;
     this->pts = pts;
   }
-  else if (this->libVer.avcodec.major == 59)
+  else if (this->libVer.avcodec.major == 59 || //
+           this->libVer.avcodec.major == 60)
   {
-    auto p    = reinterpret_cast<AVPacket_59 *>(this->pkt);
+    auto p    = reinterpret_cast<AVPacket_59_60 *>(this->pkt);
     p->pts    = pts;
     this->pts = pts;
   }
@@ -233,9 +236,10 @@ void AVPacketWrapper::setDTS(int64_t dts)
     p->dts    = dts;
     this->dts = dts;
   }
-  else if (this->libVer.avcodec.major == 59)
+  else if (this->libVer.avcodec.major == 59 || //
+           this->libVer.avcodec.major == 60)
   {
-    auto p    = reinterpret_cast<AVPacket_59 *>(this->pkt);
+    auto p    = reinterpret_cast<AVPacket_59_60 *>(this->pkt);
     p->dts    = dts;
     this->dts = dts;
   }
@@ -387,9 +391,10 @@ void AVPacketWrapper::update()
     this->duration        = p->duration;
     this->pos             = p->pos;
   }
-  else if (this->libVer.avcodec.major == 59)
+  else if (this->libVer.avcodec.major == 59 || //
+           this->libVer.avcodec.major == 60)
   {
-    auto p = reinterpret_cast<AVPacket_59 *>(this->pkt);
+    auto p = reinterpret_cast<AVPacket_59_60 *>(this->pkt);
 
     this->buf             = p->buf;
     this->pts             = p->pts;
