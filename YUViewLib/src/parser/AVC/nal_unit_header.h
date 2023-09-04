@@ -32,6 +32,7 @@
 
 #pragma once
 
+#include "common/EnumMapper.h"
 #include "parser/common/SubByteReaderLogging.h"
 
 namespace parser::avc
@@ -65,6 +66,32 @@ enum class NalType
   RESERVED_22,
   RESERVED_23
 };
+
+const EnumMapper<NalType>
+    NalTypeMapper({{NalType::UNSPECIFIED, "UNSPECIFIED"},
+                   {NalType::CODED_SLICE_NON_IDR, "CODED_SLICE_NON_IDR"},
+                   {NalType::CODED_SLICE_DATA_PARTITION_A, "CODED_SLICE_DATA_PARTITION_A"},
+                   {NalType::CODED_SLICE_DATA_PARTITION_B, "CODED_SLICE_DATA_PARTITION_B"},
+                   {NalType::CODED_SLICE_DATA_PARTITION_C, "CODED_SLICE_DATA_PARTITION_C"},
+                   {NalType::CODED_SLICE_IDR, "CODED_SLICE_IDR"},
+                   {NalType::SEI, "SEI"},
+                   {NalType::SPS, "SPS"},
+                   {NalType::PPS, "PPS"},
+                   {NalType::AUD, "AUD"},
+                   {NalType::END_OF_SEQUENCE, "END_OF_SEQUENCE"},
+                   {NalType::END_OF_STREAM, "END_OF_STREAM"},
+                   {NalType::FILLER, "FILLER"},
+                   {NalType::SPS_EXT, "SPS_EXT"},
+                   {NalType::PREFIX_NAL, "PREFIX_NAL"},
+                   {NalType::SUBSET_SPS, "SUBSET_SPS"},
+                   {NalType::DEPTH_PARAMETER_SET, "DEPTH_PARAMETER_SET"},
+                   {NalType::RESERVED_17, "RESERVED_17"},
+                   {NalType::RESERVED_18, "RESERVED_18"},
+                   {NalType::CODED_SLICE_AUX, "CODED_SLICE_AUX"},
+                   {NalType::CODED_SLICE_EXTENSION, "CODED_SLICE_EXTENSION"},
+                   {NalType::CODED_SLICE_EXTENSION_DEPTH_MAP, "CODED_SLICE_EXTENSION_DEPTH_MAP"},
+                   {NalType::RESERVED_22, "RESERVED_22"},
+                   {NalType::RESERVED_23, "RESERVED_23"}});
 
 class nal_unit_header
 {

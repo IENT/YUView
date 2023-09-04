@@ -76,11 +76,11 @@ void HRD::addAU(size_t                                         auBits,
   const auto SchedSelIdx = 0;
 
   const auto initial_cpb_removal_delay =
-      lastBufferingPeriodSEI->initial_cpb_removal_delay[SchedSelIdx];
+      lastBufferingPeriodSEI->initial_cpb_removal_delay.at(SchedSelIdx);
   const auto initial_cpb_removal_delay_offset =
-      lastBufferingPeriodSEI->initial_cpb_removal_delay_offset[SchedSelIdx];
+      lastBufferingPeriodSEI->initial_cpb_removal_delay_offset.at(SchedSelIdx);
 
-  const bool cbr_flag = vuiParam.nalHrdParameters.cbr_flag[SchedSelIdx];
+  const bool cbr_flag = vuiParam.nalHrdParameters.cbr_flag.at(SchedSelIdx);
 
   // TODO: Investigate the difference between our results and the results from stream-Eye
   // I noticed that the results from stream eye differ by a (seemingly random) additional

@@ -301,12 +301,19 @@ ParserAVFormat::parseByteVectorAnnexBStartCodes(ByteVector &                   d
   {
     auto itNextStartCode = getNextNalStart(itStartCode);
     auto nalData         = ByteVector(itStartCode + sizeStartCode, itNextStartCode);
-    auto parseResult =
-        this->annexBParser->parseAndAddNALUnit(nalID++, nalData, packetBitrateEntry, {}, item);
-    if (parseResult.success && parseResult.bitrateEntry)
-      this->bitratePlotModel->addBitratePoint(this->videoStreamIndex, *parseResult.bitrateEntry);
-    if (parseResult.success && parseResult.nalTypeName)
-      naNames[*parseResult.nalTypeName]++;
+    try
+    {
+      auto parseResult =
+          this->annexBParser->parseAndAddNALUnit(nalID++, nalData, packetBitrateEntry, {}, item);
+      if (parseResult.success && parseResult.bitrateEntry)
+        this->bitratePlotModel->addBitratePoint(this->videoStreamIndex, *parseResult.bitrateEntry);
+      if (parseResult.success && parseResult.nalTypeName)
+        naNames[*parseResult.nalTypeName]++;
+    }
+    catch (const std::exception &)
+    {
+      DEBUG_AVFORMAT("ParserAVFormat::parseByteVectorAnnexBStartCodes Parsing of NAL failed");
+    }
     itStartCode = itNextStartCode;
   }
   return naNames;
