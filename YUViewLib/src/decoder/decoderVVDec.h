@@ -90,7 +90,7 @@ public:
   static bool checkLibraryFile(QString libFilePath, QString &error);
 
   QString getDecoderName() const override;
-  QString getCodecName() const override { return "hevc"; }
+  QString getCodecName() const override { return "vvc"; }
 
   int nrSignalsSupported() const override { return nrSignals; }
 
