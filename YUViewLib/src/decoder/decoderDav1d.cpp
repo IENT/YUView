@@ -112,7 +112,7 @@ decoderDav1d::decoderDav1d(int signalID, bool cachingDecoder) : decoderBaseSingl
 {
   currentOutputBuffer.clear();
 
-  // Libde265 can only decoder HEVC in YUV format
+  // libdav1d can only decode the YUV format
   this->rawFormat = video::RawFormat::YUV;
 
   QSettings settings;
@@ -217,7 +217,7 @@ template <typename T> T decoderDav1d::resolve(T &fun, const char *symbol, bool o
   if (!ptr)
   {
     if (!optional)
-      setError(QStringLiteral("Error loading the libde265 library: Can't find function %1.")
+      setError(QStringLiteral("Error loading the libdav1d library: Can't find function %1.")
                    .arg(symbol));
     return nullptr;
   }
@@ -285,7 +285,7 @@ bool decoderDav1d::decodeNextFrame()
 {
   if (decoderState != DecoderState::RetrieveFrames)
   {
-    DEBUG_DAV1D("decoderLibde265::decodeNextFrame: Wrong decoder state.");
+    DEBUG_DAV1D("decoderDav1d::decodeNextFrame: Wrong decoder state.");
     return false;
   }
   if (decodedFrameWaiting)
@@ -546,7 +546,7 @@ bool decoderDav1d::checkLibraryFile(QString libFilePath, QString &error)
   }
 
   // Now let's see if we can retrive all the function pointers that we will need.
-  // If this works, we can be fairly certain that this is a valid libde265 library.
+  // If this works, we can be fairly certain that this is a valid libdav1d library.
   testDecoder.resolveLibraryFunctionPointers();
 
   error = testDecoder.decoderErrorString();
@@ -566,8 +566,8 @@ QString decoderDav1d::getDecoderName() const
 QStringList decoderDav1d::getLibraryNames() const
 {
   // If the file name is not set explicitly, QLibrary will try to open
-  // the libde265.so file first. Since this has been compiled for linux
-  // it will fail and not even try to open the libde265.dylib.
+  // the libdav1d.so file first. Since this has been compiled for linux
+  // it will fail and not even try to open the libdav1d.dylib.
   // On windows and linux ommitting the extension works
   if (is_Q_OS_MAC)
     return QStringList() << "libdav1d-internals.dylib"
