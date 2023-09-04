@@ -510,7 +510,7 @@ void FileSourceFFmpegFile::openFileAndFindVideoStream(QString fileName)
   if (!this->video_stream)
     return;
 
-  this->currentPacket = this->ff.allocatePaket();
+  this->currentPacket = this->ff.allocatePacket();
 
   // Get the frame rate, picture size and color conversion mode
   auto avgFrameRate = this->video_stream.getAvgFrameRate();

@@ -298,7 +298,7 @@ void decoderFFmpeg::cacheCurStatistics()
 bool decoderFFmpeg::pushData(QByteArray &data)
 {
   if (!this->raw_pkt)
-    this->raw_pkt = this->ff.allocatePaket();
+    this->raw_pkt = this->ff.allocatePacket();
   if (data.length() == 0)
   {
     // Push an empty packet to indicate that the file has ended
