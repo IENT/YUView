@@ -332,7 +332,7 @@ typedef struct AVCodecContext_58
   // Actually, there is more here, but the variables above are the only we need.
 } AVCodecContext_58;
 
-typedef struct AVCodecContext_59
+typedef struct AVCodecContext_59_60
 {
   const AVClass *         av_class;
   int                     log_level_offset;
@@ -410,7 +410,7 @@ typedef struct AVCodecContext_59
   int                                slices;
 
   // Actually, there is more here, but the variables above are the only we need.
-} AVCodecContext_59;
+} AVCodecContext_59_60;
 
 } // namespace
 
@@ -730,9 +730,9 @@ void AVCodecContextWrapper::update()
     this->color_range             = p->color_range;
     this->chroma_sample_location  = p->chroma_sample_location;
   }
-  else if (libVer.avcodec.major == 59)
+  else if (libVer.avcodec.major == 59 || libVer.avcodec.major == 60)
   {
-    auto p                        = reinterpret_cast<AVCodecContext_59 *>(this->codec);
+    auto p                        = reinterpret_cast<AVCodecContext_59_60 *>(this->codec);
     this->codec_type              = p->codec_type;
     this->codec_name              = QString("Not supported in AVCodec >= 58");
     this->codec_id                = p->codec_id;
