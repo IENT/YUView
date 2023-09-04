@@ -70,7 +70,7 @@ public:
 
   AVFrameWrapper  allocateFrame();
   void            freeFrame(AVFrameWrapper &frame);
-  AVPacketWrapper allocatePaket();
+  AVPacketWrapper allocatePacket();
   void            unrefPacket(AVPacketWrapper &packet);
   void            freePacket(AVPacketWrapper &packet);
 

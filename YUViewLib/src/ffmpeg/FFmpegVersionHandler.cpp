@@ -634,7 +634,7 @@ void FFmpegVersionHandler::freeFrame(AVFrameWrapper &frame)
   frame.clear();
 }
 
-AVPacketWrapper FFmpegVersionHandler::allocatePaket()
+AVPacketWrapper FFmpegVersionHandler::allocatePacket()
 {
   auto rawPacket = this->lib.avcodec.av_packet_alloc();
   this->lib.avcodec.av_init_packet(rawPacket);
