@@ -38,11 +38,11 @@
 #include <optional>
 #include <set>
 
-#include "common/BitratePlotModel.h"
-#include "common/TreeItem.h"
-#include "filesource/FileSourceAnnexBFile.h"
-#include "parser/Parser.h"
-#include "video/videoHandlerYUV.h"
+#include <filesource/FileSourceAnnexBFile.h>
+#include <parser/Parser.h>
+#include <parser/common/BitratePlotModel.h>
+#include <parser/common/TreeItem.h>
+#include <video/yuv/videoHandlerYUV.h>
 
 namespace parser
 {
@@ -153,7 +153,7 @@ protected:
                          std::shared_ptr<TreeItem> root,
                          std::optional<pairUint64> nalStartEndPos);
 
-  int pocOfFirstRandomAccessFrame{-1};
+  std::optional<int> pocOfFirstRandomAccessFrame{};
 
   // Save general information about the file here
   struct stream_info_type

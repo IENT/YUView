@@ -66,9 +66,9 @@ bool ParserAnnexB::addFrameToList(int                       poc,
     if (f.poc == poc)
       return false;
 
-  if (pocOfFirstRandomAccessFrame == -1 && randomAccessPoint)
-    pocOfFirstRandomAccessFrame = poc;
-  if (poc >= pocOfFirstRandomAccessFrame)
+  if (!this->pocOfFirstRandomAccessFrame && randomAccessPoint)
+    this->pocOfFirstRandomAccessFrame = poc;
+  if (poc >= this->pocOfFirstRandomAccessFrame.value())
   {
     // We don't add frames which we can not decode because they are before the first RA (I) frame
     AnnexBFrame newFrame;

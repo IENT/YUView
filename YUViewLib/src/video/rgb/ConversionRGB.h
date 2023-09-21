@@ -32,35 +32,35 @@
 
 #pragma once
 
-#include <QMetaType>
-#include <common/EnumMapper.h>
+#include <video/rgb/PixelFormatRGB.h>
 
+#include <QByteArray>
 
-namespace video
+namespace video::rgb
 {
 
-enum class RawFormat
-{
-  Invalid,
-  YUV,
-  RGB
-};
+void convertInputRGBToARGB(const QByteArray &    sourceBuffer,
+                           const PixelFormatRGB &srcPixelFormat,
+                           unsigned char *       targetBuffer,
+                           const Size            frameSize,
+                           const bool            componentInvert[4],
+                           const int             componentScale[4],
+                           const bool            limitedRange,
+                           const bool            convertAlpha,
+                           const bool            premultiplyAlpha);
 
-enum class Endianness
-{
-  Big,
-  Little
-};
+void convertSinglePlaneOfRGBToGreyscaleARGB(const QByteArray &    sourceBuffer,
+                                            const PixelFormatRGB &srcPixelFormat,
+                                            unsigned char *       targetBuffer,
+                                            const Size            frameSize,
+                                            const Channel         displayChannel,
+                                            const int             scale,
+                                            const bool            invert,
+                                            const bool            limitedRange);
 
-enum class DataLayout
-{
-  Planar,
-  Packed
-};
+rgba_t getPixelValueFromBuffer(const QByteArray &    sourceBuffer,
+                               const PixelFormatRGB &srcPixelFormat,
+                               const Size            frameSize,
+                               const QPoint &        pixelPos);
 
-const auto DataLayoutMapper =
-    EnumMapper<DataLayout>({{DataLayout::Packed, "Packed"}, {DataLayout::Planar, "Planar"}});
-
-} // namespace video
-
-Q_DECLARE_METATYPE(video::DataLayout);
+} // namespace video::rgb

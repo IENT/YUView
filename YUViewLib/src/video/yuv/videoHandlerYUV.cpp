@@ -47,8 +47,9 @@
 #include <common/FileInfo.h>
 #include <common/Functions.h>
 #include <common/FunctionsGui.h>
-#include <video/PixelFormatYUVGuess.h>
-#include <video/videoHandlerYUVCustomFormatDialog.h>
+#include <video/LimitedRangeToFullRange.h>
+#include <video/yuv/PixelFormatYUVGuess.h>
+#include <video/yuv/videoHandlerYUVCustomFormatDialog.h>
 
 namespace video::yuv
 {
@@ -787,7 +788,7 @@ inline void YUVPlaneToRGBMonochrome_444(const int                     componentS
     if (shiftTo8Bit > 0)
       newVal = clip8Bit(newVal >> shiftTo8Bit);
     if (!fullRange)
-      newVal = videoHandler::convScaleLimitedRange(newVal);
+      newVal = LimitedRangeToFullRange.at(newVal);
 
     // Set the value for R, G and B (BGRA)
     dst[i * 4]     = (unsigned char)newVal;
@@ -820,7 +821,7 @@ inline void YUVPlaneToRGBMonochrome_422(const int                     componentS
     if (shiftTo8Bit > 0)
       newVal = clip8Bit(newVal >> shiftTo8Bit);
     if (!fullRange)
-      newVal = videoHandler::convScaleLimitedRange(newVal);
+      newVal = LimitedRangeToFullRange.at(newVal);
 
     // Set the value for R, G and B of 2 pixels (BGRA)
     dst[i * 8]     = (unsigned char)newVal;
@@ -858,7 +859,7 @@ inline void YUVPlaneToRGBMonochrome_420(const int                     w,
       if (shiftTo8Bit > 0)
         newVal = clip8Bit(newVal >> shiftTo8Bit);
       if (!fullRange)
-        newVal = videoHandler::convScaleLimitedRange(newVal);
+        newVal = LimitedRangeToFullRange.at(newVal);
 
       // Set the value for R, G and B of 4 pixels (BGRA)
       int o      = (y * 2 * w + x * 2) * 4;
@@ -906,7 +907,7 @@ inline void YUVPlaneToRGBMonochrome_440(const int                     w,
       if (shiftTo8Bit > 0)
         newVal = clip8Bit(newVal >> shiftTo8Bit);
       if (!fullRange)
-        newVal = videoHandler::convScaleLimitedRange(newVal);
+        newVal = LimitedRangeToFullRange.at(newVal);
 
       // Set the value for R, G and B of 2 pixels (BGRA)
       const int pos1 = (y * 2 * w + x) * 4;
@@ -948,7 +949,7 @@ inline void YUVPlaneToRGBMonochrome_410(const int                     w,
       if (shiftTo8Bit > 0)
         newVal = clip8Bit(newVal >> shiftTo8Bit);
       if (!fullRange)
-        newVal = videoHandler::convScaleLimitedRange(newVal);
+        newVal = LimitedRangeToFullRange.at(newVal);
 
       // Set the value as RGB for 4 pixels in this line and the next 3 lines (BGRA)
       for (int yo = 0; yo < 4; yo++)
@@ -985,7 +986,7 @@ inline void YUVPlaneToRGBMonochrome_411(const int                     componentS
     if (shiftTo8Bit > 0)
       newVal = clip8Bit(newVal >> shiftTo8Bit);
     if (!fullRange)
-      newVal = videoHandler::convScaleLimitedRange(newVal);
+      newVal = LimitedRangeToFullRange.at(newVal);
 
     // Set the value for R, G and B of 4 pixels (BGRA)
     dst[i * 16]      = (unsigned char)newVal;
@@ -2724,18 +2725,21 @@ QLayout *videoHandlerYUV::createVideoHandlerControls(bool isSizeFixed)
   ui.yuvFormatComboBox->setEnabled(!isSizeFixed);
 
   // Set all the values of the properties widget to the values of this class
+  const auto hasChroma = (srcPixelFormat.getSubsampling() != Subsampling::YUV_400);
   ui.colorComponentsComboBox->addItems(
       functions::toQStringList(ComponentDisplayModeMapper.getNames()));
   ui.colorComponentsComboBox->setCurrentIndex(
       int(ComponentDisplayModeMapper.indexOf(this->conversionSettings.componentDisplayMode)));
+  ui.colorComponentsComboBox->setEnabled(hasChroma);
   ui.chromaInterpolationComboBox->addItems(
       functions::toQStringList(ChromaInterpolationMapper.getNames()));
   ui.chromaInterpolationComboBox->setCurrentIndex(
       int(ChromaInterpolationMapper.indexOf(this->conversionSettings.chromaInterpolation)));
-  ui.chromaInterpolationComboBox->setEnabled(srcPixelFormat.isChromaSubsampled());
+  ui.chromaInterpolationComboBox->setEnabled(hasChroma && srcPixelFormat.isChromaSubsampled());
   ui.colorConversionComboBox->addItems(functions::toQStringList(ColorConversionMapper.getNames()));
   ui.colorConversionComboBox->setCurrentIndex(
       int(ColorConversionMapper.indexOf(this->conversionSettings.colorConversion)));
+  ui.colorConversionComboBox->setEnabled(hasChroma);
   ui.lumaScaleSpinBox->setValue(this->conversionSettings.mathParameters[Component::Luma].scale);
   ui.lumaOffsetSpinBox->setMaximum(1000);
   ui.lumaOffsetSpinBox->setValue(this->conversionSettings.mathParameters[Component::Luma].offset);
@@ -2867,10 +2871,15 @@ void videoHandlerYUV::setSrcPixelFormat(PixelFormatYUV format, bool emitSignal)
   if (ui.created())
   {
     // Every time the pixel format changed, see if the interpolation combo box is enabled/disabled
-    QSignalBlocker blocker1(ui.chromaInterpolationComboBox);
-    QSignalBlocker blocker2(ui.lumaOffsetSpinBox);
-    QSignalBlocker blocker3(ui.chromaOffsetSpinBox);
-    ui.chromaInterpolationComboBox->setEnabled(format.isChromaSubsampled());
+    const auto     hasChroma = (srcPixelFormat.getSubsampling() != Subsampling::YUV_400);
+    QSignalBlocker blocker1(ui.colorComponentsComboBox);
+    QSignalBlocker blocker2(ui.chromaInterpolationComboBox);
+    QSignalBlocker blocker3(ui.colorConversionComboBox);
+    QSignalBlocker blocker4(ui.lumaOffsetSpinBox);
+    QSignalBlocker blocker5(ui.chromaOffsetSpinBox);
+    ui.colorComponentsComboBox->setEnabled(hasChroma);
+    ui.chromaInterpolationComboBox->setEnabled(hasChroma && format.isChromaSubsampled());
+    ui.colorConversionComboBox->setEnabled(hasChroma);
     ui.lumaOffsetSpinBox->setValue(this->conversionSettings.mathParameters[Component::Luma].offset);
     ui.chromaOffsetSpinBox->setValue(
         this->conversionSettings.mathParameters[Component::Chroma].offset);

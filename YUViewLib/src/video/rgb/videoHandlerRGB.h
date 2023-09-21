@@ -32,9 +32,10 @@
 
 #pragma once
 
-#include "PixelFormatRGB.h"
+#include <video/rgb/PixelFormatRGB.h>
+#include <video/videoHandler.h>
+
 #include "ui_videoHandlerRGB.h"
-#include "videoHandler.h"
 
 namespace video::rgb
 {
@@ -220,4 +221,4 @@ private slots:
   void slotDisplayOptionsChanged();
 };
 
-} // namespace video
+} // namespace video::rgb

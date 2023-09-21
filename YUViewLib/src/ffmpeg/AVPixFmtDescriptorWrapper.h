@@ -33,8 +33,9 @@
 #pragma once
 
 #include "FFMpegLibrariesTypes.h"
-#include "video/videoHandlerRGB.h"
-#include "video/videoHandlerYUV.h"
+
+#include <video/rgb/videoHandlerRGB.h>
+#include <video/yuv/videoHandlerYUV.h>
 
 namespace FFmpeg
 {

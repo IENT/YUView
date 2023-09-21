@@ -35,7 +35,6 @@
 #include <QLibrary>
 
 #include <common/FileInfo.h>
-#include <video/videoHandlerYUV.h>
 
 #include "decoderBase.h"
 #include "externalHeader/libVTMDecoder.h"

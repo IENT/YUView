@@ -32,8 +32,8 @@
 
 #pragma once
 
-#include "PixelFormatYUV.h"
-#include "videoHandler.h"
+#include <video/videoHandler.h>
+#include <video/yuv/PixelFormatYUV.h>
 
 #include "ui_videoHandlerYUV.h"
 

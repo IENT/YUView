@@ -147,7 +147,7 @@ typedef struct AVFormatContext_58
   // Actually, there is more here, but the variables above are the only we need.
 } AVFormatContext_58;
 
-typedef struct AVFormatContext_59
+typedef struct AVFormatContext_59_60
 {
   const AVClass *        av_class;
   struct AVInputFormat * iformat;
@@ -178,7 +178,9 @@ typedef struct AVFormatContext_59
   unsigned int           nb_chapters;
   AVChapter **           chapters;
   AVDictionary *         metadata;
-} AVFormatContext_59;
+
+  // Actually, there is more here, but the variables above are the only we need.
+} AVFormatContext_59_60;
 
 } // namespace
 
@@ -334,9 +336,9 @@ void AVFormatContextWrapper::update()
 
     this->iformat = AVInputFormatWrapper(p->iformat, this->libVer);
   }
-  else if (this->libVer.avformat.major == 59)
+  else if (this->libVer.avformat.major == 59 || this->libVer.avformat.major == 60)
   {
-    auto p           = reinterpret_cast<AVFormatContext_59 *>(this->ctx);
+    auto p           = reinterpret_cast<AVFormatContext_59_60 *>(this->ctx);
     this->ctx_flags  = p->ctx_flags;
     this->nb_streams = p->nb_streams;
     for (unsigned i = 0; i < nb_streams; i++)

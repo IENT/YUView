@@ -34,10 +34,10 @@
 
 #include <QLibrary>
 
-#include "decoderBase.h"
-#include "externalHeader/libde265/de265.h"
-#include "externalHeader/libde265/de265_internals.h"
-#include "video/videoHandlerYUV.h"
+#include <decoder/decoderBase.h>
+#include <decoder/externalHeader/libde265/de265.h>
+#include <decoder/externalHeader/libde265/de265_internals.h>
+#include <video/yuv/videoHandlerYUV.h>
 
 namespace decoder
 {

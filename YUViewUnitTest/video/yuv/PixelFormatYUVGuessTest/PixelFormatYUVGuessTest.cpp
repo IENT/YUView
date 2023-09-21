@@ -1,6 +1,6 @@
 #include <QtTest>
 
-#include <video/PixelFormatYUVGuess.h>
+#include <video/yuv/PixelFormatYUVGuess.h>
 
 using namespace video;
 

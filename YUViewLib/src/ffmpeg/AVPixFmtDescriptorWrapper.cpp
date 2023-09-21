@@ -109,7 +109,7 @@ typedef struct AVComponentDescriptor_57
   int depth;
 } AVComponentDescriptor_57;
 
-typedef struct AVPixFmtDescriptor_57
+typedef struct AVPixFmtDescriptor_57_58
 {
   const char *             name;
   uint8_t                  nb_components;
@@ -118,7 +118,7 @@ typedef struct AVPixFmtDescriptor_57
   uint64_t                 flags;
   AVComponentDescriptor_57 comp[4];
   const char *             alias;
-} AVPixFmtDescriptor_57;
+} AVPixFmtDescriptor_57_58;
 
 AVPixFmtDescriptorWrapper::Flags parseFlags(uint8_t flagsValue)
 {
@@ -217,9 +217,10 @@ AVPixFmtDescriptorWrapper::AVPixFmtDescriptorWrapper(AVPixFmtDescriptor *descrip
 
     aliases = QString(p->alias);
   }
-  else if (libVer.avutil.major == 57)
+  else if (libVer.avutil.major == 57 || //
+           libVer.avutil.major == 58)
   {
-    auto p              = reinterpret_cast<AVPixFmtDescriptor_57 *>(descriptor);
+    auto p              = reinterpret_cast<AVPixFmtDescriptor_57_58 *>(descriptor);
     this->name          = QString(p->name);
     this->nb_components = p->nb_components;
     this->log2_chroma_w = p->log2_chroma_w;
@@ -345,6 +346,8 @@ bool AVPixFmtDescriptorWrapper::setValuesFromPixelFormatYUV(PixelFormatYUV fmt)
   case Subsampling::YUV_411:
     this->log2_chroma_w = 0;
     this->log2_chroma_h = 2;
+    break;
+  default:
     break;
   }
 

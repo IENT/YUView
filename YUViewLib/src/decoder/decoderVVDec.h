@@ -34,10 +34,10 @@
 
 #include <QLibrary>
 
-#include "common/FileInfo.h"
-#include "decoderBase.h"
-#include "externalHeader/vvdec/vvdec.h"
-#include "video/videoHandlerYUV.h"
+#include <common/FileInfo.h>
+#include <decoder/decoderBase.h>
+#include <decoder/externalHeader/vvdec/vvdec.h>
+#include <video/yuv/videoHandlerYUV.h>
 
 namespace decoder
 {
@@ -90,7 +90,7 @@ public:
   static bool checkLibraryFile(QString libFilePath, QString &error);
 
   QString getDecoderName() const override;
-  QString getCodecName() const override { return "hevc"; }
+  QString getCodecName() const override { return "vvc"; }
 
   int nrSignalsSupported() const override { return nrSignals; }
 
@@ -112,9 +112,9 @@ private:
 
   void allocateNewDecoder();
 
-  vvdecDecoder *decoder{nullptr};
-  vvdecAccessUnit* accessUnit{nullptr};
-  vvdecFrame *currentFrame{nullptr};
+  vvdecDecoder *   decoder{nullptr};
+  vvdecAccessUnit *accessUnit{nullptr};
+  vvdecFrame *     currentFrame{nullptr};
 
   // Try to get the next picture from the decoder and save it in currentHMPic
   bool getNextFrameFromDecoder();
@@ -132,4 +132,4 @@ private:
   LibraryFunctionsVVDec lib{};
 };
 
-}
+} // namespace decoder

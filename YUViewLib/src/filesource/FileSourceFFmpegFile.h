@@ -37,8 +37,8 @@
 #include <ffmpeg/AVCodecParametersWrapper.h>
 #include <ffmpeg/AVPacketWrapper.h>
 #include <ffmpeg/FFmpegVersionHandler.h>
-#include <video/videoHandlerYUV.h>
-#include <video/videoHandlerRGB.h>
+#include <video/rgb/videoHandlerRGB.h>
+#include <video/yuv/videoHandlerYUV.h>
 
 /* This class can use the ffmpeg libraries (libavcodec) to read from any packetized file.
  */

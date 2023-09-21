@@ -136,7 +136,7 @@ std::size_t PixelFormatRGB::bytesPerFrame(Size frameSize) const
   return nrBytes;
 }
 
-int PixelFormatRGB::getComponentPosition(Channel channel) const
+int PixelFormatRGB::getChannelPosition(Channel channel) const
 {
   if (channel == Channel::Alpha)
   {
@@ -183,6 +183,50 @@ int PixelFormatRGB::getComponentPosition(Channel channel) const
   if (this->alphaMode == AlphaMode::First)
     return rgbIdx + 1;
   return rgbIdx;
+}
+
+Channel PixelFormatRGB::getChannelAtPosition(int position) const
+{
+  if (this->hasAlpha())
+  {
+    if (position == 0 && this->alphaMode == AlphaMode::First)
+      return Channel::Alpha;
+    if (position == 3 && this->alphaMode == AlphaMode::Last)
+      return Channel::Alpha;
+
+    if (this->alphaMode == AlphaMode::First)
+      position--;
+  }
+
+  if (position == 0)
+  {
+    if (this->channelOrder == ChannelOrder::RGB || this->channelOrder == ChannelOrder::RBG)
+      return Channel::Red;
+    if (this->channelOrder == ChannelOrder::GRB || this->channelOrder == ChannelOrder::GBR)
+      return Channel::Green;
+    if (this->channelOrder == ChannelOrder::BGR || this->channelOrder == ChannelOrder::BRG)
+      return Channel::Blue;
+  }
+  else if (position == 1)
+  {
+    if (this->channelOrder == ChannelOrder::GRB || this->channelOrder == ChannelOrder::BRG)
+      return Channel::Red;
+    if (this->channelOrder == ChannelOrder::RGB || this->channelOrder == ChannelOrder::BGR)
+      return Channel::Green;
+    if (this->channelOrder == ChannelOrder::RBG || this->channelOrder == ChannelOrder::GBR)
+      return Channel::Blue;
+  }
+  else if (position == 2)
+  {
+    if (this->channelOrder == ChannelOrder::GBR || this->channelOrder == ChannelOrder::BGR)
+      return Channel::Red;
+    if (this->channelOrder == ChannelOrder::RBG || this->channelOrder == ChannelOrder::BRG)
+      return Channel::Green;
+    if (this->channelOrder == ChannelOrder::RGB || this->channelOrder == ChannelOrder::GRB)
+      return Channel::Blue;
+  }
+
+  throw std::invalid_argument("Invalid argument for channel position");
 }
 
 } // namespace video::rgb

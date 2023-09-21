@@ -52,6 +52,7 @@ class FFmpegVersionHandler
 {
 public:
   FFmpegVersionHandler();
+  ~FFmpegVersionHandler();
 
   // Try to load the ffmpeg libraries and get all the function pointers.
   void loadFFmpegLibraries();
@@ -69,7 +70,7 @@ public:
 
   AVFrameWrapper  allocateFrame();
   void            freeFrame(AVFrameWrapper &frame);
-  AVPacketWrapper allocatePaket();
+  AVPacketWrapper allocatePacket();
   void            unrefPacket(AVPacketWrapper &packet);
   void            freePacket(AVPacketWrapper &packet);
 

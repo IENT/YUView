@@ -52,7 +52,7 @@ videoHandlerRGBCustomFormatDialog::videoHandlerRGBCustomFormatDialog(
   if (rgbFormat.hasAlpha())
   {
     this->ui.alphaChannelGroupBox->setChecked(true);
-    auto alphaPosition = rgbFormat.getComponentPosition(Channel::Alpha);
+    auto alphaPosition = rgbFormat.getChannelPosition(Channel::Alpha);
     this->ui.beforeRGBRadioButton->setChecked(alphaPosition == 0);
     this->ui.afterRGBRadioButton->setChecked(alphaPosition == 3);
   }

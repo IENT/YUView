@@ -36,10 +36,9 @@
 
 #include <common/Typedef.h>
 #include <decoder/decoderBase.h>
-#include <video/videoHandlerYUV.h>
-
-#include "externalHeader/dav1d/blockData.h"
-#include "externalHeader/dav1d/dav1d.h"
+#include <decoder/externalHeader/dav1d/blockData.h>
+#include <decoder/externalHeader/dav1d/dav1d.h>
+#include <video/yuv/videoHandlerYUV.h>
 
 namespace decoder
 {
