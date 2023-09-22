@@ -156,7 +156,7 @@ void playlistItemImageFileSequence::createPropertiesWidget()
   preparePropertiesWidget(QStringLiteral("playlistItemRawFile"));
 
   // On the top level everything is layout vertically
-  QVBoxLayout *vAllLaout = new QVBoxLayout(propertiesWidget.data());
+  QVBoxLayout *vAllLaout = new QVBoxLayout(this->propertiesWidget.get());
 
   // First add the parents controls (first video controls (width/height...)
   vAllLaout->addLayout(createPlaylistItemControls());

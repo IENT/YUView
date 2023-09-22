@@ -53,7 +53,7 @@ Parser::Parser(QObject *parent) : QObject(parent)
   this->bitratePlotModel.reset(new BitratePlotModel());
   this->hrdPlotModel.reset(new HRDPlotModel());
   this->streamIndexFilter.reset(new FilterByStreamIndexProxyModel(parent));
-  this->streamIndexFilter->setSourceModel(this->packetModel.data());
+  this->streamIndexFilter->setSourceModel(this->packetModel.get());
 }
 
 Parser::~Parser()
@@ -62,8 +62,8 @@ Parser::~Parser()
 
 HRDPlotModel *Parser::getHRDPlotModel()
 {
-  if (this->redirectPlotModel == nullptr && !this->hrdPlotModel.isNull())
-    return this->hrdPlotModel.data();
+  if (this->redirectPlotModel == nullptr && this->hrdPlotModel)
+    return this->hrdPlotModel.get();
   else if (this->redirectPlotModel != nullptr)
     return this->redirectPlotModel;
   return {};

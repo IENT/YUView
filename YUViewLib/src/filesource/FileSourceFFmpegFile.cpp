@@ -425,8 +425,8 @@ bool FileSourceFFmpegFile::scanBitstream(QWidget *mainWindow)
   // Create the dialog (if the given pointer is not null)
   auto maxPTS = this->getMaxTS();
   // Updating the dialog (setValue) is quite slow. Only do this if the percent value changes.
-  int                             curPercentValue = 0;
-  QScopedPointer<QProgressDialog> progress;
+  int                              curPercentValue = 0;
+  std::unique_ptr<QProgressDialog> progress;
   if (mainWindow != nullptr)
   {
     progress.reset(

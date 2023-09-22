@@ -200,7 +200,7 @@ bool ParserAVFormat::parseExtradata_hevc(ByteVector &extradata)
     try
     {
       avformat::HVCC hvcc;
-      hvcc.parse(extradata, packetModel->rootItem, hevcParser, this->bitratePlotModel.data());
+      hvcc.parse(extradata, packetModel->rootItem, hevcParser, this->bitratePlotModel.get());
     }
     catch (...)
     {
@@ -567,14 +567,14 @@ bool ParserAVFormat::parseAVPacket(unsigned         packetID,
 bool ParserAVFormat::runParsingOfFile(QString compressedFilePath)
 {
   // Open the file but don't parse it yet.
-  QScopedPointer<FileSourceFFmpegFile> ffmpegFile(new FileSourceFFmpegFile());
-  if (!ffmpegFile->openFile(compressedFilePath, nullptr, nullptr, false))
+  FileSourceFFmpegFile ffmpegFile;
+  if (!ffmpegFile.openFile(compressedFilePath, nullptr, nullptr, false))
   {
     emit backgroundParsingDone("Error opening the ffmpeg file.");
     return false;
   }
 
-  this->codecID = ffmpegFile->getVideoStreamCodecID();
+  this->codecID = ffmpegFile.getVideoStreamCodecID();
   if (this->codecID.isAVC())
     this->annexBParser.reset(new ParserAnnexBAVC());
   else if (this->codecID.isHEVC())
@@ -600,7 +600,7 @@ bool ParserAVFormat::runParsingOfFile(QString compressedFilePath)
   // First get the extradata and push it to the parser
   try
   {
-    auto extradata = SubByteReaderLogging::convertToByteVector(ffmpegFile->getExtradata());
+    auto extradata = SubByteReaderLogging::convertToByteVector(ffmpegFile.getExtradata());
     this->parseExtradata(extradata);
   }
   catch (...)
@@ -610,7 +610,7 @@ bool ParserAVFormat::runParsingOfFile(QString compressedFilePath)
   }
   try
   {
-    auto metadata = ffmpegFile->getMetadata();
+    auto metadata = ffmpegFile.getMetadata();
     this->parseMetadata(metadata);
   }
   catch (...)
@@ -619,17 +619,17 @@ bool ParserAVFormat::runParsingOfFile(QString compressedFilePath)
     return false;
   }
 
-  int max_ts                      = ffmpegFile->getMaxTS();
-  this->videoStreamIndex          = ffmpegFile->getVideoStreamIndex();
-  this->framerate                 = ffmpegFile->getFramerate();
-  this->streamInfoAllStreams      = ffmpegFile->getFileInfoForAllStreams();
-  this->timeBaseAllStreams        = ffmpegFile->getTimeBaseAllStreams();
-  this->shortStreamInfoAllStreams = ffmpegFile->getShortStreamDescriptionAllStreams();
+  int max_ts                      = ffmpegFile.getMaxTS();
+  this->videoStreamIndex          = ffmpegFile.getVideoStreamIndex();
+  this->framerate                 = ffmpegFile.getFramerate();
+  this->streamInfoAllStreams      = ffmpegFile.getFileInfoForAllStreams();
+  this->timeBaseAllStreams        = ffmpegFile.getTimeBaseAllStreams();
+  this->shortStreamInfoAllStreams = ffmpegFile.getShortStreamDescriptionAllStreams();
 
   emit streamInfoUpdated();
 
   // Now iterate over all packets and send them to the parser
-  AVPacketWrapper packet   = ffmpegFile->getNextPacket(false, false);
+  AVPacketWrapper packet   = ffmpegFile.getNextPacket(false, false);
   int64_t         start_ts = packet.getDTS();
 
   unsigned                packetID{};
@@ -639,7 +639,7 @@ bool ParserAVFormat::runParsingOfFile(QString compressedFilePath)
   bool          abortParsing      = false;
   QElapsedTimer signalEmitTimer;
   signalEmitTimer.start();
-  while (!ffmpegFile->atEnd() && !abortParsing)
+  while (!ffmpegFile.atEnd() && !abortParsing)
   {
     if (packet.getPacketType() == PacketType::VIDEO)
     {
@@ -661,7 +661,7 @@ bool ParserAVFormat::runParsingOfFile(QString compressedFilePath)
 
     packetID++;
     packetCounterPerStream[packet.getStreamIndex()]++;
-    packet = ffmpegFile->getNextPacket(false, false);
+    packet = ffmpegFile.getNextPacket(false, false);
 
     // For signal slot debugging purposes, sleep
     // QThread::msleep(200);
@@ -686,12 +686,12 @@ bool ParserAVFormat::runParsingOfFile(QString compressedFilePath)
   }
 
   // Seek back to the beginning of the stream.
-  ffmpegFile->seekFileToBeginning();
+  ffmpegFile.seekFileToBeginning();
 
   if (packetModel)
     emit modelDataUpdated();
 
-  this->streamInfoAllStreams = ffmpegFile->getFileInfoForAllStreams();
+  this->streamInfoAllStreams = ffmpegFile.getFileInfoForAllStreams();
   emit streamInfoUpdated();
   emit backgroundParsingDone("");
 

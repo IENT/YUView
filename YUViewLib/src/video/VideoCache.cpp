@@ -207,11 +207,11 @@ public:
       quit();
     }
   }
-  loadingWorker *worker() { return threadWorker.data(); }
+  loadingWorker *worker() { return threadWorker.get(); }
   bool           isQuitting() { return quitting; }
 
 private:
-  QScopedPointer<loadingWorker> threadWorker;
+  std::unique_ptr<loadingWorker> threadWorker;
   bool quitting; // Are er quitting the job? If yes, do not push new jobs to it.
 };
 

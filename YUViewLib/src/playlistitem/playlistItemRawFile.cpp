@@ -448,7 +448,7 @@ void playlistItemRawFile::createPropertiesWidget()
   this->preparePropertiesWidget(QStringLiteral("playlistItemRawFile"));
 
   // On the top level everything is layout vertically
-  auto vAllLaout = new QVBoxLayout(this->propertiesWidget.data());
+  auto vAllLaout = new QVBoxLayout(this->propertiesWidget.get());
 
   auto line = new QFrame;
   line->setObjectName(QStringLiteral("line"));

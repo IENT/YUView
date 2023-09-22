@@ -150,9 +150,9 @@ bool ParserAnnexB::parseAnnexBFile(std::unique_ptr<FileSourceAnnexBFile> &file, 
 {
   DEBUG_ANNEXB("ParserAnnexB::parseAnnexBFile");
 
-  int64_t                         maxPos = file->getFileSize();
-  QScopedPointer<QProgressDialog> progressDialog;
-  int                             curPercentValue = 0;
+  auto                             maxPos = file->getFileSize();
+  std::unique_ptr<QProgressDialog> progressDialog;
+  int                              curPercentValue = 0;
   if (mainWindow)
   {
     // Show a modal QProgressDialog while this operation is running.

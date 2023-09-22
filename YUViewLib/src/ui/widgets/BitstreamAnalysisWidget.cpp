@@ -165,18 +165,18 @@ void BitstreamAnalysisWidget::updateParsingStatusText(int progressValue)
 
 void BitstreamAnalysisWidget::stopAndDeleteParserBlocking()
 {
-  if (this->parser.isNull())
+  if (!this->parser)
     return;
 
-  this->disconnect(this->parser.data(),
+  this->disconnect(this->parser.get(),
                    &parser::Parser::modelDataUpdated,
                    this,
                    &BitstreamAnalysisWidget::updateParserItemModel);
-  this->disconnect(this->parser.data(),
+  this->disconnect(this->parser.get(),
                    &parser::Parser::streamInfoUpdated,
                    this,
                    &BitstreamAnalysisWidget::updateStreamInfo);
-  this->disconnect(this->parser.data(),
+  this->disconnect(this->parser.get(),
                    &parser::Parser::backgroundParsingDone,
                    this,
                    &BitstreamAnalysisWidget::backgroundParsingDone);
@@ -272,15 +272,15 @@ void BitstreamAnalysisWidget::createAndConnectNewParser(InputFormat inputFormat)
   const bool parsingLimitSet = !this->ui.parseEntireFileCheckBox->isChecked();
   this->parser->setParsingLimitEnabled(parsingLimitSet);
 
-  this->connect(this->parser.data(),
+  this->connect(this->parser.get(),
                 &parser::Parser::modelDataUpdated,
                 this,
                 &BitstreamAnalysisWidget::updateParserItemModel);
-  this->connect(this->parser.data(),
+  this->connect(this->parser.get(),
                 &parser::Parser::streamInfoUpdated,
                 this,
                 &BitstreamAnalysisWidget::updateStreamInfo);
-  this->connect(this->parser.data(),
+  this->connect(this->parser.get(),
                 &parser::Parser::backgroundParsingDone,
                 this,
                 &BitstreamAnalysisWidget::backgroundParsingDone);

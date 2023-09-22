@@ -410,8 +410,8 @@ void playlistItemOverlay::createPropertiesWidget()
   Q_ASSERT_X(!this->propertiesWidget, "createPropertiesWidget", "Properties widget already exists");
 
   // Create a new widget and populate it with controls
-  this->propertiesWidget.reset(new QWidget);
-  this->ui.setupUi(this->propertiesWidget.data());
+  this->propertiesWidget = std::make_unique<QWidget>();
+  this->ui.setupUi(this->propertiesWidget.get());
 
   this->ui.verticalLayout->insertLayout(0, this->createPlaylistItemControls());
 

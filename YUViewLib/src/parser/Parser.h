@@ -37,6 +37,8 @@
 #include <QString>
 #include <QTreeWidgetItem>
 
+#include <memory>
+
 #include "common/BitratePlotModel.h"
 #include "common/HRDPlotModel.h"
 #include "common/PacketItemModel.h"
@@ -59,8 +61,8 @@ public:
   Parser(QObject *parent);
   virtual ~Parser() = 0;
 
-  QAbstractItemModel *getPacketItemModel() { return streamIndexFilter.data(); }
-  BitratePlotModel *  getBitratePlotModel() { return bitratePlotModel.data(); }
+  QAbstractItemModel *getPacketItemModel() { return streamIndexFilter.get(); }
+  BitratePlotModel *  getBitratePlotModel() { return bitratePlotModel.get(); }
   HRDPlotModel *      getHRDPlotModel();
   void                setRedirectPlotModel(HRDPlotModel *plotModel);
 
@@ -100,9 +102,9 @@ signals:
   void streamInfoUpdated();
 
 protected:
-  QScopedPointer<PacketItemModel>               packetModel;
-  QScopedPointer<FilterByStreamIndexProxyModel> streamIndexFilter;
-  QScopedPointer<BitratePlotModel>              bitratePlotModel;
+  std::unique_ptr<PacketItemModel>               packetModel;
+  std::unique_ptr<FilterByStreamIndexProxyModel> streamIndexFilter;
+  std::unique_ptr<BitratePlotModel>              bitratePlotModel;
 
   static QString convertSliceTypeMapToString(QMap<QString, unsigned int> &currentAUSliceTypes);
 
@@ -113,8 +115,8 @@ protected:
   bool parsingLimitEnabled{false};
 
 private:
-  QScopedPointer<HRDPlotModel> hrdPlotModel;
-  HRDPlotModel *               redirectPlotModel{nullptr};
+  std::unique_ptr<HRDPlotModel> hrdPlotModel;
+  HRDPlotModel *                redirectPlotModel{nullptr};
 };
 
 } // namespace parser

@@ -147,9 +147,9 @@ public:
   {
     if (!propertiesWidget)
       createPropertiesWidget();
-    return propertiesWidget.data();
+    return propertiesWidget.get();
   }
-  bool propertiesWidgetCreated() const { return !propertiesWidget.isNull(); }
+  bool propertiesWidgetCreated() const { return static_cast<bool>(this->propertiesWidget); }
 
   // Does the playlist item currently accept drops of the given item?
   virtual bool acceptDrops(playlistItem *) const { return false; }
@@ -268,7 +268,7 @@ signals:
 
 protected:
   // The widget which is put into the stack.
-  QScopedPointer<QWidget> propertiesWidget;
+  std::unique_ptr<QWidget> propertiesWidget;
 
   // Create the properties widget and set propertiesWidget to point to it.
   // Overload this function in a child class to create a custom widget.

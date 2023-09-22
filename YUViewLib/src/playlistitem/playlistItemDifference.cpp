@@ -155,9 +155,9 @@ void playlistItemDifference::createPropertiesWidget()
   preparePropertiesWidget(QStringLiteral("playlistItemDifference"));
 
   // On the top level everything is layout vertically
-  QVBoxLayout *vAllLaout = new QVBoxLayout(propertiesWidget.data());
+  auto vAllLaout = new QVBoxLayout(propertiesWidget.get());
 
-  QFrame *line = new QFrame;
+  auto line = std::make_unique<QFrame>();
   line->setObjectName(QStringLiteral("line"));
   line->setFrameShape(QFrame::HLine);
   line->setFrameShadow(QFrame::Sunken);
@@ -165,7 +165,7 @@ void playlistItemDifference::createPropertiesWidget()
   // First add the parents controls (first video controls (width/height...) then YUV controls
   // (format,...)
   vAllLaout->addLayout(difference.createFrameHandlerControls(true));
-  vAllLaout->addWidget(line);
+  vAllLaout->addWidget(line.release());
   vAllLaout->addLayout(difference.createDifferenceHandlerControls());
 
   vAllLaout->insertStretch(-1, 1); // Push controls up
@@ -257,7 +257,10 @@ void playlistItemDifference::loadFrame(int  frameIdx,
   }
 }
 
-bool playlistItemDifference::isLoading() const { return this->isDifferenceLoading; }
+bool playlistItemDifference::isLoading() const
+{
+  return this->isDifferenceLoading;
+}
 
 bool playlistItemDifference::isLoadingDoubleBuffer() const
 {

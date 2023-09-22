@@ -80,9 +80,9 @@ private:
   void restartParsingOfCurrentItem();
   void createAndConnectNewParser(InputFormat inputFormatType);
 
-  QScopedPointer<parser::Parser> parser;
-  QFuture<void>                  backgroundParserFuture;
-  void                           backgroundParsingFunction();
+  std::unique_ptr<parser::Parser> parser;
+  QFuture<void>                   backgroundParserFuture;
+  void                            backgroundParsingFunction();
 
   QPointer<playlistItemCompressedVideo> currentCompressedVideo;
 
