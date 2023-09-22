@@ -177,7 +177,7 @@ jobs:
       run: |
         mkdir openSSL
         cd openSSL
-        curl -L https://github.com/ChristianFeldmann/YUViewQt/releases/download/openSSL1.1.1g/openSSL_1_1_1g_win.zip -o openSSL.zip
+        curl -L https://github.com/ChristianFeldmann/YUViewQt/releases/download/openSSL1.1.1u/openSSL_1_1_1u_win2019.zip -o openSSL.zip
         7z x openSSL.zip
         cd ..
     - name: Activate auto update
