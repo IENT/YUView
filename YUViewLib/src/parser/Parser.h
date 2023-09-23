@@ -106,8 +106,6 @@ protected:
   std::unique_ptr<FilterByStreamIndexProxyModel> streamIndexFilter;
   std::unique_ptr<BitratePlotModel>              bitratePlotModel;
 
-  static QString convertSliceTypeMapToString(QMap<QString, unsigned int> &currentAUSliceTypes);
-
   // If this variable is set (from an external thread), the parsing process should cancel
   // immediately
   bool cancelBackgroundParser{false};
