@@ -55,8 +55,8 @@ public:
   ParserAVFormat(QObject *parent = nullptr) : Parser(parent) {}
   ~ParserAVFormat() {}
 
-  QList<QTreeWidgetItem *> getStreamInfo() override;
-  unsigned int             getNrStreams() override
+  vector<QTreeWidgetItem *> getStreamInfo() override;
+  unsigned int              getNrStreams() override
   {
     return streamInfoAllStreams.empty() ? 0 : streamInfoAllStreams.length() - 1;
   }

@@ -70,8 +70,8 @@ public:
   void enableModel();
 
   // Get info about the stream organized in a tree
-  virtual QList<QTreeWidgetItem *> getStreamInfo() = 0;
-  virtual unsigned int             getNrStreams()  = 0;
+  virtual vector<QTreeWidgetItem *> getStreamInfo() = 0;
+  virtual unsigned int              getNrStreams()  = 0;
 
   // For parsing files in the background (threading) in the bitstream analysis dialog:
   virtual bool runParsingOfFile(QString fileName) = 0;

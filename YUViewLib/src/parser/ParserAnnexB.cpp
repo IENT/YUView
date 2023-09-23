@@ -284,22 +284,23 @@ bool ParserAnnexB::runParsingOfFile(QString compressedFilePath)
   return this->parseAnnexBFile(file);
 }
 
-QList<QTreeWidgetItem *> ParserAnnexB::stream_info_type::getStreamInfo()
+vector<QTreeWidgetItem *> ParserAnnexB::stream_info_type::getStreamInfo()
 {
-  QList<QTreeWidgetItem *> infoList;
-  infoList.append(new QTreeWidgetItem(QStringList() << "File size" << QString::number(file_size)));
+  vector<QTreeWidgetItem *> infoList;
+  infoList.push_back(
+      new QTreeWidgetItem(QStringList() << "File size" << QString::number(file_size)));
   if (parsing)
   {
-    infoList.append(new QTreeWidgetItem(QStringList() << "Number NAL units"
-                                                      << "Parsing..."));
-    infoList.append(new QTreeWidgetItem(QStringList() << "Number Frames"
-                                                      << "Parsing..."));
+    infoList.push_back(new QTreeWidgetItem(QStringList() << "Number NAL units"
+                                                         << "Parsing..."));
+    infoList.push_back(new QTreeWidgetItem(QStringList() << "Number Frames"
+                                                         << "Parsing..."));
   }
   else
   {
-    infoList.append(
+    infoList.push_back(
         new QTreeWidgetItem(QStringList() << "Number NAL units" << QString::number(nr_nal_units)));
-    infoList.append(
+    infoList.push_back(
         new QTreeWidgetItem(QStringList() << "Number Frames" << QString::number(nr_frames)));
   }
 

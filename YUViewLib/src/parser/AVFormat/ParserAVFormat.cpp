@@ -63,20 +63,21 @@ const ByteVector startCode({0, 0, 1});
 
 using namespace reader;
 
-QList<QTreeWidgetItem *> ParserAVFormat::getStreamInfo()
+vector<QTreeWidgetItem *> ParserAVFormat::getStreamInfo()
 {
   // streamInfoAllStreams containse all the info for all streams.
   // The first QStringPairList contains the general info, next all infos for each stream follows
 
-  QList<QTreeWidgetItem *> info;
   if (this->streamInfoAllStreams.count() == 0)
-    return info;
+    return {};
 
-  QStringPairList  generalInfo = this->streamInfoAllStreams[0];
-  QTreeWidgetItem *general     = new QTreeWidgetItem(QStringList() << "General");
+  auto generalInfo = this->streamInfoAllStreams[0];
+  auto general     = new QTreeWidgetItem(QStringList() << "General");
   for (QStringPair p : generalInfo)
     new QTreeWidgetItem(general, QStringList() << p.first << p.second);
-  info.append(general);
+
+  vector<QTreeWidgetItem *> info;
+  info.push_back(general);
 
   for (int i = 1; i < this->streamInfoAllStreams.count(); i++)
   {
@@ -84,7 +85,7 @@ QList<QTreeWidgetItem *> ParserAVFormat::getStreamInfo()
         new QTreeWidgetItem(QStringList() << QString("Stream %1").arg(i - 1));
     for (QStringPair p : this->streamInfoAllStreams[i])
       new QTreeWidgetItem(streamInfo, QStringList() << p.first << p.second);
-    info.append(streamInfo);
+    info.push_back(streamInfo);
   }
 
   return info;

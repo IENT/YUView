@@ -94,7 +94,8 @@ void BitstreamAnalysisWidget::updateParserItemModel()
 void BitstreamAnalysisWidget::updateStreamInfo()
 {
   this->ui.streamInfoTreeWidget->clear();
-  this->ui.streamInfoTreeWidget->addTopLevelItems(this->parser->getStreamInfo());
+  for (auto item : this->parser->getStreamInfo())
+    this->ui.streamInfoTreeWidget->addTopLevelItem(item);
   this->ui.streamInfoTreeWidget->expandAll();
 
   DEBUG_ANALYSIS("BitstreamAnalysisWidget::updateStreamInfo comboBox entries "
