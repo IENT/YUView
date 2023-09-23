@@ -91,11 +91,11 @@ vector<QTreeWidgetItem *> ParserAVFormat::getStreamInfo()
   return info;
 }
 
-QString ParserAVFormat::getShortStreamDescription(int streamIndex) const
+std::string ParserAVFormat::getShortStreamDescription(const int streamIndex) const
 {
-  if (streamIndex >= this->shortStreamInfoAllStreams.count())
+  if (streamIndex >= this->shortStreamInfoAllStreams.size())
     return {};
-  return this->shortStreamInfoAllStreams[streamIndex];
+  return this->shortStreamInfoAllStreams.at(streamIndex);
 }
 
 bool ParserAVFormat::parseExtradata(ByteVector &extradata)

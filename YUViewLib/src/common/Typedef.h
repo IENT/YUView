@@ -63,13 +63,13 @@
 #ifdef Q_OS_MAC
 const bool is_Q_OS_MAC = true;
 #else
-const bool is_Q_OS_MAC   = false;
+const bool is_Q_OS_MAC = false;
 #endif
 
 #ifdef Q_OS_WIN
 const bool is_Q_OS_WIN = true;
 #else
-const bool is_Q_OS_WIN   = false;
+const bool is_Q_OS_WIN = false;
 #endif
 
 #ifdef Q_OS_LINUX
@@ -207,6 +207,7 @@ typedef std::pair<int, int>                 IntPair;
 typedef std::pair<unsigned, unsigned>       UIntPair;
 typedef std::pair<std::string, std::string> StringPair;
 typedef std::vector<StringPair>             StringPairVec;
+typedef std::vector<std::string>            StringVec;
 
 /// ---- Legacy types that will be replaced
 typedef QPair<QString, QString>           QStringPair;
@@ -226,26 +227,6 @@ template <typename T> using vector4d = std::vector<vector3d<T>>;
 template <typename T, size_t N> using array               = std::array<T, N>;
 template <typename T, size_t N1, size_t N2> using array2d = std::array<std::array<T, N2>, N1>;
 
-template <typename T> std::string to_string(const std::pair<T, T> typePair)
-{
-  std::ostringstream ss;
-  ss << "(" << typePair.first << ", " << typePair.second << ")";
-  return ss.str();
-}
-
-template <typename T> std::string to_string(const std::vector<T> vec)
-{
-  std::ostringstream ss;
-  ss << "[";
-  for (auto it = vec.begin(); it != vec.end(); it++)
-  {
-    if (it != vec.begin())
-      ss << ", ";
-    ss << (*it);
-  }
-  ss << "]";
-  return ss.str();
-}
 
 template <typename T> int indexInVec(const std::vector<T> &vec, const T &item)
 {

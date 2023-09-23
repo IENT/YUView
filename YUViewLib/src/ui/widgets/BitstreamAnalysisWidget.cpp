@@ -118,8 +118,9 @@ void BitstreamAnalysisWidget::updateStreamInfo()
       this->ui.showStreamComboBox->addItem("Show all streams");
       for (unsigned i = 0; i < this->parser->getNrStreams(); i++)
       {
-        QString info = this->parser->getShortStreamDescription(i);
-        this->ui.showStreamComboBox->addItem(QString("Stream %1 - ").arg(i) + info);
+        const auto info = this->parser->getShortStreamDescription(i);
+        this->ui.showStreamComboBox->addItem(QString("Stream %1 - ").arg(i) +
+                                             QString::fromStdString(info));
       }
     }
   }

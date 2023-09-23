@@ -69,7 +69,7 @@ public:
 
   vector<QTreeWidgetItem *> getStreamInfo() override { return this->stream_info.getStreamInfo(); }
   unsigned int              getNrStreams() override { return 1; }
-  QString                   getShortStreamDescription(int streamIndex) const override;
+  std::string               getShortStreamDescription(const int streamIndex) const override;
 
   /* Parse the NAL unit and what it contains
    *

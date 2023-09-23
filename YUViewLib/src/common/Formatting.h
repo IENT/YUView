@@ -1,6 +1,6 @@
 /*  This file is part of YUView - The YUV player with advanced analytics toolset
  *   <https://github.com/IENT/YUView>
- *   Copyright (C) 2015  Institut f�r Nachrichtentechnik, RWTH Aachen University, GERMANY
+ *   Copyright (C) 2015  Institut für Nachrichtentechnik, RWTH Aachen University, GERMANY
  *
  *   This program is free software; you can redistribute it and/or modify
  *   it under the terms of the GNU General Public License as published by
@@ -32,42 +32,54 @@
 
 #pragma once
 
-#include <parser/Parser.h>
-#include <video/yuv/videoHandlerYUV.h>
+#include "Typedef.h"
 
-#include "GlobalDecodingValues.h"
-#include "sequence_header_obu.h"
+#include <sstream>
+#include <vector>
 
-namespace parser
+template <typename T>
+std::ostream &operator<<(std::ostream &stream, const std::pair<T, T> &typePair)
 {
+  stream << "(" << typePair.first << ", " << typePair.second << ")";
+  return stream;
+}
 
-class ParserAV1OBU : public Parser
+template <typename T> std::string to_string(const std::pair<T, T> &typePair)
 {
-  Q_OBJECT
+  std::ostringstream stream;
+  stream << typePair;
+  return stream.str();
+}
 
-public:
-  ParserAV1OBU(QObject *parent = nullptr);
-  ~ParserAV1OBU() {}
-
-  std::pair<size_t, std::string> parseAndAddOBU(int                       obuID,
-                                                ByteVector &              data,
-                                                std::shared_ptr<TreeItem> parent,
-                                                pairUint64 obuStartEndPosFile = pairUint64(-1, -1));
-
-  // So far, we only parse AV1 Obu files from the AVFormat parser so we don't need this (yet).
-  // When parsing of raw OBU files is added, we will need this.
-  bool runParsingOfFile(QString) override
+template <typename T> std::ostream &operator<<(std::ostream &stream, const std::vector<T> vec)
+{
+  stream << "[";
+  for (auto it = vec.begin(); it != vec.end(); it++)
   {
-    assert(false);
-    return false;
+    if (it != vec.begin())
+      stream << ", ";
+    stream << (*it);
   }
-  vector<QTreeWidgetItem *> getStreamInfo() override { return {}; }
-  unsigned int              getNrStreams() override { return 1; }
-  std::string               getShortStreamDescription(int) const override { return "Video"; }
+  stream << "]";
+  return stream;
+}
 
-protected:
-  av1::GlobalDecodingValues                 decValues;
-  std::shared_ptr<av1::sequence_header_obu> active_sequence_header;
-};
+template <typename T> std::string to_string(const std::vector<T> vec)
+{
+  std::ostringstream stream;
+  stream << vec;
+  return stream.str();
+}
 
-} // namespace parser
+static std::ostream &operator<<(std::ostream &stream, const Size &size)
+{
+  stream << "(" << size.width << "x" << size.height << ")";
+  return stream;
+}
+
+static std::string to_string(const Size &size)
+{
+  std::ostringstream stream;
+  stream << size;
+  return stream.str();
+}

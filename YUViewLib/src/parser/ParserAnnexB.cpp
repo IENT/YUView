@@ -32,7 +32,9 @@
 
 #include "ParserAnnexB.h"
 
-#include "parser/common/SubByteReaderLogging.h"
+#include <common/Formatting.h>
+#include <parser/common/SubByteReaderLogging.h>F
+
 
 #include <QElapsedTimer>
 #include <QProgressDialog>
@@ -49,13 +51,14 @@
 namespace parser
 {
 
-QString ParserAnnexB::getShortStreamDescription(int) const
+std::string ParserAnnexB::getShortStreamDescription(const int) const
 {
-  QString info      = "Video";
-  auto    frameSize = this->getSequenceSizeSamples();
+  std::ostringstream info;
+  info << "Video";
+  auto frameSize = this->getSequenceSizeSamples();
   if (frameSize.isValid())
-    info += QString(" (%1x%2)").arg(frameSize.width).arg(frameSize.height);
-  return info;
+    info << " " << frameSize;
+  return info.str();
 }
 
 bool ParserAnnexB::addFrameToList(int                       poc,

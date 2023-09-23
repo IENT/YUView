@@ -60,7 +60,7 @@ public:
   {
     return streamInfoAllStreams.empty() ? 0 : streamInfoAllStreams.length() - 1;
   }
-  QString getShortStreamDescription(int streamIndex) const override;
+  std::string getShortStreamDescription(const int streamIndex) const override;
 
   // This function can run in a separate thread
   bool runParsingOfFile(QString compressedFilePath) override;
@@ -95,7 +95,7 @@ private:
   // we update this list while parsing the file.
   QList<QStringPairList>    streamInfoAllStreams;
   QList<FFmpeg::AVRational> timeBaseAllStreams;
-  QList<QString>            shortStreamInfoAllStreams;
+  StringVec                 shortStreamInfoAllStreams;
 
   int    videoStreamIndex{-1};
   double framerate{-1.0};
