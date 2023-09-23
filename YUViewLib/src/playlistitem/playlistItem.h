@@ -42,6 +42,8 @@
 #include <QObject>
 #include <QTreeWidgetItem>
 
+#include <memory>
+
 #include "ui_playlistItem.h"
 
 namespace video
