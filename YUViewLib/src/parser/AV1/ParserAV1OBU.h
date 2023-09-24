@@ -61,9 +61,9 @@ public:
     assert(false);
     return false;
   }
-  QList<QTreeWidgetItem *> getStreamInfo() override { return {}; }
-  unsigned int             getNrStreams() override { return 1; }
-  QString                  getShortStreamDescription(int) const override { return "Video"; }
+  vector<QTreeWidgetItem *> getStreamInfo() override { return {}; }
+  unsigned int              getNrStreams() override { return 1; }
+  std::string               getShortStreamDescription(int) const override { return "Video"; }
 
 protected:
   av1::GlobalDecodingValues                 decValues;

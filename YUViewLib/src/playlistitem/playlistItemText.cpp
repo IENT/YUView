@@ -80,16 +80,16 @@ void playlistItemText::createPropertiesWidget()
 
   this->preparePropertiesWidget(QStringLiteral("playlistItemText"));
 
-  QVBoxLayout *vAllLaout = new QVBoxLayout(this->propertiesWidget.data());
+  auto vAllLaout = new QVBoxLayout(this->propertiesWidget.get());
 
-  QFrame *line = new QFrame;
+  auto line = std::make_unique<QFrame>();
   line->setObjectName(QStringLiteral("line"));
   line->setFrameShape(QFrame::HLine);
   line->setFrameShadow(QFrame::Sunken);
 
   // First add the parents controls (duration) then the text specific controls (font, text...)
   vAllLaout->addLayout(createPlaylistItemControls());
-  vAllLaout->addWidget(line);
+  vAllLaout->addWidget(line.release());
   vAllLaout->addLayout(createTextController());
   vAllLaout->insertStretch(-1, 1); // Push controls up
 }

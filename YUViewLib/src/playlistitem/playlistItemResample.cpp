@@ -188,7 +188,7 @@ void playlistItemResample::createPropertiesWidget()
   this->preparePropertiesWidget(QStringLiteral("playlistItemResample"));
 
   // On the top level everything is layout vertically
-  auto vAllLaout = new QVBoxLayout(propertiesWidget.data());
+  auto vAllLaout = new QVBoxLayout(this->propertiesWidget.get());
 
   ui.setupUi();
 
@@ -348,8 +348,8 @@ void playlistItemResample::slotInterpolationModeChanged(int)
 {
   this->interpolationIndex = ui.comboBoxInterpolation->currentIndex();
   auto interpolation       = (this->interpolationIndex == 0)
-                           ? video::videoHandlerResample::Interpolation::Bilinear
-                           : video::videoHandlerResample::Interpolation::Fast;
+                                 ? video::videoHandlerResample::Interpolation::Bilinear
+                                 : video::videoHandlerResample::Interpolation::Fast;
   this->video.setInterpolation(interpolation);
 }
 

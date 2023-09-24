@@ -35,6 +35,7 @@
 #include <QProgressDialog>
 #include <QSettings>
 
+#include <common/Formatting.h>
 #include <ffmpeg/AVCodecContextWrapper.h>
 #include <parser/AV1/obu_header.h>
 #include <parser/common/SubByteReaderLogging.h>
@@ -425,8 +426,8 @@ bool FileSourceFFmpegFile::scanBitstream(QWidget *mainWindow)
   // Create the dialog (if the given pointer is not null)
   auto maxPTS = this->getMaxTS();
   // Updating the dialog (setValue) is quite slow. Only do this if the percent value changes.
-  int                             curPercentValue = 0;
-  QScopedPointer<QProgressDialog> progress;
+  int                              curPercentValue = 0;
+  std::unique_ptr<QProgressDialog> progress;
   if (mainWindow != nullptr)
   {
     progress.reset(
@@ -659,7 +660,7 @@ QList<QStringPairList> FileSourceFFmpegFile::getFileInfoForAllStreams()
 {
   QList<QStringPairList> info;
 
-  info += formatCtx.getInfoText();
+  info += this->formatCtx.getInfoText();
   for (unsigned i = 0; i < this->formatCtx.getNbStreams(); i++)
   {
     auto stream         = this->formatCtx.getStream(i);
@@ -683,23 +684,22 @@ QList<AVRational> FileSourceFFmpegFile::getTimeBaseAllStreams()
   return timeBaseList;
 }
 
-QList<QString> FileSourceFFmpegFile::getShortStreamDescriptionAllStreams()
+StringVec FileSourceFFmpegFile::getShortStreamDescriptionAllStreams()
 {
-  QList<QString> descriptions;
+  StringVec descriptions;
 
-  for (unsigned i = 0; i < formatCtx.getNbStreams(); i++)
+  for (unsigned i = 0; i < this->formatCtx.getNbStreams(); i++)
   {
-    QString description;
-    auto    stream = this->formatCtx.getStream(i);
-    description    = stream.getCodecTypeName();
+    std::ostringstream description;
+    auto               stream = this->formatCtx.getStream(i);
+    description << stream.getCodecTypeName().toStdString();
 
     auto codecID = this->ff.getCodecIDWrapper(stream.getCodecID());
-    description += " " + codecID.getCodecName();
+    description << " " << codecID.getCodecName().toStdString() << " ";
 
-    description +=
-        QString(" (%1x%2)").arg(stream.getFrameSize().width).arg(stream.getFrameSize().height);
+    description << std::pair{stream.getFrameSize().width, stream.getFrameSize().height};
 
-    descriptions.append(description);
+    descriptions.push_back(description.str());
   }
 
   return descriptions;

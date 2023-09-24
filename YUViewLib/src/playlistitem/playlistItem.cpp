@@ -46,7 +46,9 @@ playlistItem::playlistItem(const QString &itemNameOrFileName, Type type)
   this->prop.id = idCounter++;
 }
 
-playlistItem::~playlistItem() {}
+playlistItem::~playlistItem()
+{
+}
 
 void playlistItem::setName(const QString &name)
 {
@@ -62,7 +64,7 @@ void playlistItem::drawItem(QPainter *painter, int, double zoomFactor, bool)
   auto displayFont = painter->font();
   displayFont.setPointSizeF(painter->font().pointSizeF() * zoomFactor);
   painter->setFont(displayFont);
-  auto textSize = painter->fontMetrics().size(0, infoText);
+  auto  textSize = painter->fontMetrics().size(0, infoText);
   QRect textRect;
   textRect.setSize(textSize);
   textRect.moveCenter(QPoint(0, 0));
@@ -75,7 +77,7 @@ QSize playlistItem::getSize() const
 {
   // Return the size of the text that is drawn on screen.
   QPainter painter;
-  auto    displayFont = painter.font();
+  auto     displayFont = painter.font();
   return painter.fontMetrics().size(0, infoText);
 }
 
@@ -182,7 +184,7 @@ void playlistItem::createPropertiesWidget()
   this->preparePropertiesWidget(QStringLiteral("playlistItem"));
 
   // On the top level everything is layout vertically
-  auto vAllLaout = new QVBoxLayout(this->propertiesWidget.data());
+  auto vAllLaout = new QVBoxLayout(this->propertiesWidget.get());
 
   // First add the parents controls (duration) then the text specific controls (font, text...)
   vAllLaout->addLayout(createPlaylistItemControls());

@@ -37,6 +37,8 @@
 #include <QString>
 #include <QTreeWidgetItem>
 
+#include <memory>
+
 #include "common/BitratePlotModel.h"
 #include "common/HRDPlotModel.h"
 #include "common/PacketItemModel.h"
@@ -59,8 +61,8 @@ public:
   Parser(QObject *parent);
   virtual ~Parser() = 0;
 
-  QAbstractItemModel *getPacketItemModel() { return streamIndexFilter.data(); }
-  BitratePlotModel *  getBitratePlotModel() { return bitratePlotModel.data(); }
+  QAbstractItemModel *getPacketItemModel() { return streamIndexFilter.get(); }
+  BitratePlotModel *  getBitratePlotModel() { return bitratePlotModel.get(); }
   HRDPlotModel *      getHRDPlotModel();
   void                setRedirectPlotModel(HRDPlotModel *plotModel);
 
@@ -68,16 +70,16 @@ public:
   void enableModel();
 
   // Get info about the stream organized in a tree
-  virtual QList<QTreeWidgetItem *> getStreamInfo() = 0;
-  virtual unsigned int             getNrStreams()  = 0;
+  virtual vector<QTreeWidgetItem *> getStreamInfo() = 0;
+  virtual unsigned int              getNrStreams()  = 0;
 
   // For parsing files in the background (threading) in the bitstream analysis dialog:
   virtual bool runParsingOfFile(QString fileName) = 0;
   int          getParsingProgressPercent() { return progressPercentValue; }
   void         setAbortParsing() { cancelBackgroundParser = true; }
 
-  virtual int     getVideoStreamIndex() { return -1; }
-  virtual QString getShortStreamDescription(int streamIndex) const = 0;
+  virtual int         getVideoStreamIndex() { return -1; }
+  virtual std::string getShortStreamDescription(const int streamIndex) const = 0;
 
   void setStreamColorCoding(bool colorCoding) { packetModel->setUseColorCoding(colorCoding); }
   void setFilterStreamIndex(int streamIndex)
@@ -100,11 +102,9 @@ signals:
   void streamInfoUpdated();
 
 protected:
-  QScopedPointer<PacketItemModel>               packetModel;
-  QScopedPointer<FilterByStreamIndexProxyModel> streamIndexFilter;
-  QScopedPointer<BitratePlotModel>              bitratePlotModel;
-
-  static QString convertSliceTypeMapToString(QMap<QString, unsigned int> &currentAUSliceTypes);
+  std::unique_ptr<PacketItemModel>               packetModel;
+  std::unique_ptr<FilterByStreamIndexProxyModel> streamIndexFilter;
+  std::unique_ptr<BitratePlotModel>              bitratePlotModel;
 
   // If this variable is set (from an external thread), the parsing process should cancel
   // immediately
@@ -113,8 +113,8 @@ protected:
   bool parsingLimitEnabled{false};
 
 private:
-  QScopedPointer<HRDPlotModel> hrdPlotModel;
-  HRDPlotModel *               redirectPlotModel{nullptr};
+  std::unique_ptr<HRDPlotModel> hrdPlotModel;
+  HRDPlotModel *                redirectPlotModel{nullptr};
 };
 
 } // namespace parser

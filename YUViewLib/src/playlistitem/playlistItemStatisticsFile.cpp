@@ -39,8 +39,8 @@
 #include <cassert>
 #include <iostream>
 
-#include <common/YUViewDomElement.h>
 #include <common/FunctionsGui.h>
+#include <common/YUViewDomElement.h>
 #include <statistics/StatisticsDataPainting.h>
 #include <statistics/StatisticsFileCSV.h>
 #include <statistics/StatisticsFileVTMBMS.h>
@@ -243,12 +243,12 @@ void playlistItemStatisticsFile::onPOCParsed(int poc)
 
 void playlistItemStatisticsFile::createPropertiesWidget()
 {
-  Q_ASSERT_X(!propertiesWidget, "createPropertiesWidget", "Properties widget already exists");
+  Q_ASSERT_X(!this->propertiesWidget, "createPropertiesWidget", "Properties widget already exists");
 
   this->preparePropertiesWidget(QStringLiteral("playlistItemStatisticsFile"));
 
   // On the top level everything is layout vertically
-  auto vAllLaout = new QVBoxLayout(propertiesWidget.data());
+  auto vAllLaout = new QVBoxLayout(this->propertiesWidget.get());
 
   auto line = new QFrame;
   line->setObjectName(QStringLiteral("lineOne"));

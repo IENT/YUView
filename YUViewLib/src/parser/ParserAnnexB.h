@@ -67,9 +67,9 @@ public:
   // Clear all knowledge about the bitstream.
   void clearData();
 
-  QList<QTreeWidgetItem *> getStreamInfo() override { return stream_info.getStreamInfo(); }
-  unsigned int             getNrStreams() override { return 1; }
-  QString                  getShortStreamDescription(int streamIndex) const override;
+  vector<QTreeWidgetItem *> getStreamInfo() override { return this->stream_info.getStreamInfo(); }
+  unsigned int              getNrStreams() override { return 1; }
+  std::string               getShortStreamDescription(const int streamIndex) const override;
 
   /* Parse the NAL unit and what it contains
    *
@@ -158,7 +158,7 @@ protected:
   // Save general information about the file here
   struct stream_info_type
   {
-    QList<QTreeWidgetItem *> getStreamInfo();
+    vector<QTreeWidgetItem *> getStreamInfo();
 
     size_t   file_size;
     unsigned nr_nal_units{0};

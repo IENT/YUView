@@ -115,7 +115,7 @@ public:
   int          getVideoStreamIndex() { return video_stream.getIndex(); }
   QList<QStringPairList>    getFileInfoForAllStreams();
   QList<FFmpeg::AVRational> getTimeBaseAllStreams();
-  QList<QString>            getShortStreamDescriptionAllStreams();
+  StringVec                 getShortStreamDescriptionAllStreams();
 
   // Look through the keyframes and find the closest one before (or equal)
   // the given frameIdx where we can start decoding

@@ -32,7 +32,8 @@
 
 #include "ParserAnnexB.h"
 
-#include "parser/common/SubByteReaderLogging.h"
+#include <common/Formatting.h>
+#include <parser/common/SubByteReaderLogging.h>
 
 #include <QElapsedTimer>
 #include <QProgressDialog>
@@ -49,13 +50,14 @@
 namespace parser
 {
 
-QString ParserAnnexB::getShortStreamDescription(int) const
+std::string ParserAnnexB::getShortStreamDescription(const int) const
 {
-  QString info      = "Video";
-  auto    frameSize = this->getSequenceSizeSamples();
+  std::ostringstream info;
+  info << "Video";
+  auto frameSize = this->getSequenceSizeSamples();
   if (frameSize.isValid())
-    info += QString(" (%1x%2)").arg(frameSize.width).arg(frameSize.height);
-  return info;
+    info << " " << frameSize;
+  return info.str();
 }
 
 bool ParserAnnexB::addFrameToList(int                       poc,
@@ -150,9 +152,9 @@ bool ParserAnnexB::parseAnnexBFile(std::unique_ptr<FileSourceAnnexBFile> &file, 
 {
   DEBUG_ANNEXB("ParserAnnexB::parseAnnexBFile");
 
-  int64_t                         maxPos = file->getFileSize();
-  QScopedPointer<QProgressDialog> progressDialog;
-  int                             curPercentValue = 0;
+  auto                             maxPos = file->getFileSize();
+  std::unique_ptr<QProgressDialog> progressDialog;
+  int                              curPercentValue = 0;
   if (mainWindow)
   {
     // Show a modal QProgressDialog while this operation is running.
@@ -284,22 +286,23 @@ bool ParserAnnexB::runParsingOfFile(QString compressedFilePath)
   return this->parseAnnexBFile(file);
 }
 
-QList<QTreeWidgetItem *> ParserAnnexB::stream_info_type::getStreamInfo()
+vector<QTreeWidgetItem *> ParserAnnexB::stream_info_type::getStreamInfo()
 {
-  QList<QTreeWidgetItem *> infoList;
-  infoList.append(new QTreeWidgetItem(QStringList() << "File size" << QString::number(file_size)));
+  vector<QTreeWidgetItem *> infoList;
+  infoList.push_back(
+      new QTreeWidgetItem(QStringList() << "File size" << QString::number(file_size)));
   if (parsing)
   {
-    infoList.append(new QTreeWidgetItem(QStringList() << "Number NAL units"
-                                                      << "Parsing..."));
-    infoList.append(new QTreeWidgetItem(QStringList() << "Number Frames"
-                                                      << "Parsing..."));
+    infoList.push_back(new QTreeWidgetItem(QStringList() << "Number NAL units"
+                                                         << "Parsing..."));
+    infoList.push_back(new QTreeWidgetItem(QStringList() << "Number Frames"
+                                                         << "Parsing..."));
   }
   else
   {
-    infoList.append(
+    infoList.push_back(
         new QTreeWidgetItem(QStringList() << "Number NAL units" << QString::number(nr_nal_units)));
-    infoList.append(
+    infoList.push_back(
         new QTreeWidgetItem(QStringList() << "Number Frames" << QString::number(nr_frames)));
   }
 

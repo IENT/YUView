@@ -1,6 +1,6 @@
 /*  This file is part of YUView - The YUV player with advanced analytics toolset
  *   <https://github.com/IENT/YUView>
- *   Copyright (C) 2015  Institut f�r Nachrichtentechnik, RWTH Aachen University, GERMANY
+ *   Copyright (C) 2015  Institut für Nachrichtentechnik, RWTH Aachen University, GERMANY
  *
  *   This program is free software; you can redistribute it and/or modify
  *   it under the terms of the GNU General Public License as published by
@@ -30,64 +30,56 @@
  *   along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "Parser.h"
+#pragma once
 
-#include <assert.h>
+#include "Typedef.h"
 
-#define BASE_DEBUG_OUTPUT 0
-#if BASE_DEBUG_OUTPUT && !NDEBUG
-#include <QDebug>
-#define DEBUG_PARSER qDebug
-#else
-#define DEBUG_PARSER(fmt, ...) ((void)0)
-#endif
+#include <sstream>
+#include <vector>
 
-namespace parser
+template <typename T>
+std::ostream &operator<<(std::ostream &stream, const std::pair<T, T> &typePair)
 {
-
-/// --------------- Base ---------------------
-
-Parser::Parser(QObject *parent) : QObject(parent)
-{
-  this->packetModel.reset(new PacketItemModel(parent));
-  this->bitratePlotModel.reset(new BitratePlotModel());
-  this->hrdPlotModel.reset(new HRDPlotModel());
-  this->streamIndexFilter.reset(new FilterByStreamIndexProxyModel(parent));
-  this->streamIndexFilter->setSourceModel(this->packetModel.get());
+  stream << "(" << typePair.first << ", " << typePair.second << ")";
+  return stream;
 }
 
-Parser::~Parser()
+template <typename T> std::string to_string(const std::pair<T, T> &typePair)
 {
+  std::ostringstream stream;
+  stream << typePair;
+  return stream.str();
 }
 
-HRDPlotModel *Parser::getHRDPlotModel()
+template <typename T> std::ostream &operator<<(std::ostream &stream, const std::vector<T> vec)
 {
-  if (this->redirectPlotModel == nullptr && this->hrdPlotModel)
-    return this->hrdPlotModel.get();
-  else if (this->redirectPlotModel != nullptr)
-    return this->redirectPlotModel;
-  return {};
-}
-
-void Parser::setRedirectPlotModel(HRDPlotModel *plotModel)
-{
-  Q_ASSERT_X(plotModel != nullptr, Q_FUNC_INFO, "Redirect pointer is NULL");
-  this->hrdPlotModel.reset(nullptr);
-  this->redirectPlotModel = plotModel;
-}
-
-void Parser::enableModel()
-{
-  if (!this->packetModel->rootItem)
+  stream << "[";
+  for (auto it = vec.begin(); it != vec.end(); it++)
   {
-    this->packetModel->rootItem = std::make_shared<TreeItem>();
-    this->packetModel->rootItem->setProperties("Name", "Value", "Coding", "Code", "Meaning");
+    if (it != vec.begin())
+      stream << ", ";
+    stream << (*it);
   }
+  stream << "]";
+  return stream;
 }
 
-void Parser::updateNumberModelItems()
+template <typename T> std::string to_string(const std::vector<T> vec)
 {
-  this->packetModel->updateNumberModelItems();
+  std::ostringstream stream;
+  stream << vec;
+  return stream.str();
 }
 
-} // namespace parser
+static std::ostream &operator<<(std::ostream &stream, const Size &size)
+{
+  stream << "(" << size.width << "x" << size.height << ")";
+  return stream;
+}
+
+static std::string to_string(const Size &size)
+{
+  std::ostringstream stream;
+  stream << size;
+  return stream.str();
+}

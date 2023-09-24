@@ -94,7 +94,8 @@ void BitstreamAnalysisWidget::updateParserItemModel()
 void BitstreamAnalysisWidget::updateStreamInfo()
 {
   this->ui.streamInfoTreeWidget->clear();
-  this->ui.streamInfoTreeWidget->addTopLevelItems(this->parser->getStreamInfo());
+  for (auto item : this->parser->getStreamInfo())
+    this->ui.streamInfoTreeWidget->addTopLevelItem(item);
   this->ui.streamInfoTreeWidget->expandAll();
 
   DEBUG_ANALYSIS("BitstreamAnalysisWidget::updateStreamInfo comboBox entries "
@@ -117,8 +118,9 @@ void BitstreamAnalysisWidget::updateStreamInfo()
       this->ui.showStreamComboBox->addItem("Show all streams");
       for (unsigned i = 0; i < this->parser->getNrStreams(); i++)
       {
-        QString info = this->parser->getShortStreamDescription(i);
-        this->ui.showStreamComboBox->addItem(QString("Stream %1 - ").arg(i) + info);
+        const auto info = this->parser->getShortStreamDescription(i);
+        this->ui.showStreamComboBox->addItem(QString("Stream %1 - ").arg(i) +
+                                             QString::fromStdString(info));
       }
     }
   }
@@ -165,18 +167,18 @@ void BitstreamAnalysisWidget::updateParsingStatusText(int progressValue)
 
 void BitstreamAnalysisWidget::stopAndDeleteParserBlocking()
 {
-  if (this->parser.isNull())
+  if (!this->parser)
     return;
 
-  this->disconnect(this->parser.data(),
+  this->disconnect(this->parser.get(),
                    &parser::Parser::modelDataUpdated,
                    this,
                    &BitstreamAnalysisWidget::updateParserItemModel);
-  this->disconnect(this->parser.data(),
+  this->disconnect(this->parser.get(),
                    &parser::Parser::streamInfoUpdated,
                    this,
                    &BitstreamAnalysisWidget::updateStreamInfo);
-  this->disconnect(this->parser.data(),
+  this->disconnect(this->parser.get(),
                    &parser::Parser::backgroundParsingDone,
                    this,
                    &BitstreamAnalysisWidget::backgroundParsingDone);
@@ -272,15 +274,15 @@ void BitstreamAnalysisWidget::createAndConnectNewParser(InputFormat inputFormat)
   const bool parsingLimitSet = !this->ui.parseEntireFileCheckBox->isChecked();
   this->parser->setParsingLimitEnabled(parsingLimitSet);
 
-  this->connect(this->parser.data(),
+  this->connect(this->parser.get(),
                 &parser::Parser::modelDataUpdated,
                 this,
                 &BitstreamAnalysisWidget::updateParserItemModel);
-  this->connect(this->parser.data(),
+  this->connect(this->parser.get(),
                 &parser::Parser::streamInfoUpdated,
                 this,
                 &BitstreamAnalysisWidget::updateStreamInfo);
-  this->connect(this->parser.data(),
+  this->connect(this->parser.get(),
                 &parser::Parser::backgroundParsingDone,
                 this,
                 &BitstreamAnalysisWidget::backgroundParsingDone);

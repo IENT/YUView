@@ -63,20 +63,21 @@ const ByteVector startCode({0, 0, 1});
 
 using namespace reader;
 
-QList<QTreeWidgetItem *> ParserAVFormat::getStreamInfo()
+vector<QTreeWidgetItem *> ParserAVFormat::getStreamInfo()
 {
   // streamInfoAllStreams containse all the info for all streams.
   // The first QStringPairList contains the general info, next all infos for each stream follows
 
-  QList<QTreeWidgetItem *> info;
   if (this->streamInfoAllStreams.count() == 0)
-    return info;
+    return {};
 
-  QStringPairList  generalInfo = this->streamInfoAllStreams[0];
-  QTreeWidgetItem *general     = new QTreeWidgetItem(QStringList() << "General");
+  auto generalInfo = this->streamInfoAllStreams[0];
+  auto general     = new QTreeWidgetItem(QStringList() << "General");
   for (QStringPair p : generalInfo)
     new QTreeWidgetItem(general, QStringList() << p.first << p.second);
-  info.append(general);
+
+  vector<QTreeWidgetItem *> info;
+  info.push_back(general);
 
   for (int i = 1; i < this->streamInfoAllStreams.count(); i++)
   {
@@ -84,17 +85,17 @@ QList<QTreeWidgetItem *> ParserAVFormat::getStreamInfo()
         new QTreeWidgetItem(QStringList() << QString("Stream %1").arg(i - 1));
     for (QStringPair p : this->streamInfoAllStreams[i])
       new QTreeWidgetItem(streamInfo, QStringList() << p.first << p.second);
-    info.append(streamInfo);
+    info.push_back(streamInfo);
   }
 
   return info;
 }
 
-QString ParserAVFormat::getShortStreamDescription(int streamIndex) const
+std::string ParserAVFormat::getShortStreamDescription(const int streamIndex) const
 {
-  if (streamIndex >= this->shortStreamInfoAllStreams.count())
+  if (streamIndex >= this->shortStreamInfoAllStreams.size())
     return {};
-  return this->shortStreamInfoAllStreams[streamIndex];
+  return this->shortStreamInfoAllStreams.at(streamIndex);
 }
 
 bool ParserAVFormat::parseExtradata(ByteVector &extradata)
@@ -200,7 +201,7 @@ bool ParserAVFormat::parseExtradata_hevc(ByteVector &extradata)
     try
     {
       avformat::HVCC hvcc;
-      hvcc.parse(extradata, packetModel->rootItem, hevcParser, this->bitratePlotModel.data());
+      hvcc.parse(extradata, packetModel->rootItem, hevcParser, this->bitratePlotModel.get());
     }
     catch (...)
     {
@@ -567,14 +568,14 @@ bool ParserAVFormat::parseAVPacket(unsigned         packetID,
 bool ParserAVFormat::runParsingOfFile(QString compressedFilePath)
 {
   // Open the file but don't parse it yet.
-  QScopedPointer<FileSourceFFmpegFile> ffmpegFile(new FileSourceFFmpegFile());
-  if (!ffmpegFile->openFile(compressedFilePath, nullptr, nullptr, false))
+  FileSourceFFmpegFile ffmpegFile;
+  if (!ffmpegFile.openFile(compressedFilePath, nullptr, nullptr, false))
   {
     emit backgroundParsingDone("Error opening the ffmpeg file.");
     return false;
   }
 
-  this->codecID = ffmpegFile->getVideoStreamCodecID();
+  this->codecID = ffmpegFile.getVideoStreamCodecID();
   if (this->codecID.isAVC())
     this->annexBParser.reset(new ParserAnnexBAVC());
   else if (this->codecID.isHEVC())
@@ -600,7 +601,7 @@ bool ParserAVFormat::runParsingOfFile(QString compressedFilePath)
   // First get the extradata and push it to the parser
   try
   {
-    auto extradata = SubByteReaderLogging::convertToByteVector(ffmpegFile->getExtradata());
+    auto extradata = SubByteReaderLogging::convertToByteVector(ffmpegFile.getExtradata());
     this->parseExtradata(extradata);
   }
   catch (...)
@@ -610,7 +611,7 @@ bool ParserAVFormat::runParsingOfFile(QString compressedFilePath)
   }
   try
   {
-    auto metadata = ffmpegFile->getMetadata();
+    auto metadata = ffmpegFile.getMetadata();
     this->parseMetadata(metadata);
   }
   catch (...)
@@ -619,17 +620,17 @@ bool ParserAVFormat::runParsingOfFile(QString compressedFilePath)
     return false;
   }
 
-  int max_ts                      = ffmpegFile->getMaxTS();
-  this->videoStreamIndex          = ffmpegFile->getVideoStreamIndex();
-  this->framerate                 = ffmpegFile->getFramerate();
-  this->streamInfoAllStreams      = ffmpegFile->getFileInfoForAllStreams();
-  this->timeBaseAllStreams        = ffmpegFile->getTimeBaseAllStreams();
-  this->shortStreamInfoAllStreams = ffmpegFile->getShortStreamDescriptionAllStreams();
+  int max_ts                      = ffmpegFile.getMaxTS();
+  this->videoStreamIndex          = ffmpegFile.getVideoStreamIndex();
+  this->framerate                 = ffmpegFile.getFramerate();
+  this->streamInfoAllStreams      = ffmpegFile.getFileInfoForAllStreams();
+  this->timeBaseAllStreams        = ffmpegFile.getTimeBaseAllStreams();
+  this->shortStreamInfoAllStreams = ffmpegFile.getShortStreamDescriptionAllStreams();
 
   emit streamInfoUpdated();
 
   // Now iterate over all packets and send them to the parser
-  AVPacketWrapper packet   = ffmpegFile->getNextPacket(false, false);
+  AVPacketWrapper packet   = ffmpegFile.getNextPacket(false, false);
   int64_t         start_ts = packet.getDTS();
 
   unsigned                packetID{};
@@ -639,7 +640,7 @@ bool ParserAVFormat::runParsingOfFile(QString compressedFilePath)
   bool          abortParsing      = false;
   QElapsedTimer signalEmitTimer;
   signalEmitTimer.start();
-  while (!ffmpegFile->atEnd() && !abortParsing)
+  while (!ffmpegFile.atEnd() && !abortParsing)
   {
     if (packet.getPacketType() == PacketType::VIDEO)
     {
@@ -661,7 +662,7 @@ bool ParserAVFormat::runParsingOfFile(QString compressedFilePath)
 
     packetID++;
     packetCounterPerStream[packet.getStreamIndex()]++;
-    packet = ffmpegFile->getNextPacket(false, false);
+    packet = ffmpegFile.getNextPacket(false, false);
 
     // For signal slot debugging purposes, sleep
     // QThread::msleep(200);
@@ -686,12 +687,12 @@ bool ParserAVFormat::runParsingOfFile(QString compressedFilePath)
   }
 
   // Seek back to the beginning of the stream.
-  ffmpegFile->seekFileToBeginning();
+  ffmpegFile.seekFileToBeginning();
 
   if (packetModel)
     emit modelDataUpdated();
 
-  this->streamInfoAllStreams = ffmpegFile->getFileInfoForAllStreams();
+  this->streamInfoAllStreams = ffmpegFile.getFileInfoForAllStreams();
   emit streamInfoUpdated();
   emit backgroundParsingDone("");
 

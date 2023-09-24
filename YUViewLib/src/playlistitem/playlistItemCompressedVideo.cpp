@@ -905,21 +905,21 @@ void playlistItemCompressedVideo::createPropertiesWidget()
 {
   Q_ASSERT_X(!this->propertiesWidget, "createPropertiesWidget", "Properties widget already exists");
 
-  if (!video)
+  if (!this->video)
   {
     playlistItem::createPropertiesWidget();
     return;
   }
 
   // Create a new widget and populate it with controls
-  this->propertiesWidget.reset(new QWidget);
-  ui.setupUi(propertiesWidget.data());
+  this->propertiesWidget = std::make_unique<QWidget>();
+  ui.setupUi(this->propertiesWidget.get());
 
-  auto lineOne = new QFrame;
+  auto lineOne = std::make_unique<QFrame>();
   lineOne->setObjectName(QStringLiteral("line"));
   lineOne->setFrameShape(QFrame::HLine);
   lineOne->setFrameShadow(QFrame::Sunken);
-  auto lineTwo = new QFrame;
+  auto lineTwo = std::make_unique<QFrame>();
   lineTwo->setObjectName(QStringLiteral("line"));
   lineTwo->setFrameShape(QFrame::HLine);
   lineTwo->setFrameShadow(QFrame::Sunken);
@@ -927,9 +927,9 @@ void playlistItemCompressedVideo::createPropertiesWidget()
   // Insert a stretch at the bottom of the vertical global layout so that everything
   // gets 'pushed' to the top
   ui.verticalLayout->insertLayout(0, createPlaylistItemControls());
-  ui.verticalLayout->insertWidget(1, lineOne);
+  ui.verticalLayout->insertWidget(1, lineOne.release());
   ui.verticalLayout->insertLayout(2, video->createVideoHandlerControls(true));
-  ui.verticalLayout->insertWidget(5, lineTwo);
+  ui.verticalLayout->insertWidget(5, lineTwo.release());
   ui.verticalLayout->insertLayout(
       6, this->statisticsUIHandler.createStatisticsHandlerControls(), 1);
 

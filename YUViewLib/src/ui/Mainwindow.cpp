@@ -148,7 +148,7 @@ MainWindow::MainWindow(bool useAlternativeSources, QWidget *parent) : QMainWindo
   // Create the VideoCache object
   cache.reset(new video::VideoCache(
       ui.playlistTreeWidget, ui.playbackController, ui.displaySplitView, this));
-  connect(cache.data(),
+  connect(cache.get(),
           &video::VideoCache::updateCacheStatus,
           ui.cachingInfoWidget,
           &VideoCacheInfoWidget::onUpdateCacheStatus);
@@ -159,8 +159,8 @@ MainWindow::MainWindow(bool useAlternativeSources, QWidget *parent) : QMainWindo
   ui.playbackController->setPlaylist(ui.playlistTreeWidget);
   ui.displaySplitView->setPlaybackController(ui.playbackController);
   ui.displaySplitView->setPlaylistTreeWidget(ui.playlistTreeWidget);
-  ui.displaySplitView->setVideoCache(this->cache.data());
-  ui.cachingInfoWidget->setPlaylistAndCache(ui.playlistTreeWidget, this->cache.data());
+  ui.displaySplitView->setVideoCache(this->cache.get());
+  ui.cachingInfoWidget->setPlaylistAndCache(ui.playlistTreeWidget, this->cache.get());
   separateViewWindow.splitView.setPlaybackController(ui.playbackController);
   separateViewWindow.splitView.setPlaylistTreeWidget(ui.playlistTreeWidget);
 
