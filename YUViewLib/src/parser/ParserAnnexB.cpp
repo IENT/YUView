@@ -33,8 +33,7 @@
 #include "ParserAnnexB.h"
 
 #include <common/Formatting.h>
-#include <parser/common/SubByteReaderLogging.h>F
-
+#include <parser/common/SubByteReaderLogging.h>
 
 #include <QElapsedTimer>
 #include <QProgressDialog>
