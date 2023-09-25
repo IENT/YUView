@@ -63,7 +63,7 @@ public:
   bool atEnd() const { return endOfFile; }
 
   // Return the name, filename and full path of every library loaded
-  QStringList getLibraryPaths() const { return ff.getLibPaths(); }
+  FFmpeg::LibraryPaths getLibraryPaths() const { return this->ff.getLibraryPaths(); }
 
   // Get properties of the bitstream
   double                     getFramerate() const { return frameRate; }

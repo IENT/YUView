@@ -66,4 +66,5 @@ struct InfoData
   QString         title{};
   QList<InfoItem> items{};
 };
+
 Q_DECLARE_METATYPE(InfoData)

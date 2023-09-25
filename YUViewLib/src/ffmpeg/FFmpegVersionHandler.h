@@ -44,6 +44,7 @@
 #include "FFMpegLibrariesTypes.h"
 #include "FFmpegLibraryFunctions.h"
 #include <common/Typedef.h>
+#include <filesystem>
 
 namespace FFmpeg
 {
@@ -55,11 +56,11 @@ public:
   ~FFmpegVersionHandler();
 
   // Try to load the ffmpeg libraries and get all the function pointers.
-  void loadFFmpegLibraries();
+  void loadFFmpegLibraries(std::vector<std::filesystem::path> searchPaths);
   bool loadingSuccessfull() const;
 
-  QStringList getLibPaths() const { return lib.getLibPaths(); }
-  QString     getLibVersionString() const;
+  LibraryPaths getLibraryPaths() const { return this->lib.getLibraryPaths(); }
+  QString      getLibVersionString() const;
 
   // Only these functions can be used to get valid versions of these wrappers (they have to use
   // ffmpeg functions to retrieve the needed information)
@@ -112,12 +113,8 @@ public:
   FFmpegLibraryFunctions lib;
 
   static AVPixelFormat convertYUVAVPixelFormat(video::yuv::PixelFormatYUV fmt);
-  // Check if the given four files can be used to open FFmpeg.
-  static bool checkLibraryFiles(QString      avCodecLib,
-                                QString      avFormatLib,
-                                QString      avUtilLib,
-                                QString      swResampleLib,
-                                QStringList &logging);
+
+  static SuccessOrErrorMessage checkPathForUsableFFmpeg(const std::filesystem::path &path);
 
   // Logging. By default we set the logging level of ffmpeg to AV_LOG_ERROR (Log errors and
   // everything worse)
@@ -127,14 +124,8 @@ public:
   QStringList getLog() const { return logList; }
 
 private:
-  // Try to load the FFmpeg libraries from the given path.
-  // Try the system paths if no path is provided. This function can be called multiple times.
-  bool loadFFmpegLibraryInPath(QString path);
-  // Try to load the four specific library files
-  bool loadFFMpegLibrarySpecific(QString avFormatLib,
-                                 QString avCodecLib,
-                                 QString avUtilLib,
-                                 QString swResampleLib);
+  SuccessOrErrorMessage loadFFmpegLibraryInPath(const std::filesystem::path);
+
   bool librariesLoaded{};
 
   // Log what is happening when loading the libraries / opening files.

@@ -134,9 +134,7 @@ public:
   bool    errorInDecoder() const { return decoderState == DecoderState::Error; }
   QString decoderErrorString() const { return errorString; }
 
-  // Get the name, filename and full path to the decoder library(s) that is/are being used.
-  // The length of the list must be a multiple of 3 (name, libName, fullPath)
-  virtual QStringList getLibraryPaths() const = 0;
+  virtual std::vector<InfoItem> getDecoderInfo() const = 0;
 
   // Get the decoder name (everyting that is needed to identify the decoder library) and the codec
   // that is being decoded. If needed, also version information (like HM 16.4)
@@ -182,9 +180,9 @@ public:
   decoderBaseSingleLib(bool cachingDecoder = false) : decoderBase(cachingDecoder){};
   virtual ~decoderBaseSingleLib(){};
 
-  QStringList getLibraryPaths() const override
+  std::vector<InfoItem> getDecoderInfo() const override
   {
-    return QStringList() << getDecoderName() << library.fileName() << library.fileName();
+    return {{this->getDecoderName(), this->library.fileName(), this->library.fileName()}};
   }
 
 protected:

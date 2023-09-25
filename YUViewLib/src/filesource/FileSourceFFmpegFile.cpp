@@ -476,7 +476,7 @@ void FileSourceFFmpegFile::openFileAndFindVideoStream(QString fileName)
 {
   this->isFileOpened = false;
 
-  this->ff.loadFFmpegLibraries();
+  this->ff.loadFFmpegLibraries(functions::getDefaultLibrarySearchPaths());
   if (!this->ff.loadingSuccessfull())
     return;
 

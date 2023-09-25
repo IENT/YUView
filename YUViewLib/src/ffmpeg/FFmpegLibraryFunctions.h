@@ -35,9 +35,18 @@
 #include "FFMpegLibrariesTypes.h"
 #include <QLibrary>
 #include <common/Typedef.h>
+#include <filesystem>
 
 namespace FFmpeg
 {
+
+struct LibraryPaths
+{
+  std::string avFormatPath;
+  std::string avCodecPath;
+  std::string avUtilPath;
+  std::string swResamplePath;
+};
 
 class FFmpegLibraryFunctions
 {
@@ -46,14 +55,10 @@ public:
   ~FFmpegLibraryFunctions();
 
   // Load the FFmpeg libraries from the given path.
-  bool loadFFmpegLibraryInPath(QString path, LibraryVersion &libraryVersion);
-  // Try to load the 4 given specific libraries
-  bool loadFFMpegLibrarySpecific(QString avFormatLib,
-                                 QString avCodecLib,
-                                 QString avUtilLib,
-                                 QString swResampleLib);
+  SuccessOrErrorMessage loadFFmpegLibraryInPath(const std::filesystem::path &path,
+                                                const LibraryVersion &       libraryVersion);
 
-  QStringList getLibPaths() const;
+  LibraryPaths getLibraryPaths() const;
 
   struct AvFormatFunctions
   {
@@ -104,7 +109,7 @@ public:
     std::function<unsigned()>            avutil_version;
     std::function<int(AVDictionary **pm, const char *key, const char *value, int flags)>
         av_dict_set;
-    std::function<AVDictionaryEntry*(
+    std::function<AVDictionaryEntry *(
         AVDictionary *m, const char *key, const AVDictionaryEntry *prev, int flags)>
         av_dict_get;
     std::function<AVFrameSideData *(const AVFrame *frame, AVFrameSideDataType type)>
