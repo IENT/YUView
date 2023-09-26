@@ -207,27 +207,21 @@ auto SupportedLibraryVersionCombinations = {
 //}
 //
 
-QString FFmpegVersionHandler::getLibVersionString() const
+std::string FFmpegVersionHandler::getLibVersionString() const
 {
-  QString s;
-  s += QString("avUtil %1.%2.%3 ")
-           .arg(libVersion.avutil.major)
-           .arg(libVersion.avutil.minor.value_or(0))
-           .arg(libVersion.avutil.micro.value_or(0));
-  s += QString("avFormat %1.%2.%3 ")
-           .arg(libVersion.avformat.major)
-           .arg(libVersion.avformat.minor.value_or(0))
-           .arg(libVersion.avformat.micro.value_or(0));
-  s += QString("avCodec %1.%2.%3 ")
-           .arg(libVersion.avcodec.major)
-           .arg(libVersion.avcodec.minor.value_or(0))
-           .arg(libVersion.avcodec.micro.value_or(0));
-  s += QString("swresample %1.%2.%3")
-           .arg(libVersion.swresample.major)
-           .arg(libVersion.swresample.minor.value_or(0))
-           .arg(libVersion.swresample.micro.value_or(0));
+  std::ostringstream stream;
 
-  return s;
+  auto addVersion = [&stream](const char *name, const Version &version) {
+    stream << name << version.major << "." << version.minor.value_or(0) << "."
+           << version.micro.value_or(0);
+  };
+
+  addVersion("avUtil", libVersion.avutil);
+  addVersion("avFormat", libVersion.avformat);
+  addVersion("avCodec", libVersion.avcodec);
+  addVersion("swresample", libVersion.swresample);
+
+  return stream.str();
 }
 
 AVCodecIDWrapper FFmpegVersionHandler::getCodecIDWrapper(AVCodecID id)
