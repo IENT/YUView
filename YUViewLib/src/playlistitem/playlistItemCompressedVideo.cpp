@@ -472,11 +472,12 @@ InfoData playlistItemCompressedVideo::getInfo() const
       InfoItem("Reader", QString::fromStdString(InputFormatMapper.getName(this->inputFormat))));
   if (this->inputFileFFmpegLoading)
   {
-    const auto libraryPaths = this->inputFileFFmpegLoading->getLibraryPaths();
-    info.items.append(InfoItem("AVFormat", QString::fromStdString(libraryPaths.avFormatPath)));
-    info.items.append(InfoItem("AVCodec", QString::fromStdString(libraryPaths.avCodecPath)));
-    info.items.append(InfoItem("AVUtil", QString::fromStdString(libraryPaths.avUtilPath)));
-    info.items.append(InfoItem("SWResample", QString::fromStdString(libraryPaths.swResamplePath)));
+    auto l = this->inputFileFFmpegLoading->getLibraryPaths();
+    if (l.length() % 3 == 0)
+    {
+      for (int i = 0; i < l.length() / 3; i++)
+        info.items.append(InfoItem(l[i * 3], l[i * 3 + 1], l[i * 3 + 2]));
+    }
   }
   if (!this->unresolvableError)
   {
@@ -490,10 +491,12 @@ InfoData playlistItemCompressedVideo::getInfo() const
         InfoItem("Num POCs", QString::number(nrFrames), "The number of pictures in the stream."));
     if (this->decodingEnabled)
     {
-      const auto decoderInfo = loadingDecoder->getDecoderInfo();
-      for (const auto &infoItem : decoderInfo)
-        info.items.append(infoItem);
-
+      auto l = loadingDecoder->getLibraryPaths();
+      if (l.length() % 3 == 0)
+      {
+        for (int i = 0; i < l.length() / 3; i++)
+          info.items.append(InfoItem(l[i * 3], l[i * 3 + 1], l[i * 3 + 2]));
+      }
       info.items.append(InfoItem("Decoder", this->loadingDecoder->getDecoderName()));
       info.items.append(InfoItem("Decoder", this->loadingDecoder->getCodecName()));
       info.items.append(InfoItem("Statistics",

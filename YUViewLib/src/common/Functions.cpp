@@ -32,10 +32,6 @@
 
 #include "Functions.h"
 
-#include <QCoreApplication>
-#include <QSettings>
-#include <QThread>
-
 #ifdef Q_OS_MAC
 #include <sys/sysctl.h>
 #include <sys/types.h>
@@ -46,6 +42,8 @@
 #endif
 
 #include <algorithm>
+
+#include <QThread>
 
 namespace functions
 {
@@ -153,31 +151,6 @@ QString formatDataSize(double size, bool isBits)
   }
 
   return valueString;
-}
-
-std::vector<std::filesystem::path> getDefaultLibrarySearchPaths()
-{
-  std::vector<std::filesystem::path> paths;
-
-  {
-    QSettings settings;
-    auto      decoderSearchPath = settings.value("SearchPath", "").toString().toStdString();
-    if (!decoderSearchPath.empty())
-      paths.push_back(decoderSearchPath);
-  }
-
-  paths.push_back(std::filesystem::current_path());
-  paths.push_back(std::filesystem::current_path() / "ffmpeg");
-  paths.push_back(std::filesystem::current_path() / "decoder");
-
-  const auto appPath = std::filesystem::path(QCoreApplication::applicationDirPath().toStdString());
-  paths.push_back(appPath);
-  paths.push_back(appPath / "ffmpeg");
-  paths.push_back(appPath / "decoder");
-
-  paths.push_back({});
-
-  return paths;
 }
 
 QStringList toQStringList(const std::vector<std::string> &stringVec)

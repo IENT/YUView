@@ -44,7 +44,6 @@
 #include "FFMpegLibrariesTypes.h"
 #include "FFmpegLibraryFunctions.h"
 #include <common/Typedef.h>
-#include <filesystem>
 
 namespace FFmpeg
 {
@@ -56,11 +55,11 @@ public:
   ~FFmpegVersionHandler();
 
   // Try to load the ffmpeg libraries and get all the function pointers.
-  void loadFFmpegLibraries(std::vector<std::filesystem::path> searchPaths);
+  void loadFFmpegLibraries();
   bool loadingSuccessfull() const;
 
-  LibraryPaths getLibraryPaths() const { return this->lib.getLibraryPaths(); }
-  QString      getLibVersionString() const;
+  QStringList getLibPaths() const { return lib.getLibPaths(); }
+  QString     getLibVersionString() const;
 
   // Only these functions can be used to get valid versions of these wrappers (they have to use
   // ffmpeg functions to retrieve the needed information)
@@ -113,8 +112,12 @@ public:
   FFmpegLibraryFunctions lib;
 
   static AVPixelFormat convertYUVAVPixelFormat(video::yuv::PixelFormatYUV fmt);
-
-  static SuccessOrErrorMessage checkPathForUsableFFmpeg(const std::filesystem::path &path);
+  // Check if the given four files can be used to open FFmpeg.
+  static bool checkLibraryFiles(QString      avCodecLib,
+                                QString      avFormatLib,
+                                QString      avUtilLib,
+                                QString      swResampleLib,
+                                QStringList &logging);
 
   // Logging. By default we set the logging level of ffmpeg to AV_LOG_ERROR (Log errors and
   // everything worse)
@@ -124,8 +127,14 @@ public:
   QStringList getLog() const { return logList; }
 
 private:
-  SuccessOrErrorMessage loadFFmpegLibraryInPath(const std::filesystem::path);
-
+  // Try to load the FFmpeg libraries from the given path.
+  // Try the system paths if no path is provided. This function can be called multiple times.
+  bool loadFFmpegLibraryInPath(QString path);
+  // Try to load the four specific library files
+  bool loadFFMpegLibrarySpecific(QString avFormatLib,
+                                 QString avCodecLib,
+                                 QString avUtilLib,
+                                 QString swResampleLib);
   bool librariesLoaded{};
 
   // Log what is happening when loading the libraries / opening files.

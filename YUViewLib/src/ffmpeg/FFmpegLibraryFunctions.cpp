@@ -182,21 +182,23 @@ FFmpegLibraryFunctions::~FFmpegLibraryFunctions()
   this->unloadAllLibraries();
 }
 
-SuccessOrErrorMessage
-FFmpegLibraryFunctions::loadFFmpegLibraryInPath(const std::filesystem::path &path,
-                                                const LibraryVersion &       libraryVersion)
+bool FFmpegLibraryFunctions::loadFFmpegLibraryInPath(QString path, LibraryVersion &libraryVersion)
 {
   // We will load the following libraries (in this order):
   // avutil, swresample, avcodec, avformat.
 
-  std::filesystem::path absolutePath;
-  if (!path.empty())
+  if (!path.isEmpty())
   {
-    if (!std::filesystem::exists(path))
-      return SuccessOrErrorMessage("The given path is invalid");
+    QDir givenPath(path);
+    if (!givenPath.exists())
+    {
+      this->log("The given path is invalid");
+      return false;
+    }
 
-    absolutePath = std::filesystem::absolute(path);
-    this->log("Absolute path " + QString::fromStdString(absolutePath.string()));
+    // Get the absolute path
+    path = givenPath.absolutePath() + "/";
+    this->log("Absolute path " + path);
   }
 
   // The ffmpeg libraries are named using a major version number. E.g: avutil-55.dll on windows.
@@ -222,9 +224,9 @@ FFmpegLibraryFunctions::loadFFmpegLibraryInPath(const std::filesystem::path &pat
       constructLibName = "lib%1.%2.dylib";
 
     auto loadLibrary =
-        [this, &constructLibName, &absolutePath](QLibrary &lib, QString libName, unsigned version) {
+        [this, &constructLibName, &path](QLibrary &lib, QString libName, unsigned version) {
           auto filename = constructLibName.arg(libName).arg(version);
-          lib.setFileName(QString::fromStdString(absolutePath.string()) + filename);
+          lib.setFileName(path + filename);
           auto success = lib.load();
           this->log("Loading library " + filename + (success ? " succeded" : " failed"));
           return success;
@@ -242,6 +244,40 @@ FFmpegLibraryFunctions::loadFFmpegLibraryInPath(const std::filesystem::path &pat
     success = true;
     break;
   }
+
+  if (!success)
+  {
+    this->unloadAllLibraries();
+    return false;
+  }
+
+  success = (bindLibraryFunctions(this->libAvformat, this->avformat, this->logList) &&
+             bindLibraryFunctions(this->libAvcodec, this->avcodec, this->logList) &&
+             bindLibraryFunctions(this->libAvutil, this->avutil, this->logList) &&
+             bindLibraryFunctions(this->libSwresample, this->swresample, this->logList));
+  this->log(QString("Binding functions ") + (success ? "successfull" : "failed"));
+
+  return success;
+}
+
+bool FFmpegLibraryFunctions::loadFFMpegLibrarySpecific(QString avFormatLib,
+                                                       QString avCodecLib,
+                                                       QString avUtilLib,
+                                                       QString swResampleLib)
+{
+  this->unloadAllLibraries();
+
+  auto loadLibrary = [this](QLibrary &lib, QString libPath) {
+    lib.setFileName(libPath);
+    auto success = lib.load();
+    this->log("Loading library " + libPath + (success ? " succeded" : " failed"));
+    return success;
+  };
+
+  auto success = (loadLibrary(this->libAvutil, avUtilLib) &&         //
+                  loadLibrary(this->libSwresample, swResampleLib) && //
+                  loadLibrary(this->libAvcodec, avCodecLib) &&       //
+                  loadLibrary(this->libAvformat, avFormatLib));
 
   if (!success)
   {
@@ -284,20 +320,30 @@ void FFmpegLibraryFunctions::unloadAllLibraries()
   this->libAvformat.unload();
 }
 
-LibraryPaths FFmpegLibraryFunctions::getLibraryPaths() const
+QStringList FFmpegLibraryFunctions::getLibPaths() const
 {
-  LibraryPaths paths;
+  QStringList libPaths;
 
-  if (this->libAvformat.isLoaded())
-    paths.avCodecPath = this->libAvformat.fileName().toStdString();
-  if (this->libAvcodec.isLoaded())
-    paths.avCodecPath = this->libAvcodec.fileName().toStdString();
-  if (this->libAvutil.isLoaded())
-    paths.avCodecPath = this->libAvutil.fileName().toStdString();
-  if (this->libSwresample.isLoaded())
-    paths.avCodecPath = this->libSwresample.fileName().toStdString();
+  auto addName = [&libPaths](QString name, const QLibrary &lib) {
+    libPaths.append(name);
+    if (lib.isLoaded())
+    {
+      libPaths.append(lib.fileName());
+      libPaths.append(lib.fileName());
+    }
+    else
+    {
+      libPaths.append("None");
+      libPaths.append("None");
+    }
+  };
 
-  return paths;
+  addName("AVCodec", this->libAvcodec);
+  addName("AVFormat", this->libAvformat);
+  addName("AVUtil", this->libAvutil);
+  addName("SwResample", this->libSwresample);
+
+  return libPaths;
 }
 
 void FFmpegLibraryFunctions::log(QString message)

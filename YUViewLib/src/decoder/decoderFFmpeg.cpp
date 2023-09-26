@@ -56,7 +56,7 @@ decoderFFmpeg::decoderFFmpeg(FFmpeg::AVCodecIDWrapper   codecID,
 {
   // The libraries are only loaded on demand. This way a FFmpegLibraries instance can exist without
   // loading the libraries which is slow and uses a lot of memory.
-  this->ff.loadFFmpegLibraries(functions::getDefaultLibrarySearchPaths());
+  this->ff.loadFFmpegLibraries();
   if (!this->ff.loadingSuccessfull())
     return;
 
@@ -99,7 +99,7 @@ decoderFFmpeg::decoderFFmpeg(FFmpeg::AVCodecParametersWrapper codecpar, bool cac
 {
   // The libraries are only loaded on demand. This way a FFmpegLibraries instance can exist without
   // loading the libraries which is slow and uses a lot of memory.
-  this->ff.loadFFmpegLibraries(functions::getDefaultLibrarySearchPaths());
+  this->ff.loadFFmpegLibraries();
   if (!this->ff.loadingSuccessfull())
     return;
 
@@ -317,21 +317,6 @@ bool decoderFFmpeg::pushData(QByteArray &data)
   this->raw_pkt.setPTS(AV_NOPTS_VALUE);
 
   return this->pushAVPacket(this->raw_pkt);
-}
-
-std::vector<InfoItem> decoderFFmpeg::getDecoderInfo() const
-{
-  const auto libraryPaths = this->ff.getLibraryPaths();
-
-  const auto avformatPath   = QString::fromStdString(libraryPaths.avFormatPath);
-  const auto avcodecPath    = QString::fromStdString(libraryPaths.avCodecPath);
-  const auto avutilPath     = QString::fromStdString(libraryPaths.avUtilPath);
-  const auto swresamplePath = QString::fromStdString(libraryPaths.swResamplePath);
-
-  return {InfoItem("AVFormat", avformatPath),
-          InfoItem("AVCodec", avcodecPath),
-          InfoItem("AVUtil", avutilPath),
-          InfoItem("SWResample", swresamplePath)};
 }
 
 bool decoderFFmpeg::pushAVPacket(FFmpeg::AVPacketWrapper &pkt)

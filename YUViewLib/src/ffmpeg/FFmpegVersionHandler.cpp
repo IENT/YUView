@@ -327,7 +327,7 @@ void FFmpegVersionHandler::avLogCallback(void *, int level, const char *fmt, va_
                                              QString(" - L%1 - ").arg(level) + msg);
 }
 
-void FFmpegVersionHandler::loadFFmpegLibraries(std::vector<std::filesystem::path> searchPaths)
+void FFmpegVersionHandler::loadFFmpegLibraries()
 {
   if (this->librariesLoaded)
     return;
@@ -338,26 +338,46 @@ void FFmpegVersionHandler::loadFFmpegLibraries(std::vector<std::filesystem::path
   // First try the specific FFMpeg libraries (if set)
   QSettings settings;
   settings.beginGroup("Decoders");
-  auto ffmpegPath = settings.value("FFmpeg.path", "").toString().toStdString();
-  if (!ffmpegPath.empty())
+  auto avFormatLib   = settings.value("FFmpeg.avformat", "").toString();
+  auto avCodecLib    = settings.value("FFmpeg.avcodec", "").toString();
+  auto avUtilLib     = settings.value("FFmpeg.avutil", "").toString();
+  auto swResampleLib = settings.value("FFmpeg.swresample", "").toString();
+  if (!avFormatLib.isEmpty() && //
+      !avCodecLib.isEmpty() &&  //
+      !avUtilLib.isEmpty() &&   //
+      !swResampleLib.isEmpty())
   {
     this->log("Trying to load the libraries specified in the settings.");
-    const auto result     = this->loadFFmpegLibraryInPath(ffmpegPath);
-    this->librariesLoaded = result.success;
+    this->librariesLoaded =
+        loadFFMpegLibrarySpecific(avFormatLib, avCodecLib, avUtilLib, swResampleLib);
   }
   else
     this->log("No ffmpeg libraries were specified in the settings.");
 
   if (!this->librariesLoaded)
   {
-    for (const auto &path : searchPaths)
-    {
-      this->log("Trying to load the libraries in the path " +
-                QString::fromStdString(path.string()));
+    // Next, we will try some other paths / options
+    QStringList possibilites;
+    auto        decoderSearchPath = settings.value("SearchPath", "").toString();
+    if (!decoderSearchPath.isEmpty())
+      possibilites.append(decoderSearchPath);       // Try the specific search path (if one is set)
+    possibilites.append(QDir::currentPath() + "/"); // Try the current working directory
+    possibilites.append(QDir::currentPath() + "/ffmpeg/");
+    possibilites.append(QCoreApplication::applicationDirPath() +
+                        "/"); // Try the path of the YUView.exe
+    possibilites.append(QCoreApplication::applicationDirPath() + "/ffmpeg/");
+    possibilites.append(
+        ""); // Just try to call QLibrary::load so that the system folder will be searched.
 
-      auto result           = loadFFmpegLibraryInPath(path);
-      this->librariesLoaded = result.success;
-      if (result.success)
+    for (auto path : possibilites)
+    {
+      if (path.isEmpty())
+        this->log("Trying to load the libraries in the system path");
+      else
+        this->log("Trying to load the libraries in the path " + path);
+
+      this->librariesLoaded = loadFFmpegLibraryInPath(path);
+      if (this->librariesLoaded)
         break;
     }
   }
@@ -490,13 +510,12 @@ int FFmpegVersionHandler::seekBeginning(AVFormatContextWrapper &fmt)
   return lib.avformat.av_seek_frame(fmt.getFormatCtx(), -1, fmt.getStartTime(), 0);
 }
 
-SuccessOrErrorMessage
-FFmpegVersionHandler::loadFFmpegLibraryInPath(const std::filesystem::path path)
+bool FFmpegVersionHandler::loadFFmpegLibraryInPath(QString path)
 {
-  SuccessOrErrorMessage success;
+  bool success = false;
   for (auto version : SupportedLibraryVersionCombinations)
   {
-    if (auto loadResult = this->lib.loadFFmpegLibraryInPath(path, version))
+    if (this->lib.loadFFmpegLibraryInPath(path, version))
     {
       this->log(QString("Checking versions avutil %1, swresample %2, avcodec %3, avformat %4")
                     .arg(version.avutil.major)
@@ -519,11 +538,53 @@ FFmpegVersionHandler::loadFFmpegLibraryInPath(const std::filesystem::path path)
   return success;
 }
 
-SuccessOrErrorMessage
-FFmpegVersionHandler::checkPathForUsableFFmpeg(const std::filesystem::path &path)
+bool FFmpegVersionHandler::loadFFMpegLibrarySpecific(QString avFormatLib,
+                                                     QString avCodecLib,
+                                                     QString avUtilLib,
+                                                     QString swResampleLib)
+{
+  bool success = false;
+  for (auto version : SupportedLibraryVersionCombinations)
+  {
+    this->log(QString("Checking versions avutil %1, swresample %2, avcodec %3, avformat %4")
+                  .arg(version.avutil.major)
+                  .arg(version.swresample.major)
+                  .arg(version.avcodec.major)
+                  .arg(version.avformat.major));
+    if (lib.loadFFMpegLibrarySpecific(avFormatLib, avCodecLib, avUtilLib, swResampleLib))
+    {
+      this->log("Testing versions of the library. Currently looking for:");
+      this->log(QString("avutil: %1.xx.xx").arg(version.avutil.major));
+      this->log(QString("swresample: %1.xx.xx").arg(version.swresample.major));
+      this->log(QString("avcodec: %1.xx.xx").arg(version.avcodec.major));
+      this->log(QString("avformat: %1.xx.xx").arg(version.avformat.major));
+
+      if ((success = checkVersionWithLib(this->lib, version, this->logList)))
+      {
+        this->libVersion = addMinorAndMicroVersion(this->lib, version);
+        this->log("checking the library versions was successful.");
+        break;
+      }
+    }
+  }
+
+  if (success && this->libVersion.avformat.major < 59)
+    this->lib.avformat.av_register_all();
+
+  return success;
+}
+
+bool FFmpegVersionHandler::checkLibraryFiles(QString      avCodecLib,
+                                             QString      avFormatLib,
+                                             QString      avUtilLib,
+                                             QString      swResampleLib,
+                                             QStringList &logging)
 {
   FFmpegVersionHandler handler;
-  return handler.loadFFmpegLibraryInPath(path);
+  bool                 success =
+      handler.loadFFMpegLibrarySpecific(avFormatLib, avCodecLib, avUtilLib, swResampleLib);
+  logging = handler.getLog();
+  return success;
 }
 
 void FFmpegVersionHandler::enableLoggingWarning()
