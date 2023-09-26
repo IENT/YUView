@@ -46,16 +46,6 @@
 namespace FFmpeg
 {
 
-struct LibraryLoadingResult
-{
-  explicit    operator bool() const { return this->success; };
-  bool        success{false};
-  std::string errorMessage;
-  std::string loadingLog;
-
-  void addLogLine(std::string line) { this->loadingLog.append(line + "\n"); }
-};
-
 // Some structs/enums which actual definition does not interest us.
 struct AVFormatContext;
 struct AVClass;
@@ -390,15 +380,18 @@ enum AVSampleFormat
 
 struct Version
 {
-  int                major{};
-  std::optional<int> minor{};
-  std::optional<int> micro{};
+  unsigned                major{};
+  std::optional<unsigned> minor{};
+  std::optional<unsigned> micro{};
 };
 
 struct LibraryVersion
 {
   LibraryVersion() = default;
-  LibraryVersion(int avutilMajor, int avcodecMajor, int avformatMajor, int swresampleMajor)
+  LibraryVersion(unsigned avutilMajor,
+                 unsigned avcodecMajor,
+                 unsigned avformatMajor,
+                 unsigned swresampleMajor)
   {
     this->avutil.major     = avutilMajor;
     this->avcodec.major    = avcodecMajor;

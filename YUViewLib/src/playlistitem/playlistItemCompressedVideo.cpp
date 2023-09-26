@@ -465,13 +465,18 @@ InfoData playlistItemCompressedVideo::getInfo() const
 {
   InfoData info("HEVC File Info");
 
+  // At first append the file information part (path, date created, file size...)
+  // info.items.append(loadingDecoder->getFileInfoList());
+
   info.items.append(
       InfoItem("Reader", QString::fromStdString(InputFormatMapper.getName(this->inputFormat))));
   if (this->inputFileFFmpegLoading)
   {
     const auto libraryPaths = this->inputFileFFmpegLoading->getLibraryPaths();
-    for (const auto &item : InfoItem::fromFFmpegLibraryPaths(libraryPaths))
-      info.items.append(item);
+    info.items.append(InfoItem("AVFormat", QString::fromStdString(libraryPaths.avFormatPath)));
+    info.items.append(InfoItem("AVCodec", QString::fromStdString(libraryPaths.avCodecPath)));
+    info.items.append(InfoItem("AVUtil", QString::fromStdString(libraryPaths.avUtilPath)));
+    info.items.append(InfoItem("SWResample", QString::fromStdString(libraryPaths.swResamplePath)));
   }
   if (!this->unresolvableError)
   {
@@ -527,8 +532,11 @@ void playlistItemCompressedVideo::infoListButtonPressed(int buttonID)
     // Get the loading log
     if (this->inputFileFFmpegLoading)
     {
-      const auto logLoading = this->inputFileFFmpegLoading->getFFmpegLoadingLog();
-      uiDialog.libraryLogEdit->setPlainText(QString::fromStdString(logLoading));
+      auto    logLoading = this->inputFileFFmpegLoading->getFFmpegLoadingLog();
+      QString logLoadingString;
+      for (const auto &l : logLoading)
+        logLoadingString.append(l + "\n");
+      uiDialog.libraryLogEdit->setPlainText(logLoadingString);
     }
 
     newDialog.exec();

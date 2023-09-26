@@ -32,8 +32,6 @@
 
 #pragma once
 
-#include <ffmpeg/FFmpegLibraryFunctions.h>
-
 #include <QList>
 #include <QMetaType>
 #include <QString>
@@ -54,9 +52,6 @@ struct InfoItem
       : name(name), text(text), button(button), buttonID(buttonID), toolTip(toolTip)
   {
   }
-
-  static std::vector<InfoItem> fromFFmpegLibraryPaths(const FFmpeg::LibraryPaths &paths);
-
   QString name{};
   QString text{};
   bool    button{};
