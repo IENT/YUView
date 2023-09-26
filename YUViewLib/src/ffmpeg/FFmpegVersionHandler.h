@@ -56,8 +56,7 @@ public:
   ~FFmpegVersionHandler();
 
   // Try to load the ffmpeg libraries and get all the function pointers.
-  void loadFFmpegLibraries(std::vector<std::filesystem::path> searchPaths);
-  bool loadingSuccessfull() const;
+  LibraryLoadingResult loadFFmpegLibraries(std::vector<std::filesystem::path> searchPaths);
 
   LibraryPaths getLibraryPaths() const { return this->lib.getLibraryPaths(); }
   QString      getLibVersionString() const;
@@ -114,23 +113,17 @@ public:
 
   static AVPixelFormat convertYUVAVPixelFormat(video::yuv::PixelFormatYUV fmt);
 
-  static SuccessOrErrorMessage checkPathForUsableFFmpeg(const std::filesystem::path &path);
+  static LibraryLoadingResult checkPathForUsableFFmpeg(const std::filesystem::path &path);
 
   // Logging. By default we set the logging level of ffmpeg to AV_LOG_ERROR (Log errors and
   // everything worse)
   static QStringList getFFmpegLog() { return logListFFmpeg; }
   void               enableLoggingWarning();
 
-  QStringList getLog() const { return logList; }
-
 private:
-  SuccessOrErrorMessage loadFFmpegLibraryInPath(const std::filesystem::path);
+  LibraryLoadingResult loadFFmpegLibraryInPath(const std::filesystem::path);
 
   bool librariesLoaded{};
-
-  // Log what is happening when loading the libraries / opening files.
-  void        log(QString message) { logList.append(message); }
-  QStringList logList{};
 
   // FFmpeg has a callback where it loggs stuff. This log goes here.
   static QStringList logListFFmpeg;

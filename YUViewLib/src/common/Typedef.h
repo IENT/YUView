@@ -254,21 +254,6 @@ template <typename T> struct Range
   }
 };
 
-class SuccessOrErrorMessage
-{
-public:
-  SuccessOrErrorMessage() = default;
-  SuccessOrErrorMessage(bool success) { this->success = success; }
-  SuccessOrErrorMessage(std::string errorMessage)
-  {
-    this->success      = false;
-    this->errorMessage = errorMessage;
-  }
-  explicit    operator bool() const { return this->success; };
-  bool        success{false};
-  std::string errorMessage;
-};
-
 struct Ratio
 {
   int num{};

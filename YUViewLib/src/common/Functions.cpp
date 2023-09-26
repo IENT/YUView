@@ -159,14 +159,18 @@ std::vector<std::filesystem::path> getDefaultLibrarySearchPaths()
 {
   std::vector<std::filesystem::path> paths;
 
-  {
-    QSettings settings;
-    auto      decoderSearchPath = settings.value("SearchPath", "").toString().toStdString();
-    if (!decoderSearchPath.empty())
-      paths.push_back(decoderSearchPath);
-  }
+  QSettings settings;
 
-  paths.push_back(std::filesystem::current_path());
+  const auto decoderSearchPath = settings.value("SearchPath", "").toString().toStdString();
+  if (!decoderSearchPath.empty())
+    paths.push_back(decoderSearchPath);
+
+  settings.beginGroup("Decoders");
+  const auto ffmpegPath = settings.value("FFmpeg.path", "").toString().toStdString();
+  if (!ffmpegPath.empty())
+    paths.push_back(ffmpegPath);
+  settings.endGroup();
+
   paths.push_back(std::filesystem::current_path() / "ffmpeg");
   paths.push_back(std::filesystem::current_path() / "decoder");
 

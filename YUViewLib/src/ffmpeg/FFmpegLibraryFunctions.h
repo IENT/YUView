@@ -32,9 +32,9 @@
 
 #pragma once
 
-#include "FFMpegLibrariesTypes.h"
-#include <QLibrary>
 #include <common/Typedef.h>
+#include <ffmpeg/FFMpegLibrariesTypes.h>
+#include <ffmpeg/LibraryLoader.h>
 #include <filesystem>
 
 namespace FFmpeg
@@ -42,10 +42,10 @@ namespace FFmpeg
 
 struct LibraryPaths
 {
-  std::string avFormatPath;
-  std::string avCodecPath;
-  std::string avUtilPath;
-  std::string swResamplePath;
+  std::filesystem::path avFormat;
+  std::filesystem::path avCodec;
+  std::filesystem::path avUtil;
+  std::filesystem::path swResample;
 };
 
 class FFmpegLibraryFunctions
@@ -54,9 +54,8 @@ public:
   FFmpegLibraryFunctions() = default;
   ~FFmpegLibraryFunctions();
 
-  // Load the FFmpeg libraries from the given path.
-  SuccessOrErrorMessage loadFFmpegLibraryInPath(const std::filesystem::path &path,
-                                                const LibraryVersion &       libraryVersion);
+  LibraryLoadingResult loadFFmpegLibraryInPath(const std::filesystem::path &path,
+                                               const LibraryVersion &       libraryVersion);
 
   LibraryPaths getLibraryPaths() const;
 
@@ -129,19 +128,13 @@ public:
   };
   SwResampleFunction swresample{};
 
-  void setLogList(QStringList *l) { logList = l; }
-
 private:
-  void addLibNamesToList(QString libName, QStringList &l, const QLibrary &lib) const;
   void unloadAllLibraries();
 
-  QStringList *logList{};
-  void         log(QString message);
-
-  QLibrary libAvutil;
-  QLibrary libSwresample;
-  QLibrary libAvcodec;
-  QLibrary libAvformat;
+  LibraryLoader libAvutil;
+  LibraryLoader libSwresample;
+  LibraryLoader libAvcodec;
+  LibraryLoader libAvformat;
 };
 
 } // namespace FFmpeg

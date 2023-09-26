@@ -33,6 +33,7 @@
 #include "FFmpegVersionHandler.h"
 #include <QDateTime>
 #include <QDir>
+#include <common/Expected.h>
 
 namespace FFmpeg
 {
@@ -40,48 +41,50 @@ namespace FFmpeg
 namespace
 {
 
-bool checkVersionWithLib(FFmpegLibraryFunctions &lib, LibraryVersion version, QStringList &logList)
+tl::expected<void, std::string> checkVersionWithLib(FFmpegLibraryFunctions &lib,
+                                                    LibraryVersion          version)
 {
   if (version.avcodec.major != AV_VERSION_MAJOR(lib.avcodec.avcodec_version()))
   {
-    logList.append(
-        QString("The openend avcodec returned a different major version (%1) than we are "
-                "looking for (%2).")
-            .arg(AV_VERSION_MAJOR(lib.avcodec.avcodec_version()))
-            .arg(version.avcodec.major));
-    return false;
+    auto errorMessage = "The openend avcodec returned a different major version (" +
+                        std::to_string(AV_VERSION_MAJOR(lib.avcodec.avcodec_version())) +
+                        ") than we are "
+                        "looking for (" +
+                        std::to_string(version.avcodec.major) + ").";
+    return tl::unexpected(errorMessage);
   }
 
   if (version.avformat.major != AV_VERSION_MAJOR(lib.avformat.avformat_version()))
   {
-    logList.append(
-        QString("The openend avformat returned a different major version (%1) than we are "
-                "looking for (%2).")
-            .arg(AV_VERSION_MAJOR(lib.avformat.avformat_version()))
-            .arg(version.avformat.major));
-    return false;
+    auto errorMessage = "The openend avformat returned a different major version (" +
+                        std::to_string(AV_VERSION_MAJOR(lib.avformat.avformat_version())) +
+                        ") than we are "
+                        "looking for (" +
+                        std::to_string(version.avformat.major) + ").";
+    return tl::unexpected(errorMessage);
   }
 
   if (version.avutil.major != AV_VERSION_MAJOR(lib.avutil.avutil_version()))
   {
-    logList.append(QString("The openend avutil returned a different major version (%1) than we are "
-                           "looking for (%2).")
-                       .arg(AV_VERSION_MAJOR(lib.avutil.avutil_version()))
-                       .arg(version.avutil.major));
-    return false;
+    auto errorMessage = "The openend avformat returned a different major version (" +
+                        std::to_string(AV_VERSION_MAJOR(lib.avutil.avutil_version())) +
+                        ") than we are "
+                        "looking for (" +
+                        std::to_string(version.avutil.major) + ").";
+    return tl::unexpected(errorMessage);
   }
 
   if (version.swresample.major != AV_VERSION_MAJOR(lib.swresample.swresample_version()))
   {
-    logList.append(
-        QString("The openend swresample returned a different major version (%1) than we are "
-                "looking for (%2).")
-            .arg(AV_VERSION_MAJOR(lib.swresample.swresample_version()))
-            .arg(version.swresample.major));
-    return false;
+    auto errorMessage = "The openend swresample returned a different major version (" +
+                        std::to_string(AV_VERSION_MAJOR(lib.swresample.swresample_version())) +
+                        ") than we are "
+                        "looking for (" +
+                        std::to_string(version.swresample.major) + ").";
+    return tl::unexpected(errorMessage);
   }
 
-  return true;
+  return {};
 }
 
 LibraryVersion addMinorAndMicroVersion(FFmpegLibraryFunctions &lib, LibraryVersion version)
@@ -265,13 +268,7 @@ bool FFmpegVersionHandler::configureDecoder(AVCodecContextWrapper &   decCtx,
       return false;
     auto ret = this->lib.avcodec.avcodec_parameters_to_context(decCtx.getCodec(), origin_par);
     if (ret < 0)
-    {
-      this->log(
-          QString(
-              "Could not copy codec parameters (avcodec_parameters_to_context). Return code %1.")
-              .arg(ret));
       return false;
-    }
   }
   else
   {
@@ -310,12 +307,10 @@ QStringList FFmpegVersionHandler::logListFFmpeg;
 FFmpegVersionHandler::FFmpegVersionHandler()
 {
   this->librariesLoaded = false;
-  this->lib.setLogList(&logList);
 }
 
 FFmpegVersionHandler::~FFmpegVersionHandler()
 {
-  this->lib.setLogList(nullptr);
 }
 
 void FFmpegVersionHandler::avLogCallback(void *, int level, const char *fmt, va_list vargs)
@@ -327,48 +322,35 @@ void FFmpegVersionHandler::avLogCallback(void *, int level, const char *fmt, va_
                                              QString(" - L%1 - ").arg(level) + msg);
 }
 
-void FFmpegVersionHandler::loadFFmpegLibraries(std::vector<std::filesystem::path> searchPaths)
+LibraryLoadingResult
+FFmpegVersionHandler::loadFFmpegLibraries(std::vector<std::filesystem::path> searchPaths)
 {
+  LibraryLoadingResult result;
+
   if (this->librariesLoaded)
-    return;
-
-  // Try to load the ffmpeg libraries from the current working directory and several other
-  // directories. Unfortunately relative paths like "./" do not work: (at least on windows)
-
-  // First try the specific FFMpeg libraries (if set)
-  QSettings settings;
-  settings.beginGroup("Decoders");
-  auto ffmpegPath = settings.value("FFmpeg.path", "").toString().toStdString();
-  if (!ffmpegPath.empty())
   {
-    this->log("Trying to load the libraries specified in the settings.");
-    const auto result     = this->loadFFmpegLibraryInPath(ffmpegPath);
-    this->librariesLoaded = result.success;
+    result.addLogLine("Libraries already loaded");
+    return result;
   }
-  else
-    this->log("No ffmpeg libraries were specified in the settings.");
 
-  if (!this->librariesLoaded)
+  for (const auto &path : searchPaths)
   {
-    for (const auto &path : searchPaths)
-    {
-      this->log("Trying to load the libraries in the path " +
-                QString::fromStdString(path.string()));
+    result.addLogLine("Trying to load the libraries in the path " + path.string());
 
-      auto result           = loadFFmpegLibraryInPath(path);
-      this->librariesLoaded = result.success;
-      if (result.success)
-        break;
+    auto resultForPath = this->loadFFmpegLibraryInPath(path);
+    result.loadingLog.append(resultForPath.loadingLog);
+    this->librariesLoaded = resultForPath.success;
+    if (resultForPath.success)
+    {
+      result.success = true;
+      break;
     }
   }
 
   if (this->librariesLoaded)
     this->lib.avutil.av_log_set_callback(&FFmpegVersionHandler::avLogCallback);
-}
 
-bool FFmpegVersionHandler::loadingSuccessfull() const
-{
-  return this->librariesLoaded;
+  return result;
 }
 
 bool FFmpegVersionHandler::openInput(AVFormatContextWrapper &fmt, QString url)
@@ -377,25 +359,16 @@ bool FFmpegVersionHandler::openInput(AVFormatContextWrapper &fmt, QString url)
   int              ret =
       this->lib.avformat.avformat_open_input(&f_ctx, url.toStdString().c_str(), nullptr, nullptr);
   if (ret < 0)
-  {
-    this->log(QString("Error opening file (avformat_open_input). Ret code %1").arg(ret));
     return false;
-  }
   if (f_ctx == nullptr)
-  {
-    this->log(QString("Error opening file (avformat_open_input). No format context returned."));
     return false;
-  }
 
   // The wrapper will take ownership of this pointer
   fmt = AVFormatContextWrapper(f_ctx, libVersion);
 
   ret = lib.avformat.avformat_find_stream_info(fmt.getFormatCtx(), nullptr);
   if (ret < 0)
-  {
-    this->log(QString("Error opening file (avformat_find_stream_info). Ret code %1").arg(ret));
     return false;
-  }
 
   return true;
 }
@@ -410,10 +383,7 @@ AVCodecWrapper FFmpegVersionHandler::findDecoder(AVCodecIDWrapper codecId)
   AVCodecID avCodecID = getCodecIDFromWrapper(codecId);
   AVCodec * c         = this->lib.avcodec.avcodec_find_decoder(avCodecID);
   if (c == nullptr)
-  {
-    this->log("Unable to find decoder for codec " + codecId.getCodecName());
-    return AVCodecWrapper();
-  }
+    return {};
   return AVCodecWrapper(c, libVersion);
 }
 
@@ -486,40 +456,47 @@ int FFmpegVersionHandler::seekBeginning(AVFormatContextWrapper &fmt)
 {
   // This is "borrowed" from the ffmpeg sources
   // (https://ffmpeg.org/doxygen/4.0/ffmpeg_8c_source.html seek_to_start)
-  this->log(QString("seek_beginning time %1").arg(fmt.getStartTime()));
   return lib.avformat.av_seek_frame(fmt.getFormatCtx(), -1, fmt.getStartTime(), 0);
 }
 
-SuccessOrErrorMessage
-FFmpegVersionHandler::loadFFmpegLibraryInPath(const std::filesystem::path path)
+LibraryLoadingResult FFmpegVersionHandler::loadFFmpegLibraryInPath(const std::filesystem::path path)
 {
-  SuccessOrErrorMessage success;
+  LibraryLoadingResult result;
   for (auto version : SupportedLibraryVersionCombinations)
   {
     if (auto loadResult = this->lib.loadFFmpegLibraryInPath(path, version))
     {
-      this->log(QString("Checking versions avutil %1, swresample %2, avcodec %3, avformat %4")
-                    .arg(version.avutil.major)
-                    .arg(version.swresample.major)
-                    .arg(version.avcodec.major)
-                    .arg(version.avformat.major));
+      result.loadingLog.append(loadResult.loadingLog);
 
-      if ((success = checkVersionWithLib(this->lib, version, this->logList)))
+      result.addLogLine("Checking versions avutil " + std::to_string(version.avutil.major) +
+                        ", swresample " + std::to_string(version.swresample.major) + ", avcodec " +
+                        std::to_string(version.avcodec.major) + ", avformat " +
+                        std::to_string(version.avformat.major));
+
+      const auto checkVersionResult = checkVersionWithLib(this->lib, version);
+      if (checkVersionResult.has_value())
       {
         this->libVersion = addMinorAndMicroVersion(this->lib, version);
-        this->log("checking the library versions was successful.");
-        break;
+
+        if (this->libVersion.avformat.major < 59)
+          this->lib.avformat.av_register_all();
+
+        result.success = true;
+        result.addLogLine("Library version check passed.");
+        return result;
+      }
+      else
+      {
+        result.addLogLine(checkVersionResult.error());
       }
     }
   }
 
-  if (success && this->libVersion.avformat.major < 59)
-    this->lib.avformat.av_register_all();
-
-  return success;
+  result.errorMessage = "No supported ffmpeg library files found in path " + path.string();
+  return result;
 }
 
-SuccessOrErrorMessage
+LibraryLoadingResult
 FFmpegVersionHandler::checkPathForUsableFFmpeg(const std::filesystem::path &path)
 {
   FFmpegVersionHandler handler;
