@@ -227,6 +227,7 @@ template <typename T> using vector4d = std::vector<vector3d<T>>;
 template <typename T, size_t N> using array               = std::array<T, N>;
 template <typename T, size_t N1, size_t N2> using array2d = std::array<std::array<T, N2>, N1>;
 
+
 template <typename T> int indexInVec(const std::vector<T> &vec, const T &item)
 {
   auto it = std::find(vec.begin(), vec.end(), item);

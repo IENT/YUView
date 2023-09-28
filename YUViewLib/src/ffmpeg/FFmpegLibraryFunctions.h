@@ -32,10 +32,9 @@
 
 #pragma once
 
+#include "FFMpegLibrariesTypes.h"
+#include <QLibrary>
 #include <common/Typedef.h>
-#include <ffmpeg/FFMpegLibrariesTypes.h>
-#include <ffmpeg/LibraryLoader.h>
-#include <filesystem>
 
 namespace FFmpeg
 {
@@ -107,7 +106,7 @@ public:
     std::function<unsigned()>            avutil_version;
     std::function<int(AVDictionary **pm, const char *key, const char *value, int flags)>
         av_dict_set;
-    std::function<AVDictionaryEntry *(
+    std::function<AVDictionaryEntry*(
         AVDictionary *m, const char *key, const AVDictionaryEntry *prev, int flags)>
         av_dict_get;
     std::function<AVFrameSideData *(const AVFrame *frame, AVFrameSideDataType type)>
@@ -127,13 +126,19 @@ public:
   };
   SwResampleFunction swresample{};
 
+  void setLogList(QStringList *l) { logList = l; }
+
 private:
+  void addLibNamesToList(QString libName, QStringList &l, const QLibrary &lib) const;
   void unloadAllLibraries();
 
-  LibraryLoader libAvutil;
-  LibraryLoader libSwresample;
-  LibraryLoader libAvcodec;
-  LibraryLoader libAvformat;
+  QStringList *logList{};
+  void         log(QString message);
+
+  QLibrary libAvutil;
+  QLibrary libSwresample;
+  QLibrary libAvcodec;
+  QLibrary libAvformat;
 };
 
 } // namespace FFmpeg

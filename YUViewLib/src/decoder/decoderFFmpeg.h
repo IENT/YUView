@@ -69,9 +69,9 @@ public:
   // What statistics do we support?
   void fillStatisticList(stats::StatisticsData &statisticsData) const override;
 
-  std::vector<InfoItem> getDecoderInfo() const override;
-  QString               getDecoderName() const override { return "FFmpeg"; }
-  QString               getCodecName() const override { return this->codecName; }
+  QStringList getLibraryPaths() const override { return ff.getLibPaths(); }
+  QString     getDecoderName() const override { return "FFmpeg"; }
+  QString     getCodecName() const override { return this->codecName; }
 
   static QStringList getLogMessages() { return FFmpeg::FFmpegVersionHandler::getFFmpegLog(); }
 

@@ -49,35 +49,6 @@
 
 #define MIN_CACHE_SIZE_IN_MB (20u)
 
-namespace
-{
-
-QStringList getLibraryPath(QWidget *parent, QString currentFile, QString caption)
-{
-  // Use the currently selected dir or the dir to YUView if this one does not exist.
-  QFileInfo curFile(currentFile);
-  auto      curDir = curFile.absoluteDir();
-  if (!curDir.exists())
-    curDir = QDir::current();
-
-  QFileDialog fileDialog(parent, caption);
-  fileDialog.setDirectory(curDir);
-  fileDialog.setFileMode(QFileDialog::ExistingFile);
-  if (is_Q_OS_LINUX)
-    fileDialog.setNameFilter("Library files (*.so.* *.so)");
-  if (is_Q_OS_MAC)
-    fileDialog.setNameFilter("Library files (*.dylib)");
-  if (is_Q_OS_WIN)
-    fileDialog.setNameFilter("Library files (*.dll)");
-
-  if (fileDialog.exec())
-    return fileDialog.selectedFiles();
-
-  return {};
-}
-
-} // namespace
-
 SettingsDialog::SettingsDialog(QWidget *parent) : QDialog(parent)
 {
   ui.setupUi(this);
@@ -185,7 +156,10 @@ SettingsDialog::SettingsDialog(QWidget *parent) : QDialog(parent)
   ui.lineEditLibDav1d->setText(settings.value("libDav1dFile", "").toString());
   ui.lineEditLibVTMFile->setText(settings.value("libVTMFile", "").toString());
   ui.lineEditLibVVDecFile->setText(settings.value("libVVDecFile", "").toString());
-  ui.lineEditFFmpegPath->setText(settings.value("FFmpeg.path", "").toString());
+  ui.lineEditAVFormat->setText(settings.value("FFmpeg.avformat", "").toString());
+  ui.lineEditAVCodec->setText(settings.value("FFmpeg.avcodec", "").toString());
+  ui.lineEditAVUtil->setText(settings.value("FFmpeg.avutil", "").toString());
+  ui.lineEditSWResample->setText(settings.value("FFmpeg.swresample", "").toString());
   settings.endGroup();
 }
 
@@ -268,10 +242,34 @@ void SettingsDialog::on_pushButtonDecoderSelectPath_clicked()
   }
 }
 
+QStringList SettingsDialog::getLibraryPath(QString currentFile, QString caption, bool multipleFiles)
+{
+  // Use the currently selected dir or the dir to YUView if this one does not exist.
+  QFileInfo curFile(currentFile);
+  QDir      curDir = curFile.absoluteDir();
+  if (!curDir.exists())
+    curDir = QDir::current();
+
+  QFileDialog fileDialog(this, caption);
+  fileDialog.setDirectory(curDir);
+  fileDialog.setFileMode(multipleFiles ? QFileDialog::ExistingFiles : QFileDialog::ExistingFile);
+  if (is_Q_OS_LINUX)
+    fileDialog.setNameFilter("Library files (*.so.* *.so)");
+  if (is_Q_OS_MAC)
+    fileDialog.setNameFilter("Library files (*.dylib)");
+  if (is_Q_OS_WIN)
+    fileDialog.setNameFilter("Library files (*.dll)");
+
+  if (fileDialog.exec())
+    return fileDialog.selectedFiles();
+
+  return {};
+}
+
 void SettingsDialog::on_pushButtonLibde265SelectFile_clicked()
 {
-  const auto newFiles = getLibraryPath(
-      this, ui.lineEditLibde265File->text(), "Please select the libde265 library file to use.");
+  QStringList newFiles = this->getLibraryPath(ui.lineEditLibde265File->text(),
+                                              "Please select the libde265 library file to use.");
   if (newFiles.count() != 1)
     return;
   QString error;
@@ -286,8 +284,8 @@ void SettingsDialog::on_pushButtonLibde265SelectFile_clicked()
 
 void SettingsDialog::on_pushButtonlibHMSelectFile_clicked()
 {
-  const auto newFiles = getLibraryPath(
-      this, ui.lineEditLibHMFile->text(), "Please select the libHMDecoder library file to use.");
+  QStringList newFiles = this->getLibraryPath(
+      ui.lineEditLibHMFile->text(), "Please select the libHMDecoder library file to use.");
   if (newFiles.count() != 1)
     return;
   QString error;
@@ -302,8 +300,8 @@ void SettingsDialog::on_pushButtonlibHMSelectFile_clicked()
 
 void SettingsDialog::on_pushButtonLibDav1dSelectFile_clicked()
 {
-  const auto newFiles = getLibraryPath(
-      this, ui.lineEditLibDav1d->text(), "Please select the libDav1d library file to use.");
+  QStringList newFiles = this->getLibraryPath(ui.lineEditLibDav1d->text(),
+                                              "Please select the libDav1d library file to use.");
   if (newFiles.count() != 1)
     return;
   QString error;
@@ -318,8 +316,8 @@ void SettingsDialog::on_pushButtonLibDav1dSelectFile_clicked()
 
 void SettingsDialog::on_pushButtonLibVTMSelectFile_clicked()
 {
-  const auto newFiles = getLibraryPath(
-      this, ui.lineEditLibVTMFile->text(), "Please select the libVTMDecoder library file to use.");
+  QStringList newFiles = this->getLibraryPath(
+      ui.lineEditLibVTMFile->text(), "Please select the libVTMDecoder library file to use.");
   if (newFiles.count() != 1)
     return;
   QString error;
@@ -334,9 +332,8 @@ void SettingsDialog::on_pushButtonLibVTMSelectFile_clicked()
 
 void SettingsDialog::on_pushButtonLibVVDecSelectFile_clicked()
 {
-  const auto newFiles = getLibraryPath(this,
-                                       ui.lineEditLibVVDecFile->text(),
-                                       "Please select the libVVDec decoder library file to use.");
+  QStringList newFiles = this->getLibraryPath(
+      ui.lineEditLibVVDecFile->text(), "Please select the libVVDec decoder library file to use.");
   if (newFiles.count() != 1)
     return;
   QString error;
@@ -350,59 +347,75 @@ void SettingsDialog::on_pushButtonLibVVDecSelectFile_clicked()
     ui.lineEditLibVVDecFile->setText(newFiles[0]);
 }
 
-void SettingsDialog::on_pushButtonFFMpegSelectPath_clicked()
+void SettingsDialog::on_pushButtonFFMpegSelectFile_clicked()
 {
-  auto curDir = QDir(ui.lineEditFFmpegPath->text());
-  if (!curDir.exists())
-    curDir = QDir::current();
-
-  QFileDialog fileDialog(this,
-                         tr("Please select the path to the shared ffmpeg libraries "
-                            "(avformat, avcodec, avutil and swscale)"));
-  fileDialog.setDirectory(curDir);
-  fileDialog.setFileMode(QFileDialog::Directory);
-
-  if (!fileDialog.exec())
+  QStringList newFiles = this->getLibraryPath(
+      ui.lineEditAVFormat->text(),
+      "Please select the 4 FFmpeg libraries AVCodec, AVFormat, AVUtil and SWResample.",
+      true);
+  if (newFiles.empty())
     return;
 
-  auto newDirectory = fileDialog.selectedFiles();
-
-  if (newDirectory.empty())
-    return;
-
-  const auto path = std::filesystem::path(newDirectory.first().toStdString());
-
-  const auto result = FFmpeg::FFmpegVersionHandler::checkPathForUsableFFmpeg(path);
-  if (result)
+  // Get the 4 libraries from the list
+  QString avCodecLib, avFormatLib, avUtilLib, swResampleLib;
+  if (newFiles.count() == 4)
   {
-    ui.lineEditFFmpegPath->setText(newDirectory.first());
+    for (auto file : newFiles)
+    {
+      QFileInfo fileInfo(file);
+      if (fileInfo.baseName().contains("avcodec", Qt::CaseInsensitive))
+        avCodecLib = file;
+      if (fileInfo.baseName().contains("avformat", Qt::CaseInsensitive))
+        avFormatLib = file;
+      if (fileInfo.baseName().contains("avutil", Qt::CaseInsensitive))
+        avUtilLib = file;
+      if (fileInfo.baseName().contains("swresample", Qt::CaseInsensitive))
+        swResampleLib = file;
+    }
+  }
+  if (avCodecLib.isEmpty() || avFormatLib.isEmpty() || avUtilLib.isEmpty() ||
+      swResampleLib.isEmpty())
+  {
+    QMessageBox::critical(
+        this,
+        "Error in file selection",
+        "Please select the four FFmpeg files AVCodec, AVFormat, AVUtil and SWresample.");
+    return;
+  }
+
+  // Try to open ffmpeg using the four libraries
+  QStringList logList;
+  if (!FFmpeg::FFmpegVersionHandler::checkLibraryFiles(
+          avCodecLib, avFormatLib, avUtilLib, swResampleLib, logList))
+  {
+    QMessageBox::StandardButton b = QMessageBox::question(
+        this,
+        "Error opening the library",
+        "The selected file does not appear to be a usable ffmpeg avFormat library. \nWe have "
+        "collected a more detailed log. Do you want to save it to disk?");
+    if (b == QMessageBox::Yes)
+    {
+      const auto filePath =
+          QFileDialog::getSaveFileName(this, "Select a destination for the log file.");
+      QFile logFile(filePath);
+      logFile.open(QIODevice::WriteOnly);
+      if (logFile.isOpen())
+      {
+        QTextStream outputStream(&logFile);
+        for (auto l : logList)
+          outputStream << l << "\n";
+      }
+      else
+        QMessageBox::information(
+            this, "Error opening file", "There was an error opening the log file " + filePath);
+    }
   }
   else
   {
-    QMessageBox::information(this,
-                             "Error opening ffmpeg in directory",
-                             "We could not open the ffmpeg libraries in the given folder.");
-    // QMessageBox::StandardButton b = QMessageBox::question(
-    //     this,
-    //     "Error opening the library",
-    //     "The selected file does not appear to be a usable ffmpeg avFormat library. \nWe have "
-    //     "collected a more detailed log. Do you want to save it to disk?");
-    // if (b == QMessageBox::Yes)
-    // {
-    //   const auto filePath =
-    //       QFileDialog::getSaveFileName(this, "Select a destination for the log file.");
-    //   QFile logFile(filePath);
-    //   logFile.open(QIODevice::WriteOnly);
-    //   if (logFile.isOpen())
-    //   {
-    //     QTextStream outputStream(&logFile);
-    //     for (auto l : logList)
-    //       outputStream << l << "\n";
-    //   }
-    //   else
-    //     QMessageBox::information(
-    //         this, "Error opening file", "There was an error opening the log file " + filePath);
-    // }
+    ui.lineEditAVCodec->setText(avCodecLib);
+    ui.lineEditAVFormat->setText(avFormatLib);
+    ui.lineEditAVUtil->setText(avUtilLib);
+    ui.lineEditSWResample->setText(swResampleLib);
   }
 }
 
@@ -464,7 +477,11 @@ void SettingsDialog::on_pushButtonSave_clicked()
   settings.setValue("libDav1dFile", ui.lineEditLibDav1d->text());
   settings.setValue("libVTMFile", ui.lineEditLibVTMFile->text());
   settings.setValue("libVVDecFile", ui.lineEditLibVVDecFile->text());
-  settings.setValue("FFmpeg.path", ui.lineEditFFmpegPath->text());
+  // FFMpeg files
+  settings.setValue("FFmpeg.avformat", ui.lineEditAVFormat->text());
+  settings.setValue("FFmpeg.avcodec", ui.lineEditAVCodec->text());
+  settings.setValue("FFmpeg.avutil", ui.lineEditAVUtil->text());
+  settings.setValue("FFmpeg.swresample", ui.lineEditSWResample->text());
   settings.endGroup();
 
   accept();

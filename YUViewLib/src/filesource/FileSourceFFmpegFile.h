@@ -121,7 +121,7 @@ public:
   // Return: POC and frame index
   std::pair<int64_t, size_t> getClosestSeekableFrameBefore(int frameIdx) const;
 
-  std::string getFFmpegLoadingLog() const { return this->ffmpegLoadingLog; }
+  QStringList getFFmpegLoadingLog() const { return ff.getLog(); }
 
 private slots:
   void fileSystemWatcherFileChanged(const QString &) { fileChanged = true; }
@@ -133,7 +133,6 @@ protected:
   bool                           goToNextPacket(bool videoPacketsOnly = false);
   FFmpeg::AVPacketWrapper        currentPacket;    //< A place for the curren (frame) input buffer
   bool                           endOfFile{false}; //< Are we at the end of file (draining mode)?
-  std::string                    ffmpegLoadingLog;
 
   // Seek the stream to the given pts value, flush the decoder and load the first packet so
   // that we are ready to start decoding from this pts.

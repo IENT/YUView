@@ -47,16 +47,6 @@
 namespace FFmpeg
 {
 
-struct LibraryLoadingResult
-{
-  explicit    operator bool() const { return this->success; };
-  bool        success{false};
-  std::string errorMessage;
-  std::string loadingLog;
-
-  void addLogLine(std::string line) { this->loadingLog.append(line + "\n"); }
-};
-
 // Some structs/enums which actual definition does not interest us.
 struct AVFormatContext;
 struct AVClass;

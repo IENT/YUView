@@ -465,6 +465,9 @@ InfoData playlistItemCompressedVideo::getInfo() const
 {
   InfoData info("HEVC File Info");
 
+  // At first append the file information part (path, date created, file size...)
+  // info.items.append(loadingDecoder->getFileInfoList());
+
   info.items.append(
       InfoItem("Reader", QString::fromStdString(InputFormatMapper.getName(this->inputFormat))));
   if (this->inputFileFFmpegLoading)
@@ -486,10 +489,12 @@ InfoData playlistItemCompressedVideo::getInfo() const
         InfoItem("Num POCs", QString::number(nrFrames), "The number of pictures in the stream."));
     if (this->decodingEnabled)
     {
-      const auto decoderInfo = loadingDecoder->getDecoderInfo();
-      for (const auto &infoItem : decoderInfo)
-        info.items.append(infoItem);
-
+      auto l = loadingDecoder->getLibraryPaths();
+      if (l.length() % 3 == 0)
+      {
+        for (int i = 0; i < l.length() / 3; i++)
+          info.items.append(InfoItem(l[i * 3], l[i * 3 + 1], l[i * 3 + 2]));
+      }
       info.items.append(InfoItem("Decoder", this->loadingDecoder->getDecoderName()));
       info.items.append(InfoItem("Decoder", this->loadingDecoder->getCodecName()));
       info.items.append(InfoItem("Statistics",
@@ -528,8 +533,11 @@ void playlistItemCompressedVideo::infoListButtonPressed(int buttonID)
     // Get the loading log
     if (this->inputFileFFmpegLoading)
     {
-      const auto logLoading = this->inputFileFFmpegLoading->getFFmpegLoadingLog();
-      uiDialog.libraryLogEdit->setPlainText(QString::fromStdString(logLoading));
+      auto    logLoading = this->inputFileFFmpegLoading->getFFmpegLoadingLog();
+      QString logLoadingString;
+      for (const auto &l : logLoading)
+        logLoadingString.append(l + "\n");
+      uiDialog.libraryLogEdit->setPlainText(logLoadingString);
     }
 
     newDialog.exec();

@@ -31,6 +31,7 @@
  */
 
 #include "FFmpegLibraryFunctions.h"
+#include <QDir>
 
 namespace FFmpeg
 {
@@ -39,16 +40,16 @@ namespace
 {
 
 template <typename T>
-bool resolveFunction(LibraryLoader &       lib,
-                     std::function<T> &    function,
-                     const char *          symbolName,
-                     LibraryLoadingResult &result)
+bool resolveFunction(QLibrary &        lib,
+                     std::function<T> &function,
+                     const char *      symbolName,
+                     QStringList *     logList)
 {
   auto ptr = lib.resolve(symbolName);
   if (!ptr)
   {
-    result.errorMessage = "Function " + std::string(symbolName) + " not found.";
-    result.addLogLine("Function " + std::string(symbolName) + " not found.");
+    if (logList)
+      logList->append(QString("Function %1 not found.").arg(symbolName));
     return false;
   }
 
@@ -56,150 +57,122 @@ bool resolveFunction(LibraryLoader &       lib,
   return true;
 }
 
-bool bindLibraryFunctionsAndUpdateResult(LibraryLoader &                            lib,
-                                         FFmpegLibraryFunctions::AvFormatFunctions &functions,
-                                         LibraryLoadingResult &                     result)
+bool bindLibraryFunctions(QLibrary &                                 lib,
+                          FFmpegLibraryFunctions::AvFormatFunctions &functions,
+                          QStringList *                              log)
 {
-  if (!resolveFunction(lib, functions.avformat_version, "avformat_version", result))
+  if (!resolveFunction(lib, functions.avformat_version, "avformat_version", log))
     return false;
 
   auto versionRaw = functions.avformat_version();
   if (AV_VERSION_MAJOR(versionRaw) < 59)
-    if (!resolveFunction(lib, functions.av_register_all, "av_register_all", result))
+    if (!resolveFunction(lib, functions.av_register_all, "av_register_all", log))
       return false;
 
-  if (!resolveFunction(lib, functions.avformat_open_input, "avformat_open_input", result))
+  if (!resolveFunction(lib, functions.avformat_open_input, "avformat_open_input", log))
     return false;
-  if (!resolveFunction(lib, functions.avformat_close_input, "avformat_close_input", result))
+  if (!resolveFunction(lib, functions.avformat_close_input, "avformat_close_input", log))
     return false;
-  if (!resolveFunction(
-          lib, functions.avformat_find_stream_info, "avformat_find_stream_info", result))
+  if (!resolveFunction(lib, functions.avformat_find_stream_info, "avformat_find_stream_info", log))
     return false;
-  if (!resolveFunction(lib, functions.av_read_frame, "av_read_frame", result))
+  if (!resolveFunction(lib, functions.av_read_frame, "av_read_frame", log))
     return false;
-  if (!resolveFunction(lib, functions.av_seek_frame, "av_seek_frame", result))
+  if (!resolveFunction(lib, functions.av_seek_frame, "av_seek_frame", log))
     return false;
-  if (!resolveFunction(lib, functions.avformat_version, "avformat_version", result))
+  if (!resolveFunction(lib, functions.avformat_version, "avformat_version", log))
     return false;
-
-  result.addLogLine("Binding avFormat functions successfull.");
   return true;
 }
 
-bool bindLibraryFunctionsAndUpdateResult(LibraryLoader &                           lib,
-                                         FFmpegLibraryFunctions::AvCodecFunctions &functions,
-                                         LibraryLoadingResult &                    result)
+bool bindLibraryFunctions(QLibrary &                                lib,
+                          FFmpegLibraryFunctions::AvCodecFunctions &functions,
+                          QStringList *                             log)
 {
-  if (!resolveFunction(lib, functions.avcodec_find_decoder, "avcodec_find_decoder", result))
+  if (!resolveFunction(lib, functions.avcodec_find_decoder, "avcodec_find_decoder", log))
     return false;
-  if (!resolveFunction(lib, functions.avcodec_alloc_context3, "avcodec_alloc_context3", result))
+  if (!resolveFunction(lib, functions.avcodec_alloc_context3, "avcodec_alloc_context3", log))
     return false;
-  if (!resolveFunction(lib, functions.avcodec_open2, "avcodec_open2", result))
+  if (!resolveFunction(lib, functions.avcodec_open2, "avcodec_open2", log))
     return false;
-  if (!resolveFunction(lib, functions.avcodec_free_context, "avcodec_free_context", result))
+  if (!resolveFunction(lib, functions.avcodec_free_context, "avcodec_free_context", log))
     return false;
-  if (!resolveFunction(lib, functions.av_init_packet, "av_init_packet", result))
+  if (!resolveFunction(lib, functions.av_init_packet, "av_init_packet", log))
     return false;
-  if (!resolveFunction(lib, functions.av_packet_alloc, "av_packet_alloc", result))
+  if (!resolveFunction(lib, functions.av_packet_alloc, "av_packet_alloc", log))
     return false;
-  if (!resolveFunction(lib, functions.av_packet_free, "av_packet_free", result))
+  if (!resolveFunction(lib, functions.av_packet_free, "av_packet_free", log))
     return false;
-  if (!resolveFunction(lib, functions.av_packet_unref, "av_packet_unref", result))
+  if (!resolveFunction(lib, functions.av_packet_unref, "av_packet_unref", log))
     return false;
-  if (!resolveFunction(lib, functions.avcodec_flush_buffers, "avcodec_flush_buffers", result))
+  if (!resolveFunction(lib, functions.avcodec_flush_buffers, "avcodec_flush_buffers", log))
     return false;
-  if (!resolveFunction(lib, functions.avcodec_version, "avcodec_version", result))
+  if (!resolveFunction(lib, functions.avcodec_version, "avcodec_version", log))
     return false;
-  if (!resolveFunction(lib, functions.avcodec_get_name, "avcodec_get_name", result))
+  if (!resolveFunction(lib, functions.avcodec_get_name, "avcodec_get_name", log))
     return false;
-  if (!resolveFunction(lib, functions.avcodec_parameters_alloc, "avcodec_parameters_alloc", result))
+  if (!resolveFunction(lib, functions.avcodec_parameters_alloc, "avcodec_parameters_alloc", log))
     return false;
 
   // The following functions are part of the new API. If they are not available, we use the old API.
   // If available, we should however use it.
-  if (resolveFunction(lib, functions.avcodec_send_packet, "avcodec_send_packet", result) &&
-      resolveFunction(lib, functions.avcodec_receive_frame, "avcodec_receive_frame", result) &&
+  if (resolveFunction(lib, functions.avcodec_send_packet, "avcodec_send_packet", log) &&
+      resolveFunction(lib, functions.avcodec_receive_frame, "avcodec_receive_frame", log) &&
       resolveFunction(
-          lib, functions.avcodec_parameters_to_context, "avcodec_parameters_to_context", result))
+          lib, functions.avcodec_parameters_to_context, "avcodec_parameters_to_context", log))
     functions.newParametersAPIAvailable = true;
   else
   {
     // If the new API is not available, then the old one must be available.
-    if (!resolveFunction(lib, functions.avcodec_decode_video2, "avcodec_decode_video2", result))
+    if (!resolveFunction(lib, functions.avcodec_decode_video2, "avcodec_decode_video2", log))
       return false;
   }
 
-  result.addLogLine("Binding avCodec functions successfull.");
   return true;
 }
 
-bool bindLibraryFunctionsAndUpdateResult(LibraryLoader &                          lib,
-                                         FFmpegLibraryFunctions::AvUtilFunctions &functions,
-                                         LibraryLoadingResult &                   result)
+bool bindLibraryFunctions(QLibrary &                               lib,
+                          FFmpegLibraryFunctions::AvUtilFunctions &functions,
+                          QStringList *                            log)
 {
-  if (!resolveFunction(lib, functions.avutil_version, "avutil_version", result))
+  if (!resolveFunction(lib, functions.avutil_version, "avutil_version", log))
     return false;
 
   auto versionRaw = functions.avutil_version();
 
-  if (!resolveFunction(lib, functions.av_frame_alloc, "av_frame_alloc", result))
+  if (!resolveFunction(lib, functions.av_frame_alloc, "av_frame_alloc", log))
     return false;
-  if (!resolveFunction(lib, functions.av_frame_free, "av_frame_free", result))
+  if (!resolveFunction(lib, functions.av_frame_free, "av_frame_free", log))
     return false;
-  if (!resolveFunction(lib, functions.av_mallocz, "av_mallocz", result))
+  if (!resolveFunction(lib, functions.av_mallocz, "av_mallocz", log))
     return false;
-  if (!resolveFunction(lib, functions.av_dict_set, "av_dict_set", result))
+  if (!resolveFunction(lib, functions.av_dict_set, "av_dict_set", log))
     return false;
-  if (!resolveFunction(lib, functions.av_dict_get, "av_dict_get", result))
+  if (!resolveFunction(lib, functions.av_dict_get, "av_dict_get", log))
     return false;
-  if (!resolveFunction(lib, functions.av_frame_get_side_data, "av_frame_get_side_data", result))
+  if (!resolveFunction(lib, functions.av_frame_get_side_data, "av_frame_get_side_data", log))
     return false;
   if (AV_VERSION_MAJOR(versionRaw) < 57)
-    if (!resolveFunction(lib, functions.av_frame_get_metadata, "av_frame_get_metadata", result))
+    if (!resolveFunction(lib, functions.av_frame_get_metadata, "av_frame_get_metadata", log))
       return false;
-  if (!resolveFunction(lib, functions.av_log_set_callback, "av_log_set_callback", result))
+  if (!resolveFunction(lib, functions.av_log_set_callback, "av_log_set_callback", log))
     return false;
-  if (!resolveFunction(lib, functions.av_log_set_level, "av_log_set_level", result))
+  if (!resolveFunction(lib, functions.av_log_set_level, "av_log_set_level", log))
     return false;
-  if (!resolveFunction(lib, functions.av_pix_fmt_desc_get, "av_pix_fmt_desc_get", result))
+  if (!resolveFunction(lib, functions.av_pix_fmt_desc_get, "av_pix_fmt_desc_get", log))
     return false;
-  if (!resolveFunction(lib, functions.av_pix_fmt_desc_next, "av_pix_fmt_desc_next", result))
+  if (!resolveFunction(lib, functions.av_pix_fmt_desc_next, "av_pix_fmt_desc_next", log))
     return false;
-  if (!resolveFunction(lib, functions.av_pix_fmt_desc_get_id, "av_pix_fmt_desc_get_id", result))
+  if (!resolveFunction(lib, functions.av_pix_fmt_desc_get_id, "av_pix_fmt_desc_get_id", log))
     return false;
 
-  result.addLogLine("Binding avUtil functions successfull.");
   return true;
 }
 
-bool bindLibraryFunctionsAndUpdateResult(LibraryLoader &                             lib,
-                                         FFmpegLibraryFunctions::SwResampleFunction &functions,
-                                         LibraryLoadingResult &                      result)
+bool bindLibraryFunctions(QLibrary &                                  lib,
+                          FFmpegLibraryFunctions::SwResampleFunction &functions,
+                          QStringList *                               log)
 {
-  if (!resolveFunction(lib, functions.swresample_version, "swresample_version", result))
-    return false;
-
-  result.addLogLine("Binding swresample functions successfull.");
-  return true;
-}
-
-StringVec formatPossibleLibraryNames(std::string libraryName, int version)
-{
-  // The ffmpeg libraries are named using a major version number. E.g: avutil-55.dll on windows.
-  // On linux, the libraries may be named differently. On Ubuntu they are named
-  // libavutil-ffmpeg.so.55. On arch linux the name is libavutil.so.55. We will try to look for both
-  // namings. On MAC os (installed with homebrew), there is a link to the lib named
-  // libavutil.54.dylib.
-
-  if (is_Q_OS_WIN)
-    return {libraryName + "-" + std::to_string(version)};
-  if (is_Q_OS_LINUX)
-    return {"lib" + libraryName + "-ffmpeg.so." + std::to_string(version),
-            "lib" + libraryName + ".so." + std::to_string(version)};
-  if (is_Q_OS_MAC)
-    return {"lib" + libraryName + "." + std::to_string(version) + ".dylib"};
-
-  return {};
+  return resolveFunction(lib, functions.swresample_version, "swresample_version", log);
 }
 
 } // namespace
@@ -216,23 +189,30 @@ FFmpegLibraryFunctions::loadFFmpegLibraryInPath(const std::filesystem::path &pat
   // We will load the following libraries (in this order):
   // avutil, swresample, avcodec, avformat.
 
-  LibraryLoadingResult loadingResult;
-
-  std::filesystem::path absoluteDirectoryPath;
-  if (!path.empty())
+  if (!path.isEmpty())
   {
-    if (!std::filesystem::exists(path))
+    QDir givenPath(path);
+    if (!givenPath.exists())
     {
-      loadingResult.errorMessage = "The given path (" + path.string() + ") could not be found";
-      return loadingResult;
+      this->log("The given path is invalid");
+      return false;
     }
 
-    absoluteDirectoryPath = std::filesystem::absolute(path);
-    loadingResult.addLogLine("Using absolute path " + absoluteDirectoryPath.string());
+    // Get the absolute path
+    path = givenPath.absolutePath() + "/";
+    this->log("Absolute path " + path);
   }
 
-  this->unloadAllLibraries();
-  loadingResult.addLogLine("Unload libraries");
+  // The ffmpeg libraries are named using a major version number. E.g: avutil-55.dll on windows.
+  // On linux, the libraries may be named differently. On Ubuntu they are named
+  // libavutil-ffmpeg.so.55. On arch linux the name is libavutil.so.55. We will try to look for both
+  // namings. On MAC os (installed with homebrew), there is a link to the lib named
+  // libavutil.54.dylib.
+  unsigned nrNames = (is_Q_OS_LINUX) ? 2 : ((is_Q_OS_WIN) ? 1 : 1);
+  bool     success = false;
+  for (unsigned i = 0; i < nrNames; i++)
+  {
+    this->unloadAllLibraries();
 
   auto loadLibrary = [&loadingResult, &absoluteDirectoryPath](
                          LibraryLoader &lib, std::string libName, const Version &version) {
@@ -253,25 +233,39 @@ FFmpegLibraryFunctions::loadFFmpegLibraryInPath(const std::filesystem::path &pat
       loadLibrary(this->libAvcodec, "avcodec", libraryVersions.avcodec) &&
       loadLibrary(this->libAvformat, "avformat", libraryVersions.avformat))
   {
-    if (bindLibraryFunctionsAndUpdateResult(this->libAvformat, this->avformat, loadingResult) &&
-        bindLibraryFunctionsAndUpdateResult(this->libAvcodec, this->avcodec, loadingResult) &&
-        bindLibraryFunctionsAndUpdateResult(this->libAvutil, this->avutil, loadingResult) &&
-        bindLibraryFunctionsAndUpdateResult(this->libSwresample, this->swresample, loadingResult))
-    {
-      loadingResult.success = true;
-      loadingResult.addLogLine("Loading of ffmpeg libraries successfull");
-      return loadingResult;
-    }
+    this->unloadAllLibraries();
+    return false;
   }
 
-  this->unloadAllLibraries();
-  loadingResult.addLogLine("Unload libraries");
+  success = (bindLibraryFunctions(this->libAvformat, this->avformat, this->logList) &&
+             bindLibraryFunctions(this->libAvcodec, this->avcodec, this->logList) &&
+             bindLibraryFunctions(this->libAvutil, this->avutil, this->logList) &&
+             bindLibraryFunctions(this->libSwresample, this->swresample, this->logList));
+  this->log(QString("Binding functions ") + (success ? "successfull" : "failed"));
 
-  return loadingResult;
+  return success;
+}
+
+void FFmpegLibraryFunctions::addLibNamesToList(QString         libName,
+                                               QStringList &   l,
+                                               const QLibrary &lib) const
+{
+  l.append(libName);
+  if (lib.isLoaded())
+  {
+    l.append(lib.fileName());
+    l.append(lib.fileName());
+  }
+  else
+  {
+    l.append("None");
+    l.append("None");
+  }
 }
 
 void FFmpegLibraryFunctions::unloadAllLibraries()
 {
+  this->log("Unloading all loaded libraries");
   this->libAvutil.unload();
   this->libSwresample.unload();
   this->libAvcodec.unload();
@@ -301,6 +295,12 @@ std::vector<LibraryInfo> FFmpegLibraryFunctions::getLibrariesInfo() const
       "SwResample", this->libSwresample.getLibraryPath(), this->swresample.swresample_version());
 
   return infoPerLIbrary;
+}
+
+void FFmpegLibraryFunctions::log(QString message)
+{
+  if (this->logList)
+    this->logList->append(message);
 }
 
 } // namespace FFmpeg

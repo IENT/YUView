@@ -476,11 +476,9 @@ void FileSourceFFmpegFile::openFileAndFindVideoStream(QString fileName)
 {
   this->isFileOpened = false;
 
-  const auto result = this->ff.loadFFmpegLibraries(functions::getDefaultLibrarySearchPaths());
-  if (!result.success)
+  this->ff.loadFFmpegLibraries();
+  if (!this->ff.loadingSuccessfull())
     return;
-
-  this->ffmpegLoadingLog = result.loadingLog;
 
   // Open the input file
   if (!this->ff.openInput(this->formatCtx, fileName))

@@ -32,8 +32,6 @@
 
 #pragma once
 
-#include <ffmpeg/FFmpegLibraryFunctions.h>
-
 #include <QList>
 #include <QMetaType>
 #include <QString>
@@ -72,5 +70,4 @@ struct InfoData
   QString         title{};
   QList<InfoItem> items{};
 };
-
 Q_DECLARE_METATYPE(InfoData)

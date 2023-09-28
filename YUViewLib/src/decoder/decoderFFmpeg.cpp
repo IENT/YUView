@@ -56,8 +56,8 @@ decoderFFmpeg::decoderFFmpeg(FFmpeg::AVCodecIDWrapper   codecID,
 {
   // The libraries are only loaded on demand. This way a FFmpegLibraries instance can exist without
   // loading the libraries which is slow and uses a lot of memory.
-  const auto result = this->ff.loadFFmpegLibraries(functions::getDefaultLibrarySearchPaths());
-  if (!result.success)
+  this->ff.loadFFmpegLibraries();
+  if (!this->ff.loadingSuccessfull())
     return;
 
   // Create the cofiguration parameters
@@ -99,8 +99,8 @@ decoderFFmpeg::decoderFFmpeg(FFmpeg::AVCodecParametersWrapper codecpar, bool cac
 {
   // The libraries are only loaded on demand. This way a FFmpegLibraries instance can exist without
   // loading the libraries which is slow and uses a lot of memory.
-  const auto result = this->ff.loadFFmpegLibraries(functions::getDefaultLibrarySearchPaths());
-  if (!result.success)
+  this->ff.loadFFmpegLibraries();
+  if (!this->ff.loadingSuccessfull())
     return;
 
   auto codecID    = this->ff.getCodecIDWrapper(codecpar.getCodecID());

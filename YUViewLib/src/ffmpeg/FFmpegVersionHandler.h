@@ -44,7 +44,6 @@
 #include "FFMpegLibrariesTypes.h"
 #include "FFmpegLibraryFunctions.h"
 #include <common/Typedef.h>
-#include <filesystem>
 
 namespace FFmpeg
 {
@@ -56,7 +55,8 @@ public:
   ~FFmpegVersionHandler();
 
   // Try to load the ffmpeg libraries and get all the function pointers.
-  LibraryLoadingResult loadFFmpegLibraries(std::vector<std::filesystem::path> searchPaths);
+  void loadFFmpegLibraries();
+  bool loadingSuccessfull() const;
 
   std::vector<LibraryInfo> getLibrariesInfo() const { return this->lib.getLibrariesInfo(); }
 
@@ -111,19 +111,26 @@ public:
   FFmpegLibraryFunctions lib;
 
   static AVPixelFormat convertYUVAVPixelFormat(video::yuv::PixelFormatYUV fmt);
-
-  static LibraryLoadingResult checkPathForUsableFFmpeg(const std::filesystem::path &path);
+  // Check if the given four files can be used to open FFmpeg.
+  static bool checkLibraryFiles(QString      avCodecLib,
+                                QString      avFormatLib,
+                                QString      avUtilLib,
+                                QString      swResampleLib,
+                                QStringList &logging);
 
   // Logging. By default we set the logging level of ffmpeg to AV_LOG_ERROR (Log errors and
   // everything worse)
   static QStringList getFFmpegLog() { return logListFFmpeg; }
   void               enableLoggingWarning();
 
-private:
-  LibraryLoadingResult loadFFmpegLibraryInPath(const std::filesystem::path);
+  QStringList getLog() const { return logList; }
 
   bool            librariesLoaded{};
   LibraryVersions libraryVersions{};
+
+  // Log what is happening when loading the libraries / opening files.
+  void        log(QString message) { logList.append(message); }
+  QStringList logList{};
 
   // FFmpeg has a callback where it loggs stuff. This log goes here.
   static QStringList logListFFmpeg;
