@@ -35,6 +35,8 @@
 #include <QLibrary>
 #include <filesystem>
 
+typedef void (*FunctionPointer)();
+
 namespace FFmpeg
 {
 
@@ -43,9 +45,9 @@ class LibraryLoader
 public:
   LibraryLoader(/* args */) = default;
 
-  void  unload();
-  bool  load(std::filesystem::path pathToLib);
-  void *resolve(std::string functionName);
+  void            unload();
+  bool            load(std::filesystem::path pathToLib);
+  FunctionPointer resolve(std::string functionName);
 
   auto getLibraryPath() const { return this->libraryPath; }
 

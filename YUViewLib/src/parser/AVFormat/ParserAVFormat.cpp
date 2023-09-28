@@ -93,7 +93,7 @@ vector<QTreeWidgetItem *> ParserAVFormat::getStreamInfo()
 
 std::string ParserAVFormat::getShortStreamDescription(const int streamIndex) const
 {
-  if (streamIndex >= this->shortStreamInfoAllStreams.size())
+  if (streamIndex < 0 || streamIndex >= static_cast<int>(this->shortStreamInfoAllStreams.size()))
     return {};
   return this->shortStreamInfoAllStreams.at(streamIndex);
 }
@@ -245,7 +245,7 @@ bool ParserAVFormat::parseExtradata_mpeg2(ByteVector &extradata)
 }
 
 std::map<std::string, unsigned>
-ParserAVFormat::parseByteVectorAnnexBStartCodes(ByteVector &                   data,
+ParserAVFormat::parseByteVectorAnnexBStartCodes(ByteVector                    &data,
                                                 PacketDataFormat               dataFormat,
                                                 BitratePlotModel::BitrateEntry packetBitrateEntry,
                                                 std::shared_ptr<TreeItem>      item)
@@ -256,7 +256,8 @@ ParserAVFormat::parseByteVectorAnnexBStartCodes(ByteVector &                   d
     return {};
   }
 
-  auto getNextNalStart = [&data, &dataFormat](ByteVector::iterator searchStart) {
+  auto getNextNalStart = [&data, &dataFormat](ByteVector::iterator searchStart)
+  {
     if (dataFormat == PacketDataFormat::RawNAL)
     {
       if (std::distance(searchStart, data.end()) <= 3)
@@ -343,7 +344,8 @@ bool ParserAVFormat::parseAVPacket(unsigned         packetID,
 
   auto timeBase = timeBaseAllStreams[packet.getStreamIndex()];
 
-  auto formatTimestamp = [](int64_t timestamp, AVRational timebase) -> std::string {
+  auto formatTimestamp = [](int64_t timestamp, AVRational timebase) -> std::string
+  {
     std::ostringstream ss;
     ss << timestamp << " (";
     if (timestamp < 0)

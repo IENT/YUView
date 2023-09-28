@@ -51,7 +51,7 @@ bool LibraryLoader::load(std::filesystem::path pathToLib)
   return success;
 };
 
-void *LibraryLoader::resolve(std::string functionName)
+FunctionPointer LibraryLoader::resolve(std::string functionName)
 {
   auto functionPointer = this->library.resolve(functionName.c_str());
   return functionPointer;

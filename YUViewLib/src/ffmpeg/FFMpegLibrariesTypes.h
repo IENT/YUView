@@ -406,38 +406,15 @@ struct Version
     return false;
   }
 
-  static Version fromFFmpegVersion(const unsigned ffmpegVersion)
-  {
-    Version v;
-    v.major = AV_VERSION_MAJOR(ffmpegVersion);
-    v.minor = AV_VERSION_MINOR(ffmpegVersion);
-    v.micro = AV_VERSION_MICRO(ffmpegVersion);
-    return v;
-  }
+  static Version fromFFmpegVersion(const unsigned ffmpegVersion);
 
   int                major{};
   std::optional<int> minor{};
   std::optional<int> micro{};
 };
 
-inline std::string to_string(const Version &version)
-{
-  std::ostringstream stream;
-  stream << "v" << version.major;
-  if (version.minor)
-  {
-    stream << "." << version.minor.value();
-    if (version.micro)
-      stream << "." << version.micro.value();
-  }
-  return stream.str();
-}
-
-static std::ostream &operator<<(std::ostream &stream, const Version &version)
-{
-  stream << to_string(version);
-  return stream;
-}
+std::string to_string(const Version &version);
+std::ostream &operator<<(std::ostream &stream, const Version &version);
 
 struct LibraryVersions
 {

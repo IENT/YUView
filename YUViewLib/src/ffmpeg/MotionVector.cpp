@@ -68,7 +68,7 @@ parseMotionData(const LibraryVersions &libraryVersions, const uint8_t *data, con
   if (libraryVersions.avutil.major == 54)
   {
     const auto nrMotionVectors = dataSize / sizeof(AVMotionVector_54);
-    for (int index = 0; index < nrMotionVectors; ++index)
+    for (size_t index = 0; index < nrMotionVectors; ++index)
     {
       const auto byteOffset = sizeof(AVMotionVector_54) * index;
       const auto p          = reinterpret_cast<const AVMotionVector_54 *>(data + byteOffset);
@@ -94,7 +94,7 @@ parseMotionData(const LibraryVersions &libraryVersions, const uint8_t *data, con
            libraryVersions.avutil.major == 57)
   {
     const auto nrMotionVectors = dataSize / sizeof(AVMotionVector_55_56_57);
-    for (int index = 0; index < nrMotionVectors; ++index)
+    for (size_t index = 0; index < nrMotionVectors; ++index)
     {
       const auto byteOffset = sizeof(AVMotionVector_55_56_57) * index;
       const auto p          = reinterpret_cast<const AVMotionVector_55_56_57 *>(data + byteOffset);

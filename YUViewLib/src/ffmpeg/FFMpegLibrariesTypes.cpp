@@ -53,4 +53,32 @@ QString timestampToString(int64_t timestamp, AVRational timebase)
       .arg(milliseconds, 3, 10, QChar('0'));
 }
 
+Version Version::fromFFmpegVersion(const unsigned ffmpegVersion)
+{
+  Version v;
+  v.major = AV_VERSION_MAJOR(ffmpegVersion);
+  v.minor = AV_VERSION_MINOR(ffmpegVersion);
+  v.micro = AV_VERSION_MICRO(ffmpegVersion);
+  return v;
+}
+
+std::string to_string(const Version &version)
+{
+  std::ostringstream stream;
+  stream << "v" << version.major;
+  if (version.minor)
+  {
+    stream << "." << version.minor.value();
+    if (version.micro)
+      stream << "." << version.micro.value();
+  }
+  return stream.str();
+}
+
+std::ostream &operator<<(std::ostream &stream, const Version &version)
+{
+  stream << to_string(version);
+  return stream;
+}
+
 } // namespace FFmpeg

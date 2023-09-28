@@ -45,7 +45,7 @@ typedef struct AVCodecParameters_57_58_59_60
   AVMediaType                   codec_type;
   AVCodecID                     codec_id;
   uint32_t                      codec_tag;
-  uint8_t *                     extradata;
+  uint8_t                      *extradata;
   int                           extradata_size;
   int                           format;
   int64_t                       bit_rate;
@@ -69,8 +69,8 @@ typedef struct AVCodecParameters_57_58_59_60
 
 } // namespace
 
-AVCodecParametersWrapper::AVCodecParametersWrapper(AVCodecParameters *    p,
-                                                   const LibraryVersions &libraryVersionsv)
+AVCodecParametersWrapper::AVCodecParametersWrapper(AVCodecParameters     *p,
+                                                   const LibraryVersions &libraryVersions)
 {
   this->param           = p;
   this->libraryVersions = libraryVersions;
