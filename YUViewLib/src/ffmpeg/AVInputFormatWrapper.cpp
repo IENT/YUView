@@ -53,35 +53,31 @@ typedef struct AVInputFormat_56_57_58_59_60
 
 } // namespace
 
-AVInputFormatWrapper::AVInputFormatWrapper()
+AVInputFormatWrapper::AVInputFormatWrapper(AVInputFormat *        avInputFormat,
+                                           const LibraryVersions &libraryVersions)
 {
-  this->fmt = nullptr;
-}
-
-AVInputFormatWrapper::AVInputFormatWrapper(AVInputFormat *f, LibraryVersion v)
-{
-  this->fmt    = f;
-  this->libVer = v;
+  this->avInputFormat   = avInputFormat;
+  this->libraryVersions = libraryVersions;
   this->update();
 }
 
 void AVInputFormatWrapper::update()
 {
-  if (this->fmt == nullptr)
+  if (this->avInputFormat == nullptr)
     return;
 
-  if (this->libVer.avformat.major == 56 || //
-      this->libVer.avformat.major == 57 || //
-      this->libVer.avformat.major == 58 || //
-      this->libVer.avformat.major == 59 || //
-      this->libVer.avformat.major == 60)
+  if (this->libraryVersions.avformat.major == 56 || //
+      this->libraryVersions.avformat.major == 57 || //
+      this->libraryVersions.avformat.major == 58 || //
+      this->libraryVersions.avformat.major == 59 || //
+      this->libraryVersions.avformat.major == 60)
   {
-    auto p           = reinterpret_cast<AVInputFormat_56_57_58_59_60 *>(this->fmt);
-    this->name       = QString(p->name);
-    this->long_name  = QString(p->long_name);
+    auto p           = reinterpret_cast<AVInputFormat_56_57_58_59_60 *>(this->avInputFormat);
+    this->name       = std::string(p->name);
+    this->long_name  = std::string(p->long_name);
     this->flags      = p->flags;
-    this->extensions = QString(p->extensions);
-    this->mime_type  = QString(p->mime_type);
+    this->extensions = std::string(p->extensions);
+    this->mime_type  = std::string(p->mime_type);
   }
 }
 

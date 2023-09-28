@@ -127,16 +127,16 @@ typedef struct AVFrame_57_58
 
 } // namespace
 
-AVFrameWrapper::AVFrameWrapper(LibraryVersion libVersion, AVFrame *frame)
+AVFrameWrapper::AVFrameWrapper(AVFrame *frame, const LibraryVersions &libraryVersions)
 {
-  this->libVer = libVersion;
-  this->frame  = frame;
+  this->frame           = frame;
+  this->libraryVersions = libraryVersions;
 }
 
 void AVFrameWrapper::clear()
 {
-  this->frame  = nullptr;
-  this->libVer = {};
+  this->frame           = nullptr;
+  this->libraryVersions = {};
 }
 
 uint8_t *AVFrameWrapper::getData(int component)
@@ -194,7 +194,7 @@ int AVFrameWrapper::getKeyFrame()
 
 AVDictionary *AVFrameWrapper::getMetadata()
 {
-  assert(this->libVer.avutil.major >= 57);
+  assert(this->libraryVersions.avutil.major >= 57);
   this->update();
   return this->metadata;
 }
@@ -204,10 +204,10 @@ void AVFrameWrapper::update()
   if (this->frame == nullptr)
     return;
 
-  if (this->libVer.avutil.major == 54)
+  if (this->libraryVersions.avutil.major == 54)
   {
     auto p = reinterpret_cast<AVFrame_54 *>(this->frame);
-    for (unsigned i = 0; i < AV_NUM_DATA_POINTERS; i++)
+    for (auto i = 0; i < AV_NUM_DATA_POINTERS; ++i)
     {
       this->data[i]     = p->data[i];
       this->linesize[i] = p->linesize[i];
@@ -226,11 +226,11 @@ void AVFrameWrapper::update()
     this->display_picture_number = p->display_picture_number;
     this->quality                = p->quality;
   }
-  else if (this->libVer.avutil.major == 55 || //
-           this->libVer.avutil.major == 56)
+  else if (this->libraryVersions.avutil.major == 55 || //
+           this->libraryVersions.avutil.major == 56)
   {
     auto p = reinterpret_cast<AVFrame_55_56 *>(this->frame);
-    for (unsigned i = 0; i < AV_NUM_DATA_POINTERS; i++)
+    for (auto i = 0; i < AV_NUM_DATA_POINTERS; ++i)
     {
       this->data[i]     = p->data[i];
       this->linesize[i] = p->linesize[i];
@@ -249,11 +249,11 @@ void AVFrameWrapper::update()
     this->display_picture_number = p->display_picture_number;
     this->quality                = p->quality;
   }
-  else if (this->libVer.avutil.major == 57 || //
-           this->libVer.avutil.major == 58)
+  else if (this->libraryVersions.avutil.major == 57 || //
+           this->libraryVersions.avutil.major == 58)
   {
     auto p = reinterpret_cast<AVFrame_57_58 *>(this->frame);
-    for (unsigned i = 0; i < AV_NUM_DATA_POINTERS; i++)
+    for (auto i = 0; i < AV_NUM_DATA_POINTERS; ++i)
     {
       this->data[i]     = p->data[i];
       this->linesize[i] = p->linesize[i];

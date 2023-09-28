@@ -46,7 +46,7 @@ class AVFormatContextWrapper
 {
 public:
   AVFormatContextWrapper() = default;
-  AVFormatContextWrapper(AVFormatContext *c, LibraryVersion v);
+  AVFormatContextWrapper(AVFormatContext *c, const LibraryVersions &libraryVersions);
 
   void            updateFrom(AVFormatContext *c);
   explicit        operator bool() const;
@@ -91,7 +91,7 @@ private:
   AVDictionaryWrapper metadata;
 
   AVFormatContext *ctx{nullptr};
-  LibraryVersion   libVer{};
+  LibraryVersions  libraryVersions{};
 };
 
 } // namespace FFmpeg

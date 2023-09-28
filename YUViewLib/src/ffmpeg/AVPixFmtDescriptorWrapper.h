@@ -44,7 +44,7 @@ class AVPixFmtDescriptorWrapper
 {
 public:
   AVPixFmtDescriptorWrapper() = default;
-  AVPixFmtDescriptorWrapper(AVPixFmtDescriptor *sideData, LibraryVersion libVer);
+  AVPixFmtDescriptorWrapper(AVPixFmtDescriptor *sideData, const LibraryVersions &libraryVersions);
 
   video::RawFormat           getRawFormat() const;
   video::yuv::PixelFormatYUV getPixelFormatYUV() const;
@@ -53,8 +53,8 @@ public:
   bool setValuesFromPixelFormatYUV(video::yuv::PixelFormatYUV fmt);
 
   // AVPixFmtDescriptor
-  QString name;
-  int     nb_components{}; ///< The number of components each pixel has, (1-4)
+  std::string name;
+  int         nb_components{}; ///< The number of components each pixel has, (1-4)
 
   /**
    * Amount to shift the luma width/height right to find the chroma width/height.
@@ -100,7 +100,7 @@ public:
     int depth{};  ///< number of bits in the component
   };
 
-  QString               aliases{};
+  std::string           aliases{};
   AVComponentDescriptor comp[4];
 
   bool operator==(const AVPixFmtDescriptorWrapper &a);

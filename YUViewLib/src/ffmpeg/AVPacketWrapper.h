@@ -119,7 +119,7 @@ class AVPacketWrapper
 {
 public:
   AVPacketWrapper() = default;
-  AVPacketWrapper(LibraryVersion libVersion, AVPacket *packet);
+  AVPacketWrapper(AVPacket *packet, const LibraryVersions &libraryVersions);
 
   void clear();
 
@@ -167,7 +167,7 @@ private:
   PacketType packetType{};
 
   AVPacket *       pkt{};
-  LibraryVersion   libVer{};
+  LibraryVersions  libraryVersions{};
   PacketDataFormat packetFormat{PacketDataFormat::Unknown};
 };
 

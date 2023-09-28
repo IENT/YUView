@@ -211,7 +211,7 @@ FFmpegLibraryFunctions::~FFmpegLibraryFunctions()
 
 LibraryLoadingResult
 FFmpegLibraryFunctions::loadFFmpegLibraryInPath(const std::filesystem::path &path,
-                                                const LibraryVersion &       libraryVersion)
+                                                const LibraryVersions &      libraryVersions)
 {
   // We will load the following libraries (in this order):
   // avutil, swresample, avcodec, avformat.
@@ -235,8 +235,8 @@ FFmpegLibraryFunctions::loadFFmpegLibraryInPath(const std::filesystem::path &pat
   loadingResult.addLogLine("Unload libraries");
 
   auto loadLibrary = [&loadingResult, &absoluteDirectoryPath](
-                         LibraryLoader &lib, std::string libName, int version) {
-    const auto libraryNames = formatPossibleLibraryNames(libName, version);
+                         LibraryLoader &lib, std::string libName, const Version &version) {
+    const auto libraryNames = formatPossibleLibraryNames(libName, version.major);
     for (const auto &possibleLibName : libraryNames)
     {
       const auto filePath = absoluteDirectoryPath / possibleLibName;
@@ -245,12 +245,13 @@ FFmpegLibraryFunctions::loadFFmpegLibraryInPath(const std::filesystem::path &pat
                                (success ? " succeded" : " failed"));
       return success;
     }
+    return false;
   };
 
-  if (loadLibrary(this->libAvutil, "avutil", libraryVersion.avutil.major) &&
-      loadLibrary(this->libSwresample, "swresample", libraryVersion.swresample.major) &&
-      loadLibrary(this->libAvcodec, "avcodec", libraryVersion.avcodec.major) &&
-      loadLibrary(this->libAvformat, "avformat", libraryVersion.avformat.major))
+  if (loadLibrary(this->libAvutil, "avutil", libraryVersions.avutil) &&
+      loadLibrary(this->libSwresample, "swresample", libraryVersions.swresample) &&
+      loadLibrary(this->libAvcodec, "avcodec", libraryVersions.avcodec) &&
+      loadLibrary(this->libAvformat, "avformat", libraryVersions.avformat))
   {
     if (bindLibraryFunctionsAndUpdateResult(this->libAvformat, this->avformat, loadingResult) &&
         bindLibraryFunctionsAndUpdateResult(this->libAvcodec, this->avcodec, loadingResult) &&
@@ -277,14 +278,29 @@ void FFmpegLibraryFunctions::unloadAllLibraries()
   this->libAvformat.unload();
 }
 
-LibraryPaths FFmpegLibraryFunctions::getLibraryPaths() const
+std::vector<LibraryInfo> FFmpegLibraryFunctions::getLibrariesInfo() const
 {
-  LibraryPaths paths;
-  paths.avFormat   = this->libAvformat.getLibraryPath();
-  paths.avCodec    = this->libAvcodec.getLibraryPath();
-  paths.avUtil     = this->libAvutil.getLibraryPath();
-  paths.swResample = this->libSwresample.getLibraryPath();
-  return paths;
+  if (!this->libAvutil || !this->libSwresample || !this->libAvcodec || !this->libAvformat)
+    return {};
+
+  std::vector<LibraryInfo> infoPerLIbrary;
+
+  auto addLibraryInfo = [&infoPerLIbrary](const char *                 name,
+                                          const std::filesystem::path &path,
+                                          const unsigned               ffmpegVersion) {
+    const auto libraryVersion = Version::fromFFmpegVersion(ffmpegVersion);
+    const auto version        = to_string(libraryVersion);
+
+    infoPerLIbrary.push_back(LibraryInfo({name, path, version}));
+  };
+
+  addLibraryInfo("AVFormat", this->libAvformat.getLibraryPath(), this->avformat.avformat_version());
+  addLibraryInfo("AVCodec", this->libAvcodec.getLibraryPath(), this->avcodec.avcodec_version());
+  addLibraryInfo("AVUtil", this->libAvutil.getLibraryPath(), this->avutil.avutil_version());
+  addLibraryInfo(
+      "SwResample", this->libSwresample.getLibraryPath(), this->swresample.swresample_version());
+
+  return infoPerLIbrary;
 }
 
 } // namespace FFmpeg

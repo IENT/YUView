@@ -104,7 +104,7 @@ decoderFFmpeg::decoderFFmpeg(FFmpeg::AVCodecParametersWrapper codecpar, bool cac
     return;
 
   auto codecID    = this->ff.getCodecIDWrapper(codecpar.getCodecID());
-  this->codecName = codecID.getCodecName();
+  this->codecName = QString::fromStdString(codecID.getCodecName());
   if (!this->createDecoder(codecID, codecpar))
   {
     this->setError("Error creating the needed decoder.");
@@ -269,29 +269,25 @@ void decoderFFmpeg::copyCurImageToBuffer()
 
 void decoderFFmpeg::cacheCurStatistics()
 {
-  // Copy the statistics of the current frame to the buffer
   DEBUG_FFMPEG("decoderFFmpeg::cacheCurStatistics");
 
-  // Try to get the motion information
-  auto sideData = this->ff.getSideData(frame, FFmpeg::AV_FRAME_DATA_MOTION_VECTORS);
-  if (sideData)
+  const auto sideData = this->ff.getSideData(frame, FFmpeg::AV_FRAME_DATA_MOTION_VECTORS);
+  if (!sideData)
+    return;
+
+  const auto motionVectors = sideData.getMotionVectors();
+  for (const auto &motionVector : motionVectors)
   {
-    const auto nrMVs = sideData.getNumberMotionVectors();
-    for (size_t i = 0; i < nrMVs; i++)
-    {
-      auto mvs = sideData.getMotionVector(unsigned(i));
+    // dst marks the center of the current block so the block position is:
+    const int     blockX = motionVector.dst_x - motionVector.w / 2;
+    const int     blockY = motionVector.dst_y - motionVector.h / 2;
+    const int16_t mvX    = motionVector.dst_x - motionVector.src_x;
+    const int16_t mvY    = motionVector.dst_y - motionVector.src_y;
 
-      // dst marks the center of the current block so the block position is:
-      const int     blockX = mvs.dst_x - mvs.w / 2;
-      const int     blockY = mvs.dst_y - mvs.h / 2;
-      const int16_t mvX    = mvs.dst_x - mvs.src_x;
-      const int16_t mvY    = mvs.dst_y - mvs.src_y;
-
-      this->statisticsData->at(mvs.source < 0 ? 0 : 1)
-          .addBlockValue(blockX, blockY, mvs.w, mvs.h, (int)mvs.source);
-      this->statisticsData->at(mvs.source < 0 ? 2 : 3)
-          .addBlockVector(blockX, blockY, mvs.w, mvs.h, mvX, mvY);
-    }
+    this->statisticsData->at(motionVector.source < 0 ? 0 : 1)
+        .addBlockValue(blockX, blockY, motionVector.w, motionVector.h, (int)motionVector.source);
+    this->statisticsData->at(motionVector.source < 0 ? 2 : 3)
+        .addBlockVector(blockX, blockY, motionVector.w, motionVector.h, mvX, mvY);
   }
 }
 
@@ -321,8 +317,7 @@ bool decoderFFmpeg::pushData(QByteArray &data)
 
 std::vector<InfoItem> decoderFFmpeg::getDecoderInfo() const
 {
-  const auto libraryPaths = this->ff.getLibraryPaths();
-  return InfoItem::fromFFmpegLibraryPaths(libraryPaths);
+  return InfoItem::fromFFmpegLibrariesInfo(this->ff.getLibrariesInfo());
 }
 
 bool decoderFFmpeg::pushAVPacket(FFmpeg::AVPacketWrapper &pkt)
@@ -450,7 +445,7 @@ bool decoderFFmpeg::createDecoder(FFmpeg::AVCodecIDWrapper         codecID,
   this->videoCodec = this->ff.findDecoder(codecID);
   if (!this->videoCodec)
     return this->setErrorB(QStringLiteral("Could not find a video decoder for the given codec ") +
-                           codecID.getCodecName());
+                           QString::fromStdString(codecID.getCodecName()));
 
   if (this->decCtx)
     return this->setErrorB(QStringLiteral("Decoder context already allocated."));

@@ -45,7 +45,7 @@ class AVStreamWrapper
 {
 public:
   AVStreamWrapper() {}
-  AVStreamWrapper(AVStream *src_str, LibraryVersion v);
+  AVStreamWrapper(AVStream *src_str, const LibraryVersions &libraryVersions);
 
   explicit        operator bool() const { return this->stream != nullptr; };
   QStringPairList getInfoText(AVCodecIDWrapper &codecIdWrapper);
@@ -86,8 +86,8 @@ private:
   // The AVCodecParameters are present from avformat major version 57 and up.
   AVCodecParametersWrapper codecpar{};
 
-  AVStream *     stream{};
-  LibraryVersion libVer{};
+  AVStream *      stream{};
+  LibraryVersions libraryVersions{};
 };
 
 } // namespace FFmpeg

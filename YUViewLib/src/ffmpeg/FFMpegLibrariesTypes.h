@@ -35,6 +35,7 @@
 #include <QString>
 #include <errno.h>
 #include <optional>
+#include <sstream>
 #include <stdint.h>
 
 /* This file defines all FFmpeg specific defines like structs, enums and some common things like
@@ -390,24 +391,59 @@ enum AVSampleFormat
 
 struct Version
 {
+  Version() = default;
+  Version(const int major) { this->major = major; }
+
+  constexpr bool operator!=(const Version &other) const
+  {
+    if (this->major != other.major)
+      return true;
+    if (this->minor && other.minor && this->minor.value() != other.minor.value())
+      return true;
+    if (this->micro && other.micro && this->micro.value() != other.micro.value())
+      return true;
+
+    return false;
+  }
+
+  static Version fromFFmpegVersion(const unsigned ffmpegVersion)
+  {
+    Version v;
+    v.major = AV_VERSION_MAJOR(ffmpegVersion);
+    v.minor = AV_VERSION_MINOR(ffmpegVersion);
+    v.micro = AV_VERSION_MICRO(ffmpegVersion);
+    return v;
+  }
+
   int                major{};
   std::optional<int> minor{};
   std::optional<int> micro{};
 };
 
-struct LibraryVersion
+inline std::string to_string(const Version &version)
 {
-  LibraryVersion() = default;
-  LibraryVersion(int avutilMajor, int avcodecMajor, int avformatMajor, int swresampleMajor)
+  std::ostringstream stream;
+  stream << "v" << version.major;
+  if (version.minor)
   {
-    this->avutil.major     = avutilMajor;
-    this->avcodec.major    = avcodecMajor;
-    this->avformat.major   = avformatMajor;
-    this->swresample.major = swresampleMajor;
+    stream << "." << version.minor.value();
+    if (version.micro)
+      stream << "." << version.micro.value();
   }
-  Version avutil{};
-  Version avcodec{};
+  return stream.str();
+}
+
+static std::ostream &operator<<(std::ostream &stream, const Version &version)
+{
+  stream << to_string(version);
+  return stream;
+}
+
+struct LibraryVersions
+{
   Version avformat{};
+  Version avcodec{};
+  Version avutil{};
   Version swresample{};
 };
 

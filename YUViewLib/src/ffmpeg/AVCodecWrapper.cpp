@@ -90,16 +90,40 @@ template <typename T> std::vector<T> convertRawListToVec(const T *rawValues, T t
 
 } // namespace
 
+AVCodecWrapper::AVCodecWrapper(AVCodec *codec, const LibraryVersions &libraryVersions)
+    : codec(codec), libraryVersions(libraryVersions)
+{
+}
+
+AVCodecID AVCodecWrapper::getCodecID()
+{
+  this->update();
+  return this->id;
+}
+
+std::string AVCodecWrapper::getName()
+{
+  this->update();
+  return this->name;
+}
+std::string AVCodecWrapper::getLongName()
+{
+  this->update();
+  return this->long_name;
+}
+
 void AVCodecWrapper::update()
 {
   if (codec == nullptr)
     return;
 
-  if (libVer.avcodec.major == 56 || libVer.avcodec.major == 57 || libVer.avcodec.major == 58)
+  if (libraryVersions.avcodec.major == 56 || //
+      libraryVersions.avcodec.major == 57 || //
+      libraryVersions.avcodec.major == 58)
   {
     auto p                      = reinterpret_cast<AVCodec_56_57_58 *>(codec);
-    this->name                  = QString(p->name);
-    this->long_name             = QString(p->long_name);
+    this->name                  = std::string(p->name);
+    this->long_name             = std::string(p->long_name);
     this->type                  = p->type;
     this->id                    = p->id;
     this->capabilities          = p->capabilities;
@@ -110,11 +134,11 @@ void AVCodecWrapper::update()
     this->channel_layouts       = convertRawListToVec(p->channel_layouts, uint64_t(0));
     this->max_lowres            = p->max_lowres;
   }
-  else if (libVer.avcodec.major == 59)
+  else if (libraryVersions.avcodec.major == 59)
   {
     auto p                      = reinterpret_cast<AVCodec_59 *>(codec);
-    this->name                  = QString(p->name);
-    this->long_name             = QString(p->long_name);
+    this->name                  = std::string(p->name);
+    this->long_name             = std::string(p->long_name);
     this->type                  = p->type;
     this->id                    = p->id;
     this->capabilities          = p->capabilities;

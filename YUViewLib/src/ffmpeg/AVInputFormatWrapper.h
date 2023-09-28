@@ -40,26 +40,24 @@ namespace FFmpeg
 class AVInputFormatWrapper
 {
 public:
-  AVInputFormatWrapper();
-  AVInputFormatWrapper(AVInputFormat *f, LibraryVersion v);
+  AVInputFormatWrapper() = default;
+  AVInputFormatWrapper(AVInputFormat *avInputFormat, const LibraryVersions &libraryVersions);
 
-  explicit operator bool() const { return fmt != nullptr; };
+  explicit operator bool() const { return this->avInputFormat != nullptr; };
 
 private:
   // Update all private values from the AVCodecContext
   void update();
 
   // These are here for debugging purposes.
-  QString name{};
-  QString long_name{};
-  int     flags{};
-  QString extensions{};
-  // const struct AVCodecTag * const *codec_tag;
-  // const AVClass *priv_class;
-  QString mime_type{};
+  std::string name{};
+  std::string long_name{};
+  int         flags{};
+  std::string extensions{};
+  std::string mime_type{};
 
-  AVInputFormat *fmt{};
-  LibraryVersion libVer{};
+  AVInputFormat * avInputFormat{};
+  LibraryVersions libraryVersions{};
 };
 
 } // namespace FFmpeg

@@ -58,8 +58,7 @@ public:
   // Try to load the ffmpeg libraries and get all the function pointers.
   LibraryLoadingResult loadFFmpegLibraries(std::vector<std::filesystem::path> searchPaths);
 
-  LibraryPaths getLibraryPaths() const { return this->lib.getLibraryPaths(); }
-  QString      getLibVersionString() const;
+  std::vector<LibraryInfo> getLibrariesInfo() const { return this->lib.getLibrariesInfo(); }
 
   // Only these functions can be used to get valid versions of these wrappers (they have to use
   // ffmpeg functions to retrieve the needed information)
@@ -83,7 +82,7 @@ public:
 
   void flush_buffers(AVCodecContextWrapper &decCtx);
 
-  LibraryVersion libVersion;
+  LibraryVersions libVersions;
 
   // Open the input file. This will call avformat_open_input and avformat_find_stream_info.
   bool openInput(AVFormatContextWrapper &fmt, QString url);
@@ -123,7 +122,8 @@ public:
 private:
   LibraryLoadingResult loadFFmpegLibraryInPath(const std::filesystem::path);
 
-  bool librariesLoaded{};
+  bool            librariesLoaded{};
+  LibraryVersions libraryVersions{};
 
   // FFmpeg has a callback where it loggs stuff. This log goes here.
   static QStringList logListFFmpeg;

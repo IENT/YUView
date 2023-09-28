@@ -32,8 +32,8 @@
 
 #pragma once
 
-#include "AVMotionVectorWrapper.h"
 #include "FFMpegLibrariesTypes.h"
+#include "MotionVector.h"
 
 namespace FFmpeg
 {
@@ -42,24 +42,15 @@ class AVFrameSideDataWrapper
 {
 public:
   AVFrameSideDataWrapper() = default;
-  AVFrameSideDataWrapper(AVFrameSideData *sideData, LibraryVersion libVer);
+  AVFrameSideDataWrapper(AVFrameSideData *sideData, const LibraryVersions &libraryVersions);
 
-  size_t                getNumberMotionVectors();
-  AVMotionVectorWrapper getMotionVector(unsigned idx);
+  std::vector<MotionVector> getMotionVectors() const;
 
   explicit operator bool() const { return sideData != nullptr; }
 
 private:
-  void update();
-
-  AVFrameSideDataType type{};
-  uint8_t *           data{nullptr};
-  size_t              size{};
-  AVDictionary *      metadata{};
-  AVBufferRef *       buf{};
-
   AVFrameSideData *sideData{};
-  LibraryVersion   libVer;
+  LibraryVersions  libraryVersions{};
 };
 
 } // namespace FFmpeg

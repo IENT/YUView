@@ -42,7 +42,7 @@ class AVCodecContextWrapper
 {
 public:
   AVCodecContextWrapper();
-  AVCodecContextWrapper(AVCodecContext *c, LibraryVersion v);
+  AVCodecContextWrapper(AVCodecContext *c, const LibraryVersions &libraryVersions);
 
   explicit operator bool() const { return this->codec != nullptr; };
 
@@ -142,7 +142,7 @@ private:
   AVChromaLocation              chroma_sample_location{};
 
   AVCodecContext *codec{};
-  LibraryVersion  libVer{};
+  LibraryVersions libraryVersions{};
 };
 
 } // namespace FFmpeg

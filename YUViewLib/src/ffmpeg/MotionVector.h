@@ -37,16 +37,8 @@
 namespace FFmpeg
 {
 
-class AVMotionVectorWrapper
+struct MotionVector
 {
-public:
-  AVMotionVectorWrapper() = delete;
-  AVMotionVectorWrapper(LibraryVersion &libVer, uint8_t *data, unsigned idx);
-
-  static size_t getNumberOfMotionVectors(LibraryVersion &libVer, size_t dataSize);
-
-  // For performance reasons, these are public here. Since update is called at construction, these
-  // should be valid.
   int32_t  source{};
   uint8_t  w{};
   uint8_t  h{};
@@ -60,5 +52,8 @@ public:
   int32_t  motion_y{};
   uint16_t motion_scale{};
 };
+
+std::vector<MotionVector>
+parseMotionData(const LibraryVersions &libraryVersions, const uint8_t *data, const size_t dataSize);
 
 } // namespace FFmpeg

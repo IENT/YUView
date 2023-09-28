@@ -30,7 +30,7 @@
  *   along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "AVMotionVectorWrapper.h"
+#include "MotionVector.h"
 #include <stdexcept>
 
 namespace FFmpeg
@@ -61,52 +61,62 @@ typedef struct AVMotionVector_55_56_57
 
 } // namespace
 
-AVMotionVectorWrapper::AVMotionVectorWrapper(LibraryVersion &libVer, uint8_t *data, unsigned idx)
+std::vector<MotionVector>
+parseMotionData(const LibraryVersions &libraryVersions, const uint8_t *data, const size_t dataSize)
 {
-  if (libVer.avutil.major == 54)
+  std::vector<MotionVector> motionVectors;
+  if (libraryVersions.avutil.major == 54)
   {
-    auto p             = reinterpret_cast<AVMotionVector_54 *>(data) + idx;
-    this->source       = p->source;
-    this->w            = p->w;
-    this->h            = p->h;
-    this->src_x        = p->src_x;
-    this->src_y        = p->src_y;
-    this->dst_x        = p->dst_x;
-    this->dst_y        = p->dst_y;
-    this->flags        = p->flags;
-    this->motion_x     = -1;
-    this->motion_y     = -1;
-    this->motion_scale = -1;
+    const auto nrMotionVectors = dataSize / sizeof(AVMotionVector_54);
+    for (int index = 0; index < nrMotionVectors; ++index)
+    {
+      const auto byteOffset = sizeof(AVMotionVector_54) * index;
+      const auto p          = reinterpret_cast<const AVMotionVector_54 *>(data + byteOffset);
+
+      MotionVector motionVector;
+      motionVector.source       = p->source;
+      motionVector.w            = p->w;
+      motionVector.h            = p->h;
+      motionVector.src_x        = p->src_x;
+      motionVector.src_y        = p->src_y;
+      motionVector.dst_x        = p->dst_x;
+      motionVector.dst_y        = p->dst_y;
+      motionVector.flags        = p->flags;
+      motionVector.motion_x     = -1;
+      motionVector.motion_y     = -1;
+      motionVector.motion_scale = -1;
+      motionVectors.push_back(motionVector);
+    }
+    return motionVectors;
   }
-  else if (libVer.avutil.major == 55 || //
-           libVer.avutil.major == 56 || //
-           libVer.avutil.major == 57)
+  else if (libraryVersions.avutil.major == 55 || //
+           libraryVersions.avutil.major == 56 || //
+           libraryVersions.avutil.major == 57)
   {
-    auto p             = reinterpret_cast<AVMotionVector_55_56_57 *>(data) + idx;
-    this->source       = p->source;
-    this->w            = p->w;
-    this->h            = p->h;
-    this->src_x        = p->src_x;
-    this->src_y        = p->src_y;
-    this->dst_x        = p->dst_x;
-    this->dst_y        = p->dst_y;
-    this->flags        = p->flags;
-    this->motion_x     = p->motion_x;
-    this->motion_y     = p->motion_y;
-    this->motion_scale = p->motion_scale;
+    const auto nrMotionVectors = dataSize / sizeof(AVMotionVector_55_56_57);
+    for (int index = 0; index < nrMotionVectors; ++index)
+    {
+      const auto byteOffset = sizeof(AVMotionVector_55_56_57) * index;
+      const auto p          = reinterpret_cast<const AVMotionVector_55_56_57 *>(data + byteOffset);
+
+      MotionVector motionVector;
+      motionVector.source       = p->source;
+      motionVector.w            = p->w;
+      motionVector.h            = p->h;
+      motionVector.src_x        = p->src_x;
+      motionVector.src_y        = p->src_y;
+      motionVector.dst_x        = p->dst_x;
+      motionVector.dst_y        = p->dst_y;
+      motionVector.flags        = p->flags;
+      motionVector.motion_x     = p->motion_x;
+      motionVector.motion_y     = p->motion_y;
+      motionVector.motion_scale = p->motion_scale;
+      motionVectors.push_back(motionVector);
+    }
+    return motionVectors;
   }
   else
     throw std::runtime_error("Invalid library version");
-}
-
-size_t AVMotionVectorWrapper::getNumberOfMotionVectors(LibraryVersion &libVer, size_t dataSize)
-{
-  if (libVer.avutil.major == 54)
-    return dataSize / sizeof(AVMotionVector_54);
-  else if (libVer.avutil.major == 55 || libVer.avutil.major == 56 || libVer.avutil.major == 57)
-    return dataSize / sizeof(AVMotionVector_55_56_57);
-  else
-    return 0;
 }
 
 } // namespace FFmpeg

@@ -55,7 +55,8 @@ struct InfoItem
   {
   }
 
-  static std::vector<InfoItem> fromFFmpegLibraryPaths(const FFmpeg::LibraryPaths &paths);
+  static std::vector<InfoItem>
+  fromFFmpegLibrariesInfo(const std::vector<FFmpeg::LibraryInfo> &librariesInfo);
 
   QString name{};
   QString text{};

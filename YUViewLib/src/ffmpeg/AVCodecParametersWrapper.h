@@ -41,7 +41,7 @@ class AVCodecParametersWrapper
 {
 public:
   AVCodecParametersWrapper() = default;
-  AVCodecParametersWrapper(AVCodecParameters *p, LibraryVersion v);
+  AVCodecParametersWrapper(AVCodecParameters *p, const LibraryVersions &libraryVersions);
   explicit        operator bool() const { return this->param != nullptr; }
   QStringPairList getInfoText();
 
@@ -93,7 +93,7 @@ private:
   int                           video_delay{};
 
   AVCodecParameters *param{};
-  LibraryVersion     libVer{};
+  LibraryVersions    libraryVersions{};
 };
 
 } // namespace FFmpeg

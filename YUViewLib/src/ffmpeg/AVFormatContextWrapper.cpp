@@ -184,10 +184,11 @@ typedef struct AVFormatContext_59_60
 
 } // namespace
 
-AVFormatContextWrapper::AVFormatContextWrapper(AVFormatContext *c, LibraryVersion v)
+AVFormatContextWrapper::AVFormatContextWrapper(AVFormatContext *      c,
+                                               const LibraryVersions &libraryVersions)
 {
-  this->ctx    = c;
-  this->libVer = v;
+  this->ctx             = c;
+  this->libraryVersions = libraryVersions;
   this->update();
 }
 
@@ -252,13 +253,13 @@ void AVFormatContextWrapper::update()
   this->streams.clear();
 
   // Copy values from the source pointer
-  if (this->libVer.avformat.major == 56)
+  if (this->libraryVersions.avformat.major == 56)
   {
     auto p           = reinterpret_cast<AVFormatContext_56 *>(this->ctx);
     this->ctx_flags  = p->ctx_flags;
     this->nb_streams = p->nb_streams;
     for (unsigned i = 0; i < this->nb_streams; i++)
-      this->streams.append(AVStreamWrapper(p->streams[i], this->libVer));
+      this->streams.append(AVStreamWrapper(p->streams[i], this->libraryVersions));
     this->filename             = QString(p->filename);
     this->start_time           = p->start_time;
     this->duration             = p->duration;
@@ -278,15 +279,15 @@ void AVFormatContextWrapper::update()
     this->nb_chapters          = p->nb_chapters;
     this->metadata             = AVDictionaryWrapper(p->metadata);
 
-    this->iformat = AVInputFormatWrapper(p->iformat, libVer);
+    this->iformat = AVInputFormatWrapper(p->iformat, this->libraryVersions);
   }
-  else if (this->libVer.avformat.major == 57)
+  else if (this->libraryVersions.avformat.major == 57)
   {
     auto p           = reinterpret_cast<AVFormatContext_57 *>(this->ctx);
     this->ctx_flags  = p->ctx_flags;
     this->nb_streams = p->nb_streams;
     for (unsigned i = 0; i < nb_streams; i++)
-      this->streams.append(AVStreamWrapper(p->streams[i], this->libVer));
+      this->streams.append(AVStreamWrapper(p->streams[i], this->libraryVersions));
     this->filename             = QString(p->filename);
     this->start_time           = p->start_time;
     this->duration             = p->duration;
@@ -306,15 +307,15 @@ void AVFormatContextWrapper::update()
     this->nb_chapters          = p->nb_chapters;
     this->metadata             = AVDictionaryWrapper(p->metadata);
 
-    this->iformat = AVInputFormatWrapper(p->iformat, libVer);
+    this->iformat = AVInputFormatWrapper(p->iformat, this->libraryVersions);
   }
-  else if (this->libVer.avformat.major == 58)
+  else if (this->libraryVersions.avformat.major == 58)
   {
     auto p           = reinterpret_cast<AVFormatContext_58 *>(this->ctx);
     this->ctx_flags  = p->ctx_flags;
     this->nb_streams = p->nb_streams;
     for (unsigned i = 0; i < nb_streams; i++)
-      this->streams.append(AVStreamWrapper(p->streams[i], this->libVer));
+      this->streams.append(AVStreamWrapper(p->streams[i], this->libraryVersions));
     this->filename             = QString(p->filename);
     this->start_time           = p->start_time;
     this->duration             = p->duration;
@@ -334,15 +335,16 @@ void AVFormatContextWrapper::update()
     this->nb_chapters          = p->nb_chapters;
     this->metadata             = AVDictionaryWrapper(p->metadata);
 
-    this->iformat = AVInputFormatWrapper(p->iformat, this->libVer);
+    this->iformat = AVInputFormatWrapper(p->iformat, this->libraryVersions);
   }
-  else if (this->libVer.avformat.major == 59 || this->libVer.avformat.major == 60)
+  else if (this->libraryVersions.avformat.major == 59 || //
+           this->libraryVersions.avformat.major == 60)
   {
     auto p           = reinterpret_cast<AVFormatContext_59_60 *>(this->ctx);
     this->ctx_flags  = p->ctx_flags;
     this->nb_streams = p->nb_streams;
     for (unsigned i = 0; i < nb_streams; i++)
-      this->streams.append(AVStreamWrapper(p->streams[i], this->libVer));
+      this->streams.append(AVStreamWrapper(p->streams[i], this->libraryVersions));
     this->filename             = QString(p->url);
     this->start_time           = p->start_time;
     this->duration             = p->duration;
@@ -362,7 +364,7 @@ void AVFormatContextWrapper::update()
     this->nb_chapters          = p->nb_chapters;
     this->metadata             = AVDictionaryWrapper(p->metadata);
 
-    this->iformat = AVInputFormatWrapper(p->iformat, this->libVer);
+    this->iformat = AVInputFormatWrapper(p->iformat, this->libraryVersions);
   }
   else
     throw std::runtime_error("Invalid library version");

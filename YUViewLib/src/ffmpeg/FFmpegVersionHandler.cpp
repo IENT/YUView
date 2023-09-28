@@ -41,75 +41,58 @@ namespace FFmpeg
 namespace
 {
 
-tl::expected<void, std::string> checkVersionWithLib(FFmpegLibraryFunctions &lib,
-                                                    LibraryVersion          version)
+LibraryVersions getLibraryVersionsFromLoadedLibraries(const FFmpegLibraryFunctions &libraries)
 {
-  if (version.avcodec.major != AV_VERSION_MAJOR(lib.avcodec.avcodec_version()))
-  {
-    auto errorMessage = "The openend avcodec returned a different major version (" +
-                        std::to_string(AV_VERSION_MAJOR(lib.avcodec.avcodec_version())) +
-                        ") than we are "
-                        "looking for (" +
-                        std::to_string(version.avcodec.major) + ").";
-    return tl::unexpected(errorMessage);
-  }
+  const auto avFormatVersion = Version::fromFFmpegVersion(libraries.avformat.avformat_version());
+  const auto avCodecVersion  = Version::fromFFmpegVersion(libraries.avcodec.avcodec_version());
+  const auto avUtilVersion   = Version::fromFFmpegVersion(libraries.avutil.avutil_version());
+  const auto swresampleVersion =
+      Version::fromFFmpegVersion(libraries.swresample.swresample_version());
 
-  if (version.avformat.major != AV_VERSION_MAJOR(lib.avformat.avformat_version()))
-  {
-    auto errorMessage = "The openend avformat returned a different major version (" +
-                        std::to_string(AV_VERSION_MAJOR(lib.avformat.avformat_version())) +
-                        ") than we are "
-                        "looking for (" +
-                        std::to_string(version.avformat.major) + ").";
-    return tl::unexpected(errorMessage);
-  }
-
-  if (version.avutil.major != AV_VERSION_MAJOR(lib.avutil.avutil_version()))
-  {
-    auto errorMessage = "The openend avformat returned a different major version (" +
-                        std::to_string(AV_VERSION_MAJOR(lib.avutil.avutil_version())) +
-                        ") than we are "
-                        "looking for (" +
-                        std::to_string(version.avutil.major) + ").";
-    return tl::unexpected(errorMessage);
-  }
-
-  if (version.swresample.major != AV_VERSION_MAJOR(lib.swresample.swresample_version()))
-  {
-    auto errorMessage = "The openend swresample returned a different major version (" +
-                        std::to_string(AV_VERSION_MAJOR(lib.swresample.swresample_version())) +
-                        ") than we are "
-                        "looking for (" +
-                        std::to_string(version.swresample.major) + ").";
-    return tl::unexpected(errorMessage);
-  }
-
-  return {};
+  return {avFormatVersion, avCodecVersion, avUtilVersion, swresampleVersion};
 }
 
-LibraryVersion addMinorAndMicroVersion(FFmpegLibraryFunctions &lib, LibraryVersion version)
+tl::expected<void, std::string>
+checkMajorVersionWithLibraries(const LibraryVersions &librariesInfo,
+                               const LibraryVersions &expectedMajorVersion)
 {
-  version.avcodec.minor    = AV_VERSION_MINOR(lib.avcodec.avcodec_version());
-  version.avcodec.micro    = AV_VERSION_MICRO(lib.avcodec.avcodec_version());
-  version.avformat.minor   = AV_VERSION_MINOR(lib.avformat.avformat_version());
-  version.avformat.micro   = AV_VERSION_MICRO(lib.avformat.avformat_version());
-  version.avutil.minor     = AV_VERSION_MINOR(lib.avutil.avutil_version());
-  version.avutil.micro     = AV_VERSION_MICRO(lib.avutil.avutil_version());
-  version.swresample.minor = AV_VERSION_MINOR(lib.swresample.swresample_version());
-  version.swresample.micro = AV_VERSION_MICRO(lib.swresample.swresample_version());
+  auto createErrorString = [](std::string_view libname,
+                              const Version &  realVersion,
+                              const Version &  expectedVersion) -> std::string {
+    std::ostringstream stream;
+    stream << "The openend " << libname << " returned a different version (" << realVersion
+           << ") than we are looking for (" << expectedVersion << ").";
+    return stream.str();
+  };
 
-  return version;
+  if (expectedMajorVersion.avcodec != librariesInfo.avcodec)
+    return tl::unexpected(
+        createErrorString("avcodec", librariesInfo.avcodec, expectedMajorVersion.avcodec));
+
+  if (expectedMajorVersion.avformat != librariesInfo.avformat)
+    return tl::unexpected(
+        createErrorString("avformat", librariesInfo.avformat, expectedMajorVersion.avformat));
+
+  if (expectedMajorVersion.avutil != librariesInfo.avutil)
+    return tl::unexpected(
+        createErrorString("avutil", librariesInfo.avutil, expectedMajorVersion.avutil));
+
+  if (expectedMajorVersion.swresample != librariesInfo.swresample)
+    return tl::unexpected(
+        createErrorString("swresample", librariesInfo.swresample, expectedMajorVersion.swresample));
+
+  return {};
 }
 
 // These FFmpeg versions are supported. The numbers indicate the major version of
 // the following libraries in this order: Util, codec, format, swresample
 // The versions are sorted from newest to oldest, so that we try to open the newest ones first.
-auto SupportedLibraryVersionCombinations = {
-    LibraryVersion(58, 60, 60, 4),
-    LibraryVersion(57, 59, 59, 4),
-    LibraryVersion(56, 58, 58, 3),
-    LibraryVersion(55, 57, 57, 2),
-    LibraryVersion(54, 56, 56, 1),
+auto SupportedMajorLibraryVersionCombinations = {
+    LibraryVersions({Version(58), Version(60), Version(60), Version(4)}),
+    LibraryVersions({Version(57), Version(59), Version(59), Version(4)}),
+    LibraryVersions({Version(56), Version(58), Version(58), Version(3)}),
+    LibraryVersions({Version(55), Version(57), Version(57), Version(2)}),
+    LibraryVersions({Version(54), Version(56), Version(56), Version(1)}),
 };
 
 } // namespace
@@ -207,26 +190,9 @@ auto SupportedLibraryVersionCombinations = {
 //}
 //
 
-std::string FFmpegVersionHandler::getLibVersionString() const
-{
-  std::ostringstream stream;
-
-  auto addVersion = [&stream](const char *name, const Version &version) {
-    stream << name << version.major << "." << version.minor.value_or(0) << "."
-           << version.micro.value_or(0);
-  };
-
-  addVersion("avUtil", libVersion.avutil);
-  addVersion("avFormat", libVersion.avformat);
-  addVersion("avCodec", libVersion.avcodec);
-  addVersion("swresample", libVersion.swresample);
-
-  return stream.str();
-}
-
 AVCodecIDWrapper FFmpegVersionHandler::getCodecIDWrapper(AVCodecID id)
 {
-  auto codecName = QString(lib.avcodec.avcodec_get_name(id));
+  const auto codecName = std::string(lib.avcodec.avcodec_get_name(id));
   return AVCodecIDWrapper(id, codecName);
 }
 
@@ -235,11 +201,11 @@ AVCodecID FFmpegVersionHandler::getCodecIDFromWrapper(AVCodecIDWrapper &wrapper)
   if (wrapper.getCodecID() != AV_CODEC_ID_NONE)
     return wrapper.getCodecID();
 
-  int     codecID = 1;
-  QString codecName;
+  int         codecID = 1;
+  std::string codecName;
   do
   {
-    auto codecName = QString(this->lib.avcodec.avcodec_get_name(AVCodecID(codecID)));
+    codecName = std::string(this->lib.avcodec.avcodec_get_name(AVCodecID(codecID)));
     if (codecName == wrapper.getCodecName())
     {
       wrapper.setCodecID(AVCodecID(codecID));
@@ -358,7 +324,7 @@ bool FFmpegVersionHandler::openInput(AVFormatContextWrapper &fmt, QString url)
     return false;
 
   // The wrapper will take ownership of this pointer
-  fmt = AVFormatContextWrapper(f_ctx, libVersion);
+  fmt = AVFormatContextWrapper(f_ctx, this->libraryVersions);
 
   ret = lib.avformat.avformat_find_stream_info(fmt.getFormatCtx(), nullptr);
   if (ret < 0)
@@ -369,7 +335,8 @@ bool FFmpegVersionHandler::openInput(AVFormatContextWrapper &fmt, QString url)
 
 AVCodecParametersWrapper FFmpegVersionHandler::allocCodecParameters()
 {
-  return AVCodecParametersWrapper(this->lib.avcodec.avcodec_parameters_alloc(), libVersion);
+  return AVCodecParametersWrapper(this->lib.avcodec.avcodec_parameters_alloc(),
+                                  this->libraryVersions);
 }
 
 AVCodecWrapper FFmpegVersionHandler::findDecoder(AVCodecIDWrapper codecId)
@@ -378,13 +345,13 @@ AVCodecWrapper FFmpegVersionHandler::findDecoder(AVCodecIDWrapper codecId)
   AVCodec * c         = this->lib.avcodec.avcodec_find_decoder(avCodecID);
   if (c == nullptr)
     return {};
-  return AVCodecWrapper(c, libVersion);
+  return AVCodecWrapper(c, this->libraryVersions);
 }
 
 AVCodecContextWrapper FFmpegVersionHandler::allocDecoder(AVCodecWrapper &codec)
 {
   return AVCodecContextWrapper(this->lib.avcodec.avcodec_alloc_context3(codec.getAVCodec()),
-                               libVersion);
+                               this->libraryVersions);
 }
 
 int FFmpegVersionHandler::dictSet(AVDictionaryWrapper &dict,
@@ -426,13 +393,13 @@ AVFrameSideDataWrapper FFmpegVersionHandler::getSideData(AVFrameWrapper &    fra
                                                          AVFrameSideDataType type)
 {
   auto sd = this->lib.avutil.av_frame_get_side_data(frame.getFrame(), type);
-  return AVFrameSideDataWrapper(sd, libVersion);
+  return AVFrameSideDataWrapper(sd, this->libraryVersions);
 }
 
 AVDictionaryWrapper FFmpegVersionHandler::getMetadata(AVFrameWrapper &frame)
 {
   AVDictionary *dict;
-  if (this->libVersion.avutil.major < 57)
+  if (this->libraryVersions.avutil.major < 57)
     dict = this->lib.avutil.av_frame_get_metadata(frame.getFrame());
   else
     dict = frame.getMetadata();
@@ -456,23 +423,24 @@ int FFmpegVersionHandler::seekBeginning(AVFormatContextWrapper &fmt)
 LibraryLoadingResult FFmpegVersionHandler::loadFFmpegLibraryInPath(const std::filesystem::path path)
 {
   LibraryLoadingResult result;
-  for (auto version : SupportedLibraryVersionCombinations)
+  for (auto version : SupportedMajorLibraryVersionCombinations)
   {
     if (auto loadResult = this->lib.loadFFmpegLibraryInPath(path, version))
     {
       result.loadingLog.append(loadResult.loadingLog);
 
-      result.addLogLine("Checking versions avutil " + std::to_string(version.avutil.major) +
-                        ", swresample " + std::to_string(version.swresample.major) + ", avcodec " +
-                        std::to_string(version.avcodec.major) + ", avformat " +
-                        std::to_string(version.avformat.major));
+      result.addLogLine("Checking versions avutil " + to_string(version.avutil) + ", swresample " +
+                        to_string(version.swresample) + ", avcodec " + to_string(version.avcodec) +
+                        ", avformat " + to_string(version.avformat));
 
-      const auto checkVersionResult = checkVersionWithLib(this->lib, version);
+      const auto libraryVersions = getLibraryVersionsFromLoadedLibraries(this->lib);
+
+      const auto checkVersionResult = checkMajorVersionWithLibraries(libraryVersions, version);
       if (checkVersionResult.has_value())
       {
-        this->libVersion = addMinorAndMicroVersion(this->lib, version);
+        this->libraryVersions = libraryVersions;
 
-        if (this->libVersion.avformat.major < 59)
+        if (this->libraryVersions.avformat.major < 59)
           this->lib.avformat.av_register_all();
 
         result.success = true;
@@ -507,7 +475,7 @@ FFmpegVersionHandler::getAvPixFmtDescriptionFromAvPixelFormat(AVPixelFormat pixF
 {
   if (pixFmt == AV_PIX_FMT_NONE)
     return {};
-  return AVPixFmtDescriptorWrapper(lib.avutil.av_pix_fmt_desc_get(pixFmt), libVersion);
+  return AVPixFmtDescriptorWrapper(lib.avutil.av_pix_fmt_desc_get(pixFmt), this->libraryVersions);
 }
 
 AVPixelFormat
@@ -522,7 +490,7 @@ FFmpegVersionHandler::getAVPixelFormatFromPixelFormatYUV(video::yuv::PixelFormat
   auto desc = this->lib.avutil.av_pix_fmt_desc_next(nullptr);
   while (desc != nullptr)
   {
-    AVPixFmtDescriptorWrapper descWrapper(desc, libVersion);
+    AVPixFmtDescriptorWrapper descWrapper(desc, this->libraryVersions);
 
     if (descWrapper == wrapper)
       return this->lib.avutil.av_pix_fmt_desc_get_id(desc);
@@ -537,7 +505,7 @@ FFmpegVersionHandler::getAVPixelFormatFromPixelFormatYUV(video::yuv::PixelFormat
 AVFrameWrapper FFmpegVersionHandler::allocateFrame()
 {
   auto framePtr = this->lib.avutil.av_frame_alloc();
-  return AVFrameWrapper(this->libVersion, framePtr);
+  return AVFrameWrapper(framePtr, this->libraryVersions);
 }
 
 void FFmpegVersionHandler::freeFrame(AVFrameWrapper &frame)
@@ -551,7 +519,7 @@ AVPacketWrapper FFmpegVersionHandler::allocatePacket()
 {
   auto rawPacket = this->lib.avcodec.av_packet_alloc();
   this->lib.avcodec.av_init_packet(rawPacket);
-  return AVPacketWrapper(this->libVersion, rawPacket);
+  return AVPacketWrapper(rawPacket, this->libraryVersions);
 }
 
 void FFmpegVersionHandler::unrefPacket(AVPacketWrapper &packet)

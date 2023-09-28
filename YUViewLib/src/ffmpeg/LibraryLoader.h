@@ -49,6 +49,8 @@ public:
 
   auto getLibraryPath() const { return this->libraryPath; }
 
+  operator bool() const { return this->library.isLoaded(); }
+
 private:
   QLibrary library;
 

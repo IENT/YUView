@@ -59,53 +59,37 @@ typedef struct AVFrameSideData_57_58
 
 } // namespace
 
-AVFrameSideDataWrapper::AVFrameSideDataWrapper(AVFrameSideData *sideData, LibraryVersion libVer)
-    : sideData(sideData), libVer(libVer)
+AVFrameSideDataWrapper::AVFrameSideDataWrapper(AVFrameSideData *      sideData,
+                                               const LibraryVersions &libraryVersions)
+    : sideData(sideData), libraryVersions(libraryVersions)
 {
-  this->update();
 }
 
-size_t AVFrameSideDataWrapper::getNumberMotionVectors()
-{
-  this->update();
-
-  if (this->type != AV_FRAME_DATA_MOTION_VECTORS)
-    return 0;
-
-  return AVMotionVectorWrapper::getNumberOfMotionVectors(this->libVer, this->size);
-}
-
-AVMotionVectorWrapper AVFrameSideDataWrapper::getMotionVector(unsigned idx)
-{
-  this->update();
-  return AVMotionVectorWrapper(this->libVer, this->data, idx);
-}
-
-void AVFrameSideDataWrapper::update()
+std::vector<MotionVector> AVFrameSideDataWrapper::getMotionVectors() const
 {
   if (this->sideData == nullptr)
-    return;
+    return {};
 
-  if (this->libVer.avutil.major == 54 || //
-      this->libVer.avutil.major == 55 || //
-      this->libVer.avutil.major == 56)
+  if (this->libraryVersions.avutil.major == 54 || //
+      this->libraryVersions.avutil.major == 55 || //
+      this->libraryVersions.avutil.major == 56)
   {
-    auto p     = reinterpret_cast<AVFrameSideData_54_55_56 *>(sideData);
-    this->type = p->type;
-    this->data = p->data;
-    if (p->size > 0)
-      this->size = size_t(p->size);
-    this->metadata = p->metadata;
-    this->buf      = p->buf;
+    auto p = reinterpret_cast<AVFrameSideData_54_55_56 *>(sideData);
+
+    if (p->type != AV_FRAME_DATA_MOTION_VECTORS)
+      return {};
+
+    return parseMotionData(this->libraryVersions, p->data, p->size);
   }
-  else if (this->libVer.avutil.major == 57 || this->libVer.avutil.major == 58)
+  else if (this->libraryVersions.avutil.major == 57 || //
+           this->libraryVersions.avutil.major == 58)
   {
-    auto p         = reinterpret_cast<AVFrameSideData_57_58 *>(sideData);
-    this->type     = p->type;
-    this->data     = p->data;
-    this->size     = p->size;
-    this->metadata = p->metadata;
-    this->buf      = p->buf;
+    auto p = reinterpret_cast<AVFrameSideData_57_58 *>(sideData);
+
+    if (p->type != AV_FRAME_DATA_MOTION_VECTORS)
+      return {};
+
+    return parseMotionData(this->libraryVersions, p->data, p->size);
   }
   else
     throw std::runtime_error("Invalid library version");

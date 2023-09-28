@@ -32,20 +32,18 @@
 
 #include "FileInfo.h"
 
-std::vector<InfoItem> InfoItem::fromFFmpegLibraryPaths(const FFmpeg::LibraryPaths &paths)
+std::vector<InfoItem>
+InfoItem::fromFFmpegLibrariesInfo(const std::vector<FFmpeg::LibraryInfo> &librariesInfo)
 {
   std::vector<InfoItem> items;
 
-  auto addItem = [&items](QString name, const std::filesystem::path &path) {
-    const auto text    = QString::fromStdString(path.filename().string());
-    const auto tooltip = QString::fromStdString(path.string());
+  for (const auto &libInfo : librariesInfo)
+  {
+    const auto name    = QString::fromStdString(libInfo.name);
+    const auto text    = QString::fromStdString(libInfo.path.filename().string());
+    const auto tooltip = QString::fromStdString(libInfo.path.string());
     items.push_back(InfoItem(name, text, tooltip));
-  };
-
-  addItem("AVFormat", paths.avFormat);
-  addItem("AVCodec", paths.avCodec);
-  addItem("AVUtil", paths.avUtil);
-  addItem("SWResample", paths.swResample);
+  }
 
   return items;
 }

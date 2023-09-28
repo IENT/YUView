@@ -62,8 +62,7 @@ public:
   // TODO: How do we do this?
   bool atEnd() const { return endOfFile; }
 
-  // Return the name, filename and full path of every library loaded
-  FFmpeg::LibraryPaths getLibraryPaths() const { return this->ff.getLibraryPaths(); }
+  std::vector<FFmpeg::LibraryInfo> getLibrariesInfo() const { return this->ff.getLibrariesInfo(); }
 
   // Get properties of the bitstream
   double                     getFramerate() const { return frameRate; }

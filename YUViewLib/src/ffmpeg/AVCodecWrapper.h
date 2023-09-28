@@ -42,31 +42,21 @@ namespace FFmpeg
 class AVCodecWrapper
 {
 public:
-  AVCodecWrapper() {}
-  AVCodecWrapper(AVCodec *codec, LibraryVersion libVer) : codec(codec), libVer(libVer) {}
-  explicit  operator bool() const { return this->codec != nullptr; }
-  AVCodec * getAVCodec() { return this->codec; }
-  AVCodecID getCodecID()
-  {
-    update();
-    return this->id;
-  }
-  QString getName()
-  {
-    update();
-    return this->name;
-  }
-  QString getLongName()
-  {
-    update();
-    return this->long_name;
-  }
+  AVCodecWrapper() = default;
+  AVCodecWrapper(AVCodec *codec, const LibraryVersions &libraryVersions);
+
+  explicit operator bool() const { return this->codec != nullptr; }
+  AVCodec *getAVCodec() { return this->codec; }
+
+  AVCodecID   getCodecID();
+  std::string getName();
+  std::string getLongName();
 
 private:
   void update();
 
-  QString                     name{};
-  QString                     long_name{};
+  std::string                 name{};
+  std::string                 long_name{};
   AVMediaType                 type;
   AVCodecID                   id{AV_CODEC_ID_NONE};
   int                         capabilities{0};
@@ -77,8 +67,8 @@ private:
   std::vector<uint64_t>       channel_layouts;
   uint8_t                     max_lowres{0};
 
-  AVCodec *      codec{nullptr};
-  LibraryVersion libVer;
+  AVCodec *       codec{nullptr};
+  LibraryVersions libraryVersions;
 };
 
 } // namespace FFmpeg

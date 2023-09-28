@@ -154,13 +154,13 @@ bool flagsSupported(const AVPixFmtDescriptorWrapper::Flags &flags)
 
 } // namespace
 
-AVPixFmtDescriptorWrapper::AVPixFmtDescriptorWrapper(AVPixFmtDescriptor *descriptor,
-                                                     LibraryVersion      libVer)
+AVPixFmtDescriptorWrapper::AVPixFmtDescriptorWrapper(AVPixFmtDescriptor *   descriptor,
+                                                     const LibraryVersions &libraryVersions)
 {
-  if (libVer.avutil.major == 54)
+  if (libraryVersions.avutil.major == 54)
   {
     auto p              = reinterpret_cast<AVPixFmtDescriptor_54 *>(descriptor);
-    this->name          = QString(p->name);
+    this->name          = std::string(p->name);
     this->nb_components = p->nb_components;
     this->log2_chroma_w = p->log2_chroma_w;
     this->log2_chroma_h = p->log2_chroma_h;
@@ -175,12 +175,12 @@ AVPixFmtDescriptorWrapper::AVPixFmtDescriptorWrapper(AVPixFmtDescriptor *descrip
       this->comp[i].depth  = p->comp[i].depth_minus1 + 1;
     }
 
-    aliases = QString(p->alias);
+    aliases = std::string(p->alias);
   }
-  else if (libVer.avutil.major == 55)
+  else if (libraryVersions.avutil.major == 55)
   {
     auto p              = reinterpret_cast<AVPixFmtDescriptor_55 *>(descriptor);
-    this->name          = QString(p->name);
+    this->name          = std::string(p->name);
     this->nb_components = p->nb_components;
     this->log2_chroma_w = p->log2_chroma_w;
     this->log2_chroma_h = p->log2_chroma_h;
@@ -195,12 +195,12 @@ AVPixFmtDescriptorWrapper::AVPixFmtDescriptorWrapper(AVPixFmtDescriptor *descrip
       this->comp[i].depth  = p->comp[i].depth;
     }
 
-    aliases = QString(p->alias);
+    aliases = std::string(p->alias);
   }
-  else if (libVer.avutil.major == 56)
+  else if (libraryVersions.avutil.major == 56)
   {
     auto p              = reinterpret_cast<AVPixFmtDescriptor_56 *>(descriptor);
-    this->name          = QString(p->name);
+    this->name          = std::string(p->name);
     this->nb_components = p->nb_components;
     this->log2_chroma_w = p->log2_chroma_w;
     this->log2_chroma_h = p->log2_chroma_h;
@@ -215,13 +215,13 @@ AVPixFmtDescriptorWrapper::AVPixFmtDescriptorWrapper(AVPixFmtDescriptor *descrip
       this->comp[i].depth  = p->comp[i].depth;
     }
 
-    aliases = QString(p->alias);
+    aliases = std::string(p->alias);
   }
-  else if (libVer.avutil.major == 57 || //
-           libVer.avutil.major == 58)
+  else if (libraryVersions.avutil.major == 57 || //
+           libraryVersions.avutil.major == 58)
   {
     auto p              = reinterpret_cast<AVPixFmtDescriptor_57_58 *>(descriptor);
-    this->name          = QString(p->name);
+    this->name          = std::string(p->name);
     this->nb_components = p->nb_components;
     this->log2_chroma_w = p->log2_chroma_w;
     this->log2_chroma_h = p->log2_chroma_h;
@@ -236,7 +236,7 @@ AVPixFmtDescriptorWrapper::AVPixFmtDescriptorWrapper(AVPixFmtDescriptor *descrip
       this->comp[i].depth  = p->comp[i].depth;
     }
 
-    aliases = QString(p->alias);
+    aliases = std::string(p->alias);
   }
 }
 

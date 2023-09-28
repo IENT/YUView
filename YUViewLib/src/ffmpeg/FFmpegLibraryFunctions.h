@@ -40,12 +40,11 @@
 namespace FFmpeg
 {
 
-struct LibraryPaths
+struct LibraryInfo
 {
-  std::filesystem::path avFormat;
-  std::filesystem::path avCodec;
-  std::filesystem::path avUtil;
-  std::filesystem::path swResample;
+  std::string           name;
+  std::filesystem::path path;
+  std::string           version;
 };
 
 class FFmpegLibraryFunctions
@@ -55,9 +54,9 @@ public:
   ~FFmpegLibraryFunctions();
 
   LibraryLoadingResult loadFFmpegLibraryInPath(const std::filesystem::path &path,
-                                               const LibraryVersion &       libraryVersion);
+                                               const LibraryVersions &      libraryVersions);
 
-  LibraryPaths getLibraryPaths() const;
+  std::vector<LibraryInfo> getLibrariesInfo() const;
 
   struct AvFormatFunctions
   {

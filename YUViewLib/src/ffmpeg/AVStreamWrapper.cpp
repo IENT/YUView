@@ -231,17 +231,17 @@ typedef struct AVStream_60
 
 } // namespace
 
-AVStreamWrapper::AVStreamWrapper(AVStream *src_str, LibraryVersion v)
+AVStreamWrapper::AVStreamWrapper(AVStream *src_str, const LibraryVersions &libraryVersions)
 {
-  this->stream = src_str;
-  this->libVer = v;
+  this->stream          = src_str;
+  this->libraryVersions = libraryVersions;
   this->update();
 }
 
 AVMediaType AVStreamWrapper::getCodecType()
 {
   this->update();
-  if (this->libVer.avformat.major <= 56 || !this->codecpar)
+  if (this->libraryVersions.avformat.major <= 56 || !this->codecpar)
     return this->codec.getCodecType();
   return this->codecpar.getCodecType();
 }
@@ -268,7 +268,7 @@ AVCodecID AVStreamWrapper::getCodecID()
   if (this->stream == nullptr)
     return AV_CODEC_ID_NONE;
 
-  if (this->libVer.avformat.major <= 56 || !this->codecpar)
+  if (this->libraryVersions.avformat.major <= 56 || !this->codecpar)
     return this->codec.getCodecID();
   else
     return this->codecpar.getCodecID();
@@ -298,7 +298,7 @@ AVRational AVStreamWrapper::getTimeBase()
 Size AVStreamWrapper::getFrameSize()
 {
   this->update();
-  if (this->libVer.avformat.major <= 56 || !this->codecpar)
+  if (this->libraryVersions.avformat.major <= 56 || !this->codecpar)
     return this->codec.getSize();
   return this->codecpar.getSize();
 }
@@ -306,7 +306,7 @@ Size AVStreamWrapper::getFrameSize()
 AVColorSpace AVStreamWrapper::getColorspace()
 {
   this->update();
-  if (this->libVer.avformat.major <= 56 || !this->codecpar)
+  if (this->libraryVersions.avformat.major <= 56 || !this->codecpar)
     return this->codec.getColorspace();
   return this->codecpar.getColorspace();
 }
@@ -314,7 +314,7 @@ AVColorSpace AVStreamWrapper::getColorspace()
 AVPixelFormat AVStreamWrapper::getPixelFormat()
 {
   this->update();
-  if (this->libVer.avformat.major <= 56 || !this->codecpar)
+  if (this->libraryVersions.avformat.major <= 56 || !this->codecpar)
     return this->codec.getPixelFormat();
   return this->codecpar.getPixelFormat();
 }
@@ -322,7 +322,7 @@ AVPixelFormat AVStreamWrapper::getPixelFormat()
 QByteArray AVStreamWrapper::getExtradata()
 {
   this->update();
-  if (this->libVer.avformat.major <= 56 || !this->codecpar)
+  if (this->libraryVersions.avformat.major <= 56 || !this->codecpar)
     return this->codec.getExtradata();
   return this->codecpar.getExtradata();
 }
@@ -345,12 +345,12 @@ void AVStreamWrapper::update()
     return;
 
   // Copy values from the source pointer
-  if (libVer.avformat.major == 56)
+  if (this->libraryVersions.avformat.major == 56)
   {
     auto p                    = reinterpret_cast<AVStream_56 *>(this->stream);
     this->index               = p->index;
     this->id                  = p->id;
-    this->codec               = AVCodecContextWrapper(p->codec, libVer);
+    this->codec               = AVCodecContextWrapper(p->codec, this->libraryVersions);
     this->time_base           = p->time_base;
     this->start_time          = p->start_time;
     this->duration            = p->duration;
@@ -362,12 +362,12 @@ void AVStreamWrapper::update()
     this->nb_side_data        = p->nb_side_data;
     this->event_flags         = p->event_flags;
   }
-  else if (libVer.avformat.major == 57)
+  else if (this->libraryVersions.avformat.major == 57)
   {
     auto p                    = reinterpret_cast<AVStream_57 *>(this->stream);
     this->index               = p->index;
     this->id                  = p->id;
-    this->codec               = AVCodecContextWrapper(p->codec, libVer);
+    this->codec               = AVCodecContextWrapper(p->codec, this->libraryVersions);
     this->time_base           = p->time_base;
     this->start_time          = p->start_time;
     this->duration            = p->duration;
@@ -378,14 +378,14 @@ void AVStreamWrapper::update()
     this->avg_frame_rate      = p->avg_frame_rate;
     this->nb_side_data        = p->nb_side_data;
     this->event_flags         = p->event_flags;
-    this->codecpar            = AVCodecParametersWrapper(p->codecpar, libVer);
+    this->codecpar            = AVCodecParametersWrapper(p->codecpar, this->libraryVersions);
   }
-  else if (libVer.avformat.major == 58)
+  else if (this->libraryVersions.avformat.major == 58)
   {
     auto p                    = reinterpret_cast<AVStream_58 *>(this->stream);
     this->index               = p->index;
     this->id                  = p->id;
-    this->codec               = AVCodecContextWrapper(p->codec, libVer);
+    this->codec               = AVCodecContextWrapper(p->codec, this->libraryVersions);
     this->time_base           = p->time_base;
     this->start_time          = p->start_time;
     this->duration            = p->duration;
@@ -396,9 +396,9 @@ void AVStreamWrapper::update()
     this->avg_frame_rate      = p->avg_frame_rate;
     this->nb_side_data        = p->nb_side_data;
     this->event_flags         = p->event_flags;
-    this->codecpar            = AVCodecParametersWrapper(p->codecpar, libVer);
+    this->codecpar            = AVCodecParametersWrapper(p->codecpar, this->libraryVersions);
   }
-  else if (libVer.avformat.major == 59)
+  else if (this->libraryVersions.avformat.major == 59)
   {
     auto p                    = reinterpret_cast<AVStream_59 *>(this->stream);
     this->index               = p->index;
@@ -413,9 +413,9 @@ void AVStreamWrapper::update()
     this->avg_frame_rate      = p->avg_frame_rate;
     this->nb_side_data        = p->nb_side_data;
     this->event_flags         = p->event_flags;
-    this->codecpar            = AVCodecParametersWrapper(p->codecpar, libVer);
+    this->codecpar            = AVCodecParametersWrapper(p->codecpar, this->libraryVersions);
   }
-  else if (libVer.avformat.major == 60)
+  else if (this->libraryVersions.avformat.major == 60)
   {
     auto p                    = reinterpret_cast<AVStream_60 *>(this->stream);
     this->index               = p->index;
@@ -430,7 +430,7 @@ void AVStreamWrapper::update()
     this->avg_frame_rate      = p->avg_frame_rate;
     this->nb_side_data        = p->nb_side_data;
     this->event_flags         = p->event_flags;
-    this->codecpar            = AVCodecParametersWrapper(p->codecpar, libVer);
+    this->codecpar            = AVCodecParametersWrapper(p->codecpar, this->libraryVersions);
   }
   else
     throw std::runtime_error("Invalid library version");
@@ -449,7 +449,7 @@ QStringPairList AVStreamWrapper::getInfoText(AVCodecIDWrapper &codecIdWrapper)
 
   info.append(QStringPair("Codec Type", getCodecTypeName()));
   info.append(QStringPair("Codec ID", QString::number((int)getCodecID())));
-  info.append(QStringPair("Codec Name", codecIdWrapper.getCodecName()));
+  info.append(QStringPair("Codec Name", QString::fromStdString(codecIdWrapper.getCodecName())));
   info.append(
       QStringPair("Time base", QString("%1/%2").arg(this->time_base.num).arg(this->time_base.den)));
   info.append(QStringPair("Start Time",

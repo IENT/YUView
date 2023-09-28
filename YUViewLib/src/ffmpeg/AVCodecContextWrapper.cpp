@@ -419,10 +419,11 @@ AVCodecContextWrapper::AVCodecContextWrapper()
   this->codec = nullptr;
 }
 
-AVCodecContextWrapper::AVCodecContextWrapper(AVCodecContext *c, LibraryVersion v)
+AVCodecContextWrapper::AVCodecContextWrapper(AVCodecContext *       c,
+                                             const LibraryVersions &libraryVersions)
 {
-  this->codec  = c;
-  this->libVer = v;
+  this->codec           = c;
+  this->libraryVersions = libraryVersions;
   this->update();
 }
 
@@ -478,7 +479,7 @@ void AVCodecContextWrapper::update()
   if (this->codec == nullptr)
     return;
 
-  if (this->libVer.avcodec.major == 56)
+  if (this->libraryVersions.avcodec.major == 56)
   {
     auto p                        = reinterpret_cast<AVCodecContext_56 *>(this->codec);
     this->codec_type              = p->codec_type;
@@ -562,7 +563,7 @@ void AVCodecContextWrapper::update()
     this->color_range             = p->color_range;
     this->chroma_sample_location  = p->chroma_sample_location;
   }
-  else if (libVer.avcodec.major == 57)
+  else if (this->libraryVersions.avcodec.major == 57)
   {
     auto p                        = reinterpret_cast<AVCodecContext_57 *>(this->codec);
     this->codec_type              = p->codec_type;
@@ -646,7 +647,7 @@ void AVCodecContextWrapper::update()
     this->color_range             = p->color_range;
     this->chroma_sample_location  = p->chroma_sample_location;
   }
-  else if (libVer.avcodec.major == 58)
+  else if (this->libraryVersions.avcodec.major == 58)
   {
     auto p                        = reinterpret_cast<AVCodecContext_58 *>(this->codec);
     this->codec_type              = p->codec_type;
@@ -730,7 +731,8 @@ void AVCodecContextWrapper::update()
     this->color_range             = p->color_range;
     this->chroma_sample_location  = p->chroma_sample_location;
   }
-  else if (libVer.avcodec.major == 59 || libVer.avcodec.major == 60)
+  else if (this->libraryVersions.avcodec.major == 59 || //
+           this->libraryVersions.avcodec.major == 60)
   {
     auto p                        = reinterpret_cast<AVCodecContext_59_60 *>(this->codec);
     this->codec_type              = p->codec_type;

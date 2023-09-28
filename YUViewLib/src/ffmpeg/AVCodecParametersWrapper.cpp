@@ -69,10 +69,11 @@ typedef struct AVCodecParameters_57_58_59_60
 
 } // namespace
 
-AVCodecParametersWrapper::AVCodecParametersWrapper(AVCodecParameters *p, LibraryVersion v)
+AVCodecParametersWrapper::AVCodecParametersWrapper(AVCodecParameters *    p,
+                                                   const LibraryVersions &libraryVersionsv)
 {
-  this->param  = p;
-  this->libVer = v;
+  this->param           = p;
+  this->libraryVersions = libraryVersions;
   this->update();
 }
 
@@ -229,8 +230,10 @@ QStringPairList AVCodecParametersWrapper::getInfoText()
 
 void AVCodecParametersWrapper::setClearValues()
 {
-  if (this->libVer.avformat.major == 57 || this->libVer.avformat.major == 58 ||
-      this->libVer.avformat.major == 59 || this->libVer.avformat.major == 60)
+  if (this->libraryVersions.avformat.major == 57 || //
+      this->libraryVersions.avformat.major == 58 || //
+      this->libraryVersions.avformat.major == 59 || //
+      this->libraryVersions.avformat.major == 60)
   {
     auto p                   = reinterpret_cast<AVCodecParameters_57_58_59_60 *>(this->param);
     p->codec_type            = AVMEDIA_TYPE_UNKNOWN;
@@ -265,8 +268,10 @@ void AVCodecParametersWrapper::setClearValues()
 
 void AVCodecParametersWrapper::setAVMediaType(AVMediaType type)
 {
-  if (this->libVer.avformat.major == 57 || this->libVer.avformat.major == 58 ||
-      this->libVer.avformat.major == 59 || this->libVer.avformat.major == 60)
+  if (this->libraryVersions.avformat.major == 57 || //
+      this->libraryVersions.avformat.major == 58 || //
+      this->libraryVersions.avformat.major == 59 || //
+      this->libraryVersions.avformat.major == 60)
   {
     auto p           = reinterpret_cast<AVCodecParameters_57_58_59_60 *>(this->param);
     p->codec_type    = type;
@@ -276,8 +281,10 @@ void AVCodecParametersWrapper::setAVMediaType(AVMediaType type)
 
 void AVCodecParametersWrapper::setAVCodecID(AVCodecID id)
 {
-  if (this->libVer.avformat.major == 57 || this->libVer.avformat.major == 58 ||
-      this->libVer.avformat.major == 59 || this->libVer.avformat.major == 60)
+  if (this->libraryVersions.avformat.major == 57 || //
+      this->libraryVersions.avformat.major == 58 || //
+      this->libraryVersions.avformat.major == 59 || //
+      this->libraryVersions.avformat.major == 60)
   {
     auto p         = reinterpret_cast<AVCodecParameters_57_58_59_60 *>(this->param);
     p->codec_id    = id;
@@ -287,8 +294,10 @@ void AVCodecParametersWrapper::setAVCodecID(AVCodecID id)
 
 void AVCodecParametersWrapper::setExtradata(QByteArray data)
 {
-  if (this->libVer.avformat.major == 57 || this->libVer.avformat.major == 58 ||
-      this->libVer.avformat.major == 59 || this->libVer.avformat.major == 60)
+  if (this->libraryVersions.avformat.major == 57 || //
+      this->libraryVersions.avformat.major == 58 || //
+      this->libraryVersions.avformat.major == 59 || //
+      this->libraryVersions.avformat.major == 60)
   {
     this->extradata   = data;
     auto p            = reinterpret_cast<AVCodecParameters_57_58_59_60 *>(this->param);
@@ -299,8 +308,10 @@ void AVCodecParametersWrapper::setExtradata(QByteArray data)
 
 void AVCodecParametersWrapper::setSize(Size size)
 {
-  if (this->libVer.avformat.major == 57 || this->libVer.avformat.major == 58 ||
-      this->libVer.avformat.major == 59 || this->libVer.avformat.major == 60)
+  if (this->libraryVersions.avformat.major == 57 || //
+      this->libraryVersions.avformat.major == 58 || //
+      this->libraryVersions.avformat.major == 59 || //
+      this->libraryVersions.avformat.major == 60)
   {
     auto p       = reinterpret_cast<AVCodecParameters_57_58_59_60 *>(this->param);
     p->width     = size.width;
@@ -312,8 +323,10 @@ void AVCodecParametersWrapper::setSize(Size size)
 
 void AVCodecParametersWrapper::setAVPixelFormat(AVPixelFormat format)
 {
-  if (this->libVer.avformat.major == 57 || this->libVer.avformat.major == 58 ||
-      this->libVer.avformat.major == 59 || this->libVer.avformat.major == 60)
+  if (this->libraryVersions.avformat.major == 57 || //
+      this->libraryVersions.avformat.major == 58 || //
+      this->libraryVersions.avformat.major == 59 || //
+      this->libraryVersions.avformat.major == 60)
   {
     auto p       = reinterpret_cast<AVCodecParameters_57_58_59_60 *>(this->param);
     p->format    = format;
@@ -323,8 +336,10 @@ void AVCodecParametersWrapper::setAVPixelFormat(AVPixelFormat format)
 
 void AVCodecParametersWrapper::setProfileLevel(int profile, int level)
 {
-  if (this->libVer.avformat.major == 57 || this->libVer.avformat.major == 58 ||
-      this->libVer.avformat.major == 59 || this->libVer.avformat.major == 60)
+  if (this->libraryVersions.avformat.major == 57 || //
+      this->libraryVersions.avformat.major == 58 || //
+      this->libraryVersions.avformat.major == 59 || //
+      this->libraryVersions.avformat.major == 60)
   {
     auto p        = reinterpret_cast<AVCodecParameters_57_58_59_60 *>(this->param);
     p->profile    = profile;
@@ -336,8 +351,10 @@ void AVCodecParametersWrapper::setProfileLevel(int profile, int level)
 
 void AVCodecParametersWrapper::setSampleAspectRatio(int num, int den)
 {
-  if (this->libVer.avformat.major == 57 || this->libVer.avformat.major == 58 ||
-      this->libVer.avformat.major == 59 || this->libVer.avformat.major == 60)
+  if (this->libraryVersions.avformat.major == 57 || //
+      this->libraryVersions.avformat.major == 58 || //
+      this->libraryVersions.avformat.major == 59 || //
+      this->libraryVersions.avformat.major == 60)
   {
     auto       p = reinterpret_cast<AVCodecParameters_57_58_59_60 *>(param);
     AVRational ratio;
@@ -353,13 +370,15 @@ void AVCodecParametersWrapper::update()
   if (this->param == nullptr)
     return;
 
-  if (this->libVer.avformat.major == 56)
+  if (this->libraryVersions.avformat.major == 56)
   {
     // This data structure does not exist in avformat major version 56.
     this->param = nullptr;
   }
-  else if (this->libVer.avformat.major == 57 || this->libVer.avformat.major == 58 ||
-           this->libVer.avformat.major == 59 || this->libVer.avformat.major == 60)
+  else if (this->libraryVersions.avformat.major == 57 || //
+           this->libraryVersions.avformat.major == 58 || //
+           this->libraryVersions.avformat.major == 59 || //
+           this->libraryVersions.avformat.major == 60)
   {
     auto p = reinterpret_cast<AVCodecParameters_57_58_59_60 *>(this->param);
 

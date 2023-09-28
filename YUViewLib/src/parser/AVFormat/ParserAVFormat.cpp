@@ -586,7 +586,8 @@ bool ParserAVFormat::runParsingOfFile(QString compressedFilePath)
     this->obuParser.reset(new ParserAV1OBU());
   else if (this->codecID.isNone())
   {
-    emit backgroundParsingDone("Unknown codec ID " + this->codecID.getCodecName());
+    emit backgroundParsingDone("Unknown codec ID " +
+                               QString::fromStdString(this->codecID.getCodecName()));
     return false;
   }
 

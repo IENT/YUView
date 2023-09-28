@@ -42,8 +42,7 @@ class AVFrameWrapper
 {
 public:
   AVFrameWrapper() = default;
-  AVFrameWrapper(LibraryVersion libVersion, AVFrame *frame);
-  ~AVFrameWrapper() = default;
+  AVFrameWrapper(AVFrame *frame, const LibraryVersions &libraryVersions);
 
   void clear();
 
@@ -81,8 +80,8 @@ private:
   int           quality{};
   AVDictionary *metadata{};
 
-  AVFrame *      frame{};
-  LibraryVersion libVer{};
+  AVFrame *       frame{};
+  LibraryVersions libraryVersions{};
 };
 
 } // namespace FFmpeg
