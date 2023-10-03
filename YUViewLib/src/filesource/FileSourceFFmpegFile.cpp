@@ -49,7 +49,7 @@
 #endif
 
 using SubByteReaderLogging = parser::reader::SubByteReaderLogging;
-using namespace FFmpeg;
+using namespace LibFFmpeg;
 
 namespace
 {

@@ -54,7 +54,7 @@
 #endif
 
 using namespace std::string_literals;
-using namespace FFmpeg;
+using namespace LibFFmpeg;
 
 namespace parser
 {

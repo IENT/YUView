@@ -32,39 +32,38 @@
 
 #pragma once
 
-#include <QList>
-#include <QMetaType>
-#include <QString>
+#include <common/Expected.h>
+#include <common/FFMpegLibrariesTypes.h>
 
-/*
- * An info item has a name, a text and an optional toolTip. These are used to show them in the
- * fileInfoWidget. For example: ["File Name", "file.yuv"] or ["Number Frames", "123"] Another option
- * is to show a button. If the user clicks on it, the callback function infoListButtonPressed() for
- * the corresponding playlist item is called.
- */
-struct InfoItem
+#include <sstream>
+#include <string>
+#include <vector>
+
+namespace LibFFmpeg::functions
 {
-  InfoItem(const QString &name,
-           const QString &text,
-           const QString &toolTip  = QString(),
-           bool           button   = false,
-           int            buttonID = -1)
-      : name(name), text(text), button(button), buttonID(buttonID), toolTip(toolTip)
+
+using LoadingResult       = tl::expected<void, std::string>;
+using LoadingResultAndLog = std::pair<LoadingResult, Log>;
+
+template <typename T>
+void checkForMissingFunctionAndLog(std::function<T> &        function,
+                                   std::string               name,
+                                   std::vector<std::string> &missingFunctions,
+                                   Log &                     log)
+{
+  if (function)
+    log.push_back("Successfully resolved function " + name);
+  else
   {
+    log.push_back("Failed to resolved function " + name);
+    missingFunctions.push_back(name);
   }
+}
 
-  QString name{};
-  QString text{};
-  bool    button{};
-  int     buttonID{};
-  QString toolTip{};
-};
+std::string to_string(std::vector<std::string> strings);
 
-struct InfoData
-{
-  explicit InfoData(const QString &title = QString()) : title(title) {}
-  bool            isEmpty() const { return title.isEmpty() && items.isEmpty(); }
-  QString         title{};
-  QList<InfoItem> items{};
-};
-Q_DECLARE_METATYPE(InfoData)
+std::string logMissingFunctionsAndGetErrorMessage(const std::vector<std::string> &missingFunctions,
+                                                  const std::string               libraryName,
+                                                  Log &                           log);
+
+} // namespace LibFFmpeg::functions

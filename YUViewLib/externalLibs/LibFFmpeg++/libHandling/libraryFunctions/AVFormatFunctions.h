@@ -32,39 +32,28 @@
 
 #pragma once
 
-#include <QList>
-#include <QMetaType>
-#include <QString>
+#include <common/Expected.h>
+#include <common/FFMpegLibrariesTypes.h>
+#include <libHandling/SharedLibraryLoader.h>
 
-/*
- * An info item has a name, a text and an optional toolTip. These are used to show them in the
- * fileInfoWidget. For example: ["File Name", "file.yuv"] or ["Number Frames", "123"] Another option
- * is to show a button. If the user clicks on it, the callback function infoListButtonPressed() for
- * the corresponding playlist item is called.
- */
-struct InfoItem
+namespace LibFFmpeg::functions
 {
-  InfoItem(const QString &name,
-           const QString &text,
-           const QString &toolTip  = QString(),
-           bool           button   = false,
-           int            buttonID = -1)
-      : name(name), text(text), button(button), buttonID(buttonID), toolTip(toolTip)
-  {
-  }
 
-  QString name{};
-  QString text{};
-  bool    button{};
-  int     buttonID{};
-  QString toolTip{};
+struct AvFormatFunctions
+{
+  std::function<void()> av_register_all;
+  std::function<int(
+      AVFormatContext **ps, const char *url, AVInputFormat *fmt, AVDictionary **options)>
+                                                                  avformat_open_input;
+  std::function<void(AVFormatContext **s)>                        avformat_close_input;
+  std::function<int(AVFormatContext *ic, AVDictionary **options)> avformat_find_stream_info;
+  std::function<int(AVFormatContext *s, AVPacket *pkt)>           av_read_frame;
+  std::function<int(AVFormatContext *s, int stream_index, int64_t timestamp, int flags)>
+                            av_seek_frame;
+  std::function<unsigned()> avformat_version;
 };
 
-struct InfoData
-{
-  explicit InfoData(const QString &title = QString()) : title(title) {}
-  bool            isEmpty() const { return title.isEmpty() && items.isEmpty(); }
-  QString         title{};
-  QList<InfoItem> items{};
-};
-Q_DECLARE_METATYPE(InfoData)
+std::optional<AvFormatFunctions> tryBindAVFormatFunctionsFromLibrary(SharedLibraryLoader &lib,
+                                                                     Log &                log);
+
+} // namespace LibFFmpeg::functions

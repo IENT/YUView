@@ -385,7 +385,7 @@ void SettingsDialog::on_pushButtonFFMpegSelectFile_clicked()
 
   // Try to open ffmpeg using the four libraries
   QStringList logList;
-  if (!FFmpeg::FFmpegVersionHandler::checkLibraryFiles(
+  if (!LibFFmpeg::FFmpegVersionHandler::checkLibraryFiles(
           avCodecLib, avFormatLib, avUtilLib, swResampleLib, logList))
   {
     QMessageBox::StandardButton b = QMessageBox::question(

@@ -44,14 +44,14 @@ namespace decoder
 class decoderFFmpeg : public decoderBase
 {
 public:
-  decoderFFmpeg(FFmpeg::AVCodecIDWrapper   codec,
-                Size                       frameSize,
-                QByteArray                 extradata,
-                video::yuv::PixelFormatYUV pixelFormatYUV,
-                IntPair                    profileLevel,
-                Ratio                      sampleAspectRatio,
-                bool                       cachingDecoder = false);
-  decoderFFmpeg(FFmpeg::AVCodecParametersWrapper codecpar, bool cachingDecoder = false);
+  decoderFFmpeg(LibFFmpeg::AVCodecIDWrapper codec,
+                Size                        frameSize,
+                QByteArray                  extradata,
+                video::yuv::PixelFormatYUV  pixelFormatYUV,
+                IntPair                     profileLevel,
+                Ratio                       sampleAspectRatio,
+                bool                        cachingDecoder = false);
+  decoderFFmpeg(LibFFmpeg::AVCodecParametersWrapper codecpar, bool cachingDecoder = false);
   ~decoderFFmpeg();
 
   void resetDecoder() override;
@@ -63,7 +63,7 @@ public:
   // Push an AVPacket or raw data. When this returns false, pushing the given packet failed.
   // Probably the decoder switched to DecoderState::RetrieveFrames. Don't forget to push the given
   // packet again later.
-  bool pushAVPacket(FFmpeg::AVPacketWrapper &pkt);
+  bool pushAVPacket(LibFFmpeg::AVPacketWrapper &pkt);
   bool pushData(QByteArray &data) override;
 
   // What statistics do we support?
@@ -73,18 +73,18 @@ public:
   QString     getDecoderName() const override { return "FFmpeg"; }
   QString     getCodecName() const override { return this->codecName; }
 
-  static QStringList getLogMessages() { return FFmpeg::FFmpegVersionHandler::getFFmpegLog(); }
+  static QStringList getLogMessages() { return LibFFmpeg::FFmpegVersionHandler::getFFmpegLog(); }
 
 protected:
-  FFmpeg::FFmpegVersionHandler ff;
+  LibFFmpeg::FFmpegVersionHandler ff;
 
-  bool
-  createDecoder(FFmpeg::AVCodecIDWrapper         codecID,
-                FFmpeg::AVCodecParametersWrapper codecpar = FFmpeg::AVCodecParametersWrapper());
+  bool createDecoder(
+      LibFFmpeg::AVCodecIDWrapper         codecID,
+      LibFFmpeg::AVCodecParametersWrapper codecpar = LibFFmpeg::AVCodecParametersWrapper());
 
-  FFmpeg::AVCodecWrapper        videoCodec; //< The video decoder codec
-  FFmpeg::AVCodecContextWrapper decCtx;     //< The decoder context
-  FFmpeg::AVFrameWrapper        frame;      //< The frame that we use for decoding
+  LibFFmpeg::AVCodecWrapper        videoCodec; //< The video decoder codec
+  LibFFmpeg::AVCodecContextWrapper decCtx;     //< The decoder context
+  LibFFmpeg::AVFrameWrapper        frame;      //< The frame that we use for decoding
 
   // Try to decode a frame. If successful, the frame will be in "frame" and return true.
   bool decodeFrame();
@@ -102,7 +102,7 @@ protected:
   bool flushing;
 
   // When pushing raw data to the decoder, we need to package it into AVPackets
-  FFmpeg::AVPacketWrapper raw_pkt;
+  LibFFmpeg::AVPacketWrapper raw_pkt;
 
   // An array of AV_INPUT_BUFFER_PADDING_SIZE zeros to be added as padding in pushData
   QByteArray avPacketPaddingData;

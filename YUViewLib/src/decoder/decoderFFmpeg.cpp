@@ -271,7 +271,7 @@ void decoderFFmpeg::cacheCurStatistics()
 {
   DEBUG_FFMPEG("decoderFFmpeg::cacheCurStatistics");
 
-  const auto sideData = this->ff.getSideData(frame, FFmpeg::AV_FRAME_DATA_MOTION_VECTORS);
+  const auto sideData = this->ff.getSideData(frame, LibFFmpeg::AV_FRAME_DATA_MOTION_VECTORS);
   if (!sideData)
     return;
 
@@ -299,7 +299,7 @@ bool decoderFFmpeg::pushData(QByteArray &data)
   {
     // Push an empty packet to indicate that the file has ended
     DEBUG_FFMPEG("decoderFFmpeg::pushData: Pushing an empty packet");
-    FFmpeg::AVPacketWrapper emptyPacket;
+    LibFFmpeg::AVPacketWrapper emptyPacket;
     return this->pushAVPacket(emptyPacket);
   }
   else
@@ -436,8 +436,8 @@ void decoderFFmpeg::fillStatisticList(stats::StatisticsData &statisticsData) con
   statisticsData.addStatType(stats::StatisticsType(3, "Motion Vector +", 4));
 }
 
-bool decoderFFmpeg::createDecoder(FFmpeg::AVCodecIDWrapper         codecID,
-                                  FFmpeg::AVCodecParametersWrapper codecpar)
+bool decoderFFmpeg::createDecoder(LibFFmpeg::AVCodecIDWrapper         codecID,
+                                  LibFFmpeg::AVCodecParametersWrapper codecpar)
 {
   // Allocate the decoder context
   if (this->videoCodec)
@@ -468,7 +468,7 @@ bool decoderFFmpeg::createDecoder(FFmpeg::AVCodecIDWrapper         codecID,
     this->formatRGB = ffmpegPixFormat.getRGBPixelFormat();
 
   // Ask the decoder to provide motion vectors (if possible)
-  FFmpeg::AVDictionaryWrapper opts;
+  LibFFmpeg::AVDictionaryWrapper opts;
   int                         ret = this->ff.dictSet(opts, "flags2", "+export_mvs", 0);
   if (ret < 0)
     return this->setErrorB(

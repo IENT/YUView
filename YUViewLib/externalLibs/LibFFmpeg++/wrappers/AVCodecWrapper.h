@@ -32,39 +32,43 @@
 
 #pragma once
 
-#include <QList>
-#include <QMetaType>
-#include <QString>
+#include <common/FFMpegLibrariesTypes.h>
 
-/*
- * An info item has a name, a text and an optional toolTip. These are used to show them in the
- * fileInfoWidget. For example: ["File Name", "file.yuv"] or ["Number Frames", "123"] Another option
- * is to show a button. If the user clicks on it, the callback function infoListButtonPressed() for
- * the corresponding playlist item is called.
- */
-struct InfoItem
+#include <vector>
+
+namespace LibFFmpeg
 {
-  InfoItem(const QString &name,
-           const QString &text,
-           const QString &toolTip  = QString(),
-           bool           button   = false,
-           int            buttonID = -1)
-      : name(name), text(text), button(button), buttonID(buttonID), toolTip(toolTip)
-  {
-  }
 
-  QString name{};
-  QString text{};
-  bool    button{};
-  int     buttonID{};
-  QString toolTip{};
+class AVCodecWrapper
+{
+public:
+  AVCodecWrapper() = default;
+  AVCodecWrapper(AVCodec *codec, const LibraryVersions &libraryVersions);
+
+  explicit operator bool() const { return this->codec != nullptr; }
+  AVCodec *getAVCodec() { return this->codec; }
+
+  AVCodecID   getCodecID();
+  std::string getName();
+  std::string getLongName();
+
+private:
+  void update();
+
+  std::string                 name{};
+  std::string                 long_name{};
+  AVMediaType                 type;
+  AVCodecID                   id{AV_CODEC_ID_NONE};
+  int                         capabilities{0};
+  std::vector<AVRational>     supported_framerates;
+  std::vector<AVPixelFormat>  pix_fmts;
+  std::vector<int>            supported_samplerates;
+  std::vector<AVSampleFormat> sample_fmts;
+  std::vector<uint64_t>       channel_layouts;
+  uint8_t                     max_lowres{0};
+
+  AVCodec *       codec{nullptr};
+  LibraryVersions libraryVersions;
 };
 
-struct InfoData
-{
-  explicit InfoData(const QString &title = QString()) : title(title) {}
-  bool            isEmpty() const { return title.isEmpty() && items.isEmpty(); }
-  QString         title{};
-  QList<InfoItem> items{};
-};
-Q_DECLARE_METATYPE(InfoData)
+} // namespace LibFFmpeg

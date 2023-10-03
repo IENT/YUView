@@ -30,41 +30,24 @@
  *   along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#pragma once
+#include "Functions.h"
 
-#include <QList>
-#include <QMetaType>
-#include <QString>
-
-/*
- * An info item has a name, a text and an optional toolTip. These are used to show them in the
- * fileInfoWidget. For example: ["File Name", "file.yuv"] or ["Number Frames", "123"] Another option
- * is to show a button. If the user clicks on it, the callback function infoListButtonPressed() for
- * the corresponding playlist item is called.
- */
-struct InfoItem
+namespace LibFFmpeg
 {
-  InfoItem(const QString &name,
-           const QString &text,
-           const QString &toolTip  = QString(),
-           bool           button   = false,
-           int            buttonID = -1)
-      : name(name), text(text), button(button), buttonID(buttonID), toolTip(toolTip)
+
+std::vector<InfoItem> fromFFmpegLibrariesInfo(const std::vector<LibraryInfo> &librariesInfo)
+{
+  std::vector<InfoItem> items;
+
+  for (const auto &libInfo : librariesInfo)
   {
+    const auto name    = QString::fromStdString(libInfo.name);
+    const auto text    = QString::fromStdString(libInfo.path.filename().string());
+    const auto tooltip = QString::fromStdString(libInfo.path.string());
+    items.push_back(InfoItem(name, text, tooltip));
   }
 
-  QString name{};
-  QString text{};
-  bool    button{};
-  int     buttonID{};
-  QString toolTip{};
-};
+  return items;
+}
 
-struct InfoData
-{
-  explicit InfoData(const QString &title = QString()) : title(title) {}
-  bool            isEmpty() const { return title.isEmpty() && items.isEmpty(); }
-  QString         title{};
-  QList<InfoItem> items{};
-};
-Q_DECLARE_METATYPE(InfoData)
+} // namespace LibFFmpeg

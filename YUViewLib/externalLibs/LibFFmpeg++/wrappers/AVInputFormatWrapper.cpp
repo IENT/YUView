@@ -30,41 +30,55 @@
  *   along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#pragma once
+#include "AVInputFormatWrapper.h"
 
-#include <QList>
-#include <QMetaType>
-#include <QString>
-
-/*
- * An info item has a name, a text and an optional toolTip. These are used to show them in the
- * fileInfoWidget. For example: ["File Name", "file.yuv"] or ["Number Frames", "123"] Another option
- * is to show a button. If the user clicks on it, the callback function infoListButtonPressed() for
- * the corresponding playlist item is called.
- */
-struct InfoItem
+namespace LibFFmpeg
 {
-  InfoItem(const QString &name,
-           const QString &text,
-           const QString &toolTip  = QString(),
-           bool           button   = false,
-           int            buttonID = -1)
-      : name(name), text(text), button(button), buttonID(buttonID), toolTip(toolTip)
+
+namespace
+{
+
+typedef struct AVInputFormat_56_57_58_59_60
+{
+  const char *                    name;
+  const char *                    long_name;
+  int                             flags;
+  const char *                    extensions;
+  const struct AVCodecTag *const *codec_tag;
+  const AVClass *                 priv_class;
+  const char *                    mime_type;
+
+  // There is more but it is not part of the public ABI
+} AVInputFormat_56_57_58_59_60;
+
+} // namespace
+
+AVInputFormatWrapper::AVInputFormatWrapper(AVInputFormat *        avInputFormat,
+                                           const LibraryVersions &libraryVersions)
+{
+  this->avInputFormat   = avInputFormat;
+  this->libraryVersions = libraryVersions;
+  this->update();
+}
+
+void AVInputFormatWrapper::update()
+{
+  if (this->avInputFormat == nullptr)
+    return;
+
+  if (this->libraryVersions.avformat.major == 56 || //
+      this->libraryVersions.avformat.major == 57 || //
+      this->libraryVersions.avformat.major == 58 || //
+      this->libraryVersions.avformat.major == 59 || //
+      this->libraryVersions.avformat.major == 60)
   {
+    auto p           = reinterpret_cast<AVInputFormat_56_57_58_59_60 *>(this->avInputFormat);
+    this->name       = std::string(p->name);
+    this->long_name  = std::string(p->long_name);
+    this->flags      = p->flags;
+    this->extensions = std::string(p->extensions);
+    this->mime_type  = std::string(p->mime_type);
   }
+}
 
-  QString name{};
-  QString text{};
-  bool    button{};
-  int     buttonID{};
-  QString toolTip{};
-};
-
-struct InfoData
-{
-  explicit InfoData(const QString &title = QString()) : title(title) {}
-  bool            isEmpty() const { return title.isEmpty() && items.isEmpty(); }
-  QString         title{};
-  QList<InfoItem> items{};
-};
-Q_DECLARE_METATYPE(InfoData)
+} // namespace LibFFmpeg

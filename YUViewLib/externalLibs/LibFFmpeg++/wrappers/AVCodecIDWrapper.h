@@ -32,39 +32,44 @@
 
 #pragma once
 
-#include <QList>
-#include <QMetaType>
-#include <QString>
+#include <common/FFMpegLibrariesTypes.h>
 
-/*
- * An info item has a name, a text and an optional toolTip. These are used to show them in the
- * fileInfoWidget. For example: ["File Name", "file.yuv"] or ["Number Frames", "123"] Another option
- * is to show a button. If the user clicks on it, the callback function infoListButtonPressed() for
- * the corresponding playlist item is called.
- */
-struct InfoItem
+namespace LibFFmpeg
 {
-  InfoItem(const QString &name,
-           const QString &text,
-           const QString &toolTip  = QString(),
-           bool           button   = false,
-           int            buttonID = -1)
-      : name(name), text(text), button(button), buttonID(buttonID), toolTip(toolTip)
+
+class AVCodecIDWrapper
+{
+public:
+  AVCodecIDWrapper() {}
+  AVCodecIDWrapper(AVCodecID codecID, std::string codecName)
+      : codecID(codecID), codecName(codecName)
   {
   }
 
-  QString name{};
-  QString text{};
-  bool    button{};
-  int     buttonID{};
-  QString toolTip{};
+  std::string getCodecName() const { return this->codecName; }
+  AVCodecID   getCodecID() const { return this->codecID; }
+
+  void setCodecID(AVCodecID id) { this->codecID = id; }
+
+  void setTypeHEVC() { this->codecName = "hevc"; }
+  void setTypeAVC() { this->codecName = "h264"; }
+
+  bool isHEVC() const { return this->codecName == "hevc"; }
+  bool isAVC() const { return this->codecName == "h264"; }
+  bool isMpeg2() const { return this->codecName == "mpeg2video"; }
+  bool isAV1() const { return this->codecName == "av1"; }
+
+  bool isNone() const
+  {
+    return this->codecName.empty() || this->codecName == "unknown_codec" ||
+           this->codecName == "none";
+  }
+
+  bool operator==(const AVCodecIDWrapper &a) const { return codecID == a.codecID; }
+
+private:
+  AVCodecID   codecID{AV_CODEC_ID_NONE};
+  std::string codecName;
 };
 
-struct InfoData
-{
-  explicit InfoData(const QString &title = QString()) : title(title) {}
-  bool            isEmpty() const { return title.isEmpty() && items.isEmpty(); }
-  QString         title{};
-  QList<InfoItem> items{};
-};
-Q_DECLARE_METATYPE(InfoData)
+} // namespace LibFFmpeg

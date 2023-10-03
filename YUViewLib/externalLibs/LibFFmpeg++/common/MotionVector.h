@@ -32,39 +32,28 @@
 
 #pragma once
 
-#include <QList>
-#include <QMetaType>
-#include <QString>
+#include "FFMpegLibrariesTypes.h"
 
-/*
- * An info item has a name, a text and an optional toolTip. These are used to show them in the
- * fileInfoWidget. For example: ["File Name", "file.yuv"] or ["Number Frames", "123"] Another option
- * is to show a button. If the user clicks on it, the callback function infoListButtonPressed() for
- * the corresponding playlist item is called.
- */
-struct InfoItem
+namespace LibFFmpeg
 {
-  InfoItem(const QString &name,
-           const QString &text,
-           const QString &toolTip  = QString(),
-           bool           button   = false,
-           int            buttonID = -1)
-      : name(name), text(text), button(button), buttonID(buttonID), toolTip(toolTip)
-  {
-  }
 
-  QString name{};
-  QString text{};
-  bool    button{};
-  int     buttonID{};
-  QString toolTip{};
+struct MotionVector
+{
+  int32_t  source{};
+  uint8_t  w{};
+  uint8_t  h{};
+  int16_t  src_x{};
+  int16_t  src_y{};
+  int16_t  dst_x{};
+  int16_t  dst_y{};
+  uint64_t flags{};
+  // The following may be invalid (-1) in older ffmpeg versions)
+  int32_t  motion_x{};
+  int32_t  motion_y{};
+  uint16_t motion_scale{};
 };
 
-struct InfoData
-{
-  explicit InfoData(const QString &title = QString()) : title(title) {}
-  bool            isEmpty() const { return title.isEmpty() && items.isEmpty(); }
-  QString         title{};
-  QList<InfoItem> items{};
-};
-Q_DECLARE_METATYPE(InfoData)
+std::vector<MotionVector>
+parseMotionData(const LibraryVersions &libraryVersions, const uint8_t *data, const size_t dataSize);
+
+} // namespace LibFFmpeg
