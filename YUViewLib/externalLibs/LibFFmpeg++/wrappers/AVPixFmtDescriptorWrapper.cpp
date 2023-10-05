@@ -32,10 +32,6 @@
 
 #include "AVPixFmtDescriptorWrapper.h"
 
-using Subsampling    = video::yuv::Subsampling;
-using PlaneOrder     = video::yuv::PlaneOrder;
-using PixelFormatYUV = video::yuv::PixelFormatYUV;
-
 using namespace std::rel_ops;
 
 namespace LibFFmpeg
@@ -44,16 +40,16 @@ namespace LibFFmpeg
 namespace
 {
 
-typedef struct AVComponentDescriptor_54
+struct AVComponentDescriptor_54
 {
   uint16_t plane : 2;
   uint16_t step_minus1 : 3;
   uint16_t offset_plus1 : 3;
   uint16_t shift : 3;
   uint16_t depth_minus1 : 4;
-} AVComponentDescriptor_54;
+};
 
-typedef struct AVPixFmtDescriptor_54
+struct AVPixFmtDescriptor_54
 {
   const char *             name;
   uint8_t                  nb_components;
@@ -62,9 +58,9 @@ typedef struct AVPixFmtDescriptor_54
   uint8_t                  flags;
   AVComponentDescriptor_54 comp[4];
   const char *             alias;
-} AVPixFmtDescriptor_54;
+};
 
-typedef struct AVComponentDescriptor_55_56
+struct AVComponentDescriptor_55_56
 {
   int plane;
   int step;
@@ -76,9 +72,9 @@ typedef struct AVComponentDescriptor_55_56
   int step_minus1;
   int depth_minus1;
   int offset_plus1;
-} AVComponentDescriptor_55_56;
+};
 
-typedef struct AVPixFmtDescriptor_55
+struct AVPixFmtDescriptor_55
 {
   const char *                name;
   uint8_t                     nb_components;
@@ -87,9 +83,9 @@ typedef struct AVPixFmtDescriptor_55
   uint64_t                    flags;
   AVComponentDescriptor_55_56 comp[4];
   const char *                alias;
-} AVPixFmtDescriptor_55;
+};
 
-typedef struct AVPixFmtDescriptor_56
+struct AVPixFmtDescriptor_56
 {
   const char *                name;
   uint8_t                     nb_components;
@@ -98,18 +94,18 @@ typedef struct AVPixFmtDescriptor_56
   uint64_t                    flags;
   AVComponentDescriptor_55_56 comp[4];
   const char *                alias;
-} AVPixFmtDescriptor_56;
+};
 
-typedef struct AVComponentDescriptor_57
+struct AVComponentDescriptor_57
 {
   int plane;
   int step;
   int offset;
   int shift;
   int depth;
-} AVComponentDescriptor_57;
+};
 
-typedef struct AVPixFmtDescriptor_57_58
+struct AVPixFmtDescriptor_57_58
 {
   const char *             name;
   uint8_t                  nb_components;
@@ -118,9 +114,23 @@ typedef struct AVPixFmtDescriptor_57_58
   uint64_t                 flags;
   AVComponentDescriptor_57 comp[4];
   const char *             alias;
-} AVPixFmtDescriptor_57_58;
+};
 
-AVPixFmtDescriptorWrapper::Flags parseFlags(uint8_t flagsValue)
+AVPixFmtDescriptorWrapper::Flags parseFlags(const uint8_t flagsValue)
+{
+  AVPixFmtDescriptorWrapper::Flags flags;
+  flags.bigEndian      = flagsValue & (1 << 0);
+  flags.pallette       = flagsValue & (1 << 1);
+  flags.bitwisePacked  = flagsValue & (1 << 2);
+  flags.hwAccelerated  = flagsValue & (1 << 3);
+  flags.planar         = flagsValue & (1 << 4);
+  flags.rgb            = flagsValue & (1 << 5);
+  flags.pseudoPallette = flagsValue & (1 << 6);
+  flags.hasAlphaPlane  = flagsValue & (1 << 7);
+  return flags;
+}
+
+AVPixFmtDescriptorWrapper::Flags parseFlags(const uint64_t flagsValue)
 {
   AVPixFmtDescriptorWrapper::Flags flags;
   flags.bigEndian      = flagsValue & (1 << 0);
@@ -134,22 +144,6 @@ AVPixFmtDescriptorWrapper::Flags parseFlags(uint8_t flagsValue)
   flags.bayerPattern   = flagsValue & (1 << 8);
   flags.floatValues    = flagsValue & (1 << 9);
   return flags;
-}
-
-bool flagsSupported(const AVPixFmtDescriptorWrapper::Flags &flags)
-{
-  // We don't support any of these
-  if (flags.pallette)
-    return false;
-  if (flags.hwAccelerated)
-    return false;
-  if (flags.pseudoPallette)
-    return false;
-  if (flags.bayerPattern)
-    return false;
-  if (flags.floatValues)
-    return false;
-  return true;
 }
 
 } // namespace
@@ -238,134 +232,6 @@ AVPixFmtDescriptorWrapper::AVPixFmtDescriptorWrapper(AVPixFmtDescriptor *   desc
 
     aliases = std::string(p->alias);
   }
-}
-
-video::RawFormat AVPixFmtDescriptorWrapper::getRawFormat() const
-{
-  return this->flags.rgb ? video::RawFormat::RGB : video::RawFormat::YUV;
-}
-
-PixelFormatYUV AVPixFmtDescriptorWrapper::getPixelFormatYUV() const
-{
-  if (this->getRawFormat() == video::RawFormat::RGB || !flagsSupported(this->flags))
-    return {};
-
-  Subsampling subsampling;
-  if (this->nb_components == 1)
-    subsampling = Subsampling::YUV_400;
-  else if (this->log2_chroma_w == 0 && this->log2_chroma_h == 0)
-    subsampling = Subsampling::YUV_444;
-  else if (this->log2_chroma_w == 1 && this->log2_chroma_h == 0)
-    subsampling = Subsampling::YUV_422;
-  else if (this->log2_chroma_w == 1 && this->log2_chroma_h == 1)
-    subsampling = Subsampling::YUV_420;
-  else if (this->log2_chroma_w == 0 && this->log2_chroma_h == 1)
-    subsampling = Subsampling::YUV_440;
-  else if (this->log2_chroma_w == 2 && this->log2_chroma_h == 2)
-    subsampling = Subsampling::YUV_410;
-  else if (this->log2_chroma_w == 0 && this->log2_chroma_h == 2)
-    subsampling = Subsampling::YUV_411;
-  else
-    return {};
-
-  PlaneOrder planeOrder;
-  if (this->nb_components == 1)
-    planeOrder = PlaneOrder::YUV;
-  else if (this->nb_components == 3 && !this->flags.hasAlphaPlane)
-    planeOrder = PlaneOrder::YUV;
-  else if (this->nb_components == 4 && this->flags.hasAlphaPlane)
-    planeOrder = PlaneOrder::YUVA;
-  else
-    return {};
-
-  int bitsPerSample = comp[0].depth;
-  for (int i = 1; i < this->nb_components; i++)
-    if (comp[i].depth != bitsPerSample)
-      // Varying bit depths for components is not supported
-      return {};
-
-  if (this->flags.bitwisePacked || !this->flags.planar)
-    // Maybe this could be supported but I don't think that any decoder actually uses this.
-    // If you encounter a format that does not work because of this check please let us know.
-    return {};
-
-  return PixelFormatYUV(subsampling, bitsPerSample, planeOrder, this->flags.bigEndian);
-}
-
-video::rgb::PixelFormatRGB AVPixFmtDescriptorWrapper::getRGBPixelFormat() const
-{
-  if (this->getRawFormat() == video::RawFormat::YUV || !flagsSupported(this->flags))
-    return {};
-
-  auto bitsPerSample = comp[0].depth;
-  for (int i = 1; i < nb_components; i++)
-    if (comp[i].depth != bitsPerSample)
-      // Varying bit depths for components is not supported
-      return {};
-
-  if (this->flags.bitwisePacked)
-    // Maybe this could be supported but I don't think that any decoder actually uses this.
-    // If you encounter a format that does not work because of this check please let us know.
-    return {};
-
-  // The only possible order of planes seems to be RGB(A)
-  auto dataLayout = this->flags.planar ? video::DataLayout::Planar : video::DataLayout::Packed;
-  auto alphaMode =
-      this->flags.hasAlphaPlane ? video::rgb::AlphaMode::Last : video::rgb::AlphaMode::None;
-  auto endianness = this->flags.bigEndian ? video::Endianness::Big : video::Endianness::Little;
-
-  return video::rgb::PixelFormatRGB(
-      bitsPerSample, dataLayout, video::rgb::ChannelOrder::RGB, alphaMode, endianness);
-}
-
-bool AVPixFmtDescriptorWrapper::setValuesFromPixelFormatYUV(PixelFormatYUV fmt)
-{
-  const auto planeOrder = fmt.getPlaneOrder();
-  if (planeOrder == PlaneOrder::YVU || planeOrder == PlaneOrder::YVUA)
-    return false;
-
-  const auto subsampling = fmt.getSubsampling();
-  switch (subsampling)
-  {
-  case Subsampling::YUV_422:
-    this->log2_chroma_w = 1;
-    this->log2_chroma_h = 0;
-    break;
-  case Subsampling::YUV_420:
-    this->log2_chroma_w = 1;
-    this->log2_chroma_h = 1;
-    break;
-  case Subsampling::YUV_440:
-    this->log2_chroma_w = 0;
-    this->log2_chroma_h = 1;
-    break;
-  case Subsampling::YUV_410:
-    this->log2_chroma_w = 2;
-    this->log2_chroma_h = 2;
-    break;
-  case Subsampling::YUV_411:
-    this->log2_chroma_w = 0;
-    this->log2_chroma_h = 2;
-    break;
-  default:
-    break;
-  }
-
-  this->nb_components = (subsampling == Subsampling::YUV_400 ? 1 : 3);
-
-  this->flags.bigEndian     = fmt.isBigEndian();
-  this->flags.planar        = fmt.isPlanar();
-  this->flags.hasAlphaPlane = (planeOrder == PlaneOrder::YUVA);
-
-  for (int i = 0; i < this->nb_components; i++)
-  {
-    this->comp[i].plane  = i;
-    this->comp[i].step   = (fmt.getBitsPerSample() > 8) ? 2 : 1;
-    this->comp[i].offset = 0;
-    this->comp[i].shift  = 0;
-    this->comp[i].depth  = fmt.getBitsPerSample();
-  }
-  return true;
 }
 
 bool AVPixFmtDescriptorWrapper::Flags::operator==(

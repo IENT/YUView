@@ -31,103 +31,9 @@
  */
 
 #include "AVPacketWrapper.h"
-#include <parser/common/SubByteReaderLogging.h>
-#include <stdexcept>
 
 namespace LibFFmpeg
 {
-
-namespace
-{
-
-bool checkForRawNALFormat(QByteArray &data, bool threeByteStartCode)
-{
-  if (threeByteStartCode && data.length() > 3 && data.at(0) == (char)0 && data.at(1) == (char)0 &&
-      data.at(2) == (char)1)
-    return true;
-  if (!threeByteStartCode && data.length() > 4 && data.at(0) == (char)0 && data.at(1) == (char)0 &&
-      data.at(2) == (char)0 && data.at(3) == (char)1)
-    return true;
-  return false;
-}
-
-bool checkForMp4Format(QByteArray &data)
-{
-  // Check the ISO mp4 format: Parse the whole data and check if the size bytes per Unit are
-  // correct.
-  uint64_t posInData = 0;
-  while (posInData + 4 <= uint64_t(data.length()))
-  {
-    auto firstBytes = data.mid(posInData, 4);
-
-    unsigned size = (unsigned char)firstBytes.at(3);
-    size += (unsigned char)firstBytes.at(2) << 8;
-    size += (unsigned char)firstBytes.at(1) << 16;
-    size += (unsigned char)firstBytes.at(0) << 24;
-    posInData += 4;
-
-    if (size > 1'000'000'000)
-      // A Nal with more then 1GB? This is probably an error.
-      return false;
-    if (posInData + size > uint64_t(data.length()))
-      // Not enough data in the input array to read NAL unit.
-      return false;
-    posInData += size;
-  }
-  return true;
-}
-
-bool checkForObuFormat(QByteArray &data)
-{
-  // TODO: We already have an implementation of this in the parser
-  //       That should also be used here so we only have one place where we parse OBUs.
-  try
-  {
-    size_t posInData = 0;
-    while (posInData + 2 <= size_t(data.length()))
-    {
-      parser::reader::SubByteReaderLogging reader(
-          parser::reader::SubByteReaderLogging::convertToByteVector(data), nullptr, "", posInData);
-
-      QString bitsRead;
-      auto    forbiddenBit = reader.readFlag("obu_forbidden_bit");
-      if (forbiddenBit)
-        return false;
-      auto obu_type = reader.readBits("obu_type", 4);
-      if (obu_type == 0 || (obu_type >= 9 && obu_type <= 14))
-        // RESERVED obu types should not occur (highly unlikely)
-        return false;
-      auto obu_extension_flag = reader.readFlag("obu_extension_flag");
-      auto obu_has_size_field = reader.readFlag("obu_has_size_field");
-      reader.readFlag("obu_reserved_1bit", parser::reader::Options().withCheckEqualTo(1));
-
-      if (obu_extension_flag)
-      {
-        reader.readBits("temporal_id", 3);
-        reader.readBits("spatial_id", 2);
-        reader.readBits(
-            "extension_header_reserved_3bits", 3, parser::reader::Options().withCheckEqualTo(0));
-      }
-      size_t obu_size;
-      if (obu_has_size_field)
-      {
-        obu_size = reader.readLEB128("obu_size");
-      }
-      else
-      {
-        obu_size = (size_t(data.size()) - posInData) - 1 - (obu_extension_flag ? 1 : 0);
-      }
-      posInData += obu_size + reader.nrBytesRead();
-    }
-  }
-  catch (...)
-  {
-    return false;
-  }
-  return true;
-}
-
-} // namespace
 
 AVPacketWrapper::AVPacketWrapper(AVPacket *packet, const LibraryVersions &libraryVersions)
 {
@@ -315,46 +221,6 @@ int AVPacketWrapper::getDataSize()
 {
   this->update();
   return this->size;
-}
-
-PacketType AVPacketWrapper::getPacketType() const
-{
-  return this->packetType;
-}
-
-void AVPacketWrapper::setPacketType(PacketType packetType)
-{
-  this->packetType = packetType;
-}
-
-PacketDataFormat AVPacketWrapper::guessDataFormatFromData()
-{
-  if (this->packetFormat != PacketDataFormat::Unknown)
-    return this->packetFormat;
-
-  auto avpacketData = QByteArray::fromRawData((const char *)(getData()), getDataSize());
-  if (avpacketData.length() < 4)
-  {
-    this->packetFormat = PacketDataFormat::Unknown;
-    return this->packetFormat;
-  }
-
-  // AVPacket data can be in one of two formats:
-  // 1: The raw annexB format with start codes (0x00000001 or 0x000001)
-  // 2: ISO/IEC 14496-15 mp4 format: The first 4 bytes determine the size of the NAL unit followed
-  // by the payload We will try to guess the format of the data from the data in this AVPacket. This
-  // should always work unless a format is used which we did not encounter so far (which is not
-  // listed above) Also I think this should be identical for all packets in a bitstream.
-  if (checkForRawNALFormat(avpacketData, false))
-    this->packetFormat = PacketDataFormat::RawNAL;
-  else if (checkForMp4Format(avpacketData))
-    this->packetFormat = PacketDataFormat::MP4;
-  else if (checkForObuFormat(avpacketData))
-    this->packetFormat = PacketDataFormat::OBU;
-  else if (checkForRawNALFormat(avpacketData, true))
-    this->packetFormat = PacketDataFormat::RawNAL;
-
-  return this->packetFormat;
 }
 
 void AVPacketWrapper::update()

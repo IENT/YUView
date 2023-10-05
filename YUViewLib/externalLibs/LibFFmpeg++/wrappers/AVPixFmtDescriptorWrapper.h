@@ -34,9 +34,6 @@
 
 #include <common/FFMpegLibrariesTypes.h>
 
-#include <video/rgb/videoHandlerRGB.h>
-#include <video/yuv/videoHandlerYUV.h>
-
 namespace LibFFmpeg
 {
 
@@ -46,15 +43,10 @@ public:
   AVPixFmtDescriptorWrapper() = default;
   AVPixFmtDescriptorWrapper(AVPixFmtDescriptor *sideData, const LibraryVersions &libraryVersions);
 
-  video::RawFormat           getRawFormat() const;
-  video::yuv::PixelFormatYUV getPixelFormatYUV() const;
-  video::rgb::PixelFormatRGB getRGBPixelFormat() const;
-
-  bool setValuesFromPixelFormatYUV(video::yuv::PixelFormatYUV fmt);
-
-  // AVPixFmtDescriptor
   std::string name;
-  int         nb_components{}; ///< The number of components each pixel has, (1-4)
+
+  // Number of components per pixel. E.g. YUV has 3, RGBA has 4.
+  int nb_components{};
 
   /**
    * Amount to shift the luma width/height right to find the chroma width/height.

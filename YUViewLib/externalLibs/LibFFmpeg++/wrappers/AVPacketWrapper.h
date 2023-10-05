@@ -37,27 +37,6 @@
 namespace LibFFmpeg
 {
 
-// AVPacket data can be in one of two formats:
-// 1: The raw annexB format with start codes (0x00000001 or 0x000001)
-// 2: ISO/IEC 14496-15 mp4 format: The first 4 bytes determine the size of the NAL unit followed by
-// the payload
-enum class PacketDataFormat
-{
-  Unknown,
-  RawNAL,
-  MP4,
-  OBU
-};
-
-enum class PacketType
-{
-  VIDEO,
-  AUDIO,
-  SUBTITLE_DVB,
-  SUBTITLE_608,
-  OTHER
-};
-
 // AVPacket is part of avcodec. The definition is different for different major versions of avcodec.
 // These are the version independent functions to retrive data from AVPacket.
 // The size of this struct is part of the public API and must be correct
@@ -139,13 +118,6 @@ public:
   uint8_t * getData();
   int       getDataSize();
 
-  // This info is set externally (in FileSourceFFmpegFile) based on the stream info
-  PacketType getPacketType() const;
-  void       setPacketType(PacketType packetType);
-
-  // Guess the format. The actual guessing is only performed if the packetFormat is not set yet.
-  PacketDataFormat guessDataFormatFromData();
-
   explicit operator bool() const { return this->pkt != nullptr; };
 
 private:
@@ -164,11 +136,8 @@ private:
   int64_t           duration{};
   int64_t           pos{};
 
-  PacketType packetType{};
-
-  AVPacket *       pkt{};
-  LibraryVersions  libraryVersions{};
-  PacketDataFormat packetFormat{PacketDataFormat::Unknown};
+  AVPacket *      pkt{};
+  LibraryVersions libraryVersions{};
 };
 
 } // namespace LibFFmpeg
