@@ -47,7 +47,20 @@
 namespace LibFFmpeg
 {
 
-using Log = std::vector<std::string>;
+struct Size
+{
+  int width{};
+  int height{};
+};
+
+struct Ratio
+{
+  int num{};
+  int den{};
+};
+
+using ByteVector = std::vector<std::byte>;
+using Log        = std::vector<std::string>;
 
 // Some structs/enums which actual definition does not interest us.
 struct AVFormatContext;

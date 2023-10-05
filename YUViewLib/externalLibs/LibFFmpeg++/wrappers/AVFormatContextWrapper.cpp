@@ -259,8 +259,8 @@ void AVFormatContextWrapper::update()
     this->ctx_flags  = p->ctx_flags;
     this->nb_streams = p->nb_streams;
     for (unsigned i = 0; i < this->nb_streams; i++)
-      this->streams.append(AVStreamWrapper(p->streams[i], this->libraryVersions));
-    this->filename             = QString(p->filename);
+      this->streams.push_back(AVStreamWrapper(p->streams[i], this->libraryVersions));
+    this->filename             = std::string(p->filename);
     this->start_time           = p->start_time;
     this->duration             = p->duration;
     this->bit_rate             = p->bit_rate;
@@ -269,7 +269,7 @@ void AVFormatContextWrapper::update()
     this->flags                = p->flags;
     this->probesize            = p->probesize;
     this->max_analyze_duration = p->max_analyze_duration;
-    this->key                  = QString::fromLatin1((const char *)p->key, p->keylen);
+    this->key                  = std::string((const char *)p->key, p->keylen);
     this->nb_programs          = p->nb_programs;
     this->video_codec_id       = p->video_codec_id;
     this->audio_codec_id       = p->audio_codec_id;
@@ -287,8 +287,8 @@ void AVFormatContextWrapper::update()
     this->ctx_flags  = p->ctx_flags;
     this->nb_streams = p->nb_streams;
     for (unsigned i = 0; i < nb_streams; i++)
-      this->streams.append(AVStreamWrapper(p->streams[i], this->libraryVersions));
-    this->filename             = QString(p->filename);
+      this->streams.push_back(AVStreamWrapper(p->streams[i], this->libraryVersions));
+    this->filename             = std::string(p->filename);
     this->start_time           = p->start_time;
     this->duration             = p->duration;
     this->bit_rate             = p->bit_rate;
@@ -297,7 +297,7 @@ void AVFormatContextWrapper::update()
     this->flags                = p->flags;
     this->probesize            = p->probesize;
     this->max_analyze_duration = p->max_analyze_duration;
-    this->key                  = QString::fromLatin1((const char *)p->key, p->keylen);
+    this->key                  = std::string((const char *)p->key, p->keylen);
     this->nb_programs          = p->nb_programs;
     this->video_codec_id       = p->video_codec_id;
     this->audio_codec_id       = p->audio_codec_id;
@@ -315,8 +315,8 @@ void AVFormatContextWrapper::update()
     this->ctx_flags  = p->ctx_flags;
     this->nb_streams = p->nb_streams;
     for (unsigned i = 0; i < nb_streams; i++)
-      this->streams.append(AVStreamWrapper(p->streams[i], this->libraryVersions));
-    this->filename             = QString(p->filename);
+      this->streams.push_back(AVStreamWrapper(p->streams[i], this->libraryVersions));
+    this->filename             = std::string(p->filename);
     this->start_time           = p->start_time;
     this->duration             = p->duration;
     this->bit_rate             = p->bit_rate;
@@ -325,7 +325,7 @@ void AVFormatContextWrapper::update()
     this->flags                = p->flags;
     this->probesize            = p->probesize;
     this->max_analyze_duration = p->max_analyze_duration;
-    this->key                  = QString::fromLatin1((const char *)p->key, p->keylen);
+    this->key                  = std::string((const char *)p->key, p->keylen);
     this->nb_programs          = p->nb_programs;
     this->video_codec_id       = p->video_codec_id;
     this->audio_codec_id       = p->audio_codec_id;
@@ -344,8 +344,8 @@ void AVFormatContextWrapper::update()
     this->ctx_flags  = p->ctx_flags;
     this->nb_streams = p->nb_streams;
     for (unsigned i = 0; i < nb_streams; i++)
-      this->streams.append(AVStreamWrapper(p->streams[i], this->libraryVersions));
-    this->filename             = QString(p->url);
+      this->streams.push_back(AVStreamWrapper(p->streams[i], this->libraryVersions));
+    this->filename             = std::string(p->url);
     this->start_time           = p->start_time;
     this->duration             = p->duration;
     this->bit_rate             = p->bit_rate;
@@ -354,7 +354,7 @@ void AVFormatContextWrapper::update()
     this->flags                = p->flags;
     this->probesize            = p->probesize;
     this->max_analyze_duration = p->max_analyze_duration;
-    this->key                  = QString::fromLatin1((const char *)p->key, p->keylen);
+    this->key                  = std::string((const char *)p->key, p->keylen);
     this->nb_programs          = p->nb_programs;
     this->video_codec_id       = p->video_codec_id;
     this->audio_codec_id       = p->audio_codec_id;
@@ -368,47 +368,6 @@ void AVFormatContextWrapper::update()
   }
   else
     throw std::runtime_error("Invalid library version");
-}
-
-QStringPairList AVFormatContextWrapper::getInfoText()
-{
-  if (this->ctx == nullptr)
-    return {QStringPair("Format context not initialized", "")};
-
-  this->update();
-
-  QStringPairList info;
-  if (this->ctx_flags != 0)
-  {
-    QString flags;
-    if (this->ctx_flags & 1)
-      flags += QString("No-Header");
-    if (this->ctx_flags & 2)
-      flags += QString("Un-seekable");
-    info.append(QStringPair("Flags", flags));
-  }
-
-  AVRational time_base;
-  time_base.num = 1;
-  time_base.den = AV_TIME_BASE;
-
-  info.append(QStringPair("Number streams", QString::number(this->nb_streams)));
-  info.append(QStringPair("File name", this->filename));
-  info.append(QStringPair("Start time",
-                          QString("%1 (%2)")
-                              .arg(this->start_time)
-                              .arg(timestampToString(this->start_time, time_base))));
-  info.append(QStringPair(
-      "Duration",
-      QString("%1 (%2)").arg(this->duration).arg(timestampToString(duration, time_base))));
-  if (bit_rate > 0)
-    info.append(QStringPair("Bitrate", QString::number(this->bit_rate)));
-  info.append(QStringPair("Packet size", QString::number(this->packet_size)));
-  info.append(QStringPair("Max delay", QString::number(this->max_delay)));
-  info.append(QStringPair("Number programs", QString::number(this->nb_programs)));
-  info.append(QStringPair("Number chapters", QString::number(this->nb_chapters)));
-
-  return info;
 }
 
 } // namespace LibFFmpeg

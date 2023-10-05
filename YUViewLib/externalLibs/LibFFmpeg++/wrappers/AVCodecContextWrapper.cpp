@@ -31,7 +31,8 @@
  */
 
 #include "AVCodecContextWrapper.h"
-#include <stdexcept>
+
+#include "Functions.h"
 
 namespace LibFFmpeg
 {
@@ -468,7 +469,7 @@ AVRational AVCodecContextWrapper::getTimeBase()
   return this->time_base;
 }
 
-QByteArray AVCodecContextWrapper::getExtradata()
+ByteVector AVCodecContextWrapper::getExtradata()
 {
   this->update();
   return this->extradata;
@@ -483,7 +484,7 @@ void AVCodecContextWrapper::update()
   {
     auto p                        = reinterpret_cast<AVCodecContext_56 *>(this->codec);
     this->codec_type              = p->codec_type;
-    this->codec_name              = QString(p->codec_name);
+    this->codec_name              = std::string(p->codec_name);
     this->codec_id                = p->codec_id;
     this->codec_tag               = p->codec_tag;
     this->stream_codec_tag        = p->stream_codec_tag;
@@ -493,7 +494,7 @@ void AVCodecContextWrapper::update()
     this->compression_level       = p->compression_level;
     this->flags                   = p->flags;
     this->flags2                  = p->flags2;
-    this->extradata               = QByteArray((const char *)p->extradata, p->extradata_size);
+    this->extradata               = copyDataFromRawArray(p->extradata, p->extradata_size);
     this->time_base               = p->time_base;
     this->ticks_per_frame         = p->ticks_per_frame;
     this->delay                   = p->delay;
@@ -567,7 +568,7 @@ void AVCodecContextWrapper::update()
   {
     auto p                        = reinterpret_cast<AVCodecContext_57 *>(this->codec);
     this->codec_type              = p->codec_type;
-    this->codec_name              = QString(p->codec_name);
+    this->codec_name              = std::string(p->codec_name);
     this->codec_id                = p->codec_id;
     this->codec_tag               = p->codec_tag;
     this->stream_codec_tag        = p->stream_codec_tag;
@@ -577,7 +578,7 @@ void AVCodecContextWrapper::update()
     this->compression_level       = p->compression_level;
     this->flags                   = p->flags;
     this->flags2                  = p->flags2;
-    this->extradata               = QByteArray((const char *)p->extradata, p->extradata_size);
+    this->extradata               = copyDataFromRawArray(p->extradata, p->extradata_size);
     this->time_base               = p->time_base;
     this->ticks_per_frame         = p->ticks_per_frame;
     this->delay                   = p->delay;
@@ -651,7 +652,7 @@ void AVCodecContextWrapper::update()
   {
     auto p                        = reinterpret_cast<AVCodecContext_58 *>(this->codec);
     this->codec_type              = p->codec_type;
-    this->codec_name              = QString("Not supported in AVCodec >= 58");
+    this->codec_name              = std::string("Not supported in AVCodec >= 58");
     this->codec_id                = p->codec_id;
     this->codec_tag               = p->codec_tag;
     this->stream_codec_tag        = -1;
@@ -661,7 +662,7 @@ void AVCodecContextWrapper::update()
     this->compression_level       = p->compression_level;
     this->flags                   = p->flags;
     this->flags2                  = p->flags2;
-    this->extradata               = QByteArray((const char *)p->extradata, p->extradata_size);
+    this->extradata               = copyDataFromRawArray(p->extradata, p->extradata_size);
     this->time_base               = p->time_base;
     this->ticks_per_frame         = p->ticks_per_frame;
     this->delay                   = p->delay;
@@ -736,7 +737,7 @@ void AVCodecContextWrapper::update()
   {
     auto p                        = reinterpret_cast<AVCodecContext_59_60 *>(this->codec);
     this->codec_type              = p->codec_type;
-    this->codec_name              = QString("Not supported in AVCodec >= 58");
+    this->codec_name              = std::string("Not supported in AVCodec >= 58");
     this->codec_id                = p->codec_id;
     this->codec_tag               = p->codec_tag;
     this->stream_codec_tag        = -1;
@@ -746,7 +747,7 @@ void AVCodecContextWrapper::update()
     this->compression_level       = p->compression_level;
     this->flags                   = p->flags;
     this->flags2                  = p->flags2;
-    this->extradata               = QByteArray((const char *)p->extradata, p->extradata_size);
+    this->extradata               = copyDataFromRawArray(p->extradata, p->extradata_size);
     this->time_base               = p->time_base;
     this->ticks_per_frame         = p->ticks_per_frame;
     this->delay                   = p->delay;

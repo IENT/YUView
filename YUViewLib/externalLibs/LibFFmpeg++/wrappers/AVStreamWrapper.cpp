@@ -246,20 +246,28 @@ AVMediaType AVStreamWrapper::getCodecType()
   return this->codecpar.getCodecType();
 }
 
-QString AVStreamWrapper::getCodecTypeName()
+std::string AVStreamWrapper::getCodecTypeName()
 {
   auto type = this->codecpar.getCodecType();
-  if (type > AVMEDIA_TYPE_NB)
-    return {};
 
-  auto names = QStringList() << "Unknown"
-                             << "Video"
-                             << "Audio"
-                             << "Data"
-                             << "Subtitle"
-                             << "Attachment"
-                             << "NB";
-  return names[type + 1];
+  switch (type)
+  {
+  case -1:
+    return "Unknown";
+  case 0:
+    return "Video";
+  case 1:
+    return "Audio";
+  case 2:
+    return "Data";
+  case 3:
+    return "Subtitle";
+  case 4:
+    return "Attachment";
+
+  default:
+    return {};
+  }
 }
 
 AVCodecID AVStreamWrapper::getCodecID()
@@ -319,7 +327,7 @@ AVPixelFormat AVStreamWrapper::getPixelFormat()
   return this->codecpar.getPixelFormat();
 }
 
-QByteArray AVStreamWrapper::getExtradata()
+ByteVector AVStreamWrapper::getExtradata()
 {
   this->update();
   if (this->libraryVersions.avformat.major <= 56 || !this->codecpar)
@@ -434,87 +442,6 @@ void AVStreamWrapper::update()
   }
   else
     throw std::runtime_error("Invalid library version");
-}
-
-QStringPairList AVStreamWrapper::getInfoText(AVCodecIDWrapper &codecIdWrapper)
-{
-  if (this->stream == nullptr)
-    return {QStringPair("Error stream is null", "")};
-
-  this->update();
-
-  QStringPairList info;
-  info.append(QStringPair("Index", QString::number(this->index)));
-  info.append(QStringPair("ID", QString::number(this->id)));
-
-  info.append(QStringPair("Codec Type", getCodecTypeName()));
-  info.append(QStringPair("Codec ID", QString::number((int)getCodecID())));
-  info.append(QStringPair("Codec Name", QString::fromStdString(codecIdWrapper.getCodecName())));
-  info.append(
-      QStringPair("Time base", QString("%1/%2").arg(this->time_base.num).arg(this->time_base.den)));
-  info.append(QStringPair("Start Time",
-                          QString("%1 (%2)")
-                              .arg(this->start_time)
-                              .arg(timestampToString(this->start_time, this->time_base))));
-  info.append(QStringPair("Duration",
-                          QString("%1 (%2)")
-                              .arg(this->duration)
-                              .arg(timestampToString(this->duration, this->time_base))));
-  info.append(QStringPair("Number Frames", QString::number(this->nb_frames)));
-
-  if (this->disposition != 0)
-  {
-    QString dispText;
-    if (this->disposition & 0x0001)
-      dispText += QString("Default ");
-    if (this->disposition & 0x0002)
-      dispText += QString("Dub ");
-    if (this->disposition & 0x0004)
-      dispText += QString("Original ");
-    if (this->disposition & 0x0008)
-      dispText += QString("Comment ");
-    if (this->disposition & 0x0010)
-      dispText += QString("Lyrics ");
-    if (this->disposition & 0x0020)
-      dispText += QString("Karaoke ");
-    if (this->disposition & 0x0040)
-      dispText += QString("Forced ");
-    if (this->disposition & 0x0080)
-      dispText += QString("Hearing_Imparied ");
-    if (this->disposition & 0x0100)
-      dispText += QString("Visual_Impaired ");
-    if (this->disposition & 0x0200)
-      dispText += QString("Clean_Effects ");
-    if (this->disposition & 0x0400)
-      dispText += QString("Attached_Pic ");
-    if (this->disposition & 0x0800)
-      dispText += QString("Timed_Thumbnails ");
-    if (this->disposition & 0x1000)
-      dispText += QString("Captions ");
-    if (this->disposition & 0x2000)
-      dispText += QString("Descriptions ");
-    if (this->disposition & 0x4000)
-      dispText += QString("Metadata ");
-    if (this->disposition & 0x8000)
-      dispText += QString("Dependent ");
-    info.append(QStringPair("Disposition", dispText));
-  }
-
-  info.append(QStringPair(
-      "Sample Aspect Ratio",
-      QString("%1:%2").arg(this->sample_aspect_ratio.num).arg(this->sample_aspect_ratio.den)));
-
-  auto divFrameRate = 0.0;
-  if (this->avg_frame_rate.den > 0)
-    divFrameRate = double(this->avg_frame_rate.num) / double(this->avg_frame_rate.den);
-  info.append(QStringPair("Average Frame Rate",
-                          QString("%1/%2 (%3)")
-                              .arg(this->avg_frame_rate.num)
-                              .arg(this->avg_frame_rate.den)
-                              .arg(divFrameRate, 0, 'f', 2)));
-
-  info += this->codecpar.getInfoText();
-  return info;
 }
 
 } // namespace LibFFmpeg

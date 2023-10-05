@@ -52,14 +52,14 @@ public:
   Size            getSize();
   AVColorSpace    getColorspace();
   AVRational      getTimeBase();
-  QByteArray      getExtradata();
+  ByteVector      getExtradata();
 
 private:
   void update();
 
   // These are private. Use "update" to update them from the AVCodecContext
   AVMediaType   codec_type{};
-  QString       codec_name{};
+  std::string   codec_name{};
   AVCodecID     codec_id{};
   unsigned int  codec_tag{};
   unsigned int  stream_codec_tag{};
@@ -69,7 +69,7 @@ private:
   int           compression_level{};
   int           flags{};
   int           flags2{};
-  QByteArray    extradata{};
+  ByteVector    extradata{};
   AVRational    time_base{};
   int           ticks_per_frame{};
   int           delay{};

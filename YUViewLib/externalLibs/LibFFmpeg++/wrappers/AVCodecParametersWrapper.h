@@ -41,12 +41,11 @@ class AVCodecParametersWrapper
 public:
   AVCodecParametersWrapper() = default;
   AVCodecParametersWrapper(AVCodecParameters *p, const LibraryVersions &libraryVersions);
-  explicit        operator bool() const { return this->param != nullptr; }
-  QStringPairList getInfoText();
+  explicit operator bool() const { return this->param != nullptr; }
 
   AVMediaType   getCodecType();
   AVCodecID     getCodecID();
-  QByteArray    getExtradata();
+  ByteVector    getExtradata();
   Size          getSize();
   AVColorSpace  getColorspace();
   AVPixelFormat getPixelFormat();
@@ -57,7 +56,7 @@ public:
 
   void setAVMediaType(AVMediaType type);
   void setAVCodecID(AVCodecID id);
-  void setExtradata(QByteArray extradata);
+  void setExtradata(const ByteVector &extradata);
   void setSize(Size size);
   void setAVPixelFormat(AVPixelFormat f);
   void setProfileLevel(int profile, int level);
@@ -73,7 +72,7 @@ private:
   AVMediaType                   codec_type{};
   AVCodecID                     codec_id{};
   uint32_t                      codec_tag{};
-  QByteArray                    extradata{};
+  ByteVector                    extradata{};
   int                           format{};
   int64_t                       bit_rate{};
   int                           bits_per_coded_sample{};

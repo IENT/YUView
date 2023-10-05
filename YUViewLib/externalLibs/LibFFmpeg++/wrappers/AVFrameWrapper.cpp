@@ -171,7 +171,7 @@ int AVFrameWrapper::getHeight()
 Size AVFrameWrapper::getSize()
 {
   this->update();
-  return Size(width, height);
+  return Size({width, height});
 }
 
 int AVFrameWrapper::getPTS()
