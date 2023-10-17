@@ -588,7 +588,8 @@ bool FileSourceFFmpegFile::goToNextPacket(bool videoPacketsOnly)
                (int)this->currentPacket.getDTS(),
                this->currentPacket.getFlagKeyframe() ? " - keyframe" : "");
 
-  if (this->packetDataFormat == PacketDataFormat::Unknown)
+  if (this->currentPacket.getPacketType() == PacketType::VIDEO &&
+      this->packetDataFormat == PacketDataFormat::Unknown)
     // This is the first video package that we find and we don't know what the format of the packet
     // data is. Guess the format from the data in the first package This format should not change
     // from packet to packet

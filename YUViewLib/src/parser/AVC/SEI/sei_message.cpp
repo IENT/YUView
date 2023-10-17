@@ -151,6 +151,12 @@ SEIParsingResult sei_message::parse(reader::SubByteReaderLogging &          read
   // When reading the data above, emulation prevention was alread removed.
   this->payloadReader.disableEmulationPrevention();
 
+  if (payloadNameMap.count(this->payloadType) > 0)
+  {
+    const auto payloadTypeName = payloadNameMap.at(this->payloadType);
+    subLevel.updateSubLevelName("sei_message() - " + payloadTypeName);
+  }
+
   return this->parsePayloadData(false, spsMap, associatedSPS);
 }
 

@@ -93,7 +93,8 @@ public:
 
 private:
   friend class SubByteReaderLoggingSubLevel;
-  void addLogSubLevel(std::string name);
+  void addLogSubLevel(const std::string &name);
+  void updateCurrentLevelName(const std::string &name);
   void removeLogSubLevel();
 
   void logExceptionAndThrowError [[noreturn]] (const std::exception &ex, const std::string &when);
@@ -111,6 +112,8 @@ public:
   SubByteReaderLoggingSubLevel() = default;
   SubByteReaderLoggingSubLevel(SubByteReaderLogging &reader, std::string name);
   ~SubByteReaderLoggingSubLevel();
+
+  void updateSubLevelName(const std::string &name);
 
 private:
   SubByteReaderLogging *r{};

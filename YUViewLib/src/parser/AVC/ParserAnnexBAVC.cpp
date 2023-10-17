@@ -472,73 +472,82 @@ ParserAnnexBAVC::parseAndAddNALUnit(int                                         
     curSlicePoc = currentSliceData->poc;
   if (this->curFrameData && this->auDelimiterDetector.isStartOfNewAU(nalAVC, curSlicePoc))
   {
-    // Save the info of the last frame
-    if (!this->addFrameToList(*this->curFrameData->poc,
-                              this->curFrameData->fileStartEndPos,
-                              this->curFrameData->isRandomAccess))
+    if (!this->curFrameData->poc)
     {
-      throw std::logic_error("Error - POC " + std::to_string(*this->curFrameData->poc) +
-                             " already in the POC list");
+      DEBUG_AVC("ParserAnnexBAVC::parseAndAddNALUnit current frame POC not set");
     }
-    if (this->curFrameData->fileStartEndPos)
-      DEBUG_AVC("ParserAnnexBAVC::parseAndAddNALUnit Adding start/end "
-                << this->curFrameData->fileStartEndPos->first << "/"
-                << this->curFrameData->fileStartEndPos->second << " - POC "
-                << *this->curFrameData->poc << (this->curFrameData->isRandomAccess ? " - ra" : ""));
     else
-      DEBUG_AVC("ParserAnnexBAVC::parseAndAddNALUnit Adding start/end NA/NA - POC "
-                << *this->curFrameData->poc << (this->curFrameData->isRandomAccess ? " - ra" : ""));
-
-    if (this->sizeCurrentAU > 0)
     {
-      DEBUG_AVC("ParserAnnexBAVC::parseAndAddNALUnit Start of new AU. Adding bitrate "
-                << this->sizeCurrentAU);
-
-      BitratePlotModel::BitrateEntry entry;
-      if (bitrateEntry)
+      // Save the info of the last frame
+      if (!this->addFrameToList(*this->curFrameData->poc,
+                                this->curFrameData->fileStartEndPos,
+                                this->curFrameData->isRandomAccess))
       {
-        entry.pts      = bitrateEntry->pts;
-        entry.dts      = bitrateEntry->dts;
-        entry.duration = bitrateEntry->duration;
+        throw std::logic_error("Error - POC " + std::to_string(*this->curFrameData->poc) +
+                               " already in the POC list");
       }
+      if (this->curFrameData->fileStartEndPos)
+        DEBUG_AVC("ParserAnnexBAVC::parseAndAddNALUnit Adding start/end "
+                  << this->curFrameData->fileStartEndPos->first << "/"
+                  << this->curFrameData->fileStartEndPos->second << " - POC "
+                  << *this->curFrameData->poc
+                  << (this->curFrameData->isRandomAccess ? " - ra" : ""));
       else
-      {
-        entry.pts          = this->lastFramePOC;
-        entry.dts          = this->counterAU;
-        entry.duration     = 1;
-        this->lastFramePOC = *this->curFrameData->poc;
-      }
-      entry.bitrate  = this->sizeCurrentAU;
-      entry.keyframe = this->currentAUAllSlicesIntra;
-      entry.frameType =
-          QString::fromStdString(convertSliceCountsToString(this->currentAUSliceTypes));
-      parseResult.bitrateEntry = entry;
+        DEBUG_AVC("ParserAnnexBAVC::parseAndAddNALUnit Adding start/end NA/NA - POC "
+                  << *this->curFrameData->poc
+                  << (this->curFrameData->isRandomAccess ? " - ra" : ""));
 
-      if (this->lastBufferingPeriodSEI && this->lastPicTimingSEI)
+      if (this->sizeCurrentAU > 0)
       {
-        try
+        DEBUG_AVC("ParserAnnexBAVC::parseAndAddNALUnit Start of new AU. Adding bitrate "
+                  << this->sizeCurrentAU);
+
+        BitratePlotModel::BitrateEntry entry;
+        if (bitrateEntry)
         {
-          if (this->activeParameterSets.spsMap.size() > 0)
-            this->hrd.addAU(this->sizeCurrentAU * 8,
-                            *this->curFrameData->poc,
-                            this->activeParameterSets.spsMap[0],
-                            this->lastBufferingPeriodSEI,
-                            this->lastPicTimingSEI,
-                            this->getHRDPlotModel());
+          entry.pts      = bitrateEntry->pts;
+          entry.dts      = bitrateEntry->dts;
+          entry.duration = bitrateEntry->duration;
         }
-        catch (const std::exception &e)
+        else
         {
-          specificDescription += " HRD Error: " + std::string(e.what());
+          entry.pts          = this->lastFramePOC;
+          entry.dts          = this->counterAU;
+          entry.duration     = 1;
+          this->lastFramePOC = *this->curFrameData->poc;
+        }
+        entry.bitrate  = this->sizeCurrentAU;
+        entry.keyframe = this->currentAUAllSlicesIntra;
+        entry.frameType =
+            QString::fromStdString(convertSliceCountsToString(this->currentAUSliceTypes));
+        parseResult.bitrateEntry = entry;
+
+        if (this->lastBufferingPeriodSEI && this->lastPicTimingSEI)
+        {
+          try
+          {
+            if (this->activeParameterSets.spsMap.size() > 0)
+              this->hrd.addAU(this->sizeCurrentAU * 8,
+                              *this->curFrameData->poc,
+                              this->activeParameterSets.spsMap[0],
+                              this->lastBufferingPeriodSEI,
+                              this->lastPicTimingSEI,
+                              this->getHRDPlotModel());
+          }
+          catch (const std::exception &e)
+          {
+            specificDescription += " HRD Error: " + std::string(e.what());
+          }
         }
       }
+      this->sizeCurrentAU = 0;
+      this->counterAU++;
+      this->currentAUAllSlicesIntra = true;
+      this->currentAUSliceTypes.clear();
+      this->currentAUAssociatedSPS.reset();
+      this->currentAUPartitionASPS.reset();
+      this->curFrameData.reset();
     }
-    this->sizeCurrentAU = 0;
-    this->counterAU++;
-    this->currentAUAllSlicesIntra = true;
-    this->currentAUSliceTypes.clear();
-    this->currentAUAssociatedSPS.reset();
-    this->currentAUPartitionASPS.reset();
-    this->curFrameData.reset();
   }
   curFrameData =
       getFrameDataWithUpdatedPosition(curFrameData, nalStartEndPosFile, currentSliceData);

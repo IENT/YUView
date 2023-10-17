@@ -160,13 +160,21 @@ SubByteReaderLogging::SubByteReaderLogging(const ByteVector &        inArr,
   }
 }
 
-void SubByteReaderLogging::addLogSubLevel(const std::string name)
+void SubByteReaderLogging::addLogSubLevel(const std::string &name)
 {
   if (!this->currentTreeLevel)
     return;
   assert(!name.empty());
   this->itemHierarchy.push(this->currentTreeLevel);
   this->currentTreeLevel = this->itemHierarchy.top()->createChildItem(name);
+}
+
+void SubByteReaderLogging::updateCurrentLevelName(const std::string &name)
+{
+  if (!this->currentTreeLevel)
+    return;
+  assert(!name.empty());
+  this->currentTreeLevel->setName(name);
 }
 
 void SubByteReaderLogging::removeLogSubLevel()
@@ -349,6 +357,12 @@ SubByteReaderLoggingSubLevel::~SubByteReaderLoggingSubLevel()
 {
   if (this->r != nullptr)
     this->r->removeLogSubLevel();
+}
+
+void SubByteReaderLoggingSubLevel::updateSubLevelName(const std::string &name)
+{
+  if (this->r != nullptr)
+    this->r->updateCurrentLevelName(name);
 }
 
 } // namespace parser::reader
