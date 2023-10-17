@@ -70,6 +70,8 @@ public:
     return ss.str();
   }
 
+  void setName(const std::string &name) { this->name = name; }
+
   int getStreamIndex() const
   {
     if (this->streamIndex >= 0)

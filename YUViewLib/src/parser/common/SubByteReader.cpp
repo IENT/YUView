@@ -275,7 +275,7 @@ bool SubByteReader::more_rbsp_data() const
     posBytes++;
     posBits = 0;
   }
-  else
+  else if (posBits != 0)
   {
     // Check the remainder of the current byte
     unsigned char c = this->byteVector[posBytes];
@@ -300,7 +300,7 @@ bool SubByteReader::more_rbsp_data() const
       return true;
     else if (!terminatingBitFound && (c == 128))
       terminatingBitFound = true;
-    else
+    else if (c != 0)
       return true;
     posBytes++;
   }
