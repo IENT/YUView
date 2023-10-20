@@ -30,41 +30,31 @@
  *   along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#pragma once
+#include "SharedLibraryLoader.h"
 
-#include <QList>
-#include <QMetaType>
-#include <QString>
-
-/*
- * An info item has a name, a text and an optional toolTip. These are used to show them in the
- * fileInfoWidget. For example: ["File Name", "file.yuv"] or ["Number Frames", "123"] Another option
- * is to show a button. If the user clicks on it, the callback function infoListButtonPressed() for
- * the corresponding playlist item is called.
- */
-struct InfoItem
+namespace LibFFmpeg
 {
-  InfoItem(const QString &name,
-           const QString &text,
-           const QString &toolTip  = QString(),
-           bool           button   = false,
-           int            buttonID = -1)
-      : name(name), text(text), button(button), buttonID(buttonID), toolTip(toolTip)
-  {
-  }
 
-  QString name{};
-  QString text{};
-  bool    button{};
-  int     buttonID{};
-  QString toolTip{};
+void SharedLibraryLoader::unload()
+{
+  this->library.unload();
+  this->libraryPath.clear();
 };
 
-struct InfoData
+bool SharedLibraryLoader::load(std::filesystem::path pathToLib)
 {
-  explicit InfoData(const QString &title = QString()) : title(title) {}
-  bool            isEmpty() const { return title.isEmpty() && items.isEmpty(); }
-  QString         title{};
-  QList<InfoItem> items{};
+  const auto filePathQString = QString::fromStdString(pathToLib.string());
+  this->library.setFileName(filePathQString);
+  const auto success = this->library.load();
+  if (success)
+    this->libraryPath = pathToLib;
+  return success;
 };
-Q_DECLARE_METATYPE(InfoData)
+
+FunctionPointer SharedLibraryLoader::resolve(std::string functionName)
+{
+  auto functionPointer = this->library.resolve(functionName.c_str());
+  return functionPointer;
+};
+
+} // namespace LibFFmpeg

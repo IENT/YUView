@@ -34,6 +34,7 @@
 
 #include <common/Typedef.h>
 
+#include <filesystem>
 #include <optional>
 
 namespace functions
@@ -61,6 +62,8 @@ QStringList getThemeColors(QString themeName);
 // From Qt 5.10 there is a built in function (QLocale::formattedDataSize). But we want to be 5.9
 // compatible.
 QString formatDataSize(double size, bool isBits = false);
+
+std::vector<std::filesystem::path> getDefaultLibrarySearchPaths();
 
 QStringList toQStringList(const std::vector<std::string> &stringVec);
 std::string toLower(std::string str);

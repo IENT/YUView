@@ -32,39 +32,21 @@
 
 #pragma once
 
-#include <QList>
-#include <QMetaType>
-#include <QString>
+#include <common/FFMpegLibrariesTypes.h>
 
-/*
- * An info item has a name, a text and an optional toolTip. These are used to show them in the
- * fileInfoWidget. For example: ["File Name", "file.yuv"] or ["Number Frames", "123"] Another option
- * is to show a button. If the user clicks on it, the callback function infoListButtonPressed() for
- * the corresponding playlist item is called.
- */
-struct InfoItem
+namespace LibFFmpeg
 {
-  InfoItem(const QString &name,
-           const QString &text,
-           const QString &toolTip  = QString(),
-           bool           button   = false,
-           int            buttonID = -1)
-      : name(name), text(text), button(button), buttonID(buttonID), toolTip(toolTip)
-  {
-  }
 
-  QString name{};
-  QString text{};
-  bool    button{};
-  int     buttonID{};
-  QString toolTip{};
-};
-
-struct InfoData
+inline ByteVector copyDataFromRawArray(const uint8_t *inputData, const int inputDataSize)
 {
-  explicit InfoData(const QString &title = QString()) : title(title) {}
-  bool            isEmpty() const { return title.isEmpty() && items.isEmpty(); }
-  QString         title{};
-  QList<InfoItem> items{};
-};
-Q_DECLARE_METATYPE(InfoData)
+  assert(inputDataSize >= 0);
+
+  ByteVector data;
+  data.resize(inputDataSize);
+
+  const auto inputDataAsBytes = reinterpret_cast<const std::byte *>(inputData);
+  std::copy(inputDataAsBytes, inputDataAsBytes + inputDataSize, data.begin());
+  return data;
+}
+
+} // namespace LibFFmpeg

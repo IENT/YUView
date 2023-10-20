@@ -32,39 +32,34 @@
 
 #pragma once
 
-#include <QList>
-#include <QMetaType>
-#include <QString>
+#include <common/Expected.h>
+#include <common/FFMpegLibrariesTypes.h>
+#include <libHandling/SharedLibraryLoader.h>
 
-/*
- * An info item has a name, a text and an optional toolTip. These are used to show them in the
- * fileInfoWidget. For example: ["File Name", "file.yuv"] or ["Number Frames", "123"] Another option
- * is to show a button. If the user clicks on it, the callback function infoListButtonPressed() for
- * the corresponding playlist item is called.
- */
-struct InfoItem
+namespace LibFFmpeg::functions
 {
-  InfoItem(const QString &name,
-           const QString &text,
-           const QString &toolTip  = QString(),
-           bool           button   = false,
-           int            buttonID = -1)
-      : name(name), text(text), button(button), buttonID(buttonID), toolTip(toolTip)
-  {
-  }
 
-  QString name{};
-  QString text{};
-  bool    button{};
-  int     buttonID{};
-  QString toolTip{};
+struct AvUtilFunctions
+{
+  std::function<unsigned()>            avutil_version;
+  std::function<AVFrame *()>           av_frame_alloc;
+  std::function<void(AVFrame **frame)> av_frame_free;
+  std::function<void(size_t size)>     av_mallocz;
+  std::function<int(AVDictionary **pm, const char *key, const char *value, int flags)> av_dict_set;
+  std::function<AVDictionaryEntry *(
+      AVDictionary *m, const char *key, const AVDictionaryEntry *prev, int flags)>
+      av_dict_get;
+  std::function<AVFrameSideData *(const AVFrame *frame, AVFrameSideDataType type)>
+                                                                            av_frame_get_side_data;
+  std::function<AVDictionary *(const AVFrame *frame)>                       av_frame_get_metadata;
+  std::function<void(void (*callback)(void *, int, const char *, va_list))> av_log_set_callback;
+  std::function<void(int level)>                                            av_log_set_level;
+  std::function<AVPixFmtDescriptor *(AVPixelFormat pix_fmt)>                av_pix_fmt_desc_get;
+  std::function<AVPixFmtDescriptor *(const AVPixFmtDescriptor *prev)>       av_pix_fmt_desc_next;
+  std::function<AVPixelFormat(const AVPixFmtDescriptor *desc)>              av_pix_fmt_desc_get_id;
 };
 
-struct InfoData
-{
-  explicit InfoData(const QString &title = QString()) : title(title) {}
-  bool            isEmpty() const { return title.isEmpty() && items.isEmpty(); }
-  QString         title{};
-  QList<InfoItem> items{};
-};
-Q_DECLARE_METATYPE(InfoData)
+std::optional<AvUtilFunctions> tryBindAVUtilFunctionsFromLibrary(SharedLibraryLoader &lib,
+                                                                 Log &                log);
+
+} // namespace LibFFmpeg::functions

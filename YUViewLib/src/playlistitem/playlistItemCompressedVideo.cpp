@@ -472,12 +472,10 @@ InfoData playlistItemCompressedVideo::getInfo() const
       InfoItem("Reader", QString::fromStdString(InputFormatMapper.getName(this->inputFormat))));
   if (this->inputFileFFmpegLoading)
   {
-    auto l = this->inputFileFFmpegLoading->getLibraryPaths();
-    if (l.length() % 3 == 0)
-    {
-      for (int i = 0; i < l.length() / 3; i++)
-        info.items.append(InfoItem(l[i * 3], l[i * 3 + 1], l[i * 3 + 2]));
-    }
+    const auto infoItems =
+        InfoItem::fromFFmpegLibrariesInfo(this->inputFileFFmpegLoading->getLibrariesInfo());
+    for (const auto &item : infoItems)
+      info.items.append(item);
   }
   if (!this->unresolvableError)
   {

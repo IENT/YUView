@@ -30,41 +30,40 @@
  *   along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#pragma once
+#include "SwResampleFunctions.h"
 
-#include <QList>
-#include <QMetaType>
-#include <QString>
+#include "Functions.h"
 
-/*
- * An info item has a name, a text and an optional toolTip. These are used to show them in the
- * fileInfoWidget. For example: ["File Name", "file.yuv"] or ["Number Frames", "123"] Another option
- * is to show a button. If the user clicks on it, the callback function infoListButtonPressed() for
- * the corresponding playlist item is called.
- */
-struct InfoItem
+namespace LibFFmpeg::functions
 {
-  InfoItem(const QString &name,
-           const QString &text,
-           const QString &toolTip  = QString(),
-           bool           button   = false,
-           int            buttonID = -1)
-      : name(name), text(text), button(button), buttonID(buttonID), toolTip(toolTip)
+
+std::optional<SwResampleFunctions> tryBindSwResampleFunctionsFromLibrary(SharedLibraryLoader &lib,
+                                                                         Log &                log)
+{
+  if (!lib)
   {
+    log.push_back("Binding of swResample functions failed. Library is not loaded.");
+    return {};
   }
 
-  QString name{};
-  QString text{};
-  bool    button{};
-  int     buttonID{};
-  QString toolTip{};
-};
+  SwResampleFunctions functions;
 
-struct InfoData
-{
-  explicit InfoData(const QString &title = QString()) : title(title) {}
-  bool            isEmpty() const { return title.isEmpty() && items.isEmpty(); }
-  QString         title{};
-  QList<InfoItem> items{};
-};
-Q_DECLARE_METATYPE(InfoData)
+  lib.tryResolveFunction(functions.swresample_version, "swresample_version");
+
+  std::vector<std::string> missingFunctions;
+
+  checkForMissingFunctionAndLog(
+      functions.swresample_version, "swresample_version", missingFunctions, log);
+
+  if (!missingFunctions.empty())
+  {
+    log.push_back("Binding swResample functions failed. Missing functions: " +
+                  to_string(missingFunctions));
+    return {};
+  }
+
+  log.push_back("Binding of swPresample functions successful.");
+  return functions;
+}
+
+} // namespace LibFFmpeg::functions

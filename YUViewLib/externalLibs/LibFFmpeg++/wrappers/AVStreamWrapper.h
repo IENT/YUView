@@ -32,39 +32,61 @@
 
 #pragma once
 
-#include <QList>
-#include <QMetaType>
-#include <QString>
+#include "AVCodecContextWrapper.h"
+#include "AVCodecIDWrapper.h"
+#include "AVCodecParametersWrapper.h"
 
-/*
- * An info item has a name, a text and an optional toolTip. These are used to show them in the
- * fileInfoWidget. For example: ["File Name", "file.yuv"] or ["Number Frames", "123"] Another option
- * is to show a button. If the user clicks on it, the callback function infoListButtonPressed() for
- * the corresponding playlist item is called.
- */
-struct InfoItem
+#include <common/FFMpegLibrariesTypes.h>
+
+namespace LibFFmpeg
 {
-  InfoItem(const QString &name,
-           const QString &text,
-           const QString &toolTip  = QString(),
-           bool           button   = false,
-           int            buttonID = -1)
-      : name(name), text(text), button(button), buttonID(buttonID), toolTip(toolTip)
+
+class AVStreamWrapper
+{
+public:
+  AVStreamWrapper() {}
+  AVStreamWrapper(AVStream *src_str, const LibraryVersions &libraryVersions);
+
+  explicit operator bool() const { return this->stream != nullptr; };
+
+  AVMediaType              getCodecType();
+  std::string              getCodecTypeName();
+  AVCodecID                getCodecID();
+  AVCodecContextWrapper &  getCodec();
+  AVRational               getAvgFrameRate();
+  AVRational               getTimeBase();
+  Size                     getFrameSize();
+  AVColorSpace             getColorspace();
+  AVPixelFormat            getPixelFormat();
+  ByteVector               getExtradata();
+  int                      getIndex();
+  AVCodecParametersWrapper getCodecpar();
+
+private:
+  void update();
+
+  // These are private. Use "update" to update them from the AVFormatContext
+  int                   index{};
+  int                   id{};
+  AVCodecContextWrapper codec{};
+  AVRational            time_base{};
+  int64_t               start_time{};
+  int64_t               duration{};
+  int64_t               nb_frames{};
+  int                   disposition{};
+  enum AVDiscard        discard
   {
-  }
+  };
+  AVRational sample_aspect_ratio{};
+  AVRational avg_frame_rate{};
+  int        nb_side_data{};
+  int        event_flags{};
 
-  QString name{};
-  QString text{};
-  bool    button{};
-  int     buttonID{};
-  QString toolTip{};
+  // The AVCodecParameters are present from avformat major version 57 and up.
+  AVCodecParametersWrapper codecpar{};
+
+  AVStream *      stream{};
+  LibraryVersions libraryVersions{};
 };
 
-struct InfoData
-{
-  explicit InfoData(const QString &title = QString()) : title(title) {}
-  bool            isEmpty() const { return title.isEmpty() && items.isEmpty(); }
-  QString         title{};
-  QList<InfoItem> items{};
-};
-Q_DECLARE_METATYPE(InfoData)
+} // namespace LibFFmpeg

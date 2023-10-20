@@ -32,39 +32,37 @@
 
 #pragma once
 
-#include <QList>
-#include <QMetaType>
-#include <QString>
+#include <libHandling/FFmpegLibrariesInterface.h>
 
-/*
- * An info item has a name, a text and an optional toolTip. These are used to show them in the
- * fileInfoWidget. For example: ["File Name", "file.yuv"] or ["Number Frames", "123"] Another option
- * is to show a button. If the user clicks on it, the callback function infoListButtonPressed() for
- * the corresponding playlist item is called.
- */
-struct InfoItem
+#include <memory>
+
+namespace LibFFmpeg
 {
-  InfoItem(const QString &name,
-           const QString &text,
-           const QString &toolTip  = QString(),
-           bool           button   = false,
-           int            buttonID = -1)
-      : name(name), text(text), button(button), buttonID(buttonID), toolTip(toolTip)
-  {
-  }
 
-  QString name{};
-  QString text{};
-  bool    button{};
-  int     buttonID{};
-  QString toolTip{};
+struct LibrariesLoadingResult
+{
+  std::shared_ptr<FFmpegLibrariesInterface> librariesInterface{};
+  std::string                               errorMessage{};
+  std::vector<std::string>                  loadingLog{};
+
+  explicit operator bool() const { return this->librariesInterface.get() != nullptr; };
 };
 
-struct InfoData
+class FFmpegLibrariesInterfaceBuilder
 {
-  explicit InfoData(const QString &title = QString()) : title(title) {}
-  bool            isEmpty() const { return title.isEmpty() && items.isEmpty(); }
-  QString         title{};
-  QList<InfoItem> items{};
+public:
+  FFmpegLibrariesInterfaceBuilder() = default;
+
+  LibrariesLoadingResult tryLoadingOfLibraries();
+
+  FFmpegLibrariesInterfaceBuilder &
+  withAdditionalSearchPaths(const std::vector<std::filesystem::path> &additionalPath);
+  FFmpegLibrariesInterfaceBuilder &withForcedReload();
+
+private:
+  std::vector<std::filesystem::path>      searchPaths{};
+  bool                                    forceReload{false};
+  std::weak_ptr<FFmpegLibrariesInterface> lastLoadedLibraries{};
 };
-Q_DECLARE_METATYPE(InfoData)
+
+} // namespace LibFFmpeg

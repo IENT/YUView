@@ -68,11 +68,12 @@ public:
   int getVideoStreamIndex() override { return videoStreamIndex; }
 
 private:
-  FFmpeg::AVCodecIDWrapper codecID;
+  LibFFmpeg::AVCodecIDWrapper codecID;
 
   bool parseExtradata(ByteVector &extradata);
   void parseMetadata(const StringPairVec &metadata);
-  bool parseAVPacket(unsigned packetID, unsigned streamPacketID, FFmpeg::AVPacketWrapper &packet);
+  bool
+  parseAVPacket(unsigned packetID, unsigned streamPacketID, LibFFmpeg::AVPacketWrapper &packet);
 
   // Used for parsing if the packets contain an annexB file that we can parse.
   std::unique_ptr<ParserAnnexB> annexBParser;
@@ -87,15 +88,15 @@ private:
   // Parse all NAL units in data using the AnnexB parser
   std::map<std::string, unsigned>
   parseByteVectorAnnexBStartCodes(ByteVector &                   data,
-                                  FFmpeg::PacketDataFormat       dataFormat,
+                                  LibFFmpeg::PacketDataFormat    dataFormat,
                                   BitratePlotModel::BitrateEntry packetBitrateEntry,
                                   std::shared_ptr<TreeItem>      item);
 
   // When the parser is used in the bitstream analysis window, the runParsingOfFile is used and
   // we update this list while parsing the file.
-  QList<QStringPairList>    streamInfoAllStreams;
-  QList<FFmpeg::AVRational> timeBaseAllStreams;
-  StringVec                 shortStreamInfoAllStreams;
+  QList<QStringPairList>       streamInfoAllStreams;
+  QList<LibFFmpeg::AVRational> timeBaseAllStreams;
+  StringVec                    shortStreamInfoAllStreams;
 
   int    videoStreamIndex{-1};
   double framerate{-1.0};

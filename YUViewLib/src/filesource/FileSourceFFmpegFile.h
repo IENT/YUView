@@ -33,10 +33,8 @@
 #pragma once
 
 #include "FileSource.h"
-#include <ffmpeg/AVCodecIDWrapper.h>
-#include <ffmpeg/AVCodecParametersWrapper.h>
-#include <ffmpeg/AVPacketWrapper.h>
-#include <ffmpeg/FFmpegVersionHandler.h>
+#include <LibFFmpeg++/Demuxer.h>
+#include <LibFFmpeg++/libHandling/FFmpegLibrariesInterfaceBuilder.h>
 #include <video/rgb/videoHandlerRGB.h>
 #include <video/yuv/videoHandlerYUV.h>
 
@@ -62,8 +60,10 @@ public:
   // TODO: How do we do this?
   bool atEnd() const { return endOfFile; }
 
-  // Return the name, filename and full path of every library loaded
-  QStringList getLibraryPaths() const { return ff.getLibPaths(); }
+  std::vector<LibFFmpeg::LibraryInfo> getLibrariesInfo() const
+  {
+    return this->ff.getLibrariesInfo();
+  }
 
   // Get properties of the bitstream
   double                     getFramerate() const { return frameRate; }
@@ -80,7 +80,7 @@ public:
   QByteArray getNextUnit(bool getLastDataAgain = false);
   // Return the next packet (unless getLastPackage is set in which case we return the current
   // packet)
-  FFmpeg::AVPacketWrapper getNextPacket(bool getLastPackage = false, bool videoPacket = true);
+  LibFFmpeg::AVPacketWrapper getNextPacket(bool getLastPackage = false, bool videoPacket = true);
   // Return the raw extradata/metadata (in avformat format containing the parameter sets)
 
   QByteArray    getExtradata();
@@ -104,18 +104,18 @@ public:
   // Get information on the video stream
   indexRange getDecodableFrameLimits() const;
 
-  FFmpeg::AVCodecIDWrapper getVideoStreamCodecID()
+  LibFFmpeg::AVCodecIDWrapper getVideoStreamCodecID()
   {
     return ff.getCodecIDWrapper(video_stream.getCodecID());
   }
-  FFmpeg::AVCodecParametersWrapper getVideoCodecPar() { return video_stream.getCodecpar(); }
+  LibFFmpeg::AVCodecParametersWrapper getVideoCodecPar() { return video_stream.getCodecpar(); }
 
   // Get more general information about the streams
   unsigned int getNumberOfStreams() { return this->formatCtx ? this->formatCtx.getNbStreams() : 0; }
   int          getVideoStreamIndex() { return video_stream.getIndex(); }
-  QList<QStringPairList>    getFileInfoForAllStreams();
-  QList<FFmpeg::AVRational> getTimeBaseAllStreams();
-  StringVec                 getShortStreamDescriptionAllStreams();
+  QList<QStringPairList>       getFileInfoForAllStreams();
+  QList<LibFFmpeg::AVRational> getTimeBaseAllStreams();
+  StringVec                    getShortStreamDescriptionAllStreams();
 
   // Look through the keyframes and find the closest one before (or equal)
   // the given frameIdx where we can start decoding
@@ -128,20 +128,20 @@ private slots:
   void fileSystemWatcherFileChanged(const QString &) { fileChanged = true; }
 
 protected:
-  FFmpeg::FFmpegVersionHandler   ff; //< Access to the libraries independent of their version
-  FFmpeg::AVFormatContextWrapper formatCtx;
-  void                           openFileAndFindVideoStream(QString fileName);
-  bool                           goToNextPacket(bool videoPacketsOnly = false);
-  FFmpeg::AVPacketWrapper        currentPacket;    //< A place for the curren (frame) input buffer
-  bool                           endOfFile{false}; //< Are we at the end of file (draining mode)?
+  LibFFmpeg::FFmpegVersionHandler   ff; //< Access to the libraries independent of their version
+  LibFFmpeg::AVFormatContextWrapper formatCtx;
+  void                              openFileAndFindVideoStream(QString fileName);
+  bool                              goToNextPacket(bool videoPacketsOnly = false);
+  LibFFmpeg::AVPacketWrapper        currentPacket; //< A place for the curren (frame) input buffer
+  bool                              endOfFile{false}; //< Are we at the end of file (draining mode)?
 
   // Seek the stream to the given pts value, flush the decoder and load the first packet so
   // that we are ready to start decoding from this pts.
-  int64_t                 duration{-1}; //< duration / AV_TIME_BASE is the duration in seconds
-  FFmpeg::AVRational      timeBase{0, 0};
-  FFmpeg::AVStreamWrapper video_stream;
-  double                  frameRate{-1};
-  Size                    frameSize;
+  int64_t                    duration{-1}; //< duration / AV_TIME_BASE is the duration in seconds
+  LibFFmpeg::AVRational      timeBase{0, 0};
+  LibFFmpeg::AVStreamWrapper video_stream;
+  double                     frameRate{-1};
+  Size                       frameSize;
 
   struct streamIndices_t
   {
@@ -187,7 +187,7 @@ protected:
     int64_t dts;
   };
 
-  FFmpeg::PacketDataFormat packetDataFormat{FFmpeg::PacketDataFormat::Unknown};
+  LibFFmpeg::PacketDataFormat packetDataFormat{LibFFmpeg::PacketDataFormat::Unknown};
 
   // These are filled after opening a file (after scanBitstream was called)
   QList<pictureIdx> keyFrameList; //< A list of pairs (frameNr, PTS) that we can seek to.

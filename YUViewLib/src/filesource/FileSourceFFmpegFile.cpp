@@ -49,7 +49,7 @@
 #endif
 
 using SubByteReaderLogging = parser::reader::SubByteReaderLogging;
-using namespace FFmpeg;
+using namespace LibFFmpeg;
 
 namespace
 {
@@ -696,7 +696,7 @@ StringVec FileSourceFFmpegFile::getShortStreamDescriptionAllStreams()
     description << stream.getCodecTypeName().toStdString();
 
     auto codecID = this->ff.getCodecIDWrapper(stream.getCodecID());
-    description << " " << codecID.getCodecName().toStdString() << " ";
+    description << " " << codecID.getCodecName() << " ";
 
     description << std::pair{stream.getFrameSize().width, stream.getFrameSize().height};
 

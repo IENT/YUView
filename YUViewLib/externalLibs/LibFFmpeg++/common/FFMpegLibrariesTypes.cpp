@@ -30,41 +30,55 @@
  *   along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#pragma once
+#include "FFMpegLibrariesTypes.h"
 
-#include <QList>
-#include <QMetaType>
-#include <QString>
-
-/*
- * An info item has a name, a text and an optional toolTip. These are used to show them in the
- * fileInfoWidget. For example: ["File Name", "file.yuv"] or ["Number Frames", "123"] Another option
- * is to show a button. If the user clicks on it, the callback function infoListButtonPressed() for
- * the corresponding playlist item is called.
- */
-struct InfoItem
+namespace LibFFmpeg
 {
-  InfoItem(const QString &name,
-           const QString &text,
-           const QString &toolTip  = QString(),
-           bool           button   = false,
-           int            buttonID = -1)
-      : name(name), text(text), button(button), buttonID(buttonID), toolTip(toolTip)
+
+QString timestampToString(int64_t timestamp, AVRational timebase)
+{
+  auto d_seconds = (double)timestamp * timebase.num / timebase.den;
+  auto hours     = (int)(d_seconds / 60 / 60);
+  d_seconds -= hours * 60 * 60;
+  auto minutes = (int)(d_seconds / 60);
+  d_seconds -= minutes * 60;
+  auto seconds = (int)d_seconds;
+  d_seconds -= seconds;
+  auto milliseconds = (int)(d_seconds * 1000);
+
+  return QString("%1:%2:%3.%4")
+      .arg(hours, 2, 10, QChar('0'))
+      .arg(minutes, 2, 10, QChar('0'))
+      .arg(seconds, 2, 10, QChar('0'))
+      .arg(milliseconds, 3, 10, QChar('0'));
+}
+
+Version Version::fromFFmpegVersion(const unsigned ffmpegVersion)
+{
+  Version v;
+  v.major = AV_VERSION_MAJOR(ffmpegVersion);
+  v.minor = AV_VERSION_MINOR(ffmpegVersion);
+  v.micro = AV_VERSION_MICRO(ffmpegVersion);
+  return v;
+}
+
+std::string to_string(const Version &version)
+{
+  std::ostringstream stream;
+  stream << "v" << version.major;
+  if (version.minor)
   {
+    stream << "." << version.minor.value();
+    if (version.micro)
+      stream << "." << version.micro.value();
   }
+  return stream.str();
+}
 
-  QString name{};
-  QString text{};
-  bool    button{};
-  int     buttonID{};
-  QString toolTip{};
-};
-
-struct InfoData
+std::ostream &operator<<(std::ostream &stream, const Version &version)
 {
-  explicit InfoData(const QString &title = QString()) : title(title) {}
-  bool            isEmpty() const { return title.isEmpty() && items.isEmpty(); }
-  QString         title{};
-  QList<InfoItem> items{};
-};
-Q_DECLARE_METATYPE(InfoData)
+  stream << to_string(version);
+  return stream;
+}
+
+} // namespace LibFFmpeg
