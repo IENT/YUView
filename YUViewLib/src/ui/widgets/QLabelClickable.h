@@ -30,6 +30,9 @@
 *   along with this program. If not, see <http://www.gnu.org/licenses/>.
 */
 
+#ifndef QLabelClickable_H
+#define QLabelClickable_H
+
 #include <QLabel>
 
 // A label that emits a 'clicked' signal when clicked.
@@ -55,3 +58,5 @@ signals:
 private:
   bool pressed;
 };
+
+#endif
