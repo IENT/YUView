@@ -113,7 +113,9 @@ playlistItem *createPlaylistItemFromFile(QWidget *parent, const QString &fileNam
 
     if (allExtensions.contains(ext))
     {
-      playlistItemRawFile *newRawFile = new playlistItemRawFile(fileName);
+      QSize size(0, 0);
+      QString sourcePixelFormat = "";
+      playlistItemRawFile *newRawFile = new playlistItemRawFile(fileName, size, sourcePixelFormat, ext);
       return newRawFile;
     }
   }
