@@ -75,12 +75,18 @@ playlistItemRawFile::playlistItemRawFile(const QString &rawFilePath,
   QFileInfo fi(rawFilePath);
   QString   ext = fi.suffix();
   ext           = ext.toLower();
-  if (ext == "yuv" || ext == "nv21" || fmt.toLower() == "yuv" || ext == "y4m")
+  if (ext == "yuv" || ext == "nv21" || ext == "y4m" || fmt.toLower() == "yuv")
   {
     this->video     = std::make_unique<video::yuv::videoHandlerYUV>();
     this->rawFormat = video::RawFormat::YUV;
   }
   else if (ext == "rgb" || ext == "gbr" || ext == "bgr" || ext == "brg" || fmt.toLower() == "rgb")
+  {
+    this->video     = std::make_unique<video::rgb::videoHandlerRGB>();
+    this->rawFormat = video::RawFormat::RGB;
+  }
+  else if (ext == "rgba" || ext == "gbra" || ext == "bgra" || ext == "brga" ||
+           ext == "argb" || ext == "agbr" || ext == "abgr" || ext == "abrg")
   {
     this->video     = std::make_unique<video::rgb::videoHandlerRGB>();
     this->rawFormat = video::RawFormat::RGB;
@@ -558,8 +564,22 @@ void playlistItemRawFile::getSupportedFileExtensions(QStringList &allExtensions,
   allExtensions.append("nv21");
   allExtensions.append("y4m");
 
+  allExtensions.append("rgba");
+  allExtensions.append("rbga");
+  allExtensions.append("grba");
+  allExtensions.append("gbra");
+  allExtensions.append("brga");
+  allExtensions.append("bgra");
+  allExtensions.append("argb");
+  allExtensions.append("arbg");
+  allExtensions.append("agrb");
+  allExtensions.append("agbr");
+  allExtensions.append("abrg");
+  allExtensions.append("abgr");
+
   filters.append("Raw YUV File (*.yuv *.nv21)");
   filters.append("Raw RGB File (*.rgb *.rbg *.grb *.gbr *.brg *.bgr)");
+  filters.append("Raw RGBA File (*.rgba *.rbga *.grba *.gbra *.brga *.bgra *.argb *.arbg *.agrb *.agbr *.abrg *.abgr)");
   filters.append("YUV4MPEG2 File (*.y4m)");
 }
 
