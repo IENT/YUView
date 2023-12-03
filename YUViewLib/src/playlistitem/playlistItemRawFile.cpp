@@ -69,7 +69,9 @@ playlistItemRawFile::playlistItemRawFile(const QString &rawFilePath,
     return;
   }
 
-  auto frameSize = Size(qFrameSize.width(), qFrameSize.height());
+  Size frameSize;
+  if (qFrameSize.width() > 0 && qFrameSize.height() > 0)
+    frameSize = Size(qFrameSize.width(), qFrameSize.height());
 
   // Create a new videoHandler instance depending on the input format
   QFileInfo fi(rawFilePath);

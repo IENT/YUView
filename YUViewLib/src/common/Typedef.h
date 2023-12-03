@@ -263,11 +263,6 @@ struct Ratio
 struct Size
 {
   constexpr Size(unsigned width, unsigned height) : width(width), height(height) {}
-  constexpr Size(int width, int height)
-  {
-    this->width  = (width < 0) ? 0 : static_cast<unsigned>(width);
-    this->height = (height < 0) ? 0 : static_cast<unsigned>(height);
-  }
   constexpr Size() = default;
 
   constexpr bool operator==(const Size &other) const

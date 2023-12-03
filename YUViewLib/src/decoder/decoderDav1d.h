@@ -69,7 +69,7 @@ public:
   void setInternalsSupported() { internalsSupported = true; }
 
   void                    clear() { memset(&curPicture, 0, sizeof(Dav1dPicture)); }
-  Size                    getFrameSize() const { return Size({curPicture.p.w, curPicture.p.h}); }
+  Size                    getFrameSize() const;
   Dav1dPicture *          getPicture() const { return (Dav1dPicture *)(&curPicture); }
   video::yuv::Subsampling getSubsampling() const;
   int                     getBitDepth() const { return curPicture.p.bpc; }
