@@ -89,6 +89,13 @@ Subsampling convertFromInternalSubsampling(Dav1dPixelLayout layout)
 
 } // namespace
 
+Size Dav1dPictureWrapper::getFrameSize() const
+{
+  if (this->curPicture.p.w < 0 || this->curPicture.p.h < 0)
+    return {};
+  return Size({static_cast<unsigned>(curPicture.p.w), static_cast<unsigned>(curPicture.p.h)});
+}
+
 Subsampling Dav1dPictureWrapper::getSubsampling() const
 {
   return convertFromInternalSubsampling(curPicture.p.layout);
