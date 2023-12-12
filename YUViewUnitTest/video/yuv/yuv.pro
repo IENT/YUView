@@ -2,5 +2,5 @@ TEMPLATE = subdirs
 
 requires(qtHaveModule(testlib))
 
-SUBDIRS = PixelFormatYUVTest/ \
+SUBDIRS = PixelFormatYUVTest \
           PixelFormatYUVGuessTest
