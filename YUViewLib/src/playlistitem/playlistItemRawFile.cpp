@@ -48,6 +48,24 @@
 #define DEBUG_RAWFILE(f) ((void)0)
 #endif
 
+namespace
+{
+
+constexpr auto YUV_EXTENSIONS  = {"yuv", "nv12", "y4m"};
+constexpr auto RGB_EXTENSIONS  = {"rgb", "gbr", "bgr", "brg"};
+constexpr auto RGBA_EXTENSIONS = {"rgba", "gbra", "bgra", "brga", "argb", "agbr", "abgr", "abrg"};
+
+bool isInExtensions(const QString &testValue, const std::initializer_list<const char *> &extensions)
+{
+  const auto it =
+      std::find_if(extensions.begin(), extensions.end(), [testValue](const char *extension) {
+        return QString(extension) == testValue;
+      });
+  return it != extensions.end();
+}
+
+} // namespace
+
 playlistItemRawFile::playlistItemRawFile(const QString &rawFilePath,
                                          const QSize    qFrameSize,
                                          const QString &sourcePixelFormat,
@@ -77,12 +95,13 @@ playlistItemRawFile::playlistItemRawFile(const QString &rawFilePath,
   QFileInfo fi(rawFilePath);
   QString   ext = fi.suffix();
   ext           = ext.toLower();
-  if (ext == "yuv" || ext == "nv21" || fmt.toLower() == "yuv" || ext == "y4m")
+  if (isInExtensions(ext, YUV_EXTENSIONS) || fmt.toLower() == "yuv")
   {
     this->video     = std::make_unique<video::yuv::videoHandlerYUV>();
     this->rawFormat = video::RawFormat::YUV;
   }
-  else if (ext == "rgb" || ext == "gbr" || ext == "bgr" || ext == "brg" || fmt.toLower() == "rgb")
+  else if (isInExtensions(ext, RGB_EXTENSIONS) || isInExtensions(ext, RGBA_EXTENSIONS) ||
+           fmt.toLower() == "rgb")
   {
     this->video     = std::make_unique<video::rgb::videoHandlerRGB>();
     this->rawFormat = video::RawFormat::RGB;
@@ -550,18 +569,14 @@ ValuePairListSets playlistItemRawFile::getPixelValues(const QPoint &pixelPos, in
 void playlistItemRawFile::getSupportedFileExtensions(QStringList &allExtensions,
                                                      QStringList &filters)
 {
-  allExtensions.append("yuv");
-  allExtensions.append("rgb");
-  allExtensions.append("rbg");
-  allExtensions.append("grb");
-  allExtensions.append("gbr");
-  allExtensions.append("brg");
-  allExtensions.append("bgr");
-  allExtensions.append("nv21");
-  allExtensions.append("y4m");
+  for (const auto &extensionsList : {YUV_EXTENSIONS, RGB_EXTENSIONS, RGBA_EXTENSIONS})
+    for (const auto &extension : extensionsList)
+      allExtensions.append(QString(extension));
 
   filters.append("Raw YUV File (*.yuv *.nv21)");
   filters.append("Raw RGB File (*.rgb *.rbg *.grb *.gbr *.brg *.bgr)");
+  filters.append("Raw RGBA File (*.rgba *.rbga *.grba *.gbra *.brga *.bgra *.argb *.arbg *.agrb "
+                 "*.agbr *.abrg *.abgr)");
   filters.append("YUV4MPEG2 File (*.y4m)");
 }
 
