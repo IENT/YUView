@@ -55,7 +55,7 @@ constexpr auto YUV_EXTENSIONS  = {"yuv", "nv12", "y4m"};
 constexpr auto RGB_EXTENSIONS  = {"rgb", "gbr", "bgr", "brg"};
 constexpr auto RGBA_EXTENSIONS = {"rgba", "gbra", "bgra", "brga", "argb", "agbr", "abgr", "abrg"};
 
-bool isInExtensions(QString testValue, std::initializer_list<const char *> extensions)
+bool isInExtensions(const QString &testValue, const std::initializer_list<const char *> &extensions)
 {
   const auto it =
       std::find_if(extensions.begin(), extensions.end(), [testValue](const char *extension) {
@@ -569,7 +569,7 @@ ValuePairListSets playlistItemRawFile::getPixelValues(const QPoint &pixelPos, in
 void playlistItemRawFile::getSupportedFileExtensions(QStringList &allExtensions,
                                                      QStringList &filters)
 {
-  for (const auto extensionsList : {YUV_EXTENSIONS, RGB_EXTENSIONS, RGBA_EXTENSIONS})
+  for (const auto &extensionsList : {YUV_EXTENSIONS, RGB_EXTENSIONS, RGBA_EXTENSIONS})
     for (const auto &extension : extensionsList)
       allExtensions.append(QString(extension));
 
