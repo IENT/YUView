@@ -273,7 +273,7 @@ struct Size
   {
     return this->width != other.width || this->height != other.height;
   }
-  constexpr bool isValid() const { return this->width != 0 && this->height != 0; }
+  constexpr bool isValid() const { return this->width > 0 && this->height > 0; }
   unsigned       width{};
   unsigned       height{};
 };
