@@ -172,9 +172,9 @@ MainWindow::MainWindow(bool useAlternativeSources, QWidget *parent) : QMainWindo
   {
     // load geometry and active dockable widgets from user preferences
     restoreGeometry(settings.value("mainWindow/geometry").toByteArray());
-    restoreState(settings.value("mainWindow/windowState").toByteArray());
+    restoreState(settings.value("mainWindow/windowState").toByteArray(), QT_VERSION);
     separateViewWindow.restoreGeometry(settings.value("separateViewWindow/geometry").toByteArray());
-    separateViewWindow.restoreState(settings.value("separateViewWindow/windowState").toByteArray());
+    separateViewWindow.restoreState(settings.value("separateViewWindow/windowState").toByteArray(), QT_VERSION);
   }
 
   connect(ui.openButton, &QPushButton::clicked, this, &MainWindow::showFileOpenDialog);
@@ -413,7 +413,7 @@ void MainWindow::createMenusAndActions()
                   &PlaybackController::previousFrame,
                   Qt::Key_Left);
 
-  auto addLambdaActionToMenu = [this](QMenu *menu, QString name, auto lambda) {
+  auto addLambdaActionToMenu = [](QMenu *menu, const QString name, auto lambda) {
     auto action = new QAction(name, menu);
     QObject::connect(action, &QAction::triggered, lambda);
     menu->addAction(action);
@@ -511,9 +511,9 @@ void MainWindow::closeEvent(QCloseEvent *event)
     // Do not save the window state if we just cleared the settings
     QSettings settings;
     settings.setValue("mainWindow/geometry", saveGeometry());
-    settings.setValue("mainWindow/windowState", saveState());
+    settings.setValue("mainWindow/windowState", saveState(QT_VERSION));
     settings.setValue("separateViewWindow/geometry", separateViewWindow.saveGeometry());
-    settings.setValue("separateViewWindow/windowState", separateViewWindow.saveState());
+    settings.setValue("separateViewWindow/windowState", separateViewWindow.saveState(QT_VERSION));
   }
 
   // Delete all items in the playlist. This will also kill all eventual running background
@@ -932,7 +932,7 @@ void MainWindow::resetWindowLayout()
   separateViewWindow.setGeometry(0, 0, 500, 300);
   separateViewWindow.move(0, 0);
   settings.setValue("separateViewWindow/geometry", separateViewWindow.saveGeometry());
-  settings.setValue("separateViewWindow/windowState", separateViewWindow.saveState());
+  settings.setValue("separateViewWindow/windowState", separateViewWindow.saveState(QT_VERSION));
 
   // Dock all dock panels
   ui.playlistDockWidget->setFloating(false);
@@ -966,7 +966,7 @@ void MainWindow::resetWindowLayout()
 
   // Save main window state (including the layout of the dock widgets)
   settings.setValue("mainWindow/geometry", saveGeometry());
-  settings.setValue("mainWindow/windowState", saveState());
+  settings.setValue("mainWindow/windowState", saveState(QT_VERSION));
 
   // Reset the split view
   ui.displaySplitView->resetView(false);
