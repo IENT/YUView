@@ -345,7 +345,7 @@ ParserAnnexBHEVC::parseAndAddNALUnit(int                                        
     else if (nalHEVC->header.nal_unit_type == hevc::NalType::SPS_NUT)
     {
       auto newSPS = std::make_shared<seq_parameter_set_rbsp>();
-      newSPS->parse(reader);
+      newSPS->parse(reader, nalHEVC->header);
 
       this->activeParameterSets.spsMap[newSPS->sps_seq_parameter_set_id] = newSPS;
 

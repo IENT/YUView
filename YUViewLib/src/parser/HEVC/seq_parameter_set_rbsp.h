@@ -35,10 +35,10 @@
 #include "NalUnitHEVC.h"
 #include "parser/common/SubByteReaderLogging.h"
 #include "profile_tier_level.h"
+#include "rbsp_trailing_bits.h"
 #include "scaling_list_data.h"
 #include "st_ref_pic_set.h"
 #include "vui_parameters.h"
-#include "rbsp_trailing_bits.h"
 
 namespace parser::hevc
 {
@@ -48,7 +48,7 @@ class seq_parameter_set_rbsp : public NalRBSP
 public:
   seq_parameter_set_rbsp() {}
 
-  void parse(reader::SubByteReaderLogging &reader);
+  void parse(reader::SubByteReaderLogging &reader, const nal_unit_header &nalUnitHeader);
 
   unsigned           sps_video_parameter_set_id{};
   unsigned           sps_max_sub_layers_minus1{};
@@ -123,6 +123,11 @@ public:
   unsigned PicWidthInCtbsY{};
   unsigned PicHeightInCtbsY{};
   unsigned PicSizeInCtbsY{};
+
+  // Annex F.7.3.2.2.1
+  unsigned sps_ext_or_max_sub_layers_minus1{};
+  bool     update_rep_format_flag{};
+  unsigned sps_rep_format_idx{};
 
   // Get the actual size of the image that will be returned. Internally the image might be bigger.
   unsigned get_conformance_cropping_width() const

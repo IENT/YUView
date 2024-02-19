@@ -33,11 +33,10 @@
 #include "slice_segment_header.h"
 
 #include "parser/common/CodingEnum.h"
-#include <parser/common/Functions.h>
 #include "pic_parameter_set_rbsp.h"
 #include "seq_parameter_set_rbsp.h"
 #include "slice_segment_layer_rbsp.h"
-
+#include <parser/common/Functions.h>
 
 #include <cmath>
 
@@ -56,7 +55,10 @@ static parser::CodingEnum<SliceType> sliceTypeCoding({{0, SliceType::B, "B", "B-
 
 using namespace reader;
 
-std::string to_string(SliceType sliceType) { return sliceTypeCoding.getMeaning(sliceType); }
+std::string to_string(SliceType sliceType)
+{
+  return sliceTypeCoding.getMeaning(sliceType);
+}
 
 void slice_segment_header::parse(SubByteReaderLogging & reader,
                                  bool                   firstAUInDecodingOrder,
@@ -148,7 +150,8 @@ void slice_segment_header::parse(SubByteReaderLogging & reader,
               this->lt_idx_sps[i] = reader.readBits(formatArray("lt_idx_sps", i), nrBits);
             }
 
-            this->UsedByCurrPicLt.push_back(sps->used_by_curr_pic_lt_sps_flag[this->lt_idx_sps[i]]);
+            this->UsedByCurrPicLt.push_back(
+                sps->used_by_curr_pic_lt_sps_flag.at(this->lt_idx_sps[i]));
           }
           else
           {

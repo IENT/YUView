@@ -125,13 +125,13 @@ void pic_parameter_set_rbsp::parse(SubByteReaderLogging &reader)
 
   // This would also be interesting but later.
   if (this->pps_multilayer_extension_flag)
-    reader.logArbitrary("pps_multilayer_extension()", 0, "", "", "Not implemented yet...");
+    reader.logArbitrary("pps_multilayer_extension()", "", "", "", "Not implemented yet...");
 
   if (this->pps_3d_extension_flag)
-    reader.logArbitrary("pps_3d_extension()", 0, "", "", "Not implemented yet...");
+    reader.logArbitrary("pps_3d_extension()", "", "", "", "Not implemented yet...");
 
   if (this->pps_extension_5bits != 0)
-    reader.logArbitrary("pps_extension_data_flag()", 0, "", "", "Not implemented yet...");
+    reader.logArbitrary("pps_extension_data_flag()", "", "", "", "Not implemented yet...");
 
   // There is more to parse but we are not interested in this information (for now)
   // this->rbspTrailingBits.parse(reader);
