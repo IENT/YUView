@@ -32,6 +32,10 @@
 
 #pragma once
 
+#include "Extensions/sps_3d_extension.h"
+#include "Extensions/sps_multilayer_extension.h"
+#include "Extensions/sps_range_extension.h"
+#include "Extensions/sps_scc_extension.h"
 #include "NalUnitHEVC.h"
 #include "parser/common/SubByteReaderLogging.h"
 #include "profile_tier_level.h"
@@ -110,7 +114,8 @@ public:
   bool     sps_range_extension_flag{};
   bool     sps_multilayer_extension_flag{};
   bool     sps_3d_extension_flag{};
-  unsigned sps_extension_5bits{};
+  bool     sps_scc_extension_flag{};
+  unsigned sps_extension_4bits{};
 
   rbsp_trailing_bits rbspTrailingBits;
 
@@ -128,6 +133,11 @@ public:
   unsigned sps_ext_or_max_sub_layers_minus1{};
   bool     update_rep_format_flag{};
   unsigned sps_rep_format_idx{};
+
+  sps_range_extension      rangeExtension{};
+  sps_multilayer_extension multilayerExtension{};
+  sps_3d_extension         extension3D{};
+  sps_scc_extension        sccExtension{};
 
   // Get the actual size of the image that will be returned. Internally the image might be bigger.
   unsigned get_conformance_cropping_width() const

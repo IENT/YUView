@@ -50,7 +50,7 @@ void seq_parameter_set_rbsp::parse(SubByteReaderLogging & reader,
   if (nalUnitHeader.nuh_layer_id == 0)
     this->sps_max_sub_layers_minus1 = reader.readBits("sps_max_sub_layers_minus1", 3);
   else
-    this->sps_ext_or_max_sub_layers_minus1 = reader.readBits("sps_max_sub_layers_minus1", 3);
+    this->sps_ext_or_max_sub_layers_minus1 = reader.readBits("sps_ext_or_max_sub_layers_minus1", 3);
 
   const auto MultiLayerExtSpsFlag =
       (nalUnitHeader.nuh_layer_id != 0 && this->sps_ext_or_max_sub_layers_minus1 == 7);
@@ -100,10 +100,10 @@ void seq_parameter_set_rbsp::parse(SubByteReaderLogging & reader,
     this->bit_depth_chroma_minus8 = reader.readUEV("bit_depth_chroma_minus8");
   }
 
+  this->log2_max_pic_order_cnt_lsb_minus4 = reader.readUEV("log2_max_pic_order_cnt_lsb_minus4");
+
   if (!MultiLayerExtSpsFlag)
   {
-    this->log2_max_pic_order_cnt_lsb_minus4 = reader.readUEV("log2_max_pic_order_cnt_lsb_minus4");
-
     this->sps_sub_layer_ordering_info_present_flag =
         reader.readFlag("sps_sub_layer_ordering_info_present_flag");
     for (unsigned i =
@@ -192,21 +192,39 @@ void seq_parameter_set_rbsp::parse(SubByteReaderLogging & reader,
     this->sps_range_extension_flag      = reader.readFlag("sps_range_extension_flag");
     this->sps_multilayer_extension_flag = reader.readFlag("sps_multilayer_extension_flag");
     this->sps_3d_extension_flag         = reader.readFlag("sps_3d_extension_flag");
-    this->sps_extension_5bits           = reader.readBits("sps_extension_5bits", 5);
+    this->sps_scc_extension_flag        = reader.readFlag("sps_scc_extension_flag");
+    this->sps_extension_4bits           = reader.readBits("sps_extension_4bits", 4);
   }
 
   // Now the extensions follow ...
   // This would also be interesting but later.
   if (this->sps_range_extension_flag)
-    reader.logArbitrary("sps_range_extension()", "", "", "", "Not implemented yet...");
+    this->rangeExtension.parse(reader);
 
   if (this->sps_multilayer_extension_flag)
-    reader.logArbitrary("sps_multilayer_extension()", "", "", "", "Not implemented yet...");
+    this->multilayerExtension.parse(reader);
 
   if (this->sps_3d_extension_flag)
-    reader.logArbitrary("sps_3d_extension()", "", "", "", "Not implemented yet...");
+    this->extension3D.parse(reader);
 
-  if (this->sps_extension_5bits != 0)
+  if (this->sps_scc_extension_flag)
+  {
+    if (MultiLayerExtSpsFlag)
+    {
+      // For multiview, the bit depths would have to be obtained from the main SPS ...
+      // Is this even possible to combine SCC with Multiview?
+      reader.logArbitrary("sps_scc_extension()", "", "", "", "Not supported for Multiview...");
+    }
+    else
+    {
+      this->sccExtension.parse(reader,
+                               this->chroma_format_idc,
+                               this->bit_depth_luma_minus8 + 8,
+                               this->bit_depth_chroma_minus8 + 8);
+    }
+  }
+
+  if (this->sps_extension_4bits != 0)
     reader.logArbitrary("sps_extension_data_flag()", "", "", "", "Not implemented yet...");
 
   // rbspTrailingBits.parse(reader);
