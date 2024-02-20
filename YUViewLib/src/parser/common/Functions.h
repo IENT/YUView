@@ -41,22 +41,24 @@
 namespace parser
 {
 
-template <typename T> std::string formatArray(std::string variableName, T idx)
+namespace
 {
-  return variableName + "[" + std::to_string(idx) + "]";
+
+template <typename T> std::string formatArrayArguments(T variable)
+{
+  return "[" + std::to_string(variable) + "]";
 }
 
-template <typename T1, typename T2>
-std::string formatArray(std::string variableName, T1 idx1, T2 idx2)
+template <typename T, typename... Args> std::string formatArrayArguments(T first, Args... args)
 {
-  return variableName + "[" + std::to_string(idx1) + "][" + std::to_string(idx2) + "]";
+  return "[" + std::to_string(first) + "]" + formatArrayArguments(args...);
 }
 
-template <typename T1, typename T2, typename T3>
-std::string formatArray(std::string variableName, T1 idx1, T2 idx2, T3 idx3)
+} // namespace
+
+template <typename... Args> std::string formatArray(std::string variableName, Args... args)
 {
-  return variableName + "[" + std::to_string(idx1) + "][" + std::to_string(idx2) + "][" +
-         std::to_string(idx3) + "]";
+  return variableName + formatArrayArguments(args...);
 }
 
 std::string convertSliceCountsToString(const std::map<std::string, unsigned int> &sliceCounts);
