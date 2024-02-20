@@ -218,6 +218,8 @@ typedef QPair<unsigned int, unsigned int> QUIntPair;
 template <typename T> using umap_1d = std::map<unsigned, T>;
 template <typename T> using umap_2d = std::map<unsigned, umap_1d<T>>;
 template <typename T> using umap_3d = std::map<unsigned, umap_2d<T>>;
+template <typename T> using umap_4d = std::map<unsigned, umap_3d<T>>;
+template <typename T> using umap_5d = std::map<unsigned, umap_4d<T>>;
 
 template <typename T> using vector   = std::vector<T>;
 template <typename T> using vector2d = std::vector<vector<T>>;
@@ -226,6 +228,8 @@ template <typename T> using vector4d = std::vector<vector3d<T>>;
 
 template <typename T, size_t N> using array               = std::array<T, N>;
 template <typename T, size_t N1, size_t N2> using array2d = std::array<std::array<T, N2>, N1>;
+template <typename T, size_t N1, size_t N2, size_t N3>
+using array3d = std::array<std::array<std::array<T, N3>, N2>, N1>;
 
 template <typename T> int indexInVec(const std::vector<T> &vec, const T &item)
 {

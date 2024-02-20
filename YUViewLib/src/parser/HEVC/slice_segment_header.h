@@ -75,6 +75,8 @@ public:
   bool              dependent_slice_segment_flag{};
   unsigned          slice_pic_parameter_set_id{};
   unsigned          slice_segment_address{};
+  bool              discardable_flag{};
+  bool              cross_layer_bla_flag{};
   vector<bool>      slice_reserved_flag;
   SliceType         slice_type{};
   bool              pic_output_flag{true};

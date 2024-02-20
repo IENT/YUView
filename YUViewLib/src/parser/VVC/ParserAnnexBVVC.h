@@ -65,6 +65,7 @@ struct ParsingState
     size_t                    counter{};
     size_t                    sizeBytes{};
     int                       poc{-1};
+    unsigned                  layerID{0};
     bool                      isKeyframe{};
     std::optional<pairUint64> fileStartEndPos;
   };

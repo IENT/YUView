@@ -97,7 +97,18 @@ void slice_segment_header::parse(SubByteReaderLogging & reader,
 
   if (!dependent_slice_segment_flag)
   {
-    for (unsigned int i = 0; i < pps->num_extra_slice_header_bits; i++)
+    unsigned i = 0;
+    if (pps->num_extra_slice_header_bits > i)
+    {
+      i++;
+      this->discardable_flag = reader.readFlag("discardable_flag");
+    }
+    if (pps->num_extra_slice_header_bits > i)
+    {
+      i++;
+      this->cross_layer_bla_flag = reader.readFlag("cross_layer_bla_flag");
+    }
+    for (; i < pps->num_extra_slice_header_bits; i++)
       this->slice_reserved_flag.push_back(reader.readFlag(formatArray("slice_reserved_flag", i)));
 
     auto sliceTypeIdx = reader.readUEV(
@@ -173,6 +184,12 @@ void slice_segment_header::parse(SubByteReaderLogging & reader,
       if (sps->sps_temporal_mvp_enabled_flag)
         this->slice_temporal_mvp_enabled_flag = reader.readFlag("slice_temporal_mvp_enabled_flag");
     }
+
+    // This is not 100% done yet.
+    // if (nalUnitHeader.nuh_layer_id > 0 && !default_ref_layers_active_flag &&
+    //     NumDirectRefLayers[nuh_layer_id] > 0)
+    // {
+    // }
 
     if (sps->sample_adaptive_offset_enabled_flag)
     {

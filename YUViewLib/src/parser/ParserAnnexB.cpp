@@ -62,10 +62,11 @@ std::string ParserAnnexB::getShortStreamDescription(const int) const
 
 bool ParserAnnexB::addFrameToList(int                       poc,
                                   std::optional<pairUint64> fileStartEndPos,
-                                  bool                      randomAccessPoint)
+                                  bool                      randomAccessPoint,
+                                  unsigned                  layerID)
 {
   for (const auto &f : this->frameListCodingOrder)
-    if (f.poc == poc)
+    if (f.poc == poc && f.layerID == layerID)
       return false;
 
   if (!this->pocOfFirstRandomAccessFrame && randomAccessPoint)
@@ -77,6 +78,7 @@ bool ParserAnnexB::addFrameToList(int                       poc,
     newFrame.poc               = poc;
     newFrame.fileStartEndPos   = fileStartEndPos;
     newFrame.randomAccessPoint = randomAccessPoint;
+    newFrame.layerID           = layerID;
     this->frameListCodingOrder.push_back(newFrame);
     this->frameListDisplayOder.clear();
   }

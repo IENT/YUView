@@ -473,6 +473,7 @@ ParserAnnexBVVC::parseAndAddNALUnit(int                                         
 
       nalVVC->rbsp = newSliceLayer;
 
+      updatedParsingState.currentAU.layerID = nalVVC->header.nuh_layer_id;
       updatedParsingState.currentAU.isKeyframe =
           (nalType == NalType::IDR_W_RADL || nalType == NalType::IDR_N_LP ||
            nalType == NalType::CRA_NUT);
@@ -596,22 +597,25 @@ int ParserAnnexBVVC::calculateAndUpdateGlobalPOC(bool isIRAP, unsigned PicOrderC
 
 bool ParserAnnexBVVC::handleNewAU(ParsingState &parsingState)
 {
-  DEBUG_VVC("Start of new AU. Adding bitrate " << parsingState.currentAU.sizeBytes << " POC "
-                                               << parsingState.currentAU.poc << " AU "
-                                               << parsingState.currentAU.counter);
+  DEBUG_VVC("Start of new AU. Adding bitrate "
+            << parsingState.currentAU.sizeBytes << " POC " << parsingState.currentAU.poc << " AU "
+            << parsingState.currentAU.counter << " Layer " << parsingState.currentAU.layerID);
 
   if (!this->addFrameToList(parsingState.currentAU.poc,
                             parsingState.currentAU.fileStartEndPos,
-                            parsingState.currentAU.isKeyframe))
+                            parsingState.currentAU.isKeyframe,
+                            parsingState.currentAU.layerID))
     return false;
 
   if (this->parsingState.currentAU.fileStartEndPos)
     DEBUG_VVC("Adding start/end " << parsingState.currentAU.fileStartEndPos->first << "/"
                                   << parsingState.currentAU.fileStartEndPos->second << " - AU "
-                                  << parsingState.currentAU.counter
+                                  << parsingState.currentAU.counter << " Layer "
+                                  << parsingState.currentAU.layerID
                                   << (parsingState.currentAU.isKeyframe ? " - ra" : ""));
   else
-    DEBUG_VVC("Adding start/end NA/NA - AU " << parsingState.currentAU.counter
+    DEBUG_VVC("Adding start/end NA/NA - AU " << parsingState.currentAU.counter << " Layer "
+                                             << parsingState.currentAU.layerID
                                              << (parsingState.currentAU.isKeyframe ? " - ra" : ""));
 
   return true;
