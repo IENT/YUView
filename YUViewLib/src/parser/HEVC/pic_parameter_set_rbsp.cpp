@@ -115,7 +115,8 @@ void pic_parameter_set_rbsp::parse(SubByteReaderLogging &reader)
     this->pps_range_extension_flag      = reader.readFlag("pps_range_extension_flag");
     this->pps_multilayer_extension_flag = reader.readFlag("pps_multilayer_extension_flag");
     this->pps_3d_extension_flag         = reader.readFlag("pps_3d_extension_flag");
-    this->pps_extension_5bits           = reader.readBits("pps_extension_5bits", 5);
+    this->pps_scc_extension_flag        = reader.readFlag("pps_scc_extension_flag");
+    this->pps_extension_4bits           = reader.readBits("pps_extension_4bits", 4);
   }
 
   // Now the extensions follow ...
@@ -125,12 +126,15 @@ void pic_parameter_set_rbsp::parse(SubByteReaderLogging &reader)
 
   // This would also be interesting but later.
   if (this->pps_multilayer_extension_flag)
-    reader.logArbitrary("pps_multilayer_extension()", "", "", "", "Not implemented yet...");
+    this->ppsMultilayerExtension.parse(reader);
 
   if (this->pps_3d_extension_flag)
-    reader.logArbitrary("pps_3d_extension()", "", "", "", "Not implemented yet...");
+    this->pps3DExtension.parse(reader);
 
-  if (this->pps_extension_5bits != 0)
+  if (this->pps_scc_extension_flag)
+    this->ppsSCCExtension.parse(reader);
+
+  if (this->pps_extension_4bits != 0)
     reader.logArbitrary("pps_extension_data_flag()", "", "", "", "Not implemented yet...");
 
   // There is more to parse but we are not interested in this information (for now)

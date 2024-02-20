@@ -32,11 +32,14 @@
 
 #pragma once
 
+#include "Extensions/pps_3d_extension.h"
+#include "Extensions/pps_multilayer_extension.h"
+#include "Extensions/pps_range_extension.h"
+#include "Extensions/pps_scc_extension.h"
 #include "NalUnitHEVC.h"
 #include "parser/common/SubByteReaderLogging.h"
-#include "pps_range_extension.h"
-#include "scaling_list_data.h"
 #include "rbsp_trailing_bits.h"
+#include "scaling_list_data.h"
 
 namespace parser::hevc
 {
@@ -91,9 +94,13 @@ public:
   bool              pps_range_extension_flag{};
   bool              pps_multilayer_extension_flag{};
   bool              pps_3d_extension_flag{};
-  unsigned          pps_extension_5bits{};
+  bool              pps_scc_extension_flag{};
+  unsigned          pps_extension_4bits{};
 
-  pps_range_extension ppsRangeExtension;
+  pps_range_extension      ppsRangeExtension{};
+  pps_multilayer_extension ppsMultilayerExtension{};
+  pps_3d_extension         pps3DExtension{};
+  pps_scc_extension        ppsSCCExtension{};
 
   rbsp_trailing_bits rbspTrailingBits;
 };
