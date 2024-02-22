@@ -33,6 +33,8 @@
 #pragma once
 
 #include "parser/common/SubByteReaderLogging.h"
+#include "video_signal_info.h"
+#include "vps_vui_bsp_hrd_params.h"
 
 namespace parser::hevc
 {
@@ -43,13 +45,59 @@ class vps_vui
 public:
   vps_vui() {}
 
-  void parse(reader::SubByteReaderLogging &reader, const bool vps_vui_present_flag);
+  void parse(reader::SubByteReaderLogging &reader,
+             const bool                    vps_vui_present_flag,
+             const bool                    vps_base_layer_internal_flag,
+             const unsigned                NumLayerSets,
+             const vector<unsigned> &      MaxSubLayersInLayerSetMinus1,
+             const unsigned                MaxLayersMinus1,
+             const umap_1d<unsigned> &     NumDirectRefLayers,
+             const vector<unsigned> &      layer_id_in_nuh,
+             const umap_1d<unsigned> &     LayerIdxInVps,
+             const umap_2d<unsigned> &     IdDirectRefLayer,
+             const unsigned                vps_num_hrd_parameters,
+             const unsigned                NumOutputLayerSets,
+             const umap_1d<unsigned> &     NumLayersInIdList,
+             const umap_1d<unsigned> &     OlsIdxToLsIdx);
 
   bool cross_layer_pic_type_aligned_flag{};
   bool cross_layer_irap_aligned_flag{};
   bool all_layers_idr_aligned_flag{};
   bool bit_rate_present_vps_flag{};
   bool pic_rate_present_vps_flag{};
+
+  umap_2d<bool>     bit_rate_present_flag;
+  umap_2d<bool>     pic_rate_present_flag;
+  umap_2d<unsigned> avg_bit_rate;
+  umap_2d<unsigned> max_bit_rate;
+  umap_2d<unsigned> constant_pic_rate_idc;
+  umap_2d<unsigned> avg_pic_rate;
+
+  bool                      video_signal_info_idx_present_flag{};
+  unsigned                  vps_num_video_signal_info_minus1{};
+  vector<video_signal_info> videoSignalInfoList;
+
+  umap_1d<unsigned> vps_video_signal_info_idx;
+
+  bool          tiles_not_in_use_flag{};
+  umap_1d<bool> tiles_in_use_flag;
+  umap_1d<bool> loop_filter_not_across_tiles_flag;
+  umap_2d<bool> tile_boundaries_aligned_flag;
+
+  bool          wpp_not_in_use_flag{};
+  umap_1d<bool> wpp_in_use_flag;
+
+  bool              single_layer_for_non_irap_flag{};
+  bool              higher_layer_irap_skip_flag{};
+  bool              ilp_restricted_ref_layers_flag{};
+  umap_2d<unsigned> min_spatial_segment_offset_plus1;
+  umap_2d<bool>     ctu_based_offset_enabled_flag;
+  umap_2d<unsigned> min_horizontal_ctu_offset_plus1;
+
+  bool                   vps_vui_bsp_hrd_present_flag{};
+  vps_vui_bsp_hrd_params vpsVuiBspHrdParams{};
+
+  umap_1d<bool> base_layer_parameter_set_compatibility_flag;
 };
 
 } // namespace parser::hevc

@@ -43,7 +43,8 @@ void vps_extension::parse(SubByteReaderLogging &reader,
                           const unsigned        vps_max_layers_minus1,
                           const bool            vps_base_layer_internal_flag,
                           const unsigned        vps_max_sub_layers_minus1,
-                          const unsigned        vps_num_layer_sets_minus1)
+                          const unsigned        vps_num_layer_sets_minus1,
+                          const unsigned        vps_num_hrd_parameters)
 {
   SubByteReaderLoggingSubLevel subLevel(reader, "vps_extension()");
 
@@ -270,7 +271,20 @@ void vps_extension::parse(SubByteReaderLogging &reader,
   {
     while (!reader.byte_aligned())
       reader.readFlag("vps_vui_alignment_bit_equal_to_one", Options().withCheckEqualTo(0));
-    vpsVui.parse(reader, this->vps_vui_present_flag);
+    vpsVui.parse(reader,
+                 this->vps_vui_present_flag,
+                 vps_base_layer_internal_flag,
+                 this->NumLayerSets,
+                 this->MaxSubLayersInLayerSetMinus1,
+                 this->MaxLayersMinus1,
+                 this->NumDirectRefLayers,
+                 this->layer_id_in_nuh,
+                 this->LayerIdxInVps,
+                 this->IdDirectRefLayer,
+                 vps_num_hrd_parameters,
+                 this->NumOutputLayerSets,
+                 this->NumLayersInIdList,
+                 this->OlsIdxToLsIdx);
   }
 }
 

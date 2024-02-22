@@ -117,7 +117,8 @@ void video_parameter_set_rbsp::parse(SubByteReaderLogging &reader)
                        this->vps_max_layers_minus1,
                        this->vps_base_layer_internal_flag,
                        this->vps_max_sub_layers_minus1,
-                       this->vps_num_layer_sets_minus1);
+                       this->vps_num_layer_sets_minus1,
+                       this->vps_num_hrd_parameters);
 
     this->vps_extension2_flag = reader.readFlag("vps_extension2_flag");
     if (this->vps_extension2_flag)
