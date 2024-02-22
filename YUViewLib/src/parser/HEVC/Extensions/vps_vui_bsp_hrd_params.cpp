@@ -34,6 +34,8 @@
 
 #include <parser/common/Functions.h>
 
+#include <cmath>
+
 namespace parser::hevc
 {
 
