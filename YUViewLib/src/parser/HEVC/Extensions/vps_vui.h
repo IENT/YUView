@@ -52,7 +52,7 @@ public:
              const vector<unsigned> &      MaxSubLayersInLayerSetMinus1,
              const unsigned                MaxLayersMinus1,
              const umap_1d<unsigned> &     NumDirectRefLayers,
-             const vector<unsigned> &      layer_id_in_nuh,
+             const umap_1d<unsigned> &      layer_id_in_nuh,
              const umap_1d<unsigned> &     LayerIdxInVps,
              const umap_2d<unsigned> &     IdDirectRefLayer,
              const unsigned                vps_num_hrd_parameters,

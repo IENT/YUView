@@ -73,18 +73,17 @@ void vps_extension::parse(SubByteReaderLogging &reader,
   for (unsigned i = 1; i <= this->MaxLayersMinus1; i++)
   {
     if (this->vps_nuh_layer_id_present_flag)
-      this->layer_id_in_nuh.push_back(reader.readBits(formatArray("layer_id_in_nuh", i), 6));
+      this->layer_id_in_nuh[i] = reader.readBits(formatArray("layer_id_in_nuh", i), 6);
     else
-      this->layer_id_in_nuh.push_back(i);
+      this->layer_id_in_nuh[i] = i;
     this->LayerIdxInVps[this->layer_id_in_nuh[i]] = i;
 
     if (!this->splitting_flag)
     {
-      this->dimension_id.push_back({});
       for (unsigned j = 0; j < NumScalabilityTypes; j++)
       {
-        const auto nrBits = this->dimension_id_len_minus1[j] + 1;
-        this->dimension_id[i].push_back(reader.readBits(formatArray("dimension_id", i, j), nrBits));
+        const auto nrBits        = this->dimension_id_len_minus1[j] + 1;
+        this->dimension_id[i][j] = reader.readBits(formatArray("dimension_id", i, j), nrBits);
       }
     }
   }
@@ -110,6 +109,7 @@ void vps_extension::parse(SubByteReaderLogging &reader,
   if (this->NumIndependentLayers > 1)
     this->num_add_layer_sets = reader.readUEV("num_add_layer_sets");
 
+  this->NumLayersInIdList[0] = 1;
   for (unsigned i = 0; i < this->num_add_layer_sets; i++)
   {
     for (unsigned j = 1; j < this->NumIndependentLayers; j++)
@@ -177,9 +177,10 @@ void vps_extension::parse(SubByteReaderLogging &reader,
         this->OutputLayerFlag[i][j]   = this->output_layer_flag[i][j];
       }
     }
-    else
+    else if ((this->defaultOutputLayerIdc == 0 || this->defaultOutputLayerIdc == 1) &&
+             i <= vps_num_layer_sets_minus1)
     {
-      for (unsigned j = 0; j < NumLayersInIdList[OlsIdxToLsIdx[i]] - 1; j++)
+      for (int j = 0; j <= int(NumLayersInIdList[OlsIdxToLsIdx[i]]) - 1; j++)
       {
         const auto layerIdAList = this->LayerSetLayerIdList[this->OlsIdxToLsIdx[i]];
         const auto nuhLayerIdA  = std::max_element(layerIdAList.begin(), layerIdAList.end());

@@ -59,9 +59,9 @@ public:
   vector<bool>       scalability_mask_flag{};
   vector<unsigned>   dimension_id_len_minus1{};
   bool               vps_nuh_layer_id_present_flag{};
-  vector<unsigned>   layer_id_in_nuh{};
+  umap_1d<unsigned>  layer_id_in_nuh{};
   umap_1d<unsigned>  LayerIdxInVps{};
-  vector2d<unsigned> dimension_id{};
+  umap_2d<unsigned>  dimension_id{};
   unsigned           view_id_len{};
   vector<unsigned>   view_id_val{};
 

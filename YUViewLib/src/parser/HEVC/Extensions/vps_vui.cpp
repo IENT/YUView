@@ -46,7 +46,7 @@ void vps_vui::parse(SubByteReaderLogging &   reader,
                     const vector<unsigned> & MaxSubLayersInLayerSetMinus1,
                     const unsigned           MaxLayersMinus1,
                     const umap_1d<unsigned> &NumDirectRefLayers,
-                    const vector<unsigned> & layer_id_in_nuh,
+                    const umap_1d<unsigned> &layer_id_in_nuh,
                     const umap_1d<unsigned> &LayerIdxInVps,
                     const umap_2d<unsigned> &IdDirectRefLayer,
                     const unsigned           vps_num_hrd_parameters,
@@ -119,9 +119,9 @@ void vps_vui::parse(SubByteReaderLogging &   reader,
         this->loop_filter_not_across_tiles_flag[i] = reader.readFlag("tiles_in_use_flag");
     }
     for (unsigned i = vps_base_layer_internal_flag ? 1 : 2; i <= MaxLayersMinus1; i++)
-      for (unsigned j = 0; j < NumDirectRefLayers.at(layer_id_in_nuh[i]); j++)
+      for (unsigned j = 0; j < NumDirectRefLayers.at(layer_id_in_nuh.at(i)); j++)
       {
-        const auto layerIdx = LayerIdxInVps.at(IdDirectRefLayer.at(layer_id_in_nuh[i]).at(j));
+        const auto layerIdx = LayerIdxInVps.at(IdDirectRefLayer.at(layer_id_in_nuh.at(i)).at(j));
         if (tiles_in_use_flag[i] && tiles_in_use_flag[layerIdx])
           this->tile_boundaries_aligned_flag[i][j] =
               reader.readFlag(formatArray("tile_boundaries_aligned_flag", i, j));
@@ -139,9 +139,9 @@ void vps_vui::parse(SubByteReaderLogging &   reader,
   if (this->ilp_restricted_ref_layers_flag)
   {
     for (unsigned i = 1; i <= MaxLayersMinus1; i++)
-      for (unsigned j = 0; j < NumDirectRefLayers.at(layer_id_in_nuh[i]); j++)
+      for (unsigned j = 0; j < NumDirectRefLayers.at(layer_id_in_nuh.at(i)); j++)
       {
-        if (vps_base_layer_internal_flag || IdDirectRefLayer.at(layer_id_in_nuh[i]).at(j) > 0)
+        if (vps_base_layer_internal_flag || IdDirectRefLayer.at(layer_id_in_nuh.at(i)).at(j) > 0)
         {
           this->min_spatial_segment_offset_plus1[i][j] =
               reader.readUEV(formatArray("min_spatial_segment_offset_plus1", i, j));
@@ -167,7 +167,7 @@ void vps_vui::parse(SubByteReaderLogging &   reader,
                              MaxSubLayersInLayerSetMinus1);
 
   for (unsigned i = 1; i <= MaxLayersMinus1; i++)
-    if (NumDirectRefLayers.at(layer_id_in_nuh[i]) == 0)
+    if (NumDirectRefLayers.at(layer_id_in_nuh.at(i)) == 0)
       this->base_layer_parameter_set_compatibility_flag[i] =
           reader.readFlag(formatArray("base_layer_parameter_set_compatibility_flag", i));
 }
