@@ -98,7 +98,6 @@ void video_parameter_set_rbsp::parse(SubByteReaderLogging &reader)
       else
         this->cprms_present_flag.push_back(reader.readFlag(formatArray("cprms_present_flag", i)));
 
-      // hrd_parameters...
       hrd_parameters hrdParameters;
       hrdParameters.parse(reader, cprms_present_flag[i], vps_max_sub_layers_minus1);
       this->vps_hrd_parameters.push_back(hrdParameters);
@@ -110,15 +109,25 @@ void video_parameter_set_rbsp::parse(SubByteReaderLogging &reader)
 
   this->vps_extension_flag = reader.readFlag("vps_extension_flag");
   if (vps_extension_flag)
-    reader.logArbitrary("vps_extension()", "", "", "", "Not implemented yet...");
+  {
+    while (!reader.byte_aligned())
+      reader.readFlag("vps_extension_alignment_bit_equal_to_one", Options().withCheckEqualTo(1));
 
-  // TODO:
-  // Here comes the VPS extension.
-  // This is specified in the annex F, multilayer and stuff.
-  // This could be added and is definitely interesting.
-  // ... later
+    vpsExtension.parse(reader,
+                       this->vps_max_layers_minus1,
+                       this->vps_base_layer_internal_flag,
+                       this->vps_max_sub_layers_minus1,
+                       this->vps_num_layer_sets_minus1);
 
-  // rbspTrailingBits.parse(reader);
+    this->vps_extension2_flag = reader.readFlag("vps_extension2_flag");
+    if (this->vps_extension2_flag)
+    {
+      while (reader.more_rbsp_data())
+        reader.readFlag("vps_extension_data_flag");
+    }
+  }
+
+  rbspTrailingBits.parse(reader);
 }
 
 } // namespace parser::hevc
