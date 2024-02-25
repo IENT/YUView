@@ -60,6 +60,8 @@ void dpb_size::parse(SubByteReaderLogging &   reader,
       if (j > 0 && this->sub_layer_flag_info_present_flag[i])
         this->sub_layer_dpb_info_present_flag[i][j] =
             reader.readFlag(formatArray("sub_layer_dpb_info_present_flag", i, j));
+      if (j == 0)
+        this->sub_layer_dpb_info_present_flag[i][j] = true;
       if (this->sub_layer_dpb_info_present_flag[i][j])
       {
         for (unsigned k = 0; k < NumLayersInIdList.at(currLsIdx); k++)

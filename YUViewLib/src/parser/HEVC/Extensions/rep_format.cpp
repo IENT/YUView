@@ -50,8 +50,8 @@ void rep_format::parse(SubByteReaderLogging &reader)
     chroma_format_vps_idc = reader.readBits("chroma_format_vps_idc", 2);
     if (this->chroma_format_vps_idc == 3)
       this->separate_colour_plane_vps_flag = reader.readFlag("separate_colour_plane_vps_flag");
-    this->bit_depth_vps_luma_minus8   = reader.readBits("bit_depth_vps_luma_minus8", 2);
-    this->bit_depth_vps_chroma_minus8 = reader.readBits("bit_depth_vps_chroma_minus8", 2);
+    this->bit_depth_vps_luma_minus8   = reader.readBits("bit_depth_vps_luma_minus8", 4);
+    this->bit_depth_vps_chroma_minus8 = reader.readBits("bit_depth_vps_chroma_minus8", 4);
   }
   this->conformance_window_vps_flag = reader.readFlag("conformance_window_vps_flag");
   if (this->conformance_window_vps_flag)

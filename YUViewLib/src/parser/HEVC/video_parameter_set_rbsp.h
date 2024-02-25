@@ -60,13 +60,17 @@ public:
 
   profile_tier_level profileTierLevel;
 
-  bool         vps_sub_layer_ordering_info_present_flag{};
-  unsigned     vps_max_dec_pic_buffering_minus1[7]{};
-  unsigned     vps_max_num_reorder_pics[7]{};
-  unsigned     vps_max_latency_increase_plus1[7]{};
-  unsigned     vps_max_layer_id{};
-  unsigned     vps_num_layer_sets_minus1{};
-  vector<bool> layer_id_included_flag[7]{};
+  bool          vps_sub_layer_ordering_info_present_flag{};
+  unsigned      vps_max_dec_pic_buffering_minus1[7]{};
+  unsigned      vps_max_num_reorder_pics[7]{};
+  unsigned      vps_max_latency_increase_plus1[7]{};
+  unsigned      vps_max_layer_id{};
+  unsigned      vps_num_layer_sets_minus1{};
+  umap_2d<bool> layer_id_included_flag{};
+
+  void              calculateValues7_3();
+  umap_2d<unsigned> LayerSetLayerIdList;
+  umap_1d<unsigned> NumLayersInIdList;
 
   bool             vps_timing_info_present_flag{};
   unsigned         vps_num_units_in_tick{};

@@ -52,7 +52,9 @@ public:
              const bool                    vps_base_layer_internal_flag,
              const unsigned                vps_max_sub_layers_minus1,
              const unsigned                vps_num_layer_sets_minus1,
-             const unsigned                vps_num_hrd_parameters);
+             const unsigned                vps_num_hrd_parameters,
+             const umap_1d<unsigned> &     NumLayersInIdListVPS,
+             const umap_2d<unsigned> &     LayerSetLayerIdListVPS);
 
   profile_tier_level profileTierLevel;
   bool               splitting_flag{};

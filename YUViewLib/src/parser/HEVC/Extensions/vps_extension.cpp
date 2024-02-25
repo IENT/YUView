@@ -41,14 +41,19 @@ namespace parser::hevc
 
 using namespace reader;
 
-void vps_extension::parse(SubByteReaderLogging &reader,
-                          const unsigned        vps_max_layers_minus1,
-                          const bool            vps_base_layer_internal_flag,
-                          const unsigned        vps_max_sub_layers_minus1,
-                          const unsigned        vps_num_layer_sets_minus1,
-                          const unsigned        vps_num_hrd_parameters)
+void vps_extension::parse(SubByteReaderLogging &   reader,
+                          const unsigned           vps_max_layers_minus1,
+                          const bool               vps_base_layer_internal_flag,
+                          const unsigned           vps_max_sub_layers_minus1,
+                          const unsigned           vps_num_layer_sets_minus1,
+                          const unsigned           vps_num_hrd_parameters,
+                          const umap_1d<unsigned> &NumLayersInIdListVPS,
+                          const umap_2d<unsigned> &LayerSetLayerIdListVPS)
 {
   SubByteReaderLoggingSubLevel subLevel(reader, "vps_extension()");
+
+  this->NumLayersInIdList   = NumLayersInIdListVPS;
+  this->LayerSetLayerIdList = LayerSetLayerIdListVPS;
 
   if (vps_max_layers_minus1 > 0 && vps_base_layer_internal_flag)
     profileTierLevel.parse(reader, false, vps_max_sub_layers_minus1);
@@ -108,8 +113,8 @@ void vps_extension::parse(SubByteReaderLogging &reader,
 
   if (this->NumIndependentLayers > 1)
     this->num_add_layer_sets = reader.readUEV("num_add_layer_sets");
+  this->NumLayerSets = vps_num_layer_sets_minus1 + 1 + num_add_layer_sets;
 
-  this->NumLayersInIdList[0] = 1;
   for (unsigned i = 0; i < this->num_add_layer_sets; i++)
   {
     for (unsigned j = 1; j < this->NumIndependentLayers; j++)
@@ -127,6 +132,9 @@ void vps_extension::parse(SubByteReaderLogging &reader,
     for (unsigned i = 0; i <= this->MaxLayersMinus1; i++)
       sub_layers_vps_max_minus1.push_back(
           reader.readBits(formatArray("sub_layers_vps_max_minus1", i), 3));
+  else
+    for (unsigned i = 0; i <= this->MaxLayersMinus1; i++)
+      sub_layers_vps_max_minus1.push_back(vps_max_sub_layers_minus1);
   this->calcualteValuesF10();
 
   this->max_tid_ref_present_flag = reader.readFlag("max_tid_ref_present_flag");
@@ -150,7 +158,6 @@ void vps_extension::parse(SubByteReaderLogging &reader,
         reader, this->vps_profile_present_flag[i], vps_max_sub_layers_minus1);
   }
 
-  this->NumLayerSets = vps_num_layer_sets_minus1 + 1 + num_add_layer_sets;
   if (this->NumLayerSets > 1)
   {
     this->num_add_olss             = reader.readUEV("num_add_olss");
@@ -171,7 +178,7 @@ void vps_extension::parse(SubByteReaderLogging &reader,
 
     if (i > vps_num_layer_sets_minus1 || this->defaultOutputLayerIdc == 2)
     {
-      for (unsigned j = 0; j < this->NumLayersInIdList[this->OlsIdxToLsIdx[i]]; j++)
+      for (unsigned j = 0; j < NumLayersInIdList[this->OlsIdxToLsIdx[i]]; j++)
       {
         this->output_layer_flag[i][j] = reader.readFlag(formatArray("output_layer_flag", i, j));
         this->OutputLayerFlag[i][j]   = this->output_layer_flag[i][j];
