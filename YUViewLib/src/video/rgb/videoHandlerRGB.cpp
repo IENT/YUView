@@ -89,12 +89,12 @@ const auto componentShowMapper =
  */
 videoHandlerRGB::RGBFormatList::RGBFormatList()
 {
-  append(PixelFormatRGB(8, DataLayout::Packed, ChannelOrder::RGB));
-  append(PixelFormatRGB(10, DataLayout::Packed, ChannelOrder::RGB));
-  append(PixelFormatRGB(8, DataLayout::Packed, ChannelOrder::RGB, AlphaMode::First));
-  append(PixelFormatRGB(8, DataLayout::Packed, ChannelOrder::BRG));
-  append(PixelFormatRGB(10, DataLayout::Packed, ChannelOrder::BRG));
-  append(PixelFormatRGB(10, DataLayout::Planar, ChannelOrder::RGB));
+  this->append(PixelFormatRGB(8, DataLayout::Packed, ChannelOrder::RGB));
+  this->append(PixelFormatRGB(10, DataLayout::Packed, ChannelOrder::RGB));
+  this->append(PixelFormatRGB(8, DataLayout::Packed, ChannelOrder::RGB, AlphaMode::First));
+  this->append(PixelFormatRGB(8, DataLayout::Packed, ChannelOrder::BRG));
+  this->append(PixelFormatRGB(10, DataLayout::Packed, ChannelOrder::BRG));
+  this->append(PixelFormatRGB(10, DataLayout::Planar, ChannelOrder::RGB));
 }
 
 /* Put all the names of the RGB formats into a list and return it
@@ -400,11 +400,11 @@ void videoHandlerRGB::slotRGBFormatControlChanged()
   auto selectionIdx     = ui.rgbFormatComboBox->currentIndex();
   auto nrBytesOldFormat = getBytesPerFrame();
 
-  if (selectionIdx == this->rgbPresetList.count())
+  const auto customFormatSelected = selectionIdx == this->rgbPresetList.count();
+  if (customFormatSelected)
   {
     DEBUG_RGB("videoHandlerRGB::slotRGBFormatControlChanged custom format");
 
-    // The user selected the "custom format..." option
     videoHandlerRGBCustomFormatDialog dialog(this->srcPixelFormat);
     if (dialog.exec() == QDialog::Accepted)
       this->srcPixelFormat = dialog.getSelectedRGBFormat();
@@ -415,24 +415,24 @@ void videoHandlerRGB::slotRGBFormatControlChanged()
     {
       // Valid pixel format which is not in the list. Add it...
       this->rgbPresetList.append(this->srcPixelFormat);
-      int                  nrItems = ui.rgbFormatComboBox->count();
-      const QSignalBlocker blocker(ui.rgbFormatComboBox);
-      ui.rgbFormatComboBox->insertItem(nrItems - 1,
-                                       QString::fromStdString(this->srcPixelFormat.getName()));
+      int                  nrItems = this->ui.rgbFormatComboBox->count();
+      const QSignalBlocker blocker(this->ui.rgbFormatComboBox);
+      this->ui.rgbFormatComboBox->insertItem(
+          nrItems - 1, QString::fromStdString(this->srcPixelFormat.getName()));
       idx = this->rgbPresetList.indexOf(this->srcPixelFormat);
     }
 
-    if (idx > 0)
+    if (idx >= 0)
     {
       // Format found. Set it without another call to this function.
-      const QSignalBlocker blocker(ui.rgbFormatComboBox);
+      const QSignalBlocker blocker(this->ui.rgbFormatComboBox);
       ui.rgbFormatComboBox->setCurrentIndex(idx);
     }
 
     selectionIdx = idx;
   }
 
-  this->setSrcPixelFormat(rgbPresetList.at(selectionIdx));
+  this->setSrcPixelFormat(this->rgbPresetList.at(selectionIdx));
 
   // Set the current frame in the buffer to be invalid and clear the cache.
   // Emit that this item needs redraw and the cache needs updating.
