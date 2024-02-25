@@ -30,39 +30,43 @@
  *   along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#pragma once
+#include "delta_dlt.h"
 
-#include <common/Typedef.h>
+#include <parser/common/Functions.h>
 
-#include <map>
-#include <string>
-#include <vector>
+#include <cmath>
 
-namespace parser
+namespace parser::hevc
 {
 
-namespace
-{
+using namespace reader;
 
-template <typename T> std::string formatArrayArguments(T variable)
+void delta_dlt::parse(SubByteReaderLogging &reader,
+                      const unsigned        pps_bit_depth_for_depth_layers_minus8)
 {
-  return "[" + std::to_string(variable) + "]";
+  SubByteReaderLoggingSubLevel subLevel(reader, "delta_dlt()");
+
+  const auto numBits      = pps_bit_depth_for_depth_layers_minus8 + 8;
+  this->num_val_delta_dlt = reader.readBits("num_val_delta_dlt", numBits);
+  if (this->num_val_delta_dlt > 0)
+  {
+    if (num_val_delta_dlt > 1)
+      this->max_diff = reader.readBits("max_diff", numBits);
+    if (this->num_val_delta_dlt > 2 && this->max_diff > 0)
+    {
+      const auto numBitsDiff = std::ceil(std::log2(this->max_diff + 1));
+      this->min_diff_minus1  = reader.readBits("min_diff_minus1", numBitsDiff);
+    }
+    this->delta_dlt_val0 = reader.readBits("delta_dlt_val0", numBits);
+    if (this->max_diff > (this->min_diff_minus1 + 1))
+    {
+      const auto minDiff     = (this->min_diff_minus1 + 1);
+      const auto numBitsDiff = std::ceil(std::log2(this->max_diff - minDiff + 1));
+      for (unsigned k = 1; k < num_val_delta_dlt; k++)
+        this->delta_val_diff_minus_min.push_back(
+            reader.readBits(formatArray("delta_val_diff_minus_min", k), numBitsDiff));
+    }
+  }
 }
 
-template <typename T, typename... Args> std::string formatArrayArguments(T first, Args... args)
-{
-  return "[" + std::to_string(first) + "]" + formatArrayArguments(args...);
-}
-
-} // namespace
-
-template <typename... Args> std::string formatArray(std::string variableName, Args... args)
-{
-  return variableName + formatArrayArguments(args...);
-}
-
-std::string convertSliceCountsToString(const std::map<std::string, unsigned int> &sliceCounts);
-std::vector<std::string> splitX26XOptionsString(const std::string str, const std::string seperator);
-size_t                   getStartCodeOffset(const ByteVector &data);
-
-} // namespace parser
+} // namespace parser::hevc

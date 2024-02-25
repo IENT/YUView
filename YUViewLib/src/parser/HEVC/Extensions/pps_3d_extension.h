@@ -32,64 +32,29 @@
 
 #pragma once
 
-#include "Extensions/vps_extension.h"
-#include "NalUnitHEVC.h"
-#include "hrd_parameters.h"
+#include "delta_dlt.h"
 #include "parser/common/SubByteReaderLogging.h"
-#include "profile_tier_level.h"
-#include "rbsp_trailing_bits.h"
 
 namespace parser::hevc
 {
 
-// The video parameter set. 7.3.2.1
-class video_parameter_set_rbsp : public NalRBSP
+// I.7.3.2.3.7 Picture parameter set 3D extension syntax
+class pps_3d_extension
 {
 public:
-  video_parameter_set_rbsp() {}
+  pps_3d_extension() {}
 
   void parse(reader::SubByteReaderLogging &reader);
 
-  unsigned vps_video_parameter_set_id{};
-  bool     vps_base_layer_internal_flag{};
-  bool     vps_base_layer_available_flag{};
-  unsigned vps_max_layers_minus1{};
-  unsigned vps_max_sub_layers_minus1{};
-  bool     vps_temporal_id_nesting_flag{};
-  unsigned vps_reserved_0xffff_16bits{};
+  bool           dlts_present_flag{};
+  unsigned       pps_depth_layers_minus1{};
+  unsigned       pps_bit_depth_for_depth_layers_minus8{};
+  vector<bool>   dlt_flag{};
+  vector<bool>   dlt_pred_flag{};
+  vector<bool>   dlt_val_flags_present_flag{};
+  vector2d<bool> dlt_value_flag{};
 
-  profile_tier_level profileTierLevel;
-
-  bool          vps_sub_layer_ordering_info_present_flag{};
-  unsigned      vps_max_dec_pic_buffering_minus1[7]{};
-  unsigned      vps_max_num_reorder_pics[7]{};
-  unsigned      vps_max_latency_increase_plus1[7]{};
-  unsigned      vps_max_layer_id{};
-  unsigned      vps_num_layer_sets_minus1{};
-  umap_2d<bool> layer_id_included_flag{};
-
-  void              calculateValues7_3();
-  umap_2d<unsigned> LayerSetLayerIdList;
-  umap_1d<unsigned> NumLayersInIdList;
-
-  bool             vps_timing_info_present_flag{};
-  unsigned         vps_num_units_in_tick{};
-  unsigned         vps_time_scale{};
-  bool             vps_poc_proportional_to_timing_flag{};
-  unsigned         vps_num_ticks_poc_diff_one_minus1{};
-  unsigned         vps_num_hrd_parameters{};
-  vector<unsigned> hrd_layer_set_idx;
-  vector<bool>     cprms_present_flag;
-
-  vector<hrd_parameters> vps_hrd_parameters;
-  bool                   vps_extension_flag{};
-  vps_extension          vpsExtension{};
-  bool                   vps_extension2_flag{};
-
-  rbsp_trailing_bits rbspTrailingBits;
-
-  // Calculated values
-  double frameRate{};
+  delta_dlt deltaDlt;
 };
 
 } // namespace parser::hevc

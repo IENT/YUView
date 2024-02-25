@@ -30,39 +30,18 @@
  *   along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#pragma once
+#include "sps_multilayer_extension.h"
 
-#include <common/Typedef.h>
-
-#include <map>
-#include <string>
-#include <vector>
-
-namespace parser
+namespace parser::hevc
 {
 
-namespace
-{
+using namespace reader;
 
-template <typename T> std::string formatArrayArguments(T variable)
+void sps_multilayer_extension::parse(SubByteReaderLogging &reader)
 {
-  return "[" + std::to_string(variable) + "]";
+  SubByteReaderLoggingSubLevel subLevel(reader, "sps_multilayer_extension()");
+
+  this->inter_view_mv_vert_constraint_flag = reader.readFlag("inter_view_mv_vert_constraint_flag");
 }
 
-template <typename T, typename... Args> std::string formatArrayArguments(T first, Args... args)
-{
-  return "[" + std::to_string(first) + "]" + formatArrayArguments(args...);
-}
-
-} // namespace
-
-template <typename... Args> std::string formatArray(std::string variableName, Args... args)
-{
-  return variableName + formatArrayArguments(args...);
-}
-
-std::string convertSliceCountsToString(const std::map<std::string, unsigned int> &sliceCounts);
-std::vector<std::string> splitX26XOptionsString(const std::string str, const std::string seperator);
-size_t                   getStartCodeOffset(const ByteVector &data);
-
-} // namespace parser
+} // namespace parser::hevc

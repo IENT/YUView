@@ -138,8 +138,9 @@ protected:
                                // in case the frame has multiple NAL units
   // The POC of the current frame. We save this we encounter a NAL from the next POC; then we add
   // it.
-  int  curFramePOC{-1};
-  bool curFrameIsRandomAccess{false};
+  int      curFramePOC{-1};
+  bool     curFrameIsRandomAccess{false};
+  unsigned curFrameLayerID{0};
 
   hevc::AUDelimiterDetector auDelimiterDetector;
 

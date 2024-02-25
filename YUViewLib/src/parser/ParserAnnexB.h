@@ -137,17 +137,20 @@ protected:
   struct AnnexBFrame
   {
     AnnexBFrame() = default;
-    int poc{-1}; //< The poc of this frame
-    std::optional<pairUint64>
-         fileStartEndPos;          //< The start and end position of all slice NAL units (if known)
-    bool randomAccessPoint{false}; //< Can we start decoding here?
+    int                       poc{-1};
+    std::optional<pairUint64> fileStartEndPos;
+    bool                      randomAccessPoint{false};
+    unsigned                  layerID{};
 
     bool operator<(AnnexBFrame const &b) const { return (this->poc < b.poc); }
     bool operator==(AnnexBFrame const &b) const { return (this->poc == b.poc); }
   };
 
   // Returns false if the POC was already present int the list
-  bool addFrameToList(int poc, std::optional<pairUint64> fileStartEndPos, bool randomAccessPoint);
+  bool addFrameToList(int                       poc,
+                      std::optional<pairUint64> fileStartEndPos,
+                      bool                      randomAccessPoint,
+                      unsigned                  layerID);
 
   static void logNALSize(const ByteVector &        data,
                          std::shared_ptr<TreeItem> root,

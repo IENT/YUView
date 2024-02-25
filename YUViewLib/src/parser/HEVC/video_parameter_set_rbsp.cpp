@@ -68,13 +68,16 @@ void video_parameter_set_rbsp::parse(SubByteReaderLogging &reader)
   }
 
   this->vps_max_layer_id = reader.readBits("vps_max_layer_id", 6);
+
   this->vps_num_layer_sets_minus1 =
       reader.readUEV("vps_num_layer_sets_minus1", Options().withCheckRange({0, 1023}));
 
   for (unsigned int i = 1; i <= this->vps_num_layer_sets_minus1; i++)
     for (unsigned int j = 0; j <= this->vps_max_layer_id; j++)
-      this->layer_id_included_flag->push_back(
-          reader.readFlag(formatArray("layer_id_included_flag", i)));
+      this->layer_id_included_flag[i][j] =
+          reader.readFlag(formatArray("layer_id_included_flag", i, j));
+
+  this->calculateValues7_3();
 
   this->vps_timing_info_present_flag = reader.readFlag("vps_timing_info_present_flag");
   if (this->vps_timing_info_present_flag)
@@ -98,7 +101,6 @@ void video_parameter_set_rbsp::parse(SubByteReaderLogging &reader)
       else
         this->cprms_present_flag.push_back(reader.readFlag(formatArray("cprms_present_flag", i)));
 
-      // hrd_parameters...
       hrd_parameters hrdParameters;
       hrdParameters.parse(reader, cprms_present_flag[i], vps_max_sub_layers_minus1);
       this->vps_hrd_parameters.push_back(hrdParameters);
@@ -110,15 +112,44 @@ void video_parameter_set_rbsp::parse(SubByteReaderLogging &reader)
 
   this->vps_extension_flag = reader.readFlag("vps_extension_flag");
   if (vps_extension_flag)
-    reader.logArbitrary("vps_extension()", "", "", "", "Not implemented yet...");
+  {
+    while (!reader.byte_aligned())
+      reader.readFlag("vps_extension_alignment_bit_equal_to_one", Options().withCheckEqualTo(1));
 
-  // TODO:
-  // Here comes the VPS extension.
-  // This is specified in the annex F, multilayer and stuff.
-  // This could be added and is definitely interesting.
-  // ... later
+    vpsExtension.parse(reader,
+                       this->vps_max_layers_minus1,
+                       this->vps_base_layer_internal_flag,
+                       this->vps_max_sub_layers_minus1,
+                       this->vps_num_layer_sets_minus1,
+                       this->vps_num_hrd_parameters,
+                       this->NumLayersInIdList,
+                       this->LayerSetLayerIdList);
 
-  // rbspTrailingBits.parse(reader);
+    this->vps_extension2_flag = reader.readFlag("vps_extension2_flag");
+    if (this->vps_extension2_flag)
+    {
+      while (reader.more_rbsp_data())
+        reader.readFlag("vps_extension_data_flag");
+    }
+  }
+
+  rbspTrailingBits.parse(reader);
+}
+
+void video_parameter_set_rbsp::calculateValues7_3()
+{
+  this->NumLayersInIdList[0]      = 1;
+  this->LayerSetLayerIdList[0][0] = 0;
+
+  for (unsigned i = 1; i <= this->vps_num_layer_sets_minus1; i++)
+  {
+    auto n = 0u;
+    for (unsigned m = 0; m <= this->vps_max_layer_id; m++)
+      if (this->layer_id_included_flag.count(i) == 1 &&
+          this->layer_id_included_flag.at(i).count(m) == 1 && this->layer_id_included_flag[i][m])
+        this->LayerSetLayerIdList[i][n++] = m;
+    this->NumLayersInIdList[i] = n;
+  }
 }
 
 } // namespace parser::hevc

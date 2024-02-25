@@ -32,37 +32,35 @@
 
 #pragma once
 
-#include <common/Typedef.h>
+#include "parser/common/SubByteReaderLogging.h"
 
-#include <map>
-#include <string>
-#include <vector>
-
-namespace parser
+namespace parser::hevc
 {
 
-namespace
+// F.7.3.2.3.6 Colour mapping octants syntax
+class colour_mapping_octants
 {
+public:
+  colour_mapping_octants() {}
 
-template <typename T> std::string formatArrayArguments(T variable)
-{
-  return "[" + std::to_string(variable) + "]";
-}
+  void parse(reader::SubByteReaderLogging &reader,
+             const unsigned                cm_octant_depth,
+             const unsigned                cm_y_part_num_log2,
+             const unsigned                CMResLSBits,
+             const unsigned                inpDepth,
+             const unsigned                idxY,
+             const unsigned                idxCb,
+             const unsigned                idxCr,
+             const unsigned                inpLength);
 
-template <typename T, typename... Args> std::string formatArrayArguments(T first, Args... args)
-{
-  return "[" + std::to_string(first) + "]" + formatArrayArguments(args...);
-}
+  bool split_octant_flag{};
 
-} // namespace
+  std::unique_ptr<array3d<colour_mapping_octants, 2, 2, 2>> colourMappingOctants;
 
-template <typename... Args> std::string formatArray(std::string variableName, Args... args)
-{
-  return variableName + formatArrayArguments(args...);
-}
+  umap_4d<bool>     coded_res_flag;
+  umap_5d<unsigned> res_coeff_q;
+  umap_5d<unsigned> res_coeff_r;
+  umap_5d<unsigned> res_coeff_s;
+};
 
-std::string convertSliceCountsToString(const std::map<std::string, unsigned int> &sliceCounts);
-std::vector<std::string> splitX26XOptionsString(const std::string str, const std::string seperator);
-size_t                   getStartCodeOffset(const ByteVector &data);
-
-} // namespace parser
+} // namespace parser::hevc

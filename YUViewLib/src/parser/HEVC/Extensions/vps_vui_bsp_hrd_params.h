@@ -32,37 +32,37 @@
 
 #pragma once
 
-#include <common/Typedef.h>
+#include "parser/common/SubByteReaderLogging.h"
 
-#include <map>
-#include <string>
-#include <vector>
+#include "../hrd_parameters.h"
 
-namespace parser
+namespace parser::hevc
 {
 
-namespace
+// F.7.3.2.2.4 Sequence parameter set multilayer extension syntax
+class vps_vui_bsp_hrd_params
 {
+public:
+  vps_vui_bsp_hrd_params() {}
 
-template <typename T> std::string formatArrayArguments(T variable)
-{
-  return "[" + std::to_string(variable) + "]";
-}
+  void parse(reader::SubByteReaderLogging &reader,
+             const unsigned                vps_num_hrd_parameters,
+             const unsigned                NumOutputLayerSets,
+             const umap_1d<unsigned> &     NumLayersInIdList,
+             const umap_1d<unsigned> &     OlsIdxToLsIdx,
+             const vector<unsigned> &      MaxSubLayersInLayerSetMinus1);
 
-template <typename T, typename... Args> std::string formatArrayArguments(T first, Args... args)
-{
-  return "[" + std::to_string(first) + "]" + formatArrayArguments(args...);
-}
+  unsigned          vps_num_add_hrd_params{};
+  umap_1d<bool>     cprms_add_present_flag;
+  umap_1d<unsigned> num_sub_layer_hrd_minus1;
 
-} // namespace
+  umap_1d<hrd_parameters> hrdParameters;
+  umap_1d<unsigned>       num_signalled_partitioning_schemes;
+  umap_2d<unsigned>       num_partitions_in_scheme_minus1;
+  umap_4d<bool>           layer_included_in_partition_flag;
+  umap_3d<unsigned>       num_bsp_schedules_minus1;
+  umap_5d<unsigned>       bsp_hrd_idx;
+  umap_5d<unsigned>       bsp_sched_idx;
+};
 
-template <typename... Args> std::string formatArray(std::string variableName, Args... args)
-{
-  return variableName + formatArrayArguments(args...);
-}
-
-std::string convertSliceCountsToString(const std::map<std::string, unsigned int> &sliceCounts);
-std::vector<std::string> splitX26XOptionsString(const std::string str, const std::string seperator);
-size_t                   getStartCodeOffset(const ByteVector &data);
-
-} // namespace parser
+} // namespace parser::hevc

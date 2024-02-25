@@ -32,37 +32,31 @@
 
 #pragma once
 
-#include <common/Typedef.h>
+#include "parser/common/SubByteReaderLogging.h"
 
-#include <map>
-#include <string>
-#include <vector>
-
-namespace parser
+namespace parser::hevc
 {
 
-namespace
+// F.7.3.2.1.3 DPB size syntax
+class dpb_size
 {
+public:
+  dpb_size() {}
 
-template <typename T> std::string formatArrayArguments(T variable)
-{
-  return "[" + std::to_string(variable) + "]";
-}
+  void parse(reader::SubByteReaderLogging &reader,
+             const unsigned                NumOutputLayerSets,
+             const umap_1d<unsigned> &     OlsIdxToLsIdx,
+             const vector<unsigned> &      MaxSubLayersInLayerSetMinus1,
+             const umap_1d<unsigned> &     NumLayersInIdList,
+             const umap_2d<bool>           NecessaryLayerFlag,
+             const bool                    vps_base_layer_internal_flag,
+             const umap_2d<unsigned> &     LayerSetLayerIdList);
 
-template <typename T, typename... Args> std::string formatArrayArguments(T first, Args... args)
-{
-  return "[" + std::to_string(first) + "]" + formatArrayArguments(args...);
-}
+  vector<bool>      sub_layer_flag_info_present_flag;
+  umap_2d<bool>     sub_layer_dpb_info_present_flag;
+  umap_3d<unsigned> max_vps_dec_pic_buffering_minus1;
+  umap_2d<unsigned> max_vps_num_reorder_pics;
+  umap_2d<unsigned> max_vps_latency_increase_plus1;
+};
 
-} // namespace
-
-template <typename... Args> std::string formatArray(std::string variableName, Args... args)
-{
-  return variableName + formatArrayArguments(args...);
-}
-
-std::string convertSliceCountsToString(const std::map<std::string, unsigned int> &sliceCounts);
-std::vector<std::string> splitX26XOptionsString(const std::string str, const std::string seperator);
-size_t                   getStartCodeOffset(const ByteVector &data);
-
-} // namespace parser
+} // namespace parser::hevc

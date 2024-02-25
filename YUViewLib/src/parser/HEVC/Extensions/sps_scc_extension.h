@@ -32,37 +32,31 @@
 
 #pragma once
 
-#include <common/Typedef.h>
+#include "parser/common/SubByteReaderLogging.h"
 
-#include <map>
-#include <string>
-#include <vector>
-
-namespace parser
+namespace parser::hevc
 {
 
-namespace
+// 7.3.2.2.3 Sequence parameter set screen content coding extension syntax
+class sps_scc_extension
 {
+public:
+  sps_scc_extension() {}
 
-template <typename T> std::string formatArrayArguments(T variable)
-{
-  return "[" + std::to_string(variable) + "]";
-}
+  void parse(reader::SubByteReaderLogging &reader,
+             const unsigned                chroma_format_idc,
+             const unsigned                bitDepthLuma,
+             const unsigned                bitDepthChroma);
 
-template <typename T, typename... Args> std::string formatArrayArguments(T first, Args... args)
-{
-  return "[" + std::to_string(first) + "]" + formatArrayArguments(args...);
-}
+  bool              sps_curr_pic_ref_enabled_flag{};
+  bool              palette_mode_enabled_flag{};
+  unsigned          palette_max_size{};
+  unsigned          delta_palette_max_predictor_size{};
+  bool              sps_palette_predictor_initializers_present_flag{};
+  unsigned          sps_num_palette_predictor_initializers_minus1{};
+  umap_2d<unsigned> sps_palette_predictor_initializer;
+  unsigned          motion_vector_resolution_control_idc{};
+  bool              intra_boundary_filtering_disabled_flag{};
+};
 
-} // namespace
-
-template <typename... Args> std::string formatArray(std::string variableName, Args... args)
-{
-  return variableName + formatArrayArguments(args...);
-}
-
-std::string convertSliceCountsToString(const std::map<std::string, unsigned int> &sliceCounts);
-std::vector<std::string> splitX26XOptionsString(const std::string str, const std::string seperator);
-size_t                   getStartCodeOffset(const ByteVector &data);
-
-} // namespace parser
+} // namespace parser::hevc

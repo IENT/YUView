@@ -32,37 +32,25 @@
 
 #pragma once
 
-#include <common/Typedef.h>
+#include "parser/common/SubByteReaderLogging.h"
 
-#include <map>
-#include <string>
-#include <vector>
-
-namespace parser
+namespace parser::hevc
 {
 
-namespace
+// I.7.3.2.3.8 Delta depth look-up table syntax
+class delta_dlt
 {
+public:
+  delta_dlt() {}
 
-template <typename T> std::string formatArrayArguments(T variable)
-{
-  return "[" + std::to_string(variable) + "]";
-}
+  void parse(reader::SubByteReaderLogging &reader,
+             const unsigned                pps_bit_depth_for_depth_layers_minus8);
 
-template <typename T, typename... Args> std::string formatArrayArguments(T first, Args... args)
-{
-  return "[" + std::to_string(first) + "]" + formatArrayArguments(args...);
-}
+  unsigned         num_val_delta_dlt{};
+  unsigned         max_diff{};
+  unsigned         min_diff_minus1{};
+  unsigned         delta_dlt_val0{};
+  vector<unsigned> delta_val_diff_minus_min;
+};
 
-} // namespace
-
-template <typename... Args> std::string formatArray(std::string variableName, Args... args)
-{
-  return variableName + formatArrayArguments(args...);
-}
-
-std::string convertSliceCountsToString(const std::map<std::string, unsigned int> &sliceCounts);
-std::vector<std::string> splitX26XOptionsString(const std::string str, const std::string seperator);
-size_t                   getStartCodeOffset(const ByteVector &data);
-
-} // namespace parser
+} // namespace parser::hevc

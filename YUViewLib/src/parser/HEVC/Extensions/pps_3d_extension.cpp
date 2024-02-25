@@ -30,39 +30,51 @@
  *   along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#pragma once
+#include "pps_3d_extension.h"
 
-#include <common/Typedef.h>
+#include <parser/common/Functions.h>
 
-#include <map>
-#include <string>
-#include <vector>
-
-namespace parser
+namespace parser::hevc
 {
 
-namespace
-{
+using namespace reader;
 
-template <typename T> std::string formatArrayArguments(T variable)
+void pps_3d_extension::parse(SubByteReaderLogging &reader)
 {
-  return "[" + std::to_string(variable) + "]";
+  SubByteReaderLoggingSubLevel subLevel(reader, "pps_3d_extension()");
+
+  this->dlts_present_flag = reader.readFlag("dlts_present_flag");
+  if (this->dlts_present_flag)
+  {
+    this->pps_depth_layers_minus1 = reader.readBits("pps_depth_layers_minus1", 6);
+    this->pps_bit_depth_for_depth_layers_minus8 =
+        reader.readBits("pps_bit_depth_for_depth_layers_minus8", 4);
+
+    const auto depthMaxValue = (1u << (pps_bit_depth_for_depth_layers_minus8 + 8)) - 1;
+
+    for (unsigned i = 0; i <= this->pps_depth_layers_minus1; i++)
+    {
+      this->dlt_flag.push_back(reader.readFlag(formatArray("dlt_flag", i)));
+      if (this->dlt_flag.at(i))
+      {
+        this->dlt_pred_flag.push_back(reader.readFlag(formatArray("dlt_pred_flag", i)));
+        if (!this->dlt_pred_flag.at(i))
+          this->dlt_val_flags_present_flag.push_back(
+              reader.readFlag(formatArray("dlt_val_flags_present_flag", i)));
+        else
+          this->dlt_val_flags_present_flag.push_back(false);
+
+        if (this->dlt_val_flags_present_flag.at(i))
+        {
+          dlt_value_flag.push_back({});
+          for (unsigned j = 0; j <= depthMaxValue; j++)
+            dlt_value_flag[i].push_back(reader.readFlag(formatArray("dlt_value_flag", i, j)));
+        }
+        else
+          this->deltaDlt.parse(reader, this->pps_bit_depth_for_depth_layers_minus8);
+      }
+    }
+  }
 }
 
-template <typename T, typename... Args> std::string formatArrayArguments(T first, Args... args)
-{
-  return "[" + std::to_string(first) + "]" + formatArrayArguments(args...);
-}
-
-} // namespace
-
-template <typename... Args> std::string formatArray(std::string variableName, Args... args)
-{
-  return variableName + formatArrayArguments(args...);
-}
-
-std::string convertSliceCountsToString(const std::map<std::string, unsigned int> &sliceCounts);
-std::vector<std::string> splitX26XOptionsString(const std::string str, const std::string seperator);
-size_t                   getStartCodeOffset(const ByteVector &data);
-
-} // namespace parser
+} // namespace parser::hevc

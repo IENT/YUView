@@ -30,39 +30,37 @@
  *   along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#pragma once
+#include "rep_format.h"
 
-#include <common/Typedef.h>
-
-#include <map>
-#include <string>
-#include <vector>
-
-namespace parser
+namespace parser::hevc
 {
 
-namespace
-{
+using namespace reader;
 
-template <typename T> std::string formatArrayArguments(T variable)
+void rep_format::parse(SubByteReaderLogging &reader)
 {
-  return "[" + std::to_string(variable) + "]";
+  SubByteReaderLoggingSubLevel subLevel(reader, "rep_format()");
+
+  this->pic_width_vps_in_luma_samples  = reader.readBits("pic_width_vps_in_luma_samples", 16);
+  this->pic_height_vps_in_luma_samples = reader.readBits("pic_height_vps_in_luma_samples", 16);
+  this->chroma_and_bit_depth_vps_present_flag =
+      reader.readFlag("chroma_and_bit_depth_vps_present_flag");
+  if (this->chroma_and_bit_depth_vps_present_flag)
+  {
+    chroma_format_vps_idc = reader.readBits("chroma_format_vps_idc", 2);
+    if (this->chroma_format_vps_idc == 3)
+      this->separate_colour_plane_vps_flag = reader.readFlag("separate_colour_plane_vps_flag");
+    this->bit_depth_vps_luma_minus8   = reader.readBits("bit_depth_vps_luma_minus8", 4);
+    this->bit_depth_vps_chroma_minus8 = reader.readBits("bit_depth_vps_chroma_minus8", 4);
+  }
+  this->conformance_window_vps_flag = reader.readFlag("conformance_window_vps_flag");
+  if (this->conformance_window_vps_flag)
+  {
+    conf_win_vps_left_offset   = reader.readUEV("conf_win_vps_left_offset");
+    conf_win_vps_right_offset  = reader.readUEV("conf_win_vps_right_offset");
+    conf_win_vps_top_offset    = reader.readUEV("conf_win_vps_top_offset");
+    conf_win_vps_bottom_offset = reader.readUEV("conf_win_vps_bottom_offset");
+  }
 }
 
-template <typename T, typename... Args> std::string formatArrayArguments(T first, Args... args)
-{
-  return "[" + std::to_string(first) + "]" + formatArrayArguments(args...);
-}
-
-} // namespace
-
-template <typename... Args> std::string formatArray(std::string variableName, Args... args)
-{
-  return variableName + formatArrayArguments(args...);
-}
-
-std::string convertSliceCountsToString(const std::map<std::string, unsigned int> &sliceCounts);
-std::vector<std::string> splitX26XOptionsString(const std::string str, const std::string seperator);
-size_t                   getStartCodeOffset(const ByteVector &data);
-
-} // namespace parser
+} // namespace parser::hevc

@@ -193,7 +193,8 @@ ParserAnnexBAVC::parseAndAddNALUnit(int                                         
       // Save the info of the last frame
       if (!this->addFrameToList(*this->curFrameData->poc,
                                 this->curFrameData->fileStartEndPos,
-                                this->curFrameData->isRandomAccess))
+                                this->curFrameData->isRandomAccess,
+                                0))
       {
         if (parent)
           parent->createChildItem("Error - POC " + std::to_string(*this->curFrameData->poc) +
@@ -481,7 +482,8 @@ ParserAnnexBAVC::parseAndAddNALUnit(int                                         
       // Save the info of the last frame
       if (!this->addFrameToList(*this->curFrameData->poc,
                                 this->curFrameData->fileStartEndPos,
-                                this->curFrameData->isRandomAccess))
+                                this->curFrameData->isRandomAccess,
+                                0))
       {
         throw std::logic_error("Error - POC " + std::to_string(*this->curFrameData->poc) +
                                " already in the POC list");

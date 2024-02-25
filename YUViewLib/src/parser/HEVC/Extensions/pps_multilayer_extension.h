@@ -32,64 +32,47 @@
 
 #pragma once
 
-#include "Extensions/vps_extension.h"
-#include "NalUnitHEVC.h"
-#include "hrd_parameters.h"
+#include "colour_mapping_table.h"
 #include "parser/common/SubByteReaderLogging.h"
-#include "profile_tier_level.h"
-#include "rbsp_trailing_bits.h"
+
 
 namespace parser::hevc
 {
 
-// The video parameter set. 7.3.2.1
-class video_parameter_set_rbsp : public NalRBSP
+// F.7.3.2.3.4 Picture parameter set multilayer extension syntax
+class pps_multilayer_extension
 {
 public:
-  video_parameter_set_rbsp() {}
+  pps_multilayer_extension() {}
 
   void parse(reader::SubByteReaderLogging &reader);
 
-  unsigned vps_video_parameter_set_id{};
-  bool     vps_base_layer_internal_flag{};
-  bool     vps_base_layer_available_flag{};
-  unsigned vps_max_layers_minus1{};
-  unsigned vps_max_sub_layers_minus1{};
-  bool     vps_temporal_id_nesting_flag{};
-  unsigned vps_reserved_0xffff_16bits{};
+  bool             poc_reset_info_present_flag{};
+  bool             pps_infer_scaling_list_flag{};
+  unsigned         pps_scaling_list_ref_layer_id{};
+  unsigned         num_ref_loc_offsets{};
+  vector<unsigned> ref_loc_offset_layer_id;
 
-  profile_tier_level profileTierLevel;
+  vector<bool> scaled_ref_layer_offset_present_flag;
+  umap_1d<int> scaled_ref_layer_left_offset;
+  umap_1d<int> scaled_ref_layer_top_offset;
+  umap_1d<int> scaled_ref_layer_right_offset;
+  umap_1d<int> scaled_ref_layer_bottom_offset;
 
-  bool          vps_sub_layer_ordering_info_present_flag{};
-  unsigned      vps_max_dec_pic_buffering_minus1[7]{};
-  unsigned      vps_max_num_reorder_pics[7]{};
-  unsigned      vps_max_latency_increase_plus1[7]{};
-  unsigned      vps_max_layer_id{};
-  unsigned      vps_num_layer_sets_minus1{};
-  umap_2d<bool> layer_id_included_flag{};
+  vector<bool> ref_region_offset_present_flag;
+  umap_1d<int> ref_region_left_offset;
+  umap_1d<int> ref_region_top_offset;
+  umap_1d<int> ref_region_right_offset;
+  umap_1d<int> ref_region_bottom_offset;
 
-  void              calculateValues7_3();
-  umap_2d<unsigned> LayerSetLayerIdList;
-  umap_1d<unsigned> NumLayersInIdList;
+  vector<bool>      resample_phase_set_present_flag;
+  umap_1d<unsigned> phase_hor_luma;
+  umap_1d<unsigned> phase_ver_luma;
+  umap_1d<unsigned> phase_hor_chroma_plus8;
+  umap_1d<unsigned> phase_ver_chroma_plus8;
 
-  bool             vps_timing_info_present_flag{};
-  unsigned         vps_num_units_in_tick{};
-  unsigned         vps_time_scale{};
-  bool             vps_poc_proportional_to_timing_flag{};
-  unsigned         vps_num_ticks_poc_diff_one_minus1{};
-  unsigned         vps_num_hrd_parameters{};
-  vector<unsigned> hrd_layer_set_idx;
-  vector<bool>     cprms_present_flag;
-
-  vector<hrd_parameters> vps_hrd_parameters;
-  bool                   vps_extension_flag{};
-  vps_extension          vpsExtension{};
-  bool                   vps_extension2_flag{};
-
-  rbsp_trailing_bits rbspTrailingBits;
-
-  // Calculated values
-  double frameRate{};
+  bool                 colour_mapping_enabled_flag{};
+  colour_mapping_table colourMappingTable;
 };
 
 } // namespace parser::hevc

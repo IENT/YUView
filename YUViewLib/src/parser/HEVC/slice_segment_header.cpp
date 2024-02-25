@@ -33,11 +33,10 @@
 #include "slice_segment_header.h"
 
 #include "parser/common/CodingEnum.h"
-#include <parser/common/Functions.h>
 #include "pic_parameter_set_rbsp.h"
 #include "seq_parameter_set_rbsp.h"
 #include "slice_segment_layer_rbsp.h"
-
+#include <parser/common/Functions.h>
 
 #include <cmath>
 
@@ -56,7 +55,10 @@ static parser::CodingEnum<SliceType> sliceTypeCoding({{0, SliceType::B, "B", "B-
 
 using namespace reader;
 
-std::string to_string(SliceType sliceType) { return sliceTypeCoding.getMeaning(sliceType); }
+std::string to_string(SliceType sliceType)
+{
+  return sliceTypeCoding.getMeaning(sliceType);
+}
 
 void slice_segment_header::parse(SubByteReaderLogging & reader,
                                  bool                   firstAUInDecodingOrder,
@@ -95,7 +97,18 @@ void slice_segment_header::parse(SubByteReaderLogging & reader,
 
   if (!dependent_slice_segment_flag)
   {
-    for (unsigned int i = 0; i < pps->num_extra_slice_header_bits; i++)
+    unsigned i = 0;
+    if (pps->num_extra_slice_header_bits > i)
+    {
+      i++;
+      this->discardable_flag = reader.readFlag("discardable_flag");
+    }
+    if (pps->num_extra_slice_header_bits > i)
+    {
+      i++;
+      this->cross_layer_bla_flag = reader.readFlag("cross_layer_bla_flag");
+    }
+    for (; i < pps->num_extra_slice_header_bits; i++)
       this->slice_reserved_flag.push_back(reader.readFlag(formatArray("slice_reserved_flag", i)));
 
     auto sliceTypeIdx = reader.readUEV(
@@ -148,7 +161,8 @@ void slice_segment_header::parse(SubByteReaderLogging & reader,
               this->lt_idx_sps[i] = reader.readBits(formatArray("lt_idx_sps", i), nrBits);
             }
 
-            this->UsedByCurrPicLt.push_back(sps->used_by_curr_pic_lt_sps_flag[this->lt_idx_sps[i]]);
+            this->UsedByCurrPicLt.push_back(
+                sps->used_by_curr_pic_lt_sps_flag.at(this->lt_idx_sps[i]));
           }
           else
           {
@@ -170,6 +184,12 @@ void slice_segment_header::parse(SubByteReaderLogging & reader,
       if (sps->sps_temporal_mvp_enabled_flag)
         this->slice_temporal_mvp_enabled_flag = reader.readFlag("slice_temporal_mvp_enabled_flag");
     }
+
+    // This is not 100% done yet.
+    // if (nalUnitHeader.nuh_layer_id > 0 && !default_ref_layers_active_flag &&
+    //     NumDirectRefLayers[nuh_layer_id] > 0)
+    // {
+    // }
 
     if (sps->sample_adaptive_offset_enabled_flag)
     {

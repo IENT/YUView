@@ -30,39 +30,22 @@
  *   along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#pragma once
+#include "video_signal_info.h"
 
-#include <common/Typedef.h>
-
-#include <map>
-#include <string>
-#include <vector>
-
-namespace parser
+namespace parser::hevc
 {
 
-namespace
-{
+using namespace reader;
 
-template <typename T> std::string formatArrayArguments(T variable)
+void video_signal_info::parse(SubByteReaderLogging &reader)
 {
-  return "[" + std::to_string(variable) + "]";
+  SubByteReaderLoggingSubLevel subLevel(reader, "video_signal_info()");
+
+  this->video_vps_format             = reader.readBits("video_vps_format", 3);
+  this->video_full_range_vps_flag    = reader.readFlag("video_full_range_vps_flag");
+  this->colour_primaries_vps         = reader.readBits("colour_primaries_vps", 8);
+  this->transfer_characteristics_vps = reader.readBits("transfer_characteristics_vps", 8);
+  this->matrix_coeffs_vps            = reader.readBits("matrix_coeffs_vps", 8);
 }
 
-template <typename T, typename... Args> std::string formatArrayArguments(T first, Args... args)
-{
-  return "[" + std::to_string(first) + "]" + formatArrayArguments(args...);
-}
-
-} // namespace
-
-template <typename... Args> std::string formatArray(std::string variableName, Args... args)
-{
-  return variableName + formatArrayArguments(args...);
-}
-
-std::string convertSliceCountsToString(const std::map<std::string, unsigned int> &sliceCounts);
-std::vector<std::string> splitX26XOptionsString(const std::string str, const std::string seperator);
-size_t                   getStartCodeOffset(const ByteVector &data);
-
-} // namespace parser
+} // namespace parser::hevc

@@ -283,7 +283,8 @@ ParserAnnexBHEVC::parseAndAddNALUnit(int                                        
     if (curFramePOC != -1)
     {
       // Save the info of the last frame
-      if (!this->addFrameToList(curFramePOC, curFrameFileStartEndPos, curFrameIsRandomAccess))
+      if (!this->addFrameToList(
+              curFramePOC, curFrameFileStartEndPos, curFrameIsRandomAccess, curFrameLayerID))
       {
         throw std::logic_error("Error - POC " + std::to_string(curFramePOC) +
                                " alread in the POC list.");
@@ -291,10 +292,12 @@ ParserAnnexBHEVC::parseAndAddNALUnit(int                                        
       if (curFrameFileStartEndPos)
         DEBUG_HEVC("ParserAnnexBHEVC::parseAndAddNALUnit Adding start/end "
                    << curFrameFileStartEndPos->first << "/" << curFrameFileStartEndPos->second
-                   << " - POC " << curFramePOC << (curFrameIsRandomAccess ? " - ra" : ""));
+                   << " - POC " << curFramePOC << " layer " << curFrameLayerID
+                   << (curFrameIsRandomAccess ? " - ra" : ""));
       else
         DEBUG_HEVC("ParserAnnexBHEVC::parseAndAddNALUnit Adding start/end NA/NA - POC "
-                   << curFramePOC << (curFrameIsRandomAccess ? " - ra" : ""));
+                   << curFramePOC << " layer " << curFrameLayerID
+                   << (curFrameIsRandomAccess ? " - ra" : ""));
     }
     // The file ended
     return parseResult;
@@ -345,7 +348,7 @@ ParserAnnexBHEVC::parseAndAddNALUnit(int                                        
     else if (nalHEVC->header.nal_unit_type == hevc::NalType::SPS_NUT)
     {
       auto newSPS = std::make_shared<seq_parameter_set_rbsp>();
-      newSPS->parse(reader);
+      newSPS->parse(reader, nalHEVC->header);
 
       this->activeParameterSets.spsMap[newSPS->sps_seq_parameter_set_id] = newSPS;
 
@@ -445,7 +448,8 @@ ParserAnnexBHEVC::parseAndAddNALUnit(int                                        
         if (curFramePOC != -1)
         {
           // Save the info of the last frame
-          if (!this->addFrameToList(curFramePOC, curFrameFileStartEndPos, curFrameIsRandomAccess))
+          if (!this->addFrameToList(
+                  curFramePOC, curFrameFileStartEndPos, curFrameIsRandomAccess, curFrameLayerID))
           {
             throw std::logic_error("Error - POC " + std::to_string(curFramePOC) +
                                    " alread in the POC list.");
@@ -453,14 +457,17 @@ ParserAnnexBHEVC::parseAndAddNALUnit(int                                        
           if (curFrameFileStartEndPos)
             DEBUG_HEVC("ParserAnnexBHEVC::parseAndAddNALUnit Adding start/end "
                        << curFrameFileStartEndPos->first << "/" << curFrameFileStartEndPos->second
-                       << " - POC " << curFramePOC << (curFrameIsRandomAccess ? " - ra" : ""));
+                       << " - POC " << curFramePOC << curFramePOC << " layer "
+                       << (curFrameIsRandomAccess ? " - ra" : ""));
           else
             DEBUG_HEVC("ParserAnnexBHEVC::parseAndAddNALUnit Adding start/end NA/NA - POC "
-                       << curFramePOC << (curFrameIsRandomAccess ? " - ra" : ""));
+                       << curFramePOC << curFramePOC << " layer "
+                       << (curFrameIsRandomAccess ? " - ra" : ""));
         }
         curFrameFileStartEndPos = nalStartEndPosFile;
         curFramePOC             = newSlice->sliceSegmentHeader.globalPOC;
         curFrameIsRandomAccess  = nalHEVC->header.isIRAP();
+        curFrameLayerID         = nalHEVC->header.nuh_layer_id;
 
         {
           std::shared_ptr<seq_parameter_set_rbsp> refSPS;

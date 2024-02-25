@@ -41,62 +41,83 @@ namespace parser::hevc
 
 using namespace reader;
 
-void seq_parameter_set_rbsp::parse(SubByteReaderLogging &reader)
+void seq_parameter_set_rbsp::parse(SubByteReaderLogging & reader,
+                                   const nal_unit_header &nalUnitHeader)
 {
   SubByteReaderLoggingSubLevel subLevel(reader, "seq_parameter_set_rbsp()");
 
-  this->sps_video_parameter_set_id   = reader.readBits("sps_video_parameter_set_id", 4);
-  this->sps_max_sub_layers_minus1    = reader.readBits("sps_max_sub_layers_minus1", 3);
-  this->sps_temporal_id_nesting_flag = reader.readFlag("sps_temporal_id_nesting_flag");
+  this->sps_video_parameter_set_id = reader.readBits("sps_video_parameter_set_id", 4);
+  if (nalUnitHeader.nuh_layer_id == 0)
+    this->sps_max_sub_layers_minus1 = reader.readBits("sps_max_sub_layers_minus1", 3);
+  else
+    this->sps_ext_or_max_sub_layers_minus1 = reader.readBits("sps_ext_or_max_sub_layers_minus1", 3);
 
-  // parse profile tier level
-  this->profileTierLevel.parse(reader, true, sps_max_sub_layers_minus1);
-
-  /// Back to the seq_parameter_set_rbsp
-  this->sps_seq_parameter_set_id = reader.readUEV("sps_seq_parameter_set_id");
-  this->chroma_format_idc        = reader.readUEV(
-      "chroma_format_idc",
-      Options().withMeaningVector({"moochrome", "4:2:0", "4:2:2", "4:4:4", "4:4:4"}));
-  if (this->chroma_format_idc == 3)
-    this->separate_colour_plane_flag = reader.readFlag("separate_colour_plane_flag");
-  this->ChromaArrayType = (this->separate_colour_plane_flag) ? 0 : this->chroma_format_idc;
-  reader.logCalculatedValue("ChromaArrayType", this->ChromaArrayType);
-
-  // Rec. ITU-T H.265 v3 (04/2015) - 6.2 - Table 6-1
-  this->SubWidthC  = (this->chroma_format_idc == 1 || this->chroma_format_idc == 2) ? 2 : 1;
-  this->SubHeightC = (this->chroma_format_idc == 1) ? 2 : 1;
-  reader.logCalculatedValue("SubWidthC", this->SubWidthC);
-  reader.logCalculatedValue("SubHeightC", this->SubHeightC);
-
-  this->pic_width_in_luma_samples  = reader.readUEV("pic_width_in_luma_samples");
-  this->pic_height_in_luma_samples = reader.readUEV("pic_height_in_luma_samples");
-  this->conformance_window_flag    = reader.readFlag("conformance_window_flag");
-
-  if (this->conformance_window_flag)
+  const auto MultiLayerExtSpsFlag =
+      (nalUnitHeader.nuh_layer_id != 0 && this->sps_ext_or_max_sub_layers_minus1 == 7);
+  if (!MultiLayerExtSpsFlag)
   {
-    this->conf_win_left_offset   = reader.readUEV("conf_win_left_offset");
-    this->conf_win_right_offset  = reader.readUEV("conf_win_right_offset");
-    this->conf_win_top_offset    = reader.readUEV("conf_win_top_offset");
-    this->conf_win_bottom_offset = reader.readUEV("conf_win_bottom_offset");
+    this->sps_temporal_id_nesting_flag = reader.readFlag("sps_temporal_id_nesting_flag");
+    this->profileTierLevel.parse(reader, true, sps_max_sub_layers_minus1);
   }
 
-  this->bit_depth_luma_minus8             = reader.readUEV("bit_depth_luma_minus8");
-  this->bit_depth_chroma_minus8           = reader.readUEV("bit_depth_chroma_minus8");
+  this->sps_seq_parameter_set_id = reader.readUEV("sps_seq_parameter_set_id");
+
+  if (MultiLayerExtSpsFlag)
+  {
+    this->update_rep_format_flag = reader.readFlag("update_rep_format_flag");
+    if (this->update_rep_format_flag)
+      this->sps_rep_format_idx = reader.readBits("sps_rep_format_idx", 8);
+  }
+  else
+  {
+    this->chroma_format_idc = reader.readUEV(
+        "chroma_format_idc",
+        Options().withMeaningVector({"moochrome", "4:2:0", "4:2:2", "4:4:4", "4:4:4"}));
+    if (this->chroma_format_idc == 3)
+      this->separate_colour_plane_flag = reader.readFlag("separate_colour_plane_flag");
+    this->ChromaArrayType = (this->separate_colour_plane_flag) ? 0 : this->chroma_format_idc;
+    reader.logCalculatedValue("ChromaArrayType", this->ChromaArrayType);
+
+    // Rec. ITU-T H.265 v3 (04/2015) - 6.2 - Table 6-1
+    this->SubWidthC  = (this->chroma_format_idc == 1 || this->chroma_format_idc == 2) ? 2 : 1;
+    this->SubHeightC = (this->chroma_format_idc == 1) ? 2 : 1;
+    reader.logCalculatedValue("SubWidthC", this->SubWidthC);
+    reader.logCalculatedValue("SubHeightC", this->SubHeightC);
+
+    this->pic_width_in_luma_samples  = reader.readUEV("pic_width_in_luma_samples");
+    this->pic_height_in_luma_samples = reader.readUEV("pic_height_in_luma_samples");
+    this->conformance_window_flag    = reader.readFlag("conformance_window_flag");
+
+    if (this->conformance_window_flag)
+    {
+      this->conf_win_left_offset   = reader.readUEV("conf_win_left_offset");
+      this->conf_win_right_offset  = reader.readUEV("conf_win_right_offset");
+      this->conf_win_top_offset    = reader.readUEV("conf_win_top_offset");
+      this->conf_win_bottom_offset = reader.readUEV("conf_win_bottom_offset");
+    }
+
+    this->bit_depth_luma_minus8   = reader.readUEV("bit_depth_luma_minus8");
+    this->bit_depth_chroma_minus8 = reader.readUEV("bit_depth_chroma_minus8");
+  }
+
   this->log2_max_pic_order_cnt_lsb_minus4 = reader.readUEV("log2_max_pic_order_cnt_lsb_minus4");
 
-  this->sps_sub_layer_ordering_info_present_flag =
-      reader.readFlag("sps_sub_layer_ordering_info_present_flag");
-  for (unsigned i =
-           (this->sps_sub_layer_ordering_info_present_flag ? 0 : this->sps_max_sub_layers_minus1);
-       i <= this->sps_max_sub_layers_minus1;
-       i++)
+  if (!MultiLayerExtSpsFlag)
   {
-    this->sps_max_dec_pic_buffering_minus1.push_back(
-        reader.readUEV(formatArray("sps_max_dec_pic_buffering_minus1", i)));
-    this->sps_max_num_reorder_pics.push_back(
-        reader.readUEV(formatArray("sps_max_num_reorder_pics", i)));
-    this->sps_max_latency_increase_plus1.push_back(
-        reader.readUEV(formatArray("sps_max_latency_increase_plus1", i)));
+    this->sps_sub_layer_ordering_info_present_flag =
+        reader.readFlag("sps_sub_layer_ordering_info_present_flag");
+    for (unsigned i =
+             (this->sps_sub_layer_ordering_info_present_flag ? 0 : this->sps_max_sub_layers_minus1);
+         i <= this->sps_max_sub_layers_minus1;
+         i++)
+    {
+      this->sps_max_dec_pic_buffering_minus1.push_back(
+          reader.readUEV(formatArray("sps_max_dec_pic_buffering_minus1", i)));
+      this->sps_max_num_reorder_pics.push_back(
+          reader.readUEV(formatArray("sps_max_num_reorder_pics", i)));
+      this->sps_max_latency_increase_plus1.push_back(
+          reader.readUEV(formatArray("sps_max_latency_increase_plus1", i)));
+    }
   }
 
   this->log2_min_luma_coding_block_size_minus3 =
@@ -171,22 +192,40 @@ void seq_parameter_set_rbsp::parse(SubByteReaderLogging &reader)
     this->sps_range_extension_flag      = reader.readFlag("sps_range_extension_flag");
     this->sps_multilayer_extension_flag = reader.readFlag("sps_multilayer_extension_flag");
     this->sps_3d_extension_flag         = reader.readFlag("sps_3d_extension_flag");
-    this->sps_extension_5bits           = reader.readBits("sps_extension_5bits", 5);
+    this->sps_scc_extension_flag        = reader.readFlag("sps_scc_extension_flag");
+    this->sps_extension_4bits           = reader.readBits("sps_extension_4bits", 4);
   }
 
   // Now the extensions follow ...
   // This would also be interesting but later.
   if (this->sps_range_extension_flag)
-    reader.logArbitrary("sps_range_extension()", 0, "", "", "Not implemented yet...");
+    this->rangeExtension.parse(reader);
 
   if (this->sps_multilayer_extension_flag)
-    reader.logArbitrary("sps_multilayer_extension()", 0, "", "", "Not implemented yet...");
+    this->multilayerExtension.parse(reader);
 
   if (this->sps_3d_extension_flag)
-    reader.logArbitrary("sps_3d_extension()", 0, "", "", "Not implemented yet...");
+    this->extension3D.parse(reader);
 
-  if (this->sps_extension_5bits != 0)
-    reader.logArbitrary("sps_extension_data_flag()", 0, "", "", "Not implemented yet...");
+  if (this->sps_scc_extension_flag)
+  {
+    if (MultiLayerExtSpsFlag)
+    {
+      // For multiview, the bit depths would have to be obtained from the main SPS ...
+      // Is this even possible to combine SCC with Multiview?
+      reader.logArbitrary("sps_scc_extension()", "", "", "", "Not supported for Multiview...");
+    }
+    else
+    {
+      this->sccExtension.parse(reader,
+                               this->chroma_format_idc,
+                               this->bit_depth_luma_minus8 + 8,
+                               this->bit_depth_chroma_minus8 + 8);
+    }
+  }
+
+  if (this->sps_extension_4bits != 0)
+    reader.logArbitrary("sps_extension_data_flag()", "", "", "", "Not implemented yet...");
 
   // rbspTrailingBits.parse(reader);
 

@@ -30,39 +30,31 @@
  *   along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#pragma once
+#include "sps_range_extension.h"
 
-#include <common/Typedef.h>
-
-#include <map>
-#include <string>
-#include <vector>
-
-namespace parser
+namespace parser::hevc
 {
 
-namespace
-{
+using namespace reader;
 
-template <typename T> std::string formatArrayArguments(T variable)
+void sps_range_extension::parse(SubByteReaderLogging &reader)
 {
-  return "[" + std::to_string(variable) + "]";
+  SubByteReaderLoggingSubLevel subLevel(reader, "sps_range_extension()");
+
+  this->transform_skip_rotation_enabled_flag =
+      reader.readFlag("transform_skip_rotation_enabled_flag");
+  this->transform_skip_context_enabled_flag =
+      reader.readFlag("transform_skip_context_enabled_flag");
+  this->implicit_rdpcm_enabled_flag        = reader.readFlag("implicit_rdpcm_enabled_flag");
+  this->explicit_rdpcm_enabled_flag        = reader.readFlag("explicit_rdpcm_enabled_flag");
+  this->extended_precision_processing_flag = reader.readFlag("extended_precision_processing_flag");
+  this->intra_smoothing_disabled_flag      = reader.readFlag("intra_smoothing_disabled_flag");
+  this->high_precision_offsets_enabled_flag =
+      reader.readFlag("high_precision_offsets_enabled_flag");
+  this->persistent_rice_adaptation_enabled_flag =
+      reader.readFlag("persistent_rice_adaptation_enabled_flag");
+  this->cabac_bypass_alignment_enabled_flag =
+      reader.readFlag("cabac_bypass_alignment_enabled_flag");
 }
 
-template <typename T, typename... Args> std::string formatArrayArguments(T first, Args... args)
-{
-  return "[" + std::to_string(first) + "]" + formatArrayArguments(args...);
-}
-
-} // namespace
-
-template <typename... Args> std::string formatArray(std::string variableName, Args... args)
-{
-  return variableName + formatArrayArguments(args...);
-}
-
-std::string convertSliceCountsToString(const std::map<std::string, unsigned int> &sliceCounts);
-std::vector<std::string> splitX26XOptionsString(const std::string str, const std::string seperator);
-size_t                   getStartCodeOffset(const ByteVector &data);
-
-} // namespace parser
+} // namespace parser::hevc
