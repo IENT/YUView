@@ -1,7 +1,7 @@
 TEMPLATE = app
 
 CONFIG += qt console warn_on no_testcase_installs depend_includepath testcase
-CONFIG += c++1z
+CONFIG += c++17
 CONFIG -= debug_and_release
 CONFIG -= app_bundled
 

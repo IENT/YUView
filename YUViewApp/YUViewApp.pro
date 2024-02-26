@@ -2,7 +2,7 @@ QT += core gui widgets opengl xml concurrent network
 
 TARGET = YUView
 TEMPLATE = app
-CONFIG += c++11
+CONFIG += c++17
 CONFIG -= debug_and_release
 
 SOURCES += $$files(src/*.cpp, false)
