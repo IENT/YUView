@@ -170,9 +170,8 @@ void StatisticsType::savePlaylist(YUViewDomElement &root) const
     newChild.setAttribute("mapVectorToColor", mapVectorToColor);
   if (init.arrowHead != arrowHead)
   {
-    auto idx = indexInVec(stats::AllArrowHeads, arrowHead);
-    if (idx >= 0)
-      newChild.setAttribute("renderarrowHead", idx);
+    if (const auto index = vectorIndexOf(stats::AllArrowHeads, arrowHead))
+      newChild.setAttribute("renderarrowHead", *index);
   }
   if (init.renderGrid != renderGrid)
     newChild.setAttribute("renderGrid", renderGrid);

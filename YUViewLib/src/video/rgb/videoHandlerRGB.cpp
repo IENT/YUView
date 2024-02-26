@@ -57,6 +57,14 @@ const auto componentShowMapper =
                                       {ComponentDisplayMode::B, "B", "Blue Only"},
                                       {ComponentDisplayMode::A, "A", "Alpha Only"}});
 
+QStringList getFormattedNames(const std::vector<rgb::PixelFormatRGB> &rgbFormatList)
+{
+  QStringList formattedNames;
+  for (size_t i = 0; i < rgbFormatList.size(); i++)
+    formattedNames.append(QString::fromStdString(rgbFormatList.at(i).getName()));
+  return formattedNames;
+}
+
 } // namespace
 
 // Activate this if you want to know when which buffer is loaded/converted to image and so on.
@@ -84,41 +92,23 @@ const auto componentShowMapper =
 #endif
 #endif
 
-/* The default constructor of the RGBFormatList will fill the list with all supported RGB file
- * formats. Don't forget to implement actual support for all of them in the conversion functions.
- */
-videoHandlerRGB::RGBFormatList::RGBFormatList()
-{
-  this->append(PixelFormatRGB(8, DataLayout::Packed, ChannelOrder::RGB));
-  this->append(PixelFormatRGB(10, DataLayout::Packed, ChannelOrder::RGB));
-  this->append(PixelFormatRGB(8, DataLayout::Packed, ChannelOrder::RGB, AlphaMode::First));
-  this->append(PixelFormatRGB(8, DataLayout::Packed, ChannelOrder::BRG));
-  this->append(PixelFormatRGB(10, DataLayout::Packed, ChannelOrder::BRG));
-  this->append(PixelFormatRGB(10, DataLayout::Planar, ChannelOrder::RGB));
-}
+// PixelFormatRGB videoHandlerRGB::RGBFormatList::getFromName(const std::string &name) const
+// {
+//   for (int i = 0; i < count(); i++)
+//     if (at(i).getName() == name)
+//       return at(i);
 
-/* Put all the names of the RGB formats into a list and return it
- */
-std::vector<std::string> videoHandlerRGB::RGBFormatList::getFormattedNames() const
-{
-  std::vector<std::string> l;
-  for (int i = 0; i < count(); i++)
-    l.push_back(at(i).getName());
-  return l;
-}
+//   // If the format could not be found, we return the "Unknown Pixel Format" format
+//   return {};
+// }
 
-PixelFormatRGB videoHandlerRGB::RGBFormatList::getFromName(const std::string &name) const
-{
-  for (int i = 0; i < count(); i++)
-    if (at(i).getName() == name)
-      return at(i);
-
-  // If the format could not be found, we return the "Unknown Pixel Format" format
-  return {};
-}
-
-// Initialize the static rgbPresetList
-videoHandlerRGB::RGBFormatList videoHandlerRGB::rgbPresetList;
+std::vector<rgb::PixelFormatRGB> videoHandlerRGB::rgbPresetList = {
+    PixelFormatRGB(8, DataLayout::Packed, ChannelOrder::RGB),
+    PixelFormatRGB(10, DataLayout::Packed, ChannelOrder::RGB),
+    PixelFormatRGB(8, DataLayout::Packed, ChannelOrder::RGB, AlphaMode::First),
+    PixelFormatRGB(8, DataLayout::Packed, ChannelOrder::BRG),
+    PixelFormatRGB(10, DataLayout::Packed, ChannelOrder::BRG),
+    PixelFormatRGB(10, DataLayout::Planar, ChannelOrder::RGB)};
 
 videoHandlerRGB::videoHandlerRGB() : videoHandler()
 {
@@ -255,21 +245,20 @@ QLayout *videoHandlerRGB::createVideoHandlerControls(bool isSizeFixed)
   ui.setupUi();
 
   // Set all the values of the properties widget to the values of this class
-  ui.rgbFormatComboBox->addItems(functions::toQStringList(rgbPresetList.getFormattedNames()));
+  ui.rgbFormatComboBox->addItems(getFormattedNames(this->rgbPresetList));
   ui.rgbFormatComboBox->addItem("Custom...");
   ui.rgbFormatComboBox->setEnabled(!isSizeFixed);
-  int idx = rgbPresetList.indexOf(srcPixelFormat);
-  if (idx == -1 && srcPixelFormat.isValid())
+
+  if (!vectorContains(videoHandlerRGB::rgbPresetList, this->srcPixelFormat) &&
+      this->srcPixelFormat.isValid())
   {
-    // Custom pixel format (but a known pixel format). Add and select it.
-    rgbPresetList.append(srcPixelFormat);
-    int nrItems = ui.rgbFormatComboBox->count();
-    ui.rgbFormatComboBox->insertItem(nrItems - 1, QString::fromStdString(srcPixelFormat.getName()));
-    idx = rgbPresetList.indexOf(srcPixelFormat);
-    ui.rgbFormatComboBox->setCurrentIndex(idx);
+    this->rgbPresetList.push_back(this->srcPixelFormat);
+    const auto nrItems = ui.rgbFormatComboBox->count();
+    ui.rgbFormatComboBox->insertItem(nrItems - 1,
+                                     QString::fromStdString(this->srcPixelFormat.getName()));
   }
-  else if (idx > 0)
-    ui.rgbFormatComboBox->setCurrentIndex(idx);
+  if (const auto presetIndex = vectorIndexOf(videoHandlerRGB::rgbPresetList, this->srcPixelFormat))
+    ui.rgbFormatComboBox->setCurrentIndex(static_cast<int>(*presetIndex));
 
   ui.RScaleSpinBox->setValue(componentScale[0]);
   ui.RScaleSpinBox->setMaximum(1000);
@@ -400,7 +389,7 @@ void videoHandlerRGB::slotRGBFormatControlChanged()
   auto selectionIdx     = ui.rgbFormatComboBox->currentIndex();
   auto nrBytesOldFormat = getBytesPerFrame();
 
-  const auto customFormatSelected = selectionIdx == this->rgbPresetList.count();
+  const auto customFormatSelected = (selectionIdx == this->rgbPresetList.size());
   if (customFormatSelected)
   {
     DEBUG_RGB("videoHandlerRGB::slotRGBFormatControlChanged custom format");
@@ -409,27 +398,25 @@ void videoHandlerRGB::slotRGBFormatControlChanged()
     if (dialog.exec() == QDialog::Accepted)
       this->srcPixelFormat = dialog.getSelectedRGBFormat();
 
-    // Check if the custom format it in the presets list. If not, add it
-    auto idx = this->rgbPresetList.indexOf(this->srcPixelFormat);
-    if (idx == -1 && this->srcPixelFormat.isValid())
+    const auto isInPresetList =
+        vectorContains(videoHandlerRGB::rgbPresetList, this->srcPixelFormat);
+    if (!isInPresetList && this->srcPixelFormat.isValid())
     {
-      // Valid pixel format which is not in the list. Add it...
-      this->rgbPresetList.append(this->srcPixelFormat);
-      int                  nrItems = this->ui.rgbFormatComboBox->count();
+      this->rgbPresetList.push_back(this->srcPixelFormat);
+      const auto nrItems = ui.rgbFormatComboBox->count();
+
       const QSignalBlocker blocker(this->ui.rgbFormatComboBox);
-      this->ui.rgbFormatComboBox->insertItem(
-          nrItems - 1, QString::fromStdString(this->srcPixelFormat.getName()));
-      idx = this->rgbPresetList.indexOf(this->srcPixelFormat);
+      ui.rgbFormatComboBox->insertItem(nrItems - 1,
+                                       QString::fromStdString(this->srcPixelFormat.getName()));
     }
 
-    if (idx >= 0)
+    if (const auto presetIndex =
+            vectorIndexOf(videoHandlerRGB::rgbPresetList, this->srcPixelFormat))
     {
-      // Format found. Set it without another call to this function.
       const QSignalBlocker blocker(this->ui.rgbFormatComboBox);
-      ui.rgbFormatComboBox->setCurrentIndex(idx);
+      selectionIdx = static_cast<int>(*presetIndex);
+      ui.rgbFormatComboBox->setCurrentIndex(selectionIdx);
     }
-
-    selectionIdx = idx;
   }
 
   this->setSrcPixelFormat(this->rgbPresetList.at(selectionIdx));

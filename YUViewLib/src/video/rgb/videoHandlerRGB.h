@@ -161,18 +161,7 @@ public:
 protected:
   ComponentDisplayMode componentDisplayMode{ComponentDisplayMode::RGBA};
 
-  // A (static) convenience QList class that handles the preset PixelFormatRGBs
-  class RGBFormatList : public QList<rgb::PixelFormatRGB>
-  {
-  public:
-    // Default constructor. Fill the list with all the supported YUV formats.
-    RGBFormatList();
-    // Get all the YUV formats as a formatted list (for the drop-down control)
-    std::vector<std::string> getFormattedNames() const;
-    // Get the PixelFormatYUV with the given name
-    rgb::PixelFormatRGB getFromName(const std::string &name) const;
-  };
-  static RGBFormatList rgbPresetList;
+  static std::vector<rgb::PixelFormatRGB> rgbPresetList;
 
   // The currently selected RGB format
   rgb::PixelFormatRGB srcPixelFormat;

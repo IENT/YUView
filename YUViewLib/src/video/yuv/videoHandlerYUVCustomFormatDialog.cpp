@@ -64,11 +64,9 @@ videoHandlerYUVCustomFormatDialog::videoHandlerYUVCustomFormatDialog(
   for (auto bitDepth : BitDepthList)
     this->ui.comboBoxBitDepth->addItem(QString("%1").arg(bitDepth));
   {
-    auto idx = indexInVec(BitDepthList, yuvFormat.getBitsPerSample());
-    if (idx == -1)
-      idx = 0;
-    this->ui.comboBoxBitDepth->setCurrentIndex(idx);
-    this->ui.comboBoxEndianness->setEnabled(idx != 0);
+    const auto idx = vectorIndexOf(BitDepthList, yuvFormat.getBitsPerSample());
+    this->ui.comboBoxBitDepth->setCurrentIndex(idx ? static_cast<int>(*idx) : 0);
+    this->ui.comboBoxEndianness->setEnabled(idx.has_value());
   }
 
   // Endianness
@@ -95,9 +93,8 @@ videoHandlerYUVCustomFormatDialog::videoHandlerYUVCustomFormatDialog(
     // Set the packing order
     this->ui.groupBoxPacked->setChecked(true);
     auto supportedPackingFormats = getSupportedPackingFormats(yuvFormat.getSubsampling());
-    auto idx                     = indexInVec(supportedPackingFormats, yuvFormat.getPackingOrder());
-    if (idx != -1)
-      this->ui.comboBoxPackingOrder->setCurrentIndex(idx);
+    if (const auto idx = vectorIndexOf(supportedPackingFormats, yuvFormat.getPackingOrder()))
+      this->ui.comboBoxPackingOrder->setCurrentIndex(static_cast<int>(*idx));
     this->ui.checkBoxBytePacking->setChecked(yuvFormat.isBytePacking());
   }
 }

@@ -231,12 +231,13 @@ template <typename T, size_t N1, size_t N2> using array2d = std::array<std::arra
 template <typename T, size_t N1, size_t N2, size_t N3>
 using array3d = std::array<std::array<std::array<T, N3>, N2>, N1>;
 
-template <typename T> int indexInVec(const std::vector<T> &vec, const T &item)
+template <typename T>
+std::optional<std::size_t> vectorIndexOf(const std::vector<T> &vec, const T &item)
 {
   auto it = std::find(vec.begin(), vec.end(), item);
   if (it == vec.end())
-    return -1;
-  return int(std::distance(vec.begin(), it));
+    return {};
+  return static_cast<std::size_t>(std::distance(vec.begin(), it));
 }
 
 template <typename T> int vectorContains(const std::vector<T> &vec, const T &item)

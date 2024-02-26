@@ -942,7 +942,8 @@ void playlistItemCompressedVideo::createPropertiesWidget()
   // Add decoders we can use
   for (auto e : possibleDecoders)
     ui.comboBoxDecoder->addItem(QString::fromStdString(DecoderEngineMapper.getName(e)));
-  ui.comboBoxDecoder->setCurrentIndex(indexInVec(possibleDecoders, this->decoderEngine));
+  if (const auto index = vectorIndexOf(possibleDecoders, this->decoderEngine))
+    ui.comboBoxDecoder->setCurrentIndex(static_cast<int>(index.value()));
 
   // Connect signals/slots
   this->connect(ui.comboBoxDisplaySignal,
