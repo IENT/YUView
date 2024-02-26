@@ -146,7 +146,7 @@ public:
   // Create the YUV controls and return a pointer to the layout.
   // yuvFormatFixed: For example a YUV file does not have a fixed format (the user can change this),
   // other sources might provide a fixed format which the user cannot change (HEVC file, ...)
-  virtual QLayout *createVideoHandlerControls(bool isSizeFixed = false) override;
+  virtual QLayout *createVideoHandlerControls(bool isSizeAndFormatFixed = false) override;
 
   // Get the name of the currently selected YUV pixel format
   virtual QString getRawPixelFormatYUVName() const
@@ -245,7 +245,7 @@ private:
   QByteArray     diffYUV;
   PixelFormatYUV diffYUVFormat{};
 
-  QList<PixelFormatYUV> presetList;
+  static std::vector<PixelFormatYUV> formatPresetList;
 
 private slots:
 

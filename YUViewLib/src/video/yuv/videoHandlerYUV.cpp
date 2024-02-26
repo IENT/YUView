@@ -2471,6 +2471,13 @@ void convertYUVToImage(const QByteArray &        sourceBuffer,
 
 } // namespace
 
+std::vector<PixelFormatYUV> videoHandlerYUV::formatPresetList = {
+    PixelFormatYUV(Subsampling::YUV_420, 8, PlaneOrder::YUV),
+    PixelFormatYUV(Subsampling::YUV_420, 10, PlaneOrder::YUV),
+    PixelFormatYUV(Subsampling::YUV_422, 8, PlaneOrder::YUV),
+    PixelFormatYUV(Subsampling::YUV_444, 8, PlaneOrder::YUV),
+    PixelFormatYUV(PredefinedPixelFormat::V210)};
+
 videoHandlerYUV::videoHandlerYUV() : videoHandler()
 {
   // Set the default YUV transformation parameters.
@@ -2478,15 +2485,8 @@ videoHandlerYUV::videoHandlerYUV() : videoHandler()
   this->conversionSettings.mathParameters[Component::Chroma] = MathParameters(1, 128, false);
 
   // If we know nothing about the YUV format, assume YUV 4:2:0 8 bit planar by default.
-  this->srcPixelFormat = PixelFormatYUV(Subsampling::YUV_420, 8, PlaneOrder::YUV);
-
-  this->presetList.append(PixelFormatYUV(Subsampling::YUV_420, 8, PlaneOrder::YUV)); // YUV 4:2:0
-  this->presetList.append(
-      PixelFormatYUV(Subsampling::YUV_420, 10, PlaneOrder::YUV)); // YUV 4:2:0 10 bit
-  this->presetList.append(PixelFormatYUV(Subsampling::YUV_422, 8, PlaneOrder::YUV)); // YUV 4:2:2
-  this->presetList.append(PixelFormatYUV(Subsampling::YUV_444, 8, PlaneOrder::YUV)); // YUV 4:4:4
-  for (auto e : PredefinedPixelFormatMapper.getEnums())
-    this->presetList.append(e);
+  const auto defaultPixelFormat = PixelFormatYUV(Subsampling::YUV_420, 8, PlaneOrder::YUV);
+  this->srcPixelFormat          = defaultPixelFormat;
 }
 
 videoHandlerYUV::~videoHandlerYUV()
@@ -2684,18 +2684,18 @@ void videoHandlerYUV::yuv420_to_argb8888(quint8 *yp,
 }
 #endif
 
-QLayout *videoHandlerYUV::createVideoHandlerControls(bool isSizeFixed)
+QLayout *videoHandlerYUV::createVideoHandlerControls(bool isSizeAndFormatFixed)
 {
   // Absolutely always only call this function once!
   assert(!ui.created());
 
   QVBoxLayout *newVBoxLayout = nullptr;
-  if (!isSizeFixed)
+  if (!isSizeAndFormatFixed)
   {
     // Our parent (videoHandler) also has controls to add. Create a new vBoxLayout and append the
     // parent controls and our controls into that layout, separated by a line. Return that layout
     newVBoxLayout = new QVBoxLayout;
-    newVBoxLayout->addLayout(FrameHandler::createFrameHandlerControls(isSizeFixed));
+    newVBoxLayout->addLayout(FrameHandler::createFrameHandlerControls(false));
 
     QFrame *line = new QFrame;
     line->setObjectName(QStringLiteral("line"));
@@ -2707,22 +2707,22 @@ QLayout *videoHandlerYUV::createVideoHandlerControls(bool isSizeFixed)
   // Create the UI and setup all the controls
   ui.setupUi();
 
-  // Add the preset YUV formats. If the current format is in the list, add it and select it.
-  for (auto format : presetList)
+  for (const auto &format : videoHandlerYUV::formatPresetList)
     ui.yuvFormatComboBox->addItem(QString::fromStdString(format.getName()));
 
-  int idx = presetList.indexOf(srcPixelFormat);
-  if (idx == -1 && srcPixelFormat.isValid())
+  const auto currentFormatInPresetList =
+      vectorContains(videoHandlerYUV::formatPresetList, this->srcPixelFormat);
+  if (!currentFormatInPresetList && this->srcPixelFormat.isValid())
   {
-    // The currently set pixel format is not in the presets list. Add and select it.
-    ui.yuvFormatComboBox->addItem(QString::fromStdString(srcPixelFormat.getName()));
-    presetList.append(srcPixelFormat);
-    idx = presetList.indexOf(srcPixelFormat);
+    videoHandlerYUV::formatPresetList.push_back(this->srcPixelFormat);
+    ui.yuvFormatComboBox->addItem(QString::fromStdString(this->srcPixelFormat.getName()));
   }
-  ui.yuvFormatComboBox->setCurrentIndex(idx);
-  // Add the custom... entry that allows the user to add custom formats
   ui.yuvFormatComboBox->addItem("Custom...");
-  ui.yuvFormatComboBox->setEnabled(!isSizeFixed);
+  ui.yuvFormatComboBox->setEnabled(!isSizeAndFormatFixed);
+
+  if (const auto presetIndex =
+          vectorIndexOf(videoHandlerYUV::formatPresetList, this->srcPixelFormat))
+    ui.yuvFormatComboBox->setCurrentIndex(static_cast<int>(*presetIndex));
 
   // Set all the values of the properties widget to the values of this class
   const auto hasChroma = (srcPixelFormat.getSubsampling() != Subsampling::YUV_400);
@@ -2794,62 +2794,43 @@ QLayout *videoHandlerYUV::createVideoHandlerControls(bool isSizeFixed)
           this,
           &videoHandlerYUV::slotYUVControlChanged);
 
-  if (!isSizeFixed && newVBoxLayout)
+  if (!isSizeAndFormatFixed && newVBoxLayout)
     newVBoxLayout->addLayout(ui.topVBoxLayout);
 
-  return (isSizeFixed) ? ui.topVBoxLayout : newVBoxLayout;
+  return (isSizeAndFormatFixed) ? ui.topVBoxLayout : newVBoxLayout;
 }
 
-void videoHandlerYUV::slotYUVFormatControlChanged(int idx)
+void videoHandlerYUV::slotYUVFormatControlChanged(int selectionIndex)
 {
-  PixelFormatYUV newFormat;
+  auto newFormat = this->srcPixelFormat;
 
-  if (idx == presetList.count())
+  const auto customFormatSelected = (selectionIndex == videoHandlerYUV::formatPresetList.size());
+  if (customFormatSelected)
   {
-    // The user selected the "custom format..." option
     videoHandlerYUVCustomFormatDialog dialog(srcPixelFormat);
     if (dialog.exec() == QDialog::Accepted && dialog.getSelectedYUVFormat().isValid())
-    {
-      // Set the custom format
-      // Check if the user specified a new format
       newFormat = dialog.getSelectedYUVFormat();
 
-      // Check if the custom format it in the presets list. If not, add it
-      int idx = presetList.indexOf(newFormat);
-      if (idx == -1 && newFormat.isValid())
-      {
-        // Valid pixel format with is not in the list. Add it...
-        presetList.append(newFormat);
-        int                  nrItems = ui.yuvFormatComboBox->count();
-        const QSignalBlocker blocker(ui.yuvFormatComboBox);
-        ui.yuvFormatComboBox->insertItem(nrItems - 1, QString::fromStdString(newFormat.getName()));
-        // Select the added format
-        idx = presetList.indexOf(newFormat);
-        ui.yuvFormatComboBox->setCurrentIndex(idx);
-      }
-      else
-      {
-        // The format is already in the list. Select it without invoking another signal.
-        const QSignalBlocker blocker(ui.yuvFormatComboBox);
-        ui.yuvFormatComboBox->setCurrentIndex(idx);
-      }
-    }
-    else
+    const auto isInPresetList = vectorContains(videoHandlerYUV::formatPresetList, newFormat);
+    if (!isInPresetList)
     {
-      // The user pressed cancel. Go back to the old format
-      int idx = presetList.indexOf(srcPixelFormat);
-      Q_ASSERT(idx != -1); // The previously selected format should always be in the list
-      const QSignalBlocker blocker(ui.yuvFormatComboBox);
-      ui.yuvFormatComboBox->setCurrentIndex(idx);
+      videoHandlerYUV::formatPresetList.push_back(newFormat);
+      const QSignalBlocker blocker(this->ui.yuvFormatComboBox);
+      const auto           insertPositionBeforeCustom = (this->ui.yuvFormatComboBox->count() - 1);
+      ui.yuvFormatComboBox->insertItem(insertPositionBeforeCustom,
+                                       QString::fromStdString(newFormat.getName()));
+    }
+
+    if (const auto presetIndex = vectorIndexOf(videoHandlerYUV::formatPresetList, newFormat))
+    {
+      const QSignalBlocker blocker(this->ui.yuvFormatComboBox);
+      ui.yuvFormatComboBox->setCurrentIndex(*presetIndex);
     }
   }
-  else
-    // One of the preset formats was selected
-    newFormat = presetList.at(idx);
 
   // Set the new format (if new) and emit a signal that a new format was selected.
-  if (srcPixelFormat != newFormat && newFormat.isValid())
-    setSrcPixelFormat(newFormat);
+  if (newFormat != this->srcPixelFormat && newFormat.isValid())
+    this->setSrcPixelFormat(newFormat);
 }
 
 void videoHandlerYUV::setSrcPixelFormat(PixelFormatYUV format, bool emitSignal)
@@ -4116,28 +4097,24 @@ void videoHandlerYUV::setPixelFormatYUV(const PixelFormatYUV &newFormat, bool em
   if (!newFormat.isValid())
     return;
 
-  if (newFormat != srcPixelFormat)
+  if (newFormat != this->srcPixelFormat)
   {
-    if (ui.created())
+    if (this->ui.created())
     {
-      // Check if the custom format is in the presets list. If not, add it.
-      int idx = presetList.indexOf(newFormat);
-      if (idx == -1)
+      const auto isInPresetList = vectorContains(videoHandlerYUV::formatPresetList, newFormat);
+      if (!isInPresetList)
       {
-        // Valid pixel format with is not in the list. Add it...
-        presetList.append(newFormat);
-        int                  nrItems = ui.yuvFormatComboBox->count();
+        videoHandlerYUV::formatPresetList.push_back(newFormat);
+        const auto           insertPositionBeforeCustom = (ui.yuvFormatComboBox->count() - 1);
         const QSignalBlocker blocker(ui.yuvFormatComboBox);
-        ui.yuvFormatComboBox->insertItem(nrItems - 1, QString::fromStdString(newFormat.getName()));
-        // Select the added format
-        idx = presetList.indexOf(newFormat);
-        ui.yuvFormatComboBox->setCurrentIndex(idx);
+        ui.yuvFormatComboBox->insertItem(insertPositionBeforeCustom,
+                                         QString::fromStdString(newFormat.getName()));
       }
-      else
+
+      if (const auto presetIndex = vectorIndexOf(videoHandlerYUV::formatPresetList, newFormat))
       {
-        // Just select the format in the combo box
         const QSignalBlocker blocker(ui.yuvFormatComboBox);
-        ui.yuvFormatComboBox->setCurrentIndex(idx);
+        ui.yuvFormatComboBox->setCurrentIndex(static_cast<int>(*presetIndex));
       }
     }
 

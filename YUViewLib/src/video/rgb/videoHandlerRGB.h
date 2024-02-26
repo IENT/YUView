@@ -161,10 +161,10 @@ public:
 protected:
   ComponentDisplayMode componentDisplayMode{ComponentDisplayMode::RGBA};
 
-  static std::vector<rgb::PixelFormatRGB> rgbPresetList;
+  static std::vector<PixelFormatRGB> formatPresetList;
 
   // The currently selected RGB format
-  rgb::PixelFormatRGB srcPixelFormat;
+  PixelFormatRGB srcPixelFormat;
 
   // Parameters for the RGBA transformation (like scaling, invert)
   int  componentScale[4]{1, 1, 1, 1};
@@ -204,9 +204,7 @@ private:
 
 private slots:
 
-  // One of the controls for the RGB format changed.
-  void slotRGBFormatControlChanged();
-  // One of the controls for the RGB display settings changed.
+  void slotRGBFormatControlChanged(int selectionIndex);
   void slotDisplayOptionsChanged();
 };
 
