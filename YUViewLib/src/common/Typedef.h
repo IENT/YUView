@@ -43,6 +43,7 @@
 #include <cstring>
 #include <iterator>
 #include <map>
+#include <optional>
 #include <sstream>
 #include <string>
 #include <type_traits>
