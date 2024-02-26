@@ -171,7 +171,7 @@ void StatisticsType::savePlaylist(YUViewDomElement &root) const
   if (init.arrowHead != arrowHead)
   {
     if (const auto index = vectorIndexOf(stats::AllArrowHeads, arrowHead))
-      newChild.setAttribute("renderarrowHead", *index);
+      newChild.setAttribute("renderarrowHead", static_cast<int>(*index));
   }
   if (init.renderGrid != renderGrid)
     newChild.setAttribute("renderGrid", renderGrid);
