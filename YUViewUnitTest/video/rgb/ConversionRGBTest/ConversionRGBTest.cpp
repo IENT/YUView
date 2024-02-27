@@ -3,6 +3,8 @@
 #include <video/LimitedRangeToFullRange.h>
 #include <video/rgb/ConversionRGB.h>
 
+#include <optional>
+
 using namespace video;
 using namespace video::rgb;
 

@@ -110,9 +110,9 @@ void StatisticsStyleControl::setStatsItem(stats::StatisticsType *item)
   {
     this->ui.groupBoxVector->show();
 
-    auto penStyleIndex = indexInVec(stats::AllPatterns, this->currentItem->vectorStyle.pattern);
-    if (penStyleIndex != -1)
-      this->ui.comboBoxVectorLineStyle->setCurrentIndex(penStyleIndex);
+    if (const auto penStyleIndex =
+            vectorIndexOf(stats::AllPatterns, this->currentItem->vectorStyle.pattern))
+      this->ui.comboBoxVectorLineStyle->setCurrentIndex(static_cast<int>(*penStyleIndex));
     this->ui.doubleSpinBoxVectorLineWidth->setValue(this->currentItem->vectorStyle.width);
     this->ui.checkBoxVectorScaleToZoom->setChecked(this->currentItem->scaleVectorToZoom);
     this->ui.comboBoxVectorHeadStyle->setCurrentIndex(int(this->currentItem->arrowHead));
@@ -130,9 +130,9 @@ void StatisticsStyleControl::setStatsItem(stats::StatisticsType *item)
   this->ui.doubleSpinBoxGridLineWidth->setValue(this->currentItem->gridStyle.width);
   this->ui.checkBoxGridScaleToZoom->setChecked(this->currentItem->scaleGridToZoom);
 
-  auto penStyleIndex = indexInVec(stats::AllPatterns, this->currentItem->vectorStyle.pattern);
-  if (penStyleIndex != -1)
-    this->ui.comboBoxGridLineStyle->setCurrentIndex(penStyleIndex);
+  if (const auto penStyleIndex =
+          vectorIndexOf(stats::AllPatterns, this->currentItem->vectorStyle.pattern))
+    this->ui.comboBoxGridLineStyle->setCurrentIndex(static_cast<int>(*penStyleIndex));
 
   this->resize(sizeHint());
 }
