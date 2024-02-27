@@ -2827,6 +2827,8 @@ void videoHandlerYUV::slotYUVFormatControlChanged(int selectionIndex)
       ui.yuvFormatComboBox->setCurrentIndex(*presetIndex);
     }
   }
+  else if (selectionIndex >= 0 && selectionIndex < videoHandlerYUV::formatPresetList.size())
+    newFormat = videoHandlerYUV::formatPresetList.at(selectionIndex);
 
   // Set the new format (if new) and emit a signal that a new format was selected.
   if (newFormat != this->srcPixelFormat && newFormat.isValid())
