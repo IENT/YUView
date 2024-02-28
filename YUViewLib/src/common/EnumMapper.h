@@ -39,6 +39,7 @@
 #include <stdexcept>
 #include <string>
 #include <vector>
+#include <stdexcept>
 
 /* This class implement mapping of "enum class" values to and from names (string).
  */
