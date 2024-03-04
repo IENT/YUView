@@ -92,9 +92,8 @@ playlistItemRawFile::playlistItemRawFile(const QString &rawFilePath,
     frameSize = Size(qFrameSize.width(), qFrameSize.height());
 
   // Create a new videoHandler instance depending on the input format
-  QFileInfo fi(rawFilePath);
-  QString   ext = fi.suffix();
-  ext           = ext.toLower();
+  QFileInfo  fi(rawFilePath);
+  const auto ext = fi.suffix().toLower();
   if (isInExtensions(ext, YUV_EXTENSIONS) || fmt.toLower() == "yuv")
   {
     this->video     = std::make_unique<video::yuv::videoHandlerYUV>();

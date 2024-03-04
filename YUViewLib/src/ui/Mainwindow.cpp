@@ -413,7 +413,7 @@ void MainWindow::createMenusAndActions()
                   &PlaybackController::previousFrame,
                   Qt::Key_Left);
 
-  auto addLambdaActionToMenu = [](QMenu *menu, const QString name, auto lambda) {
+  auto addLambdaActionToMenu = [this](QMenu *menu, const QString name, auto lambda) {
     auto action = new QAction(name, menu);
     QObject::connect(action, &QAction::triggered, lambda);
     menu->addAction(action);
