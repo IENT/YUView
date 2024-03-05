@@ -67,6 +67,27 @@ SettingsDialog::SettingsDialog(QWidget *parent) : QDialog(parent)
       settings.value("ContinuePlaybackOnSequenceSelection", false).toBool());
   ui.checkBoxSavePositionPerItem->setChecked(
       settings.value("SavePositionAndZoomPerItem", false).toBool());
+  ui.checkBoxAutodetectFileType->setChecked(settings.value("AutodetectFileType", true).toBool());
+
+  settings.beginGroup("updates");
+  const auto checkForUpdates = settings.value("checkForUpdates", true).toBool();
+  ui.groupBoxUpdates->setChecked(checkForUpdates);
+  if (UPDATE_FEATURE_ENABLE)
+  {
+    const auto updateBehavior = settings.value("updateBehavior", "ask").toString();
+    if (updateBehavior == "ask")
+      ui.comboBoxUpdateSettings->setCurrentIndex(1);
+    else if (updateBehavior == "auto")
+      ui.comboBoxUpdateSettings->setCurrentIndex(0);
+  }
+  else
+  {
+    // Updating is not supported. Disable the update strategy combo box.
+    ui.comboBoxUpdateSettings->setEnabled(false);
+    ui.labelUpdateSettings->setEnabled(false);
+  }
+  settings.endGroup();
+
   // UI
   const auto theme    = settings.value("Theme", "Default").toString();
   int        themeIdx = functions::getThemeNameList().indexOf(theme);
@@ -93,25 +114,6 @@ SettingsDialog::SettingsDialog(QWidget *parent) : QDialog(parent)
   ui.checkBoxShowFilePathSplitMode->setChecked(
       settings.value("ShowFilePathInSplitMode", true).toBool());
   ui.checkBoxPixelValuesHex->setChecked(settings.value("ShowPixelValuesHex", false).toBool());
-  // Updates settings
-  settings.beginGroup("updates");
-  const auto checkForUpdates = settings.value("checkForUpdates", true).toBool();
-  ui.groupBoxUpdates->setChecked(checkForUpdates);
-  if (UPDATE_FEATURE_ENABLE)
-  {
-    const auto updateBehavior = settings.value("updateBehavior", "ask").toString();
-    if (updateBehavior == "ask")
-      ui.comboBoxUpdateSettings->setCurrentIndex(1);
-    else if (updateBehavior == "auto")
-      ui.comboBoxUpdateSettings->setCurrentIndex(0);
-  }
-  else
-  {
-    // Updating is not supported. Disable the update strategy combo box.
-    ui.comboBoxUpdateSettings->setEnabled(false);
-    ui.labelUpdateSettings->setEnabled(false);
-  }
-  settings.endGroup();
 
   // "Caching" tab
   settings.beginGroup("VideoCache");
@@ -430,6 +432,19 @@ void SettingsDialog::on_pushButtonSave_clicked()
   settings.setValue("ContinuePlaybackOnSequenceSelection",
                     ui.checkBoxContinuePlaybackNewSelection->isChecked());
   settings.setValue("SavePositionAndZoomPerItem", ui.checkBoxSavePositionPerItem->isChecked());
+  settings.setValue("AutodetectFileType", ui.checkBoxAutodetectFileType->isChecked());
+
+  settings.beginGroup("updates");
+  settings.setValue("checkForUpdates", ui.groupBoxUpdates->isChecked());
+  if (UPDATE_FEATURE_ENABLE)
+  {
+    QString updateBehavior = "ask";
+    if (ui.comboBoxUpdateSettings->currentIndex() == 0)
+      updateBehavior = "auto";
+    settings.setValue("updateBehavior", updateBehavior);
+  }
+  settings.endGroup();
+
   // UI
   settings.setValue("Theme", ui.comboBoxTheme->currentText());
   settings.setValue("SplitViewLineStyle", ui.comboBoxSplitLineStyle->currentText());
@@ -441,17 +456,6 @@ void SettingsDialog::on_pushButtonSave_clicked()
                     ui.checkBoxPlaybackControlFullScreen->isChecked());
   settings.setValue("ShowFilePathInSplitMode", ui.checkBoxShowFilePathSplitMode->isChecked());
   settings.setValue("ShowPixelValuesHex", ui.checkBoxPixelValuesHex->isChecked());
-  // Update settings
-  settings.beginGroup("updates");
-  settings.setValue("checkForUpdates", ui.groupBoxUpdates->isChecked());
-  if (UPDATE_FEATURE_ENABLE)
-  {
-    QString updateBehavior = "ask";
-    if (ui.comboBoxUpdateSettings->currentIndex() == 0)
-      updateBehavior = "auto";
-    settings.setValue("updateBehavior", updateBehavior);
-  }
-  settings.endGroup();
 
   // "Caching" tab
   settings.beginGroup("VideoCache");

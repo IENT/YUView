@@ -46,8 +46,109 @@
 #include <QMessageBox>
 #include <QStringList>
 
+namespace
+{
+
+playlistItem *openImageFileOrSequence(QWidget *parent, const QString &fileName)
+{
+  bool openAsImageSequence = false;
+  if (playlistItemImageFileSequence::isImageSequence(fileName))
+  {
+    // This is not only one image, but a sequence of images. Ask the user how to open it.
+    QMessageBox::StandardButton choice = QMessageBox::question(
+        parent,
+        "Open image sequence",
+        "This image can be opened as an image sequence. Do you want to open it as an image "
+        "sequence (Yes) or as a single static image (No)?\n",
+        QMessageBox::Yes | QMessageBox::No | QMessageBox::Cancel,
+        QMessageBox::Yes);
+    if (choice == QMessageBox::Yes)
+      openAsImageSequence = true;
+    else if (choice == QMessageBox::No)
+      openAsImageSequence = false;
+    else
+      return nullptr;
+  }
+
+  if (openAsImageSequence)
+    return new playlistItemImageFileSequence(fileName);
+  else
+    return new playlistItemImageFile(fileName);
+}
+
+playlistItem *guessFileTypeFromFileAndCreatePlaylistItem(QWidget *parent, const QString &fileName)
+{
+  QFileInfo  fi(fileName);
+  const auto extension = fi.suffix().toLower();
+
+  auto checkForExtension = [&extension](auto getSupportedFileExtensions) {
+    QStringList allExtensions, filtersList;
+    getSupportedFileExtensions(allExtensions, filtersList);
+    return allExtensions.contains(extension);
+  };
+
+  if (checkForExtension(playlistItemRawFile::getSupportedFileExtensions))
+    return new playlistItemRawFile(fileName);
+  if (checkForExtension(playlistItemCompressedVideo::getSupportedFileExtensions))
+    return new playlistItemCompressedVideo(fileName);
+  if (checkForExtension(playlistItemImageFile::getSupportedFileExtensions))
+    return openImageFileOrSequence(parent, fileName);
+  if (checkForExtension(playlistItemStatisticsFile::getSupportedFileExtensions))
+    return new playlistItemStatisticsFile(fileName);
+
+  return {};
+}
+
+playlistItem *askUserForFileTypeAndCreatePlalistItem(QWidget *  parent,
+                                                     QString    fileName,
+                                                     const bool determineFileTypeAutomatically)
+{
+  const auto types = QStringList() << "Raw YUV File"
+                                   << "Raw RGB File"
+                                   << "Compressed file"
+                                   << "Image file"
+                                   << "Statistics File CSV"
+                                   << "Statistics File VTMBMS";
+  bool    ok{};
+  QString message = "Unable to detect file type from file extension.";
+  if (!determineFileTypeAutomatically)
+    message = "File type detection from extension is disabled (see Settings -> General).";
+  const auto asType = QInputDialog::getItem(parent,
+                                            "Select file type",
+                                            message + " Please select how to open the file.",
+                                            types,
+                                            0,
+                                            false,
+                                            &ok);
+  if (ok && !asType.isEmpty())
+  {
+    if (asType == types[0] || asType == types[1])
+    {
+      const QString fmt = (asType == types[0]) ? "yuv" : "rgb";
+      return new playlistItemRawFile(fileName, QSize(-1, -1), QString(), fmt);
+    }
+    else if (asType == types[2])
+    {
+      return new playlistItemCompressedVideo(fileName);
+    }
+    else if (asType == types[3])
+    {
+      return openImageFileOrSequence(parent, fileName);
+    }
+    else if (asType == types[4] || asType == types[5])
+    {
+      auto openMode = (asType == types[3] ? playlistItemStatisticsFile::OpenMode::CSVFile
+                                          : playlistItemStatisticsFile::OpenMode::VTMBMSFile);
+      return new playlistItemStatisticsFile(fileName, openMode);
+    }
+  }
+}
+
+} // namespace
+
 namespace playlistItems
 {
+
 QStringList getSupportedFormatsFilters()
 {
   QStringList allExtensions, filtersList;
@@ -64,9 +165,7 @@ QStringList getSupportedFormatsFilters()
   // Now build the list of filters. First append the all files filter
   QString allFiles = "All supported file formats (";
   for (auto const &ext : allExtensions)
-  {
     allFiles += "*." + ext + " ";
-  }
   if (allFiles.endsWith(' '))
     allFiles.chop(1);
   allFiles += ")";
@@ -94,139 +193,26 @@ QStringList getSupportedNameFilters()
   // Now build the list of name filters
   QStringList nameFilters;
   for (auto extension : allExtensions)
-  {
     nameFilters.append(QString("*.") + extension);
-  }
 
   return nameFilters;
 }
 
 playlistItem *createPlaylistItemFromFile(QWidget *parent, const QString &fileName)
 {
-  QFileInfo fi(fileName);
-  QString   ext = fi.suffix().toLower();
+  QSettings  settings;
+  const auto determineFileTypeAutomatically = settings.value("AutodetectFileType", true).toBool();
 
-  // Check playlistItemRawFile
-  {
-    QStringList allExtensions, filtersList;
-    playlistItemRawFile::getSupportedFileExtensions(allExtensions, filtersList);
+  playlistItem *newPlaylistItem{};
+  if (determineFileTypeAutomatically)
+    newPlaylistItem = guessFileTypeFromFileAndCreatePlaylistItem(parent, fileName);
+  if (!newPlaylistItem)
+    newPlaylistItem =
+        askUserForFileTypeAndCreatePlalistItem(parent, fileName, determineFileTypeAutomatically);
 
-    if (allExtensions.contains(ext))
-    {
-      playlistItemRawFile *newRawFile = new playlistItemRawFile(fileName);
-      return newRawFile;
-    }
-  }
-
-  // Check playlistItemCompressedVideo
-  {
-    QStringList allExtensions, filtersList;
-    playlistItemCompressedVideo::getSupportedFileExtensions(allExtensions, filtersList);
-
-    if (allExtensions.contains(ext))
-    {
-      playlistItemCompressedVideo *newRawCodedVideo = new playlistItemCompressedVideo(fileName, 0);
-      return newRawCodedVideo;
-    }
-  }
-
-  // Check playlistItemImageFile / playlistItemImageFileSequence
-  {
-    QStringList allExtensions, filtersList;
-    playlistItemImageFile::getSupportedFileExtensions(allExtensions, filtersList);
-
-    if (allExtensions.contains(ext))
-    {
-      // This is definitely an image file. But could it also be an image file sequence?
-      bool openAsImageSequence = false;
-      if (playlistItemImageFileSequence::isImageSequence(fileName))
-      {
-        // This is not only one image, but a sequence of images. Ask the user how to open it.
-        QMessageBox::StandardButton choice = QMessageBox::question(
-            parent,
-            "Open image sequence",
-            "This image can be opened as an image sequence. Do you want to open it as an image "
-            "sequence (Yes) or as a single static image (No)?\n",
-            QMessageBox::Yes | QMessageBox::No | QMessageBox::Cancel,
-            QMessageBox::Yes);
-        if (choice == QMessageBox::Yes)
-          openAsImageSequence = true;
-        else if (choice == QMessageBox::No)
-          openAsImageSequence = false;
-        else
-          return nullptr;
-      }
-
-      if (openAsImageSequence)
-      {
-        // Open it as a file sequence
-        playlistItemImageFileSequence *newSequence = new playlistItemImageFileSequence(fileName);
-        return newSequence;
-      }
-      else
-      {
-        playlistItemImageFile *newImageFile = new playlistItemImageFile(fileName);
-        return newImageFile;
-      }
-    }
-  }
-
-  // Check playlistItemStatisticsFile
-  {
-    QStringList allExtensions, filtersList;
-    playlistItemStatisticsFile::getSupportedFileExtensions(allExtensions, filtersList);
-
-    if (allExtensions.contains(ext))
-    {
-      playlistItemStatisticsFile *newStatFile = new playlistItemStatisticsFile(fileName);
-      return newStatFile;
-    }
-  }
-
-  // Unknown file type extension. Ask the user as what file type he wants to open this file.
-  QStringList types = QStringList() << "Raw YUV File"
-                                    << "Raw RGB File"
-                                    << "Compressed file"
-                                    << "Statistics File CSV"
-                                    << "Statistics File VTMBMS";
-  bool    ok;
-  QString asType = QInputDialog::getItem(parent,
-                                         "Select file type",
-                                         "The file type could not be determined from the file "
-                                         "extension. Please select the type of the file.",
-                                         types,
-                                         0,
-                                         false,
-                                         &ok);
-  if (ok && !asType.isEmpty())
-  {
-    if (asType == types[0] || asType == types[1])
-    {
-      // Raw YUV/RGB File
-      QString fmt        = (asType == types[0]) ? "yuv" : "rgb";
-      auto    newRawFile = new playlistItemRawFile(fileName, QSize(-1, -1), QString(), fmt);
-      return newRawFile;
-    }
-    else if (asType == types[2])
-    {
-      // Compressed video
-      auto newRawCodedVideo = new playlistItemCompressedVideo(fileName, 0);
-      return newRawCodedVideo;
-    }
-    else if (asType == types[3] || asType == types[4])
-    {
-      // Statistics File
-      auto openMode = (asType == types[3] ? playlistItemStatisticsFile::OpenMode::CSVFile : playlistItemStatisticsFile::OpenMode::VTMBMSFile);
-      auto newStatFile = new playlistItemStatisticsFile(fileName, openMode);
-      return newStatFile;
-    }
-  }
-
-  return nullptr;
+  return newPlaylistItem;
 }
 
-// Load one playlist item. Load it and return it. This function is separate so it can be called
-// recursively if an item has children.
 playlistItem *loadPlaylistItem(const QDomElement &elem, const QString &filePath)
 {
   playlistItem *newItem       = nullptr;
@@ -245,7 +231,8 @@ playlistItem *loadPlaylistItem(const QDomElement &elem, const QString &filePath)
   {
     newItem = playlistItemCompressedVideo::newPlaylistItemCompressedVideo(elem, filePath);
   }
-  else if (tag == "playlistItemStatisticsFile" || tag == "playlistItemStatisticsCSVFile" || tag == "playlistItemStatisticsVTMBMSFile")
+  else if (tag == "playlistItemStatisticsFile" || tag == "playlistItemStatisticsCSVFile" ||
+           tag == "playlistItemStatisticsVTMBMSFile")
   {
     auto openMode = playlistItemStatisticsFile::OpenMode::Extension;
     if (tag == "playlistItemStatisticsCSVFile")
@@ -283,26 +270,22 @@ playlistItem *loadPlaylistItem(const QDomElement &elem, const QString &filePath)
     parseChildren = true;
   }
 
-  if (newItem != nullptr && parseChildren)
+  if (newItem && parseChildren)
   {
-    // The playlistItem can have children. Parse them.
-    auto children = elem.childNodes();
+    const auto children = elem.childNodes();
 
     for (int i = 0; i < children.length(); i++)
     {
-      // Parse the child items
-      auto childElem = children.item(i).toElement();
-      auto childItem = loadPlaylistItem(childElem, filePath);
-
-      if (childItem)
+      const auto childElement = children.item(i).toElement();
+      if (const auto childItem = loadPlaylistItem(childElement, filePath))
         newItem->addChild(childItem);
     }
 
-    auto container = dynamic_cast<playlistItemContainer *>(newItem);
-    if (container)
+    if (const auto container = dynamic_cast<playlistItemContainer *>(newItem))
       container->updateChildItems();
   }
 
   return newItem;
 }
+
 } // namespace playlistItems
