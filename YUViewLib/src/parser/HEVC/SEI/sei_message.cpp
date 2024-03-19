@@ -38,9 +38,10 @@
 #include "content_light_level_info.h"
 #include "mastering_display_colour_volume.h"
 #include "parser/common/SubByteReaderLoggingOptions.h"
-#include <parser/common/Functions.h>
 #include "pic_timing.h"
+#include "three_dimensional_reference_displays_info.h"
 #include "user_data_unregistered.h"
+#include <parser/common/Functions.h>
 
 namespace parser::hevc
 {
@@ -234,6 +235,8 @@ sei_message::parsePayloadData(bool                                    reparse,
         this->payload = std::make_shared<content_light_level_info>();
       else if (this->payloadType == 147)
         this->payload = std::make_shared<alternative_transfer_characteristics>();
+      else if (this->payloadType == 176)
+        this->payload = std::make_shared<three_dimensional_reference_displays_info>();
       else
         this->payload = std::make_shared<unknown_sei>();
     }
