@@ -19,7 +19,7 @@ jobs:
             INSTALL_LIBS: qt6-base-dev
             QMAKE_COMMAND: qmake6
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
     - run: git fetch --prune --unshallow
     - name: Install Linux packages
       run: |
@@ -40,7 +40,7 @@ jobs:
         include: 
           - os: macos-12
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
     - run: git fetch --prune --unshallow
     - name: Install packages
       run: |
@@ -77,7 +77,7 @@ jobs:
             ARTIFACT_NAME: YUView-Mac12-Monterey.zip
             CPU_COUNT_COMMAND: sysctl -n hw.logicalcpu
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
     - run: git fetch --prune --unshallow
     - name: Install Qt base
       run: |
@@ -132,7 +132,7 @@ jobs:
         cp YUView.AppImage $GITHUB_WORKSPACE/artifacts/
       if: matrix.os == 'ubuntu-20.04'
     - name: Upload Artifact
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: ${{matrix.ARTIFACT_NAME}}
         path: artifacts
@@ -155,7 +155,7 @@ jobs:
             ARTIFACT_NAME: YUView-Win2019-noautoupdate.zip
             QT_FILE: qtBase_6.5.2_win2019.zip
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
     - uses: ilammy/msvc-dev-cmd@v1
     - run: git fetch --prune --unshallow
     - name: Install Qt base
@@ -219,20 +219,20 @@ jobs:
       run: |
         cd ${{ github.workspace }}/deployment/wix
         cp 'C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\VC\Redist\MSVC\v142\MergeModules\Microsoft_VC142_CRT_x64.msm' .
-        & "C:\Program Files (x86)\WiX Toolset v3.11\bin\heat.exe" dir ../../deploy -gg -dr APPLICATIONFOLDER -srd -sreg -cg YUViewComponents -out harvestedDirectory.wxs
-        & "C:\Program Files (x86)\WiX Toolset v3.11\bin\candle.exe" -dConfiguration=Release -dOutDir=bin/Release/ '-dTargetExt=.msi' '-dTargetFileName=YUViewSetup.msi' -dTargetName=YUViewSetup -out obj/Release/ -arch x64 -ext "C:\Program Files (x86)\WiX Toolset v3.11\bin\WixUIExtension.dll" YUView.wxs
-        & "C:\Program Files (x86)\WiX Toolset v3.11\bin\candle.exe" -dConfiguration=Release -dOutDir=bin/Release/ '-dTargetExt=.msi' '-dTargetFileName=YUViewSetup.msi' -dTargetName=YUViewSetup -out obj/Release/ -arch x64 harvestedDirectory.wxs
-        & "C:\Program Files (x86)\WiX Toolset v3.11\bin\light.exe" -b ../../deploy -out bin/Release/YUViewSetup.msi -pdbout bin/Release/YUViewSetup.wixpdb -cultures:null -ext "C:\Program Files (x86)\WiX Toolset v3.11\bin\WixUIExtension.dll" -contentsfile obj/Release/YUViewSetup.wixproj.BindContentsFileListnull.txt -outputsfile obj/Release/YUViewSetup.wixproj.BindOutputsFileListnull.txt -builtoutputsfile obj/Release/YUViewSetup.wixproj.BindBuiltOutputsFileListnull.txt obj/Release/YUView.wixobj obj/Release/harvestedDirectory.wixobj
+        & "C:\Program Files (x86)\WiX Toolset v3.14\bin\heat.exe" dir ../../deploy -gg -dr APPLICATIONFOLDER -srd -sreg -cg YUViewComponents -out harvestedDirectory.wxs
+        & "C:\Program Files (x86)\WiX Toolset v3.14\bin\candle.exe" -dConfiguration=Release -dOutDir=bin/Release/ '-dTargetExt=.msi' '-dTargetFileName=YUViewSetup.msi' -dTargetName=YUViewSetup -out obj/Release/ -arch x64 -ext "C:\Program Files (x86)\WiX Toolset v3.14\bin\WixUIExtension.dll" YUView.wxs
+        & "C:\Program Files (x86)\WiX Toolset v3.14\bin\candle.exe" -dConfiguration=Release -dOutDir=bin/Release/ '-dTargetExt=.msi' '-dTargetFileName=YUViewSetup.msi' -dTargetName=YUViewSetup -out obj/Release/ -arch x64 harvestedDirectory.wxs
+        & "C:\Program Files (x86)\WiX Toolset v3.14\bin\light.exe" -b ../../deploy -out bin/Release/YUViewSetup.msi -pdbout bin/Release/YUViewSetup.wixpdb -cultures:null -ext "C:\Program Files (x86)\WiX Toolset v3.14\bin\WixUIExtension.dll" -contentsfile obj/Release/YUViewSetup.wixproj.BindContentsFileListnull.txt -outputsfile obj/Release/YUViewSetup.wixproj.BindOutputsFileListnull.txt -builtoutputsfile obj/Release/YUViewSetup.wixproj.BindBuiltOutputsFileListnull.txt obj/Release/YUView.wixobj obj/Release/harvestedDirectory.wixobj
         cd ${{ github.workspace }}
         cp deployment/wix/bin/Release/YUViewSetup.msi ./
       if: matrix.auto_update == true
     - name: Upload Artifact
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: ${{matrix.ARTIFACT_NAME}}
         path: artifacts
     - name: Upload Windows installer Artifact
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: YUViewSetup.msi
         path: ./YUViewSetup.msi
