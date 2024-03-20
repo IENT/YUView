@@ -132,7 +132,7 @@ jobs:
         cp YUView.AppImage $GITHUB_WORKSPACE/artifacts/
       if: matrix.os == 'ubuntu-20.04'
     - name: Upload Artifact
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: ${{matrix.ARTIFACT_NAME}}
         path: artifacts
@@ -227,12 +227,12 @@ jobs:
         cp deployment/wix/bin/Release/YUViewSetup.msi ./
       if: matrix.auto_update == true
     - name: Upload Artifact
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: ${{matrix.ARTIFACT_NAME}}
         path: artifacts
     - name: Upload Windows installer Artifact
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: YUViewSetup.msi
         path: ./YUViewSetup.msi
