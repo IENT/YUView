@@ -59,6 +59,20 @@ namespace parser
 
 using namespace hevc;
 
+namespace
+{
+
+std::string formatNalPOCDetail(const int poc, const unsigned nuh_layer_id)
+{
+  std::string str = " (POC " + std::to_string(poc);
+  if (nuh_layer_id > 0)
+    str += " Layer " + std::to_string(nuh_layer_id);
+  str += ")";
+  return str;
+}
+
+} // namespace
+
 double ParserAnnexBHEVC::getFramerate() const
 {
   // First try to get the framerate from the parameter sets themselves
@@ -500,8 +514,9 @@ ParserAnnexBHEVC::parseAndAddNALUnit(int                                        
       }
       currentSliceType = to_string(newSlice->sliceSegmentHeader.slice_type);
 
-      specificDescription += " (POC " + std::to_string(poc) + ")";
-      parseResult.nalTypeName = "Slice(POC " + std::to_string(poc) + ")";
+      const auto pocDetail = formatNalPOCDetail(poc, nalHEVC->header.nuh_layer_id);
+      specificDescription += pocDetail;
+      parseResult.nalTypeName = "Slice" + pocDetail;
 
       DEBUG_HEVC("ParserAnnexBHEVC::parseAndAddNALUnit Slice POC "
                  << poc << " - pocCounterOffset " << this->pocCounterOffset << " maxPOCCount "
