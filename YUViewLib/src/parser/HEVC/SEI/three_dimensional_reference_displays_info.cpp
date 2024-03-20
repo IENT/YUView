@@ -40,10 +40,10 @@ namespace parser::hevc
 using namespace reader;
 
 SEIParsingResult three_dimensional_reference_displays_info::parse(
-    reader::SubByteReaderLogging &          reader,
+    reader::SubByteReaderLogging           &reader,
     bool                                    reparse,
-    VPSMap &                                vpsMap,
-    SPSMap &                                spsMap,
+    VPSMap                                 &vpsMap,
+    SPSMap                                 &spsMap,
     std::shared_ptr<seq_parameter_set_rbsp> associatedSPS)
 {
   (void)reparse;
@@ -67,8 +67,8 @@ SEIParsingResult three_dimensional_reference_displays_info::parse(
 
     const auto refDispWidthBits =
         this->exponent_ref_display_width.at(i) == 0
-            ? std::max(0ull, this->prec_ref_display_width - 30)
-            : std::max(0ull,
+            ? std::max(0UL, this->prec_ref_display_width - 30)
+            : std::max(0UL,
                        this->exponent_ref_display_width.at(i) + this->prec_ref_display_width - 31);
     this->mantissa_ref_display_width.push_back(
         reader.readBits(formatArray("mantissa_ref_display_width", i), refDispWidthBits));
@@ -79,8 +79,8 @@ SEIParsingResult three_dimensional_reference_displays_info::parse(
           reader.readBits(formatArray("exponent_ref_viewing_distance", i), 6));
 
       const auto refViewDistBits = exponent_ref_viewing_distance.at(i) == 0
-                                       ? std::max(0ull, this->prec_ref_viewing_dist - 30)
-                                       : std::max(0ull,
+                                       ? std::max(0UL, this->prec_ref_viewing_dist - 30)
+                                       : std::max(0UL,
                                                   this->exponent_ref_viewing_distance.at(i) +
                                                       this->prec_ref_viewing_dist - 31);
       this->mantissa_ref_viewing_distance.push_back(
