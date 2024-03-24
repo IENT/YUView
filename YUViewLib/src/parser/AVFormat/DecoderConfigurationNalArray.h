@@ -32,21 +32,19 @@
 
 #pragma once
 
-#include <common/Typedef.h>
 #include <parser/HEVC/ParserAnnexBHEVC.h>
 #include <parser/common/BitratePlotModel.h>
 #include <parser/common/SubByteReaderLogging.h>
-#include <parser/common/TreeItem.h>
 
 namespace parser::avformat
 {
 
-class HVCCNalUnit
+class DecoderConfigurationNALUnit
 {
 public:
-  HVCCNalUnit() = default;
+  DecoderConfigurationNALUnit() = default;
 
-  void parse(unsigned                      unitID,
+  void parse(const unsigned                unitID,
              reader::SubByteReaderLogging &reader,
              ParserAnnexBHEVC *            hevcParser,
              BitratePlotModel *            bitrateModel);
@@ -54,52 +52,20 @@ public:
   unsigned nalUnitLength{};
 };
 
-class HVCCNalArray
+class DecoderConfigurationNALArray
 {
 public:
-  HVCCNalArray() = default;
+  DecoderConfigurationNALArray() = default;
 
-  void parse(unsigned                      arrayID,
+  void parse(const unsigned                arrayID,
              reader::SubByteReaderLogging &reader,
              ParserAnnexBHEVC *            hevcParser,
              BitratePlotModel *            bitrateModel);
 
-  bool                array_completeness{};
-  unsigned            nal_unit_type{};
-  unsigned            numNalus{};
-  vector<HVCCNalUnit> nalList;
-};
-
-class HVCC
-{
-public:
-  HVCC() = default;
-
-  void parse(ByteVector &              data,
-             std::shared_ptr<TreeItem> root,
-             ParserAnnexBHEVC *        hevcParser,
-             BitratePlotModel *        bitrateModel);
-
-  unsigned configurationVersion{};
-  unsigned general_profile_space{};
-  bool     general_tier_flag{};
-  unsigned general_profile_idc{};
-  unsigned general_profile_compatibility_flags{};
-  uint64_t general_constraint_indicator_flags{};
-  unsigned general_level_idc{};
-  unsigned min_spatial_segmentation_idc{};
-  unsigned parallelismType{};
-  unsigned chromaFormat{};
-  unsigned bitDepthLumaMinus8{};
-  unsigned bitDepthChromaMinus8{};
-  unsigned avgFrameRate{};
-  unsigned constantFrameRate{};
-  unsigned numTemporalLayers{};
-  bool     temporalIdNested{};
-  unsigned lengthSizeMinusOne{};
-  unsigned numOfArrays{};
-
-  vector<HVCCNalArray> naluArrays;
+  bool                                     array_completeness{};
+  unsigned                                 nal_unit_type{};
+  unsigned                                 numNalus{};
+  std::vector<DecoderConfigurationNALUnit> nalList;
 };
 
 } // namespace parser::avformat

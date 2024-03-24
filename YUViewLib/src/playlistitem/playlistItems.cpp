@@ -142,6 +142,8 @@ playlistItem *askUserForFileTypeAndCreatePlalistItem(QWidget *  parent,
       return new playlistItemStatisticsFile(fileName, openMode);
     }
   }
+
+  return nullptr;
 }
 
 } // namespace

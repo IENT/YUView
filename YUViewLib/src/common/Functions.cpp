@@ -168,6 +168,16 @@ std::string toLower(std::string str)
   return str;
 }
 
+ByteVector readData(std::istream &istream, const size_t nrBytes)
+{
+  ByteVector data;
+  data.resize(nrBytes);
+  istream.read(reinterpret_cast<char *>(data.data()), nrBytes);
+  const auto nrBytesActuallyRead = istream.gcount();
+  data.resize(nrBytesActuallyRead);
+  return data;
+}
+
 std::optional<unsigned long> toUnsigned(const std::string &text)
 {
   try

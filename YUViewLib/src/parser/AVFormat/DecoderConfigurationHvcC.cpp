@@ -30,57 +30,17 @@
  *   along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "HVCC.h"
+#include "DecoderConfigurationHvcC.h"
 
 namespace parser::avformat
 {
 
 using namespace reader;
 
-void HVCCNalUnit::parse(unsigned              unitID,
-                        SubByteReaderLogging &reader,
-                        ParserAnnexBHEVC *    hevcParser,
-                        BitratePlotModel *    bitrateModel)
-{
-  SubByteReaderLoggingSubLevel subLevel(reader, "nal unit " + std::to_string(unitID));
-
-  this->nalUnitLength = reader.readBits("nalUnitLength", 16);
-
-  // Get the bytes of the raw nal unit to pass to the "real" hevc parser
-  auto nalData = reader.readBytes("", nalUnitLength, Options().withLoggingDisabled());
-
-  // Let the hevc annexB parser parse this
-  auto parseResult =
-      hevcParser->parseAndAddNALUnit(unitID, nalData, {}, {}, reader.getCurrentItemTree());
-  if (parseResult.success && bitrateModel != nullptr && parseResult.bitrateEntry)
-    bitrateModel->addBitratePoint(0, *parseResult.bitrateEntry);
-}
-
-void HVCCNalArray::parse(unsigned              arrayID,
-                         SubByteReaderLogging &reader,
-                         ParserAnnexBHEVC *    hevcParser,
-                         BitratePlotModel *    bitrateModel)
-{
-  SubByteReaderLoggingSubLevel subLevel(reader, "nal unit array " + std::to_string(arrayID));
-
-  // The next 3 bytes contain info about the array
-  this->array_completeness = reader.readFlag("array_completeness");
-  reader.readFlag("reserved_flag_false", Options().withCheckEqualTo(0, CheckLevel::Warning));
-  this->nal_unit_type = reader.readBits("nal_unit_type", 6);
-  this->numNalus      = reader.readBits("numNalus", 16);
-
-  for (unsigned i = 0; i < numNalus; i++)
-  {
-    HVCCNalUnit nal;
-    nal.parse(i, reader, hevcParser, bitrateModel);
-    nalList.push_back(nal);
-  }
-}
-
-void HVCC::parse(ByteVector &              data,
-                 std::shared_ptr<TreeItem> root,
-                 ParserAnnexBHEVC *        hevcParser,
-                 BitratePlotModel *        bitrateModel)
+void DecoderConfigurationHvcC::parse(const ByteVector &        data,
+                                     std::shared_ptr<TreeItem> root,
+                                     ParserAnnexBHEVC *        hevcParser,
+                                     BitratePlotModel *        bitrateModel)
 {
   SubByteReaderLogging reader(data, root, "Extradata (HEVC hvcC format)");
   reader.disableEmulationPrevention();
@@ -123,9 +83,9 @@ void HVCC::parse(ByteVector &              data,
   // Now parse the contained raw NAL unit arrays
   for (unsigned i = 0; i < this->numOfArrays; i++)
   {
-    HVCCNalArray a;
-    a.parse(i, reader, hevcParser, bitrateModel);
-    this->naluArrays.push_back(a);
+    DecoderConfigurationNALArray array;
+    array.parse(i, reader, hevcParser, bitrateModel);
+    this->naluArrays.push_back(array);
   }
 }
 

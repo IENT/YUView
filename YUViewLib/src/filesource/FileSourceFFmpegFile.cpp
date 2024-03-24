@@ -34,6 +34,7 @@
 
 #include <QProgressDialog>
 #include <QSettings>
+#include <fstream>
 
 #include <common/Formatting.h>
 #include <ffmpeg/AVCodecContextWrapper.h>
@@ -56,7 +57,17 @@ namespace
 
 auto startCode = QByteArrayLiteral("\x00\x00\x01");
 
+uint64_t getBoxSize(ByteVector::const_iterator iterator)
+{
+  uint64_t size = 0;
+  size += static_cast<uint64_t>(*(iterator++)) << (8 * 3);
+  size += static_cast<uint64_t>(*(iterator++)) << (8 * 2);
+  size += static_cast<uint64_t>(*(iterator++)) << (8 * 1);
+  size += static_cast<uint64_t>(*iterator);
+  return size;
 }
+
+} // namespace
 
 FileSourceFFmpegFile::FileSourceFFmpegFile()
 {
@@ -215,6 +226,38 @@ StringPairVec FileSourceFFmpegFile::getMetadata()
   if (!this->formatCtx)
     return {};
   return ff.getDictionaryEntries(this->formatCtx.getMetadata(), "", 0);
+}
+
+ByteVector FileSourceFFmpegFile::getLhvCData()
+{
+  const auto inputFormat = this->formatCtx.getInputFormat();
+  const auto isMp4       = inputFormat.getName().contains("mp4");
+  if (!this->getVideoStreamCodecID().isHEVC() || !isMp4)
+    return {};
+
+  // This is a bit of a hack. The problem is that FFmpeg can currently not extract this for us.
+  // Maybe this will be added in the future. So the only option we have here is to manually extract
+  // the lhvC data from the mp4 file.
+  std::ifstream input(this->fileName.toStdString(), std::ios::binary);
+  const auto    rawFileData = functions::readData(input, 1024);
+  if (rawFileData.empty())
+    return {};
+
+  const std::string searchString = "lhvC";
+  const auto        lhvcPos =
+      std::search(rawFileData.begin(), rawFileData.end(), searchString.begin(), searchString.end());
+  if (lhvcPos == rawFileData.end())
+    return {};
+
+  if (std::distance(rawFileData.begin(), lhvcPos) < 4)
+    return {};
+
+  const auto boxSize = getBoxSize(lhvcPos - 4);
+  if (boxSize == 0 || boxSize > std::distance(lhvcPos, rawFileData.end()))
+    return {};
+
+  // We just return the payload without the box size or the "lhvC" tag
+  return ByteVector(lhvcPos + 4, lhvcPos + boxSize - 4);
 }
 
 QList<QByteArray> FileSourceFFmpegFile::getParameterSets()
@@ -484,6 +527,7 @@ void FileSourceFFmpegFile::openFileAndFindVideoStream(QString fileName)
   if (!this->ff.openInput(this->formatCtx, fileName))
     return;
 
+  this->fileName = fileName;
   this->formatCtx.getInputFormat();
 
   for (unsigned idx = 0; idx < this->formatCtx.getNbStreams(); idx++)

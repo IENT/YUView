@@ -35,6 +35,7 @@
 #include "FileSource.h"
 #include <ffmpeg/AVCodecIDWrapper.h>
 #include <ffmpeg/AVCodecParametersWrapper.h>
+#include <ffmpeg/AVInputFormatWrapper.h>
 #include <ffmpeg/AVPacketWrapper.h>
 #include <ffmpeg/FFmpegVersionHandler.h>
 #include <video/rgb/videoHandlerRGB.h>
@@ -85,6 +86,7 @@ public:
 
   QByteArray    getExtradata();
   StringPairVec getMetadata();
+  ByteVector    getLhvCData();
   // Return a list containing the raw data of all parameter set NAL units
   QList<QByteArray> getParameterSets();
 
@@ -134,6 +136,8 @@ protected:
   bool                           goToNextPacket(bool videoPacketsOnly = false);
   FFmpeg::AVPacketWrapper        currentPacket;    //< A place for the curren (frame) input buffer
   bool                           endOfFile{false}; //< Are we at the end of file (draining mode)?
+
+  QString fileName;
 
   // Seek the stream to the given pts value, flush the decoder and load the first packet so
   // that we are ready to start decoding from this pts.
