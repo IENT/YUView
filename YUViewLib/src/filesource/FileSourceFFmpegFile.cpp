@@ -237,27 +237,44 @@ ByteVector FileSourceFFmpegFile::getLhvCData()
 
   // This is a bit of a hack. The problem is that FFmpeg can currently not extract this for us.
   // Maybe this will be added in the future. So the only option we have here is to manually extract
-  // the lhvC data from the mp4 file.
-  std::ifstream input(this->fileName.toStdString(), std::ios::binary);
-  const auto    rawFileData = functions::readData(input, 1024);
-  if (rawFileData.empty())
-    return {};
+  // the lhvC data from the mp4 file. In mp4, the boxes can be at the beginning or at the end of the
+  // file.
+  enum class SearchPosition
+  {
+    Beginning,
+    End
+  };
 
-  const std::string searchString = "lhvC";
-  const auto        lhvcPos =
-      std::search(rawFileData.begin(), rawFileData.end(), searchString.begin(), searchString.end());
-  if (lhvcPos == rawFileData.end())
-    return {};
+  std::ifstream inputFile(this->fileName.toStdString(), std::ios::binary);
+  for (const auto searchPosition : {SearchPosition::Beginning, SearchPosition::End})
+  {
+    constexpr auto NR_SEARCH_BYTES = 5120;
 
-  if (std::distance(rawFileData.begin(), lhvcPos) < 4)
-    return {};
+    if (searchPosition == SearchPosition::End)
+      inputFile.seekg(-NR_SEARCH_BYTES, std::ios_base::end);
 
-  const auto boxSize = getBoxSize(lhvcPos - 4);
-  if (boxSize == 0 || boxSize > std::distance(lhvcPos, rawFileData.end()))
-    return {};
+    const auto rawFileData = functions::readData(inputFile, NR_SEARCH_BYTES);
+    if (rawFileData.empty())
+      continue;
 
-  // We just return the payload without the box size or the "lhvC" tag
-  return ByteVector(lhvcPos + 4, lhvcPos + boxSize - 4);
+    const std::string searchString = "lhvC";
+    auto              lhvcPos      = std::search(
+        rawFileData.begin(), rawFileData.end(), searchString.begin(), searchString.end());
+    if (lhvcPos == rawFileData.end())
+      continue;
+
+    if (std::distance(rawFileData.begin(), lhvcPos) < 4)
+      continue;
+
+    const auto boxSize = getBoxSize(lhvcPos - 4);
+    if (boxSize == 0 || boxSize > std::distance(lhvcPos, rawFileData.end()))
+      continue;
+
+    // We just return the payload without the box size or the "lhvC" tag
+    return ByteVector(lhvcPos + 4, lhvcPos + boxSize - 4);
+  }
+
+  return {};
 }
 
 QList<QByteArray> FileSourceFFmpegFile::getParameterSets()
