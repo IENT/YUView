@@ -65,6 +65,31 @@ AVInputFormatWrapper::AVInputFormatWrapper(AVInputFormat *f, LibraryVersion v)
   this->update();
 }
 
+QString AVInputFormatWrapper::getName() const
+{
+  return this->name;
+}
+
+QString AVInputFormatWrapper::getLongName() const
+{
+  return this->long_name;
+}
+
+int AVInputFormatWrapper::getFlags() const
+{
+  return this->flags;
+}
+
+QString AVInputFormatWrapper::getExtensions() const
+{
+  return this->extensions;
+}
+
+QString AVInputFormatWrapper::getMimeType() const
+{
+  return this->mime_type;
+}
+
 void AVInputFormatWrapper::update()
 {
   if (this->fmt == nullptr)

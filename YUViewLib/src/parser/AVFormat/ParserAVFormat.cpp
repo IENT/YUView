@@ -41,7 +41,8 @@
 #include "../Mpeg2/ParserAnnexBMpeg2.h"
 #include "../Subtitles/Subtitle608.h"
 #include "../Subtitles/SubtitleDVB.h"
-#include "HVCC.h"
+#include "DecoderConfigurationHvcC.h"
+#include "DecoderConfigurationLhvC.h"
 #include "parser/common/SubByteReaderLogging.h"
 #include <parser/common/Functions.h>
 
@@ -104,13 +105,13 @@ bool ParserAVFormat::parseExtradata(ByteVector &extradata)
     return true;
 
   if (this->codecID.isAVC())
-    return this->parseExtradata_AVC(extradata);
+    return this->parseExtradataAVC(extradata);
   else if (this->codecID.isHEVC())
-    return this->parseExtradata_hevc(extradata);
+    return this->parseExtradataHEVC(extradata, HEVCExtradataType::hvcC);
   else if (this->codecID.isMpeg2())
-    return this->parseExtradata_mpeg2(extradata);
+    return this->parseExtradataMPEG2(extradata);
   else
-    return this->parseExtradata_generic(extradata);
+    return this->parseExtradataGeneric(extradata);
 }
 
 void ParserAVFormat::parseMetadata(const StringPairVec &metadata)
@@ -124,7 +125,7 @@ void ParserAVFormat::parseMetadata(const StringPairVec &metadata)
     metadataRoot->createChildItem(p.first, p.second);
 }
 
-bool ParserAVFormat::parseExtradata_generic(ByteVector &extradata)
+bool ParserAVFormat::parseExtradataGeneric(const ByteVector &extradata)
 {
   if (extradata.empty() || !packetModel->rootItem)
     return true;
@@ -138,7 +139,7 @@ bool ParserAVFormat::parseExtradata_generic(ByteVector &extradata)
   return true;
 }
 
-bool ParserAVFormat::parseExtradata_AVC(ByteVector &extradata)
+bool ParserAVFormat::parseExtradataAVC(const ByteVector &extradata)
 {
   if (extradata.empty() || !packetModel->rootItem)
     return true;
@@ -187,7 +188,7 @@ bool ParserAVFormat::parseExtradata_AVC(ByteVector &extradata)
   return true;
 }
 
-bool ParserAVFormat::parseExtradata_hevc(ByteVector &extradata)
+bool ParserAVFormat::parseExtradataHEVC(const ByteVector &extradata, const HEVCExtradataType type)
 {
   if (extradata.empty() || !packetModel->rootItem)
     return true;
@@ -200,8 +201,16 @@ bool ParserAVFormat::parseExtradata_hevc(ByteVector &extradata)
 
     try
     {
-      avformat::HVCC hvcc;
-      hvcc.parse(extradata, packetModel->rootItem, hevcParser, this->bitratePlotModel.get());
+      if (type == HEVCExtradataType::hvcC)
+      {
+        avformat::DecoderConfigurationHvcC hvcC;
+        hvcC.parse(extradata, packetModel->rootItem, hevcParser, this->bitratePlotModel.get());
+      }
+      else if (type == HEVCExtradataType::lhvC)
+      {
+        avformat::DecoderConfigurationLhvC lhvC;
+        lhvC.parse(extradata, packetModel->rootItem, hevcParser, this->bitratePlotModel.get());
+      }
     }
     catch (...)
     {
@@ -224,7 +233,7 @@ bool ParserAVFormat::parseExtradata_hevc(ByteVector &extradata)
   return true;
 }
 
-bool ParserAVFormat::parseExtradata_mpeg2(ByteVector &extradata)
+bool ParserAVFormat::parseExtradataMPEG2(const ByteVector &extradata)
 {
   if (extradata.empty() || !packetModel->rootItem)
     return true;
@@ -244,11 +253,11 @@ bool ParserAVFormat::parseExtradata_mpeg2(ByteVector &extradata)
   return true;
 }
 
-std::map<std::string, unsigned>
-ParserAVFormat::parseByteVectorAnnexBStartCodes(ByteVector &                   data,
-                                                PacketDataFormat               dataFormat,
-                                                BitratePlotModel::BitrateEntry packetBitrateEntry,
-                                                std::shared_ptr<TreeItem>      item)
+std::map<std::string, unsigned> ParserAVFormat::parseByteVectorAnnexBStartCodes(
+    const ByteVector &                   data,
+    const PacketDataFormat               dataFormat,
+    const BitratePlotModel::BitrateEntry packetBitrateEntry,
+    std::shared_ptr<TreeItem>            item)
 {
   if (dataFormat != PacketDataFormat::RawNAL && dataFormat != PacketDataFormat::MP4)
   {
@@ -256,7 +265,7 @@ ParserAVFormat::parseByteVectorAnnexBStartCodes(ByteVector &                   d
     return {};
   }
 
-  auto getNextNalStart = [&data, &dataFormat](ByteVector::iterator searchStart) {
+  auto getNextNalStart = [&data, &dataFormat](ByteVector::const_iterator searchStart) {
     if (dataFormat == PacketDataFormat::RawNAL)
     {
       if (std::distance(searchStart, data.end()) <= 3)
@@ -619,6 +628,10 @@ bool ParserAVFormat::runParsingOfFile(QString compressedFilePath)
     emit backgroundParsingDone("Error parsing Metadata from container");
     return false;
   }
+
+  const auto lhvCData = ffmpegFile.getLhvCData();
+  if (!lhvCData.empty())
+    this->parseExtradataHEVC(lhvCData, HEVCExtradataType::lhvC);
 
   int max_ts                      = ffmpegFile.getMaxTS();
   this->videoStreamIndex          = ffmpegFile.getVideoStreamIndex();

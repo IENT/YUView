@@ -34,6 +34,7 @@
 
 #include <common/Typedef.h>
 
+#include <istream>
 #include <optional>
 
 namespace functions
@@ -64,6 +65,7 @@ QString formatDataSize(double size, bool isBits = false);
 
 QStringList toQStringList(const std::vector<std::string> &stringVec);
 std::string toLower(std::string str);
+ByteVector  readData(std::istream &istream, const size_t nrBytes);
 
 inline std::string boolToString(bool b)
 {

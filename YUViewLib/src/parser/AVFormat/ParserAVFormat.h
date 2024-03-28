@@ -79,17 +79,23 @@ private:
   // Used for parsing if the packets contain an obu file that we can parse.
   std::unique_ptr<ParserAV1OBU> obuParser;
 
-  bool parseExtradata_generic(ByteVector &extradata);
-  bool parseExtradata_AVC(ByteVector &extradata);
-  bool parseExtradata_hevc(ByteVector &extradata);
-  bool parseExtradata_mpeg2(ByteVector &extradata);
+  enum class HEVCExtradataType
+  {
+    hvcC,
+    lhvC
+  };
+
+  bool parseExtradataGeneric(const ByteVector &extradata);
+  bool parseExtradataAVC(const ByteVector &extradata);
+  bool parseExtradataHEVC(const ByteVector &extradata, const HEVCExtradataType type);
+  bool parseExtradataMPEG2(const ByteVector &extradata);
 
   // Parse all NAL units in data using the AnnexB parser
   std::map<std::string, unsigned>
-  parseByteVectorAnnexBStartCodes(ByteVector &                   data,
-                                  FFmpeg::PacketDataFormat       dataFormat,
-                                  BitratePlotModel::BitrateEntry packetBitrateEntry,
-                                  std::shared_ptr<TreeItem>      item);
+  parseByteVectorAnnexBStartCodes(const ByteVector &                   data,
+                                  const FFmpeg::PacketDataFormat       dataFormat,
+                                  const BitratePlotModel::BitrateEntry packetBitrateEntry,
+                                  std::shared_ptr<TreeItem>            item);
 
   // When the parser is used in the bitstream analysis window, the runParsingOfFile is used and
   // we update this list while parsing the file.

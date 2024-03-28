@@ -1,6 +1,6 @@
 /*  This file is part of YUView - The YUV player with advanced analytics toolset
  *   <https://github.com/IENT/YUView>
- *   Copyright (C) 2015  Institut für Nachrichtentechnik, RWTH Aachen University, GERMANY
+ *   Copyright (C) 2015  Institut f�r Nachrichtentechnik, RWTH Aachen University, GERMANY
  *
  *   This program is free software; you can redistribute it and/or modify
  *   it under the terms of the GNU General Public License as published by
@@ -32,40 +32,45 @@
 
 #pragma once
 
-#include "FFMpegLibrariesTypes.h"
+#include <parser/HEVC/ParserAnnexBHEVC.h>
+#include <parser/common/BitratePlotModel.h>
+#include <parser/common/TreeItem.h>
 
-namespace FFmpeg
+#include "DecoderConfigurationNalArray.h"
+
+namespace parser::avformat
 {
 
-class AVInputFormatWrapper
+class DecoderConfigurationHvcC
 {
 public:
-  AVInputFormatWrapper();
-  AVInputFormatWrapper(AVInputFormat *f, LibraryVersion v);
+  DecoderConfigurationHvcC() = default;
 
-  QString getName() const;
-  QString getLongName() const;
-  int     getFlags() const;
-  QString getExtensions() const;
-  QString getMimeType() const;
+  void parse(const ByteVector &        data,
+             std::shared_ptr<TreeItem> root,
+             ParserAnnexBHEVC *        hevcParser,
+             BitratePlotModel *        bitrateModel);
 
-  explicit operator bool() const { return fmt != nullptr; };
+  unsigned configurationVersion{};
+  unsigned general_profile_space{};
+  bool     general_tier_flag{};
+  unsigned general_profile_idc{};
+  unsigned general_profile_compatibility_flags{};
+  uint64_t general_constraint_indicator_flags{};
+  unsigned general_level_idc{};
+  unsigned min_spatial_segmentation_idc{};
+  unsigned parallelismType{};
+  unsigned chromaFormat{};
+  unsigned bitDepthLumaMinus8{};
+  unsigned bitDepthChromaMinus8{};
+  unsigned avgFrameRate{};
+  unsigned constantFrameRate{};
+  unsigned numTemporalLayers{};
+  bool     temporalIdNested{};
+  unsigned lengthSizeMinusOne{};
+  unsigned numOfArrays{};
 
-private:
-  // Update all private values from the AVCodecContext
-  void update();
-
-  // These are here for debugging purposes.
-  QString name{};
-  QString long_name{};
-  int     flags{};
-  QString extensions{};
-  // const struct AVCodecTag * const *codec_tag;
-  // const AVClass *priv_class;
-  QString mime_type{};
-
-  AVInputFormat *fmt{};
-  LibraryVersion libVer{};
+  std::vector<DecoderConfigurationNALArray> naluArrays;
 };
 
-} // namespace FFmpeg
+} // namespace parser::avformat
