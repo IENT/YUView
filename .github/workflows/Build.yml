@@ -20,6 +20,8 @@ jobs:
             QMAKE_COMMAND: qmake6
     steps:
     - uses: actions/checkout@v4
+      with:
+        submodules: "recursive"
     - run: git fetch --prune --unshallow
     - name: Install Linux packages
       run: |
@@ -41,6 +43,8 @@ jobs:
           - os: macos-12
     steps:
     - uses: actions/checkout@v4
+      with:
+        submodules: "recursive"
     - run: git fetch --prune --unshallow
     - name: Install packages
       run: |
@@ -78,6 +82,8 @@ jobs:
             CPU_COUNT_COMMAND: sysctl -n hw.logicalcpu
     steps:
     - uses: actions/checkout@v4
+      with:
+        submodules: "recursive"
     - run: git fetch --prune --unshallow
     - name: Install Qt base
       run: |
@@ -156,6 +162,8 @@ jobs:
             QT_FILE: qtBase_6.5.2_win2019.zip
     steps:
     - uses: actions/checkout@v4
+      with:
+        submodules: "recursive"
     - uses: ilammy/msvc-dev-cmd@v1
     - run: git fetch --prune --unshallow
     - name: Install Qt base
