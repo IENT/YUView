@@ -1,3 +1,0 @@
-[submodule "YUViewLib/submodules/LibFFmpeg"]
-	path = YUViewLib/submodules/LibFFmpeg
-	url = git@github.com:ChristianFeldmann/LibFFmpeg.git
