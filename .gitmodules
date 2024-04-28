@@ -1,0 +1,3 @@
+[submodule "submodules/LibFFmpeg"]
+	path = submodules/LibFFmpeg
+	url = git@github.com:ChristianFeldmann/LibFFmpeg.git
