@@ -249,6 +249,13 @@ PixelFormatYUV guessFormatFromSizeAndName(const Size       size,
       return fmt;
   }
 
+  if (fileInfo.suffix().toLower() == "raw")
+  {
+    auto fmt = PixelFormatYUV(Subsampling::YUV_400, bitDepth, PlaneOrder::YUV, false, {}, true);
+    if (checkFormat(fmt, size, fileSize))
+      return fmt;
+  }
+
   for (const auto &name : {fileName, dirName})
   {
     // Check if the filename contains NV12

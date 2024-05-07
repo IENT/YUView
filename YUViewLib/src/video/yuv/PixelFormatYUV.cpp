@@ -44,11 +44,11 @@ void getColorConversionCoefficients(ColorConversion colorConversion, int RGBConv
   // cGV, cBU].
   const int yuvRgbConvCoeffs[6][5] = {
       {76309, 117489, -13975, -34925, 138438}, // BT709_LimitedRange
-      {65536, 103206, -12276, -30679, 121608}, // BT709_FullRange
+      {65536, 103206, -12276, -30679, 121609}, // BT709_FullRange
       {76309, 104597, -25675, -53279, 132201}, // BT601_LimitedRange
-      {65536, 91881, -22553, -46802, 116129},  // BT601_FullRange
-      {76309, 110013, -12276, -42626, 140363}, // BT2020_LimitedRange
-      {65536, 96638, -10783, -37444, 123299}   // BT2020_FullRange
+      {65536, 91881, -22553, -46802, 116130},  // BT601_FullRange
+      {76309, 110014, -12277, -42626, 140363}, // BT2020_LimitedRange
+      {65536, 96639, -10784, -37444, 123299}   // BT2020_FullRange
   };
   const auto index = ColorConversionMapper.indexOf(colorConversion);
   for (unsigned i = 0; i < 5; i++)
