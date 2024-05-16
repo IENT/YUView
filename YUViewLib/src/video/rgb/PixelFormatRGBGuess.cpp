@@ -136,6 +136,16 @@ guessFormatFromSizeAndName(const QFileInfo &fileInfo, Size frameSize, int64_t fi
 
   auto ext = fileInfo.suffix().toLower().toStdString();
 
+  if (fileInfo.suffix().toLower() == "cmyk")
+  {
+    auto fmt = PixelFormatRGB(8, DataLayout::Packed, ChannelOrder::RGB, AlphaMode::Last);
+    auto bpf = fmt.bytesPerFrame(frameSize);
+    if (bpf != 0 && (fileSize % bpf) == 0)
+    {
+      return fmt;
+    }
+  }
+
   for (const auto &name : {fileName, dirName})
   {
     for (auto format :

@@ -55,6 +55,7 @@ constexpr auto YUV_EXTENSIONS  = {"yuv", "nv12", "y4m"};
 constexpr auto RGB_EXTENSIONS  = {"rgb", "gbr", "bgr", "brg"};
 constexpr auto RGBA_EXTENSIONS = {"rgba", "gbra", "bgra", "brga", "argb", "agbr", "abgr", "abrg"};
 constexpr auto RAW_EXTENSIONS  = {"raw",};
+constexpr auto CMYK_EXTENSIONS  = {"cmyk",};
 
 bool isInExtensions(const QString &testValue, const std::initializer_list<const char *> &extensions)
 {
@@ -100,7 +101,7 @@ playlistItemRawFile::playlistItemRawFile(const QString &rawFilePath,
     this->video     = std::make_unique<video::yuv::videoHandlerYUV>();
     this->rawFormat = video::RawFormat::YUV;
   }
-  else if (isInExtensions(ext, RGB_EXTENSIONS) || isInExtensions(ext, RGBA_EXTENSIONS) ||
+  else if (isInExtensions(ext, RGB_EXTENSIONS) || isInExtensions(ext, RGBA_EXTENSIONS) || isInExtensions(ext, CMYK_EXTENSIONS) ||
            fmt.toLower() == "rgb")
   {
     this->video     = std::make_unique<video::rgb::videoHandlerRGB>();
@@ -569,7 +570,7 @@ ValuePairListSets playlistItemRawFile::getPixelValues(const QPoint &pixelPos, in
 void playlistItemRawFile::getSupportedFileExtensions(QStringList &allExtensions,
                                                      QStringList &filters)
 {
-  for (const auto &extensionsList : {YUV_EXTENSIONS, RGB_EXTENSIONS, RGBA_EXTENSIONS, RAW_EXTENSIONS})
+  for (const auto &extensionsList : {YUV_EXTENSIONS, RGB_EXTENSIONS, RGBA_EXTENSIONS, RAW_EXTENSIONS, CMYK_EXTENSIONS})
     for (const auto &extension : extensionsList)
       allExtensions.append(QString(extension));
 
@@ -578,7 +579,8 @@ void playlistItemRawFile::getSupportedFileExtensions(QStringList &allExtensions,
   filters.append("Raw RGBA File (*.rgba *.rbga *.grba *.gbra *.brga *.bgra *.argb *.arbg *.agrb "
                  "*.agbr *.abrg *.abgr)");
   filters.append("YUV4MPEG2 File (*.y4m)");
-  filters.append("Bayer Raw File (*.raw)");
+  filters.append("Raw Bayer File (*.raw)");
+  filters.append("Raw CMYK File (*.cmyk)");
 }
 
 void playlistItemRawFile::reloadItemSource()

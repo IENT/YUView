@@ -63,9 +63,9 @@ const auto ComponentDisplayModeMapper =
 
 struct ConversionSettings
 {
-  ChromaInterpolation  chromaInterpolation{ChromaInterpolation::Bilinear};
+  ChromaInterpolation  chromaInterpolation{ChromaInterpolation::NearestNeighbor};
   ComponentDisplayMode componentDisplayMode{ComponentDisplayMode::DisplayAll};
-  ColorConversion      colorConversion{ColorConversion::BT709_FullRange};
+  ColorConversion      colorConversion{ColorConversion::BT709_LimitedRange};
   // Parameters for the YUV transformation (like scaling, invert, offset). For Luma ([0]) and
   // chroma([1]).
   std::map<Component, MathParameters> mathParameters;
