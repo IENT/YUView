@@ -32,45 +32,14 @@
 
 #pragma once
 
-#include "FileSourceWithLocalFile.h"
-
-#include <QFile>
-#include <QMutex>
-#include <QString>
-
 #include <common/Typedef.h>
 
-/* The FileSource class provides functions for accessing files. Besides the reading of
- * certain blocks of the file, it also directly provides information on the file for the
- * fileInfoWidget. It also adds functions for guessing the format from the filename.
- */
-class FileSource : public FileSourceWithLocalFile
+struct GuessResult
 {
-  Q_OBJECT
-
-public:
-  FileSource();
-
-  virtual [[nodiscard]] bool openFile(const QString &filePath) override;
-
-  [[nodiscard]] virtual bool atEnd() const;
-  [[nodiscard]] QByteArray   readLine();
-  [[nodiscard]] virtual bool seek(int64_t pos);
-  [[nodiscard]] int64_t      pos();
-
-  // Read the given number of bytes starting at startPos into the QByteArray out
-  // Resize the QByteArray if necessary. Return how many bytes were read.
-  int64_t readBytes(QByteArray &targetBuffer, int64_t startPos, int64_t nrBytes);
-#if SSE_CONVERSION
-  void readBytes(byteArrayAligned &data, int64_t startPos, int64_t nrBytes);
-#endif
-
-  void clearFileCache();
-
-protected:
-  QFile srcFile;
-  bool  isFileOpened{};
-
-private:
-  QMutex readMutex;
+  Size     frameSize;
+  int      frameRate{-1};
+  unsigned bitDepth{};
+  bool     packed{false};
 };
+
+GuessResult guessFormatFromFilename(const QString &fullFilePath);

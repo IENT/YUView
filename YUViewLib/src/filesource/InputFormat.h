@@ -32,45 +32,19 @@
 
 #pragma once
 
-#include "FileSourceWithLocalFile.h"
+#include <common/EnumMapper.h>
 
-#include <QFile>
-#include <QMutex>
-#include <QString>
-
-#include <common/Typedef.h>
-
-/* The FileSource class provides functions for accessing files. Besides the reading of
- * certain blocks of the file, it also directly provides information on the file for the
- * fileInfoWidget. It also adds functions for guessing the format from the filename.
- */
-class FileSource : public FileSourceWithLocalFile
+enum class InputFormat
 {
-  Q_OBJECT
-
-public:
-  FileSource();
-
-  virtual [[nodiscard]] bool openFile(const QString &filePath) override;
-
-  [[nodiscard]] virtual bool atEnd() const;
-  [[nodiscard]] QByteArray   readLine();
-  [[nodiscard]] virtual bool seek(int64_t pos);
-  [[nodiscard]] int64_t      pos();
-
-  // Read the given number of bytes starting at startPos into the QByteArray out
-  // Resize the QByteArray if necessary. Return how many bytes were read.
-  int64_t readBytes(QByteArray &targetBuffer, int64_t startPos, int64_t nrBytes);
-#if SSE_CONVERSION
-  void readBytes(byteArrayAligned &data, int64_t startPos, int64_t nrBytes);
-#endif
-
-  void clearFileCache();
-
-protected:
-  QFile srcFile;
-  bool  isFileOpened{};
-
-private:
-  QMutex readMutex;
+  Invalid = -1,
+  AnnexBHEVC, // Raw HEVC annex B file
+  AnnexBAVC,  // Raw AVC annex B file
+  AnnexBVVC,  // Raw VVC annex B file
+  Libav       // This is some sort of container file which we will read using libavformat
 };
+
+const auto InputFormatMapper = EnumMapper<InputFormat>({{InputFormat::Invalid, "Invalid"},
+                                                        {InputFormat::AnnexBHEVC, "AnnexBHEVC"},
+                                                        {InputFormat::AnnexBAVC, "AnnexBAVC"},
+                                                        {InputFormat::AnnexBVVC, "AnnexBVVC"},
+                                                        {InputFormat::Libav, "Libav"}});

@@ -47,12 +47,9 @@ class FileSourceAnnexBFile : public FileSource
 
 public:
   FileSourceAnnexBFile();
-  FileSourceAnnexBFile(const QString &filePath) : FileSourceAnnexBFile() { openFile(filePath); }
-  ~FileSourceAnnexBFile(){};
 
   bool openFile(const QString &filePath) override;
 
-  // Is the file at the end?
   bool atEnd() const override;
 
   // --- Retrieving of data from the file ---
@@ -64,17 +61,18 @@ public:
   // Also return the start and end position of the NAL unit in the file so you can seek to it.
   // startEndPosInFile: The file positions of the first byte in the NAL header and the end position
   // of the last byte
-  QByteArray getNextNALUnit(bool getLastDataAgain = false, pairUint64 *startEndPosInFile = nullptr);
+  [[nodiscard]] QByteArray getNextNALUnit(bool        getLastDataAgain  = false,
+                                          pairUint64 *startEndPosInFile = nullptr);
 
   // Get all bytes that are needed to decode the next frame (from the given start to the given end
   // position) The data will be returned in the ISO/IEC 14496-15 format (4 bytes size followed by
   // the payload).
-  QByteArray getFrameData(pairUint64 startEndFilePos);
+  [[nodiscard]] QByteArray getFrameData(pairUint64 startEndFilePos);
 
   // Seek the file to the given byte position. Update the buffer.
-  bool seek(int64_t pos) override;
+  [[nodiscard]] bool seek(int64_t pos) override;
 
-  uint64_t getNrBytesBeforeFirstNAL() const { return this->nrBytesBeforeFirstNAL; }
+  [[nodiscard]] uint64_t getNrBytesBeforeFirstNAL() const { return this->nrBytesBeforeFirstNAL; }
 
 protected:
   QByteArray fileBuffer;
@@ -88,13 +86,9 @@ protected:
   // update the buffer and the start of the start code was in the previous buffer
   int64_t posInBuffer{0};
 
-  // load the next buffer
   bool updateBuffer();
-
-  // Seek to the first NAL header in the bitstream
   void seekToFirstNAL();
 
-  // We will keep the last buffer in case the reader wants to get it again
   QByteArray lastReturnArray;
 
   uint64_t nrBytesBeforeFirstNAL{0};

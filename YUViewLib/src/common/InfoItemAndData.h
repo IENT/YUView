@@ -32,45 +32,26 @@
 
 #pragma once
 
-#include "FileSourceWithLocalFile.h"
-
-#include <QFile>
-#include <QMutex>
+#include <QList>
+#include <QMetaType>
 #include <QString>
 
-#include <common/Typedef.h>
-
-/* The FileSource class provides functions for accessing files. Besides the reading of
- * certain blocks of the file, it also directly provides information on the file for the
- * fileInfoWidget. It also adds functions for guessing the format from the filename.
+/*
+ * An info item has a name, a text and an optional description. These are used to show them in the
+ * fileInfoWidget. For example: ["File Name", "file.yuv"] or ["Number Frames", "123"].
  */
-class FileSource : public FileSourceWithLocalFile
+struct InfoItem
 {
-  Q_OBJECT
-
-public:
-  FileSource();
-
-  virtual [[nodiscard]] bool openFile(const QString &filePath) override;
-
-  [[nodiscard]] virtual bool atEnd() const;
-  [[nodiscard]] QByteArray   readLine();
-  [[nodiscard]] virtual bool seek(int64_t pos);
-  [[nodiscard]] int64_t      pos();
-
-  // Read the given number of bytes starting at startPos into the QByteArray out
-  // Resize the QByteArray if necessary. Return how many bytes were read.
-  int64_t readBytes(QByteArray &targetBuffer, int64_t startPos, int64_t nrBytes);
-#if SSE_CONVERSION
-  void readBytes(byteArrayAligned &data, int64_t startPos, int64_t nrBytes);
-#endif
-
-  void clearFileCache();
-
-protected:
-  QFile srcFile;
-  bool  isFileOpened{};
-
-private:
-  QMutex readMutex;
+  std::string name{};
+  std::string text{};
+  std::string description{};
 };
+
+struct InfoData
+{
+  explicit InfoData(const QString &title = QString()) : title(title) {}
+  bool            isEmpty() const { return title.isEmpty() && items.isEmpty(); }
+  QString         title{};
+  QList<InfoItem> items{};
+};
+Q_DECLARE_METATYPE(InfoData)

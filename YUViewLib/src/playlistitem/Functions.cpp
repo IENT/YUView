@@ -30,47 +30,28 @@
  *   along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#pragma once
+#include "Functions.h"
 
-#include "FileSourceWithLocalFile.h"
+#include <QDir>
+#include <QFileInfo>
 
-#include <QFile>
-#include <QMutex>
-#include <QString>
-
-#include <common/Typedef.h>
-
-/* The FileSource class provides functions for accessing files. Besides the reading of
- * certain blocks of the file, it also directly provides information on the file for the
- * fileInfoWidget. It also adds functions for guessing the format from the filename.
- */
-class FileSource : public FileSourceWithLocalFile
+// If you are loading a playlist and you have an absolute path and a relative path, this function
+// will return the absolute path (if a file with that absolute path exists) or convert the relative
+// path to an absolute one and return that (if that file exists). If neither exists the empty string
+// is returned.
+QString getAbsPathFromAbsAndRel(const QString &currentPath,
+                                const QString &absolutePath,
+                                const QString &relativePath)
 {
-  Q_OBJECT
+  const QFileInfo checkAbsoluteFile(absolutePath);
+  if (checkAbsoluteFile.exists())
+    return absolutePath;
 
-public:
-  FileSource();
+  const QFileInfo playlistFilePath(currentPath);
+  const auto      combinePath = QDir(playlistFilePath.path()).filePath(relativePath);
+  const QFileInfo checkRelativeFile(combinePath);
+  if (checkRelativeFile.exists() && checkRelativeFile.isFile())
+    return QDir::cleanPath(combinePath);
 
-  virtual [[nodiscard]] bool openFile(const QString &filePath) override;
-
-  [[nodiscard]] virtual bool atEnd() const;
-  [[nodiscard]] QByteArray   readLine();
-  [[nodiscard]] virtual bool seek(int64_t pos);
-  [[nodiscard]] int64_t      pos();
-
-  // Read the given number of bytes starting at startPos into the QByteArray out
-  // Resize the QByteArray if necessary. Return how many bytes were read.
-  int64_t readBytes(QByteArray &targetBuffer, int64_t startPos, int64_t nrBytes);
-#if SSE_CONVERSION
-  void readBytes(byteArrayAligned &data, int64_t startPos, int64_t nrBytes);
-#endif
-
-  void clearFileCache();
-
-protected:
-  QFile srcFile;
-  bool  isFileOpened{};
-
-private:
-  QMutex readMutex;
-};
+  return {};
+}

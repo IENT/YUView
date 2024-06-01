@@ -34,11 +34,9 @@
 
 #include <common/Typedef.h>
 
-#include <QDateTime>
-#include <QDir>
-#include <QRegularExpression>
-#include <QSettings>
-#include <QtGlobal>
+#include <QFileInfo>
+#include <QMutexLocker>
+
 #ifdef Q_OS_WIN
 #include <windows.h>
 #endif
@@ -48,38 +46,49 @@
 #include <QThread>
 #endif
 
-FileSource::FileSource()
+FileSource::FileSource() : FileSourceWithLocalFile()
 {
-  connect(&fileWatcher,
-          &QFileSystemWatcher::fileChanged,
-          this,
-          &FileSource::fileSystemWatcherFileChanged);
 }
 
 bool FileSource::openFile(const QString &filePath)
 {
-  // Check if the file exists
-  this->fileInfo.setFile(filePath);
-  if (!this->fileInfo.exists() || !this->fileInfo.isFile())
+  QFileInfo fileInfo(filePath);
+  if (!fileInfo.exists() || !fileInfo.isFile())
     return false;
 
-  if (this->isFileOpened && this->srcFile.isOpen())
+  if (this->srcFile.isOpen())
     this->srcFile.close();
 
-  // open file for reading
   this->srcFile.setFileName(filePath);
   this->isFileOpened = this->srcFile.open(QIODevice::ReadOnly);
   if (!this->isFileOpened)
     return false;
 
-  // Save the full file path
   this->fullFilePath = filePath;
 
-  // Install a watcher for the file (if file watching is active)
   this->updateFileWatchSetting();
-  this->fileChanged = false;
 
   return true;
+}
+
+bool FileSource::atEnd() const
+{
+  return !this->isFileOpened ? true : this->srcFile.atEnd();
+}
+
+QByteArray FileSource::readLine()
+{
+  return !this->isFileOpened ? QByteArray() : this->srcFile.readLine();
+}
+
+bool FileSource::seek(int64_t pos)
+{
+  return !this->isFileOpened ? false : this->srcFile.seek(pos);
+}
+
+int64_t FileSource::pos()
+{
+  return !this->isFileOpened ? 0 : this->srcFile.pos();
 }
 
 #if SSE_CONVERSION
@@ -97,10 +106,9 @@ void FileSource::readBytes(byteArrayAligned &targetBuffer, int64_t startPos, int
 }
 #endif
 
-// Resize the target array if necessary and read the given number of bytes to the data array
 int64_t FileSource::readBytes(QByteArray &targetBuffer, int64_t startPos, int64_t nrBytes)
 {
-  if (!this->isOk())
+  if (!this->isOpened())
     return 0;
 
   if (targetBuffer.size() < nrBytes)
@@ -114,233 +122,6 @@ int64_t FileSource::readBytes(QByteArray &targetBuffer, int64_t startPos, int64_
   QMutexLocker locker(&this->readMutex);
   this->srcFile.seek(startPos);
   return this->srcFile.read(targetBuffer.data(), nrBytes);
-}
-
-QList<InfoItem> FileSource::getFileInfoList() const
-{
-  QList<InfoItem> infoList;
-
-  if (!this->isFileOpened)
-    return infoList;
-
-  infoList.append(InfoItem("File Path", this->fileInfo.absoluteFilePath()));
-#if QT_VERSION < QT_VERSION_CHECK(5, 10, 0)
-  auto createdtime = this->fileInfo.created().toString("yyyy-MM-dd hh:mm:ss");
-#else
-  auto createdtime = this->fileInfo.birthTime().toString("yyyy-MM-dd hh:mm:ss");
-#endif
-  infoList.append(InfoItem("Time Created", createdtime));
-  infoList.append(
-      InfoItem("Time Modified", this->fileInfo.lastModified().toString("yyyy-MM-dd hh:mm:ss")));
-  infoList.append(InfoItem("Nr Bytes", QString("%1").arg(this->fileInfo.size())));
-
-  return infoList;
-}
-
-QString FileSource::getAbsoluteFilePath() const
-{
-  return this->isFileOpened ? this->fileInfo.absoluteFilePath() : QString();
-}
-
-FileSource::fileFormat_t FileSource::guessFormatFromFilename() const
-{
-  FileSource::fileFormat_t format;
-
-  // We are going to check two strings (one after the other) for indicators on the frames size, fps
-  // and bit depth. 1: The file name, 2: The folder name that the file is contained in.
-
-  auto dirName  = this->fileInfo.absoluteDir().dirName();
-  auto fileName = this->fileInfo.fileName();
-  if (fileName.isEmpty())
-    return format;
-
-  for (auto const &name : {fileName, dirName})
-  {
-    // First, we will try to get a frame size from the name
-    if (!format.frameSize.isValid())
-    {
-      // The regular expressions to match. They are sorted from most detailed to least so that the
-      // most detailed ones are tested first.
-      auto regExprList =
-          QStringList()
-          << "([0-9]+)(?:x|X|\\*)([0-9]+)_([0-9]+)(?:Hz)?_([0-9]+)b?[\\._]" // Something_2160x1440_60_8_more.yuv
-                                                                            // or
-                                                                            // Something_2160x1440_60_8b.yuv
-                                                                            // or
-                                                                            // Something_2160x1440_60Hz_8_more.yuv
-          << "([0-9]+)(?:x|X|\\*)([0-9]+)_([0-9]+)(?:Hz)?[\\._]" // Something_2160x1440_60_more.yuv
-                                                                 // or Something_2160x1440_60.yuv
-          << "([0-9]+)(?:x|X|\\*)([0-9]+)[\\._]";                // Something_2160x1440_more.yuv or
-                                                                 // Something_2160x1440.yuv
-
-      for (auto regExpStr : regExprList)
-      {
-        QRegularExpression exp(regExpStr);
-        auto               match = exp.match(name);
-        if (match.hasMatch())
-        {
-          auto widthString  = match.captured(1);
-          auto heightString = match.captured(2);
-          format.frameSize  = Size(widthString.toInt(), heightString.toInt());
-
-          auto rateString = match.captured(3);
-          if (!rateString.isEmpty())
-            format.frameRate = rateString.toDouble();
-
-          auto bitDepthString = match.captured(4);
-          if (!bitDepthString.isEmpty())
-            format.bitDepth = bitDepthString.toUInt();
-
-          break; // Don't check the following expressions
-        }
-      }
-    }
-
-    // try resolution indicators with framerate: "1080p50", "720p24" ...
-    if (!format.frameSize.isValid())
-    {
-      QRegularExpression rx1080p("1080p([0-9]+)");
-      auto               matchIt = rx1080p.globalMatch(name);
-      if (matchIt.hasNext())
-      {
-        auto match           = matchIt.next();
-        format.frameSize     = Size(1920, 1080);
-        auto frameRateString = match.captured(1);
-        format.frameRate     = frameRateString.toInt();
-      }
-    }
-    if (!format.frameSize.isValid())
-    {
-      QRegularExpression rx720p("720p([0-9]+)");
-      auto               matchIt = rx720p.globalMatch(name);
-      if (matchIt.hasNext())
-      {
-        auto match           = matchIt.next();
-        format.frameSize     = Size(1280, 720);
-        auto frameRateString = match.captured(1);
-        format.frameRate     = frameRateString.toInt();
-      }
-    }
-
-    if (!format.frameSize.isValid())
-    {
-      // try to find resolution indicators (e.g. 'cif', 'hd') in file name
-      if (name.contains("_cif", Qt::CaseInsensitive))
-        format.frameSize = Size(352, 288);
-      else if (name.contains("_qcif", Qt::CaseInsensitive))
-        format.frameSize = Size(176, 144);
-      else if (name.contains("_4cif", Qt::CaseInsensitive))
-        format.frameSize = Size(704, 576);
-      else if (name.contains("UHD", Qt::CaseSensitive))
-        format.frameSize = Size(3840, 2160);
-      else if (name.contains("HD", Qt::CaseSensitive))
-        format.frameSize = Size(1920, 1080);
-      else if (name.contains("1080p", Qt::CaseSensitive))
-        format.frameSize = Size(1920, 1080);
-      else if (name.contains("720p", Qt::CaseSensitive))
-        format.frameSize = Size(1280, 720);
-    }
-
-    // Second, if we were able to get a frame size but no frame rate, we will try to get a frame
-    // rate.
-    if (format.frameSize.isValid() && format.frameRate == -1)
-    {
-      // Look for: 24fps, 50fps, 24FPS, 50FPS
-      QRegularExpression rxFPS("([0-9]+)fps", QRegularExpression::CaseInsensitiveOption);
-      auto               match = rxFPS.match(name);
-      if (match.hasMatch())
-      {
-        auto frameRateString = match.captured(1);
-        format.frameRate     = frameRateString.toInt();
-      }
-    }
-    if (format.frameSize.isValid() && format.frameRate == -1)
-    {
-      // Look for: 24Hz, 50Hz, 24HZ, 50HZ
-      QRegularExpression rxHZ("([0-9]+)HZ", QRegularExpression::CaseInsensitiveOption);
-      auto               match = rxHZ.match(name);
-      if (match.hasMatch())
-      {
-        QString frameRateString = match.captured(1);
-        format.frameRate        = frameRateString.toInt();
-      }
-    }
-
-    // Third, if we were able to get a frame size but no bit depth, we try to get a bit depth.
-    if (format.frameSize.isValid() && format.bitDepth == 0)
-    {
-      for (unsigned bd : {8, 9, 10, 12, 16})
-      {
-        // Look for: 10bit, 10BIT, 10-bit, 10-BIT
-        if (name.contains(QString("%1bit").arg(bd), Qt::CaseInsensitive) ||
-            name.contains(QString("%1-bit").arg(bd), Qt::CaseInsensitive))
-        {
-          format.bitDepth = bd;
-          break;
-        }
-        // Look for bit depths like: _16b_ .8b. -12b-
-        QRegularExpression exp(QString("(?:_|\\.|-)%1b(?:_|\\.|-)").arg(bd));
-        auto               match = exp.match(name);
-        if (match.hasMatch())
-        {
-          format.bitDepth = bd;
-          break;
-        }
-      }
-    }
-
-    // If we were able to get a frame size, try to get an indicator for packed formats
-    if (format.frameSize.isValid())
-    {
-      QRegularExpression exp("(?:_|\\.|-)packed(?:_|\\.|-)");
-      auto               match = exp.match(name);
-      if (match.hasMatch())
-        format.packed = true;
-    }
-  }
-
-  return format;
-}
-
-// If you are loading a playlist and you have an absolute path and a relative path, this function
-// will return the absolute path (if a file with that absolute path exists) or convert the relative
-// path to an absolute one and return that (if that file exists). If neither exists the empty string
-// is returned.
-QString FileSource::getAbsPathFromAbsAndRel(const QString &currentPath,
-                                            const QString &absolutePath,
-                                            const QString &relativePath)
-{
-  QFileInfo checkAbsoluteFile(absolutePath);
-  if (checkAbsoluteFile.exists())
-    return absolutePath;
-
-  QFileInfo plFileInfo(currentPath);
-  auto      combinePath = QDir(plFileInfo.path()).filePath(relativePath);
-  QFileInfo checkRelativeFile(combinePath);
-  if (checkRelativeFile.exists() && checkRelativeFile.isFile())
-  {
-    return QDir::cleanPath(combinePath);
-  }
-
-  return {};
-}
-
-bool FileSource::getAndResetFileChangedFlag()
-{
-  bool b            = this->fileChanged;
-  this->fileChanged = false;
-  return b;
-}
-
-void FileSource::updateFileWatchSetting()
-{
-  // Install a file watcher if file watching is active in the settings.
-  // The addPath/removePath functions will do nothing if called twice for the same file.
-  QSettings settings;
-  if (settings.value("WatchFiles", true).toBool())
-    fileWatcher.addPath(this->fullFilePath);
-  else
-    fileWatcher.removePath(this->fullFilePath);
 }
 
 void FileSource::clearFileCache()

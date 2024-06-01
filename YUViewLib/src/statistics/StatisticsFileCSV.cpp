@@ -193,9 +193,9 @@ void StatisticsFileCSV::readFrameAndTypePositionsFromFile(std::atomic_bool &brea
                 if (poc > this->maxPOC)
                   this->maxPOC = poc;
 
-                // Update percent of file parsed
-                this->parsingProgress =
-                    ((double)lineBufferStartPos * 100 / (double)inputFile.getFileSize());
+                if (const auto fileSize = inputFile.getFileSize())
+                  this->parsingProgress = (static_cast<double>(lineBufferStartPos) * 100 /
+                                           static_cast<double>(*fileSize));
               }
             }
           }
@@ -231,7 +231,7 @@ void StatisticsFileCSV::readFrameAndTypePositionsFromFile(std::atomic_bool &brea
 
 void StatisticsFileCSV::loadStatisticData(StatisticsData &statisticsData, int poc, int typeID)
 {
-  if (!this->file.isOk())
+  if (!this->file.isOpened())
     return;
 
   try

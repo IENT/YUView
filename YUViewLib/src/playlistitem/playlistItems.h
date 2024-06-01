@@ -45,6 +45,7 @@
 */
 namespace playlistItems
 {
+
 // Get a list of all supported file format filets and the extensions. This can be used in a file
 // open dialog.
 QStringList getSupportedFormatsFilters();
@@ -57,4 +58,5 @@ playlistItem *createPlaylistItemFromFile(QWidget *parent, const QString &fileNam
 
 // Load a playlist item (and all of it's children) from the playlist.
 playlistItem *loadPlaylistItem(const QDomElement &elem, const QString &filePath);
+
 } // namespace playlistItems

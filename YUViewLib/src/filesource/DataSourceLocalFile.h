@@ -32,45 +32,29 @@
 
 #pragma once
 
-#include "FileSourceWithLocalFile.h"
+#include "IDataSource.h"
 
-#include <QFile>
-#include <QMutex>
-#include <QString>
+#include <filesystem>
+#include <fstream>
 
-#include <common/Typedef.h>
-
-/* The FileSource class provides functions for accessing files. Besides the reading of
- * certain blocks of the file, it also directly provides information on the file for the
- * fileInfoWidget. It also adds functions for guessing the format from the filename.
- */
-class FileSource : public FileSourceWithLocalFile
+class DataSourceLocalFile : public IDataSource
 {
-  Q_OBJECT
-
 public:
-  FileSource();
+  DataSourceLocalFile(const std::filesystem::path &filePath);
 
-  virtual [[nodiscard]] bool openFile(const QString &filePath) override;
+  virtual [[nodiscard]] std::vector<InfoItem>       getInfoList() const override;
+  virtual [[nodiscard]] bool                        atEnd() const override;
+  virtual [[nodiscard]] bool                        isReady() const override;
+  virtual [[nodiscard]] std::int64_t                position() const override;
+  virtual [[nodiscard]] std::optional<std::int64_t> fileSize() const;
 
-  [[nodiscard]] virtual bool atEnd() const;
-  [[nodiscard]] QByteArray   readLine();
-  [[nodiscard]] virtual bool seek(int64_t pos);
-  [[nodiscard]] int64_t      pos();
-
-  // Read the given number of bytes starting at startPos into the QByteArray out
-  // Resize the QByteArray if necessary. Return how many bytes were read.
-  int64_t readBytes(QByteArray &targetBuffer, int64_t startPos, int64_t nrBytes);
-#if SSE_CONVERSION
-  void readBytes(byteArrayAligned &data, int64_t startPos, int64_t nrBytes);
-#endif
-
-  void clearFileCache();
+  virtual [[nodiscard]] bool         seek(const std::int64_t pos) override;
+  virtual [[nodiscard]] std::int64_t read(ByteVector &buffer, const std::int64_t nrBytes) override;
 
 protected:
-  QFile srcFile;
-  bool  isFileOpened{};
+  std::filesystem::path filePath{};
+  bool                  isFileOpened{};
 
-private:
-  QMutex readMutex;
+  std::ifstream file{};
+  std::int64_t  filePosition{};
 };
