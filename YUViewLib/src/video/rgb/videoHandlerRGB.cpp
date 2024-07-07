@@ -34,6 +34,7 @@
 
 #include <common/EnumMapper.h>
 #include <common/FileInfo.h>
+#include <common/Formatting.h>
 #include <common/Functions.h>
 #include <common/FunctionsGui.h>
 #include <video/rgb/ConversionRGB.h>
@@ -463,12 +464,12 @@ void videoHandlerRGB::savePlaylist(YUViewDomElement &element) const
   element.appendProperiteChild("scale.B", QString::number(this->componentScale[2]));
   element.appendProperiteChild("scale.A", QString::number(this->componentScale[3]));
 
-  element.appendProperiteChild("invert.R", functions::boolToString(this->componentInvert[0]));
-  element.appendProperiteChild("invert.G", functions::boolToString(this->componentInvert[1]));
-  element.appendProperiteChild("invert.B", functions::boolToString(this->componentInvert[2]));
-  element.appendProperiteChild("invert.A", functions::boolToString(this->componentInvert[3]));
+  element.appendProperiteChild("invert.R", to_string(this->componentInvert[0]));
+  element.appendProperiteChild("invert.G", to_string(this->componentInvert[1]));
+  element.appendProperiteChild("invert.B", to_string(this->componentInvert[2]));
+  element.appendProperiteChild("invert.A", to_string(this->componentInvert[3]));
 
-  element.appendProperiteChild("limitedRange", functions::boolToString(this->limitedRange));
+  element.appendProperiteChild("limitedRange", to_string(this->limitedRange));
 }
 
 void videoHandlerRGB::loadPlaylist(const YUViewDomElement &element)
@@ -625,7 +626,7 @@ void videoHandlerRGB::setSrcPixelFormat(const PixelFormatRGB &newFormat)
 // Convert the data in "sourceBuffer" from the format "srcPixelFormat" to RGB 888. While doing so,
 // apply the scaling factors, inversions and only convert the selected color components.
 void videoHandlerRGB::convertSourceToRGBA32Bit(const QByteArray &sourceBuffer,
-                                               unsigned char *   targetBuffer,
+                                               unsigned char    *targetBuffer,
                                                QImage::Format    imageFormat)
 {
   Q_ASSERT_X(sourceBuffer.size() >= getBytesPerFrame(),
@@ -694,9 +695,9 @@ void videoHandlerRGB::setFormatFromSizeAndName(
   this->setSrcPixelFormat(guessFormatFromSizeAndName(fileInfo, frameSize, fileSize));
 }
 
-void videoHandlerRGB::drawPixelValues(QPainter *    painter,
+void videoHandlerRGB::drawPixelValues(QPainter     *painter,
                                       const int     frameIdx,
-                                      const QRect & videoRect,
+                                      const QRect  &videoRect,
                                       const double  zoomFactor,
                                       FrameHandler *item2,
                                       const bool    markDifference,
@@ -810,7 +811,7 @@ void videoHandlerRGB::drawPixelValues(QPainter *    painter,
   }
 }
 
-QImage videoHandlerRGB::calculateDifference(FrameHandler *   item2,
+QImage videoHandlerRGB::calculateDifference(FrameHandler    *item2,
                                             const int        frameIdxItem0,
                                             const int        frameIdxItem1,
                                             QList<InfoItem> &differenceInfoList,

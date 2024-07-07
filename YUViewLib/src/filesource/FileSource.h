@@ -86,15 +86,6 @@ public:
   virtual bool seek(int64_t pos) { return !this->isFileOpened ? false : this->srcFile.seek(pos); }
   int64_t      pos() { return !this->isFileOpened ? 0 : this->srcFile.pos(); }
 
-  struct fileFormat_t
-  {
-    Size     frameSize;
-    int      frameRate{-1};
-    unsigned bitDepth{};
-    bool     packed{false};
-  };
-  fileFormat_t guessFormatFromFilename() const;
-
   // Get the file size in bytes
 
   // Read the given number of bytes starting at startPos into the QByteArray out

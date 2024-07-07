@@ -32,76 +32,18 @@
 
 #pragma once
 
-#include "Typedef.h"
+#include <common/Typedef.h>
 
-#include <sstream>
-#include <vector>
+#include <QFileInfo>
 
-template <typename T>
-std::ostream &operator<<(std::ostream &stream, const std::pair<T, T> &typePair)
+struct FileFormat
 {
-  stream << "(" << typePair.first << ", " << typePair.second << ")";
-  return stream;
-}
+    Size     frameSize;
+    int      frameRate{-1};
+    unsigned bitDepth{};
+    bool     packed{false};
 
-template <typename T> std::string to_string(const std::pair<T, T> &typePair)
-{
-  std::ostringstream stream;
-  stream << typePair;
-  return stream.str();
-}
+    bool operator==(const FileFormat &rhs) const;
+};
 
-template <typename T> std::ostream &operator<<(std::ostream &stream, const std::vector<T> vec)
-{
-  stream << "[";
-  for (auto it = vec.begin(); it != vec.end(); it++)
-  {
-    if (it != vec.begin())
-      stream << ", ";
-    stream << (*it);
-  }
-  stream << "]";
-  return stream;
-}
-
-template <typename T> std::string to_string(const std::vector<T> vec)
-{
-  std::ostringstream stream;
-  stream << vec;
-  return stream.str();
-}
-
-static std::ostream &operator<<(std::ostream &stream, const Size &size)
-{
-  stream << "(" << size.width << "x" << size.height << ")";
-  return stream;
-}
-
-inline std::string to_string(const Size &size)
-{
-  std::ostringstream stream;
-  stream << size;
-  return stream.str();
-}
-
-inline std::string to_string(const bool b)
-{
-  return b ? "True" : "False";
-}
-
-inline std::string stringReplaceAll(std::string str, char value, char replacement)
-{
-  std::replace(str.begin(), str.end(), value, replacement);
-  return str;
-}
-
-inline std::string stringReplaceAll(std::string str, std::initializer_list<char> values, char replacement)
-{
-  std::replace_if(
-      str.begin(),
-      str.end(),
-      [&values](const char value)
-      { return std::find(values.begin(), values.end(), value) != values.end(); },
-      replacement);
-  return str;
-}
+FileFormat guessFormatFromFilename(const QFileInfo &fileInfo);

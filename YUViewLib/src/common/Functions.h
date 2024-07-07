@@ -67,11 +67,6 @@ QStringList toQStringList(const std::vector<std::string> &stringVec);
 std::string toLower(std::string str);
 ByteVector  readData(std::istream &istream, const size_t nrBytes);
 
-inline std::string boolToString(bool b)
-{
-  return b ? "True" : "False";
-}
-
 template <typename T> unsigned clipToUnsigned(T val)
 {
   static_assert(std::is_signed<T>::value, "T must must be a signed type");
