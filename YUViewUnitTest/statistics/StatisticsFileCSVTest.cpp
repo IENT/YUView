@@ -32,6 +32,8 @@
 
 #include "gtest/gtest.h"
 
+#include "CheckFunctions.h"
+
 #include <TemporaryFile.h>
 #include <statistics/StatisticsFileCSV.h>
 
@@ -99,45 +101,6 @@ ByteVector getCSVTestData()
 
   ByteVector data(stats_str.begin(), stats_str.end());
   return data;
-}
-
-struct CheckStatsItem
-{
-  unsigned x{}, y{}, w{}, h{};
-  int      v0{}, v1{};
-};
-
-void checkVectorList(const std::vector<stats::StatsItemVector> &vectors,
-                     const std::vector<CheckStatsItem>         &checkItems)
-{
-  EXPECT_EQ(vectors.size(), checkItems.size());
-  for (unsigned i = 0; i < vectors.size(); i++)
-  {
-    const auto vec = vectors[i];
-    const auto chk = checkItems[i];
-    EXPECT_EQ(unsigned(vec.pos[0]), chk.x);
-    EXPECT_EQ(unsigned(vec.pos[1]), chk.y);
-    EXPECT_EQ(unsigned(vec.size[0]), chk.w);
-    EXPECT_EQ(unsigned(vec.size[1]), chk.h);
-    EXPECT_EQ(vec.point[0].x, chk.v0);
-    EXPECT_EQ(vec.point[0].y, chk.v1);
-  }
-}
-
-void checkValueList(const std::vector<stats::StatsItemValue> &values,
-                    const std::vector<CheckStatsItem>        &checkItems)
-{
-  EXPECT_EQ(values.size(), checkItems.size());
-  for (unsigned i = 0; i < values.size(); i++)
-  {
-    const auto val = values[i];
-    const auto chk = checkItems[i];
-    EXPECT_EQ(unsigned(val.pos[0]), chk.x);
-    EXPECT_EQ(unsigned(val.pos[1]), chk.y);
-    EXPECT_EQ(unsigned(val.size[0]), chk.w);
-    EXPECT_EQ(unsigned(val.size[1]), chk.h);
-    EXPECT_EQ(val.value, chk.v0);
-  }
 }
 
 TEST(StatisticsFileCSV, testCSVFileParsing)
@@ -270,36 +233,36 @@ TEST(StatisticsFileCSV, testCSVFileParsing)
   // Now we should get the data
   statFile.loadStatisticData(statData, 1, 9);
   EXPECT_EQ(statData.getFrameIndex(), 1);
-  checkVectorList(statData[9].vectorData,
-                  {{0, 32, 8, 16, 1, 0},
-                   {8, 32, 8, 16, 0, 0},
-                   {112, 56, 4, 8, 0, 0},
-                   {116, 56, 4, 8, 0, 0},
-                   {128, 32, 32, 16, 0, 0},
-                   {128, 48, 32, 16, 0, 0}});
+  yuviewTest::statistics::checkVectorList(statData[9].vectorData,
+                                          {{0, 32, 8, 16, 1, 0},
+                                           {8, 32, 8, 16, 0, 0},
+                                           {112, 56, 4, 8, 0, 0},
+                                           {116, 56, 4, 8, 0, 0},
+                                           {128, 32, 32, 16, 0, 0},
+                                           {128, 48, 32, 16, 0, 0}});
   EXPECT_EQ(statData[9].valueData.size(), size_t(0));
 
   statFile.loadStatisticData(statData, 1, 11);
   EXPECT_EQ(statData.getFrameIndex(), 1);
-  checkVectorList(statData[11].vectorData,
-                  {{0, 32, 8, 16, 31, 0},
-                   {8, 32, 8, 16, -33, 0},
-                   {112, 56, 4, 8, -30, 0},
-                   {116, 56, 4, 8, -30, 0},
-                   {128, 32, 32, 16, -31, 0},
-                   {128, 48, 32, 16, -31, 0},
-                   {160, 32, 32, 16, -31, 0}});
+  yuviewTest::statistics::checkVectorList(statData[11].vectorData,
+                                          {{0, 32, 8, 16, 31, 0},
+                                           {8, 32, 8, 16, -33, 0},
+                                           {112, 56, 4, 8, -30, 0},
+                                           {116, 56, 4, 8, -30, 0},
+                                           {128, 32, 32, 16, -31, 0},
+                                           {128, 48, 32, 16, -31, 0},
+                                           {160, 32, 32, 16, -31, 0}});
   EXPECT_EQ(statData[11].valueData.size(), size_t(0));
 
   statFile.loadStatisticData(statData, 7, 3);
   EXPECT_EQ(statData.getFrameIndex(), 7);
   EXPECT_EQ(statData[3].vectorData.size(), size_t(0));
-  checkValueList(statData[3].valueData,
-                 {{0, 32, 8, 16, 1},
-                  {128, 48, 32, 16, 0},
-                  {384, 0, 64, 64, 0},
-                  {520, 32, 24, 32, 0},
-                  {576, 40, 32, 24, 0}});
+  yuviewTest::statistics::checkValueList(statData[3].valueData,
+                                         {{0, 32, 8, 16, 1},
+                                          {128, 48, 32, 16, 0},
+                                          {384, 0, 64, 64, 0},
+                                          {520, 32, 24, 32, 0},
+                                          {576, 40, 32, 24, 0}});
 }
 
 } // namespace
