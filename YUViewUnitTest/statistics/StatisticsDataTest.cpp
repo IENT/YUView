@@ -32,9 +32,6 @@
 
 #include "gtest/gtest.h"
 
-using ::testing::TestWithParam;
-using ::testing::Values;
-
 #include <statistics/StatisticsData.h>
 
 namespace

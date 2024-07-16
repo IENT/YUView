@@ -61,8 +61,6 @@ std::string generateRandomFileName()
 
   std::uniform_int_distribution<int> distribution(0, 61);
 
-  const auto value = distribution(generator);
-
   std::stringstream s;
   constexpr auto    NR_CHARACTERS = 40;
   for (int i = 0; i < NR_CHARACTERS; ++i)
