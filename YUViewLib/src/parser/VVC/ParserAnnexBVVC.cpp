@@ -68,7 +68,7 @@ namespace
 {
 
 BitratePlotModel::BitrateEntry
-createBitrateEntryForAU(ParsingState &                                parsingState,
+createBitrateEntryForAU(ParsingState                                 &parsingState,
                         std::optional<BitratePlotModel::BitrateEntry> bitrateEntry)
 {
   BitratePlotModel::BitrateEntry entry;
@@ -216,7 +216,7 @@ std::optional<ParserAnnexB::SeekData> ParserAnnexBVVC::getSeekData(int iFrameNr)
         nal->header.nal_unit_type == NalType::SUFFIX_APS_NUT)
     {
       auto aps     = std::dynamic_pointer_cast<adaptation_parameter_set_rbsp>(nal->rbsp);
-      auto apsType = apsParamTypeMapper.indexOf(aps->aps_params_type);
+      auto apsType = APSParamTypeMapper.indexOf(aps->aps_params_type);
       activeAPSNal[{apsType, aps->aps_adaptation_parameter_set_id}] = nal;
     }
   }
@@ -268,7 +268,7 @@ Ratio ParserAnnexBVVC::getSampleAspectRatio()
 
 ParserAnnexB::ParseResult
 ParserAnnexBVVC::parseAndAddNALUnit(int                                           nalID,
-                                    const ByteVector &                            data,
+                                    const ByteVector                             &data,
                                     std::optional<BitratePlotModel::BitrateEntry> bitrateEntry,
                                     std::optional<pairUint64> nalStartEndPosFile,
                                     std::shared_ptr<TreeItem> parent)
@@ -369,7 +369,7 @@ ParserAnnexBVVC::parseAndAddNALUnit(int                                         
       auto newAPS = std::make_shared<adaptation_parameter_set_rbsp>();
       newAPS->parse(reader);
 
-      auto apsType = apsParamTypeMapper.indexOf(newAPS->aps_params_type);
+      auto apsType = APSParamTypeMapper.indexOf(newAPS->aps_params_type);
       this->activeParameterSets.apsMap[{apsType, newAPS->aps_adaptation_parameter_set_id}] = newAPS;
 
       specificDescription += " ID " + std::to_string(newAPS->aps_adaptation_parameter_set_id);

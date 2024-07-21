@@ -60,13 +60,31 @@ template <class T, size_t N> struct NewEnumMapper
     return this->names.at(index);
   }
 
-  constexpr std::optional<T> getValue(std::string_view name) const
+  constexpr std::optional<T> getValue(const std::string_view name) const
   {
     const auto it = std::find(this->names.begin(), this->names.end(), name);
     if (it == this->names.end())
       return {};
 
     const auto index = std::distance(this->names.begin(), it);
+    return this->items.at(index);
+  }
+
+  constexpr size_t indexOf(const T value) const
+  {
+    const auto it = std::find(this->items.begin(), this->items.end(), value);
+    if (it == this->items.end())
+      throw std::logic_error(
+          "The given type T was not registered in the mapper. All possible enums must be mapped.");
+
+    const auto index = std::distance(this->items.begin(), it);
+    return index;
+  }
+
+  constexpr std::optional<T> at(const size_t index) const
+  {
+    if (index >= N)
+      return {};
     return this->items.at(index);
   }
 

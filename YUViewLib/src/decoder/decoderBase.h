@@ -64,13 +64,14 @@ enum class DecoderEngine
   FFMpeg    // The FFMpeg decoder
 };
 
-constexpr NalTypeMapper DecoderEngineMapper(std::make_pair(DecoderEngine::Invalid, "Invalid"sv),
-                                            std::make_pair(DecoderEngine::Libde265, "Libde265"sv),
-                                            std::make_pair(DecoderEngine::HM, "HM"sv),
-                                            std::make_pair(DecoderEngine::VTM, "VTM"sv),
-                                            std::make_pair(DecoderEngine::VVDec, "VVDec"sv),
-                                            std::make_pair(DecoderEngine::Dav1d, "Dav1d"sv),
-                                            std::make_pair(DecoderEngine::FFMpeg, "FFMpeg"sv));
+constexpr NewEnumMapper<DecoderEngine, 7>
+    DecoderEngineMapper(std::make_pair(DecoderEngine::Invalid, "Invalid"sv),
+                        std::make_pair(DecoderEngine::Libde265, "Libde265"sv),
+                        std::make_pair(DecoderEngine::HM, "HM"sv),
+                        std::make_pair(DecoderEngine::VTM, "VTM"sv),
+                        std::make_pair(DecoderEngine::VVDec, "VVDec"sv),
+                        std::make_pair(DecoderEngine::Dav1d, "Dav1d"sv),
+                        std::make_pair(DecoderEngine::FFMpeg, "FFMpeg"sv));
 
 const auto DecodersHEVC =
     std::vector<DecoderEngine>({DecoderEngine::Libde265, DecoderEngine::HM, DecoderEngine::FFMpeg});
