@@ -48,14 +48,6 @@ using video::rgb::AlphaModeMapper;
 namespace
 {
 
-constexpr auto ALL_MODES_MAPPER =
-    NewEnumMapper<AlphaMode, 3>(std::make_pair(AlphaMode::First, "First"sv),
-                                std::make_pair(AlphaMode::Last, "Last"sv),
-                                std::make_pair(AlphaMode::None, "None"sv));
-
-constexpr auto EndianessMapper = NewEnumMapper<Endianness, 2>(
-    std::make_pair(Endianness::Little, "Little"sv), std::make_pair(Endianness::Big, "Big"sv));
-
 using TestParameters = std::tuple<Endianness, BitDepth, AlphaMode>;
 
 class ConversionRGBTest : public TestWithParam<TestParameters>
@@ -66,9 +58,9 @@ std::string getTestName(const testing::TestParamInfo<TestParameters> &testParam)
 {
   const auto [endianess, bitDepth, alphaMode] = testParam.param;
   std::stringstream s;
-  s << "Endianess_" << EndianessMapper.getName(endianess) << "_";
+  s << "Endianess_" << video::EndianessMapper.getName(endianess) << "_";
   s << "BitDepth_" << bitDepth << "_";
-  s << "AlphaMode_" << ALL_MODES_MAPPER.getName(alphaMode) << "_";
+  s << "AlphaMode_" << AlphaModeMapper.getName(alphaMode) << "_";
   return s.str();
 }
 
@@ -79,9 +71,9 @@ TEST_P(ConversionRGBTest, TestConversion)
 
 INSTANTIATE_TEST_SUITE_P(VideoRGB,
                          ConversionRGBTest,
-                         Combine(ValuesIn(EndianessMapper.getItems()),
+                         Combine(ValuesIn(video::EndianessMapper.getItems()),
                                  Values(8, 10, 12),
-                                 ValuesIn(ALL_MODES_MAPPER.getItems())),
+                                 ValuesIn(AlphaModeMapper.getItems())),
                          getTestName);
 
 } // namespace

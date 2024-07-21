@@ -34,7 +34,7 @@
 
 #include <QMetaType>
 #include <common/EnumMapper.h>
-
+#include <common/NewEnumMapper.h>
 
 namespace video
 {
@@ -51,6 +51,9 @@ enum class Endianness
   Big,
   Little
 };
+
+constexpr auto EndianessMapper = NewEnumMapper<Endianness, 2>(
+    std::make_pair(Endianness::Little, "Little"sv), std::make_pair(Endianness::Big, "Big"sv));
 
 enum class DataLayout
 {

@@ -33,6 +33,7 @@
 #pragma once
 
 #include <common/EnumMapper.h>
+#include <common/NewEnumMapper.h>
 #include <common/Typedef.h>
 #include <video/PixelFormat.h>
 
@@ -116,8 +117,10 @@ enum class AlphaMode
   Last
 };
 
-const auto AlphaModeMapper = EnumMapper<AlphaMode>(
-    {{AlphaMode::None, "None"}, {AlphaMode::First, "First"}, {AlphaMode::Last, "Last"}});
+constexpr auto AlphaModeMapper =
+    NewEnumMapper<AlphaMode, 3>(std::make_pair(AlphaMode::None, "None"sv),
+                                std::make_pair(AlphaMode::First, "First"sv),
+                                std::make_pair(AlphaMode::Last, "Last"sv));
 
 // This class defines a specific RGB format with all properties like order of R/G/B, bitsPerValue,
 // planarity...

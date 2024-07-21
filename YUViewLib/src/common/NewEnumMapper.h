@@ -62,7 +62,7 @@ template <class T, size_t N> struct NewEnumMapper
   constexpr const std::array<T, N> &getItems() const { return this->items; }
 
 private:
-  constexpr void addElementsRecursively(const std::size_t index) {};
+  constexpr void addElementsRecursively(const std::size_t) {};
 
   template <typename TArg, typename... Args>
   constexpr void addElementsRecursively(const std::size_t index, TArg first, Args... args)
