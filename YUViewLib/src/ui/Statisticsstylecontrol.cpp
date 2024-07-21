@@ -78,7 +78,7 @@ StatisticsStyleControl::StatisticsStyleControl(QWidget *parent)
 
   QSignalBlocker blockerPredefined(this->ui.comboBoxPredefined);
   for (auto typeName : stats::color::PredefinedTypeMapper.getNames())
-    this->ui.comboBoxPredefined->addItem(QString::fromStdString(typeName));
+    this->ui.comboBoxPredefined->addItem(QString::fromStdString(std::string(typeName)));
   this->refreshComboBoxCustomMapFromStorage();
 }
 
@@ -320,12 +320,15 @@ void StatisticsStyleControl::on_pushButtonEditMap_clicked()
 
   StatisticsStyleControl_ColorMapEditor colorMapEditor(originalColorMap, originalOtherColor, this);
 
-  connect(&colorMapEditor, &StatisticsStyleControl_ColorMapEditor::mapChanged, [&]() {
-    this->currentItem->colorMapper.colorMap      = colorMapEditor.getColorMap();
-    this->currentItem->colorMapper.colorMapOther = colorMapEditor.getOtherColor();
-    this->ui.frameDataColor->setColorMapper(this->currentItem->colorMapper);
-    emit StyleChanged();
-  });
+  connect(&colorMapEditor,
+          &StatisticsStyleControl_ColorMapEditor::mapChanged,
+          [&]()
+          {
+            this->currentItem->colorMapper.colorMap      = colorMapEditor.getColorMap();
+            this->currentItem->colorMapper.colorMapOther = colorMapEditor.getOtherColor();
+            this->ui.frameDataColor->setColorMapper(this->currentItem->colorMapper);
+            emit StyleChanged();
+          });
 
   if (colorMapEditor.exec() == QDialog::Accepted)
   {

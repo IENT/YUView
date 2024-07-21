@@ -87,14 +87,16 @@ void YUViewDomElement::appendProperiteChild(const QString         &type,
   appendChild(newChild);
 }
 
-void YUViewDomElement::setAttribute(const std::string &name, const std::string &value)
+void YUViewDomElement::setAttribute(const std::string_view name, const std::string_view value)
 {
-  QDomElement::setAttribute(QString::fromStdString(name), QString::fromStdString(value));
+  QDomElement::setAttribute(QString::fromStdString(std::string(name)),
+                            QString::fromStdString(std::string(value)));
 }
 
-void YUViewDomElement::appendProperiteChild(const std::string &type, const std::string_view name)
+void YUViewDomElement::appendProperiteChild(const std::string_view type,
+                                            const std::string_view name)
 {
-  auto newChild = ownerDocument().createElement(QString::fromStdString(type));
+  auto newChild = ownerDocument().createElement(QString::fromStdString(std::string(type)));
   newChild.appendChild(ownerDocument().createTextNode(QString::fromStdString(std::string(name))));
   appendChild(newChild);
 }

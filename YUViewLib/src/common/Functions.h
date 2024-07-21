@@ -64,7 +64,7 @@ QStringList getThemeColors(QString themeName);
 QString formatDataSize(double size, bool isBits = false);
 
 QStringList toQStringList(const std::vector<std::string> &stringVec);
-std::string toLower(std::string str);
+std::string toLower(const std::string_view str);
 ByteVector  readData(std::istream &istream, const size_t nrBytes);
 
 template <typename T> unsigned clipToUnsigned(T val)

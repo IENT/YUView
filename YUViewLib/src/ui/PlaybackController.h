@@ -34,6 +34,7 @@
 
 #include <chrono>
 
+#include <common/EnumMapper.h>
 #include <common/Typedef.h>
 #include <ui/views/SplitViewWidget.h>
 #include <ui/widgets/PlaylistTreeWidget.h>

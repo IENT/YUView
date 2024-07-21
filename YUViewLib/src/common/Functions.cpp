@@ -43,6 +43,7 @@
 
 #include <algorithm>
 #include <charconv>
+#include <string_view>
 
 #include <QThread>
 
@@ -162,11 +163,14 @@ QStringList toQStringList(const std::vector<std::string> &stringVec)
   return list;
 }
 
-std::string toLower(std::string str)
+std::string toLower(const std::string_view str)
 {
-  std::transform(
-      str.begin(), str.end(), str.begin(), [](unsigned char c) { return std::tolower(c); });
-  return str;
+  std::string lowercaseStr(str);
+  std::transform(lowercaseStr.begin(),
+                 lowercaseStr.end(),
+                 lowercaseStr.begin(),
+                 [](unsigned char c) { return std::tolower(c); });
+  return lowercaseStr;
 }
 
 ByteVector readData(std::istream &istream, const size_t nrBytes)

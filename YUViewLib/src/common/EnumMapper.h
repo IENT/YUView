@@ -63,7 +63,7 @@ public:
   using EntryVector = std::vector<Entry>;
 
   EnumMapper() = default;
-  EnumMapper(const EntryVector &entryVector) : entryVector(entryVector){};
+  EnumMapper(const EntryVector &entryVector) : entryVector(entryVector) {};
 
   std::optional<T> getValue(std::string name, StringType stringType = StringType::Name) const
   {

@@ -72,6 +72,28 @@ template <class T, size_t N> struct NewEnumMapper
     return this->items.at(index);
   }
 
+  constexpr std::optional<T> getValueCaseInsensitive(const std::string_view name) const
+  {
+    const auto compareToNameLowercase = [&name](const std::string_view str)
+    {
+      if (name.length() != str.length())
+        return false;
+      for (std::size_t i = 0; i < name.length(); ++i)
+      {
+        if (std::tolower(name.at(i)) != std::tolower(str.at(i)))
+          return false;
+      }
+      return true;
+    };
+
+    const auto it = std::find_if(this->names.begin(), this->names.end(), compareToNameLowercase);
+    if (it == this->names.end())
+      return {};
+
+    const auto index = std::distance(this->names.begin(), it);
+    return this->items.at(index);
+  }
+
   std::optional<T> getValueFromNameOrIndex(const std::string_view nameOrIndex) const
   {
     if (auto index = functions::toUnsigned(nameOrIndex))
@@ -99,7 +121,8 @@ template <class T, size_t N> struct NewEnumMapper
     return this->items.at(index);
   }
 
-  constexpr const std::array<T, N> &getItems() const { return this->items; }
+  constexpr const std::array<T, N>                &getItems() const { return this->items; }
+  constexpr const std::array<std::string_view, N> &getNames() const { return this->names; }
 
 private:
   constexpr void addElementsRecursively(const std::size_t) {};
