@@ -41,15 +41,6 @@
 namespace parser::vvc
 {
 
-std::string to_string(SliceType sliceType)
-{
-  if (sliceType == SliceType::B)
-    return "B";
-  if (sliceType == SliceType::P)
-    return "P";
-  return "I";
-}
-
 using namespace parser::reader;
 
 void slice_header::parse(SubByteReaderLogging &                    reader,

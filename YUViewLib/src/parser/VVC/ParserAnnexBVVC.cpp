@@ -34,6 +34,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <sstream>
 
 #include "SEI/buffering_period.h"
 #include "SEI/sei_message.h"
@@ -312,15 +313,15 @@ ParserAnnexBVVC::parseAndAddNALUnit(int                                         
 
   reader::SubByteReaderLogging reader(data, nalRoot, "", readOffset);
 
-  std::string specificDescription;
-  auto        nalVVC              = std::make_shared<vvc::NalUnitVVC>(nalID, nalStartEndPosFile);
-  auto        updatedParsingState = this->parsingState;
+  std::stringstream specificDescription;
+  auto              nalVVC = std::make_shared<vvc::NalUnitVVC>(nalID, nalStartEndPosFile);
+  auto              updatedParsingState = this->parsingState;
   try
   {
     nalVVC->header.parse(reader);
 
-    auto nalType        = nalVVC->header.nal_unit_type;
-    specificDescription = " " + NalTypeMapper.getName(nalType);
+    auto nalType = nalVVC->header.nal_unit_type;
+    specificDescription << " " << NalTypeMapper.getName(nalType);
 
     if (updatedParsingState.NoOutputBeforeRecoveryFlag.count(nalVVC->header.nuh_layer_id) == 0)
       updatedParsingState.NoOutputBeforeRecoveryFlag[nalVVC->header.nuh_layer_id] = true;
@@ -332,7 +333,7 @@ ParserAnnexBVVC::parseAndAddNALUnit(int                                         
 
       this->activeParameterSets.vpsMap[newVPS->vps_video_parameter_set_id] = newVPS;
 
-      specificDescription += " ID " + std::to_string(newVPS->vps_video_parameter_set_id);
+      specificDescription << " ID " << newVPS->vps_video_parameter_set_id;
 
       nalVVC->rbsp    = newVPS;
       nalVVC->rawData = data;
@@ -345,7 +346,7 @@ ParserAnnexBVVC::parseAndAddNALUnit(int                                         
 
       this->activeParameterSets.spsMap[newSPS->sps_seq_parameter_set_id] = newSPS;
 
-      specificDescription += " ID " + std::to_string(newSPS->sps_seq_parameter_set_id);
+      specificDescription << " ID " << newSPS->sps_seq_parameter_set_id;
 
       nalVVC->rbsp    = newSPS;
       nalVVC->rawData = data;
@@ -358,7 +359,7 @@ ParserAnnexBVVC::parseAndAddNALUnit(int                                         
 
       this->activeParameterSets.ppsMap[newPPS->pps_pic_parameter_set_id] = newPPS;
 
-      specificDescription += " ID " + std::to_string(newPPS->pps_pic_parameter_set_id);
+      specificDescription << " ID " << newPPS->pps_pic_parameter_set_id;
 
       nalVVC->rbsp    = newPPS;
       nalVVC->rawData = data;
@@ -372,7 +373,7 @@ ParserAnnexBVVC::parseAndAddNALUnit(int                                         
       auto apsType = APSParamTypeMapper.indexOf(newAPS->aps_params_type);
       this->activeParameterSets.apsMap[{apsType, newAPS->aps_adaptation_parameter_set_id}] = newAPS;
 
-      specificDescription += " ID " + std::to_string(newAPS->aps_adaptation_parameter_set_id);
+      specificDescription << " ID " << newAPS->aps_adaptation_parameter_set_id;
 
       nalVVC->rbsp    = newAPS;
       nalVVC->rawData = data;
@@ -410,13 +411,13 @@ ParserAnnexBVVC::parseAndAddNALUnit(int                                         
           nalType != NalType::RADL_NUT)
         updatedParsingState.prevTid0Pic[nalVVC->header.nuh_layer_id] = pictureHeader;
 
-      specificDescription += " POC " + std::to_string(pictureHeader->PicOrderCntVal);
+      specificDescription << " POC " << pictureHeader->PicOrderCntVal;
 
       nalVVC->rbsp = newPictureHeader;
     }
     else if (nalVVC->header.isSlice())
     {
-      specificDescription += " (Slice Header)";
+      specificDescription << " (Slice Header)";
       auto newSliceLayer = std::make_shared<slice_layer_rbsp>();
       newSliceLayer->parse(reader,
                            nalType,
@@ -466,10 +467,12 @@ ParserAnnexBVVC::parseAndAddNALUnit(int                                         
             updatedParsingState.currentPictureHeaderStructure;
       }
 
-      specificDescription +=
-          " POC " + std::to_string(updatedParsingState.currentPictureHeaderStructure->globalPOC);
-      specificDescription +=
-          " " + to_string(newSliceLayer->slice_header_instance.sh_slice_type) + "-Slice";
+      specificDescription << " POC "
+                          << updatedParsingState.currentPictureHeaderStructure->globalPOC;
+      specificDescription << " "
+                          << SliceTypeMapper.getName(
+                                 newSliceLayer->slice_header_instance.sh_slice_type)
+                          << "-Slice";
 
       nalVVC->rbsp = newSliceLayer;
 
@@ -529,7 +532,7 @@ ParserAnnexBVVC::parseAndAddNALUnit(int                                         
       {
         updatedParsingState.lastBufferingPeriod =
             std::dynamic_pointer_cast<buffering_period>(newSEI->sei_payload_instance);
-        specificDescription = " Buffering Period SEI";
+        specificDescription << " Buffering Period SEI";
       }
 
       nalVVC->rbsp = newSEI;
@@ -537,7 +540,7 @@ ParserAnnexBVVC::parseAndAddNALUnit(int                                         
   }
   catch (const std::exception &e)
   {
-    specificDescription += " ERROR " + std::string(e.what());
+    specificDescription << " ERROR " << e.what();
     parseResult.success = false;
   }
 
@@ -551,9 +554,8 @@ ParserAnnexBVVC::parseAndAddNALUnit(int                                         
     parseResult.bitrateEntry     = createBitrateEntryForAU(parsingStatePreviousAU, bitrateEntry);
     if (!this->handleNewAU(parsingStatePreviousAU))
     {
-      specificDescription += " ERROR Adding POC " +
-                             std::to_string(parsingStatePreviousAU.currentAU.poc) +
-                             " to frame list";
+      specificDescription << " ERROR Adding POC " << parsingStatePreviousAU.currentAU.poc
+                          << " to frame list";
       parseResult.success = false;
     }
 
@@ -575,7 +577,7 @@ ParserAnnexBVVC::parseAndAddNALUnit(int                                         
   if (nalRoot)
   {
     auto name = "NAL " + std::to_string(nalVVC->nalIdx) + ": " +
-                std::to_string(nalVVC->header.nalUnitTypeID) + specificDescription;
+                std::to_string(nalVVC->header.nalUnitTypeID) + specificDescription.str();
     nalRoot->setProperties(name);
   }
 
