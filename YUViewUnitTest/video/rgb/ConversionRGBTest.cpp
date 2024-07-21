@@ -49,12 +49,12 @@ namespace
 {
 
 constexpr auto ALL_MODES_MAPPER =
-    NewEnumMapper<AlphaMode, 3>(std::make_pair(AlphaMode::First, "First"),
-                                std::make_pair(AlphaMode::Last, "Last"),
-                                std::make_pair(AlphaMode::None, "None"));
+    NewEnumMapper<AlphaMode, 3>(std::make_pair(AlphaMode::First, "First"sv),
+                                std::make_pair(AlphaMode::Last, "Last"sv),
+                                std::make_pair(AlphaMode::None, "None"sv));
 
 constexpr auto EndianessMapper = NewEnumMapper<Endianness, 2>(
-    std::make_pair(Endianness::Little, "Little"), std::make_pair(Endianness::Big, "Big"));
+    std::make_pair(Endianness::Little, "Little"sv), std::make_pair(Endianness::Big, "Big"sv));
 
 using TestParameters = std::tuple<Endianness, BitDepth, AlphaMode>;
 

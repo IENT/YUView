@@ -35,19 +35,21 @@
 #include <algorithm>
 #include <array>
 #include <cuchar>
+#include <string_view>
+
+using namespace std::string_view_literals;
 
 template <class T, size_t N> struct NewEnumMapper
 {
-  using VALUE_AND_NAME = std::pair<T, const char *>;
+  using VALUE_AND_NAME = std::pair<T, std::string_view>;
 
   template <typename... Args> constexpr NewEnumMapper(Args... args)
   {
-    constexpr auto nrArguments = sizeof...(Args);
-    static_assert(nrArguments == N);
+    static_assert(sizeof...(Args) == N);
     this->addElementsRecursively(0, args...);
   }
 
-  constexpr const char *getName(const T value) const
+  constexpr std::string_view getName(const T value) const
   {
     const auto it = std::find(this->items.begin(), this->items.end(), value);
     if (it == this->items.end())
@@ -74,6 +76,6 @@ private:
     addElementsRecursively(index + 1, args...);
   }
 
-  std::array<T, N>            items{};
-  std::array<const char *, N> names{};
+  std::array<T, N>                items{};
+  std::array<std::string_view, N> names{};
 };
