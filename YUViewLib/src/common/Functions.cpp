@@ -42,6 +42,7 @@
 #endif
 
 #include <algorithm>
+#include <charconv>
 
 #include <QThread>
 
@@ -178,17 +179,15 @@ ByteVector readData(std::istream &istream, const size_t nrBytes)
   return data;
 }
 
-std::optional<unsigned long> toUnsigned(const std::string &text)
+std::optional<unsigned long> toUnsigned(const std::string_view text)
 {
-  try
-  {
-    auto index = std::stoul(text);
-    return index;
-  }
-  catch (...)
-  {
+  int        value{};
+  const auto result = std::from_chars(text.data(), text.data() + text.size(), value);
+
+  if (result.ec == std::errc())
     return {};
-  }
+
+  return value;
 }
 
 } // namespace functions

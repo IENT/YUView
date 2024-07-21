@@ -38,6 +38,8 @@
 #include <optional>
 #include <string_view>
 
+#include "Functions.h"
+
 using namespace std::string_view_literals;
 
 template <class T, size_t N> struct NewEnumMapper
@@ -68,6 +70,15 @@ template <class T, size_t N> struct NewEnumMapper
 
     const auto index = std::distance(this->names.begin(), it);
     return this->items.at(index);
+  }
+
+  std::optional<T> getValueFromNameOrIndex(const std::string_view nameOrIndex) const
+  {
+    if (auto index = functions::toUnsigned(nameOrIndex))
+      if (*index < N)
+        return this->items.at(*index);
+
+    return this->getValue(nameOrIndex);
   }
 
   constexpr size_t indexOf(const T value) const

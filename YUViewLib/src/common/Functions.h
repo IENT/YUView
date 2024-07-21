@@ -85,6 +85,6 @@ template <typename T, typename R> inline T clip(T val, Range<R> range)
   return (val < T(range.min)) ? T(range.min) : (val > T(range.max)) ? T(range.max) : val;
 }
 
-std::optional<unsigned long> toUnsigned(const std::string &text);
+std::optional<unsigned long> toUnsigned(const std::string_view text);
 
 } // namespace functions
