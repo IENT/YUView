@@ -52,12 +52,12 @@ enum class InputFormat
   Libav       // This is some sort of container file which we will read using libavformat
 };
 
-constexpr auto InputFormatMapper =
-    NewEnumMapper<InputFormat, 5>(std::make_pair(InputFormat::Invalid, "Invalid"sv),
-                                  std::make_pair(InputFormat::AnnexBHEVC, "AnnexBHEVC"sv),
-                                  std::make_pair(InputFormat::AnnexBAVC, "AnnexBAVC"sv),
-                                  std::make_pair(InputFormat::AnnexBVVC, "AnnexBVVC"sv),
-                                  std::make_pair(InputFormat::Libav, "Libav"sv));
+constexpr NewEnumMapper<InputFormat, 5>
+    InputFormatMapper(std::make_pair(InputFormat::Invalid, "Invalid"sv),
+                      std::make_pair(InputFormat::AnnexBHEVC, "AnnexBHEVC"sv),
+                      std::make_pair(InputFormat::AnnexBAVC, "AnnexBAVC"sv),
+                      std::make_pair(InputFormat::AnnexBVVC, "AnnexBVVC"sv),
+                      std::make_pair(InputFormat::Libav, "Libav"sv));
 
 /* The FileSource class provides functions for accessing files. Besides the reading of
  * certain blocks of the file, it also directly provides information on the file for the
