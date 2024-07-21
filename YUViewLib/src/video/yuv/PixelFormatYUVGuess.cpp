@@ -325,7 +325,7 @@ PixelFormatYUV guessFormatFromSizeAndName(const Size       size,
     if (bitDepth != 0)
       // We already extracted a bit depth from the name. Only try that.
       bitDepths = {bitDepth};
-    for (auto &subsamplingEntry : SubsamplingMapper.entries())
+    for (const auto &subsamplingEntry : SubsamplingMapper.entries())
     {
       auto nameLower = functions::toLower(name);
       if (nameLower.find(subsamplingEntry.name) != std::string::npos)
