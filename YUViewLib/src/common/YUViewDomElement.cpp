@@ -76,8 +76,8 @@ double YUViewDomElement::findChildValueDouble(const QString &tagName, double def
   return r.isEmpty() ? defaultValue : r.toDouble();
 };
 
-void YUViewDomElement::appendProperiteChild(const QString &        type,
-                                            const QString &        name,
+void YUViewDomElement::appendProperiteChild(const QString         &type,
+                                            const QString         &name,
                                             const QStringPairList &attributes)
 {
   auto newChild = ownerDocument().createElement(type);
@@ -92,9 +92,9 @@ void YUViewDomElement::setAttribute(const std::string &name, const std::string &
   QDomElement::setAttribute(QString::fromStdString(name), QString::fromStdString(value));
 }
 
-void YUViewDomElement::appendProperiteChild(const std::string &type, const std::string &name)
+void YUViewDomElement::appendProperiteChild(const std::string &type, const std::string_view name)
 {
   auto newChild = ownerDocument().createElement(QString::fromStdString(type));
-  newChild.appendChild(ownerDocument().createTextNode(QString::fromStdString(name)));
+  newChild.appendChild(ownerDocument().createTextNode(QString::fromStdString(std::string(name))));
   appendChild(newChild);
 }

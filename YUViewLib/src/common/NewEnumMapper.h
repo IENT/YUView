@@ -35,6 +35,7 @@
 #include <algorithm>
 #include <array>
 #include <cuchar>
+#include <optional>
 #include <string_view>
 
 using namespace std::string_view_literals;
@@ -57,6 +58,16 @@ template <class T, size_t N> struct NewEnumMapper
           "The given type T was not registered in the mapper. All possible enums must be mapped.");
     const auto index = std::distance(this->items.begin(), it);
     return this->names.at(index);
+  }
+
+  constexpr std::optional<T> getValue(std::string_view name) const
+  {
+    const auto it = std::find(this->names.begin(), this->names.end(), name);
+    if (it == this->names.end())
+      return {};
+
+    const auto index = std::distance(this->names.begin(), it);
+    return this->items.at(index);
   }
 
   constexpr const std::array<T, N> &getItems() const { return this->items; }

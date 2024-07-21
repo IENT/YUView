@@ -32,7 +32,7 @@
 
 #pragma once
 
-#include <common/EnumMapper.h>
+#include <common/NewEnumMapper.h>
 #include <filesource/FileSourceAnnexBFile.h>
 #include <statistics/StatisticsData.h>
 #include <video/rgb/videoHandlerRGB.h>
@@ -64,13 +64,14 @@ enum class DecoderEngine
   FFMpeg    // The FFMpeg decoder
 };
 
-const auto DecoderEngineMapper = EnumMapper<DecoderEngine>({{DecoderEngine::Invalid, "Invalid"},
-                                                            {DecoderEngine::Libde265, "Libde265"},
-                                                            {DecoderEngine::HM, "HM"},
-                                                            {DecoderEngine::VTM, "VTM"},
-                                                            {DecoderEngine::VVDec, "VVDec"},
-                                                            {DecoderEngine::Dav1d, "Dav1d"},
-                                                            {DecoderEngine::FFMpeg, "FFMpeg"}});
+constexpr auto DecoderEngineMapper =
+    NewEnumMapper<DecoderEngine, 7>(std::make_pair(DecoderEngine::Invalid, "Invalid"sv),
+                                    std::make_pair(DecoderEngine::Libde265, "Libde265"sv),
+                                    std::make_pair(DecoderEngine::HM, "HM"sv),
+                                    std::make_pair(DecoderEngine::VTM, "VTM"sv),
+                                    std::make_pair(DecoderEngine::VVDec, "VVDec"sv),
+                                    std::make_pair(DecoderEngine::Dav1d, "Dav1d"sv),
+                                    std::make_pair(DecoderEngine::FFMpeg, "FFMpeg"sv));
 
 const auto DecodersHEVC =
     std::vector<DecoderEngine>({DecoderEngine::Libde265, DecoderEngine::HM, DecoderEngine::FFMpeg});
@@ -90,7 +91,7 @@ public:
   // Create a new decoder. cachingDecoder: Is this a decoder used for caching or interactive
   // decoding?
   decoderBase(bool cachingDecoder = false);
-  virtual ~decoderBase(){};
+  virtual ~decoderBase() {};
 
   // Reset the decoder. Afterwards, the decoder should behave as if you just created a new one
   // (without the overhead of reloading the libraries). This must be used in case of errors or when
@@ -179,8 +180,8 @@ protected:
 class decoderBaseSingleLib : public decoderBase
 {
 public:
-  decoderBaseSingleLib(bool cachingDecoder = false) : decoderBase(cachingDecoder){};
-  virtual ~decoderBaseSingleLib(){};
+  decoderBaseSingleLib(bool cachingDecoder = false) : decoderBase(cachingDecoder) {};
+  virtual ~decoderBaseSingleLib() {};
 
   QStringList getLibraryPaths() const override
   {

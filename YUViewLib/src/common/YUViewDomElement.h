@@ -54,8 +54,8 @@ public:
   using QDomElement::setAttribute;
   void setAttribute(const std::string &name, const std::string &value);
 
-  void appendProperiteChild(const QString &        type,
-                            const QString &        name,
+  void appendProperiteChild(const QString         &type,
+                            const QString         &name,
                             const QStringPairList &attributes = QStringPairList());
-  void appendProperiteChild(const std::string &type, const std::string &name);
+  void appendProperiteChild(const std::string &type, const std::string_view name);
 };
