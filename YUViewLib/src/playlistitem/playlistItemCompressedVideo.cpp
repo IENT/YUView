@@ -468,8 +468,8 @@ InfoData playlistItemCompressedVideo::getInfo() const
   // At first append the file information part (path, date created, file size...)
   // info.items.append(loadingDecoder->getFileInfoList());
 
-  info.items.append(
-      InfoItem("Reader", QString::fromStdString(InputFormatMapper.getName(this->inputFormat))));
+  info.items.append(InfoItem(
+      "Reader", QString::fromStdString(std::string(InputFormatMapper.getName(this->inputFormat)))));
   if (this->inputFileFFmpegLoading)
   {
     auto l = this->inputFileFFmpegLoading->getLibraryPaths();
