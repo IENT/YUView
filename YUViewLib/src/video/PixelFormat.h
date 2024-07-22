@@ -33,7 +33,6 @@
 #pragma once
 
 #include <QMetaType>
-#include <common/EnumMapper.h>
 #include <common/NewEnumMapper.h>
 
 namespace video
@@ -61,8 +60,8 @@ enum class DataLayout
   Packed
 };
 
-const auto DataLayoutMapper =
-    EnumMapper<DataLayout>({{DataLayout::Packed, "Packed"}, {DataLayout::Planar, "Planar"}});
+constexpr auto DataLayoutMapper = NewEnumMapper<DataLayout, 2>(
+    std::make_pair(DataLayout::Packed, "Packed"sv), std::make_pair(DataLayout::Planar, "Planar"sv));
 
 } // namespace video
 
