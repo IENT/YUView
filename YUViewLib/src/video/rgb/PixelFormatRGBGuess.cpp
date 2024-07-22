@@ -48,7 +48,7 @@ std::optional<PixelFormatRGB> findPixelFormatIndicatorInName(const std::string &
   std::string matcher = "(?:_|\\.|-)(";
 
   std::map<std::string, PixelFormatRGB> stringToMatchingFormat;
-  for (auto channelOrder : ChannelOrderMapper.getEnums())
+  for (const auto channelOrder : ChannelOrderMapper.getItems())
   {
     for (auto alphaMode : {AlphaMode::None, AlphaMode::First, AlphaMode::Last})
     {
@@ -95,7 +95,7 @@ std::optional<PixelFormatRGB> findPixelFormatIndicatorInName(const std::string &
 
 std::optional<PixelFormatRGB> findPixelFormatFromFileExtension(const std::string &ext)
 {
-  for (auto channelOrder : ChannelOrderMapper.getEnums())
+  for (auto channelOrder : ChannelOrderMapper.getItems())
   {
     if (functions::toLower(ext) == functions::toLower(ChannelOrderMapper.getName(channelOrder)))
       return PixelFormatRGB(8, DataLayout::Packed, channelOrder);

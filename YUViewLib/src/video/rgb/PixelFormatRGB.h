@@ -32,7 +32,6 @@
 
 #pragma once
 
-#include <common/EnumMapper.h>
 #include <common/NewEnumMapper.h>
 #include <common/Typedef.h>
 #include <video/PixelFormat.h>
@@ -103,12 +102,13 @@ enum class ChannelOrder
   BGR
 };
 
-const auto ChannelOrderMapper = EnumMapper<ChannelOrder>({{ChannelOrder::RGB, "RGB"},
-                                                          {ChannelOrder::RBG, "RBG"},
-                                                          {ChannelOrder::GRB, "GRB"},
-                                                          {ChannelOrder::GBR, "GBR"},
-                                                          {ChannelOrder::BRG, "BRG"},
-                                                          {ChannelOrder::BGR, "BGR"}});
+constexpr NewEnumMapper<ChannelOrder, 6>
+    ChannelOrderMapper(std::make_pair(ChannelOrder::RGB, "RGB"sv),
+                       std::make_pair(ChannelOrder::RBG, "RBG"sv),
+                       std::make_pair(ChannelOrder::GRB, "GRB"sv),
+                       std::make_pair(ChannelOrder::GBR, "GBR"sv),
+                       std::make_pair(ChannelOrder::BRG, "BRG"sv),
+                       std::make_pair(ChannelOrder::BGR, "BGR"sv));
 
 enum class AlphaMode
 {

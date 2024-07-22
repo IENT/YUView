@@ -64,6 +64,16 @@ QStringList getThemeColors(QString themeName);
 QString formatDataSize(double size, bool isBits = false);
 
 QStringList toQStringList(const std::vector<std::string> &stringVec);
+
+template <size_t N>
+QStringList toQStringList(const std::array<std::string_view, N> &stringArray)
+{
+  QStringList list;
+  for (const auto &s : stringArray)
+    list.append(QString::fromStdString(std::string(s)));
+  return list;
+}
+
 std::string toLower(const std::string_view str);
 ByteVector  readData(std::istream &istream, const size_t nrBytes);
 
