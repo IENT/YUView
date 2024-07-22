@@ -32,6 +32,7 @@
 
 #pragma once
 
+#include <common/NewEnumMapper.h>
 #include <video/videoHandler.h>
 #include <video/yuv/PixelFormatYUV.h>
 
@@ -55,11 +56,11 @@ enum class ComponentDisplayMode
   DisplayCr
 };
 
-const auto ComponentDisplayModeMapper =
-    EnumMapper<ComponentDisplayMode>({{ComponentDisplayMode::DisplayAll, "Y'CbCr"},
-                                      {ComponentDisplayMode::DisplayY, "Luma (Y) Only"},
-                                      {ComponentDisplayMode::DisplayCb, "Cb only"},
-                                      {ComponentDisplayMode::DisplayCr, "Cr only"}});
+const NewEnumMapper<ComponentDisplayMode, 4>
+    ComponentDisplayModeMapper(std::make_pair(ComponentDisplayMode::DisplayAll, "Y'CbCr"sv),
+                               std::make_pair(ComponentDisplayMode::DisplayY, "Luma (Y) Only"sv),
+                               std::make_pair(ComponentDisplayMode::DisplayCb, "Cb only"sv),
+                               std::make_pair(ComponentDisplayMode::DisplayCr, "Cr only"sv));
 
 struct ConversionSettings
 {
@@ -110,7 +111,7 @@ public:
   // to another playlistItemVideo. If item2 cannot be converted to a playlistItemYuvSource,
   // we will use the playlistItemVideo::calculateDifference function to calculate the difference
   // using the RGB values.
-  virtual QImage calculateDifference(FrameHandler *   item2,
+  virtual QImage calculateDifference(FrameHandler    *item2,
                                      const int        frameIdxItem0,
                                      const int        frameIdxItem1,
                                      QList<InfoItem> &differenceInfoList,
@@ -169,9 +170,9 @@ public:
   // Draw the pixel values of the visible pixels in the center of each pixel. Only draw values for
   // the given range of pixels. Overridden from playlistItemVideo. This is a YUV source, so we can
   // draw the YUV values.
-  virtual void drawPixelValues(QPainter *    painter,
+  virtual void drawPixelValues(QPainter     *painter,
                                const int     frameIdx,
-                               const QRect & videoRect,
+                               const QRect  &videoRect,
                                const double  zoomFactor,
                                FrameHandler *item2          = nullptr,
                                const bool    markDifference = false,
@@ -222,8 +223,8 @@ private:
   bool setFormatFromSizeAndNamePacked(
       QString name, const Size size, int bitDepth, Subsampling subsampling, int64_t fileSize);
 
-  bool markDifferencesYUVPlanarToRGB(const QByteArray &    sourceBuffer,
-                                     unsigned char *       targetBuffer,
+  bool markDifferencesYUVPlanarToRGB(const QByteArray     &sourceBuffer,
+                                     unsigned char        *targetBuffer,
                                      const Size            frameSize,
                                      const PixelFormatYUV &sourceBufferFormat) const;
 
