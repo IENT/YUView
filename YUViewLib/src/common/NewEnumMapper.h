@@ -42,7 +42,7 @@
 
 using namespace std::string_view_literals;
 
-template <class T, size_t N> struct NewEnumMapper
+template <class T, std::size_t N> struct NewEnumMapper
 {
   using VALUE_AND_NAME = std::pair<T, std::string_view>;
 
@@ -51,6 +51,8 @@ template <class T, size_t N> struct NewEnumMapper
     static_assert(sizeof...(Args) == N);
     this->addElementsRecursively(0, args...);
   }
+
+  constexpr std::size_t size() const { return N; }
 
   constexpr std::string_view getName(const T value) const
   {

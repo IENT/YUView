@@ -32,11 +32,11 @@
 
 #include "videoHandlerRGB.h"
 
-#include <common/EnumMapper.h>
 #include <common/FileInfo.h>
 #include <common/Formatting.h>
 #include <common/Functions.h>
 #include <common/FunctionsGui.h>
+#include <common/NewEnumMapper.h>
 #include <video/rgb/ConversionRGB.h>
 #include <video/rgb/PixelFormatRGBGuess.h>
 #include <video/rgb/videoHandlerRGBCustomFormatDialog.h>
@@ -50,13 +50,21 @@ namespace video::rgb
 namespace
 {
 
-const auto componentShowMapper =
-    EnumMapper<ComponentDisplayMode>({{ComponentDisplayMode::RGBA, "RGBA", "RGBA"},
-                                      {ComponentDisplayMode::RGB, "RGB", "RGB"},
-                                      {ComponentDisplayMode::R, "R", "Red Only"},
-                                      {ComponentDisplayMode::G, "G", "Green Only"},
-                                      {ComponentDisplayMode::B, "B", "Blue Only"},
-                                      {ComponentDisplayMode::A, "A", "Alpha Only"}});
+constexpr NewEnumMapper<ComponentDisplayMode, 6>
+    ComponentShowMapper(std::make_pair(ComponentDisplayMode::RGBA, "RGBA"sv),
+                        std::make_pair(ComponentDisplayMode::RGB, "RGB"sv),
+                        std::make_pair(ComponentDisplayMode::R, "R"sv),
+                        std::make_pair(ComponentDisplayMode::G, "G"sv),
+                        std::make_pair(ComponentDisplayMode::B, "B"sv),
+                        std::make_pair(ComponentDisplayMode::A, "A"sv));
+
+constexpr NewEnumMapper<ComponentDisplayMode, 6>
+    ComponentShowMapperToDisplayText(std::make_pair(ComponentDisplayMode::RGBA, "RGBA"sv),
+                                     std::make_pair(ComponentDisplayMode::RGB, "RGB"sv),
+                                     std::make_pair(ComponentDisplayMode::R, "Red Only"sv),
+                                     std::make_pair(ComponentDisplayMode::G, "Green Only"sv),
+                                     std::make_pair(ComponentDisplayMode::B, "Blue Only"sv),
+                                     std::make_pair(ComponentDisplayMode::A, "Alpha Only"sv));
 
 } // namespace
 
@@ -294,10 +302,10 @@ QLayout *videoHandlerRGB::createVideoHandlerControls(bool isSizeFixed)
 void videoHandlerRGB::slotDisplayOptionsChanged()
 {
   {
-    auto selection = ui.colorComponentsComboBox->currentText().toStdString();
-    if (auto c = componentShowMapper.getValue(selection,
-                                              EnumMapper<ComponentDisplayMode>::StringType::Text))
-      this->componentDisplayMode = *c;
+    const auto index = ui.colorComponentsComboBox->currentIndex();
+    if (index >= 0 && static_cast<std::size_t>(index) < ComponentShowMapper.size())
+      if (const auto mode = ComponentShowMapper.at(static_cast<std::size_t>(index)))
+        this->componentDisplayMode = *mode;
   }
 
   componentScale[0]  = ui.RScaleSpinBox->value();
@@ -360,11 +368,10 @@ void videoHandlerRGB::updateControlsForNewPixelFormat()
     if (hasAlpha && this->componentDisplayMode == ComponentDisplayMode::RGB)
       this->componentDisplayMode = ComponentDisplayMode::RGBA;
 
-    for (const auto &item : listItems)
-      ui.colorComponentsComboBox->addItem(
-          QString::fromStdString(componentShowMapper.getText(item)));
-    ui.colorComponentsComboBox->setCurrentText(
-        QString::fromStdString(componentShowMapper.getText(this->componentDisplayMode)));
+    ui.colorComponentsComboBox->addItems(
+        functions::toQStringList(ComponentShowMapperToDisplayText.getNames()));
+    ui.colorComponentsComboBox->setCurrentText(QString::fromStdString(
+        std::string(ComponentShowMapperToDisplayText.getName(this->componentDisplayMode))));
   }
 }
 
@@ -457,7 +464,7 @@ void videoHandlerRGB::savePlaylist(YUViewDomElement &element) const
   element.appendProperiteChild("pixelFormat", this->getRawRGBPixelFormatName());
 
   element.appendProperiteChild("componentShow",
-                               componentShowMapper.getName(this->componentDisplayMode));
+                               ComponentShowMapper.getName(this->componentDisplayMode));
 
   element.appendProperiteChild("scale.R", QString::number(this->componentScale[0]));
   element.appendProperiteChild("scale.G", QString::number(this->componentScale[1]));
@@ -479,7 +486,7 @@ void videoHandlerRGB::loadPlaylist(const YUViewDomElement &element)
   this->setRGBPixelFormatByName(sourcePixelFormat);
 
   auto showVal = element.findChildValue("componentShow");
-  if (auto c = componentShowMapper.getValue(showVal.toStdString()))
+  if (const auto c = ComponentShowMapper.getValue(showVal.toStdString()))
     this->componentDisplayMode = *c;
 
   auto scaleR = element.findChildValue("scale.R");
