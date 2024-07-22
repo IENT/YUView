@@ -34,7 +34,6 @@
 
 #include <chrono>
 
-#include <common/EnumMapper.h>
 #include <common/Typedef.h>
 #include <ui/views/SplitViewWidget.h>
 #include <ui/widgets/PlaylistTreeWidget.h>
@@ -90,6 +89,13 @@ public:
   int  getCurrentFrame() const;
 
   bool setCurrentFrameAndUpdate(int frame, bool updateView = true);
+
+  enum class RepeatMode
+  {
+    Off,
+    One,
+    All
+  };
 
 public slots:
   void on_playPauseButton_clicked();
@@ -151,14 +157,6 @@ private:
   void startOrUpdateTimer();
   void startPlayback();
 
-  enum class RepeatMode
-  {
-    Off,
-    One,
-    All
-  };
-  EnumMapper<RepeatMode> RepeatModeMapper{
-      {{RepeatMode::Off, "Off"}, {RepeatMode::One, "One"}, {RepeatMode::All, "All"}}};
   RepeatMode repeatMode{RepeatMode::Off};
   void       setRepeatModeAndUpdateIcons(const RepeatMode mode);
 
