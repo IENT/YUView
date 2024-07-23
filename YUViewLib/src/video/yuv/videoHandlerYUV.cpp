@@ -2805,7 +2805,8 @@ void videoHandlerYUV::slotYUVFormatControlChanged(int selectionIndex)
 {
   auto newFormat = this->srcPixelFormat;
 
-  const auto customFormatSelected = (selectionIndex == videoHandlerYUV::formatPresetList.size());
+  const auto customFormatSelected =
+      (selectionIndex == static_cast<int>(videoHandlerYUV::formatPresetList.size()));
   if (customFormatSelected)
   {
     videoHandlerYUVCustomFormatDialog dialog(srcPixelFormat);
@@ -2825,7 +2826,7 @@ void videoHandlerYUV::slotYUVFormatControlChanged(int selectionIndex)
     if (const auto presetIndex = vectorIndexOf(videoHandlerYUV::formatPresetList, newFormat))
     {
       const QSignalBlocker blocker(this->ui.yuvFormatComboBox);
-      ui.yuvFormatComboBox->setCurrentIndex(*presetIndex);
+      ui.yuvFormatComboBox->setCurrentIndex(static_cast<int>(*presetIndex));
     }
   }
   else if (selectionIndex >= 0 && selectionIndex < videoHandlerYUV::formatPresetList.size())

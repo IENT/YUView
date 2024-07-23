@@ -135,15 +135,16 @@ enum class PackingOrder
   UNKNOWN
 };
 
-const auto PackingOrderMapper = EnumMapper<PackingOrder>({{PackingOrder::YUV, "YUV"},
-                                                          {PackingOrder::YVU, "YVU"},
-                                                          {PackingOrder::AYUV, "AYUV"},
-                                                          {PackingOrder::YUVA, "YUVA"},
-                                                          {PackingOrder::VUYA, "VUYA"},
-                                                          {PackingOrder::UYVY, "UYVY"},
-                                                          {PackingOrder::VYUY, "VYUY"},
-                                                          {PackingOrder::YUYV, "YUYV"},
-                                                          {PackingOrder::YVYU, "YVYU"}});
+constexpr NewEnumMapper<PackingOrder, 9>
+    PackingOrderMapper(std::make_pair(PackingOrder::YUV, "YUV"sv),
+                       std::make_pair(PackingOrder::YVU, "YVU"sv),
+                       std::make_pair(PackingOrder::AYUV, "AYUV"sv),
+                       std::make_pair(PackingOrder::YUVA, "YUVA"sv),
+                       std::make_pair(PackingOrder::VUYA, "VUYA"sv),
+                       std::make_pair(PackingOrder::UYVY, "UYVY"sv),
+                       std::make_pair(PackingOrder::VYUY, "VYUY"sv),
+                       std::make_pair(PackingOrder::YUYV, "YUYV"sv),
+                       std::make_pair(PackingOrder::YVYU, "YVYU"sv));
 
 enum class Subsampling
 {
