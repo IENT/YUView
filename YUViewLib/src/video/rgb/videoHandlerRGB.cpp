@@ -36,7 +36,7 @@
 #include <common/Formatting.h>
 #include <common/Functions.h>
 #include <common/FunctionsGui.h>
-#include <common/NewEnumMapper.h>
+#include <common/EnumMapper.h>
 #include <video/rgb/ConversionRGB.h>
 #include <video/rgb/PixelFormatRGBGuess.h>
 #include <video/rgb/videoHandlerRGBCustomFormatDialog.h>
@@ -50,7 +50,7 @@ namespace video::rgb
 namespace
 {
 
-constexpr NewEnumMapper<ComponentDisplayMode, 6>
+constexpr EnumMapper<ComponentDisplayMode, 6>
     ComponentShowMapper(std::make_pair(ComponentDisplayMode::RGBA, "RGBA"sv),
                         std::make_pair(ComponentDisplayMode::RGB, "RGB"sv),
                         std::make_pair(ComponentDisplayMode::R, "R"sv),
@@ -58,7 +58,7 @@ constexpr NewEnumMapper<ComponentDisplayMode, 6>
                         std::make_pair(ComponentDisplayMode::B, "B"sv),
                         std::make_pair(ComponentDisplayMode::A, "A"sv));
 
-constexpr NewEnumMapper<ComponentDisplayMode, 6>
+constexpr EnumMapper<ComponentDisplayMode, 6>
     ComponentShowMapperToDisplayText(std::make_pair(ComponentDisplayMode::RGBA, "RGBA"sv),
                                      std::make_pair(ComponentDisplayMode::RGB, "RGB"sv),
                                      std::make_pair(ComponentDisplayMode::R, "Red Only"sv),

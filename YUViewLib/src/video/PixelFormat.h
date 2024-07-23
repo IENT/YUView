@@ -33,7 +33,7 @@
 #pragma once
 
 #include <QMetaType>
-#include <common/NewEnumMapper.h>
+#include <common/EnumMapper.h>
 
 namespace video
 {
@@ -51,7 +51,7 @@ enum class Endianness
   Little
 };
 
-constexpr auto EndianessMapper = NewEnumMapper<Endianness, 2>(
+constexpr auto EndianessMapper = EnumMapper<Endianness, 2>(
     std::make_pair(Endianness::Little, "Little"sv), std::make_pair(Endianness::Big, "Big"sv));
 
 enum class DataLayout
@@ -60,7 +60,7 @@ enum class DataLayout
   Packed
 };
 
-constexpr auto DataLayoutMapper = NewEnumMapper<DataLayout, 2>(
+constexpr auto DataLayoutMapper = EnumMapper<DataLayout, 2>(
     std::make_pair(DataLayout::Packed, "Packed"sv), std::make_pair(DataLayout::Planar, "Planar"sv));
 
 } // namespace video

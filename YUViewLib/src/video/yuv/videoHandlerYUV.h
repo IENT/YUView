@@ -32,7 +32,7 @@
 
 #pragma once
 
-#include <common/NewEnumMapper.h>
+#include <common/EnumMapper.h>
 #include <video/videoHandler.h>
 #include <video/yuv/PixelFormatYUV.h>
 
@@ -56,7 +56,7 @@ enum class ComponentDisplayMode
   DisplayCr
 };
 
-const NewEnumMapper<ComponentDisplayMode, 4>
+const EnumMapper<ComponentDisplayMode, 4>
     ComponentDisplayModeMapper(std::make_pair(ComponentDisplayMode::DisplayAll, "Y'CbCr"sv),
                                std::make_pair(ComponentDisplayMode::DisplayY, "Luma (Y) Only"sv),
                                std::make_pair(ComponentDisplayMode::DisplayCb, "Cb only"sv),

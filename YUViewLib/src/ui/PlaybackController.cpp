@@ -35,7 +35,7 @@
 #include <QSettings>
 
 #include <common/FunctionsGui.h>
-#include <common/NewEnumMapper.h>
+#include <common/EnumMapper.h>
 #include <common/Typedef.h>
 #include <playlistitem/playlistItem.h>
 
@@ -52,7 +52,7 @@ using namespace std::chrono_literals;
 namespace
 {
 
-constexpr NewEnumMapper<PlaybackController::RepeatMode, 3>
+constexpr EnumMapper<PlaybackController::RepeatMode, 3>
     RepeatModeMapper(std::make_pair(PlaybackController::RepeatMode::Off, "Off"sv),
                      std::make_pair(PlaybackController::RepeatMode::One, "One"sv),
                      std::make_pair(PlaybackController::RepeatMode::All, "All"sv));

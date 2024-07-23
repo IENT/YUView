@@ -38,7 +38,7 @@
 #include "parser/common/SubByteReaderLogging.h"
 #include "rbsp_trailing_bits.h"
 #include "scaling_list_data.h"
-#include <common/NewEnumMapper.h>
+#include <common/EnumMapper.h>
 
 namespace parser::vvc
 {
@@ -50,7 +50,7 @@ enum class APSParamType
   SCALING_APS
 };
 
-constexpr NewEnumMapper<APSParamType, 3>
+constexpr EnumMapper<APSParamType, 3>
     APSParamTypeMapper(std::make_pair(APSParamType::ALF_APS, "ALF_APS"sv),
                        std::make_pair(APSParamType::LMCS_APS, "LMCS_APS"sv),
                        std::make_pair(APSParamType::SCALING_APS, "SCALING_APS"sv));

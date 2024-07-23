@@ -32,7 +32,7 @@
 
 #pragma once
 
-#include <common/NewEnumMapper.h>
+#include <common/EnumMapper.h>
 #include <common/Typedef.h>
 #include <video/PixelFormat.h>
 
@@ -68,7 +68,7 @@ enum class ColorConversion
   BT2020_FullRange,
 };
 
-constexpr NewEnumMapper<ColorConversion, 6> ColorConversionMapper(
+constexpr EnumMapper<ColorConversion, 6> ColorConversionMapper(
     std::make_pair(ColorConversion::BT709_LimitedRange, "ITU-R.BT709"sv),
     std::make_pair(ColorConversion::BT709_FullRange, "ITU-R.BT709 Full Range"sv),
     std::make_pair(ColorConversion::BT601_LimitedRange, "ITU-R.BT601"sv),
@@ -86,7 +86,7 @@ enum class ChromaInterpolation
   Interstitial
 };
 
-constexpr NewEnumMapper<ChromaInterpolation, 3> ChromaInterpolationMapper(
+constexpr EnumMapper<ChromaInterpolation, 3> ChromaInterpolationMapper(
     std::make_pair(ChromaInterpolation::NearestNeighbor, "Nearest Neighbor"sv),
     std::make_pair(ChromaInterpolation::Bilinear, "Bilinear"sv),
     std::make_pair(ChromaInterpolation::Interstitial, "Interstitial"sv));
@@ -113,7 +113,7 @@ enum class PredefinedPixelFormat
   V210
 };
 
-constexpr NewEnumMapper<PredefinedPixelFormat, 1>
+constexpr EnumMapper<PredefinedPixelFormat, 1>
     PredefinedPixelFormatMapper(std::make_pair(PredefinedPixelFormat::V210, "V210"sv));
 
 enum class PackingOrder
@@ -134,7 +134,7 @@ enum class PackingOrder
   UNKNOWN
 };
 
-constexpr NewEnumMapper<PackingOrder, 9>
+constexpr EnumMapper<PackingOrder, 9>
     PackingOrderMapper(std::make_pair(PackingOrder::YUV, "YUV"sv),
                        std::make_pair(PackingOrder::YVU, "YVU"sv),
                        std::make_pair(PackingOrder::AYUV, "AYUV"sv),
@@ -157,7 +157,7 @@ enum class Subsampling
   UNKNOWN
 };
 
-constexpr NewEnumMapper<Subsampling, 7>
+constexpr EnumMapper<Subsampling, 7>
     SubsamplingMapper(std::make_pair(Subsampling::YUV_444, "444"sv),
                       std::make_pair(Subsampling::YUV_422, "422"sv),
                       std::make_pair(Subsampling::YUV_420, "420"sv),
@@ -179,7 +179,7 @@ enum class PlaneOrder
   YVUA
 };
 
-constexpr NewEnumMapper<PlaneOrder, 4> PlaneOrderMapper(std::make_pair(PlaneOrder::YUV, "YUV"sv),
+constexpr EnumMapper<PlaneOrder, 4> PlaneOrderMapper(std::make_pair(PlaneOrder::YUV, "YUV"sv),
                                                         std::make_pair(PlaneOrder::YVU, "YVU"sv),
                                                         std::make_pair(PlaneOrder::YUVA, "YUVA"sv),
                                                         std::make_pair(PlaneOrder::YVUA, "YVUA"sv));

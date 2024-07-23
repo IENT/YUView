@@ -40,7 +40,7 @@
 #include <QString>
 
 #include <common/FileInfo.h>
-#include <common/NewEnumMapper.h>
+#include <common/EnumMapper.h>
 #include <common/Typedef.h>
 
 enum class InputFormat
@@ -52,7 +52,7 @@ enum class InputFormat
   Libav       // This is some sort of container file which we will read using libavformat
 };
 
-constexpr NewEnumMapper<InputFormat, 5>
+constexpr EnumMapper<InputFormat, 5>
     InputFormatMapper(std::make_pair(InputFormat::Invalid, "Invalid"sv),
                       std::make_pair(InputFormat::AnnexBHEVC, "AnnexBHEVC"sv),
                       std::make_pair(InputFormat::AnnexBAVC, "AnnexBAVC"sv),

@@ -32,7 +32,7 @@
 
 #pragma once
 
-#include <common/NewEnumMapper.h>
+#include <common/EnumMapper.h>
 #include <parser/common/SubByteReaderLogging.h>
 
 namespace parser::hevc
@@ -107,7 +107,7 @@ enum class NalType
   UNSPECIFIED
 };
 
-constexpr NewEnumMapper<NalType, 65>
+constexpr EnumMapper<NalType, 65>
     NalTypeMapper(std::make_pair(NalType::TRAIL_N, "TRAIL_N"sv),
                   std::make_pair(NalType::TRAIL_R, "TRAIL_R"sv),
                   std::make_pair(NalType::TSA_N, "TSA_N"sv),

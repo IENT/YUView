@@ -32,7 +32,7 @@
 
 #pragma once
 
-#include <common/NewEnumMapper.h>
+#include <common/EnumMapper.h>
 #include <parser/common/SubByteReaderLogging.h>
 
 #include "NalUnitVVC.h"
@@ -53,7 +53,7 @@ enum class SliceType
   I
 };
 
-constexpr NewEnumMapper<SliceType, 3> SliceTypeMapper(std::make_pair(SliceType::B, "B"sv),
+constexpr EnumMapper<SliceType, 3> SliceTypeMapper(std::make_pair(SliceType::B, "B"sv),
                                                       std::make_pair(SliceType::P, "P"sv),
                                                       std::make_pair(SliceType::I, "I"sv));
 

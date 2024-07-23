@@ -32,7 +32,7 @@
 
 #pragma once
 
-#include <common/NewEnumMapper.h>
+#include <common/EnumMapper.h>
 #include <parser/common/SubByteReaderLogging.h>
 
 namespace parser::avc
@@ -67,7 +67,7 @@ enum class NalType
   RESERVED_23
 };
 
-constexpr NewEnumMapper<NalType, 24> NalTypeMapper(
+constexpr EnumMapper<NalType, 24> NalTypeMapper(
     std::make_pair(NalType::UNSPECIFIED, "UNSPECIFIED"sv),
     std::make_pair(NalType::CODED_SLICE_NON_IDR, "CODED_SLICE_NON_IDR"sv),
     std::make_pair(NalType::CODED_SLICE_DATA_PARTITION_A, "CODED_SLICE_DATA_PARTITION_A"sv),

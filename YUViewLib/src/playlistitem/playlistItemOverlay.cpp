@@ -40,7 +40,7 @@
 #include <limits>
 
 #include <common/FunctionsGui.h>
-#include <common/NewEnumMapper.h>
+#include <common/EnumMapper.h>
 
 #define PLAYLISTITEMOVERLAY_DEBUG 0
 #if PLAYLISTITEMOVERLAY_DEBUG && !NDEBUG
@@ -55,7 +55,7 @@
 namespace
 {
 
-constexpr NewEnumMapper<OverlayLayoutMode, 3>
+constexpr EnumMapper<OverlayLayoutMode, 3>
     OverlayLayoutModeMapper(std::make_pair(OverlayLayoutMode::Overlay, "Overlay"sv),
                             std::make_pair(OverlayLayoutMode::Arange, "Average"sv),
                             std::make_pair(OverlayLayoutMode::Custom, "Custom"sv));

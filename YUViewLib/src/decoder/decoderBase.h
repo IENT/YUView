@@ -32,7 +32,7 @@
 
 #pragma once
 
-#include <common/NewEnumMapper.h>
+#include <common/EnumMapper.h>
 #include <filesource/FileSourceAnnexBFile.h>
 #include <statistics/StatisticsData.h>
 #include <video/rgb/videoHandlerRGB.h>
@@ -64,7 +64,7 @@ enum class DecoderEngine
   FFMpeg    // The FFMpeg decoder
 };
 
-constexpr NewEnumMapper<DecoderEngine, 7>
+constexpr EnumMapper<DecoderEngine, 7>
     DecoderEngineMapper(std::make_pair(DecoderEngine::Invalid, "Invalid"sv),
                         std::make_pair(DecoderEngine::Libde265, "Libde265"sv),
                         std::make_pair(DecoderEngine::HM, "HM"sv),

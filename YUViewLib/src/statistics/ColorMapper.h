@@ -33,7 +33,7 @@
 #pragma once
 
 #include <common/Color.h>
-#include <common/NewEnumMapper.h>
+#include <common/EnumMapper.h>
 #include <common/Typedef.h>
 #include <common/YUViewDomElement.h>
 
@@ -78,7 +78,7 @@ enum class PredefinedType
   Col3_bwg
 };
 
-constexpr NewEnumMapper<PredefinedType, 21>
+constexpr EnumMapper<PredefinedType, 21>
     PredefinedTypeMapper(std::make_pair(PredefinedType::Jet, "Jet"sv),
                          std::make_pair(PredefinedType::Heat, "Heat"sv),
                          std::make_pair(PredefinedType::Hsv, "Hsv"sv),
@@ -108,7 +108,7 @@ enum class MappingType
   Predefined
 };
 
-constexpr NewEnumMapper<MappingType, 3>
+constexpr EnumMapper<MappingType, 3>
     MappingTypeMapper(std::make_pair(MappingType::Gradient, "Gradient"sv),
                       std::make_pair(MappingType::Map, "Map"sv),
                       std::make_pair(MappingType::Predefined, "Predefined"sv));

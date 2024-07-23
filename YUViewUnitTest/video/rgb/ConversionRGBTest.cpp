@@ -32,7 +32,7 @@
 
 #include "gtest/gtest.h"
 
-#include <common/NewEnumMapper.h>
+#include <common/EnumMapper.h>
 #include <video/rgb/ConversionRGB.h>
 
 using ::testing::Combine;
