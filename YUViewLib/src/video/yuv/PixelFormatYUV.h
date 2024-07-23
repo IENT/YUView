@@ -87,10 +87,10 @@ enum class ChromaInterpolation
   Interstitial
 };
 
-const auto ChromaInterpolationMapper =
-    EnumMapper<ChromaInterpolation>({{ChromaInterpolation::NearestNeighbor, "Nearest Neighbor"},
-                                     {ChromaInterpolation::Bilinear, "Bilinear"},
-                                     {ChromaInterpolation::Interstitial, "Interstitial"}});
+constexpr NewEnumMapper<ChromaInterpolation, 3> ChromaInterpolationMapper(
+    std::make_pair(ChromaInterpolation::NearestNeighbor, "Nearest Neighbor"sv),
+    std::make_pair(ChromaInterpolation::Bilinear, "Bilinear"sv),
+    std::make_pair(ChromaInterpolation::Interstitial, "Interstitial"sv));
 
 class MathParameters
 {
@@ -114,8 +114,8 @@ enum class PredefinedPixelFormat
   V210
 };
 
-const auto PredefinedPixelFormatMapper =
-    EnumMapper<PredefinedPixelFormat>({{PredefinedPixelFormat::V210, "V210"}});
+constexpr NewEnumMapper<PredefinedPixelFormat, 1>
+    PredefinedPixelFormatMapper(std::make_pair(PredefinedPixelFormat::V210, "V210"sv));
 
 enum class PackingOrder
 {
