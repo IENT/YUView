@@ -105,11 +105,11 @@ private:
   class splitViewWidgetState
   {
   public:
-    QPointF centerOffset;
-    double zoomFactor;
-    bool splitting;
-    double splittingPoint;
-    int viewMode;
+    QPointF centerOffset{};
+    double zoomFactor{};
+    bool splitting{};
+    double splittingPoint{};
+    int viewMode{};
   };
   splitViewWidgetState viewStates[8];
 
