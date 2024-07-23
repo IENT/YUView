@@ -177,10 +177,10 @@ enum class PlaneOrder
   YVUA
 };
 
-const auto PlaneOrderMapper = EnumMapper<PlaneOrder>({{PlaneOrder::YUV, "YUV"},
-                                                      {PlaneOrder::YVU, "YVU"},
-                                                      {PlaneOrder::YUVA, "YUVA"},
-                                                      {PlaneOrder::YVUA, "YVUA"}});
+constexpr NewEnumMapper<PlaneOrder, 4> PlaneOrderMapper(std::make_pair(PlaneOrder::YUV, "YUV"sv),
+                                                        std::make_pair(PlaneOrder::YVU, "YVU"sv),
+                                                        std::make_pair(PlaneOrder::YUVA, "YUVA"sv),
+                                                        std::make_pair(PlaneOrder::YVUA, "YVUA"sv));
 
 const auto BitDepthList = std::vector<unsigned>({8, 9, 10, 12, 14, 16});
 
