@@ -32,7 +32,6 @@
 
 #pragma once
 
-#include <common/EnumMapper.h>
 #include <common/NewEnumMapper.h>
 #include <common/Typedef.h>
 #include <video/PixelFormat.h>
