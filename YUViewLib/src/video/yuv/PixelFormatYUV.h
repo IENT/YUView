@@ -33,6 +33,7 @@
 #pragma once
 
 #include <common/EnumMapper.h>
+#include <common/NewEnumMapper.h>
 #include <common/Typedef.h>
 #include <video/PixelFormat.h>
 
@@ -68,13 +69,13 @@ enum class ColorConversion
   BT2020_FullRange,
 };
 
-const auto ColorConversionMapper =
-    EnumMapper<ColorConversion>({{ColorConversion::BT709_LimitedRange, "ITU-R.BT709"},
-                                 {ColorConversion::BT709_FullRange, "ITU-R.BT709 Full Range"},
-                                 {ColorConversion::BT601_LimitedRange, "ITU-R.BT601"},
-                                 {ColorConversion::BT601_FullRange, "ITU-R.BT601 Full Range"},
-                                 {ColorConversion::BT2020_LimitedRange, "ITU-R.BT2020"},
-                                 {ColorConversion::BT2020_FullRange, "ITU-R.BT2020 Full Range"}});
+constexpr NewEnumMapper<ColorConversion, 6> ColorConversionMapper(
+    std::make_pair(ColorConversion::BT709_LimitedRange, "ITU-R.BT709"sv),
+    std::make_pair(ColorConversion::BT709_FullRange, "ITU-R.BT709 Full Range"sv),
+    std::make_pair(ColorConversion::BT601_LimitedRange, "ITU-R.BT601"sv),
+    std::make_pair(ColorConversion::BT601_FullRange, "ITU-R.BT601 Full Range"sv),
+    std::make_pair(ColorConversion::BT2020_LimitedRange, "ITU-R.BT2020"sv),
+    std::make_pair(ColorConversion::BT2020_FullRange, "ITU-R.BT2020 Full Range"sv));
 
 void getColorConversionCoefficients(ColorConversion colorConversion, int RGBConv[5]);
 
