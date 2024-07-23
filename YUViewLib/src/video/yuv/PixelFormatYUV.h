@@ -158,13 +158,16 @@ enum class Subsampling
   UNKNOWN
 };
 
-const auto SubsamplingMapper = EnumMapper<Subsampling>({{Subsampling::YUV_444, "444", "4:4:4"},
-                                                        {Subsampling::YUV_422, "422", "4:2:2"},
-                                                        {Subsampling::YUV_420, "420", "4:2:0"},
-                                                        {Subsampling::YUV_440, "440", "4:4:0"},
-                                                        {Subsampling::YUV_410, "410", "4:1:0"},
-                                                        {Subsampling::YUV_411, "411", "4:1:1"},
-                                                        {Subsampling::YUV_400, "400", "4:0:0"}});
+constexpr NewEnumMapper<Subsampling, 7>
+    SubsamplingMapper(std::make_pair(Subsampling::YUV_444, "444"sv),
+                      std::make_pair(Subsampling::YUV_422, "422"sv),
+                      std::make_pair(Subsampling::YUV_420, "420"sv),
+                      std::make_pair(Subsampling::YUV_440, "440"sv),
+                      std::make_pair(Subsampling::YUV_410, "410"sv),
+                      std::make_pair(Subsampling::YUV_411, "411"sv),
+                      std::make_pair(Subsampling::YUV_400, "400"sv));
+
+std::string formatSubsamplingWithColons(const Subsampling &subsampling);
 
 int getMaxPossibleChromaOffsetValues(bool horizontal, Subsampling subsampling);
 std::vector<PackingOrder> getSupportedPackingFormats(Subsampling subsampling);

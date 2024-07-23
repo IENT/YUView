@@ -43,8 +43,8 @@ namespace video::yuv
 Subsampling findSubsamplingTypeIndicatorInName(std::string name)
 {
   std::string matcher = "(?:_|\\.|-)(";
-  for (auto subsampling : SubsamplingMapper.getNames())
-    matcher += subsampling + "|";
+  for (const auto subsampling : SubsamplingMapper.getNames())
+    matcher += std::string(subsampling) + "|";
   matcher.pop_back(); // Remove last |
   matcher += ")(?:_|\\.|-)";
 
@@ -134,26 +134,30 @@ PixelFormatYUV testFormatFromSizeAndNamePlanar(std::string name,
           {
             const bool interlaced = !interlacedString.empty();
             {
-              auto formatName = entry.first + SubsamplingMapper.getName(subsampling) + "p";
+              std::stringstream formatName;
+              formatName << entry.first << SubsamplingMapper.getName(subsampling) << "p";
               if (bitDepth > 8)
-                formatName += std::to_string(bitDepth) + endianness;
-              formatName += interlacedString;
+                formatName << bitDepth << endianness;
+              formatName << interlacedString;
               auto fmt = PixelFormatYUV(
                   subsampling, bitDepth, entry.second, endianness == "be", {}, interlaced);
-              if (name.find(formatName) != std::string::npos && checkFormat(fmt, size, fileSize))
+              if (name.find(formatName.str()) != std::string::npos &&
+                  checkFormat(fmt, size, fileSize))
                 return fmt;
             }
 
             if (subsampling == detectedSubsampling && detectedSubsampling != Subsampling::UNKNOWN)
             {
               // Also try the string without the subsampling indicator (which we already detected)
-              auto formatName = entry.first + "p";
+              std::stringstream formatName;
+              formatName << entry.first << "p";
               if (bitDepth > 8)
-                formatName += std::to_string(bitDepth) + endianness;
-              formatName += interlacedString;
+                formatName << bitDepth << endianness;
+              formatName << interlacedString;
               auto fmt = PixelFormatYUV(
                   subsampling, bitDepth, entry.second, endianness == "be", {}, interlaced);
-              if (name.find(formatName) != std::string::npos && checkFormat(fmt, size, fileSize))
+              if (name.find(formatName.str()) != std::string::npos &&
+                  checkFormat(fmt, size, fileSize))
                 return fmt;
             }
           }
@@ -197,23 +201,27 @@ PixelFormatYUV testFormatFromSizeAndNamePacked(std::string name,
         for (const auto &endianness : endiannessList)
         {
           {
-            auto packingNameLower = functions::toLower(PackingOrderMapper.getName(packing));
-            auto formatName       = packingNameLower + SubsamplingMapper.getName(subsampling);
+            std::stringstream formatName;
+            formatName << functions::toLower(PackingOrderMapper.getName(packing));
+            formatName << SubsamplingMapper.getName(subsampling);
             if (bitDepth > 8)
-              formatName += std::to_string(bitDepth) + endianness;
+              formatName << std::to_string(bitDepth) + endianness;
             auto fmt = PixelFormatYUV(subsampling, bitDepth, packing, false, endianness == "be");
-            if (name.find(formatName) != std::string::npos && checkFormat(fmt, size, fileSize))
+            if (name.find(formatName.str()) != std::string::npos &&
+                checkFormat(fmt, size, fileSize))
               return fmt;
           }
 
           if (subsampling == detectedSubsampling && detectedSubsampling != Subsampling::UNKNOWN)
           {
             // Also try the string without the subsampling indicator (which we already detected)
-            auto formatName = functions::toLower(PackingOrderMapper.getName(packing));
+            std::stringstream formatName;
+            formatName << functions::toLower(PackingOrderMapper.getName(packing));
             if (bitDepth > 8)
-              formatName += std::to_string(bitDepth) + endianness;
+              formatName << bitDepth << endianness;
             auto fmt = PixelFormatYUV(subsampling, bitDepth, packing, false, endianness == "be");
-            if (name.find(formatName) != std::string::npos && checkFormat(fmt, size, fileSize))
+            if (name.find(formatName.str()) != std::string::npos &&
+                checkFormat(fmt, size, fileSize))
               return fmt;
           }
         }
@@ -325,19 +333,24 @@ PixelFormatYUV guessFormatFromSizeAndName(const Size       size,
     if (bitDepth != 0)
       // We already extracted a bit depth from the name. Only try that.
       bitDepths = {bitDepth};
-    for (const auto &subsamplingEntry : SubsamplingMapper.entries())
+
+    // Make iterable ... how?
+    for (std::size_t i = 0; i < SubsamplingMapper.size(); ++i)
     {
+      const auto subsampling     = SubsamplingMapper.at(i).value();
+      const auto subsamplingName = SubsamplingMapper.getName(subsampling);
+
       auto nameLower = functions::toLower(name);
-      if (nameLower.find(subsamplingEntry.name) != std::string::npos)
+      if (nameLower.find(subsamplingName) != std::string::npos)
       {
         // Try this subsampling with all bitDepths
         for (auto bd : bitDepths)
         {
           PixelFormatYUV fmt;
           if (dataLayout == DataLayout::Packed)
-            fmt = PixelFormatYUV(subsamplingEntry.value, bd, PackingOrder::YUV);
+            fmt = PixelFormatYUV(subsampling, bd, PackingOrder::YUV);
           else
-            fmt = PixelFormatYUV(subsamplingEntry.value, bd, PlaneOrder::YUV);
+            fmt = PixelFormatYUV(subsampling, bd, PlaneOrder::YUV);
           if (checkFormat(fmt, size, fileSize))
             return fmt;
         }

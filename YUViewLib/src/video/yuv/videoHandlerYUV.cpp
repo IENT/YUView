@@ -2829,7 +2829,8 @@ void videoHandlerYUV::slotYUVFormatControlChanged(int selectionIndex)
       ui.yuvFormatComboBox->setCurrentIndex(static_cast<int>(*presetIndex));
     }
   }
-  else if (selectionIndex >= 0 && selectionIndex < videoHandlerYUV::formatPresetList.size())
+  else if (selectionIndex >= 0 &&
+           selectionIndex < static_cast<int>(videoHandlerYUV::formatPresetList.size()))
     newFormat = videoHandlerYUV::formatPresetList.at(selectionIndex);
 
   // Set the new format (if new) and emit a signal that a new format was selected.
@@ -3332,7 +3333,7 @@ void videoHandlerYUV::setFormatFromCorrelation(const QByteArray &rawYUVData, int
   {
     int bits = (b == 0) ? 8 : (b == 1) ? 10 : 16;
     // Test all subsampling modes
-    for (const auto &subsampling : SubsamplingMapper.getEnums())
+    for (const auto &subsampling : SubsamplingMapper.getItems())
       for (const auto &size : testSizes)
         formatList.push_back(
             testFormatAndSize(size, PixelFormatYUV(subsampling, bits, PlaneOrder::YUV)));
@@ -4050,7 +4051,7 @@ QImage videoHandlerYUV::calculateDifference(FrameHandler    *item2,
   differenceInfoList.append(
       InfoItem("Difference Type",
                QString("YUV %1").arg(QString::fromStdString(
-                   SubsamplingMapper.getText(srcPixelFormat.getSubsampling())))));
+                   formatSubsamplingWithColons(srcPixelFormat.getSubsampling())))));
 
   {
     auto       nrPixelsLuma = w_out * h_out;
