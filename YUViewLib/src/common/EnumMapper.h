@@ -34,7 +34,7 @@
 
 #include <algorithm>
 #include <array>
-#include <cuchar>
+#include <iterator>
 #include <optional>
 #include <string_view>
 
@@ -44,7 +44,56 @@ using namespace std::string_view_literals;
 
 template <class T, std::size_t N> struct EnumMapper
 {
-  using VALUE_AND_NAME = std::pair<T, std::string_view>;
+public:
+  using ValueNamePair = std::pair<T, std::string_view>;
+  using ItemArray     = std::array<T, N>;
+  using ItemIterator  = typename ItemArray::const_iterator;
+  using NameArray     = std::array<std::string_view, N>;
+  using NameIterator  = typename NameArray::const_iterator;
+
+  struct Iterator
+  {
+    using iterator_category = std::forward_iterator_tag;
+    using difference_type   = int;
+    using value_type        = ValueNamePair;
+    using pointer           = ValueNamePair *;
+    using reference         = ValueNamePair &;
+
+    Iterator(const ItemIterator itItem, const NameIterator itName) : itItem(itItem), itName(itName)
+    {
+      this->valueNamePair.first  = *itItem;
+      this->valueNamePair.second = *itName;
+    }
+
+    ValueNamePair const &operator*() const { return this->valueNamePair; }
+    ValueNamePair const *operator->() const { return &this->valueNamePair; }
+
+    Iterator &operator++()
+    {
+      ++this->itItem;
+      ++this->itName;
+      this->valueNamePair.first  = *this->itItem;
+      this->valueNamePair.second = *this->itName;
+      return *this;
+    }
+
+    friend bool operator==(const Iterator &a, const Iterator &b)
+    {
+      return a.itItem == b.itItem && a.itName == b.itName;
+    };
+    friend bool operator!=(const Iterator &a, const Iterator &b)
+    {
+      return a.itItem != b.itItem || a.itName != b.itName;
+    };
+
+  private:
+    ItemIterator  itItem;
+    NameIterator  itName;
+    ValueNamePair valueNamePair{};
+  };
+
+  Iterator begin() const { return Iterator(this->items.begin(), this->names.begin()); }
+  Iterator end() const { return Iterator(this->items.end(), this->names.end()); }
 
   template <typename... Args> constexpr EnumMapper(Args... args)
   {
@@ -66,12 +115,14 @@ template <class T, std::size_t N> struct EnumMapper
 
   constexpr std::optional<T> getValue(const std::string_view name) const
   {
-    const auto it = std::find(this->names.begin(), this->names.end(), name);
-    if (it == this->names.end())
+    const auto it =
+        std::find_if(this->begin(),
+                     this->end(),
+                     [&name](const ValueNamePair &pair) { return pair.second == name; });
+    if (it == this->end())
       return {};
 
-    const auto index = std::distance(this->names.begin(), it);
-    return this->items.at(index);
+    return it->first;
   }
 
   constexpr std::optional<T> getValueCaseInsensitive(const std::string_view name) const
@@ -123,8 +174,8 @@ template <class T, std::size_t N> struct EnumMapper
     return this->items.at(index);
   }
 
-  constexpr const std::array<T, N>                &getItems() const { return this->items; }
-  constexpr const std::array<std::string_view, N> &getNames() const { return this->names; }
+  constexpr const ItemArray &getItems() const { return this->items; }
+  constexpr const NameArray &getNames() const { return this->names; }
 
 private:
   constexpr void addElementsRecursively(const std::size_t) {};
@@ -132,7 +183,7 @@ private:
   template <typename TArg, typename... Args>
   constexpr void addElementsRecursively(const std::size_t index, TArg first, Args... args)
   {
-    static_assert(std::is_same<VALUE_AND_NAME, TArg>());
+    static_assert(std::is_same<ValueNamePair, TArg>());
 
     const auto [value, name] = first;
     this->items[index]       = value;
@@ -141,6 +192,6 @@ private:
     addElementsRecursively(index + 1, args...);
   }
 
-  std::array<T, N>                items{};
-  std::array<std::string_view, N> names{};
+  ItemArray items{};
+  NameArray names{};
 };
