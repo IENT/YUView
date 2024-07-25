@@ -32,11 +32,11 @@
 
 #include "videoHandlerRGB.h"
 
+#include <common/EnumMapper.h>
 #include <common/FileInfo.h>
 #include <common/Formatting.h>
 #include <common/Functions.h>
 #include <common/FunctionsGui.h>
-#include <common/EnumMapper.h>
 #include <video/rgb/ConversionRGB.h>
 #include <video/rgb/PixelFormatRGBGuess.h>
 #include <video/rgb/videoHandlerRGBCustomFormatDialog.h>
@@ -303,7 +303,7 @@ void videoHandlerRGB::slotDisplayOptionsChanged()
 {
   {
     const auto index = ui.colorComponentsComboBox->currentIndex();
-    if (index >= 0 && static_cast<std::size_t>(index) < ComponentShowMapper.size())
+    if (index >= 0)
       if (const auto mode = ComponentShowMapper.at(static_cast<std::size_t>(index)))
         this->componentDisplayMode = *mode;
   }
