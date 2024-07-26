@@ -46,8 +46,9 @@ public:
   ~TemporaryFile();
 
   std::filesystem::path getFilePath() const;
+  std::string           getFilePathString() const;
 
-  private:
+private:
   std::filesystem::path temporaryFilePath;
 };
 

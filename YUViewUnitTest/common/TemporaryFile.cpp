@@ -90,4 +90,9 @@ std::filesystem::path TemporaryFile::getFilePath() const
   return this->temporaryFilePath;
 }
 
+std::string TemporaryFile::getFilePathString() const
+{
+  return this->temporaryFilePath.string();
+}
+
 } // namespace yuviewTest

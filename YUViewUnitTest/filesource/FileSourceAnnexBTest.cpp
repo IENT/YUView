@@ -113,7 +113,7 @@ TEST_P(FileSourceAnnexBTest, TestNalUnitParsing)
   const auto [nalSizes, data] = generateAnnexBStream(testParameters);
   yuviewTest::TemporaryFile temporaryFile(data);
 
-  FileSourceAnnexBFile annexBFile(QString::fromStdString(temporaryFile.getFilePath().string()));
+  FileSourceAnnexBFile annexBFile(QString::fromStdString(temporaryFile.getFilePathString()));
   EXPECT_EQ(static_cast<int>(annexBFile.getNrBytesBeforeFirstNAL()),
             testParameters.startCodePositions.at(0));
 

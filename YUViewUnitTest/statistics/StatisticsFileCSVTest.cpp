@@ -108,8 +108,7 @@ TEST(StatisticsFileCSV, testCSVFileParsing)
   yuviewTest::TemporaryFile csvFile(getCSVTestData());
 
   stats::StatisticsData    statData;
-  stats::StatisticsFileCSV statFile(QString::fromStdString(csvFile.getFilePath().string()),
-                                    statData);
+  stats::StatisticsFileCSV statFile(QString::fromStdString(csvFile.getFilePathString()), statData);
 
   EXPECT_EQ(statData.getFrameSize(), Size(1920, 1080));
 

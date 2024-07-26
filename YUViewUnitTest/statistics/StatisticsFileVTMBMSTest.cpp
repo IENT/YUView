@@ -83,7 +83,8 @@ TEST(StatisticsFileCSV, testCSVFileParsing)
   yuviewTest::TemporaryFile vtmbmsFile(getVTMBSTestData());
 
   stats::StatisticsData       statData;
-  stats::StatisticsFileVTMBMS statFile(QString::fromStdString(vtmbmsFile.getFilePath()), statData);
+  stats::StatisticsFileVTMBMS statFile(QString::fromStdString(vtmbmsFile.getFilePathString()),
+                                       statData);
 
   EXPECT_EQ(statData.getFrameSize(), Size(2048, 872));
 
