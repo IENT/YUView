@@ -42,7 +42,7 @@ struct TestParameters
   std::string    filename{};
   Size           frameSize{};
   std::int64_t   fileSize{};
-  PixelFormatRGB expectedPixelFormst{};
+  PixelFormatRGB expectedPixelFormat{};
 };
 
 class GuessRGBFormatFromFilenameFrameSizeAndFileSize : public TestWithParam<TestParameters>
@@ -55,13 +55,12 @@ std::string getTestName(const testing::TestParamInfo<TestParameters> &testParame
 
   return yuviewTest::formatTestName("FileName",
                                     testParameters.filename,
-                                    "Size",
-                                    testParameters.frameSize.width,
-                                    testParameters.frameSize.height,
+                                    "FrameSize",
+                                    testParameters.frameSize,
                                     "FileSize",
                                     testParameters.fileSize,
                                     "ExpectedRGBFormat",
-                                    testParameters.expectedPixelFormst.getName());
+                                    testParameters.expectedPixelFormat.getName());
 }
 
 TEST_P(GuessRGBFormatFromFilenameFrameSizeAndFileSize, TestGuess)
@@ -73,7 +72,7 @@ TEST_P(GuessRGBFormatFromFilenameFrameSizeAndFileSize, TestGuess)
       video::rgb::guessFormatFromSizeAndName(fileInfo, parameters.frameSize, parameters.fileSize);
 
   EXPECT_TRUE(guessedRGBFormat.isValid());
-  EXPECT_EQ(guessedRGBFormat, parameters.expectedPixelFormst);
+  EXPECT_EQ(guessedRGBFormat, parameters.expectedPixelFormat);
 }
 
 constexpr auto BytesNoAlpha   = 1920u * 1080 * 12 * 3; // 12 frames RGB

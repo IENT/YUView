@@ -39,7 +39,7 @@ namespace yuviewTest
 
 std::string replaceNonSupportedCharacters(const std::string &str)
 {
-  return stringReplaceAll(str, {' ', '.', '-', '*'}, '_');
+  return stringReplaceAll(str, {' ', '.', '-', '*', ':', '(', ')'}, '_');
 }
 
 } // namespace yuviewTest

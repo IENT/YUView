@@ -55,6 +55,8 @@ template <typename T> std::string _formatArgument(T arg)
     return std::string(arg);
   else if constexpr (std::is_same_v<T, Size>)
     return std::to_string(arg.width) + "x" + std::to_string(arg.height);
+  else if constexpr (std::is_same_v<T, std::string_view>)
+    return std::string(arg);
   else if constexpr (std::is_integral_v<T> && std::is_signed_v<T>)
   {
     if (arg < 0)
