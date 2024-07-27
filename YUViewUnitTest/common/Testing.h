@@ -34,52 +34,73 @@
 
 #include "gtest/gtest.h"
 
+#include <common/Typedef.h>
+
+using ::testing::Bool;
+using ::testing::Combine;
 using ::testing::TestWithParam;
 using ::testing::Values;
+using ::testing::ValuesIn;
 
 namespace yuviewTest
 {
 
 std::string replaceNonSupportedCharacters(const std::string &str);
 
-template <typename TArg, typename... Args>
-constexpr void _formatTestNameImplRest(std::stringstream &s, TArg arg)
+template <typename T> std::string _formatArgument(T arg)
 {
-  if constexpr (std::is_same_v<TArg, std::string>)
-    s << "_" << replaceNonSupportedCharacters(arg);
+  if constexpr (std::is_same_v<T, std::string>)
+    return replaceNonSupportedCharacters(arg);
+  else if constexpr (std::is_same_v<T, const char *>)
+    return std::string(arg);
+  else if constexpr (std::is_same_v<T, Size>)
+    return std::to_string(arg.width) + "x" + std::to_string(arg.height);
+  else if constexpr (std::is_integral_v<T> && std::is_signed_v<T>)
+  {
+    if (arg < 0)
+      return "n" + std::to_string(std::abs(arg));
+    else
+      return std::to_string(arg);
+  }
   else
-    s << "_" << arg;
+    return std::to_string(arg);
 }
 
-template <typename TArg, typename... Args>
-constexpr void _formatTestNameImplRest(std::stringstream &s, TArg arg, Args... remainingArgs)
+template <typename T, std::size_t N> std::string _formatArgument(std::array<T, N> values)
 {
-  _formatTestNameImplRest(s, arg);
-  if (sizeof...(remainingArgs) > 0)
-    _formatTestNameImplRest(s, remainingArgs...);
+  std::ostringstream stream;
+  bool               first = true;
+  for (const auto value : values)
+  {
+    if (!first)
+      stream << "_";
+    stream << _formatArgument(value);
+    first = false;
+  }
+  return stream.str();
 }
 
-template <typename TArg, typename... Args>
-constexpr void _formatTestNameImplFirst(std::stringstream &s, TArg arg)
+template <typename T> std::string _formatArgument(std::vector<T> values)
 {
-  if constexpr (std::is_same_v<TArg, std::string>)
-    s << replaceNonSupportedCharacters(arg);
-  else
-    s << arg;
+  std::ostringstream stream;
+  bool               first = true;
+  for (const auto value : values)
+  {
+    if (!first)
+      stream << "_";
+    stream << _formatArgument(value);
+    first = false;
+  }
+  return stream.str();
 }
 
-template <typename TArg, typename... Args>
-constexpr void _formatTestNameImplFirst(std::stringstream &s, TArg arg, Args... remainingArgs)
+template <typename FirstArg, typename... Args>
+std::string formatTestName(FirstArg &&firstArg, Args &&...args)
 {
-  _formatTestNameImplFirst(s, arg);
-  _formatTestNameImplRest(s, remainingArgs...);
-}
-
-template <typename... Args> std::string formatTestName(Args... args)
-{
-  std::stringstream s;
-  _formatTestNameImplFirst(s, args...);
-  return s.str();
+  std::ostringstream stream;
+  stream << _formatArgument(firstArg);
+  ((stream << "_" << _formatArgument(args)), ...);
+  return stream.str();
 }
 
 } // namespace yuviewTest

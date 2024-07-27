@@ -30,10 +30,7 @@
  *   along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "gtest/gtest.h"
-
-using ::testing::TestWithParam;
-using ::testing::Values;
+#include <common/Testing.h>
 
 #include <common/Formatting.h>
 #include <filesource/GuessFormatFromName.h>
@@ -54,17 +51,16 @@ std::string getTestName(const testing::TestParamInfo<TestParam> &testParam)
 {
   const auto [filename, expectedFormat] = testParam.param;
 
-  std::stringstream s;
-  s << "TestName_" << stringReplaceAll(filename.toStdString(), {'.', '-', '*'}, '_');
-  s << "_shouldHave_Size" << expectedFormat.frameSize.width << "x"
-    << expectedFormat.frameSize.height;
-  if (expectedFormat.frameRate > 0)
-    s << "_fps" << expectedFormat.frameRate;
-  else
-    s << "_fpsNone";
-  s << "_bitDepth" << expectedFormat.bitDepth;
-  s << "_packed" << expectedFormat.packed;
-  return s.str();
+  return yuviewTest::formatTestName("TestName",
+                                    filename.toStdString(),
+                                    "Size",
+                                    expectedFormat.frameSize,
+                                    "fps",
+                                    expectedFormat.frameRate,
+                                    "BitDepth",
+                                    expectedFormat.bitDepth,
+                                    "Packed",
+                                    expectedFormat.packed);
 }
 
 TEST_P(GuessFormatFromFilenameTest, TestFormatFromFilename)

@@ -30,10 +30,7 @@
  *   along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "gtest/gtest.h"
-
-using ::testing::TestWithParam;
-using ::testing::Values;
+#include <common/Testing.h>
 
 #include <TemporaryFile.h>
 #include <filesource/FileSourceAnnexBFile.h>
@@ -95,15 +92,13 @@ class FileSourceAnnexBTest : public TestWithParam<TestParameters>
 
 std::string getTestName(const testing::TestParamInfo<TestParameters> &testParam)
 {
-  const auto        testParameters = testParam.param;
-  std::stringstream s;
-  s << "TestAnnexBWithParameters_";
-  s << "startCodeLength_" << testParameters.startCodeLength << "_";
-  s << "totalDataLength_" << testParameters.totalDataLength << "_";
-  s << "startCodePositions_";
-  for (const auto &position : testParameters.startCodePositions)
-    s << position << "_";
-  return s.str();
+  const auto testParameters = testParam.param;
+  return yuviewTest::formatTestName("StartCodeLength",
+                                    testParameters.startCodeLength,
+                                    "TotalDataLength",
+                                    testParameters.totalDataLength,
+                                    "StartCodePositions",
+                                    testParameters.startCodePositions);
 }
 
 TEST_P(FileSourceAnnexBTest, TestNalUnitParsing)

@@ -30,18 +30,12 @@
  *   along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "gtest/gtest.h"
+#include <common/Testing.h>
 
 #include <video/LimitedRangeToFullRange.h>
 #include <video/rgb/ConversionRGB.h>
 
 #include "CreateTestData.h"
-
-using ::testing::Bool;
-using ::testing::Combine;
-using ::testing::TestWithParam;
-using ::testing::Values;
-using ::testing::ValuesIn;
 
 using OutputHasAlpha        = bool;
 using PremultiplyAlpha      = bool;
@@ -72,17 +66,15 @@ std::string getTestName(const video::rgb::PixelFormatRGB &pixelFormat,
                         const InversionPerComponent      &inversionPerComponent,
                         const bool                        limitedRange)
 {
-  std::stringstream s;
-  s << "PixelFormat_" << pixelFormat.getName();
-  s << "_OutputHasAlpha_" << outputHasAlpha;
-  s << "_ScalingPerComponent_";
-  for (const auto scale : scalingPerComponent)
-    s << scale;
-  s << "_InversionPerComponen";
-  for (const auto inversion : inversionPerComponent)
-    s << inversion;
-  s << (limitedRange ? "_limitedRange" : "_fullRange");
-  return s.str();
+  return yuviewTest::formatTestName("PixelFormat",
+                                    pixelFormat.getName(),
+                                    "OutputHasAlpha",
+                                    outputHasAlpha,
+                                    "ScalingPerComponent",
+                                    scalingPerComponent,
+                                    "InversionPerComponen",
+                                    inversionPerComponent,
+                                    (limitedRange ? "_limitedRange" : "_fullRange"));
 }
 
 int scaleShiftClipInvertValue(const int  value,

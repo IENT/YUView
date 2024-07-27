@@ -30,7 +30,7 @@
  *   along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "gtest/gtest.h"
+#include <common/Testing.h>
 
 #include <video/rgb/ConversionRGB.h>
 
