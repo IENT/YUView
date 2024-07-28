@@ -166,8 +166,8 @@ PixelFormatYUV::PixelFormatYUV(const std::string &name)
         newFormat.packingOrder = *po;
     }
 
-    if (auto subsapling = parseSubsamplingText(sm.str(2)))
-      newFormat.subsampling = subsampling;
+    if (auto subsampling = parseSubsamplingText(sm.str(2)))
+      newFormat.subsampling = *subsampling;
 
     // Get the bit depth
     {
