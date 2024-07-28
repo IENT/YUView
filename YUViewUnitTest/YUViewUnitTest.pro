@@ -12,6 +12,7 @@ SOURCES += $$files(*.cpp, true)
 HEADERS += $$files(*.h, true)
 
 INCLUDEPATH += $$top_srcdir/submodules/googletest/googletest/include \
+               $$top_srcdir/submodules/googletest/googlemock/include \
                $$top_srcdir/YUViewLib/src \
                $$top_srcdir/YUViewUnitTest/common
 LIBS += -L$$top_builddir/submodules/googletest-qmake/gtest -lgtest

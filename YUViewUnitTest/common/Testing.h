@@ -32,12 +32,14 @@
 
 #pragma once
 
-#include "gtest/gtest.h"
+#include <gmock/gmock.h>
+#include <gtest/gtest.h>
 
 #include <common/Typedef.h>
 
 using ::testing::Bool;
 using ::testing::Combine;
+using ::testing::ElementsAre;
 using ::testing::TestWithParam;
 using ::testing::Values;
 using ::testing::ValuesIn;

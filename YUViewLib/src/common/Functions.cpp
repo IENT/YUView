@@ -188,7 +188,10 @@ std::optional<unsigned long> toUnsigned(const std::string_view text)
   int        value{};
   const auto result = std::from_chars(text.data(), text.data() + text.size(), value);
 
-  if (result.ec == std::errc())
+  if (result.ec != std::errc())
+    return {};
+  const auto allCharactersParsed = (result.ptr == text.end());
+  if (!allCharactersParsed)
     return {};
 
   return value;
