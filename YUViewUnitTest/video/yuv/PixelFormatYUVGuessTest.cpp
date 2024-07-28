@@ -91,8 +91,10 @@ TEST_P(GuessYUVFormatFromFilenameFrameSizeFileSizeDataLayoutAndBitDepth, TestGue
   EXPECT_EQ(guessedFormat, parameters.expectedPixelFormat);
 }
 
-constexpr unsigned BYTES_1080P = 1920 * 1080 * 3 * 6; // 12 frames 420
-constexpr unsigned BYTES_720P  = 1280 * 720 * 3 * 6;  // 6 frames 444
+constexpr auto BYTES_1080P     = 1920 * 1080 * 3 * 6;      // 12 frames 420
+constexpr auto BYTES_720P      = 1280 * 720 * 3 * 6;       // 6 frames 444
+constexpr auto BYTES_720P_V210 = 1296u * 720 / 6 * 16 * 3; // 3 frames
+constexpr auto BYTES_1808P_400 = 1920u * 1080 * 2;         // 2 frames 400
 
 INSTANTIATE_TEST_SUITE_P(
     VideoYUVTest,
@@ -160,9 +162,110 @@ INSTANTIATE_TEST_SUITE_P(
                                           PlaneOrder::YUV,
                                           BigEndian(false),
                                           ChromaOffset(0, 0),
-                                          UVInterleaved(true))})
+                                          UVInterleaved(true))}),
+           TestParameters({"sample_1280x720_yuv420pinterlaced_114812.yuv",
+                           Size(1280, 720),
+                           16,
+                           DataLayout::Planar,
+                           BYTES_720P,
+                           PixelFormatYUV(Subsampling::YUV_420,
+                                          8,
+                                          PlaneOrder::YUV,
+                                          BigEndian(false),
+                                          ChromaOffset(0, 0),
+                                          UVInterleaved(true))}),
+           TestParameters({"sample_1280x720_yuv444p16leUVI_114812.yuv",
+                           Size(1280, 720),
+                           16,
+                           DataLayout::Planar,
+                           BYTES_720P,
+                           PixelFormatYUV(Subsampling::YUV_444,
+                                          16,
+                                          PlaneOrder::YUV,
+                                          BigEndian(false),
+                                          ChromaOffset(0, 0),
+                                          UVInterleaved(true))}),
+           TestParameters({"sample_1280x720_yuv444p16leinterlaced_114812.yuv",
+                           Size(1280, 720),
+                           16,
+                           DataLayout::Planar,
+                           BYTES_720P,
+                           PixelFormatYUV(Subsampling::YUV_444,
+                                          16,
+                                          PlaneOrder::YUV,
+                                          BigEndian(false),
+                                          ChromaOffset(0, 0),
+                                          UVInterleaved(true))}),
 
-               ),
+           // Invalid interlaced indicators
+           TestParameters({"sample_1280x720_yuv420pUVVI_114812.yuv",
+                           Size(1280, 720),
+                           8,
+                           DataLayout::Planar,
+                           BYTES_720P,
+                           PixelFormatYUV(Subsampling::YUV_420, 8)}),
+           TestParameters({"sample_1280x720_yuv420pinnterlaced_114812.yuv",
+                           Size(1280, 720),
+                           8,
+                           DataLayout::Planar,
+                           BYTES_720P,
+                           PixelFormatYUV(Subsampling::YUV_420, 8)}),
+           TestParameters({"sample_1280x720_yuv444p16leUVVI_114812.yuv",
+                           Size(1280, 720),
+                           16,
+                           DataLayout::Planar,
+                           BYTES_720P,
+                           PixelFormatYUV(Subsampling::YUV_444, 16)}),
+           TestParameters({"sample_1280x720_yuv444p16leinnterlaced_114812.yuv",
+                           Size(1280, 720),
+                           16,
+                           DataLayout::Planar,
+                           BYTES_720P,
+                           PixelFormatYUV(Subsampling::YUV_444, 16)}),
+
+           // V210 format (w must be multiple of 48)
+           TestParameters({"sample_1280x720_v210.yuv",
+                           Size(1280, 720),
+                           10,
+                           DataLayout::Packed,
+                           BYTES_720P_V210,
+                           PixelFormatYUV(PredefinedPixelFormat::V210)}),
+           TestParameters({"sample_1280x720_v210.something.yuv",
+                           Size(1280, 720),
+                           10,
+                           DataLayout::Packed,
+                           BYTES_720P_V210,
+                           PixelFormatYUV(PredefinedPixelFormat::V210)}),
+
+           // 4:0:0 formats
+           TestParameters({"sample_1920x1080_YUV400p16LE.yuv",
+                           Size(1920, 1080),
+                           16,
+                           DataLayout::Planar,
+                           BYTES_1808P_400,
+                           PixelFormatYUV(Subsampling::YUV_400, 16)}),
+           TestParameters({"sample_1920x1080_gray8le.yuv",
+                           Size(1920, 1080),
+                           0,
+                           DataLayout::Planar,
+                           BYTES_1808P_400,
+                           PixelFormatYUV(Subsampling::YUV_400, 8)}),
+           TestParameters({"sample_1920x1080_gray10le.yuv",
+                           Size(1920, 1080),
+                           0,
+                           DataLayout::Planar,
+                           BYTES_1808P_400,
+                           PixelFormatYUV(Subsampling::YUV_400, 10)}),
+           TestParameters({"sample_1920x1080_gray16le.yuv",
+                           Size(1920, 1080),
+                           0,
+                           DataLayout::Planar,
+                           BYTES_1808P_400,
+                           PixelFormatYUV(Subsampling::YUV_400, 16)})
+
+           // More tests please :)
+
+           ),
     getTestName);
 
 } // namespace video::yuv::test
