@@ -203,6 +203,11 @@ jobs:
         d:\a\YUViewQt\YUViewQt\Qt\bin\qmake CONFIG+=UNITTESTS ..
         echo "Executing jom:"
         jom
+    - name: List lib
+      if: always()
+      run: |
+        dir D:\a\YUView\YUView\build
+        dir D:\a\YUView\YUView\build\release
     - name: Run tests
       run: |
         cd build
