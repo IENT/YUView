@@ -207,7 +207,7 @@ jobs:
       if: always()
       run: |
         dir D:\a\YUView\YUView\build
-        dir D:\a\YUView\YUView\build\release
+        dir D:\a\YUView\YUView\build\submodules\googletest-qmake\gtest
     - name: Run tests
       run: |
         cd build
