@@ -190,7 +190,7 @@ std::optional<unsigned long> toUnsigned(const std::string_view text)
 
   if (result.ec != std::errc())
     return {};
-  const auto allCharactersParsed = (result.ptr == text.end());
+  const auto allCharactersParsed = (result.ptr == &(*text.end()));
   if (!allCharactersParsed)
     return {};
 
