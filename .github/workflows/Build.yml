@@ -206,13 +206,10 @@ jobs:
     - name: List lib
       if: always()
       run: |
-        dir D:\a\YUView\YUView\build
-        dir D:\a\YUView\YUView\build\submodules\googletest-qmake\gtest
+        dir D:\a\YUView\YUView\build\YUViewUnitTest
     - name: Run tests
       run: |
-        cd build
-        nmake check
-        cd ..
+        D:\a\YUView\YUView\build\YUViewUnitTest\YUViewUnitTest
     - name: WindeployQT
       run: |
         mkdir deploy
