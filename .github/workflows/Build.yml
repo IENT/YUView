@@ -7,55 +7,57 @@ on:
       - created
 
 jobs:
-  # build-unix-native:
-  #   runs-on: ${{ matrix.os }}
-  #   strategy:
-  #     matrix:
-  #       include:
-  #         - os: ubuntu-20.04
-  #           INSTALL_LIBS: libgl1-mesa-dev libxkbcommon-x11-0 libpcre2-16-0 qt5-default
-  #           QMAKE_COMMAND: qmake
-  #         - os: ubuntu-22.04
-  #           INSTALL_LIBS: qt6-base-dev
-  #           QMAKE_COMMAND: qmake6
-  #   steps:
-  #   - uses: actions/checkout@v4
-  #     with:
-  #       submodules: true
-  #   - run: git fetch --prune --unshallow
-  #   - name: Install Linux packages
-  #     run: |
-  #       sudo apt-get update
-  #       sudo apt-get install ${{matrix.INSTALL_LIBS}}
-  #   - name: Build
-  #     run: |
-  #       cd $GITHUB_WORKSPACE
-  #       mkdir build
-  #       cd build
-  #       ${{matrix.QMAKE_COMMAND}} CONFIG+=UNITTESTS ..
-  #       make -j$(nproc)
-  #       make check
-  # build-mac-native:
-  #   runs-on: ${{ matrix.os }}
-  #   strategy:
-  #     matrix:
-  #       include: 
-  #         - os: macos-13
-  #         - os: macos-14
-  #   steps:
-  #   - uses: actions/checkout@v4
-  #   - run: git fetch --prune --unshallow
-  #   - name: Install packages
-  #     run: |
-  #       brew install qt
-  #   - name: Build
-  #     run: |
-  #       cd $GITHUB_WORKSPACE
-  #       mkdir build
-  #       cd build
-  #       qmake6 CONFIG+=UNITTESTS ..
-  #       make -j $(sysctl -n hw.logicalcpu)
-  #       make check
+  build-unix-native:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-20.04
+            INSTALL_LIBS: libgl1-mesa-dev libxkbcommon-x11-0 libpcre2-16-0 qt5-default
+            QMAKE_COMMAND: qmake
+          - os: ubuntu-22.04
+            INSTALL_LIBS: qt6-base-dev
+            QMAKE_COMMAND: qmake6
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        submodules: true
+    - run: git fetch --prune --unshallow
+    - name: Install Linux packages
+      run: |
+        sudo apt-get update
+        sudo apt-get install ${{matrix.INSTALL_LIBS}}
+    - name: Build
+      run: |
+        cd $GITHUB_WORKSPACE
+        mkdir build
+        cd build
+        ${{matrix.QMAKE_COMMAND}} CONFIG+=UNITTESTS ..
+        make -j$(nproc)
+    - name: Run Unittests
+      run: $GITHUB_WORKSPACE/build/YUViewUnitTest/YUViewUnitTest
+  build-mac-native:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        include: 
+          - os: macos-13
+          - os: macos-14
+    steps:
+    - uses: actions/checkout@v4
+    - run: git fetch --prune --unshallow
+    - name: Install packages
+      run: |
+        brew install qt
+    - name: Build
+      run: |
+        cd $GITHUB_WORKSPACE
+        mkdir build
+        cd build
+        qmake6 CONFIG+=UNITTESTS ..
+        make -j $(sysctl -n hw.logicalcpu)
+    - name: Run Unittests
+      run: $GITHUB_WORKSPACE/build/YUViewUnitTest/YUViewUnitTest
   build-unix:
     runs-on: ${{ matrix.os }}
     strategy:
@@ -116,7 +118,6 @@ jobs:
         cd build
         qmake CONFIG+=UNITTESTS ..
         make -j $(${{matrix.CPU_COUNT_COMMAND}})
-        make check
     - name: Run Unittests
       run: $GITHUB_WORKSPACE/build/YUViewUnitTest/YUViewUnitTest
     - name: Build App (Mac)
@@ -128,7 +129,7 @@ jobs:
         zip -r ${{matrix.ARTIFACT_NAME}} YUView.app/
         mkdir $GITHUB_WORKSPACE/artifacts
         cp ${{matrix.ARTIFACT_NAME}} $GITHUB_WORKSPACE/artifacts/
-      if: matrix.os == 'macos-11' || matrix.os == 'macos-12'
+      if: matrix.os == 'macos-12' || matrix.os == 'macos-14'
     - name: Build Appimage (Linux)
       run: |
         cd build
