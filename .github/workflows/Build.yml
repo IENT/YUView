@@ -57,114 +57,33 @@ jobs:
   #       qmake6 CONFIG+=UNITTESTS ..
   #       make -j $(sysctl -n hw.logicalcpu)
   #       make check
-  # build-unix:
-  #   runs-on: ${{ matrix.os }}
-  #   strategy:
-  #     matrix:
-  #       include: 
-  #         - os: ubuntu-20.04
-  #           QT_FILE: qtBase_6.5.2_ubuntu20.zip
-  #           LIBDE265_REMOTE: libde265.so
-  #           LIBDE265_LOCAL: libde265-internals.so
-  #           ARTIFACT_NAME: YUView.Ubuntu20.AppImage
-  #           CPU_COUNT_COMMAND: nproc
-  #         - os: macos-11
-  #           QT_FILE: qtBase_6.5.2_mac11.zip
-  #           LIBDE265_REMOTE: libde265.dylib
-  #           LIBDE265_LOCAL: libde265-internals.dylib
-  #           ARTIFACT_NAME: YUView-Mac11-BigSur.zip
-  #           CPU_COUNT_COMMAND: sysctl -n hw.logicalcpu
-  #         - os: macos-12
-  #           QT_FILE: qtBase_6.5.2_mac12.zip
-  #           LIBDE265_REMOTE: libde265.dylib
-  #           LIBDE265_LOCAL: libde265-internals.dylib
-  #           ARTIFACT_NAME: YUView-Mac12-Monterey.zip
-  #           CPU_COUNT_COMMAND: sysctl -n hw.logicalcpu
-  #   steps:
-  #   - uses: actions/checkout@v4
-  #     with:
-  #       submodules: true
-  #   - run: git fetch --prune --unshallow
-  #   - name: Install Qt base
-  #     run: |
-  #       cd ../../
-  #       mkdir -p YUViewQt/YUViewQt
-  #       cd YUViewQt/YUViewQt
-  #       curl -L https://github.com/ChristianFeldmann/YUViewQt/releases/download/QtBase-6.5.2/${{matrix.QT_FILE}} -o Qt.zip
-  #       unzip -qa Qt.zip
-  #       echo "$GITHUB_WORKSPACE/../../YUViewQt/YUViewQt/Qt/bin" >> $GITHUB_PATH
-  #     shell: bash
-  #   - name: Install Linuxdeployqt
-  #     run: |
-  #       curl -L https://github.com/probonopd/linuxdeployqt/releases/download/continuous/linuxdeployqt-continuous-x86_64.AppImage -o linuxdeployqt-6-x86_64.AppImage
-  #       chmod a+x linuxdeployqt-6-x86_64.AppImage
-  #     if: matrix.os == 'ubuntu-20.04'
-  #   - name: Install Linux packages
-  #     run: |
-  #       sudo apt-get update
-  #       sudo apt-get install libgl1-mesa-dev libxkbcommon-x11-0 libpcre2-16-0 '^libxcb.*-dev' libx11-xcb-dev libglu1-mesa-dev libxi-dev libxkbcommon-dev libxkbcommon-x11-dev libatspi2.0-dev libfuse2
-  #     if: matrix.os == 'ubuntu-20.04'
-  #   - name: Install libde265
-  #     run: |
-  #       curl -L https://github.com/ChristianFeldmann/libde265/releases/download/v1.1/${{matrix.LIBDE265_REMOTE}} -o ${{matrix.LIBDE265_LOCAL}}
-  #       curl -L https://raw.githubusercontent.com/ChristianFeldmann/libde265/master/COPYING -o libde265License.txt
-  #     shell: bash
-  #   - name: Build Linux/Mac
-  #     run: |
-  #       cd $GITHUB_WORKSPACE
-  #       export PATH=$GITHUB_WORKSPACE/../../YUViewQt/YUViewQt/Qt/bin:$PATH
-  #       mkdir build
-  #       cd build
-  #       qmake CONFIG+=UNITTESTS ..
-  #       make -j $(${{matrix.CPU_COUNT_COMMAND}})
-  #       make check
-  #   - name: Build App (Mac)
-  #     run: |
-  #       macdeployqt build/YUViewApp/YUView.app -always-overwrite -verbose=2
-  #       cp ${{matrix.LIBDE265_LOCAL}} build/YUViewApp/YUView.app/Contents/MacOS/.
-  #       cd build/YUViewApp
-  #       # Zip
-  #       zip -r ${{matrix.ARTIFACT_NAME}} YUView.app/
-  #       mkdir $GITHUB_WORKSPACE/artifacts
-  #       cp ${{matrix.ARTIFACT_NAME}} $GITHUB_WORKSPACE/artifacts/
-  #     if: matrix.os == 'macos-11' || matrix.os == 'macos-12'
-  #   - name: Build Appimage (Linux)
-  #     run: |
-  #       cd build
-  #       make INSTALL_ROOT=appdir install
-  #       $GITHUB_WORKSPACE/linuxdeployqt-6-x86_64.AppImage YUViewApp/appdir/usr/local/share/applications/de.rwth_aachen.ient.YUView.desktop -appimage -bundle-non-qt-libs -verbose=2
-  #       mv YUView-*.AppImage YUView.AppImage
-  #       mkdir $GITHUB_WORKSPACE/artifacts
-  #       cp YUView.AppImage $GITHUB_WORKSPACE/artifacts/
-  #     if: matrix.os == 'ubuntu-20.04'
-  #   - name: Upload Artifact
-  #     uses: actions/upload-artifact@v4
-  #     with:
-  #       name: ${{matrix.ARTIFACT_NAME}}
-  #       path: artifacts
-  #   - name: Release
-  #     uses: softprops/action-gh-release@v1
-  #     if: startsWith(github.ref, 'refs/tags/')
-  #     with:
-  #       files: artifacts/${{matrix.ARTIFACT_NAME}}
-  build-windows:
+  build-unix:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
         include: 
-          # - os: windows-2019
-          #   auto_update: true
-          #   ARTIFACT_NAME: YUView-Win2019.zip
-          #   QT_FILE: qtBase_6.5.2_win2019.zip
-          - os: windows-2019
-            auto_update: false
-            ARTIFACT_NAME: YUView-Win2019-noautoupdate.zip
-            QT_FILE: qtBase_6.5.2_win2019.zip
+          - os: ubuntu-20.04
+            QT_FILE: qtBase_6.5.2_ubuntu20.zip
+            LIBDE265_REMOTE: libde265.so
+            LIBDE265_LOCAL: libde265-internals.so
+            ARTIFACT_NAME: YUView.Ubuntu20.AppImage
+            CPU_COUNT_COMMAND: nproc
+          - os: macos-11
+            QT_FILE: qtBase_6.5.2_mac11.zip
+            LIBDE265_REMOTE: libde265.dylib
+            LIBDE265_LOCAL: libde265-internals.dylib
+            ARTIFACT_NAME: YUView-Mac11-BigSur.zip
+            CPU_COUNT_COMMAND: sysctl -n hw.logicalcpu
+          - os: macos-12
+            QT_FILE: qtBase_6.5.2_mac12.zip
+            LIBDE265_REMOTE: libde265.dylib
+            LIBDE265_LOCAL: libde265-internals.dylib
+            ARTIFACT_NAME: YUView-Mac12-Monterey.zip
+            CPU_COUNT_COMMAND: sysctl -n hw.logicalcpu
     steps:
     - uses: actions/checkout@v4
       with:
         submodules: true
-    - uses: ilammy/msvc-dev-cmd@v1
     - run: git fetch --prune --unshallow
     - name: Install Qt base
       run: |
@@ -172,91 +91,170 @@ jobs:
         mkdir -p YUViewQt/YUViewQt
         cd YUViewQt/YUViewQt
         curl -L https://github.com/ChristianFeldmann/YUViewQt/releases/download/QtBase-6.5.2/${{matrix.QT_FILE}} -o Qt.zip
-        7z x  Qt.zip
-        echo "${{ github.workspace }}\..\..\YUViewQt\YUViewQt\Qt\bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+        unzip -qa Qt.zip
+        echo "$GITHUB_WORKSPACE/../../YUViewQt/YUViewQt/Qt/bin" >> $GITHUB_PATH
+      shell: bash
+    - name: Install Linuxdeployqt
+      run: |
+        curl -L https://github.com/probonopd/linuxdeployqt/releases/download/continuous/linuxdeployqt-continuous-x86_64.AppImage -o linuxdeployqt-6-x86_64.AppImage
+        chmod a+x linuxdeployqt-6-x86_64.AppImage
+      if: matrix.os == 'ubuntu-20.04'
+    - name: Install Linux packages
+      run: |
+        sudo apt-get update
+        sudo apt-get install libgl1-mesa-dev libxkbcommon-x11-0 libpcre2-16-0 '^libxcb.*-dev' libx11-xcb-dev libglu1-mesa-dev libxi-dev libxkbcommon-dev libxkbcommon-x11-dev libatspi2.0-dev libfuse2
+      if: matrix.os == 'ubuntu-20.04'
     - name: Install libde265
       run: |
-        curl -L https://github.com/ChristianFeldmann/libde265/releases/download/v1.1/libde265.dll -o libde265.dll
+        curl -L https://github.com/ChristianFeldmann/libde265/releases/download/v1.1/${{matrix.LIBDE265_REMOTE}} -o ${{matrix.LIBDE265_LOCAL}}
         curl -L https://raw.githubusercontent.com/ChristianFeldmann/libde265/master/COPYING -o libde265License.txt
-    - name: Install jom
-      run: |
-        choco install jom
-    - name: Install openSSL
-      run: |
-        mkdir openSSL
-        cd openSSL
-        curl -L https://github.com/ChristianFeldmann/YUViewQt/releases/download/openSSL1.1.1u/openSSL_1_1_1u_win2019.zip -o openSSL.zip
-        7z x openSSL.zip
-        cd ..
-    - name: Activate auto update
-      run: sed -i -- "s/#define UPDATE_FEATURE_ENABLE 0/#define UPDATE_FEATURE_ENABLE 1/g" YUViewLib/src/common/Typedef.h
       shell: bash
-      if: matrix.auto_update == true
     - name: Build
       run: |
-        echo "Creating Build dir and entering it"
+        cd $GITHUB_WORKSPACE
+        export PATH=$GITHUB_WORKSPACE/../../YUViewQt/YUViewQt/Qt/bin:$PATH
         mkdir build
         cd build
-        echo "Qmake Version:"
-        d:\a\YUViewQt\YUViewQt\Qt\bin\qmake --version
-        echo "Executing qmake..."
-        d:\a\YUViewQt\YUViewQt\Qt\bin\qmake CONFIG+=UNITTESTS ..
-        echo "Executing jom:"
-        jom
-    - name: List lib
-      if: always()
+        qmake CONFIG+=UNITTESTS ..
+        make -j $(${{matrix.CPU_COUNT_COMMAND}})
+        make check
+    - name: Run Unittests
+      run: $GITHUB_WORKSPACE/build/YUViewUnitTest/YUViewUnitTest
+    - name: Build App (Mac)
       run: |
-        dir D:\a\YUView\YUView\build\YUViewUnitTest
-    - name: Run tests
+        macdeployqt build/YUViewApp/YUView.app -always-overwrite -verbose=2
+        cp ${{matrix.LIBDE265_LOCAL}} build/YUViewApp/YUView.app/Contents/MacOS/.
+        cd build/YUViewApp
+        # Zip
+        zip -r ${{matrix.ARTIFACT_NAME}} YUView.app/
+        mkdir $GITHUB_WORKSPACE/artifacts
+        cp ${{matrix.ARTIFACT_NAME}} $GITHUB_WORKSPACE/artifacts/
+      if: matrix.os == 'macos-11' || matrix.os == 'macos-12'
+    - name: Build Appimage (Linux)
       run: |
-        D:\a\YUView\YUView\build\YUViewUnitTest\YUViewUnitTest
-    - name: WindeployQT
-      run: |
-        mkdir deploy
-        cd deploy
-        cp ../build/YUViewApp/YUView.exe .
-        d:\a\YUViewQt\YUViewQt\Qt\bin\windeployqt.exe --release --no-compiler-runtime YUView.exe
-        cp ../openSSL/*.dll .
-        mkdir decoder
-        cp ..\libde265.dll decoder
-        cp ..\libde265License.txt decoder
-        cp ../LICENSE.GPL3 .
-        cd ..
-        python deployment/versioning.py -d deploy -o deploy/versioninfo.txt
-        mkdir artifacts
-        7z a artifacts/YUView-Win.zip ./deploy/*
-    - name: Wix Windows
-      run: |
-        cd ${{ github.workspace }}/deployment/wix
-        cp 'C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\VC\Redist\MSVC\v142\MergeModules\Microsoft_VC142_CRT_x64.msm' .
-        & "C:\Program Files (x86)\WiX Toolset v3.14\bin\heat.exe" dir ../../deploy -gg -dr APPLICATIONFOLDER -srd -sreg -cg YUViewComponents -out harvestedDirectory.wxs
-        & "C:\Program Files (x86)\WiX Toolset v3.14\bin\candle.exe" -dConfiguration=Release -dOutDir=bin/Release/ '-dTargetExt=.msi' '-dTargetFileName=YUViewSetup.msi' -dTargetName=YUViewSetup -out obj/Release/ -arch x64 -ext "C:\Program Files (x86)\WiX Toolset v3.14\bin\WixUIExtension.dll" YUView.wxs
-        & "C:\Program Files (x86)\WiX Toolset v3.14\bin\candle.exe" -dConfiguration=Release -dOutDir=bin/Release/ '-dTargetExt=.msi' '-dTargetFileName=YUViewSetup.msi' -dTargetName=YUViewSetup -out obj/Release/ -arch x64 harvestedDirectory.wxs
-        & "C:\Program Files (x86)\WiX Toolset v3.14\bin\light.exe" -b ../../deploy -out bin/Release/YUViewSetup.msi -pdbout bin/Release/YUViewSetup.wixpdb -cultures:null -ext "C:\Program Files (x86)\WiX Toolset v3.14\bin\WixUIExtension.dll" -contentsfile obj/Release/YUViewSetup.wixproj.BindContentsFileListnull.txt -outputsfile obj/Release/YUViewSetup.wixproj.BindOutputsFileListnull.txt -builtoutputsfile obj/Release/YUViewSetup.wixproj.BindBuiltOutputsFileListnull.txt obj/Release/YUView.wixobj obj/Release/harvestedDirectory.wixobj
-        cd ${{ github.workspace }}
-        cp deployment/wix/bin/Release/YUViewSetup.msi ./
-      if: matrix.auto_update == true
+        cd build
+        make INSTALL_ROOT=appdir install
+        $GITHUB_WORKSPACE/linuxdeployqt-6-x86_64.AppImage YUViewApp/appdir/usr/local/share/applications/de.rwth_aachen.ient.YUView.desktop -appimage -bundle-non-qt-libs -verbose=2
+        mv YUView-*.AppImage YUView.AppImage
+        mkdir $GITHUB_WORKSPACE/artifacts
+        cp YUView.AppImage $GITHUB_WORKSPACE/artifacts/
+      if: matrix.os == 'ubuntu-20.04'
     - name: Upload Artifact
       uses: actions/upload-artifact@v4
       with:
         name: ${{matrix.ARTIFACT_NAME}}
         path: artifacts
-    - name: Upload Windows installer Artifact
-      uses: actions/upload-artifact@v4
-      with:
-        name: YUViewSetup.msi
-        path: ./YUViewSetup.msi
-      if: matrix.auto_update == true
-    - name: Release Zip
+    - name: Release
       uses: softprops/action-gh-release@v1
       if: startsWith(github.ref, 'refs/tags/')
       with:
-        files: artifacts/YUView-Win.zip
-    - name: Release Installer
-      uses: softprops/action-gh-release@v1
-      if: startsWith(github.ref, 'refs/tags/') && matrix.auto_update == true
-      with:
-        files: YUViewSetup.msi
+        files: artifacts/${{matrix.ARTIFACT_NAME}}
+  # build-windows:
+  #   runs-on: ${{ matrix.os }}
+  #   strategy:
+  #     matrix:
+  #       include: 
+  #         - os: windows-2019
+  #           auto_update: true
+  #           ARTIFACT_NAME: YUView-Win2019.zip
+  #           QT_FILE: qtBase_6.5.2_win2019.zip
+  #         - os: windows-2019
+  #           auto_update: false
+  #           ARTIFACT_NAME: YUView-Win2019-noautoupdate.zip
+  #           QT_FILE: qtBase_6.5.2_win2019.zip
+  #   steps:
+  #   - uses: actions/checkout@v4
+  #     with:
+  #       submodules: true
+  #   - uses: ilammy/msvc-dev-cmd@v1
+  #   - run: git fetch --prune --unshallow
+  #   - name: Install Qt base
+  #     run: |
+  #       cd ../../
+  #       mkdir -p YUViewQt/YUViewQt
+  #       cd YUViewQt/YUViewQt
+  #       curl -L https://github.com/ChristianFeldmann/YUViewQt/releases/download/QtBase-6.5.2/${{matrix.QT_FILE}} -o Qt.zip
+  #       7z x  Qt.zip
+  #       echo "${{ github.workspace }}\..\..\YUViewQt\YUViewQt\Qt\bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+  #   - name: Install libde265
+  #     run: |
+  #       curl -L https://github.com/ChristianFeldmann/libde265/releases/download/v1.1/libde265.dll -o libde265.dll
+  #       curl -L https://raw.githubusercontent.com/ChristianFeldmann/libde265/master/COPYING -o libde265License.txt
+  #   - name: Install jom
+  #     run: |
+  #       choco install jom
+  #   - name: Install openSSL
+  #     run: |
+  #       mkdir openSSL
+  #       cd openSSL
+  #       curl -L https://github.com/ChristianFeldmann/YUViewQt/releases/download/openSSL1.1.1u/openSSL_1_1_1u_win2019.zip -o openSSL.zip
+  #       7z x openSSL.zip
+  #       cd ..
+  #   - name: Activate auto update
+  #     run: sed -i -- "s/#define UPDATE_FEATURE_ENABLE 0/#define UPDATE_FEATURE_ENABLE 1/g" YUViewLib/src/common/Typedef.h
+  #     shell: bash
+  #     if: matrix.auto_update == true
+  #   - name: Build
+  #     run: |
+  #       echo "Creating Build dir and entering it"
+  #       mkdir build
+  #       cd build
+  #       echo "Qmake Version:"
+  #       d:\a\YUViewQt\YUViewQt\Qt\bin\qmake --version
+  #       echo "Executing qmake..."
+  #       d:\a\YUViewQt\YUViewQt\Qt\bin\qmake CONFIG+=UNITTESTS ..
+  #       echo "Executing jom:"
+  #       jom
+  #   - name: Run Unittests
+  #     run: |
+  #       D:\a\YUView\YUView\build\YUViewUnitTest\YUViewUnitTest
+  #   - name: WindeployQT
+  #     run: |
+  #       mkdir deploy
+  #       cd deploy
+  #       cp ../build/YUViewApp/YUView.exe .
+  #       d:\a\YUViewQt\YUViewQt\Qt\bin\windeployqt.exe --release --no-compiler-runtime YUView.exe
+  #       cp ../openSSL/*.dll .
+  #       mkdir decoder
+  #       cp ..\libde265.dll decoder
+  #       cp ..\libde265License.txt decoder
+  #       cp ../LICENSE.GPL3 .
+  #       cd ..
+  #       python deployment/versioning.py -d deploy -o deploy/versioninfo.txt
+  #       mkdir artifacts
+  #       7z a artifacts/YUView-Win.zip ./deploy/*
+  #   - name: Wix Windows
+  #     run: |
+  #       cd ${{ github.workspace }}/deployment/wix
+  #       cp 'C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\VC\Redist\MSVC\v142\MergeModules\Microsoft_VC142_CRT_x64.msm' .
+  #       & "C:\Program Files (x86)\WiX Toolset v3.14\bin\heat.exe" dir ../../deploy -gg -dr APPLICATIONFOLDER -srd -sreg -cg YUViewComponents -out harvestedDirectory.wxs
+  #       & "C:\Program Files (x86)\WiX Toolset v3.14\bin\candle.exe" -dConfiguration=Release -dOutDir=bin/Release/ '-dTargetExt=.msi' '-dTargetFileName=YUViewSetup.msi' -dTargetName=YUViewSetup -out obj/Release/ -arch x64 -ext "C:\Program Files (x86)\WiX Toolset v3.14\bin\WixUIExtension.dll" YUView.wxs
+  #       & "C:\Program Files (x86)\WiX Toolset v3.14\bin\candle.exe" -dConfiguration=Release -dOutDir=bin/Release/ '-dTargetExt=.msi' '-dTargetFileName=YUViewSetup.msi' -dTargetName=YUViewSetup -out obj/Release/ -arch x64 harvestedDirectory.wxs
+  #       & "C:\Program Files (x86)\WiX Toolset v3.14\bin\light.exe" -b ../../deploy -out bin/Release/YUViewSetup.msi -pdbout bin/Release/YUViewSetup.wixpdb -cultures:null -ext "C:\Program Files (x86)\WiX Toolset v3.14\bin\WixUIExtension.dll" -contentsfile obj/Release/YUViewSetup.wixproj.BindContentsFileListnull.txt -outputsfile obj/Release/YUViewSetup.wixproj.BindOutputsFileListnull.txt -builtoutputsfile obj/Release/YUViewSetup.wixproj.BindBuiltOutputsFileListnull.txt obj/Release/YUView.wixobj obj/Release/harvestedDirectory.wixobj
+  #       cd ${{ github.workspace }}
+  #       cp deployment/wix/bin/Release/YUViewSetup.msi ./
+  #     if: matrix.auto_update == true
+  #   - name: Upload Artifact
+  #     uses: actions/upload-artifact@v4
+  #     with:
+  #       name: ${{matrix.ARTIFACT_NAME}}
+  #       path: artifacts
+  #   - name: Upload Windows installer Artifact
+  #     uses: actions/upload-artifact@v4
+  #     with:
+  #       name: YUViewSetup.msi
+  #       path: ./YUViewSetup.msi
+  #     if: matrix.auto_update == true
+  #   - name: Release Zip
+  #     uses: softprops/action-gh-release@v1
+  #     if: startsWith(github.ref, 'refs/tags/')
+  #     with:
+  #       files: artifacts/YUView-Win.zip
+  #   - name: Release Installer
+  #     uses: softprops/action-gh-release@v1
+  #     if: startsWith(github.ref, 'refs/tags/') && matrix.auto_update == true
+  #     with:
+  #       files: YUViewSetup.msi
     
   # How to upload files to the release:
   # https://github.com/Blacksmoke16/oq/pull/47/files#diff-082c28d748ad2e3eecc5508d740d9417R9-R29
