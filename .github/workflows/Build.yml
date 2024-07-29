@@ -200,8 +200,8 @@ jobs:
         d:\a\YUViewQt\YUViewQt\Qt\bin\qmake CONFIG+=UNITTESTS ..
         echo "Executing jom:"
         jom
-     - name: Run Unittests
-       run: D:\a\YUView\YUView\build\YUViewUnitTest\YUViewUnitTest
+    - name: Run Unittests
+      run: D:\a\YUView\YUView\build\YUViewUnitTest\YUViewUnitTest
     - name: WindeployQT
       run: |
         mkdir deploy
