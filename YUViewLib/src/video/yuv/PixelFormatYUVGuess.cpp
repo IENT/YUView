@@ -250,11 +250,18 @@ PixelFormatYUV guessFormatFromSizeAndName(const Size       size,
   // The name of the folder that the file is in
   auto dirName = fileInfo.absoluteDir().dirName().toLower().toStdString();
 
+  if (fileInfo.suffix().toLower() == "raw")
+  {
+    const auto rawBayerFormat = PixelFormatYUV(Subsampling::YUV_400, bitDepth);
+    if (checkFormat(rawBayerFormat, size, fileSize))
+      return rawBayerFormat;
+  }
+
   if (fileInfo.suffix().toLower() == "v210")
   {
-    auto fmt = PixelFormatYUV(PredefinedPixelFormat::V210);
-    if (checkFormat(fmt, size, fileSize))
-      return fmt;
+    const auto v210Format = PixelFormatYUV(PredefinedPixelFormat::V210);
+    if (checkFormat(v210Format, size, fileSize))
+      return v210Format;
   }
 
   for (const auto &name : {fileName, dirName})

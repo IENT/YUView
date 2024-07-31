@@ -119,7 +119,7 @@ DataLayout findDataLayoutInName(const std::string &fileName)
 }
 
 PixelFormatRGB
-guessFormatFromSizeAndName(const QFileInfo &fileInfo, Size frameSize, int64_t fileSize)
+guessFormatFromSizeAndName(const QFileInfo &fileInfo, const Size frameSize, const int64_t fileSize)
 {
   // We are going to check two strings (one after the other) for indicators on the YUV format.
   // 1: The file name, 2: The folder name that the file is contained in.
@@ -130,21 +130,30 @@ guessFormatFromSizeAndName(const QFileInfo &fileInfo, Size frameSize, int64_t fi
     return {};
   fileName += ".";
 
-  // The name of the folder that the file is in
-  auto dirName = fileInfo.absoluteDir().dirName().toLower().toStdString();
+  const auto dirName       = fileInfo.absoluteDir().dirName().toLower().toStdString();
+  const auto fileExtension = fileInfo.suffix().toLower().toStdString();
 
-  auto ext = fileInfo.suffix().toLower().toStdString();
+  auto isFileSizeMultipleOfFrameSizeInBytes = [&fileSize, &frameSize](const PixelFormatRGB &format)
+  {
+    const auto bpf = format.bytesPerFrame(frameSize);
+    return bpf > 0 && (fileSize % bpf) == 0;
+  };
+
+  if (fileExtension == "cmyk")
+  {
+    const auto format = PixelFormatRGB(8, DataLayout::Packed, ChannelOrder::RGB, AlphaMode::Last);
+    if (isFileSizeMultipleOfFrameSizeInBytes(format))
+      return format;
+  }
 
   for (const auto &name : {fileName, dirName})
   {
     for (auto format :
-         {findPixelFormatIndicatorInName(name), findPixelFormatFromFileExtension(ext)})
+         {findPixelFormatIndicatorInName(name), findPixelFormatFromFileExtension(fileExtension)})
     {
       if (format)
       {
-        // Check if the file size and the assumed format match
-        auto bpf = format->bytesPerFrame(frameSize);
-        if (bpf != 0 && (fileSize % bpf) == 0)
+        if (isFileSizeMultipleOfFrameSizeInBytes(*format))
         {
           auto dataLayout = findDataLayoutInName(name);
           format->setDataLayout(dataLayout);
