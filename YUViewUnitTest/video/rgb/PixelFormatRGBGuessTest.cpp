@@ -75,9 +75,10 @@ TEST_P(GuessRGBFormatFromFilenameFrameSizeAndFileSize, TestGuess)
   EXPECT_EQ(guessedRGBFormat, parameters.expectedPixelFormat);
 }
 
-constexpr auto BytesNoAlpha   = 1920u * 1080 * 12 * 3; // 12 frames RGB
+constexpr auto BytesNoAlpha   = 1920u * 1080 * 12u * 3u; // 12 frames RGB
 constexpr auto NotEnoughBytes = 22u;
-constexpr auto UnfittingBytes = 1920u * 1080 * 5;
+constexpr auto UnfittingBytes = 1920u * 1080u * 5u;
+constexpr auto BytesBayerFile = 512u * 768u * 4u * 12u; // 12 frames raw bayer
 
 INSTANTIATE_TEST_SUITE_P(
     VideoRGBTest,
@@ -270,7 +271,13 @@ INSTANTIATE_TEST_SUITE_P(
         TestParameters({"something_1920x1080_rgb16be.yuv",
                         Size(1920, 1080),
                         UnfittingBytes,
-                        PixelFormatRGB(8, DataLayout::Packed, ChannelOrder::RGB)})
+                        PixelFormatRGB(8, DataLayout::Packed, ChannelOrder::RGB)}),
+
+        // CMYK file
+        TestParameters({"something_512x768.cmyk",
+                        Size(512, 768),
+                        BytesBayerFile,
+                        PixelFormatRGB(8, DataLayout::Packed, ChannelOrder::RGB, AlphaMode::Last)})
 
             ),
     getTestName);

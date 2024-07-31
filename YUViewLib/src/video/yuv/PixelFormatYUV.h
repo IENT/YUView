@@ -55,7 +55,7 @@ R = Y                  + V*(1-Kr)
 G = Y - U*(1-Kb)*Kb/Kg - V*(1-Kr)*Kr/Kg
 B = Y + U*(1-Kb)
 To respect value range of Y in [16:235] and U/V in [16:240], the matrix entries need to be scaled
-by 255/219 for Y and 255/112 for U/V In this software color conversion is performed with 16bit
+by 255/219 for Y and 255/224 for U/V In this software color conversion is performed with 16bit
 precision. Thus, further scaling with 2^16 is performed to get all factors as integers.
 */
 enum class ColorConversion
@@ -180,9 +180,9 @@ enum class PlaneOrder
 };
 
 constexpr EnumMapper<PlaneOrder, 4> PlaneOrderMapper(std::make_pair(PlaneOrder::YUV, "YUV"sv),
-                                                        std::make_pair(PlaneOrder::YVU, "YVU"sv),
-                                                        std::make_pair(PlaneOrder::YUVA, "YUVA"sv),
-                                                        std::make_pair(PlaneOrder::YVUA, "YVUA"sv));
+                                                     std::make_pair(PlaneOrder::YVU, "YVU"sv),
+                                                     std::make_pair(PlaneOrder::YUVA, "YUVA"sv),
+                                                     std::make_pair(PlaneOrder::YVUA, "YVUA"sv));
 
 const auto BitDepthList = std::vector<unsigned>({8, 9, 10, 12, 14, 16});
 

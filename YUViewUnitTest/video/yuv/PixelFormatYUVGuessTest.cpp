@@ -261,7 +261,15 @@ INSTANTIATE_TEST_SUITE_P(
                            0,
                            DataLayout::Planar,
                            BYTES_1808P_400,
-                           PixelFormatYUV(Subsampling::YUV_400, 16)})
+                           PixelFormatYUV(Subsampling::YUV_400, 16)}),
+
+           // Raw bayer file
+           TestParameters({"sample_1920x1080_something.raw",
+                           Size(1920, 1080),
+                           8,
+                           DataLayout::Planar,
+                           BYTES_1808P_400,
+                           PixelFormatYUV(Subsampling::YUV_400, 8)})
 
            // More tests please :)
 
