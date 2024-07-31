@@ -107,7 +107,7 @@ void videoHandlerYUVCustomFormatDialog::on_comboBoxChromaSubsampling_currentInde
   this->ui.comboBoxPackingOrder->clear();
   for (auto &packing : packingTypes)
     this->ui.comboBoxPackingOrder->addItem(
-        QString::fromStdString(PackingOrderMapper.getName(packing)));
+        QString::fromStdString(std::string(PackingOrderMapper.getName(packing))));
 
   bool packedSupported = (packingTypes.size() != 0);
   if (!packedSupported)

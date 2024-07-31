@@ -38,6 +38,7 @@
 
 #include <common/Functions.h>
 #include <common/FunctionsGui.h>
+#include <filesource/GuessFormatFromName.h>
 #include <handler/ItemMemoryHandler.h>
 
 // Activate this if you want to know when which buffer is loaded/converted to image and so on.
@@ -58,9 +59,9 @@ constexpr auto RGBA_EXTENSIONS = {"rgba", "gbra", "bgra", "brga", "argb", "agbr"
 bool isInExtensions(const QString &testValue, const std::initializer_list<const char *> &extensions)
 {
   const auto it =
-      std::find_if(extensions.begin(), extensions.end(), [testValue](const char *extension) {
-        return QString(extension) == testValue;
-      });
+      std::find_if(extensions.begin(),
+                   extensions.end(),
+                   [testValue](const char *extension) { return QString(extension) == testValue; });
   return it != extensions.end();
 }
 
@@ -443,7 +444,7 @@ bool playlistItemRawFile::parseY4MFile()
 
 void playlistItemRawFile::setFormatFromFileName()
 {
-  auto fileFormat = this->dataSource.guessFormatFromFilename();
+  const auto fileFormat = guessFormatFromFilename(this->dataSource.getFileInfo());
   if (fileFormat.frameSize.isValid())
   {
     this->video->setFrameSize(fileFormat.frameSize);

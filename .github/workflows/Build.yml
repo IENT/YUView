@@ -20,6 +20,8 @@ jobs:
             QMAKE_COMMAND: qmake6
     steps:
     - uses: actions/checkout@v4
+      with:
+        submodules: true
     - run: git fetch --prune --unshallow
     - name: Install Linux packages
       run: |
@@ -32,7 +34,8 @@ jobs:
         cd build
         ${{matrix.QMAKE_COMMAND}} CONFIG+=UNITTESTS ..
         make -j$(nproc)
-        make check
+    - name: Run Unittests
+      run: $GITHUB_WORKSPACE/build/YUViewUnitTest/YUViewUnitTest
   build-mac-native:
     runs-on: ${{ matrix.os }}
     strategy:
@@ -42,6 +45,8 @@ jobs:
           - os: macos-14
     steps:
     - uses: actions/checkout@v4
+      with:
+        submodules: true
     - run: git fetch --prune --unshallow
     - name: Install packages
       run: |
@@ -53,7 +58,8 @@ jobs:
         cd build
         qmake6 CONFIG+=UNITTESTS ..
         make -j $(sysctl -n hw.logicalcpu)
-        make check
+    - name: Run Unittests
+      run: $GITHUB_WORKSPACE/build/YUViewUnitTest/YUViewUnitTest
   build-unix:
     runs-on: ${{ matrix.os }}
     strategy:
@@ -79,6 +85,8 @@ jobs:
             CPU_COUNT_COMMAND: sysctl -n hw.logicalcpu
     steps:
     - uses: actions/checkout@v4
+      with:
+        submodules: true
     - run: git fetch --prune --unshallow
     - name: Install Qt base
       run: |
@@ -104,7 +112,7 @@ jobs:
         curl -L https://github.com/ChristianFeldmann/libde265/releases/download/v1.1/${{matrix.LIBDE265_REMOTE}} -o ${{matrix.LIBDE265_LOCAL}}
         curl -L https://raw.githubusercontent.com/ChristianFeldmann/libde265/master/COPYING -o libde265License.txt
       shell: bash
-    - name: Build Linux/Mac
+    - name: Build
       run: |
         cd $GITHUB_WORKSPACE
         export PATH=$GITHUB_WORKSPACE/../../YUViewQt/YUViewQt/Qt/bin:$PATH
@@ -112,7 +120,8 @@ jobs:
         cd build
         qmake CONFIG+=UNITTESTS ..
         make -j $(${{matrix.CPU_COUNT_COMMAND}})
-        make check
+    - name: Run Unittests
+      run: $GITHUB_WORKSPACE/build/YUViewUnitTest/YUViewUnitTest
     - name: Build App (Mac)
       run: |
         macdeployqt build/YUViewApp/YUView.app -always-overwrite -verbose=2
@@ -122,7 +131,7 @@ jobs:
         zip -r ${{matrix.ARTIFACT_NAME}} YUView.app/
         mkdir $GITHUB_WORKSPACE/artifacts
         cp ${{matrix.ARTIFACT_NAME}} $GITHUB_WORKSPACE/artifacts/
-      if: matrix.os == 'macos-11' || matrix.os == 'macos-12'
+      if: matrix.os == 'macos-12' || matrix.os == 'macos-14'
     - name: Build Appimage (Linux)
       run: |
         cd build
@@ -157,6 +166,8 @@ jobs:
             QT_FILE: qtBase_6.7.2_win2019.zip
     steps:
     - uses: actions/checkout@v4
+      with:
+        submodules: true
     - uses: ilammy/msvc-dev-cmd@v1
     - run: git fetch --prune --unshallow
     - name: Install Qt base
@@ -196,11 +207,8 @@ jobs:
         d:\a\YUViewQt\YUViewQt\Qt\bin\qmake CONFIG+=UNITTESTS ..
         echo "Executing jom:"
         jom
-    - name: Run tests
-      run: |
-        cd build
-        nmake check
-        cd ..
+    - name: Run Unittests
+      run: D:\a\YUView\YUView\build\YUViewUnitTest\YUViewUnitTest
     - name: WindeployQT
       run: |
         mkdir deploy

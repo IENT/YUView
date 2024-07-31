@@ -1,6 +1,6 @@
 /*  This file is part of YUView - The YUV player with advanced analytics toolset
  *   <https://github.com/IENT/YUView>
- *   Copyright (C) 2015  Institut f�r Nachrichtentechnik, RWTH Aachen University, GERMANY
+ *   Copyright (C) 2015  Institut für Nachrichtentechnik, RWTH Aachen University, GERMANY
  *
  *   This program is free software; you can redistribute it and/or modify
  *   it under the terms of the GNU General Public License as published by
@@ -32,135 +32,166 @@
 
 #pragma once
 
-#include <common/Functions.h>
-
-#include <map>
+#include <algorithm>
+#include <array>
+#include <iterator>
 #include <optional>
-#include <stdexcept>
-#include <string>
-#include <vector>
+#include <string_view>
 
-/* This class implement mapping of "enum class" values to and from names (string).
- */
-template <typename T> class EnumMapper
+#include "Functions.h"
+
+using namespace std::string_view_literals;
+
+template <class ValueType, std::size_t N> struct EnumMapper
 {
 public:
-  enum class StringType
+  using ValueNamePair = std::pair<ValueType, std::string_view>;
+  using ItemArray     = std::array<ValueType, N>;
+  using ItemIterator  = typename ItemArray::const_iterator;
+  using NameArray     = std::array<std::string_view, N>;
+  using NameIterator  = typename NameArray::const_iterator;
+
+  struct Iterator
   {
-    Name,
-    Text,
-    NameOrIndex
-  };
-  struct Entry
-  {
-    Entry(T value, std::string name) : value(value), name(name) {}
-    Entry(T value, std::string name, std::string text) : value(value), name(name), text(text) {}
-    T           value;
-    std::string name;
-    std::string text;
-  };
+    using iterator_category = std::forward_iterator_tag;
+    using difference_type   = int;
+    using value_type        = ValueNamePair;
+    using pointer           = ValueNamePair *;
+    using reference         = ValueNamePair &;
 
-  using EntryVector = std::vector<Entry>;
-
-  EnumMapper() = default;
-  EnumMapper(const EntryVector &entryVector) : entryVector(entryVector){};
-
-  std::optional<T> getValue(std::string name, StringType stringType = StringType::Name) const
-  {
-    if (stringType == StringType::NameOrIndex)
-      if (auto index = functions::toUnsigned(name))
-        return this->at(*index);
-
-    for (const auto &entry : this->entryVector)
+    Iterator(const ItemIterator itItem, const NameIterator itName) : itItem(itItem), itName(itName)
     {
-      if ((stringType == StringType::Name && entry.name == name) ||
-          (stringType == StringType::NameOrIndex && entry.text == name) ||
-          (stringType == StringType::Text && entry.text == name))
-        return entry.value;
+      this->valueNamePair.first  = *itItem;
+      this->valueNamePair.second = *itName;
     }
-    return {};
-  }
 
-  std::optional<T> getValueCaseInsensitive(std::string name,
-                                           StringType  stringType = StringType::Name) const
-  {
-    if (stringType == StringType::NameOrIndex)
-      if (auto index = functions::toUnsigned(name))
-        return this->at(*index);
+    ValueNamePair const &operator*() const { return this->valueNamePair; }
+    ValueNamePair const *operator->() const { return &this->valueNamePair; }
 
-    name = functions::toLower(name);
-    for (const auto &entry : this->entryVector)
+    Iterator &operator++()
     {
-      if ((stringType == StringType::Name && functions::toLower(entry.name) == name) ||
-          (stringType == StringType::NameOrIndex && functions::toLower(entry.text) == name) ||
-          (stringType == StringType::Text && functions::toLower(entry.text) == name))
-        return entry.value;
+      ++this->itItem;
+      ++this->itName;
+      this->valueNamePair.first  = *this->itItem;
+      this->valueNamePair.second = *this->itName;
+      return *this;
     }
-    return {};
+
+    friend bool operator==(const Iterator &a, const Iterator &b)
+    {
+      return a.itItem == b.itItem && a.itName == b.itName;
+    };
+    friend bool operator!=(const Iterator &a, const Iterator &b)
+    {
+      return a.itItem != b.itItem || a.itName != b.itName;
+    };
+
+  private:
+    ItemIterator  itItem;
+    NameIterator  itName;
+    ValueNamePair valueNamePair{};
+  };
+
+  Iterator begin() const { return Iterator(this->items.begin(), this->names.begin()); }
+  Iterator end() const { return Iterator(this->items.end(), this->names.end()); }
+
+  template <typename... Args> constexpr EnumMapper(Args... args)
+  {
+    static_assert(sizeof...(Args) == N);
+    this->addElementsRecursively(0, args...);
   }
 
-  std::string getName(T value) const
+  constexpr std::size_t size() const { return N; }
+
+  constexpr std::string_view getName(const ValueType value) const
   {
-    for (const auto &entry : this->entryVector)
-      if (entry.value == value)
-        return entry.name;
-    throw std::logic_error(
-        "The given type T was not registered in the mapper. All possible enums must be mapped.");
+    const auto it = std::find(this->items.begin(), this->items.end(), value);
+    if (it == this->items.end())
+      throw std::logic_error(
+          "The given type T was not registered in the mapper. All possible enums must be mapped.");
+    const auto index = std::distance(this->items.begin(), it);
+    return this->names.at(index);
   }
 
-  std::string getText(T value) const
+  constexpr std::optional<ValueType> getValue(const std::string_view name) const
   {
-    for (const auto &entry : this->entryVector)
-      if (entry.value == value)
-        return entry.text;
-    throw std::logic_error(
-        "The given type T was not registered in the mapper. All possible enums must be mapped.");
-  }
-
-  size_t indexOf(T value) const
-  {
-    for (size_t i = 0; i < this->entryVector.size(); i++)
-      if (this->entryVector.at(i).value == value)
-        return i;
-    throw std::logic_error(
-        "The given type T was not registered in the mapper. All possible enums must be mapped.");
-  }
-
-  std::optional<T> at(size_t index) const
-  {
-    if (index >= this->entryVector.size())
+    const auto it =
+        std::find_if(this->begin(),
+                     this->end(),
+                     [&name](const ValueNamePair &pair) { return pair.second == name; });
+    if (it == this->end())
       return {};
-    return this->entryVector.at(index).value;
+
+    return it->first;
   }
 
-  std::vector<T> getEnums() const
+  constexpr std::optional<ValueType> getValueCaseInsensitive(const std::string_view name) const
   {
-    std::vector<T> m;
-    for (const auto &entry : this->entryVector)
-      m.push_back(entry.value);
-    return m;
+    const auto compareToNameLowercase = [&name](const std::string_view str)
+    {
+      if (name.length() != str.length())
+        return false;
+      for (std::size_t i = 0; i < name.length(); ++i)
+      {
+        if (std::tolower(name.at(i)) != std::tolower(str.at(i)))
+          return false;
+      }
+      return true;
+    };
+
+    const auto it = std::find_if(this->names.begin(), this->names.end(), compareToNameLowercase);
+    if (it == this->names.end())
+      return {};
+
+    const auto index = std::distance(this->names.begin(), it);
+    return this->items.at(index);
   }
 
-  std::vector<std::string> getNames() const
+  std::optional<ValueType> getValueFromNameOrIndex(const std::string_view nameOrIndex) const
   {
-    std::vector<std::string> l;
-    for (const auto &entry : this->entryVector)
-      l.push_back(entry.name);
-    return l;
+    if (auto index = functions::toUnsigned(nameOrIndex))
+      if (*index < N)
+        return this->items.at(*index);
+
+    return this->getValue(nameOrIndex);
   }
 
-  std::vector<std::string> getTextEntries() const
+  constexpr size_t indexOf(const ValueType value) const
   {
-    std::vector<std::string> l;
-    for (const auto &entry : this->entryVector)
-      l.push_back(entry.text);
-    return l;
+    const auto it = std::find(this->items.begin(), this->items.end(), value);
+    if (it == this->items.end())
+      throw std::logic_error(
+          "The given type T was not registered in the mapper. All possible enums must be mapped.");
+
+    const auto index = std::distance(this->items.begin(), it);
+    return index;
   }
 
-  size_t size() const { return this->entryVector.size(); }
+  constexpr std::optional<ValueType> at(const size_t index) const
+  {
+    if (index >= N)
+      return {};
+    return this->items.at(index);
+  }
 
-  const EntryVector &entries() const { return this->entryVector; }
+  constexpr const ItemArray &getValues() const { return this->items; }
+  constexpr const NameArray &getNames() const { return this->names; }
 
 private:
-  EntryVector entryVector;
+  constexpr void addElementsRecursively(const std::size_t) {};
+
+  template <typename ArgumentType, typename... Args>
+  constexpr void addElementsRecursively(const std::size_t index, ArgumentType first, Args... args)
+  {
+    static_assert(std::is_same<ValueNamePair, ArgumentType>());
+
+    const auto [value, name] = first;
+    this->items[index]       = value;
+    this->names[index]       = name;
+
+    addElementsRecursively(index + 1, args...);
+  }
+
+  ItemArray items{};
+  NameArray names{};
 };

@@ -35,7 +35,6 @@
 #include <QMetaType>
 #include <common/EnumMapper.h>
 
-
 namespace video
 {
 
@@ -52,14 +51,17 @@ enum class Endianness
   Little
 };
 
+constexpr auto EndianessMapper = EnumMapper<Endianness, 2>(
+    std::make_pair(Endianness::Little, "Little"sv), std::make_pair(Endianness::Big, "Big"sv));
+
 enum class DataLayout
 {
   Planar,
   Packed
 };
 
-const auto DataLayoutMapper =
-    EnumMapper<DataLayout>({{DataLayout::Packed, "Packed"}, {DataLayout::Planar, "Planar"}});
+constexpr auto DataLayoutMapper = EnumMapper<DataLayout, 2>(
+    std::make_pair(DataLayout::Packed, "Packed"sv), std::make_pair(DataLayout::Planar, "Planar"sv));
 
 } // namespace video
 

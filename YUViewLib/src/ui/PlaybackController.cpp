@@ -35,6 +35,7 @@
 #include <QSettings>
 
 #include <common/FunctionsGui.h>
+#include <common/EnumMapper.h>
 #include <common/Typedef.h>
 #include <playlistitem/playlistItem.h>
 
@@ -47,6 +48,16 @@ using namespace std::chrono_literals;
 #else
 #define DEBUG_PLAYBACK(fmt, ...) ((void)0)
 #endif
+
+namespace
+{
+
+constexpr EnumMapper<PlaybackController::RepeatMode, 3>
+    RepeatModeMapper(std::make_pair(PlaybackController::RepeatMode::Off, "Off"sv),
+                     std::make_pair(PlaybackController::RepeatMode::One, "One"sv),
+                     std::make_pair(PlaybackController::RepeatMode::All, "All"sv));
+
+}
 
 CountDown::CountDown(const int ticks)
 {

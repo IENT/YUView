@@ -100,6 +100,26 @@ bool isDefaultChromaFormat(int chromaOffset, bool offsetX, Subsampling subsampli
   return chromaOffset == 0;
 }
 
+std::optional<Subsampling> parseSubsamplingText(const std::string_view text)
+{
+  if (text.size() != 5)
+    return {};
+  if (text.at(1) != ':' || text.at(3) != ':')
+    return {};
+
+  const std::string subsamplingName = {text.at(0), text.at(2), text.at(4)};
+  return SubsamplingMapper.getValue(subsamplingName);
+}
+
+std::string formatSubsamplingWithColons(const Subsampling &subsampling)
+{
+  const auto name = SubsamplingMapper.getName(subsampling);
+
+  std::stringstream s;
+  s << name.at(0) << ":" << name.at(1) << ":" << name.at(2);
+  return s.str();
+}
+
 PixelFormatYUV::PixelFormatYUV(const std::string &name)
 {
   if (auto predefinedFormat = PredefinedPixelFormatMapper.getValue(name))
@@ -146,11 +166,8 @@ PixelFormatYUV::PixelFormatYUV(const std::string &name)
         newFormat.packingOrder = *po;
     }
 
-    // Parse the subsampling
-    auto subsamplingName = sm.str(2);
-    if (auto ss =
-            SubsamplingMapper.getValue(subsamplingName, EnumMapper<Subsampling>::StringType::Text))
-      newFormat.subsampling = *ss;
+    if (auto subsampling = parseSubsamplingText(sm.str(2)))
+      newFormat.subsampling = *subsampling;
 
     // Get the bit depth
     {
@@ -463,7 +480,8 @@ std::string PixelFormatYUV::getName() const
   else
     ss << PackingOrderMapper.getName(this->packingOrder);
 
-  ss << " " << SubsamplingMapper.getText(this->subsampling) << " " << this->bitsPerSample << "-bit";
+  ss << " " << formatSubsamplingWithColons(this->subsampling) << " " << this->bitsPerSample
+     << "-bit";
 
   // Add the endianness (if the bit depth is greater 8)
   if (this->bitsPerSample > 8)

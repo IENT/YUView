@@ -78,18 +78,28 @@ enum class PredefinedType
   Col3_bwg
 };
 
-const auto PredefinedTypeMapper = EnumMapper<PredefinedType>(
-    {{PredefinedType::Jet, "Jet"},           {PredefinedType::Heat, "Heat"},
-     {PredefinedType::Hsv, "Hsv"},           {PredefinedType::Shuffle, "Shuffle"},
-     {PredefinedType::Hot, "Hot"},           {PredefinedType::Cool, "Cool"},
-     {PredefinedType::Spring, "Spring"},     {PredefinedType::Summer, "Summer"},
-     {PredefinedType::Autumn, "Autumn"},     {PredefinedType::Winter, "Winter"},
-     {PredefinedType::Gray, "Gray"},         {PredefinedType::Bone, "Bone"},
-     {PredefinedType::Copper, "Copper"},     {PredefinedType::Pink, "Pink"},
-     {PredefinedType::Lines, "Lines"},       {PredefinedType::Col3_gblr, "Col3_gblr"},
-     {PredefinedType::Col3_gwr, "Col3_gwr"}, {PredefinedType::Col3_bblr, "Col3_bblr"},
-     {PredefinedType::Col3_bwr, "Col3_bwr"}, {PredefinedType::Col3_bblg, "Col3_bblg"},
-     {PredefinedType::Col3_bwg, "Col3_bwg"}});
+constexpr EnumMapper<PredefinedType, 21>
+    PredefinedTypeMapper(std::make_pair(PredefinedType::Jet, "Jet"sv),
+                         std::make_pair(PredefinedType::Heat, "Heat"sv),
+                         std::make_pair(PredefinedType::Hsv, "Hsv"sv),
+                         std::make_pair(PredefinedType::Shuffle, "Shuffle"sv),
+                         std::make_pair(PredefinedType::Hot, "Hot"sv),
+                         std::make_pair(PredefinedType::Cool, "Cool"sv),
+                         std::make_pair(PredefinedType::Spring, "Spring"sv),
+                         std::make_pair(PredefinedType::Summer, "Summer"sv),
+                         std::make_pair(PredefinedType::Autumn, "Autumn"sv),
+                         std::make_pair(PredefinedType::Winter, "Winter"sv),
+                         std::make_pair(PredefinedType::Gray, "Gray"sv),
+                         std::make_pair(PredefinedType::Bone, "Bone"sv),
+                         std::make_pair(PredefinedType::Copper, "Copper"sv),
+                         std::make_pair(PredefinedType::Pink, "Pink"sv),
+                         std::make_pair(PredefinedType::Lines, "Lines"sv),
+                         std::make_pair(PredefinedType::Col3_gblr, "Col3_gblr"sv),
+                         std::make_pair(PredefinedType::Col3_gwr, "Col3_gwr"sv),
+                         std::make_pair(PredefinedType::Col3_bblr, "Col3_bblr"sv),
+                         std::make_pair(PredefinedType::Col3_bwr, "Col3_bwr"sv),
+                         std::make_pair(PredefinedType::Col3_bblg, "Col3_bblg"sv),
+                         std::make_pair(PredefinedType::Col3_bwg, "Col3_bwg"sv));
 
 enum class MappingType
 {
@@ -98,9 +108,10 @@ enum class MappingType
   Predefined
 };
 
-const auto MappingTypeMapper = EnumMapper<MappingType>({{MappingType::Gradient, "Gradient"},
-                                                        {MappingType::Map, "Map"},
-                                                        {MappingType::Predefined, "Predefined"}});
+constexpr EnumMapper<MappingType, 3>
+    MappingTypeMapper(std::make_pair(MappingType::Gradient, "Gradient"sv),
+                      std::make_pair(MappingType::Map, "Map"sv),
+                      std::make_pair(MappingType::Predefined, "Predefined"sv));
 
 class ColorMapper
 {

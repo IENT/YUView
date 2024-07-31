@@ -48,7 +48,7 @@ std::optional<PixelFormatRGB> findPixelFormatIndicatorInName(const std::string &
   std::string matcher = "(?:_|\\.|-)(";
 
   std::map<std::string, PixelFormatRGB> stringToMatchingFormat;
-  for (auto channelOrder : ChannelOrderMapper.getEnums())
+  for (const auto &[channelOrder, channelOrderName] : ChannelOrderMapper)
   {
     for (auto alphaMode : {AlphaMode::None, AlphaMode::First, AlphaMode::Last})
     {
@@ -68,7 +68,7 @@ std::optional<PixelFormatRGB> findPixelFormatIndicatorInName(const std::string &
           std::string name;
           if (alphaMode == AlphaMode::First)
             name += "a";
-          name += functions::toLower(ChannelOrderMapper.getName(channelOrder));
+          name += functions::toLower(channelOrderName);
           if (alphaMode == AlphaMode::Last)
             name += "a";
           name += bitDepthString + endiannessName;
@@ -95,12 +95,11 @@ std::optional<PixelFormatRGB> findPixelFormatIndicatorInName(const std::string &
 
 std::optional<PixelFormatRGB> findPixelFormatFromFileExtension(const std::string &ext)
 {
-  for (auto channelOrder : ChannelOrderMapper.getEnums())
+  for (const auto &[channelOrder, name] : ChannelOrderMapper)
   {
-    if (functions::toLower(ext) == functions::toLower(ChannelOrderMapper.getName(channelOrder)))
+    if (functions::toLower(ext) == functions::toLower(name))
       return PixelFormatRGB(8, DataLayout::Packed, channelOrder);
   }
-
   return {};
 }
 

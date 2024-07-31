@@ -64,13 +64,18 @@ QStringList getThemeColors(QString themeName);
 QString formatDataSize(double size, bool isBits = false);
 
 QStringList toQStringList(const std::vector<std::string> &stringVec);
-std::string toLower(std::string str);
-ByteVector  readData(std::istream &istream, const size_t nrBytes);
 
-inline std::string boolToString(bool b)
+template <size_t N>
+QStringList toQStringList(const std::array<std::string_view, N> &stringArray)
 {
-  return b ? "True" : "False";
+  QStringList list;
+  for (const auto &s : stringArray)
+    list.append(QString::fromStdString(std::string(s)));
+  return list;
 }
+
+std::string toLower(const std::string_view str);
+ByteVector  readData(std::istream &istream, const size_t nrBytes);
 
 template <typename T> unsigned clipToUnsigned(T val)
 {
@@ -90,6 +95,6 @@ template <typename T, typename R> inline T clip(T val, Range<R> range)
   return (val < T(range.min)) ? T(range.min) : (val > T(range.max)) ? T(range.max) : val;
 }
 
-std::optional<unsigned long> toUnsigned(const std::string &text);
+std::optional<unsigned long> toUnsigned(const std::string_view text);
 
 } // namespace functions

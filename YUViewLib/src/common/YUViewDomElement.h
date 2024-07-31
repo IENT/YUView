@@ -52,10 +52,10 @@ public:
   double findChildValueDouble(const QString &tagName, double defaultValue) const;
 
   using QDomElement::setAttribute;
-  void setAttribute(const std::string &name, const std::string &value);
+  void setAttribute(const std::string_view name, const std::string_view value);
 
-  void appendProperiteChild(const QString &        type,
-                            const QString &        name,
+  void appendProperiteChild(const QString         &type,
+                            const QString         &name,
                             const QStringPairList &attributes = QStringPairList());
-  void appendProperiteChild(const std::string &type, const std::string &name);
+  void appendProperiteChild(const std::string_view type, const std::string_view name);
 };
