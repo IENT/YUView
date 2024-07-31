@@ -76,15 +76,15 @@ void testGetPixelValueFromBuffer(const QByteArray     &sourceBuffer,
 
 TEST(GetPixelValueTest, TestGetPixelValueFromBuffer)
 {
-  for (const auto endianness : EndianessMapper.getItems())
+  for (const auto endianness : EndianessMapper.getValues())
   {
     for (auto bitDepth : {8, 10, 12})
     {
-      for (const auto &alphaMode : AlphaModeMapper.getItems())
+      for (const auto &alphaMode : AlphaModeMapper.getValues())
       {
-        for (const auto &dataLayout : DataLayoutMapper.getItems())
+        for (const auto &dataLayout : DataLayoutMapper.getValues())
         {
-          for (const auto &channelOrder : ChannelOrderMapper.getItems())
+          for (const auto &channelOrder : ChannelOrderMapper.getValues())
           {
             const PixelFormatRGB pixelFormat(
                 bitDepth, dataLayout, channelOrder, alphaMode, endianness);

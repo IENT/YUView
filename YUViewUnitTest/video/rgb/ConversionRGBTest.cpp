@@ -202,7 +202,7 @@ void testConversionToRGBASinglePlane(const QByteArray            &sourceBuffer,
                                      const bool                   limitedRange,
                                      const bool)
 {
-  for (const auto channel : ChannelMapper.getItems())
+  for (const auto channel : ChannelMapper.getValues())
   {
     if (channel == Channel::Alpha && !srcPixelFormat.hasAlpha())
       continue;
@@ -246,11 +246,11 @@ void runTestForAllParameters(TestingFunction testingFunction)
   {
     for (const auto bitDepth : {8, 10, 12})
     {
-      for (const auto &alphaMode : AlphaModeMapper.getItems())
+      for (const auto &alphaMode : AlphaModeMapper.getValues())
       {
-        for (const auto &dataLayout : video::DataLayoutMapper.getItems())
+        for (const auto &dataLayout : video::DataLayoutMapper.getValues())
         {
-          for (const auto &channelOrder : video::rgb::ChannelOrderMapper.getItems())
+          for (const auto &channelOrder : video::rgb::ChannelOrderMapper.getValues())
           {
             const video::rgb::PixelFormatRGB format(
                 bitDepth, dataLayout, channelOrder, alphaMode, endianness);

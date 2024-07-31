@@ -44,7 +44,7 @@ std::vector<PixelFormatYUV> getAllFormats()
 {
   std::vector<PixelFormatYUV> allFormats;
 
-  for (const auto subsampling : SubsamplingMapper.getItems())
+  for (const auto subsampling : SubsamplingMapper.getValues())
   {
     for (const auto bitsPerSample : BitDepthList)
     {
@@ -52,7 +52,7 @@ std::vector<PixelFormatYUV> getAllFormats()
           (bitsPerSample > 8) ? std::vector<bool>({false, true}) : std::vector<bool>({false});
 
       // Planar
-      for (const auto planeOrder : PlaneOrderMapper.getItems())
+      for (const auto planeOrder : PlaneOrderMapper.getValues())
         for (const auto bigEndian : endianList)
           allFormats.push_back(PixelFormatYUV(subsampling, bitsPerSample, planeOrder, bigEndian));
 
@@ -65,7 +65,7 @@ std::vector<PixelFormatYUV> getAllFormats()
     }
   }
 
-  for (auto predefinedFormat : PredefinedPixelFormatMapper.getItems())
+  for (auto predefinedFormat : PredefinedPixelFormatMapper.getValues())
     allFormats.push_back(PixelFormatYUV(predefinedFormat));
 
   return allFormats;

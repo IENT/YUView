@@ -3333,7 +3333,7 @@ void videoHandlerYUV::setFormatFromCorrelation(const QByteArray &rawYUVData, int
   {
     int bits = (b == 0) ? 8 : (b == 1) ? 10 : 16;
     // Test all subsampling modes
-    for (const auto &subsampling : SubsamplingMapper.getItems())
+    for (const auto &subsampling : SubsamplingMapper.getValues())
       for (const auto &size : testSizes)
         formatList.push_back(
             testFormatAndSize(size, PixelFormatYUV(subsampling, bits, PlaneOrder::YUV)));

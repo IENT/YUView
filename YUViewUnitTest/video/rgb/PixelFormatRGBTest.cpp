@@ -45,10 +45,10 @@ std::vector<PixelFormatRGB> getAllFormats()
   std::vector<PixelFormatRGB> allFormats;
 
   for (int bitsPerPixel = 8; bitsPerPixel <= 16; bitsPerPixel++)
-    for (auto dataLayout : DataLayoutMapper.getItems())
-      for (auto channelOrder : ChannelOrderMapper.getItems())
-        for (auto alphaMode : AlphaModeMapper.getItems())
-          for (auto endianness : EndianessMapper.getItems())
+    for (auto dataLayout : DataLayoutMapper.getValues())
+      for (auto channelOrder : ChannelOrderMapper.getValues())
+        for (auto alphaMode : AlphaModeMapper.getValues())
+          for (auto endianness : EndianessMapper.getValues())
             allFormats.push_back(
                 PixelFormatRGB(bitsPerPixel, dataLayout, channelOrder, alphaMode, endianness));
 

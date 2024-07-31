@@ -42,11 +42,11 @@
 
 using namespace std::string_view_literals;
 
-template <class T, std::size_t N> struct EnumMapper
+template <class ValueType, std::size_t N> struct EnumMapper
 {
 public:
-  using ValueNamePair = std::pair<T, std::string_view>;
-  using ItemArray     = std::array<T, N>;
+  using ValueNamePair = std::pair<ValueType, std::string_view>;
+  using ItemArray     = std::array<ValueType, N>;
   using ItemIterator  = typename ItemArray::const_iterator;
   using NameArray     = std::array<std::string_view, N>;
   using NameIterator  = typename NameArray::const_iterator;
@@ -103,7 +103,7 @@ public:
 
   constexpr std::size_t size() const { return N; }
 
-  constexpr std::string_view getName(const T value) const
+  constexpr std::string_view getName(const ValueType value) const
   {
     const auto it = std::find(this->items.begin(), this->items.end(), value);
     if (it == this->items.end())
@@ -113,7 +113,7 @@ public:
     return this->names.at(index);
   }
 
-  constexpr std::optional<T> getValue(const std::string_view name) const
+  constexpr std::optional<ValueType> getValue(const std::string_view name) const
   {
     const auto it =
         std::find_if(this->begin(),
@@ -125,7 +125,7 @@ public:
     return it->first;
   }
 
-  constexpr std::optional<T> getValueCaseInsensitive(const std::string_view name) const
+  constexpr std::optional<ValueType> getValueCaseInsensitive(const std::string_view name) const
   {
     const auto compareToNameLowercase = [&name](const std::string_view str)
     {
@@ -147,7 +147,7 @@ public:
     return this->items.at(index);
   }
 
-  std::optional<T> getValueFromNameOrIndex(const std::string_view nameOrIndex) const
+  std::optional<ValueType> getValueFromNameOrIndex(const std::string_view nameOrIndex) const
   {
     if (auto index = functions::toUnsigned(nameOrIndex))
       if (*index < N)
@@ -156,7 +156,7 @@ public:
     return this->getValue(nameOrIndex);
   }
 
-  constexpr size_t indexOf(const T value) const
+  constexpr size_t indexOf(const ValueType value) const
   {
     const auto it = std::find(this->items.begin(), this->items.end(), value);
     if (it == this->items.end())
@@ -167,23 +167,23 @@ public:
     return index;
   }
 
-  constexpr std::optional<T> at(const size_t index) const
+  constexpr std::optional<ValueType> at(const size_t index) const
   {
     if (index >= N)
       return {};
     return this->items.at(index);
   }
 
-  constexpr const ItemArray &getItems() const { return this->items; }
+  constexpr const ItemArray &getValues() const { return this->items; }
   constexpr const NameArray &getNames() const { return this->names; }
 
 private:
   constexpr void addElementsRecursively(const std::size_t) {};
 
-  template <typename TArg, typename... Args>
-  constexpr void addElementsRecursively(const std::size_t index, TArg first, Args... args)
+  template <typename ArgumentType, typename... Args>
+  constexpr void addElementsRecursively(const std::size_t index, ArgumentType first, Args... args)
   {
-    static_assert(std::is_same<ValueNamePair, TArg>());
+    static_assert(std::is_same<ValueNamePair, ArgumentType>());
 
     const auto [value, name] = first;
     this->items[index]       = value;

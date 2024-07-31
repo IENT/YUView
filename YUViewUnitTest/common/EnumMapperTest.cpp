@@ -124,9 +124,9 @@ TEST(EnumMapperTest, testAt)
   EXPECT_FALSE(TestEnumMapper.at(8902));
 }
 
-TEST(EnumMapperTest, testGetItems)
+TEST(EnumMapperTest, testGetValues)
 {
-  ASSERT_THAT(TestEnumMapper.getItems(),
+  ASSERT_THAT(TestEnumMapper.getValues(),
               ElementsAre(TestEnum::ValueOne, TestEnum::ValueTwo, TestEnum::ValueThree));
 }
 
