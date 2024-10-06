@@ -38,6 +38,7 @@
 
 #include <common/Functions.h>
 #include <common/FunctionsGui.h>
+#include <filesource/GuessFormatFromName.h>
 #include <handler/ItemMemoryHandler.h>
 
 // Activate this if you want to know when which buffer is loaded/converted to image and so on.
@@ -54,13 +55,15 @@ namespace
 constexpr auto YUV_EXTENSIONS  = {"yuv", "nv12", "y4m"};
 constexpr auto RGB_EXTENSIONS  = {"rgb", "gbr", "bgr", "brg"};
 constexpr auto RGBA_EXTENSIONS = {"rgba", "gbra", "bgra", "brga", "argb", "agbr", "abgr", "abrg"};
+constexpr auto RAW_BAYER_EXTENSIONS = {"raw"};
+constexpr auto CMYK_EXTENSIONS      = {"cmyk"};
 
 bool isInExtensions(const QString &testValue, const std::initializer_list<const char *> &extensions)
 {
   const auto it =
-      std::find_if(extensions.begin(), extensions.end(), [testValue](const char *extension) {
-        return QString(extension) == testValue;
-      });
+      std::find_if(extensions.begin(),
+                   extensions.end(),
+                   [testValue](const char *extension) { return QString(extension) == testValue; });
   return it != extensions.end();
 }
 
@@ -94,13 +97,14 @@ playlistItemRawFile::playlistItemRawFile(const QString &rawFilePath,
   // Create a new videoHandler instance depending on the input format
   QFileInfo  fi(rawFilePath);
   const auto ext = fi.suffix().toLower();
-  if (isInExtensions(ext, YUV_EXTENSIONS) || fmt.toLower() == "yuv")
+  if (isInExtensions(ext, YUV_EXTENSIONS) || isInExtensions(ext, RAW_BAYER_EXTENSIONS) ||
+      fmt.toLower() == "yuv")
   {
     this->video     = std::make_unique<video::yuv::videoHandlerYUV>();
     this->rawFormat = video::RawFormat::YUV;
   }
   else if (isInExtensions(ext, RGB_EXTENSIONS) || isInExtensions(ext, RGBA_EXTENSIONS) ||
-           fmt.toLower() == "rgb")
+           isInExtensions(ext, CMYK_EXTENSIONS) || fmt.toLower() == "rgb")
   {
     this->video     = std::make_unique<video::rgb::videoHandlerRGB>();
     this->rawFormat = video::RawFormat::RGB;
@@ -443,7 +447,7 @@ bool playlistItemRawFile::parseY4MFile()
 
 void playlistItemRawFile::setFormatFromFileName()
 {
-  auto fileFormat = this->dataSource.guessFormatFromFilename();
+  const auto fileFormat = guessFormatFromFilename(this->dataSource.getFileInfo());
   if (fileFormat.frameSize.isValid())
   {
     this->video->setFrameSize(fileFormat.frameSize);
@@ -568,7 +572,8 @@ ValuePairListSets playlistItemRawFile::getPixelValues(const QPoint &pixelPos, in
 void playlistItemRawFile::getSupportedFileExtensions(QStringList &allExtensions,
                                                      QStringList &filters)
 {
-  for (const auto &extensionsList : {YUV_EXTENSIONS, RGB_EXTENSIONS, RGBA_EXTENSIONS})
+  for (const auto &extensionsList :
+       {YUV_EXTENSIONS, RGB_EXTENSIONS, RGBA_EXTENSIONS, RAW_BAYER_EXTENSIONS, CMYK_EXTENSIONS})
     for (const auto &extension : extensionsList)
       allExtensions.append(QString(extension));
 
@@ -577,6 +582,8 @@ void playlistItemRawFile::getSupportedFileExtensions(QStringList &allExtensions,
   filters.append("Raw RGBA File (*.rgba *.rbga *.grba *.gbra *.brga *.bgra *.argb *.arbg *.agrb "
                  "*.agbr *.abrg *.abgr)");
   filters.append("YUV4MPEG2 File (*.y4m)");
+  filters.append("Raw Bayer File (*.raw)");
+  filters.append("Raw CMYK File (*.cmyk)");
 }
 
 void playlistItemRawFile::reloadItemSource()

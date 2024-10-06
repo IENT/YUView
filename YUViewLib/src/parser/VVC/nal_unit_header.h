@@ -32,8 +32,8 @@
 
 #pragma once
 
-#include "common/EnumMapper.h"
-#include "parser/common/SubByteReaderLogging.h"
+#include <common/EnumMapper.h>
+#include <parser/common/SubByteReaderLogging.h>
 
 namespace parser::vvc
 {
@@ -75,39 +75,40 @@ enum class NalType
   UNSPECIFIED
 };
 
-const EnumMapper<NalType> NalTypeMapper({{NalType::TRAIL_NUT, "TRAIL_NUT"},
-                                         {NalType::STSA_NUT, "STSA_NUT"},
-                                         {NalType::RADL_NUT, "RADL_NUT"},
-                                         {NalType::RASL_NUT, "RASL_NUT"},
-                                         {NalType::RSV_VCL_4, "RSV_VCL_4"},
-                                         {NalType::RSV_VCL_5, "RSV_VCL_5"},
-                                         {NalType::RSV_VCL_6, "RSV_VCL_6"},
-                                         {NalType::IDR_W_RADL, "IDR_W_RADL"},
-                                         {NalType::IDR_N_LP, "IDR_N_LP"},
-                                         {NalType::CRA_NUT, "CRA_NUT"},
-                                         {NalType::GDR_NUT, "GDR_NUT"},
-                                         {NalType::RSV_IRAP_11, "RSV_IRAP_11"},
-                                         {NalType::OPI_NUT, "OPI_NUT"},
-                                         {NalType::DCI_NUT, "DCI_NUT"},
-                                         {NalType::VPS_NUT, "VPS_NUT"},
-                                         {NalType::SPS_NUT, "SPS_NUT"},
-                                         {NalType::PPS_NUT, "PPS_NUT"},
-                                         {NalType::PREFIX_APS_NUT, "PREFIX_APS_NUT"},
-                                         {NalType::SUFFIX_APS_NUT, "SUFFIX_APS_NUT"},
-                                         {NalType::PH_NUT, "PH_NUT"},
-                                         {NalType::AUD_NUT, "AUD_NUT"},
-                                         {NalType::EOS_NUT, "EOS_NUT"},
-                                         {NalType::EOB_NUT, "EOB_NUT"},
-                                         {NalType::PREFIX_SEI_NUT, "PREFIX_SEI_NUT"},
-                                         {NalType::SUFFIX_SEI_NUT, "SUFFIX_SEI_NUT"},
-                                         {NalType::FD_NUT, "FD_NUT"},
-                                         {NalType::RSV_NVCL_26, "RSV_NVCL_26"},
-                                         {NalType::RSV_NVCL_27, "RSV_NVCL_27"},
-                                         {NalType::UNSPEC_28, "UNSPEC_28"},
-                                         {NalType::UNSPEC_29, "UNSPEC_29"},
-                                         {NalType::UNSPEC_30, "UNSPEC_30"},
-                                         {NalType::UNSPEC_31, "UNSPEC_31"},
-                                         {NalType::UNSPECIFIED, "UNSPECIFIED"}});
+constexpr EnumMapper<NalType, 33>
+    NalTypeMapper(std::make_pair(NalType::TRAIL_NUT, "TRAIL_NUT"sv),
+                  std::make_pair(NalType::STSA_NUT, "STSA_NUT"sv),
+                  std::make_pair(NalType::RADL_NUT, "RADL_NUT"sv),
+                  std::make_pair(NalType::RASL_NUT, "RASL_NUT"sv),
+                  std::make_pair(NalType::RSV_VCL_4, "RSV_VCL_4"sv),
+                  std::make_pair(NalType::RSV_VCL_5, "RSV_VCL_5"sv),
+                  std::make_pair(NalType::RSV_VCL_6, "RSV_VCL_6"sv),
+                  std::make_pair(NalType::IDR_W_RADL, "IDR_W_RADL"sv),
+                  std::make_pair(NalType::IDR_N_LP, "IDR_N_LP"sv),
+                  std::make_pair(NalType::CRA_NUT, "CRA_NUT"sv),
+                  std::make_pair(NalType::GDR_NUT, "GDR_NUT"sv),
+                  std::make_pair(NalType::RSV_IRAP_11, "RSV_IRAP_11"sv),
+                  std::make_pair(NalType::OPI_NUT, "OPI_NUT"sv),
+                  std::make_pair(NalType::DCI_NUT, "DCI_NUT"sv),
+                  std::make_pair(NalType::VPS_NUT, "VPS_NUT"sv),
+                  std::make_pair(NalType::SPS_NUT, "SPS_NUT"sv),
+                  std::make_pair(NalType::PPS_NUT, "PPS_NUT"sv),
+                  std::make_pair(NalType::PREFIX_APS_NUT, "PREFIX_APS_NUT"sv),
+                  std::make_pair(NalType::SUFFIX_APS_NUT, "SUFFIX_APS_NUT"sv),
+                  std::make_pair(NalType::PH_NUT, "PH_NUT"sv),
+                  std::make_pair(NalType::AUD_NUT, "AUD_NUT"sv),
+                  std::make_pair(NalType::EOS_NUT, "EOS_NUT"sv),
+                  std::make_pair(NalType::EOB_NUT, "EOB_NUT"sv),
+                  std::make_pair(NalType::PREFIX_SEI_NUT, "PREFIX_SEI_NUT"sv),
+                  std::make_pair(NalType::SUFFIX_SEI_NUT, "SUFFIX_SEI_NUT"sv),
+                  std::make_pair(NalType::FD_NUT, "FD_NUT"sv),
+                  std::make_pair(NalType::RSV_NVCL_26, "RSV_NVCL_26"sv),
+                  std::make_pair(NalType::RSV_NVCL_27, "RSV_NVCL_27"sv),
+                  std::make_pair(NalType::UNSPEC_28, "UNSPEC_28"sv),
+                  std::make_pair(NalType::UNSPEC_29, "UNSPEC_29"sv),
+                  std::make_pair(NalType::UNSPEC_30, "UNSPEC_30"sv),
+                  std::make_pair(NalType::UNSPEC_31, "UNSPEC_31"sv),
+                  std::make_pair(NalType::UNSPECIFIED, "UNSPECIFIED"sv));
 
 // 3.1
 static inline bool isIRAP(NalType nal_unit_type)

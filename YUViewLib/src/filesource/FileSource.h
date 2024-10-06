@@ -39,8 +39,8 @@
 #include <QMutexLocker>
 #include <QString>
 
-#include <common/EnumMapper.h>
 #include <common/FileInfo.h>
+#include <common/EnumMapper.h>
 #include <common/Typedef.h>
 
 enum class InputFormat
@@ -52,11 +52,12 @@ enum class InputFormat
   Libav       // This is some sort of container file which we will read using libavformat
 };
 
-const auto InputFormatMapper = EnumMapper<InputFormat>({{InputFormat::Invalid, "Invalid"},
-                                                        {InputFormat::AnnexBHEVC, "AnnexBHEVC"},
-                                                        {InputFormat::AnnexBAVC, "AnnexBAVC"},
-                                                        {InputFormat::AnnexBVVC, "AnnexBVVC"},
-                                                        {InputFormat::Libav, "Libav"}});
+constexpr EnumMapper<InputFormat, 5>
+    InputFormatMapper(std::make_pair(InputFormat::Invalid, "Invalid"sv),
+                      std::make_pair(InputFormat::AnnexBHEVC, "AnnexBHEVC"sv),
+                      std::make_pair(InputFormat::AnnexBAVC, "AnnexBAVC"sv),
+                      std::make_pair(InputFormat::AnnexBVVC, "AnnexBVVC"sv),
+                      std::make_pair(InputFormat::Libav, "Libav"sv));
 
 /* The FileSource class provides functions for accessing files. Besides the reading of
  * certain blocks of the file, it also directly provides information on the file for the
@@ -75,7 +76,7 @@ public:
   int64_t                 getFileSize() const { return !isFileOpened ? -1 : fileInfo.size(); }
   QString                 getAbsoluteFilePath() const;
   QFileInfo               getFileInfo() const { return this->fileInfo; }
-  QFile *                 getQFile() { return &this->srcFile; }
+  QFile                  *getQFile() { return &this->srcFile; }
   bool                    getAndResetFileChangedFlag();
 
   // Return true if the file could be opened and is ready for use.
@@ -85,15 +86,6 @@ public:
   QByteArray   readLine() { return !this->isFileOpened ? QByteArray() : this->srcFile.readLine(); }
   virtual bool seek(int64_t pos) { return !this->isFileOpened ? false : this->srcFile.seek(pos); }
   int64_t      pos() { return !this->isFileOpened ? 0 : this->srcFile.pos(); }
-
-  struct fileFormat_t
-  {
-    Size     frameSize;
-    int      frameRate{-1};
-    unsigned bitDepth{};
-    bool     packed{false};
-  };
-  fileFormat_t guessFormatFromFilename() const;
 
   // Get the file size in bytes
 

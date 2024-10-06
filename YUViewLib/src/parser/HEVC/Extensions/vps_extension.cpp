@@ -41,7 +41,7 @@ namespace parser::hevc
 
 using namespace reader;
 
-void vps_extension::parse(SubByteReaderLogging &   reader,
+void vps_extension::parse(SubByteReaderLogging    &reader,
                           const unsigned           vps_max_layers_minus1,
                           const bool               vps_base_layer_internal_flag,
                           const unsigned           vps_max_sub_layers_minus1,
@@ -67,7 +67,7 @@ void vps_extension::parse(SubByteReaderLogging &   reader,
       NumScalabilityTypes++;
   }
 
-  for (unsigned j = 0; j < (NumScalabilityTypes - (this->splitting_flag) ? 1u : 0u); j++)
+  for (unsigned j = 0; j < ((NumScalabilityTypes - (this->splitting_flag)) ? 1u : 0u); j++)
     this->dimension_id_len_minus1.push_back(
         reader.readBits(formatArray("dimension_id_len_minus1", j), 3));
 

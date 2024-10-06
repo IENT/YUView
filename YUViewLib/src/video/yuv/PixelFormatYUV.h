@@ -55,7 +55,7 @@ R = Y                  + V*(1-Kr)
 G = Y - U*(1-Kb)*Kb/Kg - V*(1-Kr)*Kr/Kg
 B = Y + U*(1-Kb)
 To respect value range of Y in [16:235] and U/V in [16:240], the matrix entries need to be scaled
-by 255/219 for Y and 255/112 for U/V In this software color conversion is performed with 16bit
+by 255/219 for Y and 255/224 for U/V In this software color conversion is performed with 16bit
 precision. Thus, further scaling with 2^16 is performed to get all factors as integers.
 */
 enum class ColorConversion
@@ -68,13 +68,13 @@ enum class ColorConversion
   BT2020_FullRange,
 };
 
-const auto ColorConversionMapper =
-    EnumMapper<ColorConversion>({{ColorConversion::BT709_LimitedRange, "ITU-R.BT709"},
-                                 {ColorConversion::BT709_FullRange, "ITU-R.BT709 Full Range"},
-                                 {ColorConversion::BT601_LimitedRange, "ITU-R.BT601"},
-                                 {ColorConversion::BT601_FullRange, "ITU-R.BT601 Full Range"},
-                                 {ColorConversion::BT2020_LimitedRange, "ITU-R.BT2020"},
-                                 {ColorConversion::BT2020_FullRange, "ITU-R.BT2020 Full Range"}});
+constexpr EnumMapper<ColorConversion, 6> ColorConversionMapper(
+    std::make_pair(ColorConversion::BT709_LimitedRange, "ITU-R.BT709"sv),
+    std::make_pair(ColorConversion::BT709_FullRange, "ITU-R.BT709 Full Range"sv),
+    std::make_pair(ColorConversion::BT601_LimitedRange, "ITU-R.BT601"sv),
+    std::make_pair(ColorConversion::BT601_FullRange, "ITU-R.BT601 Full Range"sv),
+    std::make_pair(ColorConversion::BT2020_LimitedRange, "ITU-R.BT2020"sv),
+    std::make_pair(ColorConversion::BT2020_FullRange, "ITU-R.BT2020 Full Range"sv));
 
 void getColorConversionCoefficients(ColorConversion colorConversion, int RGBConv[5]);
 
@@ -86,10 +86,10 @@ enum class ChromaInterpolation
   Interstitial
 };
 
-const auto ChromaInterpolationMapper =
-    EnumMapper<ChromaInterpolation>({{ChromaInterpolation::NearestNeighbor, "Nearest Neighbor"},
-                                     {ChromaInterpolation::Bilinear, "Bilinear"},
-                                     {ChromaInterpolation::Interstitial, "Interstitial"}});
+constexpr EnumMapper<ChromaInterpolation, 3> ChromaInterpolationMapper(
+    std::make_pair(ChromaInterpolation::NearestNeighbor, "Nearest Neighbor"sv),
+    std::make_pair(ChromaInterpolation::Bilinear, "Bilinear"sv),
+    std::make_pair(ChromaInterpolation::Interstitial, "Interstitial"sv));
 
 class MathParameters
 {
@@ -113,8 +113,8 @@ enum class PredefinedPixelFormat
   V210
 };
 
-const auto PredefinedPixelFormatMapper =
-    EnumMapper<PredefinedPixelFormat>({{PredefinedPixelFormat::V210, "V210"}});
+constexpr EnumMapper<PredefinedPixelFormat, 1>
+    PredefinedPixelFormatMapper(std::make_pair(PredefinedPixelFormat::V210, "V210"sv));
 
 enum class PackingOrder
 {
@@ -134,15 +134,16 @@ enum class PackingOrder
   UNKNOWN
 };
 
-const auto PackingOrderMapper = EnumMapper<PackingOrder>({{PackingOrder::YUV, "YUV"},
-                                                          {PackingOrder::YVU, "YVU"},
-                                                          {PackingOrder::AYUV, "AYUV"},
-                                                          {PackingOrder::YUVA, "YUVA"},
-                                                          {PackingOrder::VUYA, "VUYA"},
-                                                          {PackingOrder::UYVY, "UYVY"},
-                                                          {PackingOrder::VYUY, "VYUY"},
-                                                          {PackingOrder::YUYV, "YUYV"},
-                                                          {PackingOrder::YVYU, "YVYU"}});
+constexpr EnumMapper<PackingOrder, 9>
+    PackingOrderMapper(std::make_pair(PackingOrder::YUV, "YUV"sv),
+                       std::make_pair(PackingOrder::YVU, "YVU"sv),
+                       std::make_pair(PackingOrder::AYUV, "AYUV"sv),
+                       std::make_pair(PackingOrder::YUVA, "YUVA"sv),
+                       std::make_pair(PackingOrder::VUYA, "VUYA"sv),
+                       std::make_pair(PackingOrder::UYVY, "UYVY"sv),
+                       std::make_pair(PackingOrder::VYUY, "VYUY"sv),
+                       std::make_pair(PackingOrder::YUYV, "YUYV"sv),
+                       std::make_pair(PackingOrder::YVYU, "YVYU"sv));
 
 enum class Subsampling
 {
@@ -156,13 +157,16 @@ enum class Subsampling
   UNKNOWN
 };
 
-const auto SubsamplingMapper = EnumMapper<Subsampling>({{Subsampling::YUV_444, "444", "4:4:4"},
-                                                        {Subsampling::YUV_422, "422", "4:2:2"},
-                                                        {Subsampling::YUV_420, "420", "4:2:0"},
-                                                        {Subsampling::YUV_440, "440", "4:4:0"},
-                                                        {Subsampling::YUV_410, "410", "4:1:0"},
-                                                        {Subsampling::YUV_411, "411", "4:1:1"},
-                                                        {Subsampling::YUV_400, "400", "4:0:0"}});
+constexpr EnumMapper<Subsampling, 7>
+    SubsamplingMapper(std::make_pair(Subsampling::YUV_444, "444"sv),
+                      std::make_pair(Subsampling::YUV_422, "422"sv),
+                      std::make_pair(Subsampling::YUV_420, "420"sv),
+                      std::make_pair(Subsampling::YUV_440, "440"sv),
+                      std::make_pair(Subsampling::YUV_410, "410"sv),
+                      std::make_pair(Subsampling::YUV_411, "411"sv),
+                      std::make_pair(Subsampling::YUV_400, "400"sv));
+
+std::string formatSubsamplingWithColons(const Subsampling &subsampling);
 
 int getMaxPossibleChromaOffsetValues(bool horizontal, Subsampling subsampling);
 std::vector<PackingOrder> getSupportedPackingFormats(Subsampling subsampling);
@@ -175,10 +179,10 @@ enum class PlaneOrder
   YVUA
 };
 
-const auto PlaneOrderMapper = EnumMapper<PlaneOrder>({{PlaneOrder::YUV, "YUV"},
-                                                      {PlaneOrder::YVU, "YVU"},
-                                                      {PlaneOrder::YUVA, "YUVA"},
-                                                      {PlaneOrder::YVUA, "YVUA"}});
+constexpr EnumMapper<PlaneOrder, 4> PlaneOrderMapper(std::make_pair(PlaneOrder::YUV, "YUV"sv),
+                                                     std::make_pair(PlaneOrder::YVU, "YVU"sv),
+                                                     std::make_pair(PlaneOrder::YUVA, "YUVA"sv),
+                                                     std::make_pair(PlaneOrder::YVUA, "YVUA"sv));
 
 const auto BitDepthList = std::vector<unsigned>({8, 9, 10, 12, 14, 16});
 

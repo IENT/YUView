@@ -48,7 +48,7 @@ std::optional<PixelFormatRGB> findPixelFormatIndicatorInName(const std::string &
   std::string matcher = "(?:_|\\.|-)(";
 
   std::map<std::string, PixelFormatRGB> stringToMatchingFormat;
-  for (auto channelOrder : ChannelOrderMapper.getEnums())
+  for (const auto &[channelOrder, channelOrderName] : ChannelOrderMapper)
   {
     for (auto alphaMode : {AlphaMode::None, AlphaMode::First, AlphaMode::Last})
     {
@@ -68,7 +68,7 @@ std::optional<PixelFormatRGB> findPixelFormatIndicatorInName(const std::string &
           std::string name;
           if (alphaMode == AlphaMode::First)
             name += "a";
-          name += functions::toLower(ChannelOrderMapper.getName(channelOrder));
+          name += functions::toLower(channelOrderName);
           if (alphaMode == AlphaMode::Last)
             name += "a";
           name += bitDepthString + endiannessName;
@@ -95,12 +95,11 @@ std::optional<PixelFormatRGB> findPixelFormatIndicatorInName(const std::string &
 
 std::optional<PixelFormatRGB> findPixelFormatFromFileExtension(const std::string &ext)
 {
-  for (auto channelOrder : ChannelOrderMapper.getEnums())
+  for (const auto &[channelOrder, name] : ChannelOrderMapper)
   {
-    if (functions::toLower(ext) == functions::toLower(ChannelOrderMapper.getName(channelOrder)))
+    if (functions::toLower(ext) == functions::toLower(name))
       return PixelFormatRGB(8, DataLayout::Packed, channelOrder);
   }
-
   return {};
 }
 
@@ -120,7 +119,7 @@ DataLayout findDataLayoutInName(const std::string &fileName)
 }
 
 PixelFormatRGB
-guessFormatFromSizeAndName(const QFileInfo &fileInfo, Size frameSize, int64_t fileSize)
+guessFormatFromSizeAndName(const QFileInfo &fileInfo, const Size frameSize, const int64_t fileSize)
 {
   // We are going to check two strings (one after the other) for indicators on the YUV format.
   // 1: The file name, 2: The folder name that the file is contained in.
@@ -131,21 +130,30 @@ guessFormatFromSizeAndName(const QFileInfo &fileInfo, Size frameSize, int64_t fi
     return {};
   fileName += ".";
 
-  // The name of the folder that the file is in
-  auto dirName = fileInfo.absoluteDir().dirName().toLower().toStdString();
+  const auto dirName       = fileInfo.absoluteDir().dirName().toLower().toStdString();
+  const auto fileExtension = fileInfo.suffix().toLower().toStdString();
 
-  auto ext = fileInfo.suffix().toLower().toStdString();
+  auto isFileSizeMultipleOfFrameSizeInBytes = [&fileSize, &frameSize](const PixelFormatRGB &format)
+  {
+    const auto bpf = format.bytesPerFrame(frameSize);
+    return bpf > 0 && (fileSize % bpf) == 0;
+  };
+
+  if (fileExtension == "cmyk")
+  {
+    const auto format = PixelFormatRGB(8, DataLayout::Packed, ChannelOrder::RGB, AlphaMode::Last);
+    if (isFileSizeMultipleOfFrameSizeInBytes(format))
+      return format;
+  }
 
   for (const auto &name : {fileName, dirName})
   {
     for (auto format :
-         {findPixelFormatIndicatorInName(name), findPixelFormatFromFileExtension(ext)})
+         {findPixelFormatIndicatorInName(name), findPixelFormatFromFileExtension(fileExtension)})
     {
       if (format)
       {
-        // Check if the file size and the assumed format match
-        auto bpf = format->bytesPerFrame(frameSize);
-        if (bpf != 0 && (fileSize % bpf) == 0)
+        if (isFileSizeMultipleOfFrameSizeInBytes(*format))
         {
           auto dataLayout = findDataLayoutInName(name);
           format->setDataLayout(dataLayout);

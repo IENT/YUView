@@ -35,6 +35,7 @@
 #include <QPainter>
 #include <algorithm>
 
+#include <common/Formatting.h>
 #include <common/Functions.h>
 #include <video/yuv/videoHandlerYUV.h>
 
@@ -323,7 +324,7 @@ void videoHandlerDifference::savePlaylist(YUViewDomElement &element) const
   if (this->amplificationFactor != 1)
     element.appendProperiteChild("amplificationFactor", QString::number(this->amplificationFactor));
   if (this->markDifference)
-    element.appendProperiteChild("markDifference", functions::boolToString(this->markDifference));
+    element.appendProperiteChild("markDifference", to_string(this->markDifference));
 }
 
 void videoHandlerDifference::loadPlaylist(const YUViewDomElement &element)
@@ -354,9 +355,9 @@ ItemLoadingState videoHandlerDifference::needsLoadingRawValues(int frameIndex)
 bool videoHandlerDifference::hierarchicalPosition(int           x,
                                                   int           y,
                                                   int           blockSize,
-                                                  int &         firstX,
-                                                  int &         firstY,
-                                                  int &         partIndex,
+                                                  int          &firstX,
+                                                  int          &firstY,
+                                                  int          &partIndex,
                                                   const QImage &diffImg) const
 {
   if (x >= int(frameSize.width) || y >= int(frameSize.height))
@@ -438,10 +439,10 @@ getValueFromSource(const unsigned char *src, const int idx, const int bps, const
 bool videoHandlerDifference::hierarchicalPositionYUV(int                        x,
                                                      int                        y,
                                                      int                        blockSize,
-                                                     int &                      firstX,
-                                                     int &                      firstY,
-                                                     int &                      partIndex,
-                                                     const QByteArray &         diffYUV,
+                                                     int                       &firstX,
+                                                     int                       &firstY,
+                                                     int                       &partIndex,
+                                                     const QByteArray          &diffYUV,
                                                      const yuv::PixelFormatYUV &diffYUVFormat) const
 {
   if (x >= int(frameSize.width) || y >= int(frameSize.height))

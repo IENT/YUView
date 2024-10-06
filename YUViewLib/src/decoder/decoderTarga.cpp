@@ -35,8 +35,6 @@
 
 #include "decoderTarga.h"
 
-#include <common/EnumMapper.h>
-
 #include <fstream>
 #include <iostream>
 

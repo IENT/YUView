@@ -42,6 +42,8 @@
 #endif
 
 #include <algorithm>
+#include <charconv>
+#include <string_view>
 
 #include <QThread>
 
@@ -161,11 +163,14 @@ QStringList toQStringList(const std::vector<std::string> &stringVec)
   return list;
 }
 
-std::string toLower(std::string str)
+std::string toLower(const std::string_view str)
 {
-  std::transform(
-      str.begin(), str.end(), str.begin(), [](unsigned char c) { return std::tolower(c); });
-  return str;
+  std::string lowercaseStr(str);
+  std::transform(lowercaseStr.begin(),
+                 lowercaseStr.end(),
+                 lowercaseStr.begin(),
+                 [](unsigned char c) { return std::tolower(c); });
+  return lowercaseStr;
 }
 
 ByteVector readData(std::istream &istream, const size_t nrBytes)
@@ -178,17 +183,18 @@ ByteVector readData(std::istream &istream, const size_t nrBytes)
   return data;
 }
 
-std::optional<unsigned long> toUnsigned(const std::string &text)
+std::optional<unsigned long> toUnsigned(const std::string_view text)
 {
-  try
-  {
-    auto index = std::stoul(text);
-    return index;
-  }
-  catch (...)
-  {
+  int        value{};
+  const auto result = std::from_chars(text.data(), text.data() + text.size(), value);
+
+  if (result.ec != std::errc())
     return {};
-  }
+  const auto allCharactersParsed = (result.ptr == &(*text.end()));
+  if (!allCharactersParsed)
+    return {};
+
+  return value;
 }
 
 } // namespace functions

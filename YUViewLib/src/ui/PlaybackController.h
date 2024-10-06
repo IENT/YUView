@@ -90,6 +90,13 @@ public:
 
   bool setCurrentFrameAndUpdate(int frame, bool updateView = true);
 
+  enum class RepeatMode
+  {
+    Off,
+    One,
+    All
+  };
+
 public slots:
   void on_playPauseButton_clicked();
   void on_stopButton_clicked();
@@ -150,14 +157,6 @@ private:
   void startOrUpdateTimer();
   void startPlayback();
 
-  enum class RepeatMode
-  {
-    Off,
-    One,
-    All
-  };
-  EnumMapper<RepeatMode> RepeatModeMapper{
-      {{RepeatMode::Off, "Off"}, {RepeatMode::One, "One"}, {RepeatMode::All, "All"}}};
   RepeatMode repeatMode{RepeatMode::Off};
   void       setRepeatModeAndUpdateIcons(const RepeatMode mode);
 

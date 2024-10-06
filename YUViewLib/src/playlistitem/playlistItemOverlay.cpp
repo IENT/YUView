@@ -39,8 +39,8 @@
 #include <cmath>
 #include <limits>
 
-#include <common/EnumMapper.h>
 #include <common/FunctionsGui.h>
+#include <common/EnumMapper.h>
 
 #define PLAYLISTITEMOVERLAY_DEBUG 0
 #if PLAYLISTITEMOVERLAY_DEBUG && !NDEBUG
@@ -55,10 +55,10 @@
 namespace
 {
 
-const EnumMapper<OverlayLayoutMode>
-    overlayLayoutModeMapper({{OverlayLayoutMode::Overlay, "Overlay"},
-                             {OverlayLayoutMode::Arange, "Average"},
-                             {OverlayLayoutMode::Custom, "Custom"}});
+constexpr EnumMapper<OverlayLayoutMode, 3>
+    OverlayLayoutModeMapper(std::make_pair(OverlayLayoutMode::Overlay, "Overlay"sv),
+                            std::make_pair(OverlayLayoutMode::Arange, "Average"sv),
+                            std::make_pair(OverlayLayoutMode::Custom, "Custom"sv));
 
 }
 
@@ -473,7 +473,7 @@ void playlistItemOverlay::savePlaylist(QDomElement &root, const QDir &playlistDi
   playlistItem::appendPropertiesToPlaylist(d);
 
   // Append the overlay properties
-  d.appendProperiteChild("layoutMode", overlayLayoutModeMapper.getName(this->layoutMode));
+  d.appendProperiteChild("layoutMode", OverlayLayoutModeMapper.getName(this->layoutMode));
   if (this->layoutMode == OverlayLayoutMode::Overlay)
     d.appendProperiteChild("overlayMode", QString::number(overlayMode));
   else if (this->layoutMode == OverlayLayoutMode::Arange)
@@ -530,9 +530,8 @@ playlistItemOverlay *playlistItemOverlay::newPlaylistItemOverlay(const YUViewDom
   }
   else
   {
-    if (auto mode = overlayLayoutModeMapper.getValue(
-            root.findChildValue("layoutMode").toStdString(),
-            EnumMapper<OverlayLayoutMode>::StringType::NameOrIndex))
+    if (auto mode = OverlayLayoutModeMapper.getValueFromNameOrIndex(
+            root.findChildValue("layoutMode").toStdString()))
       newOverlay->layoutMode = *mode;
     DEBUG_OVERLAY("playlistItemOverlay::newPlaylistItemOverlay layoutMode %d",
                   newOverlay->layoutMode);
