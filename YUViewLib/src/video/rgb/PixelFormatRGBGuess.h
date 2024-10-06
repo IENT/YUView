@@ -42,6 +42,6 @@ namespace video::rgb
 // If you know the frame size of the video, the file size (and optionally the bit depth) we can
 // guess the remaining values. The rate value is set if a matching format could be found.
 PixelFormatRGB
-guessFormatFromSizeAndName(const QFileInfo &fileInfo, Size frameSize, int64_t fileSize);
+guessFormatFromSizeAndName(const QFileInfo &fileInfo, const Size frameSize, const int64_t fileSize);
 
 } // namespace video::rgb

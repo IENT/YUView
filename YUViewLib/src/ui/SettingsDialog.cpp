@@ -141,13 +141,13 @@ SettingsDialog::SettingsDialog(QWidget *parent) : QDialog(parent)
 
   for (const auto &decoder : decoder::DecodersHEVC)
     ui.comboBoxDefaultHEVC->addItem(
-        QString::fromStdString(decoder::DecoderEngineMapper.getName(decoder)));
+        QString::fromStdString(std::string(decoder::DecoderEngineMapper.getName(decoder))));
   for (const auto &decoder : decoder::DecodersVVC)
     ui.comboBoxDefaultVVC->addItem(
-        QString::fromStdString(decoder::DecoderEngineMapper.getName(decoder)));
+        QString::fromStdString(std::string(decoder::DecoderEngineMapper.getName(decoder))));
   for (const auto &decoder : decoder::DecodersAV1)
     ui.comboBoxDefaultAV1->addItem(
-        QString::fromStdString(decoder::DecoderEngineMapper.getName(decoder)));
+        QString::fromStdString(std::string(decoder::DecoderEngineMapper.getName(decoder))));
 
   ui.comboBoxDefaultHEVC->setCurrentText(settings.value("DefaultDecoderHEVC", 0).toString());
   ui.comboBoxDefaultVVC->setCurrentText(settings.value("DefaultDecoderVVC", 0).toString());

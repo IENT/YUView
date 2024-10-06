@@ -32,9 +32,11 @@
 
 #pragma once
 
+#include <common/EnumMapper.h>
+#include <parser/common/SubByteReaderLogging.h>
+
 #include "NalUnitVVC.h"
 #include "byte_alignment.h"
-#include "parser/common/SubByteReaderLogging.h"
 #include "picture_header_structure.h"
 #include "pred_weight_table.h"
 #include "ref_pic_lists.h"
@@ -51,18 +53,20 @@ enum class SliceType
   I
 };
 
-std::string to_string(SliceType sliceType);
+constexpr EnumMapper<SliceType, 3> SliceTypeMapper(std::make_pair(SliceType::B, "B"sv),
+                                                      std::make_pair(SliceType::P, "P"sv),
+                                                      std::make_pair(SliceType::I, "I"sv));
 
 class slice_header : public NalRBSP
 {
 public:
   slice_header()  = default;
   ~slice_header() = default;
-  void parse(reader::SubByteReaderLogging &                 reader,
+  void parse(reader::SubByteReaderLogging             &reader,
              NalType                                   nal_unit_type,
-             VPSMap &                                  vpsMap,
-             SPSMap &                                  spsMap,
-             PPSMap &                                  ppsMap,
+             VPSMap                                   &vpsMap,
+             SPSMap                                   &spsMap,
+             PPSMap                                   &ppsMap,
              std::shared_ptr<slice_layer_rbsp>         sliceLayer,
              std::shared_ptr<picture_header_structure> picHeader);
 

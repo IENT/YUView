@@ -21,7 +21,7 @@ jobs:
     steps:
     - uses: actions/checkout@v4
       with:
-        submodules: "recursive"
+        submodules: true
     - run: git fetch --prune --unshallow
     - name: Install Linux packages
       run: |
@@ -34,17 +34,19 @@ jobs:
         cd build
         ${{matrix.QMAKE_COMMAND}} CONFIG+=UNITTESTS ..
         make -j$(nproc)
-        make check
+    - name: Run Unittests
+      run: $GITHUB_WORKSPACE/build/YUViewUnitTest/YUViewUnitTest
   build-mac-native:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
         include: 
-          - os: macos-12
+          - os: macos-13
+          - os: macos-14
     steps:
     - uses: actions/checkout@v4
       with:
-        submodules: "recursive"
+        submodules: true
     - run: git fetch --prune --unshallow
     - name: Install packages
       run: |
@@ -56,41 +58,42 @@ jobs:
         cd build
         qmake6 CONFIG+=UNITTESTS ..
         make -j $(sysctl -n hw.logicalcpu)
-        make check
+    - name: Run Unittests
+      run: $GITHUB_WORKSPACE/build/YUViewUnitTest/YUViewUnitTest
   build-unix:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
         include: 
           - os: ubuntu-20.04
-            QT_FILE: qtBase_6.5.2_ubuntu20.zip
+            QT_FILE: qtBase_6.7.2_ubuntu20.zip
             LIBDE265_REMOTE: libde265.so
             LIBDE265_LOCAL: libde265-internals.so
             ARTIFACT_NAME: YUView.Ubuntu20.AppImage
             CPU_COUNT_COMMAND: nproc
-          - os: macos-11
-            QT_FILE: qtBase_6.5.2_mac11.zip
-            LIBDE265_REMOTE: libde265.dylib
-            LIBDE265_LOCAL: libde265-internals.dylib
-            ARTIFACT_NAME: YUView-Mac11-BigSur.zip
-            CPU_COUNT_COMMAND: sysctl -n hw.logicalcpu
           - os: macos-12
-            QT_FILE: qtBase_6.5.2_mac12.zip
+            QT_FILE: qtBase_6.7.2_mac12.zip
             LIBDE265_REMOTE: libde265.dylib
             LIBDE265_LOCAL: libde265-internals.dylib
             ARTIFACT_NAME: YUView-Mac12-Monterey.zip
             CPU_COUNT_COMMAND: sysctl -n hw.logicalcpu
+          - os: macos-14
+            QT_FILE: qtBase_6.7.2_mac14.zip
+            LIBDE265_REMOTE: libde265.dylib
+            LIBDE265_LOCAL: libde265-internals.dylib
+            ARTIFACT_NAME: YUView-Mac12-Sonoma.zip
+            CPU_COUNT_COMMAND: sysctl -n hw.logicalcpu
     steps:
     - uses: actions/checkout@v4
       with:
-        submodules: "recursive"
+        submodules: true
     - run: git fetch --prune --unshallow
     - name: Install Qt base
       run: |
         cd ../../
         mkdir -p YUViewQt/YUViewQt
         cd YUViewQt/YUViewQt
-        curl -L https://github.com/ChristianFeldmann/YUViewQt/releases/download/QtBase-6.5.2/${{matrix.QT_FILE}} -o Qt.zip
+        curl -L https://github.com/ChristianFeldmann/YUViewQt/releases/download/QtBase-6.7.2/${{matrix.QT_FILE}} -o Qt.zip
         unzip -qa Qt.zip
         echo "$GITHUB_WORKSPACE/../../YUViewQt/YUViewQt/Qt/bin" >> $GITHUB_PATH
       shell: bash
@@ -109,7 +112,7 @@ jobs:
         curl -L https://github.com/ChristianFeldmann/libde265/releases/download/v1.1/${{matrix.LIBDE265_REMOTE}} -o ${{matrix.LIBDE265_LOCAL}}
         curl -L https://raw.githubusercontent.com/ChristianFeldmann/libde265/master/COPYING -o libde265License.txt
       shell: bash
-    - name: Build Linux/Mac
+    - name: Build
       run: |
         cd $GITHUB_WORKSPACE
         export PATH=$GITHUB_WORKSPACE/../../YUViewQt/YUViewQt/Qt/bin:$PATH
@@ -117,7 +120,8 @@ jobs:
         cd build
         qmake CONFIG+=UNITTESTS ..
         make -j $(${{matrix.CPU_COUNT_COMMAND}})
-        make check
+    - name: Run Unittests
+      run: $GITHUB_WORKSPACE/build/YUViewUnitTest/YUViewUnitTest
     - name: Build App (Mac)
       run: |
         macdeployqt build/YUViewApp/YUView.app -always-overwrite -verbose=2
@@ -127,7 +131,7 @@ jobs:
         zip -r ${{matrix.ARTIFACT_NAME}} YUView.app/
         mkdir $GITHUB_WORKSPACE/artifacts
         cp ${{matrix.ARTIFACT_NAME}} $GITHUB_WORKSPACE/artifacts/
-      if: matrix.os == 'macos-11' || matrix.os == 'macos-12'
+      if: matrix.os == 'macos-12' || matrix.os == 'macos-14'
     - name: Build Appimage (Linux)
       run: |
         cd build
@@ -155,15 +159,15 @@ jobs:
           - os: windows-2019
             auto_update: true
             ARTIFACT_NAME: YUView-Win2019.zip
-            QT_FILE: qtBase_6.5.2_win2019.zip
+            QT_FILE: qtBase_6.7.2_win2019.zip
           - os: windows-2019
             auto_update: false
             ARTIFACT_NAME: YUView-Win2019-noautoupdate.zip
-            QT_FILE: qtBase_6.5.2_win2019.zip
+            QT_FILE: qtBase_6.7.2_win2019.zip
     steps:
     - uses: actions/checkout@v4
       with:
-        submodules: "recursive"
+        submodules: true
     - uses: ilammy/msvc-dev-cmd@v1
     - run: git fetch --prune --unshallow
     - name: Install Qt base
@@ -171,7 +175,7 @@ jobs:
         cd ../../
         mkdir -p YUViewQt/YUViewQt
         cd YUViewQt/YUViewQt
-        curl -L https://github.com/ChristianFeldmann/YUViewQt/releases/download/QtBase-6.5.2/${{matrix.QT_FILE}} -o Qt.zip
+        curl -L https://github.com/ChristianFeldmann/YUViewQt/releases/download/QtBase-6.7.2/${{matrix.QT_FILE}} -o Qt.zip
         7z x  Qt.zip
         echo "${{ github.workspace }}\..\..\YUViewQt\YUViewQt\Qt\bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
     - name: Install libde265
@@ -185,7 +189,7 @@ jobs:
       run: |
         mkdir openSSL
         cd openSSL
-        curl -L https://github.com/ChristianFeldmann/YUViewQt/releases/download/openSSL1.1.1u/openSSL_1_1_1u_win2019.zip -o openSSL.zip
+        curl -L https://github.com/ChristianFeldmann/YUViewQt/releases/download/openSSL1.1.1w/openSSL_1_1_1w_win2019.zip -o openSSL.zip
         7z x openSSL.zip
         cd ..
     - name: Activate auto update
@@ -203,11 +207,8 @@ jobs:
         d:\a\YUViewQt\YUViewQt\Qt\bin\qmake CONFIG+=UNITTESTS ..
         echo "Executing jom:"
         jom
-    - name: Run tests
-      run: |
-        cd build
-        nmake check
-        cd ..
+    - name: Run Unittests
+      run: D:\a\YUView\YUView\build\YUViewUnitTest\YUViewUnitTest
     - name: WindeployQT
       run: |
         mkdir deploy

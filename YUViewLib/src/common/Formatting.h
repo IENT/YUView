@@ -77,9 +77,31 @@ static std::ostream &operator<<(std::ostream &stream, const Size &size)
   return stream;
 }
 
-static std::string to_string(const Size &size)
+inline std::string to_string(const Size &size)
 {
   std::ostringstream stream;
   stream << size;
   return stream.str();
+}
+
+inline std::string to_string(const bool b)
+{
+  return b ? "True" : "False";
+}
+
+inline std::string stringReplaceAll(std::string str, char value, char replacement)
+{
+  std::replace(str.begin(), str.end(), value, replacement);
+  return str;
+}
+
+inline std::string stringReplaceAll(std::string str, std::initializer_list<char> values, char replacement)
+{
+  std::replace_if(
+      str.begin(),
+      str.end(),
+      [&values](const char value)
+      { return std::find(values.begin(), values.end(), value) != values.end(); },
+      replacement);
+  return str;
 }

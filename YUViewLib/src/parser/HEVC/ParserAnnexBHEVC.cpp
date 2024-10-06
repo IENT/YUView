@@ -34,6 +34,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <sstream>
 
 #include "SEI/buffering_period.h"
 #include "SEI/pic_timing.h"
@@ -285,7 +286,7 @@ Ratio ParserAnnexBHEVC::getSampleAspectRatio()
 
 ParserAnnexB::ParseResult
 ParserAnnexBHEVC::parseAndAddNALUnit(int                                           nalID,
-                                     const ByteVector &                            data,
+                                     const ByteVector                             &data,
                                      std::optional<BitratePlotModel::BitrateEntry> bitrateEntry,
                                      std::optional<pairUint64> nalStartEndPosFile,
                                      std::shared_ptr<TreeItem> parent)
@@ -331,8 +332,8 @@ ParserAnnexBHEVC::parseAndAddNALUnit(int                                        
 
   reader::SubByteReaderLogging reader(data, nalRoot, "", getStartCodeOffset(data));
 
-  std::string specificDescription;
-  auto        nalHEVC = std::make_shared<NalUnitHEVC>(nalID, nalStartEndPosFile);
+  std::stringstream specificDescription;
+  auto              nalHEVC = std::make_shared<NalUnitHEVC>(nalID, nalStartEndPosFile);
 
   bool        first_slice_segment_in_pic_flag = false;
   bool        currentSliceIntra               = false;
@@ -340,7 +341,7 @@ ParserAnnexBHEVC::parseAndAddNALUnit(int                                        
   try
   {
     nalHEVC->header.parse(reader);
-    specificDescription = " " + NalTypeMapper.getName(nalHEVC->header.nal_unit_type);
+    specificDescription << " " << NalTypeMapper.getName(nalHEVC->header.nal_unit_type);
 
     if (nalHEVC->header.nal_unit_type == NalType::VPS_NUT)
     {
@@ -349,7 +350,7 @@ ParserAnnexBHEVC::parseAndAddNALUnit(int                                        
 
       this->activeParameterSets.vpsMap[newVPS->vps_video_parameter_set_id] = newVPS;
 
-      specificDescription += " ID " + std::to_string(newVPS->vps_video_parameter_set_id);
+      specificDescription << " ID " << newVPS->vps_video_parameter_set_id;
 
       nalHEVC->rbsp    = newVPS;
       nalHEVC->rawData = data;
@@ -366,7 +367,7 @@ ParserAnnexBHEVC::parseAndAddNALUnit(int                                        
 
       this->activeParameterSets.spsMap[newSPS->sps_seq_parameter_set_id] = newSPS;
 
-      specificDescription += " ID " + std::to_string(newSPS->sps_seq_parameter_set_id);
+      specificDescription << " ID " << newSPS->sps_seq_parameter_set_id;
 
       DEBUG_HEVC("ParserAnnexBHEVC::parseAndAddNALUnit Parse SPS ID "
                  << newSPS->sps_seq_parameter_set_id);
@@ -383,7 +384,7 @@ ParserAnnexBHEVC::parseAndAddNALUnit(int                                        
 
       this->activeParameterSets.ppsMap[newPPS->pps_pic_parameter_set_id] = newPPS;
 
-      specificDescription += " ID " + std::to_string(newPPS->pps_pic_parameter_set_id);
+      specificDescription << " ID " << newPPS->pps_pic_parameter_set_id;
 
       DEBUG_HEVC("ParserAnnexBHEVC::parseAndAddNALUnit Parse SPS ID "
                  << newPPS->pps_pic_parameter_set_id);
@@ -515,7 +516,7 @@ ParserAnnexBHEVC::parseAndAddNALUnit(int                                        
       currentSliceType = to_string(newSlice->sliceSegmentHeader.slice_type);
 
       const auto pocDetail = formatNalPOCDetail(poc, nalHEVC->header.nuh_layer_id);
-      specificDescription += pocDetail;
+      specificDescription << pocDetail;
       parseResult.nalTypeName = "Slice" + pocDetail;
 
       DEBUG_HEVC("ParserAnnexBHEVC::parseAndAddNALUnit Slice POC "
@@ -535,7 +536,7 @@ ParserAnnexBHEVC::parseAndAddNALUnit(int                                        
 
       for (const auto &sei : newSEI->seis)
       {
-        specificDescription += " " + sei.getPayloadTypeName();
+        specificDescription << " " << sei.getPayloadTypeName();
 
         if (sei.payloadType == 0)
         {
@@ -577,7 +578,7 @@ ParserAnnexBHEVC::parseAndAddNALUnit(int                                        
       // Technically this is not a specific NAL unit type but dolby vision uses a different
       // seperator that makes the DV metadata and EL data appear to be NAL unit type 62 and 63.
       // https://patents.google.com/patent/US20180278963A1/en
-      specificDescription = " Dolby Vision";
+      specificDescription << " Dolby Vision";
       DEBUG_HEVC("ParserAnnexBHEVC::parseAndAddNALUnit Dolby Vision Metadata");
       parseResult.nalTypeName = "Dolby Vision ";
     }
@@ -607,7 +608,7 @@ ParserAnnexBHEVC::parseAndAddNALUnit(int                                        
   }
   catch (const std::exception &e)
   {
-    specificDescription += " ERROR " + std::string(e.what());
+    specificDescription << " ERROR " << e.what();
     parseResult.success = false;
   }
 
@@ -655,7 +656,7 @@ ParserAnnexBHEVC::parseAndAddNALUnit(int                                        
   if (nalRoot)
   {
     auto name = "NAL " + std::to_string(nalHEVC->nalIdx) + ": " +
-                std::to_string(nalHEVC->header.nalUnitTypeID) + specificDescription;
+                std::to_string(nalHEVC->header.nalUnitTypeID) + specificDescription.str();
     nalRoot->setProperties(name);
   }
 

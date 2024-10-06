@@ -50,9 +50,10 @@ enum class APSParamType
   SCALING_APS
 };
 
-const EnumMapper<APSParamType> apsParamTypeMapper({{APSParamType::ALF_APS, "ALF_APS"},
-                                                   {APSParamType::LMCS_APS, "LMCS_APS"},
-                                                   {APSParamType::SCALING_APS, "SCALING_APS"}});
+constexpr EnumMapper<APSParamType, 3>
+    APSParamTypeMapper(std::make_pair(APSParamType::ALF_APS, "ALF_APS"sv),
+                       std::make_pair(APSParamType::LMCS_APS, "LMCS_APS"sv),
+                       std::make_pair(APSParamType::SCALING_APS, "SCALING_APS"sv));
 
 class adaptation_parameter_set_rbsp : public NalRBSP
 {

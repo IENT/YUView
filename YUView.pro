@@ -9,7 +9,11 @@ YUViewLib.depends = LibFFmpeg
 YUViewApp.depends = YUViewLib
 
 UNITTESTS {
+  SUBDIRS += Googletest
+  Googletest.subdir = submodules/googletest-qmake
+  
   SUBDIRS += YUViewUnitTest
   YUViewUnitTest.subdir = YUViewUnitTest
+  YUViewUnitTest.depends = Googletest
   YUViewUnitTest.depends = YUViewLib
 }
