@@ -34,6 +34,8 @@
 
 #include <common/Typedef.h>
 
+#include <format>
+
 #include <QDateTime>
 #include <QDir>
 #include <QSettings>
@@ -55,26 +57,21 @@ FileSource::FileSource()
           &FileSource::fileSystemWatcherFileChanged);
 }
 
-bool FileSource::openFile(const QString &filePath)
+bool FileSource::openFile(const std::string &filePath)
 {
-  // Check if the file exists
-  this->fileInfo.setFile(filePath);
-  if (!this->fileInfo.exists() || !this->fileInfo.isFile())
+  if (!std::filesystem::is_regular_file(filePath))
     return false;
 
   if (this->isFileOpened && this->srcFile.isOpen())
     this->srcFile.close();
 
-  // open file for reading
-  this->srcFile.setFileName(filePath);
+  this->srcFile.setFileName(QString::fromStdString(filePath));
   this->isFileOpened = this->srcFile.open(QIODevice::ReadOnly);
   if (!this->isFileOpened)
     return false;
 
-  // Save the full file path
   this->fullFilePath = filePath;
 
-  // Install a watcher for the file (if file watching is active)
   this->updateFileWatchSetting();
   this->fileChanged = false;
 
@@ -115,25 +112,35 @@ int64_t FileSource::readBytes(QByteArray &targetBuffer, int64_t startPos, int64_
   return this->srcFile.read(targetBuffer.data(), nrBytes);
 }
 
-QList<InfoItem> FileSource::getFileInfoList() const
+std::vector<InfoItem> FileSource::getFileInfoList() const
 {
-  QList<InfoItem> infoList;
-
   if (!this->isFileOpened)
-    return infoList;
+    return {};
 
-  infoList.append(InfoItem("File Path", this->fileInfo.absoluteFilePath()));
+  std::vector<InfoItem> infoList;
+  infoList.emplace_back("File Path", this->fullFilePath);
+  infoList.emplace_back("Time Modified", std::format())
+
+
 #if QT_VERSION < QT_VERSION_CHECK(5, 10, 0)
   auto createdtime = this->fileInfo.created().toString("yyyy-MM-dd hh:mm:ss");
 #else
   auto createdtime = this->fileInfo.birthTime().toString("yyyy-MM-dd hh:mm:ss");
 #endif
-  infoList.append(InfoItem("Time Created", createdtime));
-  infoList.append(
-      InfoItem("Time Modified", this->fileInfo.lastModified().toString("yyyy-MM-dd hh:mm:ss")));
-  infoList.append(InfoItem("Nr Bytes", QString("%1").arg(this->fileInfo.size())));
+  infoList.emplace_back("Time Created", createdtime.toStdString());
+  infoList.emplace_back("Time Modified",
+                        this->fileInfo.lastModified().toString("yyyy-MM-dd hh:mm:ss"));
+  infoList.emplace_back("Nr Bytes", QString("%1").arg(this->fileInfo.size()));
 
   return infoList;
+}
+
+int64_t FileSource::getFileSize() const
+{
+  if (!this->isFileOpened)
+    return -1;
+
+  return !isFileOpened ? -1 : fileInfo.size();
 }
 
 QString FileSource::getAbsoluteFilePath() const

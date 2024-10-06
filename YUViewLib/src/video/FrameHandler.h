@@ -32,7 +32,7 @@
 
 #pragma once
 
-#include <common/FileInfo.h>
+#include <common/InfoItemAndData.h>
 #include <common/SaveUi.h>
 #include <common/Typedef.h>
 #include <common/YUViewDomElement.h>
@@ -94,7 +94,7 @@ public:
   // Calculate the difference of this FrameHandler to another FrameHandler. This
   // function can be overloaded by more specialized video items. For example the videoHandlerYUV
   // overloads this and calculates the difference directly on the YUV values (if possible).
-  virtual QImage calculateDifference(FrameHandler *   item2,
+  virtual QImage calculateDifference(FrameHandler    *item2,
                                      const int        frameIdxItem0,
                                      const int        frameIdxItem1,
                                      QList<InfoItem> &differenceInfoList,
@@ -115,9 +115,9 @@ public:
   // playlistItemYUVSource). If a second FrameHandler item is provided, the difference values will
   // be drawn. For the second item, a second frame index must be provided (set markDifference if you
   // want only differing values to be marked).
-  virtual void drawPixelValues(QPainter *    painter,
+  virtual void drawPixelValues(QPainter     *painter,
                                const int     frameIdx,
-                               const QRect & videoRect,
+                               const QRect  &videoRect,
                                const double  zoomFactor,
                                FrameHandler *item2          = nullptr,
                                const bool    markDifference = false,

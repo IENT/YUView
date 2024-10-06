@@ -37,26 +37,16 @@
 #include <QString>
 
 /*
- * An info item has a name, a text and an optional toolTip. These are used to show them in the
- * fileInfoWidget. For example: ["File Name", "file.yuv"] or ["Number Frames", "123"] Another option
- * is to show a button. If the user clicks on it, the callback function infoListButtonPressed() for
- * the corresponding playlist item is called.
+ * An info item has a name, a text and an optional description. These are used to show them in the
+ * fileInfoWidget. For example: ["File Name", "file.yuv"] or ["Number Frames", "123"].
  */
 struct InfoItem
 {
-  InfoItem(const QString &name,
-           const QString &text,
-           const QString &toolTip  = QString(),
-           bool           button   = false,
-           int            buttonID = -1)
-      : name(name), text(text), button(button), buttonID(buttonID), toolTip(toolTip)
-  {
-  }
-  QString name{};
-  QString text{};
-  bool    button{};
-  int     buttonID{};
-  QString toolTip{};
+  std::string name{};
+  std::string text{};
+  std::string description{};
+
+  InfoItem(std::string &&name, std::string &&text) : name(std::move(name)), text(std::move(text)) {}
 };
 
 struct InfoData

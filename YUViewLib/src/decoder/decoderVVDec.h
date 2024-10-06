@@ -34,7 +34,7 @@
 
 #include <QLibrary>
 
-#include <common/FileInfo.h>
+#include <common/InfoItemAndData.h>
 #include <decoder/decoderBase.h>
 #include <decoder/externalHeader/vvdec/vvdec.h>
 #include <video/yuv/videoHandlerYUV.h>
