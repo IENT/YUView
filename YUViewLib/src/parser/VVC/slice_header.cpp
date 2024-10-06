@@ -32,9 +32,9 @@
 
 #include "slice_header.h"
 
-#include <parser/common/Functions.h>
 #include "pic_parameter_set_rbsp.h"
 #include "seq_parameter_set_rbsp.h"
+#include <parser/common/Functions.h>
 
 #include <cmath>
 
@@ -43,11 +43,11 @@ namespace parser::vvc
 
 using namespace parser::reader;
 
-void slice_header::parse(SubByteReaderLogging &                    reader,
+void slice_header::parse(SubByteReaderLogging                     &reader,
                          NalType                                   nal_unit_type,
-                         VPSMap &                                  vpsMap,
-                         SPSMap &                                  spsMap,
-                         PPSMap &                                  ppsMap,
+                         VPSMap                                   &vpsMap,
+                         SPSMap                                   &spsMap,
+                         PPSMap                                   &ppsMap,
                          std::shared_ptr<slice_layer_rbsp>         sliceLayer,
                          std::shared_ptr<picture_header_structure> picHeader)
 {
@@ -205,7 +205,8 @@ void slice_header::parse(SubByteReaderLogging &                    reader,
       {
         if (this->ref_pic_lists_instance->getActiveRefPixList(sps, i).num_ref_entries > 1)
         {
-          this->sh_num_ref_idx_active_minus1[i] = reader.readUEV(formatArray("sh_num_ref_idx_active_minus1", i));
+          this->sh_num_ref_idx_active_minus1[i] =
+              reader.readUEV(formatArray("sh_num_ref_idx_active_minus1", i));
         }
       }
     }
@@ -242,9 +243,10 @@ void slice_header::parse(SubByteReaderLogging &                    reader,
     if (picHeader->ph_temporal_mvp_enabled_flag && !pps->pps_rpl_info_in_ph_flag)
     {
       if (this->sh_slice_type == SliceType::B)
-      {
         this->sh_collocated_from_l0_flag = reader.readFlag("sh_collocated_from_l0_flag");
-      }
+      else
+        this->sh_collocated_from_l0_flag =
+            (this->sh_slice_type == SliceType::B) ? picHeader->ph_collocated_from_l0_flag : true;
       if ((this->sh_collocated_from_l0_flag && this->NumRefIdxActive[0] > 1) ||
           (!this->sh_collocated_from_l0_flag && this->NumRefIdxActive[1] > 1))
       {
