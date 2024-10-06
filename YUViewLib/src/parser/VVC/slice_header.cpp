@@ -240,13 +240,13 @@ void slice_header::parse(SubByteReaderLogging                     &reader,
     {
       this->sh_cabac_init_flag = reader.readFlag("sh_cabac_init_flag");
     }
+    if (picHeader->ph_temporal_mvp_enabled_flag)
+      this->sh_collocated_from_l0_flag =
+            (this->sh_slice_type == SliceType::B) ? picHeader->ph_collocated_from_l0_flag : true;
     if (picHeader->ph_temporal_mvp_enabled_flag && !pps->pps_rpl_info_in_ph_flag)
     {
       if (this->sh_slice_type == SliceType::B)
         this->sh_collocated_from_l0_flag = reader.readFlag("sh_collocated_from_l0_flag");
-      else
-        this->sh_collocated_from_l0_flag =
-            (this->sh_slice_type == SliceType::B) ? picHeader->ph_collocated_from_l0_flag : true;
       if ((this->sh_collocated_from_l0_flag && this->NumRefIdxActive[0] > 1) ||
           (!this->sh_collocated_from_l0_flag && this->NumRefIdxActive[1] > 1))
       {
