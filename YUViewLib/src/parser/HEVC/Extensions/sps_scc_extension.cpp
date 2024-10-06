@@ -61,7 +61,7 @@ void sps_scc_extension::parse(SubByteReaderLogging &reader,
       const auto numComps = (chroma_format_idc == 0) ? 1 : 3;
       for (int comp = 0; comp < numComps; comp++)
       {
-        for (int i = 0; i <= this->sps_num_palette_predictor_initializers_minus1; i++)
+        for (unsigned i = 0; i <= this->sps_num_palette_predictor_initializers_minus1; i++)
         {
           // There is an issue in the HEVC spec here. It is missing the number of bits that are used
           // to code this symbol. From the SCC reference software I was able to deduce that it
