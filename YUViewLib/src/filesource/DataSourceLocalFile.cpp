@@ -30,47 +30,73 @@
  *   along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#pragma once
+#include "DataSourceLocalFile.h"
 
-#include "FileSourceWithLocalFile.h"
-
-#include <QFile>
-#include <QMutex>
-#include <QString>
-
-#include <common/Typedef.h>
-
-/* The FileSource class provides functions for accessing files. Besides the reading of
- * certain blocks of the file, it also directly provides information on the file for the
- * fileInfoWidget. It also adds functions for guessing the format from the filename.
- */
-class FileSource : public FileSourceWithLocalFile
+DataSourceLocalFile::DataSourceLocalFile(const std::filesystem::path &filePath)
 {
-  Q_OBJECT
+  this->file.open(filePath.string(), std::ios_base::in | std::ios_base::binary);
+}
 
-public:
-  FileSource();
+std::vector<InfoItem> DataSourceLocalFile::getInfoList() const
+{
+  if (!this->isReady())
+    return {};
 
-  virtual [[nodiscard]] bool openFile(const QString &filePath) override;
+  std::vector<InfoItem> infoList;
+  infoList.push_back(
+      InfoItem({"File path", this->filePath.string(), "The absolute path of the local file"}));
+  if (const auto size = this->fileSize())
+    infoList.push_back(InfoItem({"File Size", std::to_string(*size)}));
 
-  [[nodiscard]] virtual bool atEnd() const;
-  [[nodiscard]] QByteArray   readLine();
-  [[nodiscard]] virtual bool seek(int64_t pos);
-  [[nodiscard]] int64_t      pos();
+  return infoList;
+}
 
-  // Read the given number of bytes starting at startPos into the QByteArray out
-  // Resize the QByteArray if necessary. Return how many bytes were read.
-  int64_t readBytes(QByteArray &targetBuffer, int64_t startPos, int64_t nrBytes);
-#if SSE_CONVERSION
-  void readBytes(byteArrayAligned &data, int64_t startPos, int64_t nrBytes);
-#endif
+bool DataSourceLocalFile::atEnd() const
+{
+  return this->file.eof();
+}
 
-  void clearFileCache();
+bool DataSourceLocalFile::isReady() const
+{
+  return !this->file.fail();
+}
 
-protected:
-  QFile srcFile;
-  bool  isFileOpened{};
+std::int64_t DataSourceLocalFile::position() const
+{
+  return this->filePosition;
+}
 
-private:
-  QMutex readMutex;
-};
+std::optional<std::int64_t> DataSourceLocalFile::fileSize() const
+{
+  if (!this->isFileOpened)
+    return {};
+
+  const auto size = std::filesystem::file_size(this->filePath);
+  return static_cast<std::int64_t>(size);
+}
+
+bool DataSourceLocalFile::seek(const std::int64_t pos)
+{
+  if (!this->isReady())
+    return false;
+
+  this->file.seekg(static_cast<std::streampos>(pos));
+  return this->isReady();
+}
+
+std::int64_t DataSourceLocalFile::read(ByteVector &buffer, const std::int64_t nrBytes)
+{
+  if (!this->isReady())
+    return 0;
+
+  const auto usize = static_cast<size_t>(nrBytes);
+  if (buffer.size() < nrBytes)
+    buffer.resize(usize);
+
+  this->file.read(reinterpret_cast<char *>(buffer.data()), usize);
+
+  const auto bytesRead = this->file.gcount();
+
+  this->filePosition += bytesRead;
+  return static_cast<std::int64_t>(bytesRead);
+}

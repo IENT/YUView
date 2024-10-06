@@ -34,10 +34,9 @@
 
 #include <common/Typedef.h>
 
-#include <QDateTime>
-#include <QDir>
-#include <QSettings>
-#include <QtGlobal>
+#include <QFileInfo>
+#include <QMutexLocker>
+
 #ifdef Q_OS_WIN
 #include <windows.h>
 #endif
@@ -47,38 +46,49 @@
 #include <QThread>
 #endif
 
-FileSource::FileSource()
+FileSource::FileSource() : FileSourceWithLocalFile()
 {
-  connect(&fileWatcher,
-          &QFileSystemWatcher::fileChanged,
-          this,
-          &FileSource::fileSystemWatcherFileChanged);
 }
 
 bool FileSource::openFile(const QString &filePath)
 {
-  // Check if the file exists
-  this->fileInfo.setFile(filePath);
-  if (!this->fileInfo.exists() || !this->fileInfo.isFile())
+  QFileInfo fileInfo(filePath);
+  if (!fileInfo.exists() || !fileInfo.isFile())
     return false;
 
-  if (this->isFileOpened && this->srcFile.isOpen())
+  if (this->srcFile.isOpen())
     this->srcFile.close();
 
-  // open file for reading
   this->srcFile.setFileName(filePath);
   this->isFileOpened = this->srcFile.open(QIODevice::ReadOnly);
   if (!this->isFileOpened)
     return false;
 
-  // Save the full file path
   this->fullFilePath = filePath;
 
-  // Install a watcher for the file (if file watching is active)
   this->updateFileWatchSetting();
-  this->fileChanged = false;
 
   return true;
+}
+
+bool FileSource::atEnd() const
+{
+  return !this->isFileOpened ? true : this->srcFile.atEnd();
+}
+
+QByteArray FileSource::readLine()
+{
+  return !this->isFileOpened ? QByteArray() : this->srcFile.readLine();
+}
+
+bool FileSource::seek(int64_t pos)
+{
+  return !this->isFileOpened ? false : this->srcFile.seek(pos);
+}
+
+int64_t FileSource::pos()
+{
+  return !this->isFileOpened ? 0 : this->srcFile.pos();
 }
 
 #if SSE_CONVERSION
@@ -96,10 +106,9 @@ void FileSource::readBytes(byteArrayAligned &targetBuffer, int64_t startPos, int
 }
 #endif
 
-// Resize the target array if necessary and read the given number of bytes to the data array
 int64_t FileSource::readBytes(QByteArray &targetBuffer, int64_t startPos, int64_t nrBytes)
 {
-  if (!this->isOk())
+  if (!this->isOpened())
     return 0;
 
   if (targetBuffer.size() < nrBytes)
@@ -113,73 +122,6 @@ int64_t FileSource::readBytes(QByteArray &targetBuffer, int64_t startPos, int64_
   QMutexLocker locker(&this->readMutex);
   this->srcFile.seek(startPos);
   return this->srcFile.read(targetBuffer.data(), nrBytes);
-}
-
-QList<InfoItem> FileSource::getFileInfoList() const
-{
-  QList<InfoItem> infoList;
-
-  if (!this->isFileOpened)
-    return infoList;
-
-  infoList.append(InfoItem("File Path", this->fileInfo.absoluteFilePath()));
-#if QT_VERSION < QT_VERSION_CHECK(5, 10, 0)
-  auto createdtime = this->fileInfo.created().toString("yyyy-MM-dd hh:mm:ss");
-#else
-  auto createdtime = this->fileInfo.birthTime().toString("yyyy-MM-dd hh:mm:ss");
-#endif
-  infoList.append(InfoItem("Time Created", createdtime));
-  infoList.append(
-      InfoItem("Time Modified", this->fileInfo.lastModified().toString("yyyy-MM-dd hh:mm:ss")));
-  infoList.append(InfoItem("Nr Bytes", QString("%1").arg(this->fileInfo.size())));
-
-  return infoList;
-}
-
-QString FileSource::getAbsoluteFilePath() const
-{
-  return this->isFileOpened ? this->fileInfo.absoluteFilePath() : QString();
-}
-
-// If you are loading a playlist and you have an absolute path and a relative path, this function
-// will return the absolute path (if a file with that absolute path exists) or convert the relative
-// path to an absolute one and return that (if that file exists). If neither exists the empty string
-// is returned.
-QString FileSource::getAbsPathFromAbsAndRel(const QString &currentPath,
-                                            const QString &absolutePath,
-                                            const QString &relativePath)
-{
-  QFileInfo checkAbsoluteFile(absolutePath);
-  if (checkAbsoluteFile.exists())
-    return absolutePath;
-
-  QFileInfo plFileInfo(currentPath);
-  auto      combinePath = QDir(plFileInfo.path()).filePath(relativePath);
-  QFileInfo checkRelativeFile(combinePath);
-  if (checkRelativeFile.exists() && checkRelativeFile.isFile())
-  {
-    return QDir::cleanPath(combinePath);
-  }
-
-  return {};
-}
-
-bool FileSource::getAndResetFileChangedFlag()
-{
-  bool b            = this->fileChanged;
-  this->fileChanged = false;
-  return b;
-}
-
-void FileSource::updateFileWatchSetting()
-{
-  // Install a file watcher if file watching is active in the settings.
-  // The addPath/removePath functions will do nothing if called twice for the same file.
-  QSettings settings;
-  if (settings.value("WatchFiles", true).toBool())
-    fileWatcher.addPath(this->fullFilePath);
-  else
-    fileWatcher.removePath(this->fullFilePath);
 }
 
 void FileSource::clearFileCache()

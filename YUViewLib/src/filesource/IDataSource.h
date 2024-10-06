@@ -32,38 +32,21 @@
 
 #pragma once
 
-#include <QList>
-#include <QMetaType>
-#include <QString>
+#include <common/InfoItemAndData.h>
+#include <common/Typedef.h>
 
-/*
- * An info item has a name, a text and an optional toolTip. These are used to show them in the
- * fileInfoWidget. For example: ["File Name", "file.yuv"] or ["Number Frames", "123"] Another option
- * is to show a button. If the user clicks on it, the callback function infoListButtonPressed() for
- * the corresponding playlist item is called.
+/* The data source interface defines a something that can provide data.
+ * The source of the data could be a local file, a remote file or maybe
+ * something that generates data. It does not matter
  */
-struct InfoItem
+class IDataSource
 {
-  InfoItem(const QString &name,
-           const QString &text,
-           const QString &toolTip  = QString(),
-           bool           button   = false,
-           int            buttonID = -1)
-      : name(name), text(text), button(button), buttonID(buttonID), toolTip(toolTip)
-  {
-  }
-  QString name{};
-  QString text{};
-  bool    button{};
-  int     buttonID{};
-  QString toolTip{};
-};
+public:
+  virtual [[nodiscard]] std::vector<InfoItem> getInfoList() const = 0;
+  virtual [[nodiscard]] bool                  atEnd() const       = 0;
+  virtual [[nodiscard]] bool                  isReady() const     = 0;
+  virtual [[nodiscard]] std::int64_t          position() const    = 0;
 
-struct InfoData
-{
-  explicit InfoData(const QString &title = QString()) : title(title) {}
-  bool            isEmpty() const { return title.isEmpty() && items.isEmpty(); }
-  QString         title{};
-  QList<InfoItem> items{};
+  virtual [[nodiscard]] bool         seek(const std::int64_t pos)                         = 0;
+  virtual [[nodiscard]] std::int64_t read(ByteVector &buffer, const std::int64_t nrBytes) = 0;
 };
-Q_DECLARE_METATYPE(InfoData)

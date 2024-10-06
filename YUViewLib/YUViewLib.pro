@@ -12,6 +12,7 @@ HEADERS += $$files(src/*.h, true)
 FORMS += $$files(ui/*.ui, false)
 
 INCLUDEPATH += src/
+INCLUDEPATH += $$top_srcdir/submodules
 
 RESOURCES += \
     images/images.qrc \
