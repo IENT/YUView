@@ -88,7 +88,8 @@ MainWindow::MainWindow(bool useAlternativeSources, QWidget *parent) : QMainWindo
           &QWidget::setVisible);
 
   // Connect the playlistWidget signals to some slots
-  auto const fileInfoAdapter = [this] {
+  auto const fileInfoAdapter = [this]
+  {
     auto items = ui.playlistTreeWidget->getSelectedItems();
     ui.fileInfoWidget->setInfo(items[0] ? items[0]->getInfo() : InfoData(),
                                items[1] ? items[1]->getInfo() : InfoData());
@@ -101,11 +102,14 @@ MainWindow::MainWindow(bool useAlternativeSources, QWidget *parent) : QMainWindo
           &PlaylistTreeWidget::selectedItemChanged,
           ui.fileInfoWidget,
           fileInfoAdapter);
-  connect(ui.fileInfoWidget, &FileInfoWidget::infoButtonClicked, [this](int infoIndex, int row) {
-    auto items = ui.playlistTreeWidget->getSelectedItems();
-    if (items[infoIndex])
-      items[infoIndex]->infoListButtonPressed(row);
-  });
+  connect(ui.fileInfoWidget,
+          &FileInfoWidget::infoButtonClicked,
+          [this](int infoIndex, int row)
+          {
+            auto items = ui.playlistTreeWidget->getSelectedItems();
+            if (items[infoIndex])
+              items[infoIndex]->infoListButtonPressed(row);
+          });
   connect(ui.playlistTreeWidget,
           &PlaylistTreeWidget::selectionRangeChanged,
           ui.playbackController,
@@ -174,7 +178,8 @@ MainWindow::MainWindow(bool useAlternativeSources, QWidget *parent) : QMainWindo
     restoreGeometry(settings.value("mainWindow/geometry").toByteArray());
     restoreState(settings.value("mainWindow/windowState").toByteArray(), QT_VERSION);
     separateViewWindow.restoreGeometry(settings.value("separateViewWindow/geometry").toByteArray());
-    separateViewWindow.restoreState(settings.value("separateViewWindow/windowState").toByteArray(), QT_VERSION);
+    separateViewWindow.restoreState(settings.value("separateViewWindow/windowState").toByteArray(),
+                                    QT_VERSION);
   }
 
   connect(ui.openButton, &QPushButton::clicked, this, &MainWindow::showFileOpenDialog);
@@ -239,11 +244,12 @@ void MainWindow::loadFiles(const QStringList &files)
 
 void MainWindow::createMenusAndActions()
 {
-  auto addActionToMenu = [this](QMenu *            menu,
+  auto addActionToMenu = [this](QMenu             *menu,
                                 QString            name,
                                 auto               reciever,
                                 auto               functionPointer,
-                                const QKeySequence shortcut = {}) {
+                                const QKeySequence shortcut = {})
+  {
     (void)this; // QObject::connect uses this
     auto action = new QAction(name, menu);
     action->setShortcut(shortcut);
@@ -357,12 +363,13 @@ void MainWindow::createMenusAndActions()
 
   auto dockPanelsMenu = viewMenu->addMenu("Dock Panels");
   auto addDockViewAction =
-      [dockPanelsMenu](QDockWidget *dockWidget, QString text, const QKeySequence &shortcut = {}) {
-        auto action = dockWidget->toggleViewAction();
-        action->setText(text);
-        action->setShortcut(shortcut);
-        dockPanelsMenu->addAction(action);
-      };
+      [dockPanelsMenu](QDockWidget *dockWidget, QString text, const QKeySequence &shortcut = {})
+  {
+    auto action = dockWidget->toggleViewAction();
+    action->setText(text);
+    action->setShortcut(shortcut);
+    dockPanelsMenu->addAction(action);
+  };
   addDockViewAction(ui.playlistDockWidget, "Show P&laylist", Qt::CTRL | Qt::Key_L);
   addDockViewAction(ui.propertiesDock, "Show &Properties", Qt::CTRL | Qt::Key_P);
   addDockViewAction(ui.fileInfoDock, "Show &Info", Qt::CTRL | Qt::Key_I);
@@ -413,7 +420,8 @@ void MainWindow::createMenusAndActions()
                   &PlaybackController::previousFrame,
                   Qt::Key_Left);
 
-  auto addLambdaActionToMenu = [this](QMenu *menu, const QString name, auto lambda) {
+  auto addLambdaActionToMenu = [](QMenu *menu, const QString name, auto lambda)
+  {
     auto action = new QAction(name, menu);
     QObject::connect(action, &QAction::triggered, lambda);
     menu->addAction(action);
@@ -423,31 +431,43 @@ void MainWindow::createMenusAndActions()
   addActionToMenu(helpMenu, "About YUView", this, &MainWindow::showAbout);
   addActionToMenu(helpMenu, "Help", this, &MainWindow::showHelp);
   helpMenu->addSeparator();
-  addLambdaActionToMenu(helpMenu, "Open Project Website...", []() {
-    QDesktopServices::openUrl(QUrl("https://github.com/IENT/YUView"));
-  });
+  addLambdaActionToMenu(helpMenu,
+                        "Open Project Website...",
+                        []()
+                        { QDesktopServices::openUrl(QUrl("https://github.com/IENT/YUView")); });
   addLambdaActionToMenu(
       helpMenu, "Check for new version", [this]() { this->updater->startCheckForNewVersion(); });
 
   auto downloadsMenu = helpMenu->addMenu("Downloads");
-  addLambdaActionToMenu(downloadsMenu, "libde265 HEVC decoder", []() {
-    QDesktopServices::openUrl(QUrl("https://github.com/ChristianFeldmann/libde265/releases"));
-  });
-  addLambdaActionToMenu(downloadsMenu, "HM reference HEVC decoder", []() {
-    QDesktopServices::openUrl(QUrl("https://github.com/ChristianFeldmann/libHM/releases"));
-  });
-  addLambdaActionToMenu(downloadsMenu, "VTM VVC decoder", []() {
-    QDesktopServices::openUrl(QUrl("https://github.com/ChristianFeldmann/VTM/releases"));
-  });
-  addLambdaActionToMenu(downloadsMenu, "dav1d AV1 decoder", []() {
-    QDesktopServices::openUrl(QUrl("https://github.com/ChristianFeldmann/dav1d/releases"));
-  });
-  addLambdaActionToMenu(downloadsMenu, "FFmpeg libraries", []() {
-    QDesktopServices::openUrl(QUrl("https://ffmpeg.org/"));
-  });
-  addLambdaActionToMenu(downloadsMenu, "VVDec libraries", []() {
-    QDesktopServices::openUrl(QUrl("https://github.com/ChristianFeldmann/vvdec/releases"));
-  });
+  addLambdaActionToMenu(downloadsMenu,
+                        "libde265 HEVC decoder",
+                        []() {
+                          QDesktopServices::openUrl(
+                              QUrl("https://github.com/ChristianFeldmann/libde265/releases"));
+                        });
+  addLambdaActionToMenu(
+      downloadsMenu,
+      "HM reference HEVC decoder",
+      []()
+      { QDesktopServices::openUrl(QUrl("https://github.com/ChristianFeldmann/libHM/releases")); });
+  addLambdaActionToMenu(
+      downloadsMenu,
+      "VTM VVC decoder",
+      []()
+      { QDesktopServices::openUrl(QUrl("https://github.com/ChristianFeldmann/VTM/releases")); });
+  addLambdaActionToMenu(
+      downloadsMenu,
+      "dav1d AV1 decoder",
+      []()
+      { QDesktopServices::openUrl(QUrl("https://github.com/ChristianFeldmann/dav1d/releases")); });
+  addLambdaActionToMenu(downloadsMenu,
+                        "FFmpeg libraries",
+                        []() { QDesktopServices::openUrl(QUrl("https://ffmpeg.org/")); });
+  addLambdaActionToMenu(
+      downloadsMenu,
+      "VVDec libraries",
+      []()
+      { QDesktopServices::openUrl(QUrl("https://github.com/ChristianFeldmann/vvdec/releases")); });
   helpMenu->addSeparator();
   addLambdaActionToMenu(downloadsMenu, "Performance Tests", [this]() { this->performanceTest(); });
   addActionToMenu(helpMenu, "Reset Window Layout", this, &MainWindow::resetWindowLayout);

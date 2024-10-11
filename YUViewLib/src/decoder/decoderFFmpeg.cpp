@@ -58,7 +58,10 @@ decoderFFmpeg::decoderFFmpeg(FFmpeg::AVCodecIDWrapper   codecID,
   // loading the libraries which is slow and uses a lot of memory.
   this->ff.loadFFmpegLibraries();
   if (!this->ff.loadingSuccessfull())
+  {
+    this->setError("Error loading FFmpeg libraries.");
     return;
+  }
 
   // Create the cofiguration parameters
   auto codecpar = this->ff.allocCodecParameters();
