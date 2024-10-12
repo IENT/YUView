@@ -63,10 +63,10 @@ Subsampling findSubsamplingTypeIndicatorInName(std::string name)
 std::vector<unsigned> getDetectionBitDepthList(unsigned forceAsFirst)
 {
   std::vector<unsigned> bitDepthList;
-  if (forceAsFirst >= 8 && forceAsFirst <= 16)
+  if (forceAsFirst >= 8 && forceAsFirst <= 32)
     bitDepthList.push_back(forceAsFirst);
 
-  for (auto bitDepth : {10u, 12u, 14u, 16u, 8u})
+  for (auto bitDepth : {8u, 10u, 12u, 14u, 16u, 20u, 24u, 32u})
   {
     if (!vectorContains(bitDepthList, bitDepth))
       bitDepthList.push_back(bitDepth);
