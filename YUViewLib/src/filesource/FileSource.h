@@ -43,6 +43,8 @@
 #include <common/InfoItemAndData.h>
 #include <common/Typedef.h>
 
+#include <filesystem>
+
 enum class InputFormat
 {
   Invalid = -1,
