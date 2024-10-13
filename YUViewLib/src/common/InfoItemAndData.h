@@ -47,6 +47,15 @@ struct InfoItem
   std::string description{};
 
   InfoItem(std::string &&name, std::string &&text) : name(std::move(name)), text(std::move(text)) {}
+  InfoItem(std::string &&name, std::string &&text, std::string &&description)
+      : name(std::move(name)), text(std::move(text)), description(std::move(description))
+  {
+  }
+  InfoItem(std::string_view name, std::string_view text) : name(name), text(text) {}
+  InfoItem(std::string_view name, std::string_view text, std::string_view description)
+      : name(name), text(text), description(description)
+  {
+  }
 };
 
 struct InfoData

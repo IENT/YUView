@@ -58,8 +58,8 @@ class ParserAnnexB : public Parser
   Q_OBJECT
 
 public:
-  ParserAnnexB(QObject *parent = nullptr) : Parser(parent){};
-  virtual ~ParserAnnexB(){};
+  ParserAnnexB(QObject *parent = nullptr) : Parser(parent) {};
+  virtual ~ParserAnnexB() {};
 
   // How many POC's have been found in the file
   size_t getNumberPOCs() const { return this->frameListCodingOrder.size(); }
@@ -67,7 +67,7 @@ public:
   // Clear all knowledge about the bitstream.
   void clearData();
 
-  vector<QTreeWidgetItem *> getStreamInfo() override { return this->stream_info.getStreamInfo(); }
+  vector<QTreeWidgetItem *> getStreamInfo() override { return this->streamInfo.getStreamInfo(); }
   unsigned int              getNrStreams() override { return 1; }
   std::string               getShortStreamDescription(const int streamIndex) const override;
 
@@ -89,7 +89,7 @@ public:
     std::optional<BitratePlotModel::BitrateEntry> bitrateEntry;
   };
   virtual ParseResult parseAndAddNALUnit(int                                           nalID,
-                                         const ByteVector &                            data,
+                                         const ByteVector                             &data,
                                          std::optional<BitratePlotModel::BitrateEntry> bitrateEntry,
                                          std::optional<pairUint64> nalStartEndPosFile = {},
                                          std::shared_ptr<TreeItem> parent = nullptr) = 0;
@@ -117,8 +117,8 @@ public:
     FrameIndexDisplayOrder frameIndex{};
     unsigned               frameDistanceInCodingOrder{};
   };
-  auto getClosestSeekPoint(FrameIndexDisplayOrder targetFrame, FrameIndexDisplayOrder currentFrame)
-      -> SeekPointInfo;
+  auto getClosestSeekPoint(FrameIndexDisplayOrder targetFrame,
+                           FrameIndexDisplayOrder currentFrame) -> SeekPointInfo;
 
   // Get the parameters sets as extradata. The format of this depends on the underlying codec.
   virtual QByteArray getExtradata() = 0;
@@ -131,7 +131,7 @@ public:
   bool parseAnnexBFile(std::unique_ptr<FileSourceAnnexBFile> &file, QWidget *mainWindow = nullptr);
 
   // Called from the bitstream analyzer. This function can run in a background process.
-  bool runParsingOfFile(QString compressedFilePath) override;
+  bool runParsingOfFile(const std::filesystem::path &compressedFilePath) override;
 
 protected:
   struct AnnexBFrame
@@ -152,23 +152,23 @@ protected:
                       bool                      randomAccessPoint,
                       unsigned                  layerID);
 
-  static void logNALSize(const ByteVector &        data,
+  static void logNALSize(const ByteVector         &data,
                          std::shared_ptr<TreeItem> root,
                          std::optional<pairUint64> nalStartEndPos);
 
   std::optional<int> pocOfFirstRandomAccessFrame{};
 
   // Save general information about the file here
-  struct stream_info_type
+  struct StreamInfo
   {
     vector<QTreeWidgetItem *> getStreamInfo();
 
-    size_t   file_size;
-    unsigned nr_nal_units{0};
-    unsigned nr_frames{0};
+    int64_t  file_size{};
+    unsigned nrNalUnits{0};
+    unsigned nrFrames{0};
     bool     parsing{false};
   };
-  stream_info_type stream_info;
+  StreamInfo streamInfo{};
 
   int getFramePOC(FrameIndexDisplayOrder frameIdx);
 

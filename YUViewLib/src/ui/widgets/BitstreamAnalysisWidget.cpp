@@ -196,7 +196,7 @@ void BitstreamAnalysisWidget::stopAndDeleteParserBlocking()
 void BitstreamAnalysisWidget::backgroundParsingFunction()
 {
   if (this->parser)
-    this->parser->runParsingOfFile(this->currentCompressedVideo->properties().name);
+    this->parser->runParsingOfFile(this->currentCompressedVideo->properties().name.toStdString());
 }
 
 void BitstreamAnalysisWidget::currentSelectedItemsChanged(playlistItem *item1, playlistItem *, bool)

@@ -47,10 +47,9 @@ class FileSourceAnnexBFile : public FileSource
 
 public:
   FileSourceAnnexBFile();
-  FileSourceAnnexBFile(const QString &filePath) : FileSourceAnnexBFile() { openFile(filePath); }
-  ~FileSourceAnnexBFile(){};
+  FileSourceAnnexBFile(const std::filesystem::path &filePath);
 
-  bool openFile(const QString &filePath) override;
+  bool openFile(const std::filesystem::path &filePath) override;
 
   // Is the file at the end?
   bool atEnd() const override;

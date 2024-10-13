@@ -1,34 +1,34 @@
 /*  This file is part of YUView - The YUV player with advanced analytics toolset
-*   <https://github.com/IENT/YUView>
-*   Copyright (C) 2015  Institut für Nachrichtentechnik, RWTH Aachen University, GERMANY
-*
-*   This program is free software; you can redistribute it and/or modify
-*   it under the terms of the GNU General Public License as published by
-*   the Free Software Foundation; either version 3 of the License, or
-*   (at your option) any later version.
-*
-*   In addition, as a special exception, the copyright holders give
-*   permission to link the code of portions of this program with the
-*   OpenSSL library under certain conditions as described in each
-*   individual source file, and distribute linked combinations including
-*   the two.
-*   
-*   You must obey the GNU General Public License in all respects for all
-*   of the code used other than OpenSSL. If you modify file(s) with this
-*   exception, you may extend this exception to your version of the
-*   file(s), but you are not obligated to do so. If you do not wish to do
-*   so, delete this exception statement from your version. If you delete
-*   this exception statement from all source files in the program, then
-*   also delete it here.
-*
-*   This program is distributed in the hope that it will be useful,
-*   but WITHOUT ANY WARRANTY; without even the implied warranty of
-*   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-*   GNU General Public License for more details.
-*
-*   You should have received a copy of the GNU General Public License
-*   along with this program. If not, see <http://www.gnu.org/licenses/>.
-*/
+ *   <https://github.com/IENT/YUView>
+ *   Copyright (C) 2015  Institut für Nachrichtentechnik, RWTH Aachen University, GERMANY
+ *
+ *   This program is free software; you can redistribute it and/or modify
+ *   it under the terms of the GNU General Public License as published by
+ *   the Free Software Foundation; either version 3 of the License, or
+ *   (at your option) any later version.
+ *
+ *   In addition, as a special exception, the copyright holders give
+ *   permission to link the code of portions of this program with the
+ *   OpenSSL library under certain conditions as described in each
+ *   individual source file, and distribute linked combinations including
+ *   the two.
+ *
+ *   You must obey the GNU General Public License in all respects for all
+ *   of the code used other than OpenSSL. If you modify file(s) with this
+ *   exception, you may extend this exception to your version of the
+ *   file(s), but you are not obligated to do so. If you do not wish to do
+ *   so, delete this exception statement from your version. If you delete
+ *   this exception statement from all source files in the program, then
+ *   also delete it here.
+ *
+ *   This program is distributed in the hope that it will be useful,
+ *   but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ *   GNU General Public License for more details.
+ *
+ *   You should have received a copy of the GNU General Public License
+ *   along with this program. If not, see <http://www.gnu.org/licenses/>.
+ */
 
 #pragma once
 
@@ -36,10 +36,7 @@
 #include <QPixmap>
 #include <QWidget>
 
-#include "common/FileInfo.h"
-
-// This is the text that will be shown in the dockWidgets title if no playlistitem is selected
-#define FILEINFOWIDGET_DEFAULT_WINDOW_TITLE "Info"
+#include "common/InfoItemAndData.h"
 
 class FileInfoWidget : public QWidget
 {
@@ -58,18 +55,8 @@ public:
   Q_SIGNAL void infoButtonClicked(int infoIndex, int row);
 
 private:
-  // Clear widgets starting at given row.
-  void clear(int startRow);
+  int addInfoDataItemsAndGetNextRowIndex(const InfoData &data, int row);
 
-  // Add information at the given grid row, for a given InfoData index (0 or 1).
-  int addInfo(const InfoData &data, int row, int infoIndex);
-
-  // One of the buttons in the info panel was clicked.
-  void infoButtonClickedSlot();
-
-  // The grid layout that contains all the InfoItems
   QGridLayout grid;
-    
-  // The warning icon. This is shown instead of a text if the name of the InfoItem is "Warning"
-  QPixmap warningIcon;
+  QPixmap     warningIcon;
 };

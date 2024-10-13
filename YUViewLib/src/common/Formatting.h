@@ -73,7 +73,7 @@ template <typename T> std::string to_string(const std::vector<T> vec)
 
 static std::ostream &operator<<(std::ostream &stream, const Size &size)
 {
-  stream << "(" << size.width << "x" << size.height << ")";
+  stream << size.width << "x" << size.height;
   return stream;
 }
 
@@ -89,13 +89,31 @@ inline std::string to_string(const bool b)
   return b ? "True" : "False";
 }
 
+template <typename T>
+static std::ostream &operator<<(std::ostream &stream, const std::optional<T> &opt)
+{
+  if (opt)
+    stream << opt;
+  else
+    stream << "NA";
+  return stream;
+}
+
+template <typename T> inline std::string to_string(const std::optional<T> &opt)
+{
+  std::ostringstream stream;
+  stream << opt;
+  return stream.str();
+}
+
 inline std::string stringReplaceAll(std::string str, char value, char replacement)
 {
   std::replace(str.begin(), str.end(), value, replacement);
   return str;
 }
 
-inline std::string stringReplaceAll(std::string str, std::initializer_list<char> values, char replacement)
+inline std::string
+stringReplaceAll(std::string str, std::initializer_list<char> values, char replacement)
 {
   std::replace_if(
       str.begin(),

@@ -37,6 +37,7 @@
 #include <QSettings>
 #include <QUrl>
 
+#include <common/Formatting.h>
 #include <common/FunctionsGui.h>
 #include <filesource/FileSource.h>
 
@@ -101,7 +102,7 @@ void playlistItemImageFile::savePlaylist(QDomElement &root, const QDir &playlist
  */
 playlistItemImageFile *
 playlistItemImageFile::newplaylistItemImageFile(const YUViewDomElement &root,
-                                                const QString &         playlistFilePath)
+                                                const QString          &playlistFilePath)
 {
   // Parse the DOM element. It should have all values of a playlistItemImageFile
   auto absolutePath = root.findChildValue("absolutePath");
@@ -185,20 +186,20 @@ InfoData playlistItemImageFile::getInfo() const
 {
   InfoData info("Image Info");
 
-  info.items.append(InfoItem("File", this->properties().name));
+  info.items.append(InfoItem("File", this->properties().name.toStdString()));
   if (frame.isFormatValid())
   {
-    auto frameSize = frame.getFrameSize();
     info.items.append(InfoItem("Resolution",
-                               QString("%1x%2").arg(frameSize.width).arg(frameSize.height),
+                               to_string(frame.getFrameSize()),
                                "The video resolution in pixel (width x height)"));
     info.items.append(InfoItem(
-        "Bit depth", QString::number(frame.getImageBitDepth()), "The bit depth of the image."));
+        "Bit depth", std::to_string(frame.getImageBitDepth()), "The bit depth of the image."));
   }
   else if (isLoading())
-    info.items.append(InfoItem("Status", "Loading...", "The image is being loaded. Please wait."));
+    info.items.append(
+        InfoItem("Status"sv, "Loading...", "The image is being loaded. Please wait."));
   else
-    info.items.append(InfoItem("Status", "Error", "There was an error loading the image."));
+    info.items.append(InfoItem("Status"sv, "Error", "There was an error loading the image."));
 
   return info;
 }

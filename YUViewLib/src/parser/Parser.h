@@ -37,6 +37,7 @@
 #include <QString>
 #include <QTreeWidgetItem>
 
+#include <filesystem>
 #include <memory>
 
 #include "common/BitratePlotModel.h"
@@ -62,8 +63,8 @@ public:
   virtual ~Parser() = 0;
 
   QAbstractItemModel *getPacketItemModel() { return streamIndexFilter.get(); }
-  BitratePlotModel *  getBitratePlotModel() { return bitratePlotModel.get(); }
-  HRDPlotModel *      getHRDPlotModel();
+  BitratePlotModel   *getBitratePlotModel() { return bitratePlotModel.get(); }
+  HRDPlotModel       *getHRDPlotModel();
   void                setRedirectPlotModel(HRDPlotModel *plotModel);
 
   void updateNumberModelItems();
@@ -74,7 +75,7 @@ public:
   virtual unsigned int              getNrStreams()  = 0;
 
   // For parsing files in the background (threading) in the bitstream analysis dialog:
-  virtual bool runParsingOfFile(QString fileName) = 0;
+  virtual bool runParsingOfFile(const std::filesystem::path &fileName) = 0;
   int          getParsingProgressPercent() { return progressPercentValue; }
   void         setAbortParsing() { cancelBackgroundParser = true; }
 
@@ -114,7 +115,7 @@ protected:
 
 private:
   std::unique_ptr<HRDPlotModel> hrdPlotModel;
-  HRDPlotModel *                redirectPlotModel{nullptr};
+  HRDPlotModel                 *redirectPlotModel{nullptr};
 };
 
 } // namespace parser

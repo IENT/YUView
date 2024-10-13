@@ -32,7 +32,7 @@
 
 #pragma once
 
-#include <common/FileInfo.h>
+#include <common/InfoItemAndData.h>
 #include <common/SaveUi.h>
 #include <common/Typedef.h>
 #include <common/YUViewDomElement.h>
@@ -227,7 +227,7 @@ public:
   virtual unsigned int getCachingFrameSize() const { return 0; }
   // Remove the frame with the given index from the cache.
   virtual void removeFrameFromCache(int) {}
-  virtual void removeAllFramesFromCache(){};
+  virtual void removeAllFramesFromCache() {};
 
   // ----- Detection of source/file change events -----
 

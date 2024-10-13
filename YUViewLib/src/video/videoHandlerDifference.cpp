@@ -292,9 +292,10 @@ void videoHandlerDifference::reportFirstDifferencePosition(QList<InfoItem> &info
                                       videoYUV0->getDiffYUVFormat()))
           {
             // We found a difference in this block
-            infoList.append(InfoItem("First diff LCU", QString::number(y * widthLCU + x)));
-            infoList.append(InfoItem("First diff X,Y", QString("%1,%2").arg(firstX).arg(firstY)));
-            infoList.append(InfoItem("First diff partIndex", QString::number(partIndex)));
+            infoList.append(InfoItem("First diff LCU", std::to_string(y * widthLCU + x)));
+            infoList.append(
+                InfoItem("First diff X,Y", std::to_string(firstX) + "," + std::to_string(firstY)));
+            infoList.append(InfoItem("First diff partIndex", std::to_string(partIndex)));
             return;
           }
         }
@@ -303,9 +304,10 @@ void videoHandlerDifference::reportFirstDifferencePosition(QList<InfoItem> &info
           if (hierarchicalPosition(x * 64, y * 64, 64, firstX, firstY, partIndex, currentImage))
           {
             // We found a difference in this block
-            infoList.append(InfoItem("First diff LCU", QString::number(y * widthLCU + x)));
-            infoList.append(InfoItem("First diff X,Y", QString("%1,%2").arg(firstX).arg(firstY)));
-            infoList.append(InfoItem("First diff partIndex", QString::number(partIndex)));
+            infoList.append(InfoItem("First diff LCU", std::to_string(y * widthLCU + x)));
+            infoList.append(
+                InfoItem("First diff X,Y", std::to_string(firstX) + "," + std::to_string(firstY)));
+            infoList.append(InfoItem("First diff partIndex", std::to_string(partIndex)));
             return;
           }
         }
@@ -314,7 +316,7 @@ void videoHandlerDifference::reportFirstDifferencePosition(QList<InfoItem> &info
   }
 
   // No difference was found
-  infoList.append(InfoItem("Difference", "Frames are identical"));
+  infoList.append(InfoItem("Difference"sv, "Frames are identical"));
 }
 
 void videoHandlerDifference::savePlaylist(YUViewDomElement &element) const

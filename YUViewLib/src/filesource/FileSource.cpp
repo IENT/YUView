@@ -32,6 +32,7 @@
 
 #include "FileSource.h"
 
+#include <common/Formatting.h>
 #include <common/Typedef.h>
 
 #include <format>
@@ -57,7 +58,7 @@ FileSource::FileSource()
           &FileSource::fileSystemWatcherFileChanged);
 }
 
-bool FileSource::openFile(const std::string &filePath)
+bool FileSource::openFile(const std::filesystem::path &filePath)
 {
   if (!std::filesystem::is_regular_file(filePath))
     return false;
@@ -117,35 +118,47 @@ std::vector<InfoItem> FileSource::getFileInfoList() const
   if (!this->isFileOpened)
     return {};
 
+  // For now we still use the QFileInfo. There is no easy cross platform formatting
+  // for the std::filesystem::file_time_type. This is added in C++ 20.
+  QFileInfo fileInfo(QString::fromStdString(this->fullFilePath.string()));
+
   std::vector<InfoItem> infoList;
+
   infoList.emplace_back("File Path", this->fullFilePath);
-  infoList.emplace_back("Time Modified", std::format())
-
-
 #if QT_VERSION < QT_VERSION_CHECK(5, 10, 0)
-  auto createdtime = this->fileInfo.created().toString("yyyy-MM-dd hh:mm:ss");
+  const auto createdtime = this->fileInfo.created().toString("yyyy-MM-dd hh:mm:ss");
 #else
-  auto createdtime = this->fileInfo.birthTime().toString("yyyy-MM-dd hh:mm:ss");
+  const auto createdtime = fileInfo.birthTime().toString("yyyy-MM-dd hh:mm:ss");
 #endif
   infoList.emplace_back("Time Created", createdtime.toStdString());
   infoList.emplace_back("Time Modified",
-                        this->fileInfo.lastModified().toString("yyyy-MM-dd hh:mm:ss"));
-  infoList.emplace_back("Nr Bytes", QString("%1").arg(this->fileInfo.size()));
+                        fileInfo.lastModified().toString("yyyy-MM-dd hh:mm:ss").toStdString());
+
+  if (const auto size = this->getFileSize())
+    infoList.emplace_back("Nr Bytes", to_string(this->getFileSize()));
 
   return infoList;
 }
 
-int64_t FileSource::getFileSize() const
+std::optional<int64_t> FileSource::getFileSize() const
 {
   if (!this->isFileOpened)
-    return -1;
+    return {};
 
-  return !isFileOpened ? -1 : fileInfo.size();
+  try
+  {
+    const auto size = std::filesystem::file_size(this->fullFilePath);
+    return static_cast<int64_t>(size);
+  }
+  catch (const std::filesystem::filesystem_error &e)
+  {
+    return {};
+  }
 }
 
-QString FileSource::getAbsoluteFilePath() const
+std::string FileSource::getAbsoluteFilePath() const
 {
-  return this->isFileOpened ? this->fileInfo.absoluteFilePath() : QString();
+  return this->isFileOpened ? this->fullFilePath.string() : "";
 }
 
 // If you are loading a playlist and you have an absolute path and a relative path, this function
@@ -184,9 +197,9 @@ void FileSource::updateFileWatchSetting()
   // The addPath/removePath functions will do nothing if called twice for the same file.
   QSettings settings;
   if (settings.value("WatchFiles", true).toBool())
-    fileWatcher.addPath(this->fullFilePath);
+    fileWatcher.addPath(QString::fromStdString(this->fullFilePath.string()));
   else
-    fileWatcher.removePath(this->fullFilePath);
+    fileWatcher.removePath(QString::fromStdString(this->fullFilePath.string()));
 }
 
 void FileSource::clearFileCache()
@@ -202,7 +215,7 @@ void FileSource::clearFileCache()
   QMutexLocker locker(&this->readMutex);
   this->srcFile.close();
 
-  LPCWSTR file = (const wchar_t *)this->fullFilePath.utf16();
+  LPCWSTR file = this->fullFilePath.wstring().c_str();
   HANDLE  hFile =
       CreateFile(file, GENERIC_READ, 0, NULL, OPEN_EXISTING, FILE_FLAG_NO_BUFFERING, NULL);
   CloseHandle(hFile);

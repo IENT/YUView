@@ -37,7 +37,7 @@ namespace stats
 
 StatisticsFileBase::StatisticsFileBase(const QString &filename)
 {
-  this->file.openFile(filename);
+  this->file.openFile(filename.toStdString());
   if (!this->file.isOk())
   {
     this->errorMessage = "Error opening file " + filename;
@@ -45,23 +45,25 @@ StatisticsFileBase::StatisticsFileBase(const QString &filename)
   }
 }
 
-StatisticsFileBase::~StatisticsFileBase() { this->abortParsingDestroy = true; }
+StatisticsFileBase::~StatisticsFileBase()
+{
+  this->abortParsingDestroy = true;
+}
 
 InfoData StatisticsFileBase::getInfo() const
 {
   InfoData info("Statistics File info");
 
-  // Append the file information (path, date created, file size...)
-  info.items.append(this->file.getFileInfoList());
-  info.items.append(InfoItem("Sorted by POC", this->fileSortedByPOC ? "Yes" : "No"));
-  info.items.append(InfoItem("Parsing:", QString("%1%...").arg(this->parsingProgress, 0, 'f', 2)));
+  for (const auto &infoItem : this->file.getFileInfoList())
+    info.items.append(infoItem);
+  info.items.append(InfoItem("Sorted by POC"sv, this->fileSortedByPOC ? "Yes" : "No"));
+  info.items.append(InfoItem("Parsing:", std::to_string(this->parsingProgress) + "..."));
   if (this->blockOutsideOfFramePOC != -1)
-    info.items.append(
-        InfoItem("Warning",
-                 QString("A block in frame %1 is outside of the given size of the statistics.")
-                     .arg(this->blockOutsideOfFramePOC)));
+    info.items.append(InfoItem("Warning",
+                               "A block in frame " + std::to_string(this->blockOutsideOfFramePOC) +
+                                   " is outside of the given size of the statistics."));
   if (this->error)
-    info.items.append(InfoItem("Parsing Error:", this->errorMessage));
+    info.items.append(InfoItem("Parsing Error:", this->errorMessage.toStdString()));
 
   return info;
 }

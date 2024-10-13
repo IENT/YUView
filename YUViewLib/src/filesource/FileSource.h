@@ -70,10 +70,10 @@ class FileSource : public QObject
 public:
   FileSource();
 
-  virtual bool openFile(const std::string &filePath);
+  virtual bool openFile(const std::filesystem::path &filePath);
 
   virtual std::vector<InfoItem> getFileInfoList() const;
-  int64_t                       getFileSize() const;
+  std::optional<int64_t>        getFileSize() const;
   std::string                   getAbsoluteFilePath() const;
   QFile                        *getQFile() { return &this->srcFile; }
   bool                          getAndResetFileChangedFlag();
@@ -106,9 +106,9 @@ private slots:
   void fileSystemWatcherFileChanged(const QString &) { fileChanged = true; }
 
 protected:
-  std::string fullFilePath{};
-  QFile       srcFile;
-  bool        isFileOpened{};
+  std::filesystem::path fullFilePath{};
+  QFile                 srcFile;
+  bool                  isFileOpened{};
 
 private:
   QFileSystemWatcher fileWatcher{};

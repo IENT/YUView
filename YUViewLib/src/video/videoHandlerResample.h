@@ -32,7 +32,7 @@
 
 #pragma once
 
-#include <common/FileInfo.h>
+#include <common/InfoItemAndData.h>
 
 #include <video/videoHandler.h>
 #include <video/yuv/videoHandlerYUV.h>
@@ -57,7 +57,7 @@ public:
 
   // We need to override these videoHandler functions in order to map the frameIndex
   void drawFrame(QPainter *painter, int frameIndex, double zoomFactor, bool drawRawValues) override;
-  QImage           calculateDifference(FrameHandler *   item2,
+  QImage           calculateDifference(FrameHandler    *item2,
                                        const int        frameIndex0,
                                        const int        frameIndex1,
                                        QList<InfoItem> &differenceInfoList,

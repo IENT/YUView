@@ -81,7 +81,7 @@ playlistItemRawFile::playlistItemRawFile(const QString &rawFilePath,
   this->prop.isFileSource          = true;
   this->prop.propertiesWidgetTitle = "Raw File Properties";
 
-  this->dataSource.openFile(rawFilePath);
+  this->dataSource.openFile(std::filesystem::path(rawFilePath.toStdString()));
 
   if (!this->dataSource.isOk())
   {
@@ -135,7 +135,7 @@ playlistItemRawFile::playlistItemRawFile(const QString &rawFilePath,
       // Load 24883200 bytes from the input and try to get the format from the correlation.
       QByteArray rawData;
       this->dataSource.readBytes(rawData, 0, 24883200);
-      this->video->setFormatFromCorrelation(rawData, this->dataSource.getFileSize());
+      this->video->setFormatFromCorrelation(rawData, this->dataSource.getFileSize().value_or(-1));
     }
   }
   else
@@ -189,7 +189,7 @@ void playlistItemRawFile::updateStartEndRange()
       this->prop.startEndRange = indexRange(-1, -1);
       return;
     }
-    nrFrames = this->dataSource.getFileSize() / bpf;
+    nrFrames = this->dataSource.getFileSize().value_or(0) / bpf;
   }
 
   this->prop.startEndRange = indexRange(0, std::max(nrFrames - 1, 0));
@@ -200,13 +200,13 @@ InfoData playlistItemRawFile::getInfo() const
   InfoData info((rawFormat == video::RawFormat::YUV) ? "YUV File Info" : "RGB File Info");
 
   // At first append the file information part (path, date created, file size...)
-  info.items.append(this->dataSource.getFileInfoList());
+  for (const auto &infoItem : this->dataSource.getFileInfoList())
+    info.items.append(infoItem);
 
-  auto nrFrames =
+  const auto nrFrames =
       (this->properties().startEndRange.second - this->properties().startEndRange.first + 1);
-  info.items.append(InfoItem("Num Frames", QString::number(nrFrames)));
-  info.items.append(
-      InfoItem("Bytes per Frame", QString("%1").arg(this->video->getBytesPerFrame())));
+  info.items.append(InfoItem("Num Frames", std::to_string(nrFrames)));
+  info.items.append(InfoItem("Bytes per Frame", std::to_string(this->video->getBytesPerFrame())));
 
   if (this->dataSource.isOk() && this->video->isFormatValid() && !this->isY4MFile)
   {
@@ -215,12 +215,14 @@ InfoData playlistItemRawFile::getInfo() const
     // selected YUV format / width / height ...
 
     auto bpf = this->video->getBytesPerFrame();
-    if ((this->dataSource.getFileSize() % bpf) != 0)
+    if (const auto fileSize = this->dataSource.getFileSize())
     {
-      // Add a warning
-      info.items.append(InfoItem(
-          "Warning", "The file size and the given video size and/or raw format do not match."));
+      if ((*fileSize % bpf) != 0)
+        info.items.append(InfoItem(
+            "Warning"sv, "The file size and the given video size and/or raw format do not match."));
     }
+    else
+      info.items.append(InfoItem("Warning"sv, "Could not obtain file size from input."));
   }
 
   return info;
@@ -447,7 +449,9 @@ bool playlistItemRawFile::parseY4MFile()
 
 void playlistItemRawFile::setFormatFromFileName()
 {
-  const auto fileFormat = guessFormatFromFilename(this->dataSource.getFileInfo());
+  const QFileInfo fileInfo(QString::fromStdString(this->dataSource.getAbsoluteFilePath()));
+
+  const auto fileFormat = guessFormatFromFilename(fileInfo);
   if (fileFormat.frameSize.isValid())
   {
     this->video->setFrameSize(fileFormat.frameSize);
@@ -458,8 +462,8 @@ void playlistItemRawFile::setFormatFromFileName()
                                           fileFormat.bitDepth,
                                           fileFormat.packed ? video::DataLayout::Packed
                                                             : video::DataLayout::Planar,
-                                          dataSource.getFileSize(),
-                                          dataSource.getFileInfo());
+                                          this->dataSource.getFileSize().value_or(-1),
+                                          fileInfo);
     if (fileFormat.frameRate != -1)
       this->prop.frameRate = fileFormat.frameRate;
   }
@@ -490,9 +494,10 @@ void playlistItemRawFile::createPropertiesWidget()
 
 void playlistItemRawFile::savePlaylist(QDomElement &root, const QDir &playlistDir) const
 {
-  QUrl fileURL(dataSource.getAbsoluteFilePath());
+  QUrl fileURL(QString::fromStdString(dataSource.getAbsoluteFilePath()));
   fileURL.setScheme("file");
-  auto relativePath = playlistDir.relativeFilePath(dataSource.getAbsoluteFilePath());
+  auto relativePath =
+      playlistDir.relativeFilePath(QString::fromStdString(dataSource.getAbsoluteFilePath()));
 
   auto d = YUViewDomElement(root.ownerDocument().createElement("playlistItemRawFile"));
 
@@ -589,7 +594,7 @@ void playlistItemRawFile::getSupportedFileExtensions(QStringList &allExtensions,
 void playlistItemRawFile::reloadItemSource()
 {
   // Reopen the file
-  this->dataSource.openFile(this->properties().name);
+  this->dataSource.openFile(this->properties().name.toStdString());
   if (!this->dataSource.isOk())
     // Opening the file failed.
     return;

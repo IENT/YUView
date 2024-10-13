@@ -279,6 +279,7 @@ struct Size
   {
     return this->width != other.width || this->height != other.height;
   }
+  explicit       operator bool() const { return this->isValid(); }
   constexpr bool isValid() const { return this->width > 0 && this->height > 0; }
   unsigned       width{};
   unsigned       height{};
@@ -345,7 +346,7 @@ Q_DECLARE_METATYPE(recacheIndicator)
 template <typename... Args> struct QNonConstOverload
 {
   template <typename R, typename T>
-  Q_DECL_CONSTEXPR auto operator()(R (T::*ptr)(Args...)) const Q_DECL_NOTHROW -> decltype(ptr)
+  Q_DECL_CONSTEXPR auto operator()(R (T::*ptr)(Args...)) const Q_DECL_NOTHROW->decltype(ptr)
   {
     return ptr;
   }
@@ -358,7 +359,7 @@ template <typename... Args> struct QNonConstOverload
 template <typename... Args> struct QConstOverload
 {
   template <typename R, typename T>
-  Q_DECL_CONSTEXPR auto operator()(R (T::*ptr)(Args...) const) const Q_DECL_NOTHROW -> decltype(ptr)
+  Q_DECL_CONSTEXPR auto operator()(R (T::*ptr)(Args...) const) const Q_DECL_NOTHROW->decltype(ptr)
   {
     return ptr;
   }
@@ -375,7 +376,7 @@ template <typename... Args> struct QOverload : QConstOverload<Args...>, QNonCons
   using QNonConstOverload<Args...>::of;
   using QNonConstOverload<Args...>::operator();
   template <typename R>
-  Q_DECL_CONSTEXPR auto operator()(R (*ptr)(Args...)) const Q_DECL_NOTHROW -> decltype(ptr)
+  Q_DECL_CONSTEXPR auto operator()(R (*ptr)(Args...)) const Q_DECL_NOTHROW->decltype(ptr)
   {
     return ptr;
   }

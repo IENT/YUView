@@ -36,6 +36,7 @@
 #include <QSettings>
 #include <QUrl>
 
+#include <common/Formatting.h>
 #include <common/FunctionsGui.h>
 #include <filesource/FileSource.h>
 
@@ -91,7 +92,7 @@ bool playlistItemImageFileSequence::isImageSequence(const QString &filePath)
   return files.count() > 1;
 }
 
-void playlistItemImageFileSequence::fillImageFileList(QStringList &  imageFiles,
+void playlistItemImageFileSequence::fillImageFileList(QStringList   &imageFiles,
                                                       const QString &filePath)
 {
   // See if the filename ends with a number
@@ -170,19 +171,17 @@ InfoData playlistItemImageFileSequence::getInfo() const
 
   if (this->video->isFormatValid())
   {
-    auto videoSize = this->video->getFrameSize();
-    auto nrFrames  = this->imageFiles.size();
-    info.items.append(InfoItem("Num Frames", QString::number(nrFrames)));
+    info.items.append(InfoItem("Num Frames", std::to_string(this->imageFiles.size())));
     info.items.append(InfoItem("Resolution",
-                               QString("%1x%2").arg(videoSize.width).arg(videoSize.height),
+                               to_string(this->video->getFrameSize()),
                                "The video resolution in pixels (width x height)"));
   }
   else
-    info.items.append(InfoItem("Status", "Error", "There was an error loading the image."));
+    info.items.append(InfoItem("Status"sv, "Error", "There was an error loading the image."));
 
   if (loadPlaylistFrameMissing)
     info.items.append(
-        InfoItem("Warning",
+        InfoItem("Warning"sv,
                  "Frames missing",
                  "At least one frame could not be found when loading from playlist."));
 
