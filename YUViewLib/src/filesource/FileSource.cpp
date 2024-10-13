@@ -35,8 +35,6 @@
 #include <common/Formatting.h>
 #include <common/Typedef.h>
 
-#include <format>
-
 #include <QDateTime>
 #include <QDir>
 #include <QSettings>

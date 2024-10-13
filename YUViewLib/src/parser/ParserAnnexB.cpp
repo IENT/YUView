@@ -287,12 +287,12 @@ bool ParserAnnexB::runParsingOfFile(const std::filesystem::path &compressedFileP
   return this->parseAnnexBFile(file);
 }
 
-vector<QTreeWidgetItem *> ParserAnnexB::StreamInfo::getStreamInfo()
+vector<QTreeWidgetItem *> ParserAnnexB::createTreeItemsFromStreamInfo() const
 {
   vector<QTreeWidgetItem *> infoList;
-  infoList.push_back(
-      new QTreeWidgetItem(QStringList() << "File size" << QString::number(file_size)));
-  if (parsing)
+  infoList.push_back(new QTreeWidgetItem(
+      QStringList() << "File size" << QString::number(this->streamInfo.file_size)));
+  if (this->streamInfo.parsing)
   {
     infoList.push_back(new QTreeWidgetItem(QStringList() << "Number NAL units"
                                                          << "Parsing..."));
@@ -301,10 +301,10 @@ vector<QTreeWidgetItem *> ParserAnnexB::StreamInfo::getStreamInfo()
   }
   else
   {
-    infoList.push_back(new QTreeWidgetItem(QStringList() << "Number NAL units"
-                                                         << QString::number(this->nrNalUnits)));
-    infoList.push_back(
-        new QTreeWidgetItem(QStringList() << "Number Frames" << QString::number(this->nrFrames)));
+    infoList.push_back(new QTreeWidgetItem(
+        QStringList() << "Number NAL units" << QString::number(this->streamInfo.nrNalUnits)));
+    infoList.push_back(new QTreeWidgetItem(
+        QStringList() << "Number Frames" << QString::number(this->streamInfo.nrFrames)));
   }
 
   return infoList;

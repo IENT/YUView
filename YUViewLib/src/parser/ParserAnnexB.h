@@ -67,7 +67,7 @@ public:
   // Clear all knowledge about the bitstream.
   void clearData();
 
-  vector<QTreeWidgetItem *> getStreamInfo() override { return this->streamInfo.getStreamInfo(); }
+  vector<QTreeWidgetItem *> getStreamInfo() override { return createTreeItemsFromStreamInfo(); }
   unsigned int              getNrStreams() override { return 1; }
   std::string               getShortStreamDescription(const int streamIndex) const override;
 
@@ -161,14 +161,13 @@ protected:
   // Save general information about the file here
   struct StreamInfo
   {
-    vector<QTreeWidgetItem *> getStreamInfo();
-
     int64_t  file_size{};
     unsigned nrNalUnits{0};
     unsigned nrFrames{0};
     bool     parsing{false};
   };
-  StreamInfo streamInfo{};
+  StreamInfo                streamInfo{};
+  vector<QTreeWidgetItem *> createTreeItemsFromStreamInfo() const;
 
   int getFramePOC(FrameIndexDisplayOrder frameIdx);
 
