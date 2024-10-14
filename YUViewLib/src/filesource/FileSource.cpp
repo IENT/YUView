@@ -122,7 +122,7 @@ std::vector<InfoItem> FileSource::getFileInfoList() const
 
   std::vector<InfoItem> infoList;
 
-  infoList.emplace_back("File Path", this->fullFilePath);
+  infoList.emplace_back("File Path", this->fullFilePath.string());
 #if QT_VERSION < QT_VERSION_CHECK(5, 10, 0)
   const auto createdtime = this->fileInfo.created().toString("yyyy-MM-dd hh:mm:ss");
 #else
