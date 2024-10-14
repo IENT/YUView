@@ -51,7 +51,7 @@ template <typename T> std::string to_string(const std::pair<T, T> &typePair)
   return stream.str();
 }
 
-template <typename T> std::ostream &operator<<(std::ostream &stream, const std::vector<T> vec)
+template <typename T> std::ostream &operator<<(std::ostream &stream, const std::vector<T> &vec)
 {
   stream << "[";
   for (auto it = vec.begin(); it != vec.end(); it++)
@@ -64,7 +64,7 @@ template <typename T> std::ostream &operator<<(std::ostream &stream, const std::
   return stream;
 }
 
-template <typename T> std::string to_string(const std::vector<T> vec)
+template <typename T> std::string to_string(const std::vector<T> &vec)
 {
   std::ostringstream stream;
   stream << vec;
@@ -93,7 +93,7 @@ template <typename T>
 static std::ostream &operator<<(std::ostream &stream, const std::optional<T> &opt)
 {
   if (opt)
-    stream << opt;
+    stream << opt.value();
   else
     stream << "NA";
   return stream;
