@@ -580,7 +580,8 @@ bool ParserAVFormat::runParsingOfFile(const std::filesystem::path &compressedFil
 {
   // Open the file but don't parse it yet.
   FileSourceFFmpegFile ffmpegFile;
-  if (!ffmpegFile.openFile(QString::fromStdString(compressedFilePath), nullptr, nullptr, false))
+  if (!ffmpegFile.openFile(
+          QString::fromStdString(compressedFilePath.string()), nullptr, nullptr, false))
   {
     emit backgroundParsingDone("Error opening the ffmpeg file.");
     return false;
