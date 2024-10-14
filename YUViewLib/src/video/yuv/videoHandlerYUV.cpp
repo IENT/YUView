@@ -135,7 +135,7 @@ std::pair<bool, PixelFormatYUV> convertYUVPackedToPlanar(const QByteArray     &s
   const auto h = curFrameSize.height;
 
   // Bytes per sample
-  const auto bps = (format.getBitsPerSample() > 8) ? 2u : 1u;
+  const auto bytesPerSample = get_min_standard_bytes(format.getBitsPerSample());
 
   if (format.getSubsampling() == Subsampling::YUV_422)
   {
@@ -187,7 +187,7 @@ std::pair<bool, PixelFormatYUV> convertYUVPackedToPlanar(const QByteArray     &s
     }
     else
     {
-      if (bps == 1)
+      if (bytesPerSample == 1)
       {
         // One byte per sample.
         const unsigned char *restrict src = (unsigned char *)sourceBuffer.data();
@@ -204,13 +204,28 @@ std::pair<bool, PixelFormatYUV> convertYUVPackedToPlanar(const QByteArray     &s
           src += 4; // Goto the next 4 samples
         }
       }
-      else
+      else if (bytesPerSample == 2)
       {
         // Two bytes per sample.
         const unsigned short *restrict src = (unsigned short *)sourceBuffer.data();
         unsigned short *restrict dstY      = (unsigned short *)targetBuffer.data();
         unsigned short *restrict dstU      = dstY + w * h;
         unsigned short *restrict dstV      = dstU + w / 2 * h;
+
+        for (unsigned i = 0; i < nr4Samples; i++)
+        {
+          *dstY++ = src[oY];
+          *dstY++ = src[oY + 2];
+          *dstU++ = src[oU];
+          *dstV++ = src[oV];
+          src += 4; // Goto the next 4 samples
+        }
+      } else {
+        // Four bytes per sample.
+        const unsigned long *restrict src = (unsigned long *)sourceBuffer.data();
+        unsigned long *restrict dstY      = (unsigned long *)targetBuffer.data();
+        unsigned long *restrict dstU      = dstY + w * h;
+        unsigned long *restrict dstV      = dstU + w / 2 * h;
 
         for (unsigned i = 0; i < nr4Samples; i++)
         {
@@ -239,7 +254,7 @@ std::pair<bool, PixelFormatYUV> convertYUVPackedToPlanar(const QByteArray     &s
     // How many samples to the next sample?
     const int offsetNext = (packing == PackingOrder::YUV || packing == PackingOrder::YVU ? 3 : 4);
 
-    if (bps == 1)
+    if (bytesPerSample == 1)
     {
       // One byte per sample.
       const unsigned char *restrict src = (unsigned char *)sourceBuffer.data();
@@ -255,13 +270,27 @@ std::pair<bool, PixelFormatYUV> convertYUVPackedToPlanar(const QByteArray     &s
         src += offsetNext; // Goto the next sample
       }
     }
-    else
+    else if (bytesPerSample == 2)
     {
       // Two bytes per sample.
       const unsigned short *restrict src = (unsigned short *)sourceBuffer.data();
       unsigned short *restrict dstY      = (unsigned short *)targetBuffer.data();
       unsigned short *restrict dstU      = dstY + w * h;
       unsigned short *restrict dstV      = dstU + w * h;
+
+      for (unsigned i = 0; i < w * h; i++)
+      {
+        *dstY++ = src[oY];
+        *dstU++ = src[oU];
+        *dstV++ = src[oV];
+        src += offsetNext; // Goto the next sample
+      }
+    } else {
+      // Four bytes per sample.
+      const unsigned long *restrict src = (unsigned long *)sourceBuffer.data();
+      unsigned long *restrict dstY      = (unsigned long *)targetBuffer.data();
+      unsigned long *restrict dstU      = dstY + w * h;
+      unsigned long *restrict dstV      = dstU + w * h;
 
       for (unsigned i = 0; i < w * h; i++)
       {
@@ -428,7 +457,7 @@ bool convertYUV420ToRGB(const QByteArray         &sourceBuffer,
 {
   typedef typename std::conditional<bitDepth == 8, uint8_t *, uint16_t *>::type InValueType;
   static_assert(bitDepth == 8 || bitDepth == 10);
-  constexpr auto rightShift = (bitDepth == 8) ? 0 : 2;
+  constexpr auto rightShift = (bitDepth - 8);
 
   const auto frameWidth  = size.width;
   const auto frameHeight = size.height;
@@ -669,7 +698,6 @@ inline int transformYUV(const bool         invert,
   else
     newValue = (newValue - offset) * scale + offset; // Scale + Offset
 
-  // Clip to 8 bit
   if (newValue < 0)
     newValue = 0;
   if (newValue > clipMax)
@@ -734,7 +762,11 @@ inline int getValueFromSource(const unsigned char *restrict src,
                               const int  bps,
                               const bool bigEndian)
 {
-  if (bps > 8)
+  if (bps > 16)
+    // Read four bytes in the right order
+    return (bigEndian) ? src[idx * 4] << 24 | src[idx * 4 + 1] << 16 | src[idx * 4 + 2] << 8 | src[idx * 4 + 3]
+                       : src[idx * 4] | src[idx * 4 + 1] << 8 | src[idx * 4 + 2] << 16 | src[idx * 4 + 3] << 24;
+  else if (bps > 8)
     // Read two bytes in the right order
     return (bigEndian) ? src[idx * 2] << 8 | src[idx * 2 + 1]
                        : src[idx * 2] | src[idx * 2 + 1] << 8;
@@ -746,7 +778,25 @@ inline int getValueFromSource(const unsigned char *restrict src,
 inline void setValueInBuffer(
     unsigned char *restrict dst, const int val, const int idx, const int bps, const bool bigEndian)
 {
-  if (bps > 8)
+  if (bps > 16)
+  {
+    // Write four bytes
+    if (bigEndian)
+    {
+      dst[idx * 4]     = (val & 0xff) >> 24;
+      dst[idx * 4 + 1] = (val & 0xff) >> 16;
+      dst[idx * 4 + 2] = (val & 0xff) >> 8;
+      dst[idx * 4 + 3] = val & 0xff;
+    }
+    else
+    {
+      dst[idx * 4]     = val & 0xff;
+      dst[idx * 4 + 1] = (val & 0xff) >> 8;
+      dst[idx * 4 + 2] = (val & 0xff) >> 16;
+      dst[idx * 4 + 3] = (val & 0xff) >> 24;
+    }
+  }
+  else if (bps > 8)
   {
     // Write two bytes
     if (bigEndian)
@@ -1097,8 +1147,9 @@ inline void UVPlaneResamplingChromaOffset(const PixelFormatYUV format,
   // The format to use for input/output
   const bool bigEndian = format.isBigEndian();
   const int  bps       = format.getBitsPerSample();
+  const auto bytesPerSample = get_min_standard_bytes(bps);
 
-  const int stride = bps > 8 ? w * 2 : w;
+  const int stride = bytesPerSample * w;
   if (offsetX8 != 0)
   {
     // Perform horizontal re-sampling
@@ -1997,6 +2048,7 @@ bool convertYUVPlanarToRGB(const QByteArray         &sourceBuffer,
   // const auto applyMathChroma = mathC.mathRequired();
 
   const auto bps       = format.getBitsPerSample();
+  const auto bytesPerSample = get_min_standard_bytes(bps);
   const bool fullRange = isFullRange(conversionSettings.colorConversion);
   // const auto yOffset = 16<<(bps-8);
   // const auto cZero = 128<<(bps-8);
@@ -2009,8 +2061,8 @@ bool convertYUVPlanarToRGB(const QByteArray         &sourceBuffer,
       (w / format.getSubsamplingHor()) * (h / format.getSubsamplingVer());
 
   // How many bytes are in each component?
-  const auto nrBytesLumaPlane   = (bps > 8) ? componentSizeLuma * 2 : componentSizeLuma;
-  const auto nrBytesChromaPlane = (bps > 8) ? componentSizeChroma * 2 : componentSizeChroma;
+  const auto nrBytesLumaPlane   = bytesPerSample * componentSizeLuma;
+  const auto nrBytesChromaPlane = bytesPerSample * componentSizeChroma;
 
   // If the U and V (and A if present) components are interlevaed, we have to skip every nth value
   // in the input when reading U and V
@@ -2050,7 +2102,7 @@ bool convertYUVPlanarToRGB(const QByteArray         &sourceBuffer,
       if (!firstComponent)
       {
         if (format.isUVInterleaved())
-          srcOffset += (bps > 8) ? 2 : 1;
+          srcOffset += bytesPerSample;
         else
           srcOffset += nrBytesChromaPlane;
       }
@@ -2109,7 +2161,7 @@ bool convertYUVPlanarToRGB(const QByteArray         &sourceBuffer,
     // is just 1 (or 2) bytes
     int nrBytesToNextChromaPlane = nrBytesChromaPlane;
     if (format.isUVInterleaved())
-      nrBytesToNextChromaPlane = (bps > 8) ? 2 : 1;
+      nrBytesToNextChromaPlane = bytesPerSample;
 
     // Get/set the parameters used for YUV -> RGB conversion
     int RGBConv[5];
@@ -3327,11 +3379,11 @@ void videoHandlerYUV::setFormatFromCorrelation(const QByteArray &rawYUVData, int
                                             Size(1920, 1072),
                                             Size(1920, 1080)});
 
-  // Test bit depths 8, 10 and 16
+  // Test bit depths 8, 10, 16 and 24
   std::vector<testFormatAndSize> formatList;
   for (int b = 0; b < 3; b++)
   {
-    int bits = (b == 0) ? 8 : (b == 1) ? 10 : 16;
+    int bits = (b == 0) ? 8 : (b == 1) ? 10 : (b == 2)? 16: 24;
     // Test all subsampling modes
     for (const auto &subsampling : SubsamplingMapper.getValues())
       for (const auto &size : testSizes)
@@ -3384,8 +3436,10 @@ void videoHandlerYUV::setFormatFromCorrelation(const QByteArray &rawYUVData, int
         auto ptr       = (unsigned short *)rawYUVData.data();
         testFormat.mse = computeMSE(ptr, ptr + picSize / 2, lumaSamples);
       }
-      else
-        continue;
+      else {
+        auto ptr       = (unsigned short *)rawYUVData.data();
+        testFormat.mse = computeMSE(ptr, ptr + picSize / 4, lumaSamples);
+      }
     }
   }
 
@@ -3533,6 +3587,7 @@ yuv_t videoHandlerYUV::getPixelValue(const QPoint &pixelPos) const
   const int            w      = frameSize.width;
   const int            h      = frameSize.height;
 
+  const auto bytesPerSample = get_min_standard_bytes(format.getBitsPerSample());
   yuv_t value = {0, 0, 0};
 
   if (auto predefinedFormat = format.getPredefinedFormat())
@@ -3549,10 +3604,8 @@ yuv_t videoHandlerYUV::getPixelValue(const QPoint &pixelPos) const
         (w / format.getSubsamplingHor()) * (h / format.getSubsamplingVer());
 
     // How many bytes are in each component?
-    const int nrBytesLumaPlane =
-        (format.getBitsPerSample() > 8) ? componentSizeLuma * 2 : componentSizeLuma;
-    const int nrBytesChromaPlane =
-        (format.getBitsPerSample() > 8) ? componentSizeChroma * 2 : componentSizeChroma;
+    const int nrBytesLumaPlane = bytesPerSample * componentSizeLuma;
+    const int nrBytesChromaPlane = bytesPerSample * componentSizeChroma;
 
     // Luma first
     const unsigned char *restrict srcY   = (unsigned char *)currentFrameRawData.data();
@@ -3646,7 +3699,7 @@ yuv_t videoHandlerYUV::getPixelValue(const QPoint &pixelPos) const
       {
         // The offset of the pixel in bytes
         const unsigned offsetCoordinate4Block = (w * 2 * pixelPos.y() + (pixelPos.x() / 2 * 4)) *
-                                                (format.getBitsPerSample() > 8 ? 2 : 1);
+                                                bytesPerSample;
         const unsigned char *restrict src =
             (unsigned char *)currentFrameRawData.data() + offsetCoordinate4Block;
 
@@ -3675,7 +3728,7 @@ yuv_t videoHandlerYUV::getPixelValue(const QPoint &pixelPos) const
       // How many bytes to the next sample?
       const int offsetNext =
           (packing == PackingOrder::YUV || packing == PackingOrder::YVU ? 3 : 4) *
-          (format.getBitsPerSample() > 8 ? 2 : 1);
+          bytesPerSample;
       const int offsetSrc               = (w * pixelPos.y() + pixelPos.x()) * offsetNext;
       const unsigned char *restrict src = (unsigned char *)currentFrameRawData.data() + offsetSrc;
 
@@ -3700,6 +3753,7 @@ bool videoHandlerYUV::markDifferencesYUVPlanarToRGB(const QByteArray     &source
   const auto h      = curFrameSize.height;
 
   const int bps   = format.getBitsPerSample();
+  const int bytesPerSample = get_min_standard_bytes(bps);
   const int cZero = 128 << (bps - 8);
 
   // Other bit depths not (yet) supported. w and h must be divisible by the subsampling.
@@ -3713,8 +3767,8 @@ bool videoHandlerYUV::markDifferencesYUVPlanarToRGB(const QByteArray     &source
       (w / format.getSubsamplingHor()) * (h / format.getSubsamplingVer());
 
   // How many bytes are in each component?
-  const int nrBytesLumaPlane   = (bps > 8) ? componentSizeLuma * 2 : componentSizeLuma;
-  const int nrBytesChromaPlane = (bps > 8) ? componentSizeChroma * 2 : componentSizeChroma;
+  const int nrBytesLumaPlane   = bytesPerSample * componentSizeLuma;
+  const int nrBytesChromaPlane = bytesPerSample * componentSizeChroma;
 
   // Is this big endian (actually the difference buffer should always be big endian)
   const bool bigEndian = format.isBigEndian();
@@ -3821,7 +3875,11 @@ QImage videoHandlerYUV::calculateDifference(FrameHandler    *item2,
   // up.
   const unsigned bps_in[2] = {srcPixelFormat.getBitsPerSample(),
                               yuvItem2->srcPixelFormat.getBitsPerSample()};
+  const unsigned bytesPerSample[2] = {static_cast<unsigned int>(get_min_standard_bytes(bps_in[0])),
+                                    static_cast<unsigned int>(get_min_standard_bytes(bps_in[1]))};
   const auto     bps_out   = std::max(bps_in[0], bps_in[1]);
+  const auto bytesPerSample_out = get_min_standard_bytes(bps_out);
+
   // Which of the two input values has to be scaled up? Only one of these (or neither) can be set.
   const bool bitDepthScaling[2] = {bps_in[0] != bps_out, bps_in[1] != bps_out};
   // Scale the input up by this many bits
@@ -3885,11 +3943,11 @@ QImage videoHandlerYUV::calculateDifference(FrameHandler    *item2,
   const unsigned componentSizeChroma_In[2] = {(w_in[0] / subH) * (h_in[0] / subV),
                                               (w_in[1] / subH) * (h_in[1] / subV)};
   const unsigned nrBytesLumaPlane_In[2]    = {
-      bps_in[0] > 8 ? 2 * componentSizeLuma_In[0] : componentSizeLuma_In[0],
-      bps_in[1] > 8 ? 2 * componentSizeLuma_In[1] : componentSizeLuma_In[1]};
+      bytesPerSample[0] * componentSizeLuma_In[0],
+      bytesPerSample[1] * componentSizeLuma_In[1]};
   const unsigned nrBytesChromaPlane_In[2] = {
-      bps_in[0] > 8 ? 2 * componentSizeChroma_In[0] : componentSizeChroma_In[0],
-      bps_in[1] > 8 ? 2 * componentSizeChroma_In[1] : componentSizeChroma_In[1]};
+      bytesPerSample[0] * componentSizeChroma_In[0],
+      bytesPerSample[1] *  componentSizeChroma_In[1]};
   // Current item
   const unsigned char *restrict srcY1 = (unsigned char *)currentFrameRawData.data();
   const unsigned char *restrict srcU1 =
@@ -3916,8 +3974,8 @@ QImage videoHandlerYUV::calculateDifference(FrameHandler    *item2,
           : srcY2 + nrBytesLumaPlane_In[1];
 
   // Get pointers to the output
-  const int componentSizeLuma_out   = w_out * h_out * (bps_out > 8 ? 2 : 1); // Size in bytes
-  const int componentSizeChroma_out = (w_out / subH) * (h_out / subV) * (bps_out > 8 ? 2 : 1);
+  const int componentSizeLuma_out   = w_out * h_out * bytesPerSample_out; // Size in bytes
+  const int componentSizeChroma_out = (w_out / subH) * (h_out / subV) * bytesPerSample_out;
   // Resize the output buffer to the right size
   diffYUV.resize(componentSizeLuma_out + 2 * componentSizeChroma_out);
   unsigned char *restrict dstY = (unsigned char *)diffYUV.data();
@@ -3929,9 +3987,8 @@ QImage videoHandlerYUV::calculateDifference(FrameHandler    *item2,
   int64_t mseAdd[3] = {0, 0, 0};
 
   // Calculate Luma sample difference
-  const unsigned stride_in[2] = {bps_in[0] > 8 ? w_in[0] * 2 : w_in[0],
-                                 bps_in[1] > 8 ? w_in[1] * 2
-                                               : w_in[1]}; // How many bytes to the next y line?
+  const unsigned stride_in[2] = {bytesPerSample[0] * w_in[0],
+                                 bytesPerSample[1] * w_in[1]}; // How many bytes to the next y line?
   for (unsigned y = 0; y < h_out; y++)
   {
     for (unsigned x = 0; x < w_out; x++)
@@ -3953,7 +4010,7 @@ QImage videoHandlerYUV::calculateDifference(FrameHandler    *item2,
       diff = functions::clip(diff + diffZero, 0, maxVal);
 
       setValueInBuffer(dstY, diff, 0, bps_out, true);
-      dstY += (bps_out > 8) ? 2 : 1;
+      dstY += bytesPerSample_out;
     }
 
     // Goto the next y line
@@ -3963,8 +4020,8 @@ QImage videoHandlerYUV::calculateDifference(FrameHandler    *item2,
 
   // Next U/V
   const unsigned strideC_in[2] = {
-      w_in[0] / subH * (bps_in[0] > 8 ? 2 : 1),
-      w_in[1] / subH * (bps_in[1] > 8 ? 2 : 1)}; // How many bytes to the next U/V y line
+      w_in[0] / subH * bytesPerSample[0],
+      w_in[1] / subH * bytesPerSample[1]}; // How many bytes to the next U/V y line
   for (unsigned y = 0; y < h_out / subV; y++)
   {
     for (unsigned x = 0; x < w_out / subH; x++)
@@ -4001,8 +4058,8 @@ QImage videoHandlerYUV::calculateDifference(FrameHandler    *item2,
 
       setValueInBuffer(dstU, diffU, 0, bps_out, true);
       setValueInBuffer(dstV, diffV, 0, bps_out, true);
-      dstU += (bps_out > 8) ? 2 : 1;
-      dstV += (bps_out > 8) ? 2 : 1;
+      dstU += bytesPerSample_out;
+      dstV += bytesPerSample_out;
     }
 
     // Goto the next y line

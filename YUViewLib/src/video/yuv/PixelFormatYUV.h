@@ -184,7 +184,7 @@ constexpr EnumMapper<PlaneOrder, 4> PlaneOrderMapper(std::make_pair(PlaneOrder::
                                                      std::make_pair(PlaneOrder::YUVA, "YUVA"sv),
                                                      std::make_pair(PlaneOrder::YVUA, "YVUA"sv));
 
-const auto BitDepthList = std::vector<unsigned>({8, 9, 10, 12, 14, 16});
+const auto BitDepthList = std::vector<unsigned>({8, 9, 10, 12, 14, 16, 20, 24, 32});
 
 // This class defines a specific YUV format with all properties like pixels per sample, subsampling
 // of chroma components and so on.
@@ -262,5 +262,22 @@ private:
   PackingOrder packingOrder{PackingOrder::YUV};
   bool         bytePacking{};
 };
+
+inline uint64_t get_min_standard_bytes(uint64_t x) {
+  if (x == 0)
+    return 0;
+
+  if (x >= UINT64_MAX / 8) {
+    return UINT64_MAX;
+  }
+
+  x--;
+
+  for (int current_shift = 1; current_shift < 64; current_shift <<= 1) {
+    x |= x >> current_shift;
+  }
+
+  return (x + 8) >> 3;
+}
 
 } // namespace video::yuv
