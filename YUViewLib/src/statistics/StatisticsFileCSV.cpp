@@ -194,8 +194,9 @@ void StatisticsFileCSV::readFrameAndTypePositionsFromFile(std::atomic_bool &brea
                   this->maxPOC = poc;
 
                 // Update percent of file parsed
-                this->parsingProgress =
-                    ((double)lineBufferStartPos * 100 / (double)inputFile.getFileSize());
+                if (const auto fileSize = inputFile.getFileSize())
+                  this->parsingProgress = (static_cast<double>(lineBufferStartPos) * 100 /
+                                           static_cast<double>(*fileSize));
               }
             }
           }
@@ -314,9 +315,9 @@ void StatisticsFileCSV::loadStatisticData(StatisticsData &statisticsData, int po
         this->blockOutsideOfFramePOC = poc;
 
       auto &statTypes = statisticsData.getStatisticsTypes();
-      auto  statIt    = std::find_if(statTypes.begin(), statTypes.end(), [type](StatisticsType &t) {
-        return t.typeID == type;
-      });
+      auto  statIt    = std::find_if(statTypes.begin(),
+                                 statTypes.end(),
+                                 [type](StatisticsType &t) { return t.typeID == type; });
       Q_ASSERT_X(statIt != statTypes.end(), Q_FUNC_INFO, "Stat type not found.");
 
       if (vectorData && statIt->hasVectorData)

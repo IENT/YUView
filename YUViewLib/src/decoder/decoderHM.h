@@ -34,7 +34,7 @@
 
 #include <QLibrary>
 
-#include <common/FileInfo.h>
+#include <common/InfoItemAndData.h>
 #include <decoder/decoderBase.h>
 #include <decoder/externalHeader/libHMDecoder.h>
 #include <video/yuv/videoHandlerYUV.h>
@@ -51,11 +51,11 @@ struct LibraryFunctionsHM
   void (*libHMDec_set_SEI_Check)(libHMDec_context *, bool check_hash){};
   void (*libHMDec_set_max_temporal_layer)(libHMDec_context *, int max_layer){};
   libHMDec_error (*libHMDec_push_nal_unit)(libHMDec_context *decCtx,
-                                           const void *      data8,
+                                           const void       *data8,
                                            int               length,
                                            bool              eof,
-                                           bool &            bNewPicture,
-                                           bool &            checkOutputPictures){};
+                                           bool             &bNewPicture,
+                                           bool             &checkOutputPictures){};
 
   // Get a picture and retrive information on the picture
   libHMDec_picture *(*libHMDec_get_picture)(libHMDec_context *){};
@@ -77,8 +77,8 @@ struct LibraryFunctionsHM
   libHMDec_BlockValue *(*libHMDEC_get_internal_info)(libHMDec_context *,
                                                      libHMDec_picture *pic,
                                                      unsigned int      typeIdx,
-                                                     unsigned int &    nrValues,
-                                                     bool &            callAgain){};
+                                                     unsigned int     &nrValues,
+                                                     bool             &callAgain){};
   libHMDec_error (*libHMDEC_clear_internal_info)(libHMDec_context *decCtx){};
 };
 
@@ -107,7 +107,7 @@ public:
 private:
   // A private constructor that creates an uninitialized decoder library.
   // Used by checkLibraryFile to check if a file can be used as a this decoder.
-  decoderHM(){};
+  decoderHM() {};
 
   // Return the possible names of the HM library
   QStringList getLibraryNames() const override;
@@ -150,7 +150,7 @@ private:
   QByteArray currentOutputBuffer;
   void       copyImgToByteArray(
             libHMDec_picture *src,
-            QByteArray &      dst); // Copy the raw data from the de265_image source *src to the byte array
+            QByteArray &dst); // Copy the raw data from the de265_image source *src to the byte array
 #endif
 
   LibraryFunctionsHM lib;

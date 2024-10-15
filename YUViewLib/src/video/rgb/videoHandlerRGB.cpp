@@ -33,10 +33,10 @@
 #include "videoHandlerRGB.h"
 
 #include <common/EnumMapper.h>
-#include <common/FileInfo.h>
 #include <common/Formatting.h>
 #include <common/Functions.h>
 #include <common/FunctionsGui.h>
+#include <common/InfoItemAndData.h>
 #include <video/rgb/ConversionRGB.h>
 #include <video/rgb/PixelFormatRGBGuess.h>
 #include <video/rgb/videoHandlerRGBCustomFormatDialog.h>
@@ -65,6 +65,27 @@ constexpr EnumMapper<ComponentDisplayMode, 6>
                                      std::make_pair(ComponentDisplayMode::G, "Green Only"sv),
                                      std::make_pair(ComponentDisplayMode::B, "Blue Only"sv),
                                      std::make_pair(ComponentDisplayMode::A, "Alpha Only"sv));
+
+void addConversionInformationToInfoList(QList<InfoItem> &differenceInfoList,
+                                        const int        width,
+                                        const int        height,
+                                        const unsigned   bitDepth,
+                                        const int64_t    mseAdd[3])
+{
+  differenceInfoList.append(InfoItem("Difference Type", "RGB " + std::to_string(bitDepth) + "bit"));
+
+  const auto nrPixels = static_cast<double>(width * height);
+  differenceInfoList.append(
+      InfoItem("MSE R", std::to_string(static_cast<double>(mseAdd[0]) / nrPixels)));
+  differenceInfoList.append(
+      InfoItem("MSE G", std::to_string(static_cast<double>(mseAdd[1]) / nrPixels)));
+  differenceInfoList.append(
+      InfoItem("MSE B", std::to_string(static_cast<double>(mseAdd[2]) / nrPixels)));
+
+  differenceInfoList.append(
+      InfoItem("MSE All",
+               std::to_string(static_cast<double>(mseAdd[0] + mseAdd[1] + mseAdd[2]) / nrPixels)));
+}
 
 } // namespace
 
@@ -379,7 +400,8 @@ void videoHandlerRGB::slotRGBFormatControlChanged(int selectionIndex)
 {
   const auto nrBytesOldFormat = getBytesPerFrame();
 
-  const auto customFormatSelected = (selectionIndex == videoHandlerRGB::formatPresetList.size());
+  const auto customFormatSelected =
+      (selectionIndex == static_cast<int>(videoHandlerRGB::formatPresetList.size()));
   if (customFormatSelected)
   {
     DEBUG_RGB("videoHandlerRGB::slotRGBFormatControlChanged custom format");
@@ -1047,17 +1069,7 @@ QImage videoHandlerRGB::calculateDifference(FrameHandler    *item2,
           false, Q_FUNC_INFO, "No RGB format with less than 8 or more than 16 bits supported yet.");
   }
 
-  // Append the conversion information that will be returned
-  differenceInfoList.append(InfoItem("Difference Type", QString("RGB %1bit").arg(bitDepth)));
-  double mse[4];
-  mse[0] = double(mseAdd[0]) / (width * height);
-  mse[1] = double(mseAdd[1]) / (width * height);
-  mse[2] = double(mseAdd[2]) / (width * height);
-  mse[3] = mse[0] + mse[1] + mse[2];
-  differenceInfoList.append(InfoItem("MSE R", QString("%1").arg(mse[0])));
-  differenceInfoList.append(InfoItem("MSE G", QString("%1").arg(mse[1])));
-  differenceInfoList.append(InfoItem("MSE B", QString("%1").arg(mse[2])));
-  differenceInfoList.append(InfoItem("MSE All", QString("%1").arg(mse[3])));
+  addConversionInformationToInfoList(differenceInfoList, width, height, bitDepth, mseAdd);
 
   return outputImage;
 }

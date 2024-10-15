@@ -34,7 +34,7 @@
 
 #include <QLibrary>
 
-#include <common/FileInfo.h>
+#include <common/InfoItemAndData.h>
 
 #include "decoderBase.h"
 #include "externalHeader/libVTMDecoder.h"

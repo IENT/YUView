@@ -75,9 +75,9 @@ InfoData playlistItemDifference::getInfo() const
   InfoData info("Difference Info");
 
   if (childCount() >= 1)
-    info.items.append(InfoItem(QString("File 1"), getChildPlaylistItem(0)->properties().name));
+    info.items.append(InfoItem("File 1", getChildPlaylistItem(0)->properties().name.toStdString()));
   if (childCount() >= 2)
-    info.items.append(InfoItem(QString("File 2"), getChildPlaylistItem(1)->properties().name));
+    info.items.append(InfoItem("File 2", getChildPlaylistItem(1)->properties().name.toStdString()));
 
   // Report the position of the first difference in coding order
   difference.reportFirstDifferencePosition(info.items);

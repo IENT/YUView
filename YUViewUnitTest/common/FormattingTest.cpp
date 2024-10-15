@@ -30,40 +30,59 @@
  *   along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#pragma once
+#include <common/Testing.h>
 
-#include <QList>
-#include <QMetaType>
-#include <QString>
+#include <common/Formatting.h>
 
-/*
- * An info item has a name, a text and an optional toolTip. These are used to show them in the
- * fileInfoWidget. For example: ["File Name", "file.yuv"] or ["Number Frames", "123"] Another option
- * is to show a button. If the user clicks on it, the callback function infoListButtonPressed() for
- * the corresponding playlist item is called.
- */
-struct InfoItem
+namespace
 {
-  InfoItem(const QString &name,
-           const QString &text,
-           const QString &toolTip  = QString(),
-           bool           button   = false,
-           int            buttonID = -1)
-      : name(name), text(text), button(button), buttonID(buttonID), toolTip(toolTip)
-  {
-  }
-  QString name{};
-  QString text{};
-  bool    button{};
-  int     buttonID{};
-  QString toolTip{};
-};
 
-struct InfoData
+template <typename T> void runFormatTest(const T &value, const std::string_view expectedString)
 {
-  explicit InfoData(const QString &title = QString()) : title(title) {}
-  bool            isEmpty() const { return title.isEmpty() && items.isEmpty(); }
-  QString         title{};
-  QList<InfoItem> items{};
-};
-Q_DECLARE_METATYPE(InfoData)
+  std::ostringstream stream;
+  stream << value;
+  EXPECT_EQ(stream.str(), expectedString);
+  EXPECT_EQ(to_string(value), expectedString);
+}
+
+TEST(FormattingTest, FormattingOfPair)
+{
+  runFormatTest(std::make_pair(11, 472), "(11, 472)");
+  runFormatTest(std::make_pair(11.0, 472.23), "(11, 472.23)");
+  runFormatTest(std::make_pair("abcde", "ghij"), "(abcde, ghij)");
+}
+
+TEST(FormattingTest, FormattingOfVector)
+{
+  runFormatTest(std::vector<int>({8, 22, 99, 0}), "[8, 22, 99, 0]");
+  runFormatTest(std::vector<double>({8.22, 22.12, 99.0, 0.01}), "[8.22, 22.12, 99, 0.01]");
+  runFormatTest(std::vector<std::string>({"abc", "def", "g", "hi"}), "[abc, def, g, hi]");
+}
+
+TEST(FormattingTest, FormattingOfSize)
+{
+  runFormatTest(Size(124, 156), "124x156");
+  runFormatTest(Size(999, 125682), "999x125682");
+}
+
+TEST(FormattingTest, FormattingOfBool)
+{
+  EXPECT_EQ(to_string(false), "False");
+  EXPECT_EQ(to_string(true), "True");
+}
+
+TEST(FormattingTest, FormattingOfOptional)
+{
+  runFormatTest(std::optional<int>(), "NA");
+  runFormatTest(std::make_optional<int>(22), "22");
+  runFormatTest(std::make_optional<double>(22.556), "22.556");
+  runFormatTest(std::make_optional<std::string>("Test234"), "Test234");
+}
+
+TEST(FormattingTest, StringReplaceAll)
+{
+    EXPECT_EQ(stringReplaceAll("abcdefghi", 'c', 'g'), "abgdefghi");
+    EXPECT_EQ(stringReplaceAll("abcdefghijklmn", {'c', 'h', 'm'}, 'g'), "abgdefggijklgn");
+}
+
+} // namespace

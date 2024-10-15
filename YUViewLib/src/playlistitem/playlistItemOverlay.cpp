@@ -39,8 +39,8 @@
 #include <cmath>
 #include <limits>
 
-#include <common/FunctionsGui.h>
 #include <common/EnumMapper.h>
+#include <common/FunctionsGui.h>
 
 #define PLAYLISTITEMOVERLAY_DEBUG 0
 #if PLAYLISTITEMOVERLAY_DEBUG && !NDEBUG
@@ -60,7 +60,12 @@ constexpr EnumMapper<OverlayLayoutMode, 3>
                             std::make_pair(OverlayLayoutMode::Arange, "Average"sv),
                             std::make_pair(OverlayLayoutMode::Custom, "Custom"sv));
 
+std::string to_string(const QSize &size)
+{
+  return "(" + std::to_string(size.width()) + "," + std::to_string(size.height()) + ")";
 }
+
+} // namespace
 
 playlistItemOverlay::playlistItemOverlay() : playlistItemContainer("Overlay Item")
 {
@@ -84,18 +89,16 @@ InfoData playlistItemOverlay::getInfo() const
   InfoData info("Overlay Info");
 
   // Add the size of this playlistItemOverlay
-  info.items.append(
-      InfoItem("Overlay Size", QString("(%1,%2)").arg(getSize().width()).arg(getSize().height())));
+  const auto size = this->getSize();
+  info.items.append(InfoItem("Overlay Size", to_string(size)));
 
   // Add the sizes of all child items
   for (int i = 0; i < this->childCount(); i++)
   {
     if (auto childItem = getChildPlaylistItem(i))
     {
-      auto childSize = childItem->getSize();
-      info.items.append(
-          InfoItem(QString("Item %1 size").arg(i),
-                   QString("(%1,%2)").arg(childSize.width()).arg(childSize.height())));
+      const auto childSize = childItem->getSize();
+      info.items.append(InfoItem("Item " + std::to_string(i) + " size", to_string(childSize)));
     }
   }
   return info;

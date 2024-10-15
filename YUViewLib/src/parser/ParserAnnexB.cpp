@@ -54,8 +54,7 @@ std::string ParserAnnexB::getShortStreamDescription(const int) const
 {
   std::ostringstream info;
   info << "Video";
-  auto frameSize = this->getSequenceSizeSamples();
-  if (frameSize.isValid())
+  if (const auto frameSize = this->getSequenceSizeSamples())
     info << " " << frameSize;
   return info.str();
 }
@@ -85,7 +84,7 @@ bool ParserAnnexB::addFrameToList(int                       poc,
   return true;
 }
 
-void ParserAnnexB::logNALSize(const ByteVector &        data,
+void ParserAnnexB::logNALSize(const ByteVector         &data,
                               std::shared_ptr<TreeItem> root,
                               std::optional<pairUint64> nalStartEndPos)
 {
@@ -154,7 +153,7 @@ bool ParserAnnexB::parseAnnexBFile(std::unique_ptr<FileSourceAnnexBFile> &file, 
 {
   DEBUG_ANNEXB("ParserAnnexB::parseAnnexBFile");
 
-  auto                             maxPos = file->getFileSize();
+  const auto                       fileSize = file->getFileSize();
   std::unique_ptr<QProgressDialog> progressDialog;
   int                              curPercentValue = 0;
   if (mainWindow)
@@ -171,8 +170,8 @@ bool ParserAnnexB::parseAnnexBFile(std::unique_ptr<FileSourceAnnexBFile> &file, 
     progressDialog->setWindowModality(Qt::WindowModal);
   }
 
-  stream_info.file_size = file->getFileSize();
-  stream_info.parsing   = true;
+  this->streamInfo.file_size = file->getFileSize().value_or(0);
+  this->streamInfo.parsing   = true;
   emit streamInfoUpdated();
 
   // Just push all NAL units from the annexBFile into the annexBParser
@@ -185,8 +184,8 @@ bool ParserAnnexB::parseAnnexBFile(std::unique_ptr<FileSourceAnnexBFile> &file, 
   {
     // Update the progress dialog
     int64_t pos = file->pos();
-    if (stream_info.file_size > 0)
-      progressPercentValue = functions::clip((int)(pos * 100 / stream_info.file_size), 0, 100);
+    if (this->streamInfo.file_size > 0)
+      progressPercentValue = functions::clip((int)(pos * 100 / this->streamInfo.file_size), 0, 100);
 
     try
     {
@@ -225,8 +224,8 @@ bool ParserAnnexB::parseAnnexBFile(std::unique_ptr<FileSourceAnnexBFile> &file, 
         return false;
 
       int newPercentValue = 0;
-      if (maxPos > 0)
-        newPercentValue = functions::clip(int((file->pos() - maxPos) * 100 / maxPos), 0, 100);
+      if (fileSize)
+        newPercentValue = functions::clip(int((file->pos() - *fileSize) * 100 / *fileSize), 0, 100);
       if (newPercentValue != curPercentValue)
       {
         progressDialog->setValue(newPercentValue);
@@ -272,28 +271,28 @@ bool ParserAnnexB::parseAnnexBFile(std::unique_ptr<FileSourceAnnexBFile> &file, 
   if (packetModel)
     emit modelDataUpdated();
 
-  stream_info.parsing      = false;
-  stream_info.nr_nal_units = nalID;
-  stream_info.nr_frames    = unsigned(this->frameListCodingOrder.size());
+  this->streamInfo.parsing    = false;
+  this->streamInfo.nrNalUnits = nalID;
+  this->streamInfo.nrFrames   = unsigned(this->frameListCodingOrder.size());
   emit streamInfoUpdated();
   emit backgroundParsingDone("");
 
   return !cancelBackgroundParser;
 }
 
-bool ParserAnnexB::runParsingOfFile(QString compressedFilePath)
+bool ParserAnnexB::runParsingOfFile(const std::filesystem::path &compressedFilePath)
 {
   DEBUG_ANNEXB("playlistItemCompressedVideo::runParsingOfFile");
   auto file = std::make_unique<FileSourceAnnexBFile>(compressedFilePath);
   return this->parseAnnexBFile(file);
 }
 
-vector<QTreeWidgetItem *> ParserAnnexB::stream_info_type::getStreamInfo()
+vector<QTreeWidgetItem *> ParserAnnexB::createTreeItemsFromStreamInfo() const
 {
   vector<QTreeWidgetItem *> infoList;
-  infoList.push_back(
-      new QTreeWidgetItem(QStringList() << "File size" << QString::number(file_size)));
-  if (parsing)
+  infoList.push_back(new QTreeWidgetItem(
+      QStringList() << "File size" << QString::number(this->streamInfo.file_size)));
+  if (this->streamInfo.parsing)
   {
     infoList.push_back(new QTreeWidgetItem(QStringList() << "Number NAL units"
                                                          << "Parsing..."));
@@ -302,10 +301,10 @@ vector<QTreeWidgetItem *> ParserAnnexB::stream_info_type::getStreamInfo()
   }
   else
   {
-    infoList.push_back(
-        new QTreeWidgetItem(QStringList() << "Number NAL units" << QString::number(nr_nal_units)));
-    infoList.push_back(
-        new QTreeWidgetItem(QStringList() << "Number Frames" << QString::number(nr_frames)));
+    infoList.push_back(new QTreeWidgetItem(
+        QStringList() << "Number NAL units" << QString::number(this->streamInfo.nrNalUnits)));
+    infoList.push_back(new QTreeWidgetItem(
+        QStringList() << "Number Frames" << QString::number(this->streamInfo.nrFrames)));
   }
 
   return infoList;

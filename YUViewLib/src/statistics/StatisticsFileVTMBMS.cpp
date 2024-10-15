@@ -142,8 +142,9 @@ void StatisticsFileVTMBMS::readFrameAndTypePositionsFromFile(std::atomic_bool &b
                   this->maxPOC = poc;
 
                 // Update percent of file parsed
-                this->parsingProgress =
-                    ((double)lineBufferStartPos * 100 / (double)inputFile.getFileSize());
+                if (const auto fileSize = inputFile.getFileSize())
+                  this->parsingProgress = (static_cast<double>(lineBufferStartPos) * 100 /
+                                           static_cast<double>(*fileSize));
               }
             }
           }
@@ -209,9 +210,9 @@ void StatisticsFileVTMBMS::loadStatisticData(StatisticsData &statisticsData, int
 
     // prepare regex for selected type
     auto &statTypes = statisticsData.getStatisticsTypes();
-    auto  statIt    = std::find_if(statTypes.begin(), statTypes.end(), [typeID](StatisticsType &t) {
-      return t.typeID == typeID;
-    });
+    auto  statIt    = std::find_if(statTypes.begin(),
+                               statTypes.end(),
+                               [typeID](StatisticsType &t) { return t.typeID == typeID; });
     Q_ASSERT_X(statIt != statTypes.end(), Q_FUNC_INFO, "Stat type not found.");
     QRegularExpression typeRegex(" " + statIt->typeName + "="); // for catching lines of the type
 
@@ -434,11 +435,11 @@ void StatisticsFileVTMBMS::readHeaderFromFile(StatisticsData &statisticsData)
 
       // extract statistics information from header lines
       // match:
-      //# Sequence size: [832x 480]
+      // # Sequence size: [832x 480]
       QRegularExpression sequenceSizeRegex("# Sequence size: \\[([0-9]+)x *([0-9]+)\\]");
 
       // match:
-      //# Block Statistic Type: MergeFlag; Flag
+      // # Block Statistic Type: MergeFlag; Flag
       QRegularExpression availableStatisticsRegex(
           "# Block Statistic Type: *([0-9a-zA-Z_]+); *([0-9a-zA-Z]+); *(.*)");
 

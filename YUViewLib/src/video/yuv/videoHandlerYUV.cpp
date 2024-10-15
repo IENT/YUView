@@ -35,6 +35,8 @@
 #include <algorithm>
 #include <cmath>
 #include <cstdio>
+#include <iomanip>
+#include <sstream>
 #include <type_traits>
 #include <vector>
 
@@ -44,10 +46,10 @@
 #include <QDir>
 #include <QPainter>
 
-#include <common/FileInfo.h>
 #include <common/Formatting.h>
 #include <common/Functions.h>
 #include <common/FunctionsGui.h>
+#include <common/InfoItemAndData.h>
 #include <video/LimitedRangeToFullRange.h>
 #include <video/yuv/PixelFormatYUVGuess.h>
 #include <video/yuv/videoHandlerYUVCustomFormatDialog.h>
@@ -111,6 +113,17 @@ template <typename T> double computeMSE(T ptr, T ptr2, int numPixels)
   }
 
   return (double)sad / numPixels;
+}
+
+std::string formatMSEandPSNR(const double mse, const int bps_out)
+{
+  const auto maxSquared = ((1 << bps_out) - 1) * ((1 << bps_out) - 1);
+  const auto psnr       = 10 * std::log10(maxSquared / mse);
+
+  std::ostringstream stream;
+  stream << std::setw(1) << mse << " (" << std::setw(2) << psnr << ")";
+
+  return stream.str();
 }
 
 bool isFullRange(const ColorConversion colorConversion)
@@ -3817,22 +3830,20 @@ QImage videoHandlerYUV::calculateDifference(FrameHandler    *item2,
                                              markDifference);
 
   // Get/Set the bit depth of the input and output
-  // If the bit depth if the two items is different, we will scale the item with the lower bit depth
+  // If the bit depth of the two items is different, we will scale the item with the lower bit depth
   // up.
   const unsigned bps_in[2] = {srcPixelFormat.getBitsPerSample(),
                               yuvItem2->srcPixelFormat.getBitsPerSample()};
   const auto     bps_out   = std::max(bps_in[0], bps_in[1]);
-  // Which of the two input values has to be scaled up? Only one of these (or neither) can be set.
-  const bool bitDepthScaling[2] = {bps_in[0] != bps_out, bps_in[1] != bps_out};
-  // Scale the input up by this many bits
-  const auto depthScale = bps_out - (bitDepthScaling[0] ? bps_in[0] : bps_in[1]);
-  // Add a warning if the bit depths of the two inputs don't agree
-  if (bitDepthScaling[0] || bitDepthScaling[1])
+
+  const unsigned bitDepthScale[2] = {bps_out - bps_in[0], bps_out - bps_in[1]};
+  if (bitDepthScale[0] > 0 || bitDepthScale[1] > 0)
     differenceInfoList.append(
-        InfoItem("Warning",
+        InfoItem("Warning"sv,
                  "The bit depth of the two items differs.",
                  "The bit depth of the two input items is different. The lower bit depth will be "
                  "scaled up and the difference is calculated."));
+
   // What are the maximum and middle value for the output bit depth
   const int diffZero = 128 << (bps_out - 8);
   const int maxVal   = (1 << bps_out) - 1;
@@ -3862,7 +3873,7 @@ QImage videoHandlerYUV::calculateDifference(FrameHandler    *item2,
   // Append a warning if the frame sizes are different
   if (frameSize != yuvItem2->frameSize)
     differenceInfoList.append(
-        InfoItem("Warning",
+        InfoItem("Warning"sv,
                  "The size of the two items differs.",
                  "The size of the two input items is different. The difference of the top left "
                  "aligned part that overlaps will be calculated."));
@@ -3940,10 +3951,8 @@ QImage videoHandlerYUV::calculateDifference(FrameHandler    *item2,
       auto val2 = getValueFromSource(srcY2, x, bps_in[1], bigEndian[1]);
 
       // Scale (if necessary)
-      if (bitDepthScaling[0])
-        val1 = val1 << depthScale;
-      else if (bitDepthScaling[1])
-        val2 = val2 << depthScale;
+      val1 = val1 << bitDepthScale[0];
+      val2 = val2 << bitDepthScale[1];
 
       // Calculate the difference, add MSE, (amplify) and clip the difference value
       auto diff = val1 - val2;
@@ -3975,16 +3984,10 @@ QImage videoHandlerYUV::calculateDifference(FrameHandler    *item2,
       auto valV2 = getValueFromSource(srcV2, x, bps_in[1], bigEndian[1]);
 
       // Scale (if necessary)
-      if (bitDepthScaling[0])
-      {
-        valU1 = valU1 << depthScale;
-        valV1 = valV1 << depthScale;
-      }
-      else if (bitDepthScaling[1])
-      {
-        valU2 = valU2 << depthScale;
-        valV2 = valV2 << depthScale;
-      }
+      valU1 = valU1 << bitDepthScale[0];
+      valV1 = valV1 << bitDepthScale[0];
+      valU2 = valU2 << bitDepthScale[1];
+      valV2 = valV2 << bitDepthScale[1];
 
       // Calculate the difference, add MSE, (amplify) and clip the difference value
       auto diffU = valU1 - valU2;
@@ -4048,37 +4051,27 @@ QImage videoHandlerYUV::calculateDifference(FrameHandler    *item2,
         diffYUV, outputImage.bits(), Size(w_out, h_out), tmpDiffYUVFormat, conversionSettings);
   }
 
-  differenceInfoList.append(
-      InfoItem("Difference Type",
-               QString("YUV %1").arg(QString::fromStdString(
-                   formatSubsamplingWithColons(srcPixelFormat.getSubsampling())))));
+  differenceInfoList.append(InfoItem(
+      "Difference Type", "YUV " + formatSubsamplingWithColons(srcPixelFormat.getSubsampling())));
 
   {
-    auto       nrPixelsLuma = w_out * h_out;
-    const auto maxSquared   = ((1 << bps_out) - 1) * ((1 << bps_out) - 1);
-    auto       mse          = double(mseAdd[0]) / nrPixelsLuma;
-    auto       psnr         = 10 * std::log10(maxSquared / mse);
-    differenceInfoList.append(
-        InfoItem("MSE/PSNR Y", QString("%1 (%2dB)").arg(mse, 0, 'f', 1).arg(psnr, 0, 'f', 2)));
+    const auto nrPixelsLuma = w_out * h_out;
+
+    const auto mseY = double(mseAdd[0]) / nrPixelsLuma;
+    differenceInfoList.append(InfoItem("MSE/PSNR Y", formatMSEandPSNR(mseY, bps_out)));
 
     if (srcPixelFormat.getSubsampling() != Subsampling::YUV_400)
     {
       auto nrPixelsChroma = w_out / subH * h_out / subV;
 
-      auto mseU  = double(mseAdd[1]) / nrPixelsChroma;
-      auto psnrU = 10 * std::log10(maxSquared / mseU);
-      differenceInfoList.append(
-          InfoItem("MSE/PSNR U", QString("%1 (%2dB)").arg(mseU, 0, 'f', 1).arg(psnrU, 0, 'f', 2)));
+      auto mseU = double(mseAdd[1]) / nrPixelsChroma;
+      differenceInfoList.append(InfoItem("MSE/PSNR U", formatMSEandPSNR(mseU, bps_out)));
 
-      auto mseV  = double(mseAdd[2]) / nrPixelsChroma;
-      auto psnrV = 10 * std::log10(maxSquared / mseV);
-      differenceInfoList.append(
-          InfoItem("MSE/PSNR V", QString("%1 (%2dB)").arg(mseV, 0, 'f', 1).arg(psnrV, 0, 'f', 2)));
+      auto mseV = double(mseAdd[2]) / nrPixelsChroma;
+      differenceInfoList.append(InfoItem("MSE/PSNR V", formatMSEandPSNR(mseV, bps_out)));
 
       auto mseAvg = double(mseAdd[0] + mseAdd[1] + mseAdd[2]) / (nrPixelsLuma + 2 * nrPixelsChroma);
-      auto psnrAvg = 10 * std::log10(maxSquared / mseAvg);
-      differenceInfoList.append(InfoItem(
-          "MSE/PSNR Avg", QString("%1 (%2dB)").arg(mseAvg, 0, 'f', 1).arg(psnrAvg, 0, 'f', 2)));
+      differenceInfoList.append(InfoItem("MSE/PSNR Avg", formatMSEandPSNR(mseAvg, bps_out)));
     }
   }
 

@@ -32,31 +32,37 @@
 
 #pragma once
 
-#include <QGridLayout>
-#include <QPixmap>
-#include <QWidget>
+#include <QList>
+#include <QMetaType>
+#include <QString>
 
-#include "common/InfoItemAndData.h"
-
-class FileInfoWidget : public QWidget
+/*
+ * An info item has a name, a text and an optional description. These are used to show them in the
+ * fileInfoWidget. For example: ["File Name", "file.yuv"] or ["Number Frames", "123"].
+ */
+struct InfoItem
 {
-  Q_OBJECT
+  std::string name{};
+  std::string text{};
+  std::string description{};
 
-public:
-  FileInfoWidget(QWidget *parent = 0);
-
-  // Set the file info. The title of the dock widget will be set to fileInfoTitle and
-  // the given list of InfoItems (Qpai<QString,QString>) will be added as labels into
-  // the QGridLayout infoLayout.
-  Q_SLOT void setInfo(const InfoData &info1 = InfoData(), const InfoData &info2 = InfoData());
-
-  // One at a given row of a given infoIndex (0 or 1) was clicked.
-  // infoIndex 0 refers to info1 above, infoIndex 1 refers to info2 above
-  Q_SIGNAL void infoButtonClicked(int infoIndex, int row);
-
-private:
-  int addInfoDataItemsAndGetNextRowIndex(const InfoData &data, int row);
-
-  QGridLayout grid;
-  QPixmap     warningIcon;
+  InfoItem(std::string &&name, std::string &&text) : name(std::move(name)), text(std::move(text)) {}
+  InfoItem(std::string &&name, std::string &&text, std::string &&description)
+      : name(std::move(name)), text(std::move(text)), description(std::move(description))
+  {
+  }
+  InfoItem(std::string_view name, std::string_view text) : name(name), text(text) {}
+  InfoItem(std::string_view name, std::string_view text, std::string_view description)
+      : name(name), text(text), description(description)
+  {
+  }
 };
+
+struct InfoData
+{
+  explicit InfoData(const QString &title = QString()) : title(title) {}
+  bool            isEmpty() const { return title.isEmpty() && items.isEmpty(); }
+  QString         title{};
+  QList<InfoItem> items{};
+};
+Q_DECLARE_METATYPE(InfoData)

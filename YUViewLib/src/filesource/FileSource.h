@@ -39,9 +39,11 @@
 #include <QMutexLocker>
 #include <QString>
 
-#include <common/FileInfo.h>
 #include <common/EnumMapper.h>
+#include <common/InfoItemAndData.h>
 #include <common/Typedef.h>
+
+#include <filesystem>
 
 enum class InputFormat
 {
@@ -70,14 +72,13 @@ class FileSource : public QObject
 public:
   FileSource();
 
-  virtual bool openFile(const QString &filePath);
+  virtual bool openFile(const std::filesystem::path &filePath);
 
-  virtual QList<InfoItem> getFileInfoList() const;
-  int64_t                 getFileSize() const { return !isFileOpened ? -1 : fileInfo.size(); }
-  QString                 getAbsoluteFilePath() const;
-  QFileInfo               getFileInfo() const { return this->fileInfo; }
-  QFile                  *getQFile() { return &this->srcFile; }
-  bool                    getAndResetFileChangedFlag();
+  virtual std::vector<InfoItem> getFileInfoList() const;
+  std::optional<int64_t>        getFileSize() const;
+  std::string                   getAbsoluteFilePath() const;
+  QFile                        *getQFile() { return &this->srcFile; }
+  bool                          getAndResetFileChangedFlag();
 
   // Return true if the file could be opened and is ready for use.
   bool isOk() const { return this->isFileOpened; }
@@ -107,10 +108,9 @@ private slots:
   void fileSystemWatcherFileChanged(const QString &) { fileChanged = true; }
 
 protected:
-  QString   fullFilePath{};
-  QFileInfo fileInfo;
-  QFile     srcFile;
-  bool      isFileOpened{};
+  std::filesystem::path fullFilePath{};
+  QFile                 srcFile;
+  bool                  isFileOpened{};
 
 private:
   QFileSystemWatcher fileWatcher{};

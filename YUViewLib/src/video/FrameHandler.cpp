@@ -279,7 +279,7 @@ void FrameHandler::drawFrame(QPainter *painter, double zoomFactor, bool drawRawV
 
 void FrameHandler::drawPixelValues(QPainter *painter,
                                    const int,
-                                   const QRect & videoRect,
+                                   const QRect  &videoRect,
                                    const double  zoomFactor,
                                    FrameHandler *item2,
                                    const bool    markDifference,
@@ -424,17 +424,17 @@ QImage FrameHandler::calculateDifference(FrameHandler *item2,
     }
   }
 
-  differenceInfoList.append(InfoItem("Difference Type", "RGB"));
+  differenceInfoList.append(InfoItem("Difference Type"sv, "RGB"));
 
   double mse[4];
   mse[0] = double(mseAdd[0]) / (width * height);
   mse[1] = double(mseAdd[1]) / (width * height);
   mse[2] = double(mseAdd[2]) / (width * height);
   mse[3] = mse[0] + mse[1] + mse[2];
-  differenceInfoList.append(InfoItem("MSE R", QString("%1").arg(mse[0])));
-  differenceInfoList.append(InfoItem("MSE G", QString("%1").arg(mse[1])));
-  differenceInfoList.append(InfoItem("MSE B", QString("%1").arg(mse[2])));
-  differenceInfoList.append(InfoItem("MSE All", QString("%1").arg(mse[3])));
+  differenceInfoList.append(InfoItem("MSE R", std::to_string(mse[0])));
+  differenceInfoList.append(InfoItem("MSE G", std::to_string(mse[1])));
+  differenceInfoList.append(InfoItem("MSE B", std::to_string(mse[2])));
+  differenceInfoList.append(InfoItem("MSE All", std::to_string(mse[3])));
 
   return diffImg;
 }

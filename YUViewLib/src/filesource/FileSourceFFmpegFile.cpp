@@ -267,7 +267,8 @@ ByteVector FileSourceFFmpegFile::getLhvCData()
       continue;
 
     const auto boxSize = getBoxSize(lhvcPos - 4);
-    if (boxSize == 0 || boxSize > std::distance(lhvcPos, rawFileData.end()))
+    if (boxSize == 0 ||
+        boxSize > static_cast<std::uint64_t>(std::distance(lhvcPos, rawFileData.end())))
       continue;
 
     // We just return the payload without the box size or the "lhvC" tag
@@ -399,8 +400,8 @@ FileSourceFFmpegFile::~FileSourceFFmpegFile()
     this->ff.freePacket(this->currentPacket);
 }
 
-bool FileSourceFFmpegFile::openFile(const QString &       filePath,
-                                    QWidget *             mainWindow,
+bool FileSourceFFmpegFile::openFile(const QString        &filePath,
+                                    QWidget              *mainWindow,
                                     FileSourceFFmpegFile *other,
                                     bool                  parseFile)
 {

@@ -94,7 +94,7 @@ vector<QTreeWidgetItem *> ParserAVFormat::getStreamInfo()
 
 std::string ParserAVFormat::getShortStreamDescription(const int streamIndex) const
 {
-  if (streamIndex >= this->shortStreamInfoAllStreams.size())
+  if (streamIndex >= static_cast<int>(this->shortStreamInfoAllStreams.size()))
     return {};
   return this->shortStreamInfoAllStreams.at(streamIndex);
 }
@@ -254,7 +254,7 @@ bool ParserAVFormat::parseExtradataMPEG2(const ByteVector &extradata)
 }
 
 std::map<std::string, unsigned> ParserAVFormat::parseByteVectorAnnexBStartCodes(
-    const ByteVector &                   data,
+    const ByteVector                    &data,
     const PacketDataFormat               dataFormat,
     const BitratePlotModel::BitrateEntry packetBitrateEntry,
     std::shared_ptr<TreeItem>            item)
@@ -265,7 +265,8 @@ std::map<std::string, unsigned> ParserAVFormat::parseByteVectorAnnexBStartCodes(
     return {};
   }
 
-  auto getNextNalStart = [&data, &dataFormat](ByteVector::const_iterator searchStart) {
+  auto getNextNalStart = [&data, &dataFormat](ByteVector::const_iterator searchStart)
+  {
     if (dataFormat == PacketDataFormat::RawNAL)
     {
       if (std::distance(searchStart, data.end()) <= 3)
@@ -352,7 +353,8 @@ bool ParserAVFormat::parseAVPacket(unsigned         packetID,
 
   auto timeBase = timeBaseAllStreams[packet.getStreamIndex()];
 
-  auto formatTimestamp = [](int64_t timestamp, AVRational timebase) -> std::string {
+  auto formatTimestamp = [](int64_t timestamp, AVRational timebase) -> std::string
+  {
     std::ostringstream ss;
     ss << timestamp << " (";
     if (timestamp < 0)
@@ -574,11 +576,12 @@ bool ParserAVFormat::parseAVPacket(unsigned         packetID,
   return true;
 }
 
-bool ParserAVFormat::runParsingOfFile(QString compressedFilePath)
+bool ParserAVFormat::runParsingOfFile(const std::filesystem::path &compressedFilePath)
 {
   // Open the file but don't parse it yet.
   FileSourceFFmpegFile ffmpegFile;
-  if (!ffmpegFile.openFile(compressedFilePath, nullptr, nullptr, false))
+  if (!ffmpegFile.openFile(
+          QString::fromStdString(compressedFilePath.string()), nullptr, nullptr, false))
   {
     emit backgroundParsingDone("Error opening the ffmpeg file.");
     return false;

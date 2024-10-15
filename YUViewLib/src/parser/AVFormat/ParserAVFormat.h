@@ -63,7 +63,7 @@ public:
   std::string getShortStreamDescription(const int streamIndex) const override;
 
   // This function can run in a separate thread
-  bool runParsingOfFile(QString compressedFilePath) override;
+  bool runParsingOfFile(const std::filesystem::path &compressedFilePath) override;
 
   int getVideoStreamIndex() override { return videoStreamIndex; }
 
