@@ -32,43 +32,36 @@
 
 #pragma once
 
-#include <QList>
-#include <QMetaType>
-#include <QString>
+#include "IDataSource.h"
 
-/*
- * An info item has a name, a text and an optional description. These are used to show them in the
- * fileInfoWidget. For example: ["File Name", "file.yuv"] or ["Number Frames", "123"].
- */
-struct InfoItem
+#include <filesystem>
+#include <fstream>
+
+namespace filesource
 {
-  std::string name{};
-  std::string text{};
-  std::string description{};
 
-  InfoItem(std::string &&name, std::string &&text) : name(std::move(name)), text(std::move(text)) {}
-  InfoItem(std::string &&name, std::string &&text, std::string &&description)
-      : name(std::move(name)), text(std::move(text)), description(std::move(description))
-  {
-  }
-  InfoItem(std::string_view name, std::string_view text) : name(name), text(text) {}
-  InfoItem(std::string_view name, std::string_view text, std::string_view description)
-      : name(name), text(text), description(description)
-  {
-  }
+class DataSourceLocalFile : public IDataSource
+{
+public:
+  DataSourceLocalFile(const std::filesystem::path &filePath);
 
-  bool operator==(const InfoItem &other) const
-  {
-    return this->name == other.name && this->text == other.text &&
-           this->description == other.description;
-  }
+  [[nodiscard]] std::vector<InfoItem> getInfoList() const override;
+  [[nodiscard]] bool                  atEnd() const override;
+  [[nodiscard]] bool                  isOk() const override;
+  [[nodiscard]] std::int64_t          position() const override;
+
+  [[nodiscard]] bool         seek(const std::int64_t pos) override;
+  [[nodiscard]] std::int64_t read(ByteVector &buffer, const std::int64_t nrBytes) override;
+
+  [[nodiscard]] std::optional<std::int64_t> fileSize() const;
+  [[nodiscard]] std::filesystem::path       filePath() const;
+
+protected:
+  std::filesystem::path path{};
+  bool                  isFileOpened{};
+
+  std::ifstream file{};
+  std::int64_t  filePosition{};
 };
 
-struct InfoData
-{
-  explicit InfoData(const QString &title = QString()) : title(title) {}
-  bool            isEmpty() const { return title.isEmpty() && items.isEmpty(); }
-  QString         title{};
-  QList<InfoItem> items{};
-};
-Q_DECLARE_METATYPE(InfoData)
+} // namespace filesource
