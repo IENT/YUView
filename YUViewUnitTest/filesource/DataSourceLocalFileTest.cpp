@@ -47,6 +47,7 @@ TEST(DataSourceLocalFileTest, OpenFileThatDoesNotExist)
   filesource::DataSourceLocalFile file("/path/to/file/that/does/not/exist");
   EXPECT_FALSE(file.isOk());
   EXPECT_FALSE(file);
+  EXPECT_TRUE(file.filePath().empty());
   EXPECT_EQ(file.getInfoList().size(), 0u);
   EXPECT_FALSE(file.atEnd());
   EXPECT_EQ(file.position(), 0);
@@ -55,6 +56,24 @@ TEST(DataSourceLocalFileTest, OpenFileThatDoesNotExist)
 
   ByteVector dummyVector;
   EXPECT_EQ(file.read(dummyVector, 378), 0);
+  EXPECT_EQ(dummyVector.size(), 0);
+}
+
+TEST(DataSourceLocalFileTest, OpenFileThatExists_TestRetrievalOfFileInfo)
+{
+  yuviewTest::TemporaryFile tempFile(DUMMY_DATA);
+
+  filesource::DataSourceLocalFile file(tempFile.getFilePath());
+  EXPECT_TRUE(file);
+
+  EXPECT_EQ(file.fileSize().value(), 8);
+
+  const auto debugTest = file.getInfoList();
+  EXPECT_THAT(file.getInfoList(),
+              ElementsAre(InfoItem("File Path",
+                                   tempFile.getFilePath().string(),
+                                   "The absolute path of the local file"),
+                          InfoItem("File Size"sv, "8"sv)));
 }
 
 TEST(DataSourceLocalFileTest, OpenFileThatExists_TestReadingOfData)
@@ -68,14 +87,6 @@ TEST(DataSourceLocalFileTest, OpenFileThatExists_TestReadingOfData)
   EXPECT_EQ(file.filePath(), tempFile.getFilePath());
   EXPECT_FALSE(file.atEnd());
   EXPECT_EQ(file.position(), 0);
-  EXPECT_EQ(file.fileSize().value(), 8);
-
-  const auto debugTest = file.getInfoList();
-  EXPECT_THAT(file.getInfoList(),
-              ElementsAre(InfoItem("File Path",
-                                   tempFile.getFilePath().string(),
-                                   "The absolute path of the local file"),
-                          InfoItem("File Size"sv, "8"sv)));
 
   ByteVector buffer;
   EXPECT_EQ(file.read(buffer, 5), 5);
