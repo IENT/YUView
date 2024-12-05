@@ -75,9 +75,9 @@ void videoHandler::setFrameSize(Size size)
 {
   if (size != frameSize)
   {
-    this->currentFrameRawData_frameIndex = -1;
-    this->currentImageIndex              = -1;
-    this->rawData_frameIndex             = -1;
+    this->currentFrameRawDataFrameIndex = -1;
+    this->currentImageIndex             = -1;
+    this->rawData_frameIndex            = -1;
   }
 
   FrameHandler::setFrameSize(size);
@@ -221,7 +221,7 @@ void videoHandler::drawFrame(QPainter *painter, int frameIdx, double zoomFactor,
   }
 }
 
-QImage videoHandler::calculateDifference(FrameHandler *   item2,
+QImage videoHandler::calculateDifference(FrameHandler    *item2,
                                          const int        frameIdxItem0,
                                          const int        frameIdxItem1,
                                          QList<InfoItem> &differenceInfoList,
@@ -387,8 +387,8 @@ void videoHandler::loadFrameForCaching(int frameIndex, QImage &frameToCache)
 
 void videoHandler::invalidateAllBuffers()
 {
-  currentFrameRawData_frameIndex = -1;
-  rawData_frameIndex             = -1;
+  currentFrameRawDataFrameIndex = -1;
+  rawData_frameIndex            = -1;
 
   // Set the current frame in the buffer to be invalid
   currentImageIndex       = -1;
@@ -419,8 +419,8 @@ QLayout *videoHandler::createVideoHandlerControls(bool)
 
 ItemLoadingState videoHandler::needsLoadingRawValues(int frameIndex)
 {
-  return (this->currentFrameRawData_frameIndex == frameIndex) ? ItemLoadingState::LoadingNotNeeded
-                                                              : ItemLoadingState::LoadingNeeded;
+  return (this->currentFrameRawDataFrameIndex == frameIndex) ? ItemLoadingState::LoadingNotNeeded
+                                                             : ItemLoadingState::LoadingNeeded;
 }
 
 } // namespace video

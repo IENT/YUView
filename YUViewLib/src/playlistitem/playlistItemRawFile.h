@@ -33,7 +33,8 @@
 #pragma once
 
 #include <common/Typedef.h>
-#include <filesource/FileSource.h>
+#include <dataSource/DataSourceLocalFile.h>
+#include <dataSource/IDataSource.h>
 
 #include <QFuture>
 #include <QString>
@@ -64,7 +65,7 @@ public:
   // Create a new playlistItemRawFile from the playlist file entry. Return nullptr if parsing
   // failed.
   static playlistItemRawFile *newplaylistItemRawFile(const YUViewDomElement &root,
-                                                     const QString &         playlistFilePath);
+                                                     const QString          &playlistFilePath);
 
   virtual bool canBeUsedInProcessing() const override { return true; }
 
@@ -73,18 +74,10 @@ public:
   // Add the file type filters and the extensions of files that we can load.
   static void getSupportedFileExtensions(QStringList &allExtensions, QStringList &filters);
 
-  // ----- Detection of source/file change events -----
-  virtual bool isSourceChanged() override { return this->dataSource.getAndResetFileChangedFlag(); }
+  virtual bool isSourceChanged() override;
   virtual void reloadItemSource() override;
-  virtual void updateSettings() override { this->dataSource.updateFileWatchSetting(); }
 
-  // Cache the given frame
-  virtual void cacheFrame(int idx, bool testMode) override
-  {
-    if (testMode)
-      dataSource.clearFileCache();
-    playlistItemWithVideo::cacheFrame(idx, testMode);
-  }
+  virtual void cacheFrame(int idx, bool testMode) override;
 
 private slots:
   // Load the raw data for the given frame index from file. This slot is called by the videoHandler
@@ -105,7 +98,7 @@ private:
 
   int getNumberFrames() const;
 
-  FileSource dataSource;
+  std::unique_ptr<datasource::DataSourceLocalFile> dataSource;
 
   void updateStartEndRange() override;
 

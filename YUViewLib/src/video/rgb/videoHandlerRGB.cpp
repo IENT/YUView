@@ -211,7 +211,7 @@ QStringPairList videoHandlerRGB::getPixelValues(const QPoint &pixelPos,
   return values;
 }
 
-void videoHandlerRGB::setFormatFromCorrelation(const QByteArray &, int64_t)
+void videoHandlerRGB::setFormatFromCorrelation(const ByteVector &, int64_t)
 { /* TODO */
 }
 

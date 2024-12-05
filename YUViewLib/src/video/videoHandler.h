@@ -87,7 +87,7 @@ public:
   // Try to guess and set the format (frameSize/srcPixelFormat) from the raw data in the right raw
   // format. If a file size is given, it is tested if the guessed format and the file size match.
   // You can overload this for any specific raw format. The default implementation does nothing.
-  virtual void setFormatFromCorrelation(const QByteArray &, int64_t fileSize = -1)
+  virtual void setFormatFromCorrelation(const ByteVector &, int64_t fileSize = -1)
   {
     (void)fileSize;
   }
@@ -131,7 +131,7 @@ public:
   // TODO: Explain better what the difference between these two is (currentFrameRawData and rawData)
 
   // A buffer with the raw RGB data (this is filled if signalRequestRawData() is emitted)
-  QByteArray rawData;
+  ByteVector rawData;
   int        rawData_frameIndex{-1};
 
   // Do we need to load the raw values (because they are drawn on screen?)
@@ -186,8 +186,8 @@ protected:
   // The buffer of the raw data (RGB or YUV) of the current frame (and its frame index)
   // Before using the currentFrameRawData, you have to check if the currentFrameRawData_frameIndex
   // is correct. If not, you have to call loadFrame() to load the frame and set it correctly.
-  QByteArray currentFrameRawData;
-  int        currentFrameRawData_frameIndex{-1};
+  ByteVector currentFrameRawData;
+  int        currentFrameRawDataFrameIndex{-1};
 
   // Set the cache to be invalid until a call to removefromCache(-1) clears it.
   void setCacheInvalid() { cacheValid = false; }

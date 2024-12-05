@@ -85,7 +85,7 @@ public:
 
   // Try to guess and set the format (frameSize/srcPixelFormat) from the raw RGB data.
   // If a file size is given, it is tested if the RGB format and the file size match.
-  virtual void setFormatFromCorrelation(const QByteArray &rawRGBData,
+  virtual void setFormatFromCorrelation(const ByteVector &rawRGBData,
                                         int64_t           fileSize = -1) override;
 
   virtual QString getFormatAsString() const override

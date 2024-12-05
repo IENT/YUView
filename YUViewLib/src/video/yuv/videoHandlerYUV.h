@@ -130,7 +130,7 @@ public:
 
   // Try to guess and set the format (frameSize/srcPixelFormat) from the raw YUV data.
   // If a file size is given, it is tested if the YUV format and the file size match.
-  virtual void setFormatFromCorrelation(const QByteArray &rawYUVData,
+  virtual void setFormatFromCorrelation(const ByteVector &rawYUVData,
                                         int64_t           fileSize = -1) override;
 
   virtual QString getFormatAsString() const override
@@ -183,7 +183,7 @@ public:
   // -1.
   bool showPixelValuesAsDiff{false};
 
-  QByteArray     getDiffYUV() const { return this->diffYUV; };
+  ByteVector     getDiffYUV() const { return this->diffYUV; };
   PixelFormatYUV getDiffYUVFormat() const { return this->diffYUVFormat; }
 
   bool isDiffReady() const { return this->diffReady; }
@@ -219,7 +219,7 @@ private:
   bool setFormatFromSizeAndNamePacked(
       QString name, const Size size, int bitDepth, Subsampling subsampling, int64_t fileSize);
 
-  bool markDifferencesYUVPlanarToRGB(const QByteArray     &sourceBuffer,
+  bool markDifferencesYUVPlanarToRGB(const ByteVector     &sourceBuffer,
                                      unsigned char        *targetBuffer,
                                      const Size            frameSize,
                                      const PixelFormatYUV &sourceBufferFormat) const;
@@ -239,7 +239,7 @@ private:
   SafeUi<Ui::videoHandlerYUV> ui;
 
   bool           diffReady{};
-  QByteArray     diffYUV;
+  ByteVector     diffYUV;
   PixelFormatYUV diffYUVFormat{};
 
   static std::vector<PixelFormatYUV> formatPresetList;

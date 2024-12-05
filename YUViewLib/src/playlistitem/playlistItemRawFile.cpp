@@ -67,6 +67,18 @@ bool isInExtensions(const QString &testValue, const std::initializer_list<const 
   return it != extensions.end();
 }
 
+std::string extractStringFromByteVector(const ByteVector &data, const int offset, const int length)
+{
+  const auto requiredDataLength = offset + length;
+  if (data.empty() || offset <= 0 || length <= 0 || data.size() < requiredDataLength)
+    return {};
+
+  std::string str;
+  for (auto i = offset; i < offset + length; ++i)
+    str.push_back(data.at(i));
+  return str;
+}
+
 } // namespace
 
 playlistItemRawFile::playlistItemRawFile(const QString &rawFilePath,
@@ -81,11 +93,11 @@ playlistItemRawFile::playlistItemRawFile(const QString &rawFilePath,
   this->prop.isFileSource          = true;
   this->prop.propertiesWidgetTitle = "Raw File Properties";
 
-  this->dataSource.openFile(std::filesystem::path(rawFilePath.toStdString()));
+  this->dataSource = std::make_unique<datasource::DataSourceLocalFile>(
+      std::filesystem::path(rawFilePath.toStdString()));
 
-  if (!this->dataSource.isOk())
+  if (!this->dataSource->isOk())
   {
-    // Opening the file failed.
     this->setError("Error opening the input file.");
     return;
   }
@@ -133,9 +145,9 @@ playlistItemRawFile::playlistItemRawFile(const QString &rawFilePath,
     if (!this->video->isFormatValid())
     {
       // Load 24883200 bytes from the input and try to get the format from the correlation.
-      QByteArray rawData;
-      this->dataSource.readBytes(rawData, 0, 24883200);
-      this->video->setFormatFromCorrelation(rawData, this->dataSource.getFileSize().value_or(-1));
+      ByteVector rawData;
+      this->dataSource->read(rawData, 24883200);
+      this->video->setFormatFromCorrelation(rawData, this->dataSource->getFileSize().value_or(-1));
     }
   }
   else
@@ -172,7 +184,7 @@ playlistItemRawFile::playlistItemRawFile(const QString &rawFilePath,
 
 void playlistItemRawFile::updateStartEndRange()
 {
-  if (!this->dataSource.isOk() || !this->video->isFormatValid())
+  if (!this->dataSource->isOk() || !this->video->isFormatValid())
   {
     this->prop.startEndRange = indexRange(-1, -1);
     return;
@@ -189,7 +201,7 @@ void playlistItemRawFile::updateStartEndRange()
       this->prop.startEndRange = indexRange(-1, -1);
       return;
     }
-    nrFrames = this->dataSource.getFileSize().value_or(0) / bpf;
+    nrFrames = this->dataSource->getFileSize().value_or(0) / bpf;
   }
 
   this->prop.startEndRange = indexRange(0, std::max(nrFrames - 1, 0));
@@ -200,7 +212,7 @@ InfoData playlistItemRawFile::getInfo() const
   InfoData info((rawFormat == video::RawFormat::YUV) ? "YUV File Info" : "RGB File Info");
 
   // At first append the file information part (path, date created, file size...)
-  for (const auto &infoItem : this->dataSource.getFileInfoList())
+  for (const auto &infoItem : this->dataSource->getInfoList())
     info.items.append(infoItem);
 
   const auto nrFrames =
@@ -208,14 +220,14 @@ InfoData playlistItemRawFile::getInfo() const
   info.items.append(InfoItem("Num Frames", std::to_string(nrFrames)));
   info.items.append(InfoItem("Bytes per Frame", std::to_string(this->video->getBytesPerFrame())));
 
-  if (this->dataSource.isOk() && this->video->isFormatValid() && !this->isY4MFile)
+  if (this->dataSource->isOk() && this->video->isFormatValid() && !this->isY4MFile)
   {
     // Check if the size of the file and the number of bytes per frame can be divided
     // without any remainder. If not, then there is probably something wrong with the
     // selected YUV format / width / height ...
 
     auto bpf = this->video->getBytesPerFrame();
-    if (const auto fileSize = this->dataSource.getFileSize())
+    if (const auto fileSize = this->dataSource->getFileSize())
     {
       if ((*fileSize % bpf) != 0)
         info.items.append(InfoItem(
@@ -232,13 +244,13 @@ bool playlistItemRawFile::parseY4MFile()
 {
   // Read a chunck of data from the file. Thecnically, the header can be arbitrarily long, but in
   // practice, 512 bytes should cover the length of all headers
-  QByteArray rawData;
-  this->dataSource.readBytes(rawData, 0, 512);
+  ByteVector rawData;
+  this->dataSource->read(rawData, 512);
 
   DEBUG_RAWFILE("playlistItemRawFile::parseY4MFile Read Y4M");
 
   // A Y4M file must start with the signature string "YUV4MPEG2 ".
-  if (rawData.left(10) != "YUV4MPEG2 ")
+  if (extractStringFromByteVector(rawData, 0, 10) != "YUV4MPEG2 ")
     return setError("Y4M File header does not start with YUV4MPEG2 header signature.");
 
   DEBUG_RAWFILE("playlistItemRawFile::parseY4MFile Found signature YUV4MPEG2");
@@ -319,7 +331,7 @@ bool playlistItemRawFile::parseY4MFile()
     else if (parameterIndicator == 'C')
     {
       // Get 3 bytes and check them
-      auto formatName = rawData.mid(offset, 3);
+      const auto formatName = extractStringFromByteVector(rawData, offset, 3);
       offset += 3;
 
       // The YUV format. By default, YUV420 is setup.
@@ -405,10 +417,13 @@ bool playlistItemRawFile::parseY4MFile()
   while (true)
   {
     // Seek the file to 'offset' and read a few bytes
-    if (this->dataSource.readBytes(rawData, offset, 20) < 20)
+    if (!this->dataSource->seek(offset))
+      return setError(
+          QString("Error parsing the Y4M header: Unable to seek to position %1").arg(offset));
+    if (this->dataSource->read(rawData, 20) < 20)
       return setError("Error parsing the Y4M header: The file ended unexpectedly.");
 
-    auto frameIndicator = rawData.mid(0, 5);
+    const auto frameIndicator = extractStringFromByteVector(rawData, 0, 5);
     if (frameIndicator != "FRAME")
       return setError("Error parsing the Y4M header: Could not locate the next 'FRAME' indicator.");
 
@@ -434,7 +449,7 @@ bool playlistItemRawFile::parseY4MFile()
     DEBUG_RAWFILE("playlistItemRawFile::parseY4MFile Found FRAME at offset " << offset);
 
     offset += stride;
-    if (offset >= this->dataSource.getFileSize())
+    if (offset >= this->dataSource->getFileSize())
       break;
   }
 
@@ -449,8 +464,8 @@ bool playlistItemRawFile::parseY4MFile()
 
 void playlistItemRawFile::setFormatFromFileName()
 {
-  const auto fileInfoForGuess = filesource::frameFormatGuess::getFileInfoForGuessFromPath(
-      this->dataSource.getAbsoluteFilePath());
+  const auto fileInfoForGuess =
+      filesource::frameFormatGuess::getFileInfoForGuessFromPath(this->dataSource->getFilePath());
 
   const auto frameFormat = filesource::frameFormatGuess::guessFrameFormat(fileInfoForGuess);
 
@@ -491,10 +506,10 @@ void playlistItemRawFile::createPropertiesWidget()
 
 void playlistItemRawFile::savePlaylist(QDomElement &root, const QDir &playlistDir) const
 {
-  QUrl fileURL(QString::fromStdString(dataSource.getAbsoluteFilePath()));
+  QUrl fileURL(QString::fromStdString(dataSource->getFilePath()));
   fileURL.setScheme("file");
   auto relativePath =
-      playlistDir.relativeFilePath(QString::fromStdString(dataSource.getAbsoluteFilePath()));
+      playlistDir.relativeFilePath(QString::fromStdString(dataSource->getFilePath()));
 
   auto d = YUViewDomElement(root.ownerDocument().createElement("playlistItemRawFile"));
 
@@ -550,7 +565,9 @@ void playlistItemRawFile::loadRawData(int frameIdx)
 
   DEBUG_RAWFILE("playlistItemRawFile::loadRawData Start loading frame " << frameIdx << " bytes "
                                                                         << int(nrBytes));
-  if (this->dataSource.readBytes(this->video->rawData, fileStartPos, nrBytes) < nrBytes)
+  if (!this->dataSource->seek(fileStartPos))
+    return;
+  if (this->dataSource->read(this->video->rawData, nrBytes) < nrBytes)
     return; // Error
   this->video->rawData_frameIndex = frameIdx;
 
@@ -589,12 +606,18 @@ void playlistItemRawFile::getSupportedFileExtensions(QStringList &allExtensions,
   filters.append("Raw CMYK File (*.cmyk)");
 }
 
+bool playlistItemRawFile::isSourceChanged()
+{
+  if (!this->dataSource)
+    return false;
+  return this->dataSource->wasSourceModified();
+}
+
 void playlistItemRawFile::reloadItemSource()
 {
   // Reopen the file
-  this->dataSource.openFile(this->properties().name.toStdString());
-  if (!this->dataSource.isOk())
-    // Opening the file failed.
+  this->dataSource->reloadAndResetDataSource();
+  if (!this->dataSource->isOk())
     return;
 
   this->video->invalidateAllBuffers();
@@ -602,4 +625,13 @@ void playlistItemRawFile::reloadItemSource()
 
   // Emit that the item needs redrawing and the cache changed.
   emit SignalItemChanged(true, RECACHE_NONE);
+}
+
+void playlistItemRawFile::cacheFrame(int idx, bool testMode)
+{
+  if (!this->dataSource)
+    return;
+  if (testMode)
+    this->dataSource->clearFileCache();
+  playlistItemWithVideo::cacheFrame(idx, testMode);
 }
