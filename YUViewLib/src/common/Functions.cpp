@@ -236,4 +236,21 @@ std::optional<int> toInt(const std::string_view text)
   return value;
 }
 
+std::vector<std::string> splitString(const std::string_view text, const char delimiter)
+{
+  std::vector<std::string> results;
+
+  auto currentIt = text.begin();
+  while (true)
+  {
+    const auto nextDelimiter = std::find(currentIt, text.end(), delimiter);
+    results.emplace_back(currentIt, nextDelimiter);
+    if (nextDelimiter == text.end())
+      return results;
+    currentIt = nextDelimiter + 1;
+  }
+
+  return results;
+}
+
 } // namespace functions

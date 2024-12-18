@@ -47,20 +47,19 @@ namespace
 constexpr unsigned STAT_PARSING_BUFFER_SIZE = 1048576u;
 constexpr unsigned STAT_MAX_STRING_SIZE     = 1u << 28;
 
-QStringList parseCSVLine(const QString &srcLine, char delimiter)
+std::vector<std::string> parseCSVLine(const std::string &srcLine, char delimiter)
 {
-  // first, trim newline and white spaces from both ends of line
-  QString line = srcLine.trimmed().remove(' ');
-  // now split string with delimiter
-  return line.split(delimiter);
+  // // first, trim newline and white spaces from both ends of line
+  // QString line = srcLine.trimmed().remove(' ');
+  // // now split string with delimiter
+  // return line.split(delimiter);
 }
 
 } // namespace
 
-StatisticsFileCSV::StatisticsFileCSV(const QString &filename, StatisticsData &statisticsData)
-    : StatisticsFileBase(filename)
+StatisticsFileCSV::StatisticsFileCSV(std::unique_ptr<datasource::IDataSource> &&dataSource)
+    : StatisticsFileBase(std::move(dataSource))
 {
-  this->readHeaderFromFile(statisticsData);
 }
 
 /** The background task that parses the file and extracts the exact file positions
@@ -82,7 +81,7 @@ void StatisticsFileCSV::readFrameAndTypePositionsFromFile(std::atomic_bool &brea
       return;
 
     // We perform reading using an input buffer
-    QByteArray inputBuffer;
+    ByteVector inputBuffer;
     bool       fileAtEnd      = false;
     uint64_t   bufferStartPos = 0;
 
@@ -343,166 +342,146 @@ void StatisticsFileCSV::loadStatisticData(StatisticsData &statisticsData, int po
   }
 }
 
-void StatisticsFileCSV::readHeaderFromFile(StatisticsData &statisticsData)
+StatisticsData StatisticsFileCSV::readStatisticsTypesFromHeader()
 {
-  // TODO: Why is there a try block here? I see no throwing of anything ...
-  //       We should get rid of this and just set an error and return on failure.
-  try
+  if (!this->dataSource->isOk())
+    return;
+
+  StatisticsData statisticsData;
+
+  // scan header lines first
+  // also count the lines per Frame for more efficient memory allocation
+  // if an ID is used twice, the data of the first gets overwritten
+  bool typeParsingActive = false;
+  // StatisticsType aType;
+
+  while (!this->dataSource->atEnd())
   {
-    if (!this->file.isOk())
-      return;
+    const auto aLine = this->dataSource->readLine();
 
-    statisticsData.clear();
+    auto rowItemList = parseCSVLine(aLine, ';');
 
-    // scan header lines first
-    // also count the lines per Frame for more efficient memory allocation
-    // if an ID is used twice, the data of the first gets overwritten
-    bool           typeParsingActive = false;
-    StatisticsType aType;
+    if (rowItemList[0].isEmpty())
+      continue;
 
-    while (!this->file.atEnd())
+    // either a new type or a line which is not header finishes the last type
+    if (((rowItemList[1] == "type") || (rowItemList[0][0] != '%')) && typeParsingActive)
     {
-      // read one line
-      auto    aLineByteArray = this->file.readLine();
-      QString aLine(aLineByteArray);
+      // Last type is complete. Store this initial state.
+      aType.setInitialState();
+      statisticsData.addStatType(aType);
 
-      // get components of this line
-      auto rowItemList = parseCSVLine(aLine, ';');
+      // start from scratch for next item
+      aType             = StatisticsType();
+      typeParsingActive = false;
 
-      if (rowItemList[0].isEmpty())
-        continue;
-
-      // either a new type or a line which is not header finishes the last type
-      if (((rowItemList[1] == "type") || (rowItemList[0][0] != '%')) && typeParsingActive)
-      {
-        // Last type is complete. Store this initial state.
-        aType.setInitialState();
-        statisticsData.addStatType(aType);
-
-        // start from scratch for next item
-        aType             = StatisticsType();
-        typeParsingActive = false;
-
-        // if we found a non-header line, stop here
-        if (rowItemList[0][0] != '%')
-          return;
-      }
-
-      if (rowItemList[1] == "type") // new type
-      {
-        aType.typeID   = rowItemList[2].toInt();
-        aType.typeName = rowItemList[3];
-
-        // The next entry (4) is "map", "range", or "vector"
-        if (rowItemList.count() >= 5)
-        {
-          if (rowItemList[4] == "map" || rowItemList[4] == "range")
-          {
-            aType.hasValueData    = true;
-            aType.renderValueData = true;
-          }
-          else if (rowItemList[4] == "vector" || rowItemList[4] == "line")
-          {
-            aType.hasVectorData    = true;
-            aType.renderVectorData = true;
-            if (rowItemList[4] == "line")
-              aType.arrowHead = StatisticsType::ArrowHead::none;
-          }
-        }
-
-        typeParsingActive = true;
-      }
-      else if (rowItemList[1] == "mapColor")
-      {
-        int id = rowItemList[2].toInt();
-
-        // assign color
-        auto r = (unsigned char)rowItemList[3].toInt();
-        auto g = (unsigned char)rowItemList[4].toInt();
-        auto b = (unsigned char)rowItemList[5].toInt();
-        auto a = (unsigned char)rowItemList[6].toInt();
-
-        aType.colorMapper.mappingType  = color::MappingType::Map;
-        aType.colorMapper.colorMap[id] = Color(r, g, b, a);
-      }
-      else if (rowItemList[1] == "range")
-      {
-        // This is a range with min/max
-        auto min      = rowItemList[2].toInt();
-        auto r        = (unsigned char)rowItemList[4].toInt();
-        auto g        = (unsigned char)rowItemList[6].toInt();
-        auto b        = (unsigned char)rowItemList[8].toInt();
-        auto a        = (unsigned char)rowItemList[10].toInt();
-        auto minColor = Color(r, g, b, a);
-
-        auto max      = rowItemList[3].toInt();
-        r             = rowItemList[5].toInt();
-        g             = rowItemList[7].toInt();
-        b             = rowItemList[9].toInt();
-        a             = rowItemList[11].toInt();
-        auto maxColor = Color(r, g, b, a);
-
-        aType.colorMapper = color::ColorMapper({min, max}, minColor, maxColor);
-      }
-      else if (rowItemList[1] == "defaultRange")
-      {
-        // This is a color gradient function
-        int  min       = rowItemList[2].toInt();
-        int  max       = rowItemList[3].toInt();
-        auto rangeName = rowItemList[4].toStdString();
-
-        aType.colorMapper = color::ColorMapper({min, max}, rangeName);
-      }
-      else if (rowItemList[1] == "vectorColor")
-      {
-        auto r                  = (unsigned char)rowItemList[2].toInt();
-        auto g                  = (unsigned char)rowItemList[3].toInt();
-        auto b                  = (unsigned char)rowItemList[4].toInt();
-        auto a                  = (unsigned char)rowItemList[5].toInt();
-        aType.vectorStyle.color = Color(r, g, b, a);
-      }
-      else if (rowItemList[1] == "gridColor")
-      {
-        auto r                = (unsigned char)rowItemList[2].toInt();
-        auto g                = (unsigned char)rowItemList[3].toInt();
-        auto b                = (unsigned char)rowItemList[4].toInt();
-        auto a                = 255;
-        aType.gridStyle.color = Color(r, g, b, a);
-      }
-      else if (rowItemList[1] == "scaleFactor")
-      {
-        aType.vectorScale = rowItemList[2].toInt();
-      }
-      else if (rowItemList[1] == "scaleToBlockSize")
-      {
-        aType.scaleValueToBlockSize = (rowItemList[2] == "1");
-      }
-      else if (rowItemList[1] == "seq-specs")
-      {
-        auto seqName = rowItemList[2];
-        auto layerId = rowItemList[3];
-        // For now do nothing with this information.
-        // Show the file name for this item instead.
-        auto width  = rowItemList[4].toInt();
-        auto height = rowItemList[5].toInt();
-        if (width > 0 && height > 0)
-          statisticsData.setFrameSize(Size(width, height));
-        if (rowItemList[6].toDouble() > 0.0)
-          this->framerate = rowItemList[6].toDouble();
-      }
+      // if we found a non-header line, stop here
+      if (rowItemList[0][0] != '%')
+        return;
     }
-  }
-  catch (const char *str)
-  {
-    std::cerr << "Error while parsing meta data: " << str << '\n';
-    this->errorMessage = QString("Error while parsing meta data: ") + QString(str);
-    this->error        = true;
-  }
-  catch (...)
-  {
-    std::cerr << "Error while parsing meta data.";
-    this->errorMessage = QString("Error while parsing meta data.");
-    this->error        = true;
+
+    if (rowItemList[1] == "type") // new type
+    {
+      aType.typeID   = rowItemList[2].toInt();
+      aType.typeName = rowItemList[3];
+
+      // The next entry (4) is "map", "range", or "vector"
+      if (rowItemList.count() >= 5)
+      {
+        if (rowItemList[4] == "map" || rowItemList[4] == "range")
+        {
+          aType.hasValueData    = true;
+          aType.renderValueData = true;
+        }
+        else if (rowItemList[4] == "vector" || rowItemList[4] == "line")
+        {
+          aType.hasVectorData    = true;
+          aType.renderVectorData = true;
+          if (rowItemList[4] == "line")
+            aType.arrowHead = StatisticsType::ArrowHead::none;
+        }
+      }
+
+      typeParsingActive = true;
+    }
+    else if (rowItemList[1] == "mapColor")
+    {
+      int id = rowItemList[2].toInt();
+
+      // assign color
+      auto r = (unsigned char)rowItemList[3].toInt();
+      auto g = (unsigned char)rowItemList[4].toInt();
+      auto b = (unsigned char)rowItemList[5].toInt();
+      auto a = (unsigned char)rowItemList[6].toInt();
+
+      aType.colorMapper.mappingType  = color::MappingType::Map;
+      aType.colorMapper.colorMap[id] = Color(r, g, b, a);
+    }
+    else if (rowItemList[1] == "range")
+    {
+      // This is a range with min/max
+      auto min      = rowItemList[2].toInt();
+      auto r        = (unsigned char)rowItemList[4].toInt();
+      auto g        = (unsigned char)rowItemList[6].toInt();
+      auto b        = (unsigned char)rowItemList[8].toInt();
+      auto a        = (unsigned char)rowItemList[10].toInt();
+      auto minColor = Color(r, g, b, a);
+
+      auto max      = rowItemList[3].toInt();
+      r             = rowItemList[5].toInt();
+      g             = rowItemList[7].toInt();
+      b             = rowItemList[9].toInt();
+      a             = rowItemList[11].toInt();
+      auto maxColor = Color(r, g, b, a);
+
+      aType.colorMapper = color::ColorMapper({min, max}, minColor, maxColor);
+    }
+    else if (rowItemList[1] == "defaultRange")
+    {
+      // This is a color gradient function
+      int  min       = rowItemList[2].toInt();
+      int  max       = rowItemList[3].toInt();
+      auto rangeName = rowItemList[4].toStdString();
+
+      aType.colorMapper = color::ColorMapper({min, max}, rangeName);
+    }
+    else if (rowItemList[1] == "vectorColor")
+    {
+      auto r                  = (unsigned char)rowItemList[2].toInt();
+      auto g                  = (unsigned char)rowItemList[3].toInt();
+      auto b                  = (unsigned char)rowItemList[4].toInt();
+      auto a                  = (unsigned char)rowItemList[5].toInt();
+      aType.vectorStyle.color = Color(r, g, b, a);
+    }
+    else if (rowItemList[1] == "gridColor")
+    {
+      auto r                = (unsigned char)rowItemList[2].toInt();
+      auto g                = (unsigned char)rowItemList[3].toInt();
+      auto b                = (unsigned char)rowItemList[4].toInt();
+      auto a                = 255;
+      aType.gridStyle.color = Color(r, g, b, a);
+    }
+    else if (rowItemList[1] == "scaleFactor")
+    {
+      aType.vectorScale = rowItemList[2].toInt();
+    }
+    else if (rowItemList[1] == "scaleToBlockSize")
+    {
+      aType.scaleValueToBlockSize = (rowItemList[2] == "1");
+    }
+    else if (rowItemList[1] == "seq-specs")
+    {
+      auto seqName = rowItemList[2];
+      auto layerId = rowItemList[3];
+      // For now do nothing with this information.
+      // Show the file name for this item instead.
+      auto width  = rowItemList[4].toInt();
+      auto height = rowItemList[5].toInt();
+      if (width > 0 && height > 0)
+        statisticsData.setFrameSize(Size(width, height));
+      if (rowItemList[6].toDouble() > 0.0)
+        this->framerate = rowItemList[6].toDouble();
+    }
   }
 }
 

@@ -35,12 +35,13 @@
 namespace stats
 {
 
-StatisticsFileBase::StatisticsFileBase(const QString &filename)
+StatisticsFileBase::StatisticsFileBase(std::unique_ptr<datasource::IDataSource> &&dataSource)
 {
-  this->file.openFile(filename.toStdString());
-  if (!this->file.isOk())
+  this->dataSource = std::move(dataSource);
+
+  if (!this->dataSource || !this->dataSource->isOk())
   {
-    this->errorMessage = "Error opening file " + filename;
+    this->errorMessage = "Invalid data source";
     this->error        = true;
   }
 }
@@ -54,7 +55,7 @@ InfoData StatisticsFileBase::getInfo() const
 {
   InfoData info("Statistics File info");
 
-  for (const auto &infoItem : this->file.getFileInfoList())
+  for (const auto &infoItem : this->dataSource->getInfoList())
     info.items.append(infoItem);
   info.items.append(InfoItem("Sorted by POC"sv, this->fileSortedByPOC ? "Yes" : "No"));
   info.items.append(InfoItem("Parsing:", std::to_string(this->parsingProgress) + "..."));

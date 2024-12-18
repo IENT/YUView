@@ -30,51 +30,34 @@
  *   along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <common/Testing.h>
+#pragma once
 
-#include <common/Functions.h>
+#include "IDataSource.h"
 
-namespace
+namespace datasource
 {
 
-TEST(FunctionsTest, toUnsigned)
+class DataSourceLineReader
 {
-  EXPECT_EQ(functions::toUnsigned("0"), 0);
-  EXPECT_EQ(functions::toUnsigned("256"), 256);
-  EXPECT_EQ(functions::toUnsigned("4294967295"), 4294967295);
+public:
+  DataSourceLineReader(std::unique_ptr<IDataSource> dataSource);
 
-  EXPECT_FALSE(functions::toUnsigned("4294967296"));
-  EXPECT_FALSE(functions::toUnsigned("-1"));
-  EXPECT_FALSE(functions::toUnsigned("-256"));
-  EXPECT_FALSE(functions::toUnsigned("24A"));
-  EXPECT_FALSE(functions::toUnsigned("A24"));
-  EXPECT_FALSE(functions::toUnsigned("NotANumber"));
-}
+  [[nodiscard]] std::vector<InfoItem> getInfoList() const;
+  [[nodiscard]] bool                  atEnd() const;
+  [[nodiscard]] bool                  isOk() const;
+  [[nodiscard]] std::int64_t          getPosition() const;
 
-TEST(FunctionsTest, toInt)
-{
-  EXPECT_EQ(functions::toInt("0"), 0);
-  EXPECT_EQ(functions::toInt("256"), 256);
-  EXPECT_EQ(functions::toInt("2147483647"), 2147483647);
-  EXPECT_EQ(functions::toInt("-1"), -1);
-  EXPECT_EQ(functions::toInt("-256"), -256);
-  EXPECT_EQ(functions::toInt("-2147483648"), -2147483648);
+  [[nodiscard]] bool wasSourceModified() const;
 
-  EXPECT_FALSE(functions::toInt("2147483648"));
-  EXPECT_FALSE(functions::toInt("-2147483649"));
-  EXPECT_FALSE(functions::toInt("24A"));
-  EXPECT_FALSE(functions::toInt("A24"));
-  EXPECT_FALSE(functions::toInt("NotANumber"));
-}
+  [[nodiscard]] bool        seek(const std::int64_t pos);
+  [[nodiscard]] std::string readLine();
 
-TEST(FunctionsTest, splitString)
-{
-  EXPECT_THAT(functions::splitString("d,a,t,a", ','), ElementsAre("d", "a", "t", "a"));
-  EXPECT_THAT(functions::splitString("some,more,thi++ngs", ','),
-              ElementsAre("some", "more", "thi++ngs"));
-  EXPECT_THAT(functions::splitString(",do,aa,t,a", ','), ElementsAre("", "do", "aa", "t", "a"));
-  EXPECT_THAT(functions::splitString("do,aa,,t,a", ','), ElementsAre("do", "aa", "", "t", "a"));
-  EXPECT_THAT(functions::splitString("do,aa,t,a,", ','), ElementsAre("do", "aa", "t", "a", ""));
-}
+  [[nodiscard]] std::optional<std::int64_t> getFileSize() const;
 
-} // namespace
+protected:
+  std::unique_ptr<IDataSource> dataSource;
+
+  std::string textBuffer;
+};
+
+} // namespace datasource

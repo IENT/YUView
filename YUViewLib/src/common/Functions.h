@@ -101,4 +101,6 @@ template <typename T, typename R> inline T clip(T val, Range<R> range)
 std::optional<unsigned> toUnsigned(const std::string_view text);
 std::optional<int>      toInt(const std::string_view text);
 
+std::vector<std::string> splitString(const std::string_view text, const char delimiter);
+
 } // namespace functions

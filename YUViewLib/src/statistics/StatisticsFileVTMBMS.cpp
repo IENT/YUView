@@ -416,142 +416,142 @@ void StatisticsFileVTMBMS::loadStatisticData(StatisticsData &statisticsData, int
 
 void StatisticsFileVTMBMS::readHeaderFromFile(StatisticsData &statisticsData)
 {
-  try
-  {
-    if (!this->file.isOk())
-      return;
+  // try
+  // {
+  //   if (!this->file.isOk())
+  //     return;
 
-    statisticsData.clear();
+  //   statisticsData.clear();
 
-    while (!this->file.atEnd())
-    {
-      // read one line
-      auto    aLineByteArray = this->file.readLine();
-      QString aLine(aLineByteArray);
+  //   while (!this->file.atEnd())
+  //   {
+  //     // read one line
+  //     auto    aLineByteArray = this->file.readLine();
+  //     QString aLine(aLineByteArray);
 
-      // if we found a non-header line, stop here
-      if (aLine[0] != '#')
-        return;
+  //     // if we found a non-header line, stop here
+  //     if (aLine[0] != '#')
+  //       return;
 
-      // extract statistics information from header lines
-      // match:
-      // # Sequence size: [832x 480]
-      QRegularExpression sequenceSizeRegex("# Sequence size: \\[([0-9]+)x *([0-9]+)\\]");
+  //     // extract statistics information from header lines
+  //     // match:
+  //     // # Sequence size: [832x 480]
+  //     QRegularExpression sequenceSizeRegex("# Sequence size: \\[([0-9]+)x *([0-9]+)\\]");
 
-      // match:
-      // # Block Statistic Type: MergeFlag; Flag
-      QRegularExpression availableStatisticsRegex(
-          "# Block Statistic Type: *([0-9a-zA-Z_]+); *([0-9a-zA-Z]+); *(.*)");
+  //     // match:
+  //     // # Block Statistic Type: MergeFlag; Flag
+  //     QRegularExpression availableStatisticsRegex(
+  //         "# Block Statistic Type: *([0-9a-zA-Z_]+); *([0-9a-zA-Z]+); *(.*)");
 
-      // get sequence size
-      auto sequenceSizeMatch = sequenceSizeRegex.match(aLine);
-      if (sequenceSizeMatch.hasMatch())
-      {
-        statisticsData.setFrameSize(
-            Size(sequenceSizeMatch.captured(1).toInt(), sequenceSizeMatch.captured(2).toInt()));
-      }
+  //     // get sequence size
+  //     auto sequenceSizeMatch = sequenceSizeRegex.match(aLine);
+  //     if (sequenceSizeMatch.hasMatch())
+  //     {
+  //       statisticsData.setFrameSize(
+  //           Size(sequenceSizeMatch.captured(1).toInt(), sequenceSizeMatch.captured(2).toInt()));
+  //     }
 
-      // get available statistics
-      auto availableStatisticsMatch = availableStatisticsRegex.match(aLine);
-      if (availableStatisticsMatch.hasMatch())
-      {
-        StatisticsType aType;
-        // Store initial state.
-        aType.setInitialState();
+  //     // get available statistics
+  //     auto availableStatisticsMatch = availableStatisticsRegex.match(aLine);
+  //     if (availableStatisticsMatch.hasMatch())
+  //     {
+  //       StatisticsType aType;
+  //       // Store initial state.
+  //       aType.setInitialState();
 
-        // set name
-        aType.typeName = availableStatisticsMatch.captured(1);
+  //       // set name
+  //       aType.typeName = availableStatisticsMatch.captured(1);
 
-        // with -1, an id will be automatically assigned
-        aType.typeID = -1;
+  //       // with -1, an id will be automatically assigned
+  //       aType.typeID = -1;
 
-        // check if scalar or vector
-        auto statType = availableStatisticsMatch.captured(2);
-        if (statType.contains(
-                "AffineTFVectors")) // "Vector" is contained in this, need to check it first
-        {
-          auto               scaleInfo = availableStatisticsMatch.captured(3);
-          QRegularExpression scaleInfoRegex("Scale: *([0-9]+)");
-          auto               scaleInfoMatch = scaleInfoRegex.match(scaleInfo);
-          int                scale;
-          if (scaleInfoMatch.hasMatch())
-            scale = scaleInfoMatch.captured(1).toInt();
-          else
-            scale = 1;
+  //       // check if scalar or vector
+  //       auto statType = availableStatisticsMatch.captured(2);
+  //       if (statType.contains(
+  //               "AffineTFVectors")) // "Vector" is contained in this, need to check it first
+  //       {
+  //         auto               scaleInfo = availableStatisticsMatch.captured(3);
+  //         QRegularExpression scaleInfoRegex("Scale: *([0-9]+)");
+  //         auto               scaleInfoMatch = scaleInfoRegex.match(scaleInfo);
+  //         int                scale;
+  //         if (scaleInfoMatch.hasMatch())
+  //           scale = scaleInfoMatch.captured(1).toInt();
+  //         else
+  //           scale = 1;
 
-          aType.hasAffineTFData   = true;
-          aType.renderVectorData  = true;
-          aType.vectorScale       = scale;
-          aType.vectorStyle.color = Color(255, 0, 0);
-        }
-        else if (statType.contains("Vector"))
-        {
-          auto               scaleInfo = availableStatisticsMatch.captured(3);
-          QRegularExpression scaleInfoRegex("Scale: *([0-9]+)");
-          auto               scaleInfoMatch = scaleInfoRegex.match(scaleInfo);
-          int                scale;
-          if (scaleInfoMatch.hasMatch())
-            scale = scaleInfoMatch.captured(1).toInt();
-          else
-            scale = 1;
+  //         aType.hasAffineTFData   = true;
+  //         aType.renderVectorData  = true;
+  //         aType.vectorScale       = scale;
+  //         aType.vectorStyle.color = Color(255, 0, 0);
+  //       }
+  //       else if (statType.contains("Vector"))
+  //       {
+  //         auto               scaleInfo = availableStatisticsMatch.captured(3);
+  //         QRegularExpression scaleInfoRegex("Scale: *([0-9]+)");
+  //         auto               scaleInfoMatch = scaleInfoRegex.match(scaleInfo);
+  //         int                scale;
+  //         if (scaleInfoMatch.hasMatch())
+  //           scale = scaleInfoMatch.captured(1).toInt();
+  //         else
+  //           scale = 1;
 
-          aType.hasVectorData     = true;
-          aType.renderVectorData  = true;
-          aType.vectorScale       = scale;
-          aType.vectorStyle.color = Color(255, 0, 0);
-        }
-        else if (statType.contains("Flag"))
-        {
-          aType.hasValueData    = true;
-          aType.renderValueData = true;
-          aType.colorMapper     = color::ColorMapper({0, 1}, color::PredefinedType::Jet);
-        }
-        else if (statType.contains("Integer")) // for now do the same as for Flags
-        {
-          auto               rangeInfo = availableStatisticsMatch.captured(3);
-          QRegularExpression rangeInfoRegex("\\[([0-9\\-]+), *([0-9\\-]+)\\]");
-          auto               rangeInfoMatch = rangeInfoRegex.match(rangeInfo);
-          int                minVal         = 0;
-          int                maxVal         = 100;
-          if (rangeInfoMatch.hasMatch())
-          {
-            minVal = rangeInfoMatch.captured(1).toInt();
-            maxVal = rangeInfoMatch.captured(2).toInt();
-          }
+  //         aType.hasVectorData     = true;
+  //         aType.renderVectorData  = true;
+  //         aType.vectorScale       = scale;
+  //         aType.vectorStyle.color = Color(255, 0, 0);
+  //       }
+  //       else if (statType.contains("Flag"))
+  //       {
+  //         aType.hasValueData    = true;
+  //         aType.renderValueData = true;
+  //         aType.colorMapper     = color::ColorMapper({0, 1}, color::PredefinedType::Jet);
+  //       }
+  //       else if (statType.contains("Integer")) // for now do the same as for Flags
+  //       {
+  //         auto               rangeInfo = availableStatisticsMatch.captured(3);
+  //         QRegularExpression rangeInfoRegex("\\[([0-9\\-]+), *([0-9\\-]+)\\]");
+  //         auto               rangeInfoMatch = rangeInfoRegex.match(rangeInfo);
+  //         int                minVal         = 0;
+  //         int                maxVal         = 100;
+  //         if (rangeInfoMatch.hasMatch())
+  //         {
+  //           minVal = rangeInfoMatch.captured(1).toInt();
+  //           maxVal = rangeInfoMatch.captured(2).toInt();
+  //         }
 
-          aType.hasValueData    = true;
-          aType.renderValueData = true;
-          aType.colorMapper     = color::ColorMapper({minVal, maxVal}, color::PredefinedType::Jet);
-        }
-        else if (statType.contains("Line"))
-        {
-          aType.hasVectorData     = true;
-          aType.renderVectorData  = true;
-          aType.vectorScale       = 1;
-          aType.arrowHead         = StatisticsType::ArrowHead::none;
-          aType.gridStyle.color   = Color(255, 255, 255);
-          aType.vectorStyle.color = Color(255, 255, 255);
-        }
+  //         aType.hasValueData    = true;
+  //         aType.renderValueData = true;
+  //         aType.colorMapper     = color::ColorMapper({minVal, maxVal}, color::PredefinedType::Jet);
+  //       }
+  //       else if (statType.contains("Line"))
+  //       {
+  //         aType.hasVectorData     = true;
+  //         aType.renderVectorData  = true;
+  //         aType.vectorScale       = 1;
+  //         aType.arrowHead         = StatisticsType::ArrowHead::none;
+  //         aType.gridStyle.color   = Color(255, 255, 255);
+  //         aType.vectorStyle.color = Color(255, 255, 255);
+  //       }
 
-        // check whether is was a geometric partitioning statistic with polygon shape
-        if (statType.contains("Polygon"))
-          aType.isPolygon = true;
+  //       // check whether is was a geometric partitioning statistic with polygon shape
+  //       if (statType.contains("Polygon"))
+  //         aType.isPolygon = true;
 
-        // add the new type if it is not already in the list
-        statisticsData.addStatType(aType); // check if in list is done by addStatsType
-      }
-    }
-  } // try
-  catch (const char *str)
-  {
-    std::cerr << "Error while parsing meta data: " << str << '\n';
-    this->errorMessage = QString("Error while parsing meta data: ") + QString(str);
-  }
-  catch (...)
-  {
-    std::cerr << "Error while parsing meta data.";
-    this->errorMessage = QString("Error while parsing meta data.");
-  }
+  //       // add the new type if it is not already in the list
+  //       statisticsData.addStatType(aType); // check if in list is done by addStatsType
+  //     }
+  //   }
+  // } // try
+  // catch (const char *str)
+  // {
+  //   std::cerr << "Error while parsing meta data: " << str << '\n';
+  //   this->errorMessage = QString("Error while parsing meta data: ") + QString(str);
+  // }
+  // catch (...)
+  // {
+  //   std::cerr << "Error while parsing meta data.";
+  //   this->errorMessage = QString("Error while parsing meta data.");
+  // }
 }
 
 } // namespace stats

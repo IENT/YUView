@@ -30,51 +30,49 @@
  *   along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <common/Testing.h>
+#include "DataSourceLineReader.h"
 
-#include <common/Functions.h>
-
-namespace
+namespace datasource
 {
 
-TEST(FunctionsTest, toUnsigned)
+DataSourceLineReader::DataSourceLineReader(std::unique_ptr<IDataSource> dataSource)
+    : dataSource(std::move(dataSource))
 {
-  EXPECT_EQ(functions::toUnsigned("0"), 0);
-  EXPECT_EQ(functions::toUnsigned("256"), 256);
-  EXPECT_EQ(functions::toUnsigned("4294967295"), 4294967295);
-
-  EXPECT_FALSE(functions::toUnsigned("4294967296"));
-  EXPECT_FALSE(functions::toUnsigned("-1"));
-  EXPECT_FALSE(functions::toUnsigned("-256"));
-  EXPECT_FALSE(functions::toUnsigned("24A"));
-  EXPECT_FALSE(functions::toUnsigned("A24"));
-  EXPECT_FALSE(functions::toUnsigned("NotANumber"));
 }
 
-TEST(FunctionsTest, toInt)
+std::vector<InfoItem> DataSourceLineReader::getInfoList() const
 {
-  EXPECT_EQ(functions::toInt("0"), 0);
-  EXPECT_EQ(functions::toInt("256"), 256);
-  EXPECT_EQ(functions::toInt("2147483647"), 2147483647);
-  EXPECT_EQ(functions::toInt("-1"), -1);
-  EXPECT_EQ(functions::toInt("-256"), -256);
-  EXPECT_EQ(functions::toInt("-2147483648"), -2147483648);
+  return this->dataSource->getInfoList();
+};
 
-  EXPECT_FALSE(functions::toInt("2147483648"));
-  EXPECT_FALSE(functions::toInt("-2147483649"));
-  EXPECT_FALSE(functions::toInt("24A"));
-  EXPECT_FALSE(functions::toInt("A24"));
-  EXPECT_FALSE(functions::toInt("NotANumber"));
+bool DataSourceLineReader::atEnd() const
+{
+  return this->dataSource->atEnd();
 }
 
-TEST(FunctionsTest, splitString)
+bool DataSourceLineReader::isOk() const
 {
-  EXPECT_THAT(functions::splitString("d,a,t,a", ','), ElementsAre("d", "a", "t", "a"));
-  EXPECT_THAT(functions::splitString("some,more,thi++ngs", ','),
-              ElementsAre("some", "more", "thi++ngs"));
-  EXPECT_THAT(functions::splitString(",do,aa,t,a", ','), ElementsAre("", "do", "aa", "t", "a"));
-  EXPECT_THAT(functions::splitString("do,aa,,t,a", ','), ElementsAre("do", "aa", "", "t", "a"));
-  EXPECT_THAT(functions::splitString("do,aa,t,a,", ','), ElementsAre("do", "aa", "t", "a", ""));
+  return this->dataSource->isOk();
 }
 
-} // namespace
+std::int64_t DataSourceLineReader::getPosition() const
+{
+  return this->dataSource->getPosition();
+}
+
+bool DataSourceLineReader::wasSourceModified() const
+{
+  return this->dataSource->wasSourceModified();
+}
+
+bool DataSourceLineReader::seek(const std::int64_t pos)
+{
+  return this->dataSource->seek(pos);
+}
+
+std::string DataSourceLineReader::readLine()
+{
+  // Fill buffer and read ...
+}
+
+} // namespace datasource

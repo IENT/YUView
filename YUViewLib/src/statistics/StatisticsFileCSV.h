@@ -42,26 +42,25 @@ namespace stats
 class StatisticsFileCSV : public StatisticsFileBase
 {
 public:
-  StatisticsFileCSV(const QString &filename, StatisticsData &statisticsData);
+  StatisticsFileCSV(std::unique_ptr<datasource::IDataSource> &&dataSource);
   virtual ~StatisticsFileCSV() = default;
 
-  // -1 if it could not be parser from the file
-  double getFramerate() const override { return this->framerate; }
+  std::optional<double> getFramerate() const override { return this->framerate; }
 
   // Parse the whole file and get the positions where a new POC/type starts and save them. Later we
   // can then seek to these positions to load data. Usually this is called in a seperate thread.
   void readFrameAndTypePositionsFromFile(std::atomic_bool &breakFunction) override;
 
   // Load the statistics for "poc/type" from file and put it into the statisticsData.
-  // If the statistics file is in an interleaved format (types are mixed within one POC) this function also parses
-  // types which were not requested by the given 'type'.
+  // If the statistics file is in an interleaved format (types are mixed within one POC) this
+  // function also parses types which were not requested by the given 'type'.
   virtual void loadStatisticData(StatisticsData &statisticsData, int poc, int typeID) override;
 
 protected:
   //! Scan the header: What types are saved in this file?
-  void readHeaderFromFile(StatisticsData &statisticsData);
+  StatisticsData readStatisticsTypesFromHeader();
 
-  double framerate{-1};
+  std::optional<double> framerate{};
 
   // File positions pocTypeFileposMap[poc][typeID]
   using TypeFileposMap = std::map<int, uint64_t>;

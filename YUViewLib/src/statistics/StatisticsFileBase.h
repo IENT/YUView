@@ -32,7 +32,7 @@
 
 #pragma once
 
-#include "filesource/FileSource.h"
+#include "dataSource/IDataSource.h"
 #include "statistics/StatisticsData.h"
 
 #include <QObject>
@@ -47,7 +47,7 @@ class StatisticsFileBase : public QObject
   Q_OBJECT
 
 public:
-  StatisticsFileBase(const QString &filename);
+  StatisticsFileBase(std::unique_ptr<datasource::IDataSource> &&dataSource);
   virtual ~StatisticsFileBase();
 
   // Parse the whole file and get the positions where a new POC/type starts and save them. Later we
@@ -59,13 +59,11 @@ public:
 
   operator bool() const { return !this->error; };
 
-  // -1 if it could not be parser from the file
-  virtual double getFramerate() const { return -1; }
+  virtual std::optional<double> getFramerate() const { return {}; }
 
   int getMaxPoc() const { return this->maxPOC; }
 
-  bool isFileChanged() { return this->file.getAndResetFileChangedFlag(); }
-  void updateSettings() { this->file.updateFileWatchSetting(); }
+  bool isFileChanged() const { return this->dataSource->wasSourceModified(); }
 
   InfoData getInfo() const;
 
@@ -77,7 +75,7 @@ signals:
   void readPOC(int newPoc);
 
 protected:
-  FileSource file;
+  std::unique_ptr<datasource::IDataSource> dataSource;
 
   // Set if the file is sorted by POC and the types are 'random' within this POC (true)
   // or if the file is sorted by typeID and the POC is 'random'

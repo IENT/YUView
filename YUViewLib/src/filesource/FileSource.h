@@ -84,7 +84,7 @@ public:
   bool isOk() const { return this->isFileOpened; }
 
   virtual bool atEnd() const { return !this->isFileOpened ? true : this->srcFile.atEnd(); }
-  QByteArray   readLine() { return !this->isFileOpened ? QByteArray() : this->srcFile.readLine(); }
+  std::string  readLine();
   virtual bool seek(int64_t pos) { return !this->isFileOpened ? false : this->srcFile.seek(pos); }
   int64_t      pos() { return !this->isFileOpened ? 0 : this->srcFile.pos(); }
 

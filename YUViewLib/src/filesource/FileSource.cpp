@@ -151,6 +151,15 @@ bool FileSource::getAndResetFileChangedFlag()
   return b;
 }
 
+std::string FileSource::readLine()
+{
+  if (!this->isFileOpened)
+    return {};
+
+  const auto line = this->srcFile.readLine();
+  return line.toStdString();
+}
+
 void FileSource::updateFileWatchSetting()
 {
   // Install a file watcher if file watching is active in the settings.
