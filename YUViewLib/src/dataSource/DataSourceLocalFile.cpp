@@ -73,7 +73,7 @@ std::vector<InfoItem> DataSourceLocalFile::getInfoList() const
   std::vector<InfoItem> infoList;
   infoList.push_back(
       InfoItem({"File Path", this->filePath.string(), "The absolute path of the local file"}));
-  if (const auto size = this->getFileSize())
+  if (const auto size = this->getSize())
     infoList.push_back(InfoItem({"File Size", std::to_string(*size)}));
 
   return infoList;
@@ -94,6 +94,15 @@ bool DataSourceLocalFile::isOk() const
 std::int64_t DataSourceLocalFile::getPosition() const
 {
   return this->filePosition;
+}
+
+std::optional<std::int64_t> DataSourceLocalFile::getSize() const
+{
+  if (!this->isOk())
+    return {};
+
+  const auto size = std::filesystem::file_size(this->filePath);
+  return static_cast<std::int64_t>(size);
 }
 
 void DataSourceLocalFile::clearFileCache()
@@ -167,15 +176,6 @@ std::int64_t DataSourceLocalFile::read(ByteVector &buffer, const std::int64_t nr
 
   this->filePosition += bytesRead;
   return static_cast<std::int64_t>(bytesRead);
-}
-
-std::optional<std::int64_t> DataSourceLocalFile::getFileSize() const
-{
-  if (!this->isOk())
-    return {};
-
-  const auto size = std::filesystem::file_size(this->filePath);
-  return static_cast<std::int64_t>(size);
 }
 
 [[nodiscard]] std::filesystem::path DataSourceLocalFile::getFilePath() const

@@ -212,8 +212,8 @@ bool playlistItemStatisticsFile::isSourceChanged()
 void playlistItemStatisticsFile::updateSettings()
 {
   this->statisticsUIHandler.updateSettings();
-  if (this->file)
-    this->file->updateSettings();
+  // if (this->file)
+  //   this->file->updateSettings();
 }
 
 void playlistItemStatisticsFile::getSupportedFileExtensions(QStringList &allExtensions,
@@ -275,14 +275,14 @@ void playlistItemStatisticsFile::openStatisticsFile()
   }
 
   auto suffix = QFileInfo(this->prop.name).suffix();
-  if (this->openMode == OpenMode::CSVFile ||
-      (this->openMode == OpenMode::Extension && suffix == "csv"))
-    this->file.reset(new stats::StatisticsFileCSV(this->prop.name, this->statisticsData));
-  else if (this->openMode == OpenMode::VTMBMSFile ||
-           (this->openMode == OpenMode::Extension && suffix == "vtmbmsstats"))
-    this->file.reset(new stats::StatisticsFileVTMBMS(this->prop.name, this->statisticsData));
-  else
-    assert(false);
+  // if (this->openMode == OpenMode::CSVFile ||
+  //     (this->openMode == OpenMode::Extension && suffix == "csv"))
+  //   this->file.reset(new stats::StatisticsFileCSV(this->prop.name, this->statisticsData));
+  // else if (this->openMode == OpenMode::VTMBMSFile ||
+  //          (this->openMode == OpenMode::Extension && suffix == "vtmbmsstats"))
+  //   this->file.reset(new stats::StatisticsFileVTMBMS(this->prop.name, this->statisticsData));
+  // else
+  //   assert(false);
 
   connect(this->file.get(),
           &stats::StatisticsFileBase::readPOC,

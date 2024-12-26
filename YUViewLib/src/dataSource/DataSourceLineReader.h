@@ -40,24 +40,18 @@ namespace datasource
 class DataSourceLineReader
 {
 public:
-  DataSourceLineReader(std::unique_ptr<IDataSource> dataSource);
+  DataSourceLineReader() = delete;
+  DataSourceLineReader(IDataSource *const dataSource);
 
-  [[nodiscard]] std::vector<InfoItem> getInfoList() const;
-  [[nodiscard]] bool                  atEnd() const;
-  [[nodiscard]] bool                  isOk() const;
-  [[nodiscard]] std::int64_t          getPosition() const;
-
-  [[nodiscard]] bool wasSourceModified() const;
-
-  [[nodiscard]] bool        seek(const std::int64_t pos);
-  [[nodiscard]] std::string readLine();
-
-  [[nodiscard]] std::optional<std::int64_t> getFileSize() const;
+  [[nodiscard]] std::optional<std::string> readLine();
 
 protected:
-  std::unique_ptr<IDataSource> dataSource;
+  IDataSource *dataSource{};
 
-  std::string textBuffer;
+  ByteVector           dataBuffer;
+  ByteVector::iterator dataPosition{this->dataBuffer.end()};
+
+  std::int64_t bufferSize{1048576};
 };
 
 } // namespace datasource

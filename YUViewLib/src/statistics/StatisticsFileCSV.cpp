@@ -74,10 +74,7 @@ void StatisticsFileCSV::readFrameAndTypePositionsFromFile(std::atomic_bool &brea
 {
   try
   {
-    // Open the file (again). Since this is a background process, we open the file again to
-    // not disturb any reading from not background code.
-    FileSource inputFile;
-    if (!inputFile.openFile(this->file.getAbsoluteFilePath()))
+    if (!this->dataSource || !this->dataSource->isOk())
       return;
 
     // We perform reading using an input buffer
@@ -85,19 +82,19 @@ void StatisticsFileCSV::readFrameAndTypePositionsFromFile(std::atomic_bool &brea
     bool       fileAtEnd      = false;
     uint64_t   bufferStartPos = 0;
 
-    QString  lineBuffer;
-    uint64_t lineBufferStartPos = 0;
-    int      lastPOC            = INT_INVALID;
-    int      lastType           = INT_INVALID;
-    bool     sortingFixed       = false;
+    std::string lineBuffer;
+    uint64_t    lineBufferStartPos = 0;
+    int         lastPOC            = INT_INVALID;
+    int         lastType           = INT_INVALID;
+    bool        sortingFixed       = false;
 
     this->parsingProgress = 0;
 
     while (!fileAtEnd && !breakFunction.load() && !this->abortParsingDestroy)
     {
       // Fill the buffer
-      auto bufferSize = inputFile.readBytes(inputBuffer, bufferStartPos, STAT_PARSING_BUFFER_SIZE);
-      if (bufferSize < 0)
+      auto bufferSize = this->dataSource->read(inputBuffer, STAT_PARSING_BUFFER_SIZE);
+      if (bufferSize <= 0)
         return; // Error reading bytes from file
       if (bufferSize < STAT_PARSING_BUFFER_SIZE)
         // Less bytes than the maximum buffer size were read. The file is at the end.
@@ -120,11 +117,10 @@ void StatisticsFileCSV::readFrameAndTypePositionsFromFile(std::atomic_bool &brea
             auto rowItemList = parseCSVLine(lineBuffer, ';');
 
             // ignore empty entries and headers
-            if (!rowItemList[0].isEmpty() && rowItemList[0][0] != '%')
+            if (!rowItemList[0].empty() && rowItemList[0][0] != '%')
             {
-              // check for POC/type information
-              auto poc    = rowItemList[0].toInt();
-              auto typeID = rowItemList[5].toInt();
+              auto poc    = functions::toInt(rowItemList[0]).value_or(0);
+              auto typeID = functions::toInt(rowItemList[5]).value_or(0);
 
               if (lastType == -1 && lastPOC == -1)
               {
@@ -178,7 +174,7 @@ void StatisticsFileCSV::readFrameAndTypePositionsFromFile(std::atomic_bool &brea
                   // There must not be a start position for this POC/type already.
                   if (this->pocTypeFileposMap.count(poc) > 0 &&
                       this->pocTypeFileposMap[poc].count(typeID) > 0)
-                    throw "The data for each typeID must be continuous in an non interleaved "
+                    throw "The data for each typeID must be continuous in a non-interleaved "
                           "statistics file";
                 }
 
@@ -192,8 +188,7 @@ void StatisticsFileCSV::readFrameAndTypePositionsFromFile(std::atomic_bool &brea
                 if (poc > this->maxPOC)
                   this->maxPOC = poc;
 
-                // Update percent of file parsed
-                if (const auto fileSize = inputFile.getFileSize())
+                if (const auto fileSize = this->dataSource->getSize())
                   this->parsingProgress = (static_cast<double>(lineBufferStartPos) * 100 /
                                            static_cast<double>(*fileSize));
               }
@@ -206,7 +201,7 @@ void StatisticsFileCSV::readFrameAndTypePositionsFromFile(std::atomic_bool &brea
         else
         {
           // No newline character found
-          lineBuffer.append(inputBuffer.at(int(i)));
+          lineBuffer.push_back(inputBuffer.at(int(i)));
         }
       }
 
@@ -231,258 +226,258 @@ void StatisticsFileCSV::readFrameAndTypePositionsFromFile(std::atomic_bool &brea
 
 void StatisticsFileCSV::loadStatisticData(StatisticsData &statisticsData, int poc, int typeID)
 {
-  if (!this->file.isOk())
-    return;
+  // if (!this->dataSource || !this->dataSource->isOk())
+  //   return;
 
-  try
-  {
-    statisticsData.setFrameIndex(poc);
+  // try
+  // {
+  //   statisticsData.setFrameIndex(poc);
 
-    if (this->pocTypeFileposMap.count(poc) == 0 || this->pocTypeFileposMap[poc].count(typeID) == 0)
-    {
-      // There are no statistics in the file for the given frame and index.
-      statisticsData[typeID] = {};
-      return;
-    }
+  //   if (this->pocTypeFileposMap.count(poc) == 0 || this->pocTypeFileposMap[poc].count(typeID) == 0)
+  //   {
+  //     // There are no statistics in the file for the given frame and index.
+  //     statisticsData[typeID] = {};
+  //     return;
+  //   }
 
-    auto startPos = this->pocTypeFileposMap[poc][typeID];
-    if (this->fileSortedByPOC)
-    {
-      // If the statistics file is sorted by POC we have to start at the first entry of this POC and
-      // parse the file until another POC is encountered. If this is not done, some information from
-      // a different typeID could be ignored during parsing.
+  //   auto startPos = this->pocTypeFileposMap[poc][typeID];
+  //   if (this->fileSortedByPOC)
+  //   {
+  //     // If the statistics file is sorted by POC we have to start at the first entry of this POC and
+  //     // parse the file until another POC is encountered. If this is not done, some information from
+  //     // a different typeID could be ignored during parsing.
 
-      // Get the position of the first line with the given frameIdx
-      startPos = std::numeric_limits<qint64>::max();
-      for (const auto &typeEntry : this->pocTypeFileposMap[poc])
-        if (typeEntry.second < startPos)
-          startPos = typeEntry.second;
-    }
+  //     // Get the position of the first line with the given frameIdx
+  //     startPos = std::numeric_limits<qint64>::max();
+  //     for (const auto &typeEntry : this->pocTypeFileposMap[poc])
+  //       if (typeEntry.second < startPos)
+  //         startPos = typeEntry.second;
+  //   }
 
-    QTextStream in(this->file.getQFile());
-    in.seek(startPos);
+  //   QTextStream in(this->file.getQFile());
+  //   in.seek(startPos);
 
-    while (!in.atEnd())
-    {
-      // read one line
-      auto aLine       = in.readLine();
-      auto rowItemList = parseCSVLine(aLine, ';');
+  //   while (!in.atEnd())
+  //   {
+  //     // read one line
+  //     auto aLine       = in.readLine();
+  //     auto rowItemList = parseCSVLine(aLine, ';');
 
-      if (rowItemList[0].isEmpty())
-        continue;
+  //     if (rowItemList[0].isEmpty())
+  //       continue;
 
-      auto pocRow = rowItemList[0].toInt();
-      auto type   = rowItemList[5].toInt();
+  //     auto pocRow = rowItemList[0].toInt();
+  //     auto type   = rowItemList[5].toInt();
 
-      // if there is a new POC, we are done here!
-      if (pocRow != poc)
-        break;
-      // if there is a new type and this is a non interleaved file, we are done here.
-      if (!this->fileSortedByPOC && type != typeID)
-        break;
+  //     // if there is a new POC, we are done here!
+  //     if (pocRow != poc)
+  //       break;
+  //     // if there is a new type and this is a non interleaved file, we are done here.
+  //     if (!this->fileSortedByPOC && type != typeID)
+  //       break;
 
-      int values[4] = {0};
+  //     int values[4] = {0};
 
-      values[0] = rowItemList[6].toInt();
+  //     values[0] = rowItemList[6].toInt();
 
-      bool vectorData = false;
-      bool lineData   = false; // or a vector specified by 2 points
+  //     bool vectorData = false;
+  //     bool lineData   = false; // or a vector specified by 2 points
 
-      if (rowItemList.count() > 7)
-      {
-        values[1]  = rowItemList[7].toInt();
-        vectorData = true;
-      }
-      if (rowItemList.count() > 8)
-      {
-        values[2]  = rowItemList[8].toInt();
-        values[3]  = rowItemList[9].toInt();
-        lineData   = true;
-        vectorData = false;
-      }
+  //     if (rowItemList.count() > 7)
+  //     {
+  //       values[1]  = rowItemList[7].toInt();
+  //       vectorData = true;
+  //     }
+  //     if (rowItemList.count() > 8)
+  //     {
+  //       values[2]  = rowItemList[8].toInt();
+  //       values[3]  = rowItemList[9].toInt();
+  //       lineData   = true;
+  //       vectorData = false;
+  //     }
 
-      auto posX   = rowItemList[1].toInt();
-      auto posY   = rowItemList[2].toInt();
-      auto width  = rowItemList[3].toUInt();
-      auto height = rowItemList[4].toUInt();
+  //     auto posX   = rowItemList[1].toInt();
+  //     auto posY   = rowItemList[2].toInt();
+  //     auto width  = rowItemList[3].toUInt();
+  //     auto height = rowItemList[4].toUInt();
 
-      // Check if block is within the image range
-      if (this->blockOutsideOfFramePOC == -1 &&
-          (posX + int(width) > int(statisticsData.getFrameSize().width) ||
-           posY + int(height) > int(statisticsData.getFrameSize().height)))
-        // Block not in image. Warn about this.
-        this->blockOutsideOfFramePOC = poc;
+  //     // Check if block is within the image range
+  //     if (this->blockOutsideOfFramePOC == -1 &&
+  //         (posX + int(width) > int(statisticsData.getFrameSize().width) ||
+  //          posY + int(height) > int(statisticsData.getFrameSize().height)))
+  //       // Block not in image. Warn about this.
+  //       this->blockOutsideOfFramePOC = poc;
 
-      auto &statTypes = statisticsData.getStatisticsTypes();
-      auto  statIt    = std::find_if(statTypes.begin(),
-                                 statTypes.end(),
-                                 [type](StatisticsType &t) { return t.typeID == type; });
-      Q_ASSERT_X(statIt != statTypes.end(), Q_FUNC_INFO, "Stat type not found.");
+  //     auto &statTypes = statisticsData.getStatisticsTypes();
+  //     auto  statIt    = std::find_if(statTypes.begin(),
+  //                                statTypes.end(),
+  //                                [type](StatisticsType &t) { return t.typeID == type; });
+  //     Q_ASSERT_X(statIt != statTypes.end(), Q_FUNC_INFO, "Stat type not found.");
 
-      if (vectorData && statIt->hasVectorData)
-        statisticsData[type].addBlockVector(posX, posY, width, height, values[0], values[1]);
-      else if (lineData && statIt->hasVectorData)
-        statisticsData[type].addLine(
-            posX, posY, width, height, values[0], values[1], values[2], values[3]);
-      else
-        statisticsData[type].addBlockValue(posX, posY, width, height, values[0]);
-    }
-  }
-  catch (const char *str)
-  {
-    std::cerr << "Error while parsing: " << str << '\n';
-    this->errorMessage = QString("Error while parsing meta data: ") + QString(str);
-    this->error        = true;
-  }
-  catch (...)
-  {
-    std::cerr << "Error while parsing.";
-    this->errorMessage = QString("Error while parsing meta data.");
-    this->error        = true;
-  }
+  //     if (vectorData && statIt->hasVectorData)
+  //       statisticsData[type].addBlockVector(posX, posY, width, height, values[0], values[1]);
+  //     else if (lineData && statIt->hasVectorData)
+  //       statisticsData[type].addLine(
+  //           posX, posY, width, height, values[0], values[1], values[2], values[3]);
+  //     else
+  //       statisticsData[type].addBlockValue(posX, posY, width, height, values[0]);
+  //   }
+  // }
+  // catch (const char *str)
+  // {
+  //   std::cerr << "Error while parsing: " << str << '\n';
+  //   this->errorMessage = QString("Error while parsing meta data: ") + QString(str);
+  //   this->error        = true;
+  // }
+  // catch (...)
+  // {
+  //   std::cerr << "Error while parsing.";
+  //   this->errorMessage = QString("Error while parsing meta data.");
+  //   this->error        = true;
+  // }
 }
 
 StatisticsData StatisticsFileCSV::readStatisticsTypesFromHeader()
 {
-  if (!this->dataSource->isOk())
-    return;
+  // if (!this->dataSource->isOk())
+  //   return;
 
-  StatisticsData statisticsData;
+  // StatisticsData statisticsData;
 
-  // scan header lines first
-  // also count the lines per Frame for more efficient memory allocation
-  // if an ID is used twice, the data of the first gets overwritten
-  bool typeParsingActive = false;
-  // StatisticsType aType;
+  // // scan header lines first
+  // // also count the lines per Frame for more efficient memory allocation
+  // // if an ID is used twice, the data of the first gets overwritten
+  // bool typeParsingActive = false;
+  // // StatisticsType aType;
 
-  while (!this->dataSource->atEnd())
-  {
-    const auto aLine = this->dataSource->readLine();
+  // while (!this->dataSource->atEnd())
+  // {
+  //   const auto aLine = this->dataSource->readLine();
 
-    auto rowItemList = parseCSVLine(aLine, ';');
+  //   auto rowItemList = parseCSVLine(aLine, ';');
 
-    if (rowItemList[0].isEmpty())
-      continue;
+  //   if (rowItemList[0].isEmpty())
+  //     continue;
 
-    // either a new type or a line which is not header finishes the last type
-    if (((rowItemList[1] == "type") || (rowItemList[0][0] != '%')) && typeParsingActive)
-    {
-      // Last type is complete. Store this initial state.
-      aType.setInitialState();
-      statisticsData.addStatType(aType);
+  //   // either a new type or a line which is not header finishes the last type
+  //   if (((rowItemList[1] == "type") || (rowItemList[0][0] != '%')) && typeParsingActive)
+  //   {
+  //     // Last type is complete. Store this initial state.
+  //     aType.setInitialState();
+  //     statisticsData.addStatType(aType);
 
-      // start from scratch for next item
-      aType             = StatisticsType();
-      typeParsingActive = false;
+  //     // start from scratch for next item
+  //     aType             = StatisticsType();
+  //     typeParsingActive = false;
 
-      // if we found a non-header line, stop here
-      if (rowItemList[0][0] != '%')
-        return;
-    }
+  //     // if we found a non-header line, stop here
+  //     if (rowItemList[0][0] != '%')
+  //       return;
+  //   }
 
-    if (rowItemList[1] == "type") // new type
-    {
-      aType.typeID   = rowItemList[2].toInt();
-      aType.typeName = rowItemList[3];
+  //   if (rowItemList[1] == "type") // new type
+  //   {
+  //     aType.typeID   = rowItemList[2].toInt();
+  //     aType.typeName = rowItemList[3];
 
-      // The next entry (4) is "map", "range", or "vector"
-      if (rowItemList.count() >= 5)
-      {
-        if (rowItemList[4] == "map" || rowItemList[4] == "range")
-        {
-          aType.hasValueData    = true;
-          aType.renderValueData = true;
-        }
-        else if (rowItemList[4] == "vector" || rowItemList[4] == "line")
-        {
-          aType.hasVectorData    = true;
-          aType.renderVectorData = true;
-          if (rowItemList[4] == "line")
-            aType.arrowHead = StatisticsType::ArrowHead::none;
-        }
-      }
+  //     // The next entry (4) is "map", "range", or "vector"
+  //     if (rowItemList.count() >= 5)
+  //     {
+  //       if (rowItemList[4] == "map" || rowItemList[4] == "range")
+  //       {
+  //         aType.hasValueData    = true;
+  //         aType.renderValueData = true;
+  //       }
+  //       else if (rowItemList[4] == "vector" || rowItemList[4] == "line")
+  //       {
+  //         aType.hasVectorData    = true;
+  //         aType.renderVectorData = true;
+  //         if (rowItemList[4] == "line")
+  //           aType.arrowHead = StatisticsType::ArrowHead::none;
+  //       }
+  //     }
 
-      typeParsingActive = true;
-    }
-    else if (rowItemList[1] == "mapColor")
-    {
-      int id = rowItemList[2].toInt();
+  //     typeParsingActive = true;
+  //   }
+  //   else if (rowItemList[1] == "mapColor")
+  //   {
+  //     int id = rowItemList[2].toInt();
 
-      // assign color
-      auto r = (unsigned char)rowItemList[3].toInt();
-      auto g = (unsigned char)rowItemList[4].toInt();
-      auto b = (unsigned char)rowItemList[5].toInt();
-      auto a = (unsigned char)rowItemList[6].toInt();
+  //     // assign color
+  //     auto r = (unsigned char)rowItemList[3].toInt();
+  //     auto g = (unsigned char)rowItemList[4].toInt();
+  //     auto b = (unsigned char)rowItemList[5].toInt();
+  //     auto a = (unsigned char)rowItemList[6].toInt();
 
-      aType.colorMapper.mappingType  = color::MappingType::Map;
-      aType.colorMapper.colorMap[id] = Color(r, g, b, a);
-    }
-    else if (rowItemList[1] == "range")
-    {
-      // This is a range with min/max
-      auto min      = rowItemList[2].toInt();
-      auto r        = (unsigned char)rowItemList[4].toInt();
-      auto g        = (unsigned char)rowItemList[6].toInt();
-      auto b        = (unsigned char)rowItemList[8].toInt();
-      auto a        = (unsigned char)rowItemList[10].toInt();
-      auto minColor = Color(r, g, b, a);
+  //     aType.colorMapper.mappingType  = color::MappingType::Map;
+  //     aType.colorMapper.colorMap[id] = Color(r, g, b, a);
+  //   }
+  //   else if (rowItemList[1] == "range")
+  //   {
+  //     // This is a range with min/max
+  //     auto min      = rowItemList[2].toInt();
+  //     auto r        = (unsigned char)rowItemList[4].toInt();
+  //     auto g        = (unsigned char)rowItemList[6].toInt();
+  //     auto b        = (unsigned char)rowItemList[8].toInt();
+  //     auto a        = (unsigned char)rowItemList[10].toInt();
+  //     auto minColor = Color(r, g, b, a);
 
-      auto max      = rowItemList[3].toInt();
-      r             = rowItemList[5].toInt();
-      g             = rowItemList[7].toInt();
-      b             = rowItemList[9].toInt();
-      a             = rowItemList[11].toInt();
-      auto maxColor = Color(r, g, b, a);
+  //     auto max      = rowItemList[3].toInt();
+  //     r             = rowItemList[5].toInt();
+  //     g             = rowItemList[7].toInt();
+  //     b             = rowItemList[9].toInt();
+  //     a             = rowItemList[11].toInt();
+  //     auto maxColor = Color(r, g, b, a);
 
-      aType.colorMapper = color::ColorMapper({min, max}, minColor, maxColor);
-    }
-    else if (rowItemList[1] == "defaultRange")
-    {
-      // This is a color gradient function
-      int  min       = rowItemList[2].toInt();
-      int  max       = rowItemList[3].toInt();
-      auto rangeName = rowItemList[4].toStdString();
+  //     aType.colorMapper = color::ColorMapper({min, max}, minColor, maxColor);
+  //   }
+  //   else if (rowItemList[1] == "defaultRange")
+  //   {
+  //     // This is a color gradient function
+  //     int  min       = rowItemList[2].toInt();
+  //     int  max       = rowItemList[3].toInt();
+  //     auto rangeName = rowItemList[4].toStdString();
 
-      aType.colorMapper = color::ColorMapper({min, max}, rangeName);
-    }
-    else if (rowItemList[1] == "vectorColor")
-    {
-      auto r                  = (unsigned char)rowItemList[2].toInt();
-      auto g                  = (unsigned char)rowItemList[3].toInt();
-      auto b                  = (unsigned char)rowItemList[4].toInt();
-      auto a                  = (unsigned char)rowItemList[5].toInt();
-      aType.vectorStyle.color = Color(r, g, b, a);
-    }
-    else if (rowItemList[1] == "gridColor")
-    {
-      auto r                = (unsigned char)rowItemList[2].toInt();
-      auto g                = (unsigned char)rowItemList[3].toInt();
-      auto b                = (unsigned char)rowItemList[4].toInt();
-      auto a                = 255;
-      aType.gridStyle.color = Color(r, g, b, a);
-    }
-    else if (rowItemList[1] == "scaleFactor")
-    {
-      aType.vectorScale = rowItemList[2].toInt();
-    }
-    else if (rowItemList[1] == "scaleToBlockSize")
-    {
-      aType.scaleValueToBlockSize = (rowItemList[2] == "1");
-    }
-    else if (rowItemList[1] == "seq-specs")
-    {
-      auto seqName = rowItemList[2];
-      auto layerId = rowItemList[3];
-      // For now do nothing with this information.
-      // Show the file name for this item instead.
-      auto width  = rowItemList[4].toInt();
-      auto height = rowItemList[5].toInt();
-      if (width > 0 && height > 0)
-        statisticsData.setFrameSize(Size(width, height));
-      if (rowItemList[6].toDouble() > 0.0)
-        this->framerate = rowItemList[6].toDouble();
-    }
-  }
+  //     aType.colorMapper = color::ColorMapper({min, max}, rangeName);
+  //   }
+  //   else if (rowItemList[1] == "vectorColor")
+  //   {
+  //     auto r                  = (unsigned char)rowItemList[2].toInt();
+  //     auto g                  = (unsigned char)rowItemList[3].toInt();
+  //     auto b                  = (unsigned char)rowItemList[4].toInt();
+  //     auto a                  = (unsigned char)rowItemList[5].toInt();
+  //     aType.vectorStyle.color = Color(r, g, b, a);
+  //   }
+  //   else if (rowItemList[1] == "gridColor")
+  //   {
+  //     auto r                = (unsigned char)rowItemList[2].toInt();
+  //     auto g                = (unsigned char)rowItemList[3].toInt();
+  //     auto b                = (unsigned char)rowItemList[4].toInt();
+  //     auto a                = 255;
+  //     aType.gridStyle.color = Color(r, g, b, a);
+  //   }
+  //   else if (rowItemList[1] == "scaleFactor")
+  //   {
+  //     aType.vectorScale = rowItemList[2].toInt();
+  //   }
+  //   else if (rowItemList[1] == "scaleToBlockSize")
+  //   {
+  //     aType.scaleValueToBlockSize = (rowItemList[2] == "1");
+  //   }
+  //   else if (rowItemList[1] == "seq-specs")
+  //   {
+  //     auto seqName = rowItemList[2];
+  //     auto layerId = rowItemList[3];
+  //     // For now do nothing with this information.
+  //     // Show the file name for this item instead.
+  //     auto width  = rowItemList[4].toInt();
+  //     auto height = rowItemList[5].toInt();
+  //     if (width > 0 && height > 0)
+  //       statisticsData.setFrameSize(Size(width, height));
+  //     if (rowItemList[6].toDouble() > 0.0)
+  //       this->framerate = rowItemList[6].toDouble();
+  //   }
+  // }
 }
 
 } // namespace stats

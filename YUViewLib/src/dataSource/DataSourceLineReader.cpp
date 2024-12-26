@@ -35,44 +35,41 @@
 namespace datasource
 {
 
-DataSourceLineReader::DataSourceLineReader(std::unique_ptr<IDataSource> dataSource)
-    : dataSource(std::move(dataSource))
+DataSourceLineReader::DataSourceLineReader(IDataSource *const dataSource) : dataSource(dataSource)
 {
+  if (nullptr == dataSource)
+    throw std::runtime_error("Datasource must not be null");
 }
 
-std::vector<InfoItem> DataSourceLineReader::getInfoList() const
+std::optional<std::string> DataSourceLineReader::readLine()
 {
-  return this->dataSource->getInfoList();
-};
+  if (!this->dataSource || !this->dataSource->isOk())
+    return {};
 
-bool DataSourceLineReader::atEnd() const
-{
-  return this->dataSource->atEnd();
-}
+  if (this->dataBuffer.empty() && this->dataSource->atEnd())
+    return {};
 
-bool DataSourceLineReader::isOk() const
-{
-  return this->dataSource->isOk();
-}
+  std::string line;
 
-std::int64_t DataSourceLineReader::getPosition() const
-{
-  return this->dataSource->getPosition();
-}
+  while (true)
+  {
+    const auto nextNewline = std::find(this->dataPosition, this->dataBuffer.end(), '\n');
 
-bool DataSourceLineReader::wasSourceModified() const
-{
-  return this->dataSource->wasSourceModified();
-}
+    const auto newLineFound = (nextNewline != this->dataBuffer.end());
+    if (newLineFound)
+    {
+      line.append(this->dataPosition, nextNewline);
+      this->dataPosition = nextNewline + 1;
+      return line;
+    }
 
-bool DataSourceLineReader::seek(const std::int64_t pos)
-{
-  return this->dataSource->seek(pos);
-}
+    line.append(this->dataPosition, this->dataBuffer.end());
 
-std::string DataSourceLineReader::readLine()
-{
-  // Fill buffer and read ...
+    if (this->dataSource->read(this->dataBuffer, this->bufferSize) <= 0)
+      return line;
+
+    this->dataPosition = this->dataBuffer.begin();
+  }
 }
 
 } // namespace datasource

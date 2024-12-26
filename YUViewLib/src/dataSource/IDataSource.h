@@ -45,10 +45,13 @@ namespace datasource
 class IDataSource
 {
 public:
-  [[nodiscard]] virtual std::vector<InfoItem> getInfoList() const = 0;
-  [[nodiscard]] virtual bool                  atEnd() const       = 0;
-  [[nodiscard]] virtual bool                  isOk() const        = 0;
-  [[nodiscard]] virtual std::int64_t          getPosition() const = 0;
+  virtual ~IDataSource() = default;
+
+  [[nodiscard]] virtual std::vector<InfoItem>       getInfoList() const = 0;
+  [[nodiscard]] virtual bool                        atEnd() const       = 0;
+  [[nodiscard]] virtual bool                        isOk() const        = 0;
+  [[nodiscard]] virtual std::int64_t                getPosition() const = 0;
+  [[nodiscard]] virtual std::optional<std::int64_t> getSize() const     = 0;
 
   virtual void               clearFileCache()           = 0;
   [[nodiscard]] virtual bool wasSourceModified() const  = 0;
@@ -56,8 +59,8 @@ public:
 
   explicit operator bool() const { return this->isOk(); }
 
-  [[nodiscard]] virtual bool         seek(const std::int64_t pos)                         = 0;
-  [[nodiscard]] virtual std::int64_t read(ByteVector &buffer, const std::int64_t nrBytes) = 0;
+  virtual bool         seek(const std::int64_t pos)                         = 0;
+  virtual std::int64_t read(ByteVector &buffer, const std::int64_t nrBytes) = 0;
 };
 
 } // namespace datasource

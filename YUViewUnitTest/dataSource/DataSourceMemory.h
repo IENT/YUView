@@ -32,45 +32,35 @@
 
 #pragma once
 
-#include "IDataSource.h"
+#include <dataSource/IDataSource.h>
 
-#include <filesystem>
-#include <fstream>
-#include <mutex>
+#include <common/Testing.h>
 
-namespace datasource
+namespace datasource::test
 {
 
-class DataSourceLocalFile : public IDataSource
+class DataSourceMemory : public IDataSource
 {
 public:
-  DataSourceLocalFile() = delete;
-  DataSourceLocalFile(const std::filesystem::path &filePath);
+  DataSourceMemory() = delete;
+  DataSourceMemory(ByteVector &&data);
 
-  [[nodiscard]] std::vector<InfoItem>       getInfoList() const override;
-  [[nodiscard]] bool                        atEnd() const override;
-  [[nodiscard]] bool                        isOk() const override;
-  [[nodiscard]] std::int64_t                getPosition() const override;
-  [[nodiscard]] std::optional<std::int64_t> getSize() const override;
+  [[nodiscard]] std::vector<InfoItem>       getInfoList() const;
+  [[nodiscard]] bool                        atEnd() const;
+  [[nodiscard]] bool                        isOk() const;
+  [[nodiscard]] std::int64_t                getPosition() const;
+  [[nodiscard]] std::optional<std::int64_t> getSize() const;
 
-  void               clearFileCache() override;
-  [[nodiscard]] bool wasSourceModified() const override;
-  void               reloadAndResetDataSource() override;
+  void               clearFileCache();
+  [[nodiscard]] bool wasSourceModified() const;
+  void               reloadAndResetDataSource();
 
-  [[nodiscard]] bool         seek(const std::int64_t pos) override;
-  [[nodiscard]] std::int64_t read(ByteVector &buffer, const std::int64_t nrBytes) override;
+  bool         seek(const std::int64_t pos);
+  std::int64_t read(ByteVector &buffer, const std::int64_t nrBytes);
 
-  [[nodiscard]] std::filesystem::path getFilePath() const;
-
-protected:
-  std::filesystem::path                          filePath{};
-  std::optional<std::filesystem::file_time_type> lastWriteTime{};
-  bool                                           isFileOpened{};
-
-  std::ifstream file{};
-  std::int64_t  filePosition{};
-
-  std::mutex readingMutex;
+private:
+  ByteVector           data;
+  ByteVector::iterator readingPosition;
 };
 
-} // namespace datasource
+} // namespace datasource::test

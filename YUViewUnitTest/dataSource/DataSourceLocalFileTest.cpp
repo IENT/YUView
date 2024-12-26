@@ -53,7 +53,7 @@ TEST(DataSourceLocalFileTest, OpenFileThatDoesNotExist)
   EXPECT_EQ(file.getInfoList().size(), 0u);
   EXPECT_FALSE(file.atEnd());
   EXPECT_EQ(file.getPosition(), 0);
-  EXPECT_FALSE(file.getFileSize().has_value());
+  EXPECT_FALSE(file.getSize().has_value());
   EXPECT_FALSE(file.seek(252));
   EXPECT_FALSE(file.wasSourceModified());
 
@@ -69,7 +69,7 @@ TEST(DataSourceLocalFileTest, OpenFileThatExists_TestRetrievalOfFileInfo)
   DataSourceLocalFile file(tempFile.getFilePath());
   EXPECT_TRUE(file);
 
-  EXPECT_EQ(file.getFileSize().value(), 8);
+  EXPECT_EQ(file.getSize().value(), 8);
 
   const auto debugTest = file.getInfoList();
   EXPECT_THAT(file.getInfoList(),

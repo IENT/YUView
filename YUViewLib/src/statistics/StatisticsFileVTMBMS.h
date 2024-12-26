@@ -42,7 +42,7 @@ namespace stats
 class StatisticsFileVTMBMS : public StatisticsFileBase
 {
 public:
-  StatisticsFileVTMBMS(const QString &filename, StatisticsData &statisticsData);
+  StatisticsFileVTMBMS(std::unique_ptr<datasource::IDataSource> &&dataSource);
   virtual ~StatisticsFileVTMBMS() = default;
 
   // Parse the whole file and get the positions where a new POC/type starts and save them. Later we
