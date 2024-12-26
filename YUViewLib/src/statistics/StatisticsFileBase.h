@@ -37,6 +37,8 @@
 
 #include <QObject>
 
+#include <memory>
+
 namespace stats
 {
 
