@@ -40,9 +40,9 @@
 #endif
 #include <QtMath>
 
+#include <common/FunctionsGui.h>
 #include <statistics/StatisticsData.h>
 #include <statistics/StatisticsType.h>
-#include <common/FunctionsGui.h>
 
 namespace stats
 {
@@ -64,7 +64,10 @@ StatisticUIHandler::StatisticUIHandler()
           Qt::QueuedConnection);
 }
 
-void StatisticUIHandler::setStatisticsData(StatisticsData *data) { this->statisticsData = data; }
+void StatisticUIHandler::setStatisticsData(StatisticsData *data)
+{
+  this->statisticsData = data;
+}
 
 QLayout *StatisticUIHandler::createStatisticsHandlerControls(bool recreateControlsOnly)
 {
@@ -89,9 +92,10 @@ QLayout *StatisticUIHandler::createStatisticsHandlerControls(bool recreateContro
     auto &statType = statTypes.at(row);
 
     // Append the name (with the check box to enable/disable the statistics item)
-    QCheckBox *itemNameCheck = new QCheckBox(statType.typeName, ui.scrollAreaWidgetContents);
+    QCheckBox *itemNameCheck =
+        new QCheckBox(QString::fromStdString(statType.typeName), ui.scrollAreaWidgetContents);
     itemNameCheck->setChecked(statType.render);
-    itemNameCheck->setToolTip(statType.description);
+    itemNameCheck->setToolTip(QString::fromStdString(statType.description));
     ui.gridLayout->addWidget(itemNameCheck, int(row + 2), 0);
     connect(itemNameCheck,
             &QCheckBox::stateChanged,
@@ -155,7 +159,8 @@ QWidget *StatisticUIHandler::getSecondaryStatisticsHandlerControls(bool recreate
       auto &statType = statTypes.at(row);
 
       // Append the name (with the check box to enable/disable the statistics item)
-      QCheckBox *itemNameCheck = new QCheckBox(statType.typeName, ui2.scrollAreaWidgetContents);
+      QCheckBox *itemNameCheck =
+          new QCheckBox(QString::fromStdString(statType.typeName), ui2.scrollAreaWidgetContents);
       itemNameCheck->setChecked(statType.render);
       ui2.gridLayout->addWidget(itemNameCheck, int(row + 2), 0);
       connect(itemNameCheck,
@@ -321,8 +326,8 @@ void StatisticUIHandler::updateStatisticsHandlerControls()
   }
 
   // First run a check if all statisticsTypes are identical
-  bool controlsStillValid = true;
-  auto &statTypes = this->statisticsData->getStatisticsTypes();
+  bool  controlsStillValid = true;
+  auto &statTypes          = this->statisticsData->getStatisticsTypes();
   if (statTypes.size() != itemNameCheckBoxes[0].size())
     // There are more or less statistics types as before
     controlsStillValid = false;
@@ -330,7 +335,7 @@ void StatisticUIHandler::updateStatisticsHandlerControls()
   {
     for (unsigned row = 0; row < statTypes.size(); row++)
     {
-      if (itemNameCheckBoxes[0][row]->text() != statTypes[row].typeName)
+      if (itemNameCheckBoxes[0][row]->text().toStdString() != statTypes[row].typeName)
       {
         // One of the statistics types changed it's name or the order of statistics types changed.
         // Either way, we will create new controls.
@@ -410,11 +415,11 @@ void StatisticUIHandler::updateStatisticsHandlerControls()
         {
           // In the new list of statistics types we found one that has the same name as this one.
           // This is enough indication. Apply the old settings to this new type.
-          statTypes[j].render           = statsTypeListBackup[i].render;
-          statTypes[j].renderValueData  = statsTypeListBackup[i].renderValueData;
-          statTypes[j].renderVectorData = statsTypeListBackup[i].renderVectorData;
-          statTypes[j].renderGrid       = statsTypeListBackup[i].renderGrid;
-          statTypes[j].alphaFactor      = statsTypeListBackup[i].alphaFactor;
+          statTypes[j].render            = statsTypeListBackup[i].render;
+          statTypes[j].valueDataOptions  = statsTypeListBackup[i].valueDataOptions;
+          statTypes[j].vectorDataOptions = statsTypeListBackup[i].vectorDataOptions;
+          statTypes[j].gridOptions       = statsTypeListBackup[i].gridOptions;
+          statTypes[j].alphaFactor       = statsTypeListBackup[i].alphaFactor;
         }
       }
     }

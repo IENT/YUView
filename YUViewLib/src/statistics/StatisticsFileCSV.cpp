@@ -320,9 +320,9 @@ void StatisticsFileCSV::loadStatisticData(StatisticsData &statisticsData, int po
                                  [type](StatisticsType &t) { return t.typeID == type; });
       Q_ASSERT_X(statIt != statTypes.end(), Q_FUNC_INFO, "Stat type not found.");
 
-      if (vectorData && statIt->hasVectorData)
+      if (vectorData && statIt->vectorDataOptions)
         statisticsData[type].addBlockVector(posX, posY, width, height, values[0], values[1]);
-      else if (lineData && statIt->hasVectorData)
+      else if (lineData && statIt->vectorDataOptions)
         statisticsData[type].addLine(
             posX, posY, width, height, values[0], values[1], values[2], values[3]);
       else
@@ -391,22 +391,20 @@ void StatisticsFileCSV::readHeaderFromFile(StatisticsData &statisticsData)
       if (rowItemList[1] == "type") // new type
       {
         aType.typeID   = rowItemList[2].toInt();
-        aType.typeName = rowItemList[3];
+        aType.typeName = rowItemList[3].toStdString();
 
         // The next entry (4) is "map", "range", or "vector"
         if (rowItemList.count() >= 5)
         {
           if (rowItemList[4] == "map" || rowItemList[4] == "range")
           {
-            aType.hasValueData    = true;
-            aType.renderValueData = true;
+            aType.valueDataOptions.emplace();
           }
           else if (rowItemList[4] == "vector" || rowItemList[4] == "line")
           {
-            aType.hasVectorData    = true;
-            aType.renderVectorData = true;
+            aType.vectorDataOptions.emplace();
             if (rowItemList[4] == "line")
-              aType.arrowHead = StatisticsType::ArrowHead::none;
+              aType.vectorDataOptions->arrowHead = StatisticsType::ArrowHead::none;
           }
         }
 
@@ -422,8 +420,8 @@ void StatisticsFileCSV::readHeaderFromFile(StatisticsData &statisticsData)
         auto b = (unsigned char)rowItemList[5].toInt();
         auto a = (unsigned char)rowItemList[6].toInt();
 
-        aType.colorMapper.mappingType  = color::MappingType::Map;
-        aType.colorMapper.colorMap[id] = Color(r, g, b, a);
+        aType.valueDataOptions->colorMapper.mappingType  = color::MappingType::Map;
+        aType.valueDataOptions->colorMapper.colorMap[id] = Color(r, g, b, a);
       }
       else if (rowItemList[1] == "range")
       {
@@ -442,7 +440,7 @@ void StatisticsFileCSV::readHeaderFromFile(StatisticsData &statisticsData)
         a             = rowItemList[11].toInt();
         auto maxColor = Color(r, g, b, a);
 
-        aType.colorMapper = color::ColorMapper({min, max}, minColor, maxColor);
+        aType.valueDataOptions->colorMapper = color::ColorMapper({min, max}, minColor, maxColor);
       }
       else if (rowItemList[1] == "defaultRange")
       {
@@ -451,31 +449,31 @@ void StatisticsFileCSV::readHeaderFromFile(StatisticsData &statisticsData)
         int  max       = rowItemList[3].toInt();
         auto rangeName = rowItemList[4].toStdString();
 
-        aType.colorMapper = color::ColorMapper({min, max}, rangeName);
+        aType.valueDataOptions->colorMapper = color::ColorMapper({min, max}, rangeName);
       }
       else if (rowItemList[1] == "vectorColor")
       {
-        auto r                  = (unsigned char)rowItemList[2].toInt();
-        auto g                  = (unsigned char)rowItemList[3].toInt();
-        auto b                  = (unsigned char)rowItemList[4].toInt();
-        auto a                  = (unsigned char)rowItemList[5].toInt();
-        aType.vectorStyle.color = Color(r, g, b, a);
+        auto r                               = (unsigned char)rowItemList[2].toInt();
+        auto g                               = (unsigned char)rowItemList[3].toInt();
+        auto b                               = (unsigned char)rowItemList[4].toInt();
+        auto a                               = (unsigned char)rowItemList[5].toInt();
+        aType.vectorDataOptions->style.color = Color(r, g, b, a);
       }
       else if (rowItemList[1] == "gridColor")
       {
-        auto r                = (unsigned char)rowItemList[2].toInt();
-        auto g                = (unsigned char)rowItemList[3].toInt();
-        auto b                = (unsigned char)rowItemList[4].toInt();
-        auto a                = 255;
-        aType.gridStyle.color = Color(r, g, b, a);
+        auto r                        = (unsigned char)rowItemList[2].toInt();
+        auto g                        = (unsigned char)rowItemList[3].toInt();
+        auto b                        = (unsigned char)rowItemList[4].toInt();
+        auto a                        = 255;
+        aType.gridOptions.style.color = Color(r, g, b, a);
       }
       else if (rowItemList[1] == "scaleFactor")
       {
-        aType.vectorScale = rowItemList[2].toInt();
+        aType.vectorDataOptions->scale = rowItemList[2].toInt();
       }
       else if (rowItemList[1] == "scaleToBlockSize")
       {
-        aType.scaleValueToBlockSize = (rowItemList[2] == "1");
+        aType.valueDataOptions->scaleToBlockSize = (rowItemList[2] == "1");
       }
       else if (rowItemList[1] == "seq-specs")
       {

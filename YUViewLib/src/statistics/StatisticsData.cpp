@@ -202,7 +202,7 @@ QStringPairList StatisticsData::getValuesAt(const QPoint &pos) const
 
   for (auto it = this->statsTypes.rbegin(); it != this->statsTypes.rend(); it++)
   {
-    if (!it->renderGrid)
+    if (!it->gridOptions.render)
       continue;
 
     if (it->typeID == INT_INVALID || this->frameCache.count(it->typeID) == 0)
@@ -217,11 +217,12 @@ QStringPairList StatisticsData::getValuesAt(const QPoint &pos) const
       if (rect.contains(pos))
       {
         int  value  = valueItem.value;
-        auto valTxt = it->getValueTxt(value);
-        if (valTxt.isEmpty() && it->scaleValueToBlockSize)
-          valTxt = QString("%1").arg(float(value) / (valueItem.size[0] * valueItem.size[1]));
+        auto valTxt = it->getValueText(value);
+        if (valTxt.empty() && it->valueDataOptions && it->valueDataOptions->scaleToBlockSize)
+          valTxt = std::to_string(float(value) / (valueItem.size[0] * valueItem.size[1]));
 
-        valueList.append(QStringPair(it->typeName, valTxt));
+        valueList.append(
+            QStringPair(QString::fromStdString(it->typeName), QString::fromStdString(valTxt)));
         foundStats = true;
       }
     }
@@ -232,20 +233,21 @@ QStringPairList StatisticsData::getValuesAt(const QPoint &pos) const
           QRect(vectorItem.pos[0], vectorItem.pos[1], vectorItem.size[0], vectorItem.size[1]);
       if (rect.contains(pos))
       {
-        double x{};
-        double y{};
+        double     x{};
+        double     y{};
+        const auto scale = it->vectorDataOptions->scale;
         if (vectorItem.isLine)
         {
-          x = double(vectorItem.point[1].x - vectorItem.point[0].x) / it->vectorScale;
-          y = double(vectorItem.point[1].y - vectorItem.point[0].y) / it->vectorScale;
+          x = double(vectorItem.point[1].x - vectorItem.point[0].x) / scale;
+          y = double(vectorItem.point[1].y - vectorItem.point[0].y) / scale;
         }
         else
         {
-          x = double(vectorItem.point[0].x) / it->vectorScale;
-          y = double(vectorItem.point[0].y) / it->vectorScale;
+          x = double(vectorItem.point[0].x) / scale;
+          y = double(vectorItem.point[0].y) / scale;
         }
-        valueList.append(
-            QStringPair(QString("%1").arg(it->typeName), QString("(%1,%2)").arg(x).arg(y)));
+        valueList.append(QStringPair(QString("%1").arg(QString::fromStdString(it->typeName)),
+                                     QString("(%1,%2)").arg(x).arg(y)));
         foundStats = true;
       }
     }
@@ -256,14 +258,17 @@ QStringPairList StatisticsData::getValuesAt(const QPoint &pos) const
           affineTFItem.pos[0], affineTFItem.pos[1], affineTFItem.size[0], affineTFItem.size[1]);
       if (rect.contains(pos))
       {
+        const auto scale = it->vectorDataOptions->scale;
         for (unsigned i = 0; i < 3; i++)
         {
-          auto xScaled = float(affineTFItem.point[i].x / it->vectorScale);
-          auto yScaled = float(affineTFItem.point[i].y / it->vectorScale);
+          auto xScaled = float(affineTFItem.point[i].x / scale);
+          auto yScaled = float(affineTFItem.point[i].y / scale);
           valueList.append(
-              QStringPair(QString("%1_%2[x]").arg(it->typeName).arg(i), QString::number(xScaled)));
+              QStringPair(QString("%1_%2[x]").arg(QString::fromStdString(it->typeName)).arg(i),
+                          QString::number(xScaled)));
           valueList.append(
-              QStringPair(QString("%1_%2[y]").arg(it->typeName).arg(i), QString::number(yScaled)));
+              QStringPair(QString("%1_%2[y]").arg(QString::fromStdString(it->typeName)).arg(i),
+                          QString::number(yScaled)));
         }
         foundStats = true;
       }
@@ -276,8 +281,9 @@ QStringPairList StatisticsData::getValuesAt(const QPoint &pos) const
       if (stats::polygonContainsPoint(valueItem.corners, Point(pos.x(), pos.y())))
       {
         int  value  = valueItem.value;
-        auto valTxt = it->getValueTxt(value);
-        valueList.append(QStringPair(it->typeName, valTxt));
+        auto valTxt = it->getValueText(value);
+        valueList.append(
+            QStringPair(QString::fromStdString(it->typeName), QString::fromStdString(valTxt)));
         foundStats = true;
       }
     }
@@ -288,22 +294,23 @@ QStringPairList StatisticsData::getValuesAt(const QPoint &pos) const
         continue; // need at least triangle -- or more corners
       if (stats::polygonContainsPoint(polygonVectorItem.corners, Point(pos.x(), pos.y())))
       {
-        if (it->renderVectorData)
+        if (it->vectorDataOptions && it->vectorDataOptions->render)
         {
           // The length of the vector
-          auto xScaled = (float)polygonVectorItem.point.x / it->vectorScale;
-          auto yScaled = (float)polygonVectorItem.point.y / it->vectorScale;
-          valueList.append(
-              QStringPair(QString("%1[x]").arg(it->typeName), QString::number(xScaled)));
-          valueList.append(
-              QStringPair(QString("%1[y]").arg(it->typeName), QString::number(yScaled)));
+          const auto scale   = it->vectorDataOptions->scale;
+          auto       xScaled = (float)polygonVectorItem.point.x / scale;
+          auto       yScaled = (float)polygonVectorItem.point.y / scale;
+          valueList.append(QStringPair(QString("%1[x]").arg(QString::fromStdString(it->typeName)),
+                                       QString::number(xScaled)));
+          valueList.append(QStringPair(QString("%1[y]").arg(QString::fromStdString(it->typeName)),
+                                       QString::number(yScaled)));
           foundStats = true;
         }
       }
     }
 
     if (!foundStats)
-      valueList.append(QStringPair(it->typeName, "-"));
+      valueList.append(QStringPair(QString::fromStdString(it->typeName), "-"));
   }
 
   return valueList;

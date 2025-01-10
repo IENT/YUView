@@ -71,10 +71,10 @@ struct LineDrawStyle
 class StatisticsType
 {
 public:
-  StatisticsType(int typeID = INT_INVALID, const QString &typeName = "?");
-  StatisticsType(int typeID, const QString &typeName, int vectorScaling);
+  StatisticsType(int typeID = INT_INVALID, const std::string &typeName = "");
+  StatisticsType(int typeID, const std::string &typeName, int vectorScaling);
   StatisticsType(int                       typeID,
-                 const QString &           typeName,
+                 const std::string        &typeName,
                  const color::ColorMapper &colorMapper,
                  bool                      hasAndRenderVectorData = false);
 
@@ -87,58 +87,61 @@ public:
   void loadPlaylist(const YUViewDomElement &root);
 
   // Every statistics type has an ID, a name and possibly a description
-  int     typeID{};
-  QString typeName{};
-  QString description{};
+  int         typeID{};
+  std::string typeName{};
+  std::string description{};
 
   // Get the value text (from the value map (if there is an entry))
-  QString getValueTxt(int val) const;
+  std::string getValueText(const int val) const;
 
-  void    setMappingValues(std::vector<QString> values);
-  QString getMappedValue(int typeID) const;
+  void        setMappingValues(std::vector<std::string> values);
+  std::string getMappedValue(const int typeID) const;
 
   // Is this statistics type rendered and what is the alpha value?
   // These are corresponding to the controls in the properties panel
   bool render{};
   int  alphaFactor{50};
 
-  // Value data (a certain value, that is set for a block)
-  bool               hasValueData{};          // Does this type have value data?
-  bool               renderValueData{};       // Do we render the value data?
-  bool               scaleValueToBlockSize{}; // Scale the values according to the size of the block
-  color::ColorMapper colorMapper;             // How do we map values to color?
+  struct ValueDataOptions
+  {
+    bool               render{true};
+    bool               scaleToBlockSize{};
+    color::ColorMapper colorMapper;
+  };
 
-  // Vector data (a vector that is set for a block)
-  bool hasVectorData{}; // Does this type have any vector data?
-  bool hasAffineTFData{};
-  bool renderVectorData{};       // Do we draw the vector data?
-  bool renderVectorDataValues{}; // Do we draw the values of the vector next to the vector (by
-                                 // default true).
-  bool          scaleVectorToZoom{};
-  LineDrawStyle vectorStyle; // How do we draw the vectors
-  int vectorScale{1}; // Every vector value (x,y) has to be divided by this value before displaying
-                      // it (e.g. 1/4 th pixel accuracy)
-  bool mapVectorToColor{}; // Color the vectors depending on their direction
+  std::optional<ValueDataOptions> valueDataOptions;
+
   enum class ArrowHead
   {
     arrow,
     circle,
     none
   };
-  ArrowHead arrowHead{
-      ArrowHead::arrow}; // Do we draw an arrow, a circle or nothing at the end of the arrow?
 
-  // Do we (and if yes how) draw a grid around each block (vector or value)
-  bool          renderGrid{true};
-  LineDrawStyle gridStyle;
-  bool          scaleGridToZoom{};
+  struct VectorDataOptions
+  {
+    bool          render{true};
+    bool          renderDataValues{true};
+    bool          scaleToZoom{};
+    LineDrawStyle style;
+    int           scale{};
+    bool          mapToColor{};
+    ArrowHead     arrowHead{};
+  };
 
-  // is statistic drawn as a block or as a polygon?
-  bool isPolygon{};
+  std::optional<VectorDataOptions> vectorDataOptions;
+
+  struct GridOptions
+  {
+    bool          render{};
+    LineDrawStyle style;
+    bool          scaleToZoom{};
+  };
+
+  GridOptions gridOptions;
 
 private:
-  // If set, this map is used to map values to text
-  std::map<int, QString> valMap;
+  std::map<int, std::string> valuesToText;
 
   // Backup values for setDefaultState()
   struct initialState
@@ -146,20 +149,9 @@ private:
     bool render;
     int  alphaFactor;
 
-    bool               renderValueData;
-    bool               scaleValueToBlockSize;
-    color::ColorMapper colorMapper;
-
-    bool          renderVectorData;
-    bool          scaleVectorToZoom;
-    LineDrawStyle vectorStyle;
-    int           vectorScale;
-    bool          mapVectorToColor;
-    ArrowHead     arrowHead;
-
-    bool          renderGrid;
-    LineDrawStyle gridStyle;
-    bool          scaleGridToZoom;
+    std::optional<ValueDataOptions>  valueDataOptions;
+    std::optional<VectorDataOptions> vectorDataOptions;
+    GridOptions                      gridOptions;
   };
   initialState init;
 };

@@ -166,18 +166,18 @@ TEST(StatisticsFileCSV, testCSVFileParsing)
   // std::cout << "valueGridColors: " << valueGridColors.toStdString() << "\n";
 
   const auto typeIDs       = std::vector<int>({9, 10, 11, 12, 7, 8, 5, 6, 0, 3, 4, 1});
-  const auto typeNameNames = std::vector<QString>({"MVDL0",
-                                                   "MVDL1",
-                                                   "MVL0",
-                                                   "MVL1",
-                                                   "MVPIdxL0",
-                                                   "MVPIdxL1",
-                                                   "MergeIdxL0",
-                                                   "MergeIdxL1",
-                                                   "PredMode",
-                                                   "RefFrmIdxL0",
-                                                   "RefFrmIdxL1",
-                                                   "Skipflag"});
+  const auto typeNameNames = std::vector<std::string>({"MVDL0",
+                                                       "MVDL1",
+                                                       "MVL0",
+                                                       "MVL1",
+                                                       "MVPIdxL0",
+                                                       "MVPIdxL1",
+                                                       "MergeIdxL0",
+                                                       "MergeIdxL1",
+                                                       "PredMode",
+                                                       "RefFrmIdxL0",
+                                                       "RefFrmIdxL1",
+                                                       "Skipflag"});
   const auto vectorColors  = std::vector<std::string>(
       {"#640000", "#006400", "#c80000", "#00c800", "", "", "", "", "", "", "", ""});
   const auto vectorScaleFactors = std::vector<int>({4, 4, 4, 4, -1, -1, -1, -1, -1, -1, -1, -1});
@@ -202,17 +202,17 @@ TEST(StatisticsFileCSV, testCSVFileParsing)
 
     EXPECT_EQ(t.typeID, typeIDs[i]);
     EXPECT_EQ(t.typeName, typeNameNames[i]);
-    if (t.hasVectorData)
+    if (t.vectorDataOptions)
     {
-      EXPECT_EQ(t.vectorStyle.color.toHex(), vectorColors[i]);
-      EXPECT_EQ(t.vectorScale, vectorScaleFactors[i]);
+      EXPECT_EQ(t.vectorDataOptions->style.color.toHex(), vectorColors[i]);
+      EXPECT_EQ(t.vectorDataOptions->scale, vectorScaleFactors[i]);
     }
-    if (t.hasValueData)
+    if (t.valueDataOptions)
     {
-      EXPECT_EQ(t.colorMapper.valueRange.min, valueColorRangeMin[i]);
-      EXPECT_EQ(t.colorMapper.valueRange.max, valueColorRangeMax[i]);
-      EXPECT_EQ(t.colorMapper.predefinedType, stats::color::PredefinedType::Jet);
-      EXPECT_EQ(t.gridStyle.color.toHex(), valueGridColors[i]);
+      EXPECT_EQ(t.valueDataOptions->colorMapper.valueRange.min, valueColorRangeMin[i]);
+      EXPECT_EQ(t.valueDataOptions->colorMapper.valueRange.max, valueColorRangeMax[i]);
+      EXPECT_EQ(t.valueDataOptions->colorMapper.predefinedType, stats::color::PredefinedType::Jet);
+      EXPECT_EQ(t.gridOptions.style.color.toHex(), valueGridColors[i]);
     }
   }
 
