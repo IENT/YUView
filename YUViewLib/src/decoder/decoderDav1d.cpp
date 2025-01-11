@@ -40,11 +40,13 @@
 
 #include <common/Functions.h>
 #include <common/Typedef.h>
+#include <statistics/StatisticsTypeBuilder.h>
 
 namespace decoder
 {
 
-using Subsampling = video::yuv::Subsampling;
+using stats::StatisticsTypeBuilder;
+using video::yuv::Subsampling;
 
 // Debug the decoder (0:off 1:interactive decoder only 2:caching decoder only 3:both)
 #define DECODERDAV1D_DEBUG_OUTPUT 0
@@ -587,195 +589,294 @@ void decoderDav1d::fillStatisticList(stats::StatisticsData &statisticsData) cons
 {
   using namespace stats::color;
 
-  stats::StatisticsType predMode(0, "Pred Mode", ColorMapper({0, 1}, PredefinedType::Jet));
-  predMode.description = "The prediction mode (intra/inter) per block";
-  predMode.setMappingValues({"INTRA", "INTER"});
-  statisticsData.addStatType(predMode);
+  statisticsData.addStatType(
+      StatisticsTypeBuilder()
+          .withTypeID(0)
+          .withTypeName("Pred Mode")
+          .withDescription("The prediction mode (intra/inter) per block")
+          .withValueDataOptions({.colorMapper = ColorMapper({0, 1}, PredefinedType::Jet)})
+          .withMappingValues({"INTRA", "INTER"})
+          .build());
 
-  // LastActiveSegId indicates the real maximum. But that can also vary per frame.
-  // 255 is the maximum maximum.
-  stats::StatisticsType segmentID(1, "Segment ID", ColorMapper({0, 255}, PredefinedType::Jet));
-  segmentID.description =
-      "Specifies which segment is associated with the current intra block being decoded";
-  statisticsData.addStatType(segmentID);
+  statisticsData.addStatType(
+      StatisticsTypeBuilder()
+          .withTypeID(1)
+          .withTypeName("Segment ID")
+          .withDescription(
+              "Specifies which segment is associated with the current intra block being "
+              "decoded")
+          .withValueDataOptions({.colorMapper = ColorMapper({0, 255}, PredefinedType::Jet)})
+          .build());
 
-  stats::StatisticsType skip(2, "skip", ColorMapper({0, 1}, Color(0, 0, 0), Color(255, 0, 0)));
-  skip.description = "Equal to 0 indicates that there may be some transform coefficients for this "
-                     "block. 1 Indicates there are none.";
-  statisticsData.addStatType(skip);
+  statisticsData.addStatType(
+      StatisticsTypeBuilder()
+          .withTypeID(2)
+          .withTypeName("Skip")
+          .withDescription(
+              "Equal to 0 indicates that there may be some transform coefficients for this "
+              "block. 1 Indicates there are none.")
+          .withValueDataOptions(
+              {.colorMapper = ColorMapper({0, 1}, Color(0, 0, 0), Color(255, 0, 0))})
+          .build());
 
-  stats::StatisticsType skip_mode(
-      3, "skip_mode", ColorMapper({0, 1}, Color(0, 0, 0), Color(0, 255, 0)));
-  skip_mode.description = "Equal to 1 indicates that signaling of most of the mode info is skipped";
-  statisticsData.addStatType(skip_mode);
+  statisticsData.addStatType(
+      StatisticsTypeBuilder()
+          .withTypeID(3)
+          .withTypeName("Skip Mode")
+          .withDescription(
+              "Equal to 1 indicates that signaling of most of the mode info is skipped")
+          .withValueDataOptions(
+              {.colorMapper = ColorMapper({0, 1}, Color(0, 0, 0), Color(0, 255, 0))})
+          .build());
 
-  // Intra specific values
+  statisticsData.addStatType(
+      StatisticsTypeBuilder()
+          .withTypeID(4)
+          .withTypeName("Intra Pred Mode (Y)")
+          .withDescription("Intra prediction mode Luma")
+          .withValueDataOptions({.colorMapper = ColorMapper({0, 13}, PredefinedType::Jet)})
+          .withMappingValues({"DC_PRED",
+                              "VERT_PRED",
+                              "HOR_PRED",
+                              "DIAG_DOWN_LEFT_PRED",
+                              "DIAG_DOWN_RIGHT_PRED",
+                              "VERT_RIGHT_PRED",
+                              "HOR_DOWN_PRED",
+                              "HOR_UP_PRED",
+                              "VERT_LEFT_PRED",
+                              "SMOOTH_PRED",
+                              "SMOOTH_V_PRED",
+                              "SMOOTH_H_PRED",
+                              "PAETH_PRED",
+                              "CFL_PRED"})
+          .build());
 
-  stats::StatisticsType intraPredModeLuma(
-      4, "intra pred mode (Y)", ColorMapper({0, 13}, PredefinedType::Jet));
-  intraPredModeLuma.description = "Intra prediction mode Luma (Y)";
-  intraPredModeLuma.setMappingValues({"DC_PRED",
-                                      "VERT_PRED",
-                                      "HOR_PRED",
-                                      "DIAG_DOWN_LEFT_PRED",
-                                      "DIAG_DOWN_RIGHT_PRED",
-                                      "VERT_RIGHT_PRED",
-                                      "HOR_DOWN_PRED",
-                                      "HOR_UP_PRED",
-                                      "VERT_LEFT_PRED",
-                                      "SMOOTH_PRED",
-                                      "SMOOTH_V_PRED",
-                                      "SMOOTH_H_PRED",
-                                      "PAETH_PRED",
-                                      "CFL_PRED"});
-  statisticsData.addStatType(intraPredModeLuma);
+  statisticsData.addStatType(
+      StatisticsTypeBuilder()
+          .withTypeID(5)
+          .withTypeName("Intra Pred Mode (UV)")
+          .withDescription("Intra prediction mode Chroma")
+          .withValueDataOptions({.colorMapper = ColorMapper({0, 12}, PredefinedType::Jet)})
+          .withMappingValues({"DC_PRED",
+                              "VERT_PRED",
+                              "HOR_PRED",
+                              "DIAG_DOWN_LEFT_PRED",
+                              "DIAG_DOWN_RIGHT_PRED",
+                              "VERT_RIGHT_PRED",
+                              "HOR_DOWN_PRED",
+                              "HOR_UP_PRED",
+                              "VERT_LEFT_PRED",
+                              "SMOOTH_PRED",
+                              "SMOOTH_V_PRED",
+                              "SMOOTH_H_PRED",
+                              "PAETH_PRED"})
+          .build());
 
-  stats::StatisticsType intraPredModeChroma(
-      5, "intra pred mode (UV)", ColorMapper({0, 12}, PredefinedType::Jet));
-  intraPredModeChroma.description = "Intra prediction mode Chroma (UV)";
-  intraPredModeChroma.setMappingValues({"DC_PRED",
-                                        "VERT_PRED",
-                                        "HOR_PRED",
-                                        "DIAG_DOWN_LEFT_PRED",
-                                        "DIAG_DOWN_RIGHT_PRED",
-                                        "VERT_RIGHT_PRED",
-                                        "HOR_DOWN_PRED",
-                                        "HOR_UP_PRED",
-                                        "VERT_LEFT_PRED",
-                                        "SMOOTH_PRED",
-                                        "SMOOTH_V_PRED",
-                                        "SMOOTH_H_PRED",
-                                        "PAETH_PRED"});
+  statisticsData.addStatType(
+      StatisticsTypeBuilder()
+          .withTypeID(6)
+          .withTypeName("Palette Size (Y)")
+          .withDescription("Palette Size Luma")
+          .withValueDataOptions(
+              {.colorMapper = ColorMapper({0, 255}, Color(0, 0, 0), Color(0, 0, 255))})
+          .build());
 
-  statisticsData.addStatType(intraPredModeChroma);
+  statisticsData.addStatType(
+      StatisticsTypeBuilder()
+          .withTypeID(7)
+          .withTypeName("Palette Size Chroma")
+          .withValueDataOptions(
+              {.colorMapper = ColorMapper({0, 255}, Color(0, 0, 0), Color(0, 0, 255))})
+          .build());
 
-  stats::StatisticsType paletteSizeLuma(
-      6, "palette size (Y)", ColorMapper({0, 255}, Color(0, 0, 0), Color(0, 0, 255)));
-  statisticsData.addStatType(paletteSizeLuma);
+  statisticsData.addStatType(
+      StatisticsTypeBuilder()
+          .withTypeID(8)
+          .withTypeName("Intra Angle Delta (Y)")
+          .withDescription("Offset to be applied to the intra prediction angle specified by the "
+                           "prediction mode")
+          .withValueDataOptions({.colorMapper = ColorMapper({-3, 4}, PredefinedType::Col3_bblg)})
+          .build());
 
-  stats::StatisticsType paletteSizeChroma(
-      7, "palette size (U)", ColorMapper({0, 255}, Color(0, 0, 0), Color(0, 0, 255)));
-  statisticsData.addStatType(paletteSizeChroma);
+  statisticsData.addStatType(
+      StatisticsTypeBuilder()
+          .withTypeID(9)
+          .withTypeName("Intra Angle Delta (UV)")
+          .withDescription("Offset to be applied to the chroma prediction angle specified by the "
+                           "prediction mode")
+          .withValueDataOptions({.colorMapper = ColorMapper({-3, 4}, PredefinedType::Col3_bblg)})
+          .build());
 
-  stats::StatisticsType intraAngleDeltaLuma(
-      8, "intra angle delta (Y)", ColorMapper({-3, 4}, PredefinedType::Col3_bblg));
-  intraAngleDeltaLuma.description =
-      "Offset to be applied to the intra prediction angle specified by the prediction mode";
-  statisticsData.addStatType(intraAngleDeltaLuma);
+  statisticsData.addStatType(StatisticsTypeBuilder()
+                                 .withTypeID(10)
+                                 .withTypeName("Intra Direction Luma")
+                                 .withDescription("Intra prediction direction luma")
+                                 .withVectorDataOptions({.scale = 4})
+                                 .build());
 
-  stats::StatisticsType intraAngleDeltaChroma(
-      9, "intra angle delta (UV)", ColorMapper({-3, 4}, PredefinedType::Col3_bblg));
-  intraAngleDeltaChroma.description =
-      "Offset to be applied to the intra prediction angle specified by the prediction mode";
-  statisticsData.addStatType(intraAngleDeltaChroma);
+  statisticsData.addStatType(StatisticsTypeBuilder()
+                                 .withTypeID(11)
+                                 .withTypeName("Intra Direction Chroma")
+                                 .withDescription("Intra prediction direction chroma")
+                                 .withVectorDataOptions({.scale = 4})
+                                 .build());
 
-  stats::StatisticsType intraDirLuma(10, "Intra direction luma", 4);
-  intraDirLuma.description = "Intra prediction direction luma";
-  statisticsData.addStatType(intraDirLuma);
+  statisticsData.addStatType(
+      StatisticsTypeBuilder()
+          .withTypeID(12)
+          .withTypeName("Chroma from Luma Alpha (U)")
+          .withDescription(
+              "CflAlphaU: Contains the signed value of the alpha component for the U component")
+          .withValueDataOptions(
+              {.colorMapper = ColorMapper({-128, 128}, PredefinedType::Col3_bblg)})
+          .build());
 
-  stats::StatisticsType intraDirChroma(11, "Intra direction chroma", 4);
-  intraDirChroma.description = "Intra prediction direction chroma";
-  statisticsData.addStatType(intraDirChroma);
+  statisticsData.addStatType(
+      StatisticsTypeBuilder()
+          .withTypeID(13)
+          .withTypeName("Chroma from Luma Alpha (V)")
+          .withDescription(
+              "CflAlphaV: Contains the signed value of the alpha component for the V component")
+          .withValueDataOptions(
+              {.colorMapper = ColorMapper({-128, 128}, PredefinedType::Col3_bblg)})
+          .build());
 
-  stats::StatisticsType chromaFromLumaAlphaU(
-      12, "chroma from luma alpha (U)", ColorMapper({-128, 128}, PredefinedType::Col3_bblg));
-  chromaFromLumaAlphaU.description =
-      "CflAlphaU: contains the signed value of the alpha component for the U component";
-  statisticsData.addStatType(chromaFromLumaAlphaU);
+  statisticsData.addStatType(
+      StatisticsTypeBuilder()
+          .withTypeID(14)
+          .withTypeName("Ref Frame Index 0")
+          .withDescription("Reference frame index from List 0")
+          .withValueDataOptions({.colorMapper = ColorMapper({0, 7}, PredefinedType::Jet)})
+          .build());
 
-  stats::StatisticsType chromaFromLumaAlphaV(
-      13, "chroma from luma alpha (V)", ColorMapper({-128, 128}, PredefinedType::Col3_bblg));
-  chromaFromLumaAlphaV.description =
-      "CflAlphaU: contains the signed value of the alpha component for the U component";
-  statisticsData.addStatType(chromaFromLumaAlphaV);
+  statisticsData.addStatType(
+      StatisticsTypeBuilder()
+          .withTypeID(15)
+          .withTypeName("Ref Frame Index 1")
+          .withDescription("Reference frame index from List 1")
+          .withValueDataOptions({.colorMapper = ColorMapper({0, 7}, PredefinedType::Jet)})
+          .build());
 
-  // Inter specific values
+  statisticsData.addStatType(
+      StatisticsTypeBuilder()
+          .withTypeID(16)
+          .withTypeName("Compound Prediction Type")
+          .withDescription("The type of compound prediction used")
+          .withValueDataOptions({.colorMapper = ColorMapper({0, 4}, PredefinedType::Jet)})
+          .withMappingValues({"COMP_INTER_NONE",
+                              "COMP_INTER_WEIGHTED_AVG",
+                              "COMP_INTER_AVG",
+                              "COMP_INTER_SEG",
+                              "COMP_INTER_WEDGE"})
+          .build());
 
-  stats::StatisticsType refFrames0(
-      14, "ref frame index 0", ColorMapper({0, 7}, PredefinedType::Jet));
-  statisticsData.addStatType(refFrames0);
+  statisticsData.addStatType(
+      StatisticsTypeBuilder()
+          .withTypeID(17)
+          .withTypeName("Wedge Index")
+          .withValueDataOptions({.colorMapper = ColorMapper({0, 16}, PredefinedType::Jet)})
+          .build());
 
-  stats::StatisticsType refFrames1(
-      15, "ref frame index 1", ColorMapper({0, 7}, PredefinedType::Jet));
-  statisticsData.addStatType(refFrames1);
+  statisticsData.addStatType(
+      StatisticsTypeBuilder()
+          .withTypeID(18)
+          .withTypeName("Mask Sign")
+          .withValueDataOptions(
+              {.colorMapper = ColorMapper({0, 1}, Color(0, 0, 0), Color(0, 255, 255))})
+          .build());
 
-  stats::StatisticsType compoundPredType(
-      16, "compound prediction type", ColorMapper({0, 4}, PredefinedType::Jet));
-  compoundPredType.setMappingValues({"COMP_INTER_NONE",
-                                     "COMP_INTER_WEIGHTED_AVG",
-                                     "COMP_INTER_AVG",
-                                     "COMP_INTER_SEG",
-                                     "COMP_INTER_WEDGE"});
-  statisticsData.addStatType(compoundPredType);
-
-  stats::StatisticsType wedgeIndex(17, "wedge index", ColorMapper({0, 16}, PredefinedType::Jet));
-  statisticsData.addStatType(wedgeIndex);
-
-  stats::StatisticsType maskSign(
-      18, "mask sign", ColorMapper({0, 1}, Color(0, 0, 0), Color(0, 255, 255)));
-  statisticsData.addStatType(maskSign);
-
-  stats::StatisticsType interMode(19, "inter mode", ColorMapper({0, 7}, PredefinedType::Jet));
-  interMode.setMappingValues({"NEARESTMV_NEARESTMV",
+  statisticsData.addStatType(
+      StatisticsTypeBuilder()
+          .withTypeID(19)
+          .withTypeName("Inter Mode")
+          .withValueDataOptions({.colorMapper = ColorMapper({0, 7}, PredefinedType::Jet)})
+          .withMappingValues({"NEARESTMV_NEARESTMV",
                               "NEARMV_NEARMV",
                               "NEARESTMV_NEWMV",
                               "NEWMV_NEARESTMV",
                               "NEARMV_NEWMV",
                               "NEWMV_NEARMV",
                               "GLOBALMV_GLOBALMV",
-                              "NEWMV_NEWMV"});
-  statisticsData.addStatType(interMode);
+                              "NEWMV_NEWMV"})
+          .build());
 
-  stats::StatisticsType drlIndex(
-      20, "dynamic reference list index", ColorMapper({0, 16}, Color(0, 0, 0), Color(0, 255, 255)));
-  statisticsData.addStatType(drlIndex);
+  statisticsData.addStatType(
+      StatisticsTypeBuilder()
+          .withTypeID(20)
+          .withTypeName("Dynamic Reference List Index")
+          .withValueDataOptions(
+              {.colorMapper = ColorMapper({0, 16}, Color(0, 0, 0), Color(0, 255, 255))})
+          .build());
 
-  stats::StatisticsType interintraType(
-      21, "inter-intra type", ColorMapper({0, 2}, PredefinedType::Jet));
-  interintraType.setMappingValues({"INTER_INTRA_NONE", "INTER_INTRA_BLEND", "INTER_INTRA_WEDGE"});
-  statisticsData.addStatType(interintraType);
+  statisticsData.addStatType(
+      StatisticsTypeBuilder()
+          .withTypeID(21)
+          .withTypeName("Inter-Intra Type")
+          .withValueDataOptions({.colorMapper = ColorMapper({0, 2}, PredefinedType::Jet)})
+          .withMappingValues({"INTER_INTRA_NONE", "INTER_INTRA_BLEND", "INTER_INTRA_WEDGE"})
+          .build());
 
-  stats::StatisticsType interintraMode(
-      22, "inter-intra mode", ColorMapper({0, 4}, PredefinedType::Jet));
-  interintraMode.setMappingValues(
-      {"II_DC_PRED", "II_VERT_PRED", "II_HOR_PRED", "II_SMOOTH_PRED", "N_INTER_INTRA_PRED_MODES"});
-  statisticsData.addStatType(interintraMode);
+  statisticsData.addStatType(
+      StatisticsTypeBuilder()
+          .withTypeID(22)
+          .withTypeName("Inter-Intra Mode")
+          .withValueDataOptions({.colorMapper = ColorMapper({0, 4}, PredefinedType::Jet)})
+          .withMappingValues({"II_DC_PRED",
+                              "II_VERT_PRED",
+                              "II_HOR_PRED",
+                              "II_SMOOTH_PRED",
+                              "N_INTER_INTRA_PRED_MODES"})
+          .build());
 
-  stats::StatisticsType motionMode(23, "motion mode", ColorMapper({0, 2}, PredefinedType::Jet));
-  motionMode.setMappingValues({"MM_TRANSLATION", "MM_OBMC", "MM_WARP"});
-  statisticsData.addStatType(motionMode);
+  statisticsData.addStatType(
+      StatisticsTypeBuilder()
+          .withTypeID(23)
+          .withTypeName("Motion Mode")
+          .withValueDataOptions({.colorMapper = ColorMapper({0, 2}, PredefinedType::Jet)})
+          .withMappingValues({"MM_TRANSLATION", "MM_OBMC", "MM_WARP"})
+          .build());
 
-  stats::StatisticsType motionVec0(24, "Motion Vector 0", 4);
-  motionVec0.description = "The motion vector for component 0";
-  statisticsData.addStatType(motionVec0);
+  statisticsData.addStatType(
+      StatisticsTypeBuilder()
+          .withTypeID(24)
+          .withTypeName("Motion Vector 0")
+          .withDescription("The motion vector for component 0")
+          .withValueDataOptions(
+              {.colorMapper = ColorMapper({-128, 128}, PredefinedType::Col3_bblg)})
+          .build());
 
-  stats::StatisticsType motionVec1(25, "Motion Vector 1", 4);
-  motionVec1.description = "The motion vector for component 1";
-  statisticsData.addStatType(motionVec1);
+  statisticsData.addStatType(StatisticsTypeBuilder()
+                                 .withTypeID(25)
+                                 .withTypeName("Motion Vector 1")
+                                 .withDescription("The motion vector for component 1")
+                                 .withVectorDataOptions({.scale = 4})
+                                 .build());
 
-  stats::StatisticsType transformDepth(
-      26, "Transform Size", ColorMapper({0, 19}, PredefinedType::Jet));
-  transformDepth.description = "The transform size";
-  transformDepth.setMappingValues({"TX_4X4",
-                                   "TX_8X8",
-                                   "TX_16X16",
-                                   "TX_32X32",
-                                   "TX_64X64",
-                                   "RTX_4X8",
-                                   "RTX_8X4",
-                                   "RTX_8X16",
-                                   "RTX_16X8",
-                                   "RTX_16X32",
-                                   "RTX_32X16",
-                                   "RTX_32X64",
-                                   "RTX_64X32",
-                                   "RTX_4X16",
-                                   "RTX_16X4",
-                                   "RTX_8X32",
-                                   "RTX_32X8",
-                                   "RTX_16X64",
-                                   "RTX_64X16"});
-  statisticsData.addStatType(transformDepth);
+  statisticsData.addStatType(
+      StatisticsTypeBuilder()
+          .withTypeID(26)
+          .withTypeName("Transform Size")
+          .withValueDataOptions({.colorMapper = ColorMapper({0, 19}, PredefinedType::Jet)})
+          .withMappingValues({"TX_4X4",
+                              "TX_8X8",
+                              "TX_16X16",
+                              "TX_32X32",
+                              "TX_64X64",
+                              "RTX_4X8",
+                              "RTX_8X4",
+                              "RTX_8X16",
+                              "RTX_16X8",
+                              "RTX_16X32",
+                              "RTX_32X16",
+                              "RTX_32X64",
+                              "RTX_64X32",
+                              "RTX_4X16",
+                              "RTX_16X4",
+                              "RTX_8X32",
+                              "RTX_32X8",
+                              "RTX_16X64",
+                              "RTX_64X16"})
+          .build());
 }
 
 void decoderDav1d::cacheStatistics(const Dav1dPictureWrapper &img)

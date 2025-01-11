@@ -33,21 +33,24 @@
 #include <common/Testing.h>
 
 #include <statistics/StatisticsData.h>
+#include <statistics/StatisticsTypeBuilder.h>
 
-namespace
+namespace stats::test
 {
 
 TEST(StatisticsData, testPixelValueRetrievalInteger)
 {
-  stats::StatisticsData data;
+  StatisticsData data;
 
   constexpr auto typeID     = 0;
   constexpr auto frameIndex = 0;
 
-  stats::StatisticsType valueType(
-      typeID, "Something", stats::color::ColorMapper({0, 10}, stats::color::PredefinedType::Jet));
-  valueType.render = true;
-  data.addStatType(valueType);
+  data.addStatType(StatisticsTypeBuilder()
+                       .withTypeID(typeID)
+                       .withTypeName("Something")
+                       .withValueDataOptions({.colorMapper = stats::color::ColorMapper(
+                                                  {0, 10}, stats::color::PredefinedType::Jet)})
+                       .build());
 
   EXPECT_EQ(data.needsLoading(frameIndex), ItemLoadingState::LoadingNeeded);
   EXPECT_EQ(data.getTypesThatNeedLoading(frameIndex).size(), std::size_t(1));
@@ -68,15 +71,16 @@ TEST(StatisticsData, testPixelValueRetrievalInteger)
 
 TEST(StatisticsData, testPixelValueRetrievalVector)
 {
-  stats::StatisticsData data;
+  StatisticsData data;
 
   constexpr auto typeID     = 0;
   constexpr auto frameIndex = 0;
 
-  using VectorScaling = int;
-  stats::StatisticsType valueType(typeID, "Something", VectorScaling(4));
-  valueType.render = true;
-  data.addStatType(valueType);
+  data.addStatType(StatisticsTypeBuilder()
+                       .withTypeID(typeID)
+                       .withTypeName("Something")
+                       .withVectorDataOptions({.scale = 4})
+                       .build());
 
   EXPECT_EQ(data.needsLoading(frameIndex), ItemLoadingState::LoadingNeeded);
   EXPECT_EQ(data.getTypesThatNeedLoading(frameIndex).size(), std::size_t(1));
@@ -95,4 +99,4 @@ TEST(StatisticsData, testPixelValueRetrievalVector)
   EXPECT_EQ(dataOutside.at(0), QStringPair({"Something", "-"}));
 }
 
-} // namespace
+} // namespace stats::test

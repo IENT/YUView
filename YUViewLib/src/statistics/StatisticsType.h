@@ -71,12 +71,7 @@ struct LineDrawStyle
 class StatisticsType
 {
 public:
-  StatisticsType(int typeID = INT_INVALID, const std::string &typeName = "");
-  StatisticsType(int typeID, const std::string &typeName, int vectorScaling);
-  StatisticsType(int                       typeID,
-                 const std::string        &typeName,
-                 const color::ColorMapper &colorMapper,
-                 bool                      hasAndRenderVectorData = false);
+  StatisticsType() = default;
 
   // Save all the values that the user could change. When saving to playlist we can save only the
   // changed values to playlist.

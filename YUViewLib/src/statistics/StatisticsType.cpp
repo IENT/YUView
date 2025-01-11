@@ -73,42 +73,6 @@ std::vector<StatisticsType::ArrowHead> AllArrowHeads = {StatisticsType::ArrowHea
 
 } // namespace
 
-StatisticsType::StatisticsType(int typeID, const std::string &typeName)
-    : typeID(typeID), typeName(typeName)
-{
-}
-
-StatisticsType::StatisticsType(int typeID, const std::string &typeName, int vectorScaling)
-    : StatisticsType(typeID, typeName)
-{
-  this->vectorDataOptions.emplace();
-  this->vectorDataOptions->scale  = vectorScaling;
-  this->vectorDataOptions->render = true;
-
-  this->setInitialState();
-}
-
-// Convenience constructor for a statistics type with block data and a named color map
-StatisticsType::StatisticsType(int                       typeID,
-                               const std::string        &typeName,
-                               const color::ColorMapper &colorMapper,
-                               bool                      hasAndRenderVectorData)
-    : StatisticsType(typeID, typeName)
-{
-
-  this->valueDataOptions.emplace();
-  this->valueDataOptions->render      = true;
-  this->valueDataOptions->colorMapper = colorMapper;
-
-  if (hasAndRenderVectorData)
-  {
-    this->vectorDataOptions.emplace();
-    this->vectorDataOptions->render = true;
-  }
-
-  this->setInitialState();
-}
-
 void StatisticsType::setInitialState()
 {
   this->init.render      = this->render;
