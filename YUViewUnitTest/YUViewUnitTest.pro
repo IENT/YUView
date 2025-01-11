@@ -6,7 +6,7 @@ TEMPLATE = app
 CONFIG += console
 CONFIG -= app_bundle
 CONFIG -= debug_and_release
-CONFIG += c++17
+CONFIG += c++20
 
 SOURCES += $$files(*.cpp, true)
 HEADERS += $$files(*.h, true)
