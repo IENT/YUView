@@ -33,6 +33,7 @@
 #include "decoderFFmpeg.h"
 
 #include <common/Functions.h>
+#include <statistics/StatisticsTypeBuilder.h>
 
 #define DECODERFFMPEG_DEBUG_OUTPUT 0
 #if DECODERFFMPEG_DEBUG_OUTPUT && !NDEBUG
@@ -44,6 +45,8 @@
 
 namespace decoder
 {
+
+using stats::StatisticsTypeBuilder;
 
 decoderFFmpeg::decoderFFmpeg(FFmpeg::AVCodecIDWrapper   codecID,
                              Size                       size,
@@ -429,13 +432,30 @@ bool decoderFFmpeg::decodeFrame()
 
 void decoderFFmpeg::fillStatisticList(stats::StatisticsData &statisticsData) const
 {
-  auto sourceColorMapper =
+  const auto sourceColorMapper =
       stats::color::ColorMapper({-2, 2}, stats::color::PredefinedType::Col3_bblg);
 
-  statisticsData.addStatType(stats::StatisticsType(0, "Source -", sourceColorMapper));
-  statisticsData.addStatType(stats::StatisticsType(1, "Source +", sourceColorMapper));
-  statisticsData.addStatType(stats::StatisticsType(2, "Motion Vector -", 4));
-  statisticsData.addStatType(stats::StatisticsType(3, "Motion Vector +", 4));
+  statisticsData.addStatType(StatisticsTypeBuilder()
+                                 .withTypeID(0)
+                                 .withTypeName("Source -")
+                                 .withValueDataOptions({.colorMapper = sourceColorMapper})
+                                 .build());
+  statisticsData.addStatType(StatisticsTypeBuilder()
+                                 .withTypeID(1)
+                                 .withTypeName("Source +")
+                                 .withValueDataOptions({.colorMapper = sourceColorMapper})
+                                 .build());
+
+  statisticsData.addStatType(StatisticsTypeBuilder()
+                                 .withTypeID(2)
+                                 .withTypeName("Motion Vector -")
+                                 .withVectorDataOptions({.scale = 4})
+                                 .build());
+  statisticsData.addStatType(StatisticsTypeBuilder()
+                                 .withTypeID(3)
+                                 .withTypeName("Motion Vector +")
+                                 .withVectorDataOptions({.scale = 4})
+                                 .build());
 }
 
 bool decoderFFmpeg::createDecoder(FFmpeg::AVCodecIDWrapper         codecID,
