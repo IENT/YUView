@@ -101,7 +101,7 @@ public:
   {
     bool               render{true};
     bool               scaleToBlockSize{};
-    color::ColorMapper colorMapper;
+    color::ColorMapper colorMapper{};
   };
 
   std::optional<ValueDataOptions> valueDataOptions;

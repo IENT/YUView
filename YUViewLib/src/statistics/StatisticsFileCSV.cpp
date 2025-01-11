@@ -315,9 +315,9 @@ void StatisticsFileCSV::loadStatisticData(StatisticsData &statisticsData, int po
         this->blockOutsideOfFramePOC = poc;
 
       auto &statTypes = statisticsData.getStatisticsTypes();
-      auto  statIt    = std::find_if(statTypes.begin(),
-                                 statTypes.end(),
-                                 [type](StatisticsType &t) { return t.typeID == type; });
+      auto  statIt    = std::find_if(statTypes.begin(), statTypes.end(), [type](StatisticsType &t) {
+        return t.typeID == type;
+      });
       Q_ASSERT_X(statIt != statTypes.end(), Q_FUNC_INFO, "Stat type not found.");
 
       if (vectorData && statIt->vectorDataOptions)
@@ -398,11 +398,11 @@ void StatisticsFileCSV::readHeaderFromFile(StatisticsData &statisticsData)
         {
           if (rowItemList[4] == "map" || rowItemList[4] == "range")
           {
-            aType.valueDataOptions.emplace();
+            aType.valueDataOptions = StatisticsType::ValueDataOptions();
           }
           else if (rowItemList[4] == "vector" || rowItemList[4] == "line")
           {
-            aType.vectorDataOptions.emplace();
+            aType.vectorDataOptions = StatisticsType::VectorDataOptions();
             if (rowItemList[4] == "line")
               aType.vectorDataOptions->arrowHead = StatisticsType::ArrowHead::none;
           }
