@@ -202,9 +202,6 @@ QStringPairList StatisticsData::getValuesAt(const QPoint &pos) const
 
   for (auto it = this->statsTypes.rbegin(); it != this->statsTypes.rend(); it++)
   {
-    if (!it->gridOptions.render)
-      continue;
-
     if (it->typeID == INT_INVALID || this->frameCache.count(it->typeID) == 0)
       // no active statistics data
       continue;
