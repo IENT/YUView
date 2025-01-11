@@ -1002,7 +1002,7 @@ void decoderLibde265::fillStatisticList(stats::StatisticsData &statisticsData) c
           .withDescription("The intra mode for the luma component per TU (intra prediction is "
                            "performed on a TU level)")
           .withVectorDataOptions(
-              StatisticsType::VectorDataOptions({.scale = 32, .renderDataValues = false}))
+              StatisticsType::VectorDataOptions({.renderDataValues = false, .scale = 32}))
           .withMappingValues(INTRA_DIR_LIST)
           .build());
 
@@ -1013,7 +1013,7 @@ void decoderLibde265::fillStatisticList(stats::StatisticsData &statisticsData) c
           .withDescription("The intra mode for the chroma component per TU (intra prediction is "
                            "performed on a TU level)")
           .withVectorDataOptions(
-              StatisticsType::VectorDataOptions({.scale = 32, .renderDataValues = false}))
+              StatisticsType::VectorDataOptions({.renderDataValues = false, .scale = 32}))
           .withMappingValues(INTRA_DIR_LIST)
           .build());
 

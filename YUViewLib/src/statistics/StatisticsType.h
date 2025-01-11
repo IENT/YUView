@@ -101,7 +101,7 @@ public:
   {
     bool               render{true};
     bool               scaleToBlockSize{};
-    color::ColorMapper colorMapper;
+    color::ColorMapper colorMapper{};
   };
 
   std::optional<ValueDataOptions> valueDataOptions;
@@ -118,7 +118,7 @@ public:
     bool          render{true};
     bool          renderDataValues{true};
     bool          scaleToZoom{};
-    LineDrawStyle style;
+    LineDrawStyle style{};
     int           scale{};
     bool          mapToColor{};
     ArrowHead     arrowHead{};
@@ -129,7 +129,7 @@ public:
   struct GridOptions
   {
     bool          render{};
-    LineDrawStyle style;
+    LineDrawStyle style{};
     bool          scaleToZoom{};
   };
 

@@ -566,7 +566,7 @@ void decoderHM::fillStatisticList(stats::StatisticsData &statisticsData) const
               .withValueDataOptions(StatisticsType::ValueDataOptions(
                   {.colorMapper = ColorMapper({0, 34}, PredefinedType::Jet)}))
               .withVectorDataOptions(
-                  StatisticsType::VectorDataOptions({.scale = 32, .renderDataValues = true}))
+                  StatisticsType::VectorDataOptions({.renderDataValues = true, .scale = 32}))
               .withMappingValues(
                   {"INTRA_PLANAR",     "INTRA_DC",         "INTRA_ANGULAR_2",  "INTRA_ANGULAR_3",
                    "INTRA_ANGULAR_4",  "INTRA_ANGULAR_5",  "INTRA_ANGULAR_6",  "INTRA_ANGULAR_7",

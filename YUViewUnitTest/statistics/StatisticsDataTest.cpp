@@ -50,6 +50,7 @@ TEST(StatisticsData, testPixelValueRetrievalInteger)
                        .withTypeName("Something")
                        .withValueDataOptions({.colorMapper = stats::color::ColorMapper(
                                                   {0, 10}, stats::color::PredefinedType::Jet)})
+                       .withRender(true)
                        .build());
 
   EXPECT_EQ(data.needsLoading(frameIndex), ItemLoadingState::LoadingNeeded);
@@ -80,6 +81,7 @@ TEST(StatisticsData, testPixelValueRetrievalVector)
                        .withTypeID(typeID)
                        .withTypeName("Something")
                        .withVectorDataOptions({.scale = 4})
+                       .withRender(true)
                        .build());
 
   EXPECT_EQ(data.needsLoading(frameIndex), ItemLoadingState::LoadingNeeded);
