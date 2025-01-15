@@ -1,4 +1,4 @@
-QT += core xml 
+QT += core xml widget
 
 TARGET = YUViewUnitTest
 TEMPLATE = app
