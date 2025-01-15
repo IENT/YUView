@@ -6,7 +6,12 @@ TEMPLATE = app
 CONFIG += console
 CONFIG -= app_bundle
 CONFIG -= debug_and_release
+
 CONFIG += c++20
+gcc {
+  # For gcc 9, setting 20 does not work. Must set c++2a.
+  equals(QMAKE_GCC_MAJOR_VERSION, 9): QMAKE_CXXFLAGS += -std=c++2a
+}
 
 SOURCES += $$files(*.cpp, true)
 HEADERS += $$files(*.h, true)

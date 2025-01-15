@@ -2,9 +2,14 @@ QT += core gui widgets opengl xml concurrent network
 
 TEMPLATE = lib
 CONFIG += staticlib
-CONFIG += c++20
 CONFIG -= debug_and_release
 CONFIG += object_parallel_to_source
+
+CONFIG += c++20
+gcc {
+  # For gcc 9, setting 20 does not work. Must set c++2a.
+  equals(QMAKE_GCC_MAJOR_VERSION, 9): QMAKE_CXXFLAGS += -std=c++2a
+}
 
 SOURCES += $$files(src/*.cpp, true)
 HEADERS += $$files(src/*.h, true)
