@@ -58,10 +58,7 @@ struct LineDrawStyle
   double  width{0.25};
   Pattern pattern{Pattern::Solid};
 
-  bool operator!=(const LineDrawStyle &other) const
-  {
-    return color != other.color || width != other.width || pattern != other.pattern;
-  }
+  bool operator==(const LineDrawStyle &other) const;
 };
 
 /* This class defines a type of statistic to render. Each statistics type entry defines the name and

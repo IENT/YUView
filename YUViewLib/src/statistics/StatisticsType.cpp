@@ -73,6 +73,11 @@ std::vector<StatisticsType::ArrowHead> AllArrowHeads = {StatisticsType::ArrowHea
 
 } // namespace
 
+bool LineDrawStyle::operator==(const LineDrawStyle &other) const
+{
+  return color == other.color && width == other.width && pattern == other.pattern;
+}
+
 void StatisticsType::setInitialState()
 {
   this->init.render      = this->render;

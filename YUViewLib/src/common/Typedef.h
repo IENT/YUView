@@ -170,9 +170,9 @@ template <typename T> struct Range
   T min{};
   T max{};
 
-  bool operator!=(const Range &other) const
+  bool operator==(const Range &other) const
   {
-    return this->min != other.min || this->max != other.max;
+    return this->min == other.min && this->max == other.max;
   }
 };
 
