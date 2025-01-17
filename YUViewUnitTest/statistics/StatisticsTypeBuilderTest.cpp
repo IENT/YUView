@@ -55,7 +55,7 @@ TEST(StatisticsTypeBuilderTest, DefaultValues)
 
 TEST(StatisticsTypeBuilderTest, SetTypeNameDescriptionAndRenderValues)
 {
-  const auto statisticsType = stats::StatisticsTypeBuilder()
+  const auto statisticsType = StatisticsTypeBuilder()
                                   .withTypeID(1)
                                   .withTypeName("TestType")
                                   .withDescription("TestDescription")
@@ -72,7 +72,7 @@ TEST(StatisticsTypeBuilderTest, SetTypeNameDescriptionAndRenderValues)
 
 TEST(StatisticsTypeBuilderTest, SetValueDatDefaultValues)
 {
-  const auto statisticsType = stats::StatisticsTypeBuilder().withValueDataOptions({}).build();
+  const auto statisticsType = StatisticsTypeBuilder().withValueDataOptions({}).build();
 
   EXPECT_TRUE(statisticsType.valueDataOptions);
   EXPECT_EQ(statisticsType.valueDataOptions->render, true);
@@ -82,7 +82,7 @@ TEST(StatisticsTypeBuilderTest, SetValueDatDefaultValues)
 
 TEST(StatisticsTypeBuilderTest, SetValueDataCustomValues)
 {
-  const auto colorMapper = color::ColorMapper({0, 255}, color::PredefinedType::Jet);
+  const color::ColorMapper colorMapper({0, 255}, color::PredefinedType::Jet);
 
   const auto statisticsType =
       stats::StatisticsTypeBuilder()
@@ -112,7 +112,7 @@ TEST(StatisticsTypeBuilderTest, SetVectorDataDefaultValues)
 
 TEST(StatisticsTypeBuilderTest, SetVectorDataCustomValues)
 {
-  const auto lineDrawStyle = LineDrawStyle(Color(255, 0, 0), 2, Pattern::DashDot);
+  const LineDrawStyle lineDrawStyle(Color(255, 0, 0), 2, Pattern::DashDot);
 
   const auto statisticsType = StatisticsTypeBuilder()
                                   .withVectorDataOptions({
@@ -147,7 +147,7 @@ TEST(StatisticsTypeBuilderTest, SetGridOptionsDefaultValues)
 
 TEST(StatisticsTypeBuilderTest, SetGridOptionsCustomValues)
 {
-  const auto lineDrawStyle = LineDrawStyle(Color(123, 44, 99), 5, Pattern::DashDot);
+  const LineDrawStyle lineDrawStyle(Color(123, 44, 99), 5, Pattern::DashDot);
 
   const auto statisticsType =
       StatisticsTypeBuilder()
