@@ -112,7 +112,7 @@ TEST(StatisticsTypeBuilderTest, SetVectorDataDefaultValues)
 
 TEST(StatisticsTypeBuilderTest, SetVectorDataCustomValues)
 {
-  const LineDrawStyle lineDrawStyle(Color(255, 0, 0), 2, Pattern::DashDot);
+  const LineDrawStyle lineDrawStyle({Color(255, 0, 0), 2, Pattern::DashDot});
 
   const auto statisticsType = StatisticsTypeBuilder()
                                   .withVectorDataOptions({
@@ -147,7 +147,7 @@ TEST(StatisticsTypeBuilderTest, SetGridOptionsDefaultValues)
 
 TEST(StatisticsTypeBuilderTest, SetGridOptionsCustomValues)
 {
-  const LineDrawStyle lineDrawStyle(Color(123, 44, 99), 5, Pattern::DashDot);
+  const LineDrawStyle lineDrawStyle({Color(123, 44, 99), 5, Pattern::DashDot});
 
   const auto statisticsType =
       StatisticsTypeBuilder()
