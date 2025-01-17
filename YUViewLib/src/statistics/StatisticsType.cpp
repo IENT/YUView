@@ -67,9 +67,62 @@ LineDrawStyle convertStringToPen(const QString &str)
   return style;
 }
 
+void addModifiedValuesToElement(YUViewDomElement                                      &element,
+                                const std::optional<StatisticsType::ValueDataOptions> &options,
+                                const std::optional<StatisticsType::ValueDataOptions> &initOptions)
+{
+  if (!options)
+    return;
+
+  if (!initOptions || options->render != initOptions->render)
+    element.setAttribute("renderValueData", options->render);
+  if (!initOptions || options->scaleToBlockSize != initOptions->scaleToBlockSize)
+    element.setAttribute("scaleValueToBlockSize", options->render);
+  if (!initOptions || options->colorMapper != initOptions->colorMapper)
+    options->colorMapper.savePlaylist(element);
+}
+
 std::vector<StatisticsType::ArrowHead> AllArrowHeads = {StatisticsType::ArrowHead::arrow,
                                                         StatisticsType::ArrowHead::circle,
                                                         StatisticsType::ArrowHead::none};
+
+void addModifiedValuesToElement(YUViewDomElement                                       &element,
+                                const std::optional<StatisticsType::VectorDataOptions> &options,
+                                const std::optional<StatisticsType::VectorDataOptions> &initOptions)
+{
+  if (!options)
+    return;
+
+  if (!initOptions || options->render != initOptions->render)
+    element.setAttribute("renderVectorData", options->render);
+  if (!initOptions || options->renderDataValues != initOptions->renderDataValues)
+    element.setAttribute("renderVectorDataValues", options->renderDataValues);
+  if (!initOptions || options->scaleToZoom != initOptions->scaleToZoom)
+    element.setAttribute("scaleVectorToZoom", options->scaleToZoom);
+  if (!initOptions || options->style != initOptions->style)
+    element.setAttribute("vectorStyle", convertPenToString(options->style));
+  if (!initOptions || options->scale != initOptions->scale)
+    element.setAttribute("vectorScale", options->scale);
+  if (!initOptions || options->mapToColor != initOptions->mapToColor)
+    element.setAttribute("mapVectorToColor", options->mapToColor);
+  if (!initOptions || options->arrowHead != initOptions->arrowHead)
+  {
+    if (const auto index = vectorIndexOf(AllArrowHeads, options->arrowHead))
+      element.setAttribute("renderarrowHead", static_cast<int>(*index));
+  }
+}
+
+void addModifiedValuesToElement(YUViewDomElement                  &element,
+                                const StatisticsType::GridOptions &options,
+                                const StatisticsType::GridOptions &initOptions)
+{
+  if (options.render != initOptions.render)
+    element.setAttribute("renderGrid", options.render);
+  if (options.style != initOptions.style)
+    element.setAttribute("gridStyle", convertPenToString(options.style));
+  if (options.scaleToZoom != initOptions.scaleToZoom)
+    element.setAttribute("scaleGridToZoom", options.scaleToZoom);
+}
 
 } // namespace
 
@@ -92,114 +145,100 @@ void StatisticsType::setInitialState()
  */
 void StatisticsType::savePlaylist(YUViewDomElement &root) const
 {
-  // bool statChanged =
-  //     (init.render != render || init.alphaFactor != alphaFactor ||
-  //      init.renderValueData != renderValueData ||
-  //      init.scaleValueToBlockSize != scaleValueToBlockSize || init.colorMapper != colorMapper ||
-  //      init.renderVectorData != renderVectorData || init.scaleVectorToZoom != scaleVectorToZoom
-  //      || init.vectorStyle != vectorStyle || init.vectorScale != vectorScale ||
-  //      init.mapVectorToColor != mapVectorToColor || init.arrowHead != arrowHead ||
-  //      init.renderGrid != renderGrid || init.gridStyle != gridStyle ||
-  //      init.scaleGridToZoom != scaleGridToZoom);
+  bool allValuesIdenticalToInitialValues = (init.render == this->render &&                       //
+                                            init.alphaFactor == this->alphaFactor &&             //
+                                            init.valueDataOptions == this->valueDataOptions &&   //
+                                            init.vectorDataOptions == this->vectorDataOptions && //
+                                            init.gridOptions == this->gridOptions);
 
-  // if (!statChanged)
-  //   return;
+  if (allValuesIdenticalToInitialValues)
+    return;
 
-  // YUViewDomElement newChild =
-  // root.ownerDocument().createElement(QString("statType%1").arg(typeID));
-  // newChild.appendChild(root.ownerDocument().createTextNode(QString::fromStdString(typeName)));
+  YUViewDomElement newChild = root.ownerDocument().createElement(QString("statType%1").arg(typeID));
+  newChild.appendChild(root.ownerDocument().createTextNode(QString::fromStdString(typeName)));
 
-  // // Append only the parameters that changed
-  // if (init.render != render)
-  //   newChild.setAttribute("render", render);
-  // if (init.alphaFactor != alphaFactor)
-  //   newChild.setAttribute("alphaFactor", alphaFactor);
-  // if (init.renderValueData != renderValueData)
-  //   newChild.setAttribute("renderValueData", renderValueData);
-  // if (init.scaleValueToBlockSize != scaleValueToBlockSize)
-  //   newChild.setAttribute("scaleValueToBlockSize", scaleValueToBlockSize);
-  // if (init.colorMapper != this->colorMapper)
-  //   this->colorMapper.savePlaylist(newChild);
-  // if (init.renderVectorData != renderVectorData)
-  //   newChild.setAttribute("renderVectorData", renderVectorData);
-  // if (init.scaleVectorToZoom != scaleVectorToZoom)
-  //   newChild.setAttribute("scaleVectorToZoom", scaleVectorToZoom);
-  // if (init.vectorStyle != vectorStyle)
-  //   newChild.setAttribute("vectorStyle", convertPenToString(vectorStyle));
-  // if (init.vectorScale != vectorScale)
-  //   newChild.setAttribute("vectorScale", vectorScale);
-  // if (init.mapVectorToColor != mapVectorToColor)
-  //   newChild.setAttribute("mapVectorToColor", mapVectorToColor);
-  // if (init.arrowHead != arrowHead)
-  // {
-  //   if (const auto index = vectorIndexOf(stats::AllArrowHeads, arrowHead))
-  //     newChild.setAttribute("renderarrowHead", static_cast<int>(*index));
-  // }
-  // if (init.renderGrid != renderGrid)
-  //   newChild.setAttribute("renderGrid", renderGrid);
-  // if (init.gridStyle != gridStyle)
-  //   newChild.setAttribute("gridStyle", convertPenToString(gridStyle));
-  // if (init.scaleGridToZoom != scaleGridToZoom)
-  //   newChild.setAttribute("scaleGridToZoom", scaleGridToZoom);
+  // Append only the parameters that changed
+  if (init.render != render)
+    newChild.setAttribute("render", render);
+  if (init.alphaFactor != alphaFactor)
+    newChild.setAttribute("alphaFactor", alphaFactor);
 
-  // root.appendChild(newChild);
+  addModifiedValuesToElement(newChild, this->valueDataOptions, this->init.valueDataOptions);
+  addModifiedValuesToElement(newChild, this->vectorDataOptions, this->init.vectorDataOptions);
+  addModifiedValuesToElement(newChild, this->gridOptions, this->init.gridOptions);
+
+  root.appendChild(newChild);
 }
 
 void StatisticsType::loadPlaylist(const YUViewDomElement &root)
 {
-  // auto [name, attributes] = root.findChildValueWithAttributes(QString("statType%1").arg(typeID));
+  const auto [name, attributes] =
+      root.findChildValueWithAttributes(QString("statType%1").arg(typeID));
 
-  // if (name.toStdString() != this->typeName)
-  //   // The name of this type with the right ID and the name in the playlist don't match?...
-  //   return;
+  if (name.toStdString() != this->typeName)
+    // The name of this type with the right ID and the name in the playlist don't match?...
+    return;
 
-  // // Parse and set all the attributes that are in the playlist
-  // for (int i = 0; i < attributes.length(); i++)
-  // {
-  //   if (attributes[i].first == "render")
-  //     render = (attributes[i].second != "0");
-  //   else if (attributes[i].first == "alphaFactor")
-  //     alphaFactor = attributes[i].second.toInt();
-  //   else if (attributes[i].first == "renderValueData")
-  //     renderValueData = (attributes[i].second != "0");
-  //   else if (attributes[i].first == "scaleValueToBlockSize")
-  //     scaleValueToBlockSize = (attributes[i].second != "0");
-  //   else if (attributes[i].first == "renderVectorData")
-  //     renderVectorData = (attributes[i].second != "0");
-  //   else if (attributes[i].first == "scaleVectorToZoom")
-  //     scaleVectorToZoom = (attributes[i].second != "0");
-  //   else if (attributes[i].first == "vectorPen")
-  //     vectorStyle = convertStringToPen(attributes[i].second);
-  //   else if (attributes[i].first == "vectorScale")
-  //     vectorScale = attributes[i].second.toInt();
-  //   else if (attributes[i].first == "mapVectorToColor")
-  //     mapVectorToColor = (attributes[i].second != "0");
-  //   else if (attributes[i].first == "renderarrowHead")
-  //   {
-  //     auto idx = attributes[i].second.toInt();
-  //     if (idx >= 0 && unsigned(idx) < AllArrowHeads.size())
-  //       arrowHead = AllArrowHeads[idx];
-  //   }
-  //   else if (attributes[i].first == "renderGrid")
-  //     renderGrid = (attributes[i].second != "0");
-  //   else if (attributes[i].first == "gridPen")
-  //     gridStyle = convertStringToPen(attributes[i].second);
-  //   else if (attributes[i].first == "scaleGridToZoom")
-  //     scaleGridToZoom = (attributes[i].second != "0");
-  // }
+  // Parse and set all the attributes that are in the playlist
+  for (const auto [name, value] : attributes)
+  {
+    if (name == "render")
+      this->render = (value != "0");
+    else if (name == "alphaFactor")
+      this->alphaFactor = value.toInt();
+    else if (name == "renderValueData" || name == "scaleValueToBlockSize" ||
+             name == "colorMapperType")
+    {
+      if (!this->valueDataOptions)
+        this->valueDataOptions.emplace();
 
-  // this->colorMapper.loadPlaylist(attributes);
+      if (name == "renderValueData")
+        this->valueDataOptions->render = (value != "0");
+      else if (name == "scaleValueToBlockSize")
+        this->valueDataOptions->scaleToBlockSize = (value != "0");
+      else if (name == "colorMapperType")
+        this->valueDataOptions->colorMapper.loadPlaylist(attributes);
+    }
+    else if (name == "renderVectorData" || name == "renderVectorDataValues" ||
+             name == "scaleVectorToZoom" || name == "vectorStyle" || name == "vectorScale" ||
+             name == "mapVectorToColor" || name == "renderarrowHead")
+    {
+      if (!this->vectorDataOptions)
+        this->vectorDataOptions.emplace();
+
+      if (name == "renderVectorData")
+        this->vectorDataOptions->render = (value != "0");
+      else if (name == "renderVectorDataValues")
+        this->vectorDataOptions->renderDataValues = (value != "0");
+      else if (name == "scaleVectorToZoom")
+        this->vectorDataOptions->scaleToZoom = (value != "0");
+      else if (name == "vectorStyle")
+        this->vectorDataOptions->style = convertStringToPen(value);
+      else if (name == "vectorScale")
+        this->vectorDataOptions->scale = value.toInt();
+      else if (name == "mapVectorToColor")
+        this->vectorDataOptions->mapToColor = (value != "0");
+      else if (name == "renderarrowHead")
+      {
+        const auto idx = value.toInt();
+        if (idx >= 0 && unsigned(idx) < AllArrowHeads.size())
+          this->vectorDataOptions->arrowHead = AllArrowHeads.at(idx);
+      }
+    }
+    else if (name == "renderGrid")
+      this->gridOptions.render = (value != "0");
+    else if (name == "gridPen")
+      this->gridOptions.style = convertStringToPen(value);
+    else if (name == "scaleGridToZoom")
+      this->gridOptions.scaleToZoom = (value != "0");
+  }
 }
 
-// If the internal valueMap can map the value to text, text and value will be returned.
-// Otherwise just the value as QString will be returned.
 std::string StatisticsType::getValueText(const int val) const
 {
-  if (this->valuesToText.count(val) > 0)
-  {
-    // A text for this value van be shown.
+  if (this->valuesToText.contains(val))
     return this->valuesToText.at(val) + " (" + std::to_string(val) + ")";
-  }
+
   return std::to_string(val);
 }
 
@@ -210,12 +249,29 @@ void StatisticsType::setMappingValues(std::vector<std::string> values)
     this->valuesToText[i] = values[i];
 }
 
-std::string StatisticsType::getMappedValue(const int typeID) const
+bool StatisticsType::ValueDataOptions::operator==(const ValueDataOptions &rhs) const
 {
-  if (this->valuesToText.count(typeID) == 0)
-    return {};
+  return this->render == rhs.render &&                     //
+         this->scaleToBlockSize == rhs.scaleToBlockSize && //
+         this->colorMapper == rhs.colorMapper;
+}
 
-  return this->valuesToText.at(typeID);
+bool StatisticsType::VectorDataOptions::operator==(const VectorDataOptions &rhs) const
+{
+  return this->render == rhs.render &&                     //
+         this->renderDataValues == rhs.renderDataValues && //
+         this->scaleToZoom == rhs.scaleToZoom &&           //
+         this->style == rhs.style &&                       //
+         this->scale == rhs.scale &&                       //
+         this->mapToColor == rhs.mapToColor &&             //
+         this->arrowHead == rhs.arrowHead;
+}
+
+bool StatisticsType::GridOptions::operator==(const GridOptions &rhs) const
+{
+  return this->render == rhs.render && //
+         this->style == rhs.style &&   //
+         this->scaleToZoom == rhs.scaleToZoom;
 }
 
 } // namespace stats

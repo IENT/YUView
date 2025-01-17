@@ -83,11 +83,9 @@ public:
   std::string typeName{};
   std::string description{};
 
-  // Get the value text (from the value map (if there is an entry))
   std::string getValueText(const int val) const;
 
-  void        setMappingValues(std::vector<std::string> values);
-  std::string getMappedValue(const int typeID) const;
+  void setMappingValues(std::vector<std::string> values);
 
   // Is this statistics type rendered and what is the alpha value?
   // These are corresponding to the controls in the properties panel
@@ -99,6 +97,8 @@ public:
     bool               render{true};
     bool               scaleToBlockSize{};
     color::ColorMapper colorMapper{};
+
+    bool operator==(const ValueDataOptions &rhs) const;
   };
 
   std::optional<ValueDataOptions> valueDataOptions;
@@ -119,6 +119,8 @@ public:
     int           scale{};
     bool          mapToColor{};
     ArrowHead     arrowHead{};
+
+    bool operator==(const VectorDataOptions &rhs) const;
   };
 
   std::optional<VectorDataOptions> vectorDataOptions;
@@ -128,6 +130,8 @@ public:
     bool          render{};
     LineDrawStyle style{};
     bool          scaleToZoom{};
+
+    bool operator==(const GridOptions &rhs) const;
   };
 
   GridOptions gridOptions;
