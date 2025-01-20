@@ -67,7 +67,7 @@ LineDrawStyle convertStringToPen(const QString &str)
   return style;
 }
 
-void addModifiedValuesToElement(YUViewDomElement                                      &element,
+void addModifiedValuesToElement(YUViewDomElement &                                     element,
                                 const std::optional<StatisticsType::ValueDataOptions> &options,
                                 const std::optional<StatisticsType::ValueDataOptions> &initOptions)
 {
@@ -86,7 +86,7 @@ std::vector<StatisticsType::ArrowHead> AllArrowHeads = {StatisticsType::ArrowHea
                                                         StatisticsType::ArrowHead::circle,
                                                         StatisticsType::ArrowHead::none};
 
-void addModifiedValuesToElement(YUViewDomElement                                       &element,
+void addModifiedValuesToElement(YUViewDomElement &                                      element,
                                 const std::optional<StatisticsType::VectorDataOptions> &options,
                                 const std::optional<StatisticsType::VectorDataOptions> &initOptions)
 {
@@ -112,7 +112,7 @@ void addModifiedValuesToElement(YUViewDomElement                                
   }
 }
 
-void addModifiedValuesToElement(YUViewDomElement                  &element,
+void addModifiedValuesToElement(YUViewDomElement &                 element,
                                 const StatisticsType::GridOptions &options,
                                 const StatisticsType::GridOptions &initOptions)
 {
@@ -129,6 +129,11 @@ void addModifiedValuesToElement(YUViewDomElement                  &element,
 bool LineDrawStyle::operator==(const LineDrawStyle &other) const
 {
   return color == other.color && width == other.width && pattern == other.pattern;
+}
+
+bool LineDrawStyle::operator!=(const LineDrawStyle &other) const
+{
+  return !(*this == other);
 }
 
 void StatisticsType::setInitialState()
@@ -190,7 +195,7 @@ void StatisticsType::loadPlaylist(const YUViewDomElement &root)
              name == "colorMapperType")
     {
       if (!this->valueDataOptions)
-        this->valueDataOptions.emplace();
+        this->valueDataOptions = ValueDataOptions();
 
       if (name == "renderValueData")
         this->valueDataOptions->render = (value != "0");
@@ -204,7 +209,7 @@ void StatisticsType::loadPlaylist(const YUViewDomElement &root)
              name == "mapVectorToColor" || name == "renderarrowHead")
     {
       if (!this->vectorDataOptions)
-        this->vectorDataOptions.emplace();
+        this->vectorDataOptions = VectorDataOptions();
 
       if (name == "renderVectorData")
         this->vectorDataOptions->render = (value != "0");

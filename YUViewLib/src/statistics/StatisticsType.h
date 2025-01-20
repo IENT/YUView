@@ -59,6 +59,7 @@ struct LineDrawStyle
   Pattern pattern{Pattern::Solid};
 
   bool operator==(const LineDrawStyle &other) const;
+  bool operator!=(const LineDrawStyle &other) const;
 };
 
 /* This class defines a type of statistic to render. Each statistics type entry defines the name and

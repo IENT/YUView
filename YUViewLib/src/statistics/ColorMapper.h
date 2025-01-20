@@ -131,6 +131,7 @@ public:
   // Two colorMappers are identical if they will return the same color when asked for any value.
   // When changing the type of one of the mappers, this might not be true anymore.
   bool operator==(const ColorMapper &other) const;
+  bool operator!=(const ColorMapper &other) const;
 
   MappingType mappingType{MappingType::Predefined};
 

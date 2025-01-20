@@ -152,8 +152,7 @@ Color ColorMapper::getColor(double value) const
     // The value scaled from 0 to 1 within the range (rangeMin ... rangeMax)
     auto valScaled = (value - this->valueRange.min) / rangeWidth;
 
-    auto interpolate = [&valScaled](int start, int end)
-    {
+    auto interpolate = [&valScaled](int start, int end) {
       auto range       = end - start;
       auto rangeScaled = std::floor(valScaled * double(range) + 0.5);
       return start + int(rangeScaled);
@@ -463,6 +462,11 @@ bool ColorMapper::operator==(const ColorMapper &other) const
     return this->valueRange == other.valueRange && //
            this->predefinedType == other.predefinedType;
   return false;
+}
+
+bool ColorMapper::operator!=(const ColorMapper &other) const
+{
+  return !(*this == other);
 }
 
 } // namespace stats::color
