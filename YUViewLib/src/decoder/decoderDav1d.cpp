@@ -590,18 +590,14 @@ void decoderDav1d::fillStatisticList(stats::StatisticsData &statisticsData) cons
   using namespace stats::color;
 
   statisticsData.addStatType(
-      StatisticsTypeBuilder()
-          .withTypeID(0)
-          .withTypeName("Pred Mode")
+      StatisticsTypeBuilder(0, "Pred Mode")
           .withDescription("The prediction mode (intra/inter) per block")
           .withValueDataOptions({.colorMapper = ColorMapper({0, 1}, PredefinedType::Jet)})
           .withMappingValues({"INTRA", "INTER"})
           .build());
 
   statisticsData.addStatType(
-      StatisticsTypeBuilder()
-          .withTypeID(1)
-          .withTypeName("Segment ID")
+      StatisticsTypeBuilder(1, "Segment ID")
           .withDescription(
               "Specifies which segment is associated with the current intra block being "
               "decoded")
@@ -609,9 +605,7 @@ void decoderDav1d::fillStatisticList(stats::StatisticsData &statisticsData) cons
           .build());
 
   statisticsData.addStatType(
-      StatisticsTypeBuilder()
-          .withTypeID(2)
-          .withTypeName("Skip")
+      StatisticsTypeBuilder(2, "Skip")
           .withDescription(
               "Equal to 0 indicates that there may be some transform coefficients for this "
               "block. 1 Indicates there are none.")
@@ -620,9 +614,7 @@ void decoderDav1d::fillStatisticList(stats::StatisticsData &statisticsData) cons
           .build());
 
   statisticsData.addStatType(
-      StatisticsTypeBuilder()
-          .withTypeID(3)
-          .withTypeName("Skip Mode")
+      StatisticsTypeBuilder(3, "Skip Mode")
           .withDescription(
               "Equal to 1 indicates that signaling of most of the mode info is skipped")
           .withValueDataOptions(
@@ -630,9 +622,7 @@ void decoderDav1d::fillStatisticList(stats::StatisticsData &statisticsData) cons
           .build());
 
   statisticsData.addStatType(
-      StatisticsTypeBuilder()
-          .withTypeID(4)
-          .withTypeName("Intra Pred Mode (Y)")
+      StatisticsTypeBuilder(4, "Intra Pred Mode (Y)")
           .withDescription("Intra prediction mode Luma")
           .withValueDataOptions({.colorMapper = ColorMapper({0, 13}, PredefinedType::Jet)})
           .withMappingValues({"DC_PRED",
@@ -652,9 +642,7 @@ void decoderDav1d::fillStatisticList(stats::StatisticsData &statisticsData) cons
           .build());
 
   statisticsData.addStatType(
-      StatisticsTypeBuilder()
-          .withTypeID(5)
-          .withTypeName("Intra Pred Mode (UV)")
+      StatisticsTypeBuilder(5, "Intra Pred Mode (UV)")
           .withDescription("Intra prediction mode Chroma")
           .withValueDataOptions({.colorMapper = ColorMapper({0, 12}, PredefinedType::Jet)})
           .withMappingValues({"DC_PRED",
@@ -673,58 +661,44 @@ void decoderDav1d::fillStatisticList(stats::StatisticsData &statisticsData) cons
           .build());
 
   statisticsData.addStatType(
-      StatisticsTypeBuilder()
-          .withTypeID(6)
-          .withTypeName("Palette Size (Y)")
+      StatisticsTypeBuilder(6, "Palette Size (Y)")
           .withDescription("Palette Size Luma")
           .withValueDataOptions(
               {.colorMapper = ColorMapper({0, 255}, Color(0, 0, 0), Color(0, 0, 255))})
           .build());
 
   statisticsData.addStatType(
-      StatisticsTypeBuilder()
-          .withTypeID(7)
-          .withTypeName("Palette Size Chroma")
+      StatisticsTypeBuilder(7, "Palette Size Chroma")
           .withValueDataOptions(
               {.colorMapper = ColorMapper({0, 255}, Color(0, 0, 0), Color(0, 0, 255))})
           .build());
 
   statisticsData.addStatType(
-      StatisticsTypeBuilder()
-          .withTypeID(8)
-          .withTypeName("Intra Angle Delta (Y)")
+      StatisticsTypeBuilder(8, "Intra Angle Delta (Y)")
           .withDescription("Offset to be applied to the intra prediction angle specified by the "
                            "prediction mode")
           .withValueDataOptions({.colorMapper = ColorMapper({-3, 4}, PredefinedType::Col3_bblg)})
           .build());
 
   statisticsData.addStatType(
-      StatisticsTypeBuilder()
-          .withTypeID(9)
-          .withTypeName("Intra Angle Delta (UV)")
+      StatisticsTypeBuilder(9, "Intra Angle Delta (UV)")
           .withDescription("Offset to be applied to the chroma prediction angle specified by the "
                            "prediction mode")
           .withValueDataOptions({.colorMapper = ColorMapper({-3, 4}, PredefinedType::Col3_bblg)})
           .build());
 
-  statisticsData.addStatType(StatisticsTypeBuilder()
-                                 .withTypeID(10)
-                                 .withTypeName("Intra Direction Luma")
+  statisticsData.addStatType(StatisticsTypeBuilder(10, "Intra Direction Luma")
                                  .withDescription("Intra prediction direction luma")
                                  .withVectorDataOptions({.scale = 4})
                                  .build());
 
-  statisticsData.addStatType(StatisticsTypeBuilder()
-                                 .withTypeID(11)
-                                 .withTypeName("Intra Direction Chroma")
+  statisticsData.addStatType(StatisticsTypeBuilder(11, "Intra Direction Chroma")
                                  .withDescription("Intra prediction direction chroma")
                                  .withVectorDataOptions({.scale = 4})
                                  .build());
 
   statisticsData.addStatType(
-      StatisticsTypeBuilder()
-          .withTypeID(12)
-          .withTypeName("Chroma from Luma Alpha (U)")
+      StatisticsTypeBuilder(12, "Chroma from Luma Alpha (U)")
           .withDescription(
               "CflAlphaU: Contains the signed value of the alpha component for the U component")
           .withValueDataOptions(
@@ -732,9 +706,7 @@ void decoderDav1d::fillStatisticList(stats::StatisticsData &statisticsData) cons
           .build());
 
   statisticsData.addStatType(
-      StatisticsTypeBuilder()
-          .withTypeID(13)
-          .withTypeName("Chroma from Luma Alpha (V)")
+      StatisticsTypeBuilder(13, "Chroma from Luma Alpha (V)")
           .withDescription(
               "CflAlphaV: Contains the signed value of the alpha component for the V component")
           .withValueDataOptions(
@@ -742,25 +714,19 @@ void decoderDav1d::fillStatisticList(stats::StatisticsData &statisticsData) cons
           .build());
 
   statisticsData.addStatType(
-      StatisticsTypeBuilder()
-          .withTypeID(14)
-          .withTypeName("Ref Frame Index 0")
+      StatisticsTypeBuilder(14, "Ref Frame Index 0")
           .withDescription("Reference frame index from List 0")
           .withValueDataOptions({.colorMapper = ColorMapper({0, 7}, PredefinedType::Jet)})
           .build());
 
   statisticsData.addStatType(
-      StatisticsTypeBuilder()
-          .withTypeID(15)
-          .withTypeName("Ref Frame Index 1")
+      StatisticsTypeBuilder(15, "Ref Frame Index 1")
           .withDescription("Reference frame index from List 1")
           .withValueDataOptions({.colorMapper = ColorMapper({0, 7}, PredefinedType::Jet)})
           .build());
 
   statisticsData.addStatType(
-      StatisticsTypeBuilder()
-          .withTypeID(16)
-          .withTypeName("Compound Prediction Type")
+      StatisticsTypeBuilder(16, "Compound Prediction Type")
           .withDescription("The type of compound prediction used")
           .withValueDataOptions({.colorMapper = ColorMapper({0, 4}, PredefinedType::Jet)})
           .withMappingValues({"COMP_INTER_NONE",
@@ -771,24 +737,18 @@ void decoderDav1d::fillStatisticList(stats::StatisticsData &statisticsData) cons
           .build());
 
   statisticsData.addStatType(
-      StatisticsTypeBuilder()
-          .withTypeID(17)
-          .withTypeName("Wedge Index")
+      StatisticsTypeBuilder(17, "Wedge Index")
           .withValueDataOptions({.colorMapper = ColorMapper({0, 16}, PredefinedType::Jet)})
           .build());
 
   statisticsData.addStatType(
-      StatisticsTypeBuilder()
-          .withTypeID(18)
-          .withTypeName("Mask Sign")
+      StatisticsTypeBuilder(18, "Mask Sign")
           .withValueDataOptions(
               {.colorMapper = ColorMapper({0, 1}, Color(0, 0, 0), Color(0, 255, 255))})
           .build());
 
   statisticsData.addStatType(
-      StatisticsTypeBuilder()
-          .withTypeID(19)
-          .withTypeName("Inter Mode")
+      StatisticsTypeBuilder(19, "Inter Mode")
           .withValueDataOptions({.colorMapper = ColorMapper({0, 7}, PredefinedType::Jet)})
           .withMappingValues({"NEARESTMV_NEARESTMV",
                               "NEARMV_NEARMV",
@@ -801,25 +761,19 @@ void decoderDav1d::fillStatisticList(stats::StatisticsData &statisticsData) cons
           .build());
 
   statisticsData.addStatType(
-      StatisticsTypeBuilder()
-          .withTypeID(20)
-          .withTypeName("Dynamic Reference List Index")
+      StatisticsTypeBuilder(20, "Dynamic Reference List Index")
           .withValueDataOptions(
               {.colorMapper = ColorMapper({0, 16}, Color(0, 0, 0), Color(0, 255, 255))})
           .build());
 
   statisticsData.addStatType(
-      StatisticsTypeBuilder()
-          .withTypeID(21)
-          .withTypeName("Inter-Intra Type")
+      StatisticsTypeBuilder(21, "Inter-Intra Type")
           .withValueDataOptions({.colorMapper = ColorMapper({0, 2}, PredefinedType::Jet)})
           .withMappingValues({"INTER_INTRA_NONE", "INTER_INTRA_BLEND", "INTER_INTRA_WEDGE"})
           .build());
 
   statisticsData.addStatType(
-      StatisticsTypeBuilder()
-          .withTypeID(22)
-          .withTypeName("Inter-Intra Mode")
+      StatisticsTypeBuilder(22, "Inter-Intra Mode")
           .withValueDataOptions({.colorMapper = ColorMapper({0, 4}, PredefinedType::Jet)})
           .withMappingValues({"II_DC_PRED",
                               "II_VERT_PRED",
@@ -829,33 +783,23 @@ void decoderDav1d::fillStatisticList(stats::StatisticsData &statisticsData) cons
           .build());
 
   statisticsData.addStatType(
-      StatisticsTypeBuilder()
-          .withTypeID(23)
-          .withTypeName("Motion Mode")
+      StatisticsTypeBuilder(23, "Motion Mode")
           .withValueDataOptions({.colorMapper = ColorMapper({0, 2}, PredefinedType::Jet)})
           .withMappingValues({"MM_TRANSLATION", "MM_OBMC", "MM_WARP"})
           .build());
 
-  statisticsData.addStatType(
-      StatisticsTypeBuilder()
-          .withTypeID(24)
-          .withTypeName("Motion Vector 0")
-          .withDescription("The motion vector for component 0")
-          .withValueDataOptions(
-              {.colorMapper = ColorMapper({-128, 128}, PredefinedType::Col3_bblg)})
-          .build());
+  statisticsData.addStatType(StatisticsTypeBuilder(24, "Motion Vector 0")
+                                 .withDescription("The motion vector for component 0")
+                                 .withVectorDataOptions({.scale = 4})
+                                 .build());
 
-  statisticsData.addStatType(StatisticsTypeBuilder()
-                                 .withTypeID(25)
-                                 .withTypeName("Motion Vector 1")
+  statisticsData.addStatType(StatisticsTypeBuilder(25, "Motion Vector 1")
                                  .withDescription("The motion vector for component 1")
                                  .withVectorDataOptions({.scale = 4})
                                  .build());
 
   statisticsData.addStatType(
-      StatisticsTypeBuilder()
-          .withTypeID(26)
-          .withTypeName("Transform Size")
+      StatisticsTypeBuilder(26, "Transform Size")
           .withValueDataOptions({.colorMapper = ColorMapper({0, 19}, PredefinedType::Jet)})
           .withMappingValues({"TX_4X4",
                               "TX_8X8",

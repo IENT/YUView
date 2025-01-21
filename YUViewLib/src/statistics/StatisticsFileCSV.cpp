@@ -32,6 +32,8 @@
 
 #include "StatisticsFileCSV.h"
 
+#include <statistics/StatisticsTypeBuilder.h>
+
 #include <QTextStream>
 #include <iostream>
 
@@ -315,9 +317,9 @@ void StatisticsFileCSV::loadStatisticData(StatisticsData &statisticsData, int po
         this->blockOutsideOfFramePOC = poc;
 
       auto &statTypes = statisticsData.getStatisticsTypes();
-      auto  statIt    = std::find_if(statTypes.begin(), statTypes.end(), [type](StatisticsType &t) {
-        return t.typeID == type;
-      });
+      auto  statIt    = std::find_if(statTypes.begin(),
+                                 statTypes.end(),
+                                 [type](StatisticsType &t) { return t.typeID == type; });
       Q_ASSERT_X(statIt != statTypes.end(), Q_FUNC_INFO, "Stat type not found.");
 
       if (vectorData && statIt->vectorDataOptions)
@@ -354,11 +356,16 @@ void StatisticsFileCSV::readHeaderFromFile(StatisticsData &statisticsData)
 
     statisticsData.clear();
 
-    // scan header lines first
-    // also count the lines per Frame for more efficient memory allocation
-    // if an ID is used twice, the data of the first gets overwritten
-    bool           typeParsingActive = false;
-    StatisticsType aType;
+    struct ParsedData
+    {
+      int         typeID{};
+      std::string typeName{};
+
+      std::optional<StatisticsType::ValueDataOptions>  valueDataOptions;
+      std::optional<StatisticsType::VectorDataOptions> vectorDataOptions;
+      StatisticsType::GridOptions                      gridOptions;
+    };
+    std::optional<ParsedData> type;
 
     while (!this->file.atEnd())
     {
@@ -373,42 +380,43 @@ void StatisticsFileCSV::readHeaderFromFile(StatisticsData &statisticsData)
         continue;
 
       // either a new type or a line which is not header finishes the last type
-      if (((rowItemList[1] == "type") || (rowItemList[0][0] != '%')) && typeParsingActive)
+      if (((rowItemList[1] == "type") || (rowItemList[0][0] != '%')) && type)
       {
         // Last type is complete. Store this initial state.
-        aType.setInitialState();
-        statisticsData.addStatType(aType);
+        statisticsData.addStatType(StatisticsTypeBuilder(type->typeID, type->typeName)
+                                       .withValueDataOptions(type->valueDataOptions)
+                                       .withVectorDataOptions(type->vectorDataOptions)
+                                       .withGridOptions(type->gridOptions)
+                                       .build());
 
-        // start from scratch for next item
-        aType             = StatisticsType();
-        typeParsingActive = false;
+        type.reset();
 
         // if we found a non-header line, stop here
         if (rowItemList[0][0] != '%')
           return;
       }
 
-      if (rowItemList[1] == "type") // new type
+      if (rowItemList[1] == "type")
       {
-        aType.typeID   = rowItemList[2].toInt();
-        aType.typeName = rowItemList[3].toStdString();
+        // Start of a new type
+        type.emplace();
+        type->typeID   = rowItemList[2].toInt();
+        type->typeName = rowItemList[3].toStdString();
 
         // The next entry (4) is "map", "range", or "vector"
         if (rowItemList.count() >= 5)
         {
           if (rowItemList[4] == "map" || rowItemList[4] == "range")
           {
-            aType.valueDataOptions = StatisticsType::ValueDataOptions();
+            type->valueDataOptions = StatisticsType::ValueDataOptions();
           }
           else if (rowItemList[4] == "vector" || rowItemList[4] == "line")
           {
-            aType.vectorDataOptions = StatisticsType::VectorDataOptions();
+            type->vectorDataOptions = StatisticsType::VectorDataOptions();
             if (rowItemList[4] == "line")
-              aType.vectorDataOptions->arrowHead = StatisticsType::ArrowHead::none;
+              type->vectorDataOptions->arrowHead = StatisticsType::ArrowHead::none;
           }
         }
-
-        typeParsingActive = true;
       }
       else if (rowItemList[1] == "mapColor")
       {
@@ -420,8 +428,8 @@ void StatisticsFileCSV::readHeaderFromFile(StatisticsData &statisticsData)
         auto b = (unsigned char)rowItemList[5].toInt();
         auto a = (unsigned char)rowItemList[6].toInt();
 
-        aType.valueDataOptions->colorMapper.mappingType  = color::MappingType::Map;
-        aType.valueDataOptions->colorMapper.colorMap[id] = Color(r, g, b, a);
+        type->valueDataOptions->colorMapper.mappingType  = color::MappingType::Map;
+        type->valueDataOptions->colorMapper.colorMap[id] = Color(r, g, b, a);
       }
       else if (rowItemList[1] == "range")
       {
@@ -440,7 +448,7 @@ void StatisticsFileCSV::readHeaderFromFile(StatisticsData &statisticsData)
         a             = rowItemList[11].toInt();
         auto maxColor = Color(r, g, b, a);
 
-        aType.valueDataOptions->colorMapper = color::ColorMapper({min, max}, minColor, maxColor);
+        type->valueDataOptions->colorMapper = color::ColorMapper({min, max}, minColor, maxColor);
       }
       else if (rowItemList[1] == "defaultRange")
       {
@@ -449,7 +457,7 @@ void StatisticsFileCSV::readHeaderFromFile(StatisticsData &statisticsData)
         int  max       = rowItemList[3].toInt();
         auto rangeName = rowItemList[4].toStdString();
 
-        aType.valueDataOptions->colorMapper = color::ColorMapper({min, max}, rangeName);
+        type->valueDataOptions->colorMapper = color::ColorMapper({min, max}, rangeName);
       }
       else if (rowItemList[1] == "vectorColor")
       {
@@ -457,7 +465,7 @@ void StatisticsFileCSV::readHeaderFromFile(StatisticsData &statisticsData)
         auto g                               = (unsigned char)rowItemList[3].toInt();
         auto b                               = (unsigned char)rowItemList[4].toInt();
         auto a                               = (unsigned char)rowItemList[5].toInt();
-        aType.vectorDataOptions->style.color = Color(r, g, b, a);
+        type->vectorDataOptions->style.color = Color(r, g, b, a);
       }
       else if (rowItemList[1] == "gridColor")
       {
@@ -465,15 +473,15 @@ void StatisticsFileCSV::readHeaderFromFile(StatisticsData &statisticsData)
         auto g                        = (unsigned char)rowItemList[3].toInt();
         auto b                        = (unsigned char)rowItemList[4].toInt();
         auto a                        = 255;
-        aType.gridOptions.style.color = Color(r, g, b, a);
+        type->gridOptions.style.color = Color(r, g, b, a);
       }
       else if (rowItemList[1] == "scaleFactor")
       {
-        aType.vectorDataOptions->scale = rowItemList[2].toInt();
+        type->vectorDataOptions->scale = rowItemList[2].toInt();
       }
       else if (rowItemList[1] == "scaleToBlockSize")
       {
-        aType.valueDataOptions->scaleToBlockSize = (rowItemList[2] == "1");
+        type->valueDataOptions->scaleToBlockSize = (rowItemList[2] == "1");
       }
       else if (rowItemList[1] == "seq-specs")
       {

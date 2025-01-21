@@ -100,7 +100,7 @@ splitViewWidget::splitViewWidget(QWidget *parent) : MoveAndZoomableView(parent)
   setContextMenuPolicy(Qt::PreventContextMenu);
 
   // No test running yet
-  connect(&testProgrssUpdateTimer, &QTimer::timeout, this, [=] { updateTestProgress(); });
+  connect(&testProgrssUpdateTimer, &QTimer::timeout, this, [this] { this->updateTestProgress(); });
 
   // Initialize the font and the position of the zoom factor indication
   zoomFactorFont = QFont(SPLITVIEWWIDGET_ZOOMFACTOR_FONT, SPLITVIEWWIDGET_ZOOMFACTOR_FONTSIZE);
@@ -235,7 +235,7 @@ void splitViewWidget::paintEvent(QPaintEvent *)
   // For the zoom box, calculate the pixel position under the cursor for each view. The following
   // things are calculated in this function:
   bool  pixelPosInItem[2] = {false,
-                            false}; //< Is the pixel position under the cursor within the item?
+                             false}; //< Is the pixel position under the cursor within the item?
   QRect zoomPixelRect[2];            //< A QRect around the pixel that is under the cursor
   if (anyItemsSelected && this->drawZoomBox)
   {
@@ -617,7 +617,7 @@ void splitViewWidget::setZoomBoxPixelUnderCursor(QPoint posA,
 }
 
 void splitViewWidget::paintZoomBox(int           view,
-                                   QPainter &    painter,
+                                   QPainter     &painter,
                                    int           xSplit,
                                    const QPoint &drawArea_botR,
                                    playlistItem *item,
@@ -803,7 +803,7 @@ void splitViewWidget::paintRegularGrid(QPainter *painter, playlistItem *item)
   }
 }
 
-void splitViewWidget::paintPixelRulersX(QPainter &    painter,
+void splitViewWidget::paintPixelRulersX(QPainter     &painter,
                                         playlistItem *item,
                                         int           xPixMin,
                                         int           xPixMax,
@@ -857,7 +857,7 @@ void splitViewWidget::paintPixelRulersX(QPainter &    painter,
   }
 }
 
-void splitViewWidget::paintPixelRulersY(QPainter &    painter,
+void splitViewWidget::paintPixelRulersY(QPainter     &painter,
                                         playlistItem *item,
                                         int           yPixMax,
                                         int           xPos,
@@ -1605,9 +1605,9 @@ void splitViewWidget::freezeView(bool freeze)
 }
 
 void splitViewWidget::getViewState(QPointF &offset,
-                                   double & zoom,
-                                   double & splitPoint,
-                                   int &    mode) const
+                                   double  &zoom,
+                                   double  &splitPoint,
+                                   int     &mode) const
 {
   offset     = this->moveOffset;
   zoom       = this->zoomFactor;
@@ -1657,14 +1657,15 @@ void splitViewWidget::createMenuActions()
   const bool menuActionsCreatedYet = bool(this->actionSplitViewGroup);
   Q_ASSERT_X(!menuActionsCreatedYet, Q_FUNC_INFO, "Only call this initialization function once.");
 
-  auto configureAction = [this](QAction &           action,
+  auto configureAction = [this](QAction            &action,
                                 QActionGroup *const actionGroup,
-                                const QString &     text,
+                                const QString      &text,
                                 const bool          checkable,
                                 const bool          checked,
                                 void (splitViewWidget::*func)(bool),
                                 const QKeySequence &shortcut  = {},
-                                const bool          isEnabled = true) {
+                                const bool          isEnabled = true)
+  {
     action.setParent(this);
     action.setCheckable(checkable);
     action.setChecked(checked);

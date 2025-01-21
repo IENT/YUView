@@ -39,7 +39,7 @@ namespace stats::test
 
 TEST(StatisticsTypeBuilderTest, DefaultValues)
 {
-  const auto statisticsType = StatisticsTypeBuilder().build();
+  const auto statisticsType = StatisticsTypeBuilder(0, "").build();
 
   EXPECT_EQ(statisticsType.typeID, 0);
   EXPECT_TRUE(statisticsType.typeName.empty());
@@ -55,9 +55,7 @@ TEST(StatisticsTypeBuilderTest, DefaultValues)
 
 TEST(StatisticsTypeBuilderTest, SetTypeNameDescriptionAndRenderValues)
 {
-  const auto statisticsType = StatisticsTypeBuilder()
-                                  .withTypeID(1)
-                                  .withTypeName("TestType")
+  const auto statisticsType = StatisticsTypeBuilder(1, "TestType")
                                   .withDescription("TestDescription")
                                   .withRender(true)
                                   .withAlphaFactor(75)
@@ -72,7 +70,8 @@ TEST(StatisticsTypeBuilderTest, SetTypeNameDescriptionAndRenderValues)
 
 TEST(StatisticsTypeBuilderTest, SetValueDatDefaultValues)
 {
-  const auto statisticsType = StatisticsTypeBuilder().withValueDataOptions({}).build();
+  const auto statisticsType =
+      StatisticsTypeBuilder(0, "").withValueDataOptions(StatisticsType::ValueDataOptions()).build();
 
   EXPECT_TRUE(statisticsType.valueDataOptions);
   EXPECT_EQ(statisticsType.valueDataOptions->render, true);
@@ -85,7 +84,7 @@ TEST(StatisticsTypeBuilderTest, SetValueDataCustomValues)
   const color::ColorMapper colorMapper({0, 255}, color::PredefinedType::Jet);
 
   const auto statisticsType =
-      stats::StatisticsTypeBuilder()
+      stats::StatisticsTypeBuilder(0, "")
           .withValueDataOptions(
               {.render = false, .scaleToBlockSize = true, .colorMapper = colorMapper})
           .build();
@@ -98,7 +97,9 @@ TEST(StatisticsTypeBuilderTest, SetValueDataCustomValues)
 
 TEST(StatisticsTypeBuilderTest, SetVectorDataDefaultValues)
 {
-  const auto statisticsType = StatisticsTypeBuilder().withVectorDataOptions({}).build();
+  const auto statisticsType = StatisticsTypeBuilder(0, "")
+                                  .withVectorDataOptions(StatisticsType::VectorDataOptions())
+                                  .build();
 
   EXPECT_TRUE(statisticsType.vectorDataOptions);
   EXPECT_TRUE(statisticsType.vectorDataOptions->render);
@@ -114,7 +115,7 @@ TEST(StatisticsTypeBuilderTest, SetVectorDataCustomValues)
 {
   const LineDrawStyle lineDrawStyle({Color(255, 0, 0), 2, Pattern::DashDot});
 
-  const auto statisticsType = StatisticsTypeBuilder()
+  const auto statisticsType = StatisticsTypeBuilder(0, "")
                                   .withVectorDataOptions({
                                       .render           = false,
                                       .renderDataValues = false,
@@ -138,7 +139,7 @@ TEST(StatisticsTypeBuilderTest, SetVectorDataCustomValues)
 
 TEST(StatisticsTypeBuilderTest, SetGridOptionsDefaultValues)
 {
-  const auto statisticsType = StatisticsTypeBuilder().withGridOptions({}).build();
+  const auto statisticsType = StatisticsTypeBuilder(0, "").withGridOptions({}).build();
 
   EXPECT_FALSE(statisticsType.gridOptions.render);
   EXPECT_EQ(statisticsType.gridOptions.style, LineDrawStyle());
@@ -150,7 +151,7 @@ TEST(StatisticsTypeBuilderTest, SetGridOptionsCustomValues)
   const LineDrawStyle lineDrawStyle({Color(123, 44, 99), 5, Pattern::DashDot});
 
   const auto statisticsType =
-      StatisticsTypeBuilder()
+      StatisticsTypeBuilder(0, "")
           .withGridOptions({.render = true, .style = lineDrawStyle, .scaleToZoom = true})
           .build();
 

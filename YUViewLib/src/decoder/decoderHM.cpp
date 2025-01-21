@@ -535,8 +535,7 @@ void decoderHM::fillStatisticList(stats::StatisticsData &statisticsData) const
       max               = (uMax > INT_MAX) ? INT_MAX : uMax;
     }
 
-    auto typeBuilder =
-        StatisticsTypeBuilder().withTypeID(i).withTypeName(name).withDescription(description);
+    auto typeBuilder = StatisticsTypeBuilder(i, name).withDescription(description);
 
     if (statType == LIBHMDEC_TYPE_FLAG)
     {

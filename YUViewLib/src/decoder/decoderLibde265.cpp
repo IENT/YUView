@@ -898,17 +898,13 @@ void decoderLibde265::fillStatisticList(stats::StatisticsData &statisticsData) c
   using namespace stats::color;
 
   statisticsData.addStatType(
-      StatisticsTypeBuilder()
-          .withTypeID(0)
-          .withTypeName("Slice Index")
+      StatisticsTypeBuilder(0, "Slice Index")
           .withDescription("The slice index reported per CTU")
           .withValueDataOptions(StatisticsType::ValueDataOptions(
               {.colorMapper = ColorMapper({0, 10}, Color(0, 0, 0), Color(255, 0, 0))}))
           .build());
 
-  statisticsData.addStatType(StatisticsTypeBuilder()
-                                 .withTypeID(1)
-                                 .withTypeName("Part Size")
+  statisticsData.addStatType(StatisticsTypeBuilder(1, "Part Size")
                                  .withDescription("The partition size of each CU into PUs")
                                  .withValueDataOptions(StatisticsType::ValueDataOptions(
                                      {.colorMapper = ColorMapper({0, 7}, PredefinedType::Jet)}))
@@ -923,9 +919,7 @@ void decoderLibde265::fillStatisticList(stats::StatisticsData &statisticsData) c
                                  .build());
 
   statisticsData.addStatType(
-      StatisticsTypeBuilder()
-          .withTypeID(2)
-          .withTypeName("Pred Mode")
+      StatisticsTypeBuilder(2, "Pred Mode")
           .withDescription("The internal libde265 prediction mode (intra/inter/skip) per CU")
           .withValueDataOptions(StatisticsType::ValueDataOptions(
               {.colorMapper = ColorMapper({0, 2}, PredefinedType::Jet)}))
@@ -933,53 +927,41 @@ void decoderLibde265::fillStatisticList(stats::StatisticsData &statisticsData) c
           .build());
 
   statisticsData.addStatType(
-      StatisticsTypeBuilder()
-          .withTypeID(3)
-          .withTypeName("PCM flag")
+      StatisticsTypeBuilder(3, "PCM flag")
           .withDescription("The PCM flag per CU")
           .withValueDataOptions(StatisticsType::ValueDataOptions(
               {.colorMapper = ColorMapper({0, 1}, Color(0, 0, 0), Color(255, 0, 0))}))
           .build());
 
   statisticsData.addStatType(
-      StatisticsTypeBuilder()
-          .withTypeID(4)
-          .withTypeName("Transquant Bypass Flag")
+      StatisticsTypeBuilder(4, "Transquant Bypass Flag")
           .withDescription("The transquant bypass flag per CU")
           .withValueDataOptions(StatisticsType::ValueDataOptions(
               {.colorMapper = ColorMapper({0, 1}, Color(0, 0, 0), Color(255, 0, 0))}))
           .build());
 
   statisticsData.addStatType(
-      StatisticsTypeBuilder()
-          .withTypeID(5)
-          .withTypeName("Ref POC 0")
+      StatisticsTypeBuilder(5, "Ref POC 0")
           .withDescription("The reference POC in LIST 0 relative to the current POC per PU")
           .withValueDataOptions(StatisticsType::ValueDataOptions(
               {.colorMapper = ColorMapper({-16, 16}, PredefinedType::Col3_bblg)}))
           .build());
 
   statisticsData.addStatType(
-      StatisticsTypeBuilder()
-          .withTypeID(6)
-          .withTypeName("Ref POC 1")
+      StatisticsTypeBuilder(6, "Ref POC 1")
           .withDescription("The reference POC in LIST 1 relative to the current POC per PU")
           .withValueDataOptions(StatisticsType::ValueDataOptions(
               {.colorMapper = ColorMapper({-16, 16}, PredefinedType::Col3_bblg)}))
           .build());
 
   statisticsData.addStatType(
-      StatisticsTypeBuilder()
-          .withTypeID(7)
-          .withTypeName("Motion Vector 0")
+      StatisticsTypeBuilder(7, "Motion Vector 0")
           .withDescription("The motion vector in LIST 0 per PU")
           .withVectorDataOptions(StatisticsType::VectorDataOptions({.scale = 4}))
           .build());
 
   statisticsData.addStatType(
-      StatisticsTypeBuilder()
-          .withTypeID(8)
-          .withTypeName("Motion Vector 1")
+      StatisticsTypeBuilder(8, "Motion Vector 1")
           .withDescription("The motion vector in LIST 1 per PU")
           .withVectorDataOptions(StatisticsType::VectorDataOptions({.scale = 4}))
           .build());
@@ -996,9 +978,7 @@ void decoderLibde265::fillStatisticList(stats::StatisticsData &statisticsData) c
       "INTRA_ANGULAR_32", "INTRA_ANGULAR_33", "INTRA_ANGULAR_34"};
 
   statisticsData.addStatType(
-      StatisticsTypeBuilder()
-          .withTypeID(9)
-          .withTypeName("Intra Dir Luma")
+      StatisticsTypeBuilder(9, "Intra Dir Luma")
           .withDescription("The intra mode for the luma component per TU (intra prediction is "
                            "performed on a TU level)")
           .withVectorDataOptions(
@@ -1007,9 +987,7 @@ void decoderLibde265::fillStatisticList(stats::StatisticsData &statisticsData) c
           .build());
 
   statisticsData.addStatType(
-      StatisticsTypeBuilder()
-          .withTypeID(10)
-          .withTypeName("Intra Dir Chroma")
+      StatisticsTypeBuilder(10, "Intra Dir Chroma")
           .withDescription("The intra mode for the chroma component per TU (intra prediction is "
                            "performed on a TU level)")
           .withVectorDataOptions(
@@ -1018,9 +996,7 @@ void decoderLibde265::fillStatisticList(stats::StatisticsData &statisticsData) c
           .build());
 
   statisticsData.addStatType(
-      StatisticsTypeBuilder()
-          .withTypeID(11)
-          .withTypeName("Transform Depth")
+      StatisticsTypeBuilder(11, "Transform Depth")
           .withDescription("The transform depth within the transform tree per TU")
           .withValueDataOptions(StatisticsType::ValueDataOptions(
               {.colorMapper = ColorMapper({0, 3}, Color(0, 0, 0), Color(0, 255, 0))}))

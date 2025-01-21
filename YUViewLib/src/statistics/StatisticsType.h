@@ -68,18 +68,12 @@ struct LineDrawStyle
  */
 class StatisticsType
 {
+  friend class StatisticsTypeBuilder;
+
 public:
-  StatisticsType() = default;
+  void saveToPlaylist(YUViewDomElement &root) const;
+  void tryToLoadFromPlaylist(const YUViewDomElement &root);
 
-  // Save all the values that the user could change. When saving to playlist we can save only the
-  // changed values to playlist.
-  void setInitialState();
-
-  // Load/Save status of statistics from playlist file
-  void savePlaylist(YUViewDomElement &root) const;
-  void loadPlaylist(const YUViewDomElement &root);
-
-  // Every statistics type has an ID, a name and possibly a description
   int         typeID{};
   std::string typeName{};
   std::string description{};
@@ -138,9 +132,11 @@ public:
   GridOptions gridOptions;
 
 private:
+  StatisticsType() = delete;
+  StatisticsType(int typeId, std::string typeName);
+
   std::map<int, std::string> valuesToText;
 
-  // Backup values for setDefaultState()
   struct initialState
   {
     bool render;
@@ -151,6 +147,8 @@ private:
     GridOptions                      gridOptions;
   };
   initialState init;
+
+  void saveInitialState();
 };
 
 } // namespace stats

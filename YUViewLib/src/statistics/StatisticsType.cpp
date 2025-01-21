@@ -67,7 +67,7 @@ LineDrawStyle convertStringToPen(const QString &str)
   return style;
 }
 
-void addModifiedValuesToElement(YUViewDomElement &                                     element,
+void addModifiedValuesToElement(YUViewDomElement                                      &element,
                                 const std::optional<StatisticsType::ValueDataOptions> &options,
                                 const std::optional<StatisticsType::ValueDataOptions> &initOptions)
 {
@@ -86,7 +86,7 @@ std::vector<StatisticsType::ArrowHead> AllArrowHeads = {StatisticsType::ArrowHea
                                                         StatisticsType::ArrowHead::circle,
                                                         StatisticsType::ArrowHead::none};
 
-void addModifiedValuesToElement(YUViewDomElement &                                      element,
+void addModifiedValuesToElement(YUViewDomElement                                       &element,
                                 const std::optional<StatisticsType::VectorDataOptions> &options,
                                 const std::optional<StatisticsType::VectorDataOptions> &initOptions)
 {
@@ -112,7 +112,7 @@ void addModifiedValuesToElement(YUViewDomElement &                              
   }
 }
 
-void addModifiedValuesToElement(YUViewDomElement &                 element,
+void addModifiedValuesToElement(YUViewDomElement                  &element,
                                 const StatisticsType::GridOptions &options,
                                 const StatisticsType::GridOptions &initOptions)
 {
@@ -136,19 +136,9 @@ bool LineDrawStyle::operator!=(const LineDrawStyle &other) const
   return !(*this == other);
 }
 
-void StatisticsType::setInitialState()
-{
-  this->init.render      = this->render;
-  this->init.alphaFactor = this->alphaFactor;
-
-  this->init.valueDataOptions  = this->valueDataOptions;
-  this->init.vectorDataOptions = this->vectorDataOptions;
-  this->init.gridOptions       = this->gridOptions;
-}
-
 /* Save all the settings of the statistics type that have changed from the initial state
  */
-void StatisticsType::savePlaylist(YUViewDomElement &root) const
+void StatisticsType::saveToPlaylist(YUViewDomElement &root) const
 {
   bool allValuesIdenticalToInitialValues = (init.render == this->render &&                       //
                                             init.alphaFactor == this->alphaFactor &&             //
@@ -175,10 +165,10 @@ void StatisticsType::savePlaylist(YUViewDomElement &root) const
   root.appendChild(newChild);
 }
 
-void StatisticsType::loadPlaylist(const YUViewDomElement &root)
+void StatisticsType::tryToLoadFromPlaylist(const YUViewDomElement &root)
 {
   const auto [name, attributes] =
-      root.findChildValueWithAttributes(QString("statType%1").arg(typeID));
+      root.findChildValueWithAttributes(QString("statType%1").arg(this->typeID));
 
   if (name.toStdString() != this->typeName)
     // The name of this type with the right ID and the name in the playlist don't match?...
@@ -237,6 +227,8 @@ void StatisticsType::loadPlaylist(const YUViewDomElement &root)
     else if (name == "scaleGridToZoom")
       this->gridOptions.scaleToZoom = (value != "0");
   }
+
+  this->saveInitialState();
 }
 
 std::string StatisticsType::getValueText(const int val) const
@@ -277,6 +269,21 @@ bool StatisticsType::GridOptions::operator==(const GridOptions &rhs) const
   return this->render == rhs.render && //
          this->style == rhs.style &&   //
          this->scaleToZoom == rhs.scaleToZoom;
+}
+
+StatisticsType::StatisticsType(int typeId, std::string typeName)
+    : typeID(typeId), typeName(std::move(typeName))
+{
+}
+
+void StatisticsType::saveInitialState()
+{
+  this->init.render      = this->render;
+  this->init.alphaFactor = this->alphaFactor;
+
+  this->init.valueDataOptions  = this->valueDataOptions;
+  this->init.vectorDataOptions = this->vectorDataOptions;
+  this->init.gridOptions       = this->gridOptions;
 }
 
 } // namespace stats

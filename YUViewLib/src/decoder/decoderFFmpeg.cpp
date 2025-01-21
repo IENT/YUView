@@ -435,27 +435,17 @@ void decoderFFmpeg::fillStatisticList(stats::StatisticsData &statisticsData) con
   const auto sourceColorMapper =
       stats::color::ColorMapper({-2, 2}, stats::color::PredefinedType::Col3_bblg);
 
-  statisticsData.addStatType(StatisticsTypeBuilder()
-                                 .withTypeID(0)
-                                 .withTypeName("Source -")
+  statisticsData.addStatType(StatisticsTypeBuilder(0, "Source -")
                                  .withValueDataOptions({.colorMapper = sourceColorMapper})
                                  .build());
-  statisticsData.addStatType(StatisticsTypeBuilder()
-                                 .withTypeID(1)
-                                 .withTypeName("Source +")
+  statisticsData.addStatType(StatisticsTypeBuilder(1, "Source +")
                                  .withValueDataOptions({.colorMapper = sourceColorMapper})
                                  .build());
 
-  statisticsData.addStatType(StatisticsTypeBuilder()
-                                 .withTypeID(2)
-                                 .withTypeName("Motion Vector -")
-                                 .withVectorDataOptions({.scale = 4})
-                                 .build());
-  statisticsData.addStatType(StatisticsTypeBuilder()
-                                 .withTypeID(3)
-                                 .withTypeName("Motion Vector +")
-                                 .withVectorDataOptions({.scale = 4})
-                                 .build());
+  statisticsData.addStatType(
+      StatisticsTypeBuilder(2, "Motion Vector -").withVectorDataOptions({.scale = 4}).build());
+  statisticsData.addStatType(
+      StatisticsTypeBuilder(3, "Motion Vector +").withVectorDataOptions({.scale = 4}).build());
 }
 
 bool decoderFFmpeg::createDecoder(FFmpeg::AVCodecIDWrapper         codecID,

@@ -359,13 +359,13 @@ void StatisticsData::addStatType(const StatisticsType &type)
 void StatisticsData::savePlaylist(YUViewDomElement &root) const
 {
   for (const auto &type : this->statsTypes)
-    type.savePlaylist(root);
+    type.saveToPlaylist(root);
 }
 
 void StatisticsData::loadPlaylist(const YUViewDomElement &root)
 {
   for (auto &type : this->statsTypes)
-    type.loadPlaylist(root);
+    type.tryToLoadFromPlaylist(root);
 }
 
 } // namespace stats

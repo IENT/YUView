@@ -45,9 +45,7 @@ TEST(StatisticsData, testPixelValueRetrievalInteger)
   constexpr auto typeID     = 0;
   constexpr auto frameIndex = 0;
 
-  data.addStatType(StatisticsTypeBuilder()
-                       .withTypeID(typeID)
-                       .withTypeName("Something")
+  data.addStatType(StatisticsTypeBuilder(typeID, "Something")
                        .withValueDataOptions({.colorMapper = stats::color::ColorMapper(
                                                   {0, 10}, stats::color::PredefinedType::Jet)})
                        .withRender(true)
@@ -77,9 +75,7 @@ TEST(StatisticsData, testPixelValueRetrievalVector)
   constexpr auto typeID     = 0;
   constexpr auto frameIndex = 0;
 
-  data.addStatType(StatisticsTypeBuilder()
-                       .withTypeID(typeID)
-                       .withTypeName("Something")
+  data.addStatType(StatisticsTypeBuilder(typeID, "Something")
                        .withVectorDataOptions({.scale = 4})
                        .withRender(true)
                        .build());

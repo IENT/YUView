@@ -38,16 +38,9 @@ namespace stats
 class StatisticsTypeBuilder
 {
 public:
-  StatisticsTypeBuilder &withTypeID(const int typeID)
+  StatisticsTypeBuilder() = delete;
+  StatisticsTypeBuilder(int typeID, const std::string &typeName) : statisticsType(typeID, typeName)
   {
-    this->statisticsType.typeID = typeID;
-    return *this;
-  }
-
-  StatisticsTypeBuilder &withTypeName(const std::string &typeName)
-  {
-    this->statisticsType.typeName = typeName;
-    return *this;
   }
 
   StatisticsTypeBuilder &withDescription(const std::string &description)
@@ -76,7 +69,21 @@ public:
   }
 
   StatisticsTypeBuilder
+  withValueDataOptions(const std::optional<StatisticsType::ValueDataOptions> &valueDataOptions)
+  {
+    this->statisticsType.valueDataOptions = valueDataOptions;
+    return *this;
+  }
+
+  StatisticsTypeBuilder
   withVectorDataOptions(const StatisticsType::VectorDataOptions &vectorDataOptions)
+  {
+    this->statisticsType.vectorDataOptions = vectorDataOptions;
+    return *this;
+  }
+
+  StatisticsTypeBuilder
+  withVectorDataOptions(const std::optional<StatisticsType::VectorDataOptions> &vectorDataOptions)
   {
     this->statisticsType.vectorDataOptions = vectorDataOptions;
     return *this;
@@ -96,17 +103,16 @@ public:
 
   StatisticsTypeBuilder &withMappingValues(const std::initializer_list<const char *> &mappingValues)
   {
-    std::vector<std::string> values;
+    int typeId = 0;
     for (const auto &value : mappingValues)
-      values.push_back(value);
+      this->statisticsType.valuesToText[typeId++] = value;
 
-    this->statisticsType.setMappingValues(values);
     return *this;
   }
 
   StatisticsType build()
   {
-    this->statisticsType.setInitialState();
+    this->statisticsType.saveInitialState();
     return this->statisticsType;
   }
 

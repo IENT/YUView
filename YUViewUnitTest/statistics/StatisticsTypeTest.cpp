@@ -40,7 +40,7 @@ namespace stats::test
 TEST(StatisticsTypeTest, GetValueText)
 {
   const auto statisticsType =
-      StatisticsTypeBuilder().withMappingValues({"First", "Second", "Third"}).build();
+      StatisticsTypeBuilder(0, "").withMappingValues({"First", "Second", "Third"}).build();
 
   EXPECT_EQ(statisticsType.getValueText(0), "First (0)");
   EXPECT_EQ(statisticsType.getValueText(1), "Second (1)");
@@ -50,7 +50,5 @@ TEST(StatisticsTypeTest, GetValueText)
   EXPECT_EQ(statisticsType.getValueText(1256), "1256");
   EXPECT_EQ(statisticsType.getValueText(-1), "-1");
 }
-
-
 
 } // namespace stats::test
