@@ -69,7 +69,7 @@ public:
   }
 
   StatisticsTypeBuilder
-  withValueDataOptions(const std::optional<StatisticsType::ValueDataOptions> &valueDataOptions)
+  withOptionalValueDataOptions(const std::optional<StatisticsType::ValueDataOptions> &valueDataOptions)
   {
     this->statisticsType.valueDataOptions = valueDataOptions;
     return *this;
@@ -83,7 +83,7 @@ public:
   }
 
   StatisticsTypeBuilder
-  withVectorDataOptions(const std::optional<StatisticsType::VectorDataOptions> &vectorDataOptions)
+  withOptionalVectorDataOptions(const std::optional<StatisticsType::VectorDataOptions> &vectorDataOptions)
   {
     this->statisticsType.vectorDataOptions = vectorDataOptions;
     return *this;

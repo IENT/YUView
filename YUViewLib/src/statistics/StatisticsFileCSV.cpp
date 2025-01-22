@@ -384,8 +384,8 @@ void StatisticsFileCSV::readHeaderFromFile(StatisticsData &statisticsData)
       {
         // Last type is complete. Store this initial state.
         statisticsData.addStatType(StatisticsTypeBuilder(type->typeID, type->typeName)
-                                       .withValueDataOptions(type->valueDataOptions)
-                                       .withVectorDataOptions(type->vectorDataOptions)
+                                       .withOptionalValueDataOptions(type->valueDataOptions)
+                                       .withOptionalVectorDataOptions(type->vectorDataOptions)
                                        .withGridOptions(type->gridOptions)
                                        .build());
 
