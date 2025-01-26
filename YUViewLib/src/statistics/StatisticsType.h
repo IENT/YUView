@@ -33,7 +33,6 @@
 #pragma once
 
 #include <common/Typedef.h>
-#include <common/YUViewDomElement.h>
 
 #include "ColorMapper.h"
 
@@ -69,10 +68,9 @@ struct LineDrawStyle
 class StatisticsType
 {
   friend class StatisticsTypeBuilder;
+  friend class StatisticsTypePlaylistHandler;
 
 public:
-  void saveToPlaylist(YUViewDomElement &root) const;
-  void tryToLoadFromPlaylist(const YUViewDomElement &root);
 
   int         typeID{};
   std::string typeName{};

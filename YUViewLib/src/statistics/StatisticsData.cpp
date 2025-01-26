@@ -32,6 +32,8 @@
 
 #include "StatisticsData.h"
 
+#include "StatisticsTypePlaylistHandler.h"
+
 #include <common/Functions.h>
 
 // Activate this if you want to know when what is loaded.
@@ -359,13 +361,13 @@ void StatisticsData::addStatType(const StatisticsType &type)
 void StatisticsData::savePlaylist(YUViewDomElement &root) const
 {
   for (const auto &type : this->statsTypes)
-    type.saveToPlaylist(root);
+    StatisticsTypePlaylistHandler::saveToPlaylist(type, root);
 }
 
 void StatisticsData::loadPlaylist(const YUViewDomElement &root)
 {
   for (auto &type : this->statsTypes)
-    type.tryToLoadFromPlaylist(root);
+    StatisticsTypePlaylistHandler::tryToLoadFromPlaylist(type, root);
 }
 
 } // namespace stats
