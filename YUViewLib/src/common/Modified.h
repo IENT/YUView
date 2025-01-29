@@ -36,28 +36,21 @@ template <typename T> class modified
 {
 public:
   modified() = default;
-  modified(const T &value) : internalValue(value) {}
+  modified(const T &value) : internalValue(value), initialValue(value) {}
 
   T operator*() const { return this->internalValue; }
   T value() const { return this->internalValue; }
   operator T() const { return this->internalValue; }
 
-  void operator=(const T &newValue)
-  {
-    if (newValue != this->internalValue)
-    {
-      this->internalValue = newValue;
-      this->valueModified = true;
-    }
-  }
+  void operator=(const T &newValue) { this->internalValue = newValue; }
 
   bool operator==(const T &other) const { return this->internalValue == other; }
   bool operator==(const modified<T> &other) const { return this->internalValue == other.value(); }
 
-  [[nodiscard]] bool wasModified() const { return this->valueModified; }
-  void               setUnmodified() { this->valueModified = false; }
+  [[nodiscard]] bool wasModified() const { return this->internalValue != this->initialValue; }
+  void               setUnmodified() { this->initialValue = this->internalValue; }
 
 private:
-  T    internalValue{};
-  bool valueModified{false};
+  T internalValue{};
+  T initialValue{};
 };

@@ -59,14 +59,14 @@ TEST(ModifiedTest, TestModificationWithNewValue_ShouldReportModification)
   EXPECT_TRUE(someValue.wasModified());
 }
 
-TEST(ModifiedTest, TestModificationWithNewValueAndThenWithInitialValue_ShouldReportModification)
+TEST(ModifiedTest, TestModificationWithNewValueAndThenWithInitialValue_ShouldReportUnmodified)
 {
   modified<int> someValue = 22;
   someValue               = 23;
   EXPECT_TRUE(someValue.wasModified());
 
   someValue = 22;
-  EXPECT_TRUE(someValue.wasModified());
+  EXPECT_FALSE(someValue.wasModified());
 }
 
 TEST(ModifiedTest, TestValueRetrieval)
