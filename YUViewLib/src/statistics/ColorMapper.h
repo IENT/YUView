@@ -138,7 +138,7 @@ public:
   Range<int>     valueRange{};
   Color          gradientColorStart{0, 0, 0};
   Color          gradientColorEnd{0, 0, 255};
-  ColorMap       colorMap;
+  ColorMap       colorMap{};
   Color          colorMapOther{};
   PredefinedType predefinedType{PredefinedType::Jet};
 };

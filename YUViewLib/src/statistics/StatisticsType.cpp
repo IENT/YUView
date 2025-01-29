@@ -103,9 +103,12 @@ void StatisticsType::saveInitialState()
 {
   this->render.setUnmodified();
   this->alphaFactor.setUnmodified();
-  this->valueDataOptions->render.setUnmodified();
-  this->valueDataOptions->scaleToBlockSize.setUnmodified();
-  this->valueDataOptions->colorMapper.setUnmodified();
+  if (this->valueDataOptions)
+  {
+    this->valueDataOptions->render.setUnmodified();
+    this->valueDataOptions->scaleToBlockSize.setUnmodified();
+    this->valueDataOptions->colorMapper.setUnmodified();
+  }
 
   this->init.vectorDataOptions = this->vectorDataOptions;
   this->init.gridOptions       = this->gridOptions;
