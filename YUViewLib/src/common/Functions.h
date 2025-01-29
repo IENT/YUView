@@ -34,6 +34,7 @@
 
 #include <common/Typedef.h>
 
+#include <cmath>
 #include <istream>
 #include <optional>
 
