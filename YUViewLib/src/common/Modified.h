@@ -40,6 +40,7 @@ public:
 
   T operator*() const { return this->internalValue; }
   T value() const { return this->internalValue; }
+  operator T() const { return this->internalValue; }
 
   void operator=(const T &newValue)
   {

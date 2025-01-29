@@ -37,7 +37,12 @@
 TEST(ModifiedTest, TestInitialization_ShouldBeUnmodified)
 {
   modified<int> someValue = 22;
+  EXPECT_EQ(someValue, 22);
   EXPECT_FALSE(someValue.wasModified());
+
+  modified<int> somOtherValue{44};
+  EXPECT_EQ(somOtherValue, 44);
+  EXPECT_FALSE(somOtherValue.wasModified());
 }
 
 TEST(ModifiedTest, TestModificationWithSameValue_ShouldReportUnmodified)
@@ -106,4 +111,15 @@ TEST(ModifiedTest, TestSetUnmodified)
 
   someValue.setUnmodified();
   EXPECT_FALSE(someValue.wasModified());
+}
+
+TEST(ModiifedTest, TestImplicitConversionToT)
+{
+  modified<int> someValue = 22;
+  const auto    result    = 44 + someValue;
+  EXPECT_EQ(result, 66);
+
+  modified<bool> someFlag{true};
+  EXPECT_TRUE(someFlag);
+  EXPECT_FALSE(!someFlag);
 }
