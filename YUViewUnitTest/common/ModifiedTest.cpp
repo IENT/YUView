@@ -80,6 +80,22 @@ TEST(ModifiedTest, TestValueRetrieval)
   EXPECT_EQ(someValue.value(), 33);
 }
 
+TEST(ModifiedTest, TestOperatorArrow)
+{
+  struct TestStruct
+  {
+    int  val;
+    bool operator==(const TestStruct &other) const { return this->val == other.val; }
+  };
+
+  modified<TestStruct> someValue{};
+  someValue->val = 55;
+  EXPECT_TRUE(someValue.wasModified());
+
+  someValue->val = 0;
+  EXPECT_FALSE(someValue.wasModified());
+}
+
 TEST(ModifiedTest, TestComparisonOperator_ShouldCompareToTDirectly)
 {
   modified<int> someValue = 22;

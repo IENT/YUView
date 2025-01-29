@@ -38,8 +38,10 @@ public:
   modified() = default;
   modified(const T &value) : internalValue(value), initialValue(value) {}
 
-  T operator*() const { return this->internalValue; }
-  T value() const { return this->internalValue; }
+  T        operator*() const { return this->internalValue; }
+  T        value() const { return this->internalValue; }
+  const T *operator->() const { return &this->internalValue; }
+  T       *operator->() { return &this->internalValue; }
   operator T() const { return this->internalValue; }
 
   void operator=(const T &newValue) { this->internalValue = newValue; }
@@ -47,7 +49,7 @@ public:
   bool operator==(const T &other) const { return this->internalValue == other; }
   bool operator==(const modified<T> &other) const { return this->internalValue == other.value(); }
 
-  [[nodiscard]] bool wasModified() const { return this->internalValue != this->initialValue; }
+  [[nodiscard]] bool wasModified() const { return !(this->internalValue == this->initialValue); }
   void               setUnmodified() { this->initialValue = this->internalValue; }
 
 private:
