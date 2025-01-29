@@ -32,6 +32,7 @@
 
 #pragma once
 
+#include <common/Modified.h>
 #include <common/Typedef.h>
 
 #include "ColorMapper.h"
@@ -71,7 +72,6 @@ class StatisticsType
   friend class StatisticsTypePlaylistHandler;
 
 public:
-
   int         typeID{};
   std::string typeName{};
   std::string description{};
@@ -80,10 +80,9 @@ public:
 
   void setMappingValues(std::vector<std::string> values);
 
-  // Is this statistics type rendered and what is the alpha value?
   // These are corresponding to the controls in the properties panel
-  bool render{};
-  int  alphaFactor{50};
+  modified<bool> render{};
+  modified<int>  alphaFactor{50};
 
   struct ValueDataOptions
   {
@@ -137,9 +136,6 @@ private:
 
   struct initialState
   {
-    bool render;
-    int  alphaFactor;
-
     std::optional<ValueDataOptions>  valueDataOptions;
     std::optional<VectorDataOptions> vectorDataOptions;
     GridOptions                      gridOptions;

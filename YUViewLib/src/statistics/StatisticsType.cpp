@@ -94,9 +94,6 @@ StatisticsType::StatisticsType(int typeId, std::string typeName)
 
 void StatisticsType::saveInitialState()
 {
-  this->init.render      = this->render;
-  this->init.alphaFactor = this->alphaFactor;
-
   this->init.valueDataOptions  = this->valueDataOptions;
   this->init.vectorDataOptions = this->vectorDataOptions;
   this->init.gridOptions       = this->gridOptions;

@@ -128,8 +128,8 @@ void StatisticsTypePlaylistHandler::saveToPlaylist(const StatisticsType &type,
                                                    YUViewDomElement     &root)
 {
   bool allValuesIdenticalToInitialValues =
-      (type.init.render == type.render &&                       //
-       type.init.alphaFactor == type.alphaFactor &&             //
+      (!type.render.wasModified() &&                            //
+       !type.alphaFactor.wasModified() &&                       //
        type.init.valueDataOptions == type.valueDataOptions &&   //
        type.init.vectorDataOptions == type.vectorDataOptions && //
        type.init.gridOptions == type.gridOptions);
@@ -142,9 +142,9 @@ void StatisticsTypePlaylistHandler::saveToPlaylist(const StatisticsType &type,
   newChild.appendChild(root.ownerDocument().createTextNode(QString::fromStdString(type.typeName)));
 
   // Append only the parameters that changed
-  if (type.init.render != type.render)
+  if (type.render.wasModified())
     newChild.setAttribute("render", type.render);
-  if (type.init.alphaFactor != type.alphaFactor)
+  if (type.alphaFactor.wasModified())
     newChild.setAttribute("alphaFactor", type.alphaFactor);
 
   addModifiedValuesToElement(newChild, type.valueDataOptions, type.init.valueDataOptions);

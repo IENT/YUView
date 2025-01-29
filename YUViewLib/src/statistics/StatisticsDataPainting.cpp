@@ -122,7 +122,8 @@ void paintVector(QPainter                    *painter,
     if (vector.mapToColor)
       arrowColor.setHsvF(
           functions::clip((std::atan2(vy, vx) + M_PI) / (2 * M_PI), 0.0, 1.0), 1.0, 1.0);
-    arrowColor.setAlpha(arrowColor.alpha() * ((float)statisticsType.alphaFactor / 100.0));
+    arrowColor.setAlpha(
+        functions::scaleValueByPercent(arrowColor.alpha(), *statisticsType.alphaFactor));
 
     if (vector.scaleToZoom)
       vectorStyle.width = vectorStyle.width * zoomFactor / 8;
@@ -347,7 +348,7 @@ void stats::paintStatisticsData(QPainter              *painter,
               float(value) / (valueItem.size[0] * valueItem.size[1]));
         else
           rectColor = it->valueDataOptions->colorMapper.getColor(value);
-        rectColor.setAlpha(rectColor.alpha() * ((float)it->alphaFactor / 100.0));
+        rectColor.setAlpha(functions::scaleValueByPercent(rectColor.alpha(), *it->alphaFactor));
 
         auto rectQColor = functionsGui::toQColor(rectColor);
         painter->setBrush(rectQColor);
@@ -436,7 +437,7 @@ void stats::paintStatisticsData(QPainter              *painter,
                 float(value) / (boundingRect.size().width() * boundingRect.size().height()));
           else
             color = valueOptions.colorMapper.getColor(value);
-          color.setAlpha(color.alpha() * ((float)it->alphaFactor / 100.0));
+          color.setAlpha(functions::scaleValueByPercent(color.alpha(), *it->alphaFactor));
 
           // Fill polygon
           QPainterPath path;
@@ -563,7 +564,7 @@ void stats::paintStatisticsData(QPainter              *painter,
           if (it->vectorDataOptions->mapToColor)
             arrowColor.setHsvF(
                 functions::clip((std::atan2(vy, vx) + M_PI) / (2 * M_PI), 0.0, 1.0), 1.0, 1.0);
-          arrowColor.setAlpha(arrowColor.alpha() * ((float)it->alphaFactor / 100.0));
+          arrowColor.setAlpha(functions::scaleValueByPercent(arrowColor.alpha(), *it->alphaFactor));
           if (it->vectorDataOptions->scaleToZoom)
             vectorStyle.width = vectorStyle.width * zoomFactor / 8;
 
@@ -887,7 +888,7 @@ void stats::paintStatisticsData(QPainter              *painter,
           if (it->vectorDataOptions->mapToColor)
             arrowColor.setHsvF(
                 functions::clip((std::atan2(vy, vx) + M_PI) / (2 * M_PI), 0.0, 1.0), 1.0, 1.0);
-          arrowColor.setAlpha(arrowColor.alpha() * ((float)it->alphaFactor / 100.0));
+          arrowColor.setAlpha(functions::scaleValueByPercent(arrowColor.alpha(), *it->alphaFactor));
           if (it->vectorDataOptions->scaleToZoom)
             vectorStyle.width = vectorStyle.width * zoomFactor / 8;
 
