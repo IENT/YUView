@@ -204,7 +204,7 @@ TEST(StatisticsFileCSV, testCSVFileParsing)
     EXPECT_EQ(t.typeName, typeNameNames[i]);
     if (t.vectorDataOptions)
     {
-      EXPECT_EQ(t.vectorDataOptions->style.color.toHex(), vectorColors[i]);
+      EXPECT_EQ(t.vectorDataOptions->style->color.toHex(), vectorColors[i]);
       EXPECT_EQ(t.vectorDataOptions->scale, vectorScaleFactors[i]);
     }
     if (t.valueDataOptions)

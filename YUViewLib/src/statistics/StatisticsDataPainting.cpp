@@ -118,7 +118,7 @@ void paintVector(QPainter                    *painter,
 
     // Set the pen for drawing
     auto vectorStyle = statisticsType.vectorDataOptions->style;
-    auto arrowColor  = functionsGui::toQColor(vectorStyle.color);
+    auto arrowColor  = functionsGui::toQColor(vectorStyle->color);
     if (vector.mapToColor)
       arrowColor.setHsvF(
           functions::clip((std::atan2(vy, vx) + M_PI) / (2 * M_PI), 0.0, 1.0), 1.0, 1.0);
@@ -126,9 +126,9 @@ void paintVector(QPainter                    *painter,
         functions::scaleValueByPercent(arrowColor.alpha(), *statisticsType.alphaFactor));
 
     if (vector.scaleToZoom)
-      vectorStyle.width = vectorStyle.width * zoomFactor / 8;
+      vectorStyle->width = vectorStyle->width * zoomFactor / 8;
 
-    painter->setPen(QPen(arrowColor, vectorStyle.width, patternToQPenStyle(vectorStyle.pattern)));
+    painter->setPen(QPen(arrowColor, vectorStyle->width, patternToQPenStyle(vectorStyle->pattern)));
     painter->setBrush(arrowColor);
 
     // Draw the arrow tip, or a circle if the vector is (0,0) if the zoom factor is not 1 or
@@ -560,16 +560,16 @@ void stats::paintStatisticsData(QPainter              *painter,
         {
           // Set the pen for drawing
           auto vectorStyle = it->vectorDataOptions->style;
-          auto arrowColor  = functionsGui::toQColor(vectorStyle.color);
+          auto arrowColor  = functionsGui::toQColor(vectorStyle->color);
           if (it->vectorDataOptions->mapToColor)
             arrowColor.setHsvF(
                 functions::clip((std::atan2(vy, vx) + M_PI) / (2 * M_PI), 0.0, 1.0), 1.0, 1.0);
           arrowColor.setAlpha(functions::scaleValueByPercent(arrowColor.alpha(), *it->alphaFactor));
           if (it->vectorDataOptions->scaleToZoom)
-            vectorStyle.width = vectorStyle.width * zoomFactor / 8;
+            vectorStyle->width = vectorStyle->width * zoomFactor / 8;
 
           painter->setPen(
-              QPen(arrowColor, vectorStyle.width, patternToQPenStyle(vectorStyle.pattern)));
+              QPen(arrowColor, vectorStyle->width, patternToQPenStyle(vectorStyle->pattern)));
           painter->setBrush(arrowColor);
 
           // Draw the arrow tip, or a circle if the vector is (0,0) if the zoom factor is not 1 or
@@ -884,16 +884,16 @@ void stats::paintStatisticsData(QPainter              *painter,
         {
           // Set the pen for drawing
           auto vectorStyle = it->vectorDataOptions->style;
-          auto arrowColor  = functionsGui::toQColor(vectorStyle.color);
+          auto arrowColor  = functionsGui::toQColor(vectorStyle->color);
           if (it->vectorDataOptions->mapToColor)
             arrowColor.setHsvF(
                 functions::clip((std::atan2(vy, vx) + M_PI) / (2 * M_PI), 0.0, 1.0), 1.0, 1.0);
           arrowColor.setAlpha(functions::scaleValueByPercent(arrowColor.alpha(), *it->alphaFactor));
           if (it->vectorDataOptions->scaleToZoom)
-            vectorStyle.width = vectorStyle.width * zoomFactor / 8;
+            vectorStyle->width = vectorStyle->width * zoomFactor / 8;
 
           painter->setPen(
-              QPen(arrowColor, vectorStyle.width, patternToQPenStyle(vectorStyle.pattern)));
+              QPen(arrowColor, vectorStyle->width, patternToQPenStyle(vectorStyle->pattern)));
           painter->setBrush(arrowColor);
 
           // Draw the arrow tip, or a circle if the vector is (0,0) if the zoom factor is not 1 or

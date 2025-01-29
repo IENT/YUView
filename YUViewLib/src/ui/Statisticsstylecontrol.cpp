@@ -113,13 +113,13 @@ void StatisticsStyleControl::setStatsItem(stats::StatisticsType *item)
 
     const auto &options = *this->currentItem->vectorDataOptions;
 
-    if (const auto penStyleIndex = vectorIndexOf(stats::AllPatterns, options.style.pattern))
+    if (const auto penStyleIndex = vectorIndexOf(stats::AllPatterns, options.style->pattern))
       this->ui.comboBoxVectorLineStyle->setCurrentIndex(static_cast<int>(*penStyleIndex));
-    this->ui.doubleSpinBoxVectorLineWidth->setValue(options.style.width);
+    this->ui.doubleSpinBoxVectorLineWidth->setValue(options.style->width);
     this->ui.checkBoxVectorScaleToZoom->setChecked(options.scaleToZoom);
-    this->ui.comboBoxVectorHeadStyle->setCurrentIndex(int(options.arrowHead));
+    this->ui.comboBoxVectorHeadStyle->setCurrentIndex(int(*options.arrowHead));
     this->ui.checkBoxVectorMapToColor->setChecked(options.mapToColor);
-    this->ui.colorFrameVectorColor->setPlainColor(functionsGui::toQColor(options.style.color));
+    this->ui.colorFrameVectorColor->setPlainColor(functionsGui::toQColor(options.style->color));
     this->ui.colorFrameVectorColor->setEnabled(!options.mapToColor);
     this->ui.pushButtonEditVectorColor->setEnabled(!options.mapToColor);
   }
@@ -134,7 +134,7 @@ void StatisticsStyleControl::setStatsItem(stats::StatisticsType *item)
   }
 
   if (const auto penStyleIndex =
-          vectorIndexOf(stats::AllPatterns, this->currentItem->vectorDataOptions->style.pattern))
+          vectorIndexOf(stats::AllPatterns, this->currentItem->vectorDataOptions->style->pattern))
     this->ui.comboBoxGridLineStyle->setCurrentIndex(static_cast<int>(*penStyleIndex));
 
   this->resize(sizeHint());
@@ -417,14 +417,14 @@ void StatisticsStyleControl::on_pushButtonDeleteMap_clicked()
 void StatisticsStyleControl::on_comboBoxVectorLineStyle_currentIndexChanged(int index)
 {
   // Convert the selection to a pen style and set it
-  auto pattern                                        = stats::AllPatterns.at(index);
-  this->currentItem->vectorDataOptions->style.pattern = pattern;
+  auto pattern                                         = stats::AllPatterns.at(index);
+  this->currentItem->vectorDataOptions->style->pattern = pattern;
   emit StyleChanged();
 }
 
 void StatisticsStyleControl::on_doubleSpinBoxVectorLineWidth_valueChanged(double width)
 {
-  this->currentItem->vectorDataOptions->style.width = width;
+  this->currentItem->vectorDataOptions->style->width = width;
   emit StyleChanged();
 }
 
@@ -451,15 +451,15 @@ void StatisticsStyleControl::on_checkBoxVectorMapToColor_stateChanged(int arg1)
 void StatisticsStyleControl::on_colorFrameVectorColor_clicked()
 {
   auto newQColor = QColorDialog::getColor(
-      functionsGui::toQColor(this->currentItem->vectorDataOptions->style.color),
+      functionsGui::toQColor(this->currentItem->vectorDataOptions->style->color),
       this,
       tr("Select vector color"),
       QColorDialog::ShowAlphaChannel);
 
   auto newColor = functionsGui::toColor(newQColor);
-  if (newQColor.isValid() && newColor != this->currentItem->vectorDataOptions->style.color)
+  if (newQColor.isValid() && newColor != this->currentItem->vectorDataOptions->style->color)
   {
-    this->currentItem->vectorDataOptions->style.color = newColor;
+    this->currentItem->vectorDataOptions->style->color = newColor;
     this->ui.colorFrameVectorColor->setPlainColor(newQColor);
     emit StyleChanged();
   }

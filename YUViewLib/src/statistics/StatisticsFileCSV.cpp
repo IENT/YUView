@@ -461,11 +461,11 @@ void StatisticsFileCSV::readHeaderFromFile(StatisticsData &statisticsData)
       }
       else if (rowItemList[1] == "vectorColor")
       {
-        auto r                               = (unsigned char)rowItemList[2].toInt();
-        auto g                               = (unsigned char)rowItemList[3].toInt();
-        auto b                               = (unsigned char)rowItemList[4].toInt();
-        auto a                               = (unsigned char)rowItemList[5].toInt();
-        type->vectorDataOptions->style.color = Color(r, g, b, a);
+        auto r                                = (unsigned char)rowItemList[2].toInt();
+        auto g                                = (unsigned char)rowItemList[3].toInt();
+        auto b                                = (unsigned char)rowItemList[4].toInt();
+        auto a                                = (unsigned char)rowItemList[5].toInt();
+        type->vectorDataOptions->style->color = Color(r, g, b, a);
       }
       else if (rowItemList[1] == "gridColor")
       {

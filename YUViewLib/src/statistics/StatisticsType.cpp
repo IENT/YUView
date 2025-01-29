@@ -102,9 +102,18 @@ void StatisticsType::saveInitialState()
     this->valueDataOptions->scaleToBlockSize.setUnmodified();
     this->valueDataOptions->colorMapper.setUnmodified();
   }
+  if (this->vectorDataOptions)
+  {
+    this->vectorDataOptions->render.setUnmodified();
+    this->vectorDataOptions->renderDataValues.setUnmodified();
+    this->vectorDataOptions->scaleToZoom.setUnmodified();
+    this->vectorDataOptions->style.setUnmodified();
+    this->vectorDataOptions->scale.setUnmodified();
+    this->vectorDataOptions->mapToColor.setUnmodified();
+    this->vectorDataOptions->arrowHead.setUnmodified();
+  }
 
-  this->init.vectorDataOptions = this->vectorDataOptions;
-  this->init.gridOptions       = this->gridOptions;
+  this->init.gridOptions = this->gridOptions;
 }
 
 } // namespace stats

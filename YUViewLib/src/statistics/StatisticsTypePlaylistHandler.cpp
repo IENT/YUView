@@ -84,27 +84,26 @@ std::vector<StatisticsType::ArrowHead> AllArrowHeads = {StatisticsType::ArrowHea
                                                         StatisticsType::ArrowHead::none};
 
 void addModifiedValuesToElement(YUViewDomElement                                       &element,
-                                const std::optional<StatisticsType::VectorDataOptions> &options,
-                                const std::optional<StatisticsType::VectorDataOptions> &initOptions)
+                                const std::optional<StatisticsType::VectorDataOptions> &options)
 {
   if (!options)
     return;
 
-  if (!initOptions || options->render != initOptions->render)
+  if (options->render.wasModified())
     element.setAttribute("renderVectorData", options->render);
-  if (!initOptions || options->renderDataValues != initOptions->renderDataValues)
+  if (options->renderDataValues.wasModified())
     element.setAttribute("renderVectorDataValues", options->renderDataValues);
-  if (!initOptions || options->scaleToZoom != initOptions->scaleToZoom)
+  if (options->scaleToZoom.wasModified())
     element.setAttribute("scaleVectorToZoom", options->scaleToZoom);
-  if (!initOptions || options->style != initOptions->style)
+  if (options->style.wasModified())
     element.setAttribute("vectorStyle", convertPenToString(options->style));
-  if (!initOptions || options->scale != initOptions->scale)
+  if (options->scale.wasModified())
     element.setAttribute("vectorScale", options->scale);
-  if (!initOptions || options->mapToColor != initOptions->mapToColor)
+  if (options->mapToColor.wasModified())
     element.setAttribute("mapVectorToColor", options->mapToColor);
-  if (!initOptions || options->arrowHead != initOptions->arrowHead)
+  if (options->arrowHead.wasModified())
   {
-    if (const auto index = vectorIndexOf(AllArrowHeads, options->arrowHead))
+    if (const auto index = vectorIndexOf(AllArrowHeads, *options->arrowHead))
       element.setAttribute("renderarrowHead", static_cast<int>(*index));
   }
 }
@@ -131,12 +130,20 @@ void StatisticsTypePlaylistHandler::saveToPlaylist(const StatisticsType &type,
                                 type.valueDataOptions->scaleToBlockSize.wasModified() ||
                                 type.valueDataOptions->colorMapper.wasModified());
 
-  bool allValuesIdenticalToInitialValues =
-      (!type.render.wasModified() &&                            //
-       !type.alphaFactor.wasModified() &&                       //
-       !valueDataOptionsModified &&                             //
-       type.init.vectorDataOptions == type.vectorDataOptions && //
-       type.init.gridOptions == type.gridOptions);
+  const auto vectorDataOptionsModified =
+      type.vectorDataOptions &&
+      (type.vectorDataOptions->render.wasModified() ||
+       type.vectorDataOptions->renderDataValues.wasModified() ||
+       type.vectorDataOptions->scaleToZoom.wasModified() ||
+       type.vectorDataOptions->style.wasModified() || type.vectorDataOptions->scale.wasModified() ||
+       type.vectorDataOptions->mapToColor.wasModified() ||
+       type.vectorDataOptions->arrowHead.wasModified());
+
+  const auto allValuesIdenticalToInitialValues = (!type.render.wasModified() &&      //
+                                                  !type.alphaFactor.wasModified() && //
+                                                  !valueDataOptionsModified &&       //
+                                                  !vectorDataOptionsModified &&      //
+                                                  type.init.gridOptions == type.gridOptions);
 
   if (allValuesIdenticalToInitialValues)
     return;
@@ -152,7 +159,7 @@ void StatisticsTypePlaylistHandler::saveToPlaylist(const StatisticsType &type,
     newChild.setAttribute("alphaFactor", type.alphaFactor);
 
   addModifiedValuesToElement(newChild, type.valueDataOptions);
-  addModifiedValuesToElement(newChild, type.vectorDataOptions, type.init.vectorDataOptions);
+  addModifiedValuesToElement(newChild, type.vectorDataOptions);
   addModifiedValuesToElement(newChild, type.gridOptions, type.init.gridOptions);
 
   root.appendChild(newChild);

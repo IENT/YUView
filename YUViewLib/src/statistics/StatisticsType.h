@@ -104,13 +104,13 @@ public:
 
   struct VectorDataOptions
   {
-    bool          render{true};
-    bool          renderDataValues{true};
-    bool          scaleToZoom{};
-    LineDrawStyle style{};
-    int           scale{};
-    bool          mapToColor{};
-    ArrowHead     arrowHead{};
+    modified<bool>          render{true};
+    modified<bool>          renderDataValues{true};
+    modified<bool>          scaleToZoom{};
+    modified<LineDrawStyle> style{};
+    modified<int>           scale{};
+    modified<bool>          mapToColor{};
+    modified<ArrowHead>     arrowHead{};
 
     bool operator==(const VectorDataOptions &rhs) const;
   };
@@ -136,8 +136,7 @@ private:
 
   struct initialState
   {
-    std::optional<VectorDataOptions> vectorDataOptions;
-    GridOptions                      gridOptions;
+    GridOptions gridOptions;
   };
   initialState init;
 
