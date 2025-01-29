@@ -126,11 +126,16 @@ void addModifiedValuesToElement(YUViewDomElement                  &element,
 void StatisticsTypePlaylistHandler::saveToPlaylist(const StatisticsType &type,
                                                    YUViewDomElement     &root)
 {
+  const auto valueDataOptionsModified =
+      type.valueDataOptions && (type.valueDataOptions->render.wasModified() ||
+                                type.valueDataOptions->scaleToBlockSize.wasModified() ||
+                                type.valueDataOptions->colorMapper.wasModified());
+
   bool allValuesIdenticalToInitialValues =
-      (!type.render.wasModified() &&                                        //
-       !type.alphaFactor.wasModified() &&                                   //
-       (!type.valueDataOptions || !type.valueDataOptions->wasModified()) && //
-       type.init.vectorDataOptions == type.vectorDataOptions &&             //
+      (!type.render.wasModified() &&                            //
+       !type.alphaFactor.wasModified() &&                       //
+       !valueDataOptionsModified &&                             //
+       type.init.vectorDataOptions == type.vectorDataOptions && //
        type.init.gridOptions == type.gridOptions);
 
   if (allValuesIdenticalToInitialValues)

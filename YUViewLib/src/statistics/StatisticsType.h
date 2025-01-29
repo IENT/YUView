@@ -90,8 +90,7 @@ public:
     modified<bool>               scaleToBlockSize{};
     modified<color::ColorMapper> colorMapper{};
 
-    [[nodiscard]] bool wasModified() const;
-    bool               operator==(const ValueDataOptions &rhs) const;
+    bool operator==(const ValueDataOptions &rhs) const;
   };
 
   std::optional<ValueDataOptions> valueDataOptions;

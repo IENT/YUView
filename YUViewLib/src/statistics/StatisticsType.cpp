@@ -62,13 +62,6 @@ void StatisticsType::setMappingValues(std::vector<std::string> values)
     this->valuesToText[i] = values[i];
 }
 
-bool StatisticsType::ValueDataOptions::wasModified() const
-{
-  return this->render.wasModified() ||           //
-         this->scaleToBlockSize.wasModified() || //
-         this->colorMapper.wasModified();
-}
-
 bool StatisticsType::ValueDataOptions::operator==(const ValueDataOptions &rhs) const
 {
   return this->render == rhs.render &&                     //
