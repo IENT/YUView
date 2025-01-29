@@ -344,10 +344,10 @@ void stats::paintStatisticsData(QPainter              *painter,
         // Get the right color for the item and draw it.
         Color rectColor;
         if (it->valueDataOptions->scaleToBlockSize)
-          rectColor = it->valueDataOptions->colorMapper.getColor(
+          rectColor = it->valueDataOptions->colorMapper->getColor(
               float(value) / (valueItem.size[0] * valueItem.size[1]));
         else
-          rectColor = it->valueDataOptions->colorMapper.getColor(value);
+          rectColor = it->valueDataOptions->colorMapper->getColor(value);
         rectColor.setAlpha(functions::scaleValueByPercent(rectColor.alpha(), *it->alphaFactor));
 
         auto rectQColor = functionsGui::toQColor(rectColor);
@@ -433,10 +433,10 @@ void stats::paintStatisticsData(QPainter              *painter,
           // Get the right color for the item and draw it.
           Color color;
           if (valueOptions.scaleToBlockSize)
-            color = valueOptions.colorMapper.getColor(
+            color = valueOptions.colorMapper->getColor(
                 float(value) / (boundingRect.size().width() * boundingRect.size().height()));
           else
-            color = valueOptions.colorMapper.getColor(value);
+            color = valueOptions.colorMapper->getColor(value);
           color.setAlpha(functions::scaleValueByPercent(color.alpha(), *it->alphaFactor));
 
           // Fill polygon

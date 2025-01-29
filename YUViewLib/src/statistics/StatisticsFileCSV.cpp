@@ -428,8 +428,8 @@ void StatisticsFileCSV::readHeaderFromFile(StatisticsData &statisticsData)
         auto b = (unsigned char)rowItemList[5].toInt();
         auto a = (unsigned char)rowItemList[6].toInt();
 
-        type->valueDataOptions->colorMapper.mappingType  = color::MappingType::Map;
-        type->valueDataOptions->colorMapper.colorMap[id] = Color(r, g, b, a);
+        type->valueDataOptions->colorMapper->mappingType  = color::MappingType::Map;
+        type->valueDataOptions->colorMapper->colorMap[id] = Color(r, g, b, a);
       }
       else if (rowItemList[1] == "range")
       {

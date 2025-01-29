@@ -86,11 +86,12 @@ public:
 
   struct ValueDataOptions
   {
-    bool               render{true};
-    bool               scaleToBlockSize{};
-    color::ColorMapper colorMapper{};
+    modified<bool>               render{true};
+    modified<bool>               scaleToBlockSize{};
+    modified<color::ColorMapper> colorMapper{};
 
-    bool operator==(const ValueDataOptions &rhs) const;
+    [[nodiscard]] bool wasModified() const;
+    bool               operator==(const ValueDataOptions &rhs) const;
   };
 
   std::optional<ValueDataOptions> valueDataOptions;
@@ -136,7 +137,6 @@ private:
 
   struct initialState
   {
-    std::optional<ValueDataOptions>  valueDataOptions;
     std::optional<VectorDataOptions> vectorDataOptions;
     GridOptions                      gridOptions;
   };

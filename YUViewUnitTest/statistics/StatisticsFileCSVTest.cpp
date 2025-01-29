@@ -209,9 +209,9 @@ TEST(StatisticsFileCSV, testCSVFileParsing)
     }
     if (t.valueDataOptions)
     {
-      EXPECT_EQ(t.valueDataOptions->colorMapper.valueRange.min, valueColorRangeMin[i]);
-      EXPECT_EQ(t.valueDataOptions->colorMapper.valueRange.max, valueColorRangeMax[i]);
-      EXPECT_EQ(t.valueDataOptions->colorMapper.predefinedType, stats::color::PredefinedType::Jet);
+      EXPECT_EQ(t.valueDataOptions->colorMapper->valueRange.min, valueColorRangeMin[i]);
+      EXPECT_EQ(t.valueDataOptions->colorMapper->valueRange.max, valueColorRangeMax[i]);
+      EXPECT_EQ(t.valueDataOptions->colorMapper->predefinedType, stats::color::PredefinedType::Jet);
       EXPECT_EQ(t.gridOptions.style.color.toHex(), valueGridColors[i]);
     }
   }

@@ -66,18 +66,17 @@ LineDrawStyle convertStringToPen(const QString &str)
 }
 
 void addModifiedValuesToElement(YUViewDomElement                                      &element,
-                                const std::optional<StatisticsType::ValueDataOptions> &options,
-                                const std::optional<StatisticsType::ValueDataOptions> &initOptions)
+                                const std::optional<StatisticsType::ValueDataOptions> &options)
 {
   if (!options)
     return;
 
-  if (!initOptions || options->render != initOptions->render)
+  if (options->render.wasModified())
     element.setAttribute("renderValueData", options->render);
-  if (!initOptions || options->scaleToBlockSize != initOptions->scaleToBlockSize)
+  if (options->scaleToBlockSize.wasModified())
     element.setAttribute("scaleValueToBlockSize", options->render);
-  if (!initOptions || options->colorMapper != initOptions->colorMapper)
-    options->colorMapper.savePlaylist(element);
+  if (options->colorMapper.wasModified())
+    options->colorMapper->savePlaylist(element);
 }
 
 std::vector<StatisticsType::ArrowHead> AllArrowHeads = {StatisticsType::ArrowHead::arrow,
@@ -128,10 +127,10 @@ void StatisticsTypePlaylistHandler::saveToPlaylist(const StatisticsType &type,
                                                    YUViewDomElement     &root)
 {
   bool allValuesIdenticalToInitialValues =
-      (!type.render.wasModified() &&                            //
-       !type.alphaFactor.wasModified() &&                       //
-       type.init.valueDataOptions == type.valueDataOptions &&   //
-       type.init.vectorDataOptions == type.vectorDataOptions && //
+      (!type.render.wasModified() &&                                        //
+       !type.alphaFactor.wasModified() &&                                   //
+       (!type.valueDataOptions || !type.valueDataOptions->wasModified()) && //
+       type.init.vectorDataOptions == type.vectorDataOptions &&             //
        type.init.gridOptions == type.gridOptions);
 
   if (allValuesIdenticalToInitialValues)
@@ -147,7 +146,7 @@ void StatisticsTypePlaylistHandler::saveToPlaylist(const StatisticsType &type,
   if (type.alphaFactor.wasModified())
     newChild.setAttribute("alphaFactor", type.alphaFactor);
 
-  addModifiedValuesToElement(newChild, type.valueDataOptions, type.init.valueDataOptions);
+  addModifiedValuesToElement(newChild, type.valueDataOptions);
   addModifiedValuesToElement(newChild, type.vectorDataOptions, type.init.vectorDataOptions);
   addModifiedValuesToElement(newChild, type.gridOptions, type.init.gridOptions);
 
@@ -182,7 +181,7 @@ void StatisticsTypePlaylistHandler::tryToLoadFromPlaylist(StatisticsType        
       else if (name == "scaleValueToBlockSize")
         type.valueDataOptions->scaleToBlockSize = (value != "0");
       else if (name == "colorMapperType")
-        type.valueDataOptions->colorMapper.loadPlaylist(attributes);
+        type.valueDataOptions->colorMapper->loadPlaylist(attributes);
     }
     else if (name == "renderVectorData" || name == "renderVectorDataValues" ||
              name == "scaleVectorToZoom" || name == "vectorStyle" || name == "vectorScale" ||

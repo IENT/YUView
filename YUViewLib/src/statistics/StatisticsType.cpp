@@ -62,6 +62,13 @@ void StatisticsType::setMappingValues(std::vector<std::string> values)
     this->valuesToText[i] = values[i];
 }
 
+bool StatisticsType::ValueDataOptions::wasModified() const
+{
+  return this->render.wasModified() ||           //
+         this->scaleToBlockSize.wasModified() || //
+         this->colorMapper.wasModified();
+}
+
 bool StatisticsType::ValueDataOptions::operator==(const ValueDataOptions &rhs) const
 {
   return this->render == rhs.render &&                     //
@@ -94,7 +101,12 @@ StatisticsType::StatisticsType(int typeId, std::string typeName)
 
 void StatisticsType::saveInitialState()
 {
-  this->init.valueDataOptions  = this->valueDataOptions;
+  this->render.setUnmodified();
+  this->alphaFactor.setUnmodified();
+  this->valueDataOptions->render.setUnmodified();
+  this->valueDataOptions->scaleToBlockSize.setUnmodified();
+  this->valueDataOptions->colorMapper.setUnmodified();
+
   this->init.vectorDataOptions = this->vectorDataOptions;
   this->init.gridOptions       = this->gridOptions;
 }
