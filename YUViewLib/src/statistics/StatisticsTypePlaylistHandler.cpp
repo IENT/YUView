@@ -109,14 +109,13 @@ void addModifiedValuesToElement(YUViewDomElement                                
 }
 
 void addModifiedValuesToElement(YUViewDomElement                  &element,
-                                const StatisticsType::GridOptions &options,
-                                const StatisticsType::GridOptions &initOptions)
+                                const StatisticsType::GridOptions &options)
 {
-  if (options.render != initOptions.render)
+  if (options.render.wasModified())
     element.setAttribute("renderGrid", options.render);
-  if (options.style != initOptions.style)
+  if (options.style.wasModified())
     element.setAttribute("gridStyle", convertPenToString(options.style));
-  if (options.scaleToZoom != initOptions.scaleToZoom)
+  if (options.scaleToZoom.wasModified())
     element.setAttribute("scaleGridToZoom", options.scaleToZoom);
 }
 
@@ -139,11 +138,15 @@ void StatisticsTypePlaylistHandler::saveToPlaylist(const StatisticsType &type,
        type.vectorDataOptions->mapToColor.wasModified() ||
        type.vectorDataOptions->arrowHead.wasModified());
 
+  const auto gridOptionsModified = type.gridOptions.render.wasModified() || //
+                                   type.gridOptions.style.wasModified() ||  //
+                                   type.gridOptions.scaleToZoom.wasModified();
+
   const auto allValuesIdenticalToInitialValues = (!type.render.wasModified() &&      //
                                                   !type.alphaFactor.wasModified() && //
                                                   !valueDataOptionsModified &&       //
                                                   !vectorDataOptionsModified &&      //
-                                                  type.init.gridOptions == type.gridOptions);
+                                                  !gridOptionsModified);
 
   if (allValuesIdenticalToInitialValues)
     return;
@@ -160,7 +163,7 @@ void StatisticsTypePlaylistHandler::saveToPlaylist(const StatisticsType &type,
 
   addModifiedValuesToElement(newChild, type.valueDataOptions);
   addModifiedValuesToElement(newChild, type.vectorDataOptions);
-  addModifiedValuesToElement(newChild, type.gridOptions, type.init.gridOptions);
+  addModifiedValuesToElement(newChild, type.gridOptions);
 
   root.appendChild(newChild);
 }

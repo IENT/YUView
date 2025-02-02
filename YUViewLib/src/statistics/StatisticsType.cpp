@@ -112,8 +112,9 @@ void StatisticsType::saveInitialState()
     this->vectorDataOptions->mapToColor.setUnmodified();
     this->vectorDataOptions->arrowHead.setUnmodified();
   }
-
-  this->init.gridOptions = this->gridOptions;
+  this->gridOptions.render.setUnmodified();
+  this->gridOptions.style.setUnmodified();
+  this->gridOptions.scaleToZoom.setUnmodified();
 }
 
 } // namespace stats

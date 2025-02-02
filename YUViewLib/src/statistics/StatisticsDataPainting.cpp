@@ -72,7 +72,7 @@ QPoint getPolygonCenter(const QPolygon &polygon)
   return p;
 }
 
-Qt::PenStyle patternToQPenStyle(stats::Pattern &pattern)
+Qt::PenStyle patternToQPenStyle(const stats::Pattern &pattern)
 {
   if (pattern == stats::Pattern::Solid)
     return Qt::SolidLine;
@@ -87,7 +87,7 @@ Qt::PenStyle patternToQPenStyle(stats::Pattern &pattern)
   return Qt::SolidLine;
 }
 
-QPen styleToPen(stats::LineDrawStyle &style)
+QPen styleToPen(const stats::LineDrawStyle &style)
 {
   return QPen(functionsGui::toQColor(style.color), style.width, patternToQPenStyle(style.pattern));
 }
@@ -361,14 +361,14 @@ void stats::paintStatisticsData(QPainter              *painter,
         // Set the grid color (no fill)
         auto gridStyle = it->gridOptions.style;
         if (it->gridOptions.scaleToZoom)
-          gridStyle.width = gridStyle.width * zoomFactor;
+          gridStyle->width = gridStyle->width * zoomFactor;
 
-        painter->setPen(styleToPen(gridStyle));
+        painter->setPen(styleToPen(*gridStyle));
         painter->setBrush(QBrush(QColor(Qt::color0), Qt::NoBrush)); // no fill color
 
         // Save the line width (if thicker)
-        if (gridStyle.width > maxLineWidth)
-          maxLineWidth = gridStyle.width;
+        if (gridStyle->width > maxLineWidth)
+          maxLineWidth = gridStyle->width;
 
         painter->drawRect(displayRect);
       }
@@ -454,14 +454,14 @@ void stats::paintStatisticsData(QPainter              *painter,
           // Set the grid color (no fill)
           auto gridStyle = it->gridOptions.style;
           if (it->gridOptions.scaleToZoom)
-            gridStyle.width = gridStyle.width * zoomFactor;
+            gridStyle->width = gridStyle->width * zoomFactor;
 
           painter->setPen(styleToPen(gridStyle));
           painter->setBrush(QBrush(QColor(Qt::color0), Qt::NoBrush)); // no fill color
 
           // Save the line width (if thicker)
-          if (gridStyle.width > maxLineWidth)
-            maxLineWidth = gridStyle.width;
+          if (gridStyle->width > maxLineWidth)
+            maxLineWidth = gridStyle->width;
 
           painter->drawPolygon(displayPolygon);
         }
@@ -711,7 +711,7 @@ void stats::paintStatisticsData(QPainter              *painter,
         {
           auto gridStyle = it->gridOptions.style;
           if (it->gridOptions.scaleToZoom)
-            gridStyle.width = gridStyle.width * zoomFactor;
+            gridStyle->width = gridStyle->width * zoomFactor;
 
           painter->setPen(styleToPen(gridStyle));
           painter->setBrush(QBrush(QColor(Qt::color0), Qt::NoBrush)); // no fill color
@@ -818,7 +818,7 @@ void stats::paintStatisticsData(QPainter              *painter,
       {
         auto gridStyle = it->gridOptions.style;
         if (it->gridOptions.scaleToZoom)
-          gridStyle.width = gridStyle.width * zoomFactor;
+          gridStyle->width = gridStyle->width * zoomFactor;
 
         painter->setPen(styleToPen(gridStyle));
         painter->setBrush(QBrush(QColor(Qt::color0), Qt::NoBrush)); // no fill color
@@ -991,7 +991,7 @@ void stats::paintStatisticsData(QPainter              *painter,
       {
         auto gridStyle = it->gridOptions.style;
         if (it->gridOptions.scaleToZoom)
-          gridStyle.width = gridStyle.width * zoomFactor;
+          gridStyle->width = gridStyle->width * zoomFactor;
 
         painter->setPen(styleToPen(gridStyle));
         painter->setBrush(QBrush(QColor(Qt::color0), Qt::NoBrush)); // no fill color

@@ -119,9 +119,9 @@ public:
 
   struct GridOptions
   {
-    bool          render{};
-    LineDrawStyle style{};
-    bool          scaleToZoom{};
+    modified<bool>          render{};
+    modified<LineDrawStyle> style{};
+    modified<bool>          scaleToZoom{};
 
     bool operator==(const GridOptions &rhs) const;
   };
@@ -133,12 +133,6 @@ private:
   StatisticsType(int typeId, std::string typeName);
 
   std::map<int, std::string> valuesToText;
-
-  struct initialState
-  {
-    GridOptions gridOptions;
-  };
-  initialState init;
 
   void saveInitialState();
 };

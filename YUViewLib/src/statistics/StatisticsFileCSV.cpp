@@ -469,11 +469,11 @@ void StatisticsFileCSV::readHeaderFromFile(StatisticsData &statisticsData)
       }
       else if (rowItemList[1] == "gridColor")
       {
-        auto r                        = (unsigned char)rowItemList[2].toInt();
-        auto g                        = (unsigned char)rowItemList[3].toInt();
-        auto b                        = (unsigned char)rowItemList[4].toInt();
-        auto a                        = 255;
-        type->gridOptions.style.color = Color(r, g, b, a);
+        auto r                         = (unsigned char)rowItemList[2].toInt();
+        auto g                         = (unsigned char)rowItemList[3].toInt();
+        auto b                         = (unsigned char)rowItemList[4].toInt();
+        auto a                         = 255;
+        type->gridOptions.style->color = Color(r, g, b, a);
       }
       else if (rowItemList[1] == "scaleFactor")
       {

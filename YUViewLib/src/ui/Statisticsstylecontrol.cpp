@@ -128,8 +128,8 @@ void StatisticsStyleControl::setStatsItem(stats::StatisticsType *item)
 
   {
     const auto &options = this->currentItem->gridOptions;
-    this->ui.frameGridColor->setPlainColor(functionsGui::toQColor(options.style.color));
-    this->ui.doubleSpinBoxGridLineWidth->setValue(options.style.width);
+    this->ui.frameGridColor->setPlainColor(functionsGui::toQColor(options.style->color));
+    this->ui.doubleSpinBoxGridLineWidth->setValue(options.style->width);
     this->ui.checkBoxGridScaleToZoom->setChecked(options.scaleToZoom);
   }
 
@@ -474,15 +474,15 @@ void StatisticsStyleControl::on_groupBoxGrid_clicked(bool check)
 void StatisticsStyleControl::on_frameGridColor_clicked()
 {
   auto newQColor =
-      QColorDialog::getColor(functionsGui::toQColor(this->currentItem->gridOptions.style.color),
+      QColorDialog::getColor(functionsGui::toQColor(this->currentItem->gridOptions.style->color),
                              this,
                              tr("Select grid color"),
                              QColorDialog::ShowAlphaChannel);
 
   auto newColor = functionsGui::toColor(newQColor);
-  if (newQColor.isValid() && newColor != this->currentItem->gridOptions.style.color)
+  if (newQColor.isValid() && newColor != this->currentItem->gridOptions.style->color)
   {
-    this->currentItem->gridOptions.style.color = newColor;
+    this->currentItem->gridOptions.style->color = newColor;
     this->ui.frameGridColor->setPlainColor(newQColor);
     emit StyleChanged();
   }
@@ -491,14 +491,14 @@ void StatisticsStyleControl::on_frameGridColor_clicked()
 void StatisticsStyleControl::on_comboBoxGridLineStyle_currentIndexChanged(int index)
 {
   // Convert the selection to a pen style and set it
-  auto pattern                                 = stats::AllPatterns.at(index);
-  this->currentItem->gridOptions.style.pattern = pattern;
+  auto pattern                                  = stats::AllPatterns.at(index);
+  this->currentItem->gridOptions.style->pattern = pattern;
   emit StyleChanged();
 }
 
 void StatisticsStyleControl::on_doubleSpinBoxGridLineWidth_valueChanged(double width)
 {
-  this->currentItem->gridOptions.style.width = width;
+  this->currentItem->gridOptions.style->width = width;
   emit StyleChanged();
 }
 
