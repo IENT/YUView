@@ -55,13 +55,6 @@ std::string StatisticsType::getValueText(const int val) const
   return std::to_string(val);
 }
 
-void StatisticsType::setMappingValues(std::vector<std::string> values)
-{
-  // We assume linear increasing typed IDs
-  for (int i = 0; i < int(values.size()); i++)
-    this->valuesToText[i] = values[i];
-}
-
 bool StatisticsType::ValueDataOptions::operator==(const ValueDataOptions &rhs) const
 {
   return this->render == rhs.render &&                     //

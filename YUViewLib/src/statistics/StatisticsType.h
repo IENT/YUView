@@ -78,8 +78,6 @@ public:
 
   std::string getValueText(const int val) const;
 
-  void setMappingValues(std::vector<std::string> values);
-
   // These are corresponding to the controls in the properties panel
   modified<bool> render{};
   modified<int>  alphaFactor{50};

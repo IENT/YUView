@@ -68,8 +68,8 @@ public:
     return *this;
   }
 
-  StatisticsTypeBuilder
-  withOptionalValueDataOptions(const std::optional<StatisticsType::ValueDataOptions> &valueDataOptions)
+  StatisticsTypeBuilder withOptionalValueDataOptions(
+      const std::optional<StatisticsType::ValueDataOptions> &valueDataOptions)
   {
     this->statisticsType.valueDataOptions = valueDataOptions;
     return *this;
@@ -82,8 +82,8 @@ public:
     return *this;
   }
 
-  StatisticsTypeBuilder
-  withOptionalVectorDataOptions(const std::optional<StatisticsType::VectorDataOptions> &vectorDataOptions)
+  StatisticsTypeBuilder withOptionalVectorDataOptions(
+      const std::optional<StatisticsType::VectorDataOptions> &vectorDataOptions)
   {
     this->statisticsType.vectorDataOptions = vectorDataOptions;
     return *this;
@@ -97,7 +97,9 @@ public:
 
   StatisticsTypeBuilder &withMappingValues(const std::vector<std::string> &mappingValues)
   {
-    this->statisticsType.setMappingValues(mappingValues);
+    int i = 0;
+    for (const auto &value : mappingValues)
+      this->statisticsType.valuesToText[i++] = value;
     return *this;
   }
 
