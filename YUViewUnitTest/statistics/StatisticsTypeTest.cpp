@@ -51,4 +51,132 @@ TEST(StatisticsTypeTest, GetValueText)
   EXPECT_EQ(statisticsType.getValueText(-1), "-1");
 }
 
+TEST(StatisticsTypeTest, TestValueDataEqualityOperator)
+{
+  const StatisticsType::ValueDataOptions options = {
+      .render = true, .scaleToBlockSize = false, .colorMapper = color::ColorMapper()};
+
+  const StatisticsType::ValueDataOptions identicalOptions = {
+      .render = true, .scaleToBlockSize = false, .colorMapper = color::ColorMapper()};
+
+  const StatisticsType::ValueDataOptions optionsWithDifferentRenderFlag = {
+      .render = false, .scaleToBlockSize = false, .colorMapper = color::ColorMapper()};
+
+  const StatisticsType::ValueDataOptions optionsWithDifferentScaleToBlockSize = {
+      .render = true, .scaleToBlockSize = true, .colorMapper = color::ColorMapper()};
+
+  const StatisticsType::ValueDataOptions optionsWithDifferentColorMapper = {
+      .render           = false,
+      .scaleToBlockSize = false,
+      .colorMapper      = color::ColorMapper({0, 255}, Color(0, 0, 0), Color(0, 0, 255))};
+
+  EXPECT_TRUE(options == identicalOptions);
+  EXPECT_FALSE(options == optionsWithDifferentRenderFlag);
+  EXPECT_TRUE(options != optionsWithDifferentRenderFlag);
+  EXPECT_FALSE(options == optionsWithDifferentScaleToBlockSize);
+  EXPECT_TRUE(options != optionsWithDifferentScaleToBlockSize);
+  EXPECT_FALSE(options == optionsWithDifferentColorMapper);
+  EXPECT_TRUE(options != optionsWithDifferentColorMapper);
+}
+
+TEST(StatisticsTypeTest, TestVectorDataEqualityOperator)
+{
+  const StatisticsType::VectorDataOptions options = {.render           = true,
+                                                     .renderDataValues = false,
+                                                     .scaleToZoom      = true,
+                                                     .style            = LineDrawStyle(),
+                                                     .scale            = 3,
+                                                     .mapToColor       = true,
+                                                     .arrowHead =
+                                                         StatisticsType::ArrowHead::circle};
+
+  const StatisticsType::VectorDataOptions identicalOptions = {
+      .render           = true,
+      .renderDataValues = false,
+      .scaleToZoom      = true,
+      .style            = LineDrawStyle(),
+      .scale            = 3,
+      .mapToColor       = true,
+      .arrowHead        = StatisticsType::ArrowHead::circle};
+
+  const StatisticsType::VectorDataOptions optionsWithDifferentRenderFlag = {
+      .render           = false,
+      .renderDataValues = false,
+      .scaleToZoom      = true,
+      .style            = LineDrawStyle(),
+      .scale            = 3,
+      .mapToColor       = true,
+      .arrowHead        = StatisticsType::ArrowHead::circle};
+
+  const StatisticsType::VectorDataOptions optionsWithDifferentRenderDataValuesFlag = {
+      .render           = true,
+      .renderDataValues = true,
+      .scaleToZoom      = true,
+      .style            = LineDrawStyle(),
+      .scale            = 3,
+      .mapToColor       = true,
+      .arrowHead        = StatisticsType::ArrowHead::circle};
+
+  const StatisticsType::VectorDataOptions optionsWithDifferentScaleToZoomFlag = {
+      .render           = true,
+      .renderDataValues = false,
+      .scaleToZoom      = false,
+      .style            = LineDrawStyle(),
+      .scale            = 3,
+      .mapToColor       = true,
+      .arrowHead        = StatisticsType::ArrowHead::circle};
+
+  const StatisticsType::VectorDataOptions optionsWithDifferentStyle = {
+      .render           = true,
+      .renderDataValues = false,
+      .scaleToZoom      = true,
+      .style            = LineDrawStyle({Color(255, 0, 0), 2, Pattern::DashDot}),
+      .scale            = 3,
+      .mapToColor       = true,
+      .arrowHead        = StatisticsType::ArrowHead::circle};
+
+  const StatisticsType::VectorDataOptions optionsWithDifferentScale = {
+      .render           = true,
+      .renderDataValues = false,
+      .scaleToZoom      = true,
+      .style            = LineDrawStyle(),
+      .scale            = 4,
+      .mapToColor       = true,
+      .arrowHead        = StatisticsType::ArrowHead::circle};
+
+  const StatisticsType::VectorDataOptions optionsWithDifferentMapToColorFlag = {
+      .render           = true,
+      .renderDataValues = false,
+      .scaleToZoom      = true,
+      .style            = LineDrawStyle(),
+      .scale            = 3,
+      .mapToColor       = false,
+      .arrowHead        = StatisticsType::ArrowHead::circle};
+
+  const StatisticsType::VectorDataOptions optionsWithDifferentArrowHead = {
+      .render           = true,
+      .renderDataValues = false,
+      .scaleToZoom      = true,
+      .style            = LineDrawStyle(),
+      .scale            = 3,
+      .mapToColor       = true,
+      .arrowHead        = StatisticsType::ArrowHead::arrow};
+
+  EXPECT_TRUE(options == identicalOptions);
+  EXPECT_FALSE(options == optionsWithDifferentRenderFlag);
+  EXPECT_TRUE(options != optionsWithDifferentRenderFlag);
+  EXPECT_FALSE(options == optionsWithDifferentRenderDataValuesFlag);
+  EXPECT_TRUE(options != optionsWithDifferentRenderDataValuesFlag);
+  EXPECT_FALSE(options == optionsWithDifferentScaleToZoomFlag);
+  EXPECT_TRUE(options != optionsWithDifferentScaleToZoomFlag);
+  EXPECT_FALSE(options == optionsWithDifferentStyle);
+  EXPECT_TRUE(options != optionsWithDifferentStyle);
+  EXPECT_FALSE(options == optionsWithDifferentScale);
+  EXPECT_TRUE(options != optionsWithDifferentScale);
+  EXPECT_FALSE(options == optionsWithDifferentMapToColorFlag);
+  EXPECT_TRUE(options != optionsWithDifferentMapToColorFlag);
+  EXPECT_FALSE(options == optionsWithDifferentArrowHead);
+  EXPECT_TRUE(options != optionsWithDifferentArrowHead);
+}
+
 } // namespace stats::test
