@@ -179,4 +179,32 @@ TEST(StatisticsTypeTest, TestVectorDataEqualityOperator)
   EXPECT_TRUE(options != optionsWithDifferentArrowHead);
 }
 
+TEST(StatisticsTypeTest, TestGridOptionsEqualityOperator)
+{
+  const StatisticsType::GridOptions options = {
+      .render = true, .style = LineDrawStyle(), .scaleToZoom = true};
+
+  const StatisticsType::GridOptions identicalOptions = {
+      .render = true, .style = LineDrawStyle(), .scaleToZoom = true};
+
+  const StatisticsType::GridOptions optionsWithDifferentRenderFlag = {
+      .render = false, .style = LineDrawStyle(), .scaleToZoom = true};
+
+  const StatisticsType::GridOptions optionsWithDifferentStyle = {
+      .render      = true,
+      .style       = LineDrawStyle({Color(255, 0, 0), 2, Pattern::DashDot}),
+      .scaleToZoom = true};
+
+  const StatisticsType::GridOptions optionsWithDifferentScaleToZoomFlag = {
+      .render = true, .style = LineDrawStyle(), .scaleToZoom = false};
+
+  EXPECT_TRUE(options == identicalOptions);
+  EXPECT_FALSE(options == optionsWithDifferentRenderFlag);
+  EXPECT_TRUE(options != optionsWithDifferentRenderFlag);
+  EXPECT_FALSE(options == optionsWithDifferentStyle);
+  EXPECT_TRUE(options != optionsWithDifferentStyle);
+  EXPECT_FALSE(options == optionsWithDifferentScaleToZoomFlag);
+  EXPECT_TRUE(options != optionsWithDifferentScaleToZoomFlag);
+}
+
 } // namespace stats::test
