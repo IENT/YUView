@@ -77,9 +77,9 @@ playlistItemStatisticsFile::playlistItemStatisticsFile(const QString &itemNameOr
   this->openStatisticsFile();
   this->statisticsUIHandler.setStatisticsData(&this->statisticsData);
 
-  connect(&this->statisticsUIHandler,
-          &stats::StatisticUIHandler::updateItem,
-          [this](bool redraw) { emit SignalItemChanged(redraw, RECACHE_NONE); });
+  connect(&this->statisticsUIHandler, &stats::StatisticUIHandler::updateItem, [this](bool redraw) {
+    emit SignalItemChanged(redraw, RECACHE_NONE);
+  });
 }
 
 playlistItemStatisticsFile::~playlistItemStatisticsFile()
@@ -299,8 +299,9 @@ void playlistItemStatisticsFile::openStatisticsFile()
   this->timer.start(1000, this);
   this->breakBackgroundAtomic.store(false);
   this->backgroundParserFuture = QtConcurrent::run(
-      [=](stats::StatisticsFileBase *file)
-      { file->readFrameAndTypePositionsFromFile(std::ref(this->breakBackgroundAtomic)); },
+      [=, this](stats::StatisticsFileBase *file) {
+        file->readFrameAndTypePositionsFromFile(std::ref(this->breakBackgroundAtomic));
+      },
       this->file.get());
 
   DEBUG_STAT(

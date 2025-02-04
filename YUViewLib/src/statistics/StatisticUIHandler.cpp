@@ -119,7 +119,7 @@ QLayout *StatisticUIHandler::createStatisticsHandlerControls(bool recreateContro
     QPushButton *pushButton = new QPushButton(
         functionsGui::convertIcon(":img_edit.png"), QString(), ui.scrollAreaWidgetContents);
     ui.gridLayout->addWidget(pushButton, int(row + 2), 2);
-    connect(pushButton, &QPushButton::released, this, [=] { onStyleButtonClicked(row); });
+    connect(pushButton, &QPushButton::released, this, [=, this] { onStyleButtonClicked(row); });
     itemStyleButtons[0].push_back(pushButton);
   }
 
@@ -185,7 +185,7 @@ QWidget *StatisticUIHandler::getSecondaryStatisticsHandlerControls(bool recreate
       QPushButton *pushButton = new QPushButton(
           functionsGui::convertIcon(":img_edit.png"), QString(), ui2.scrollAreaWidgetContents);
       ui2.gridLayout->addWidget(pushButton, int(row + 2), 2);
-      connect(pushButton, &QPushButton::released, this, [=] { onStyleButtonClicked(row); });
+      connect(pushButton, &QPushButton::released, this, [=, this] { onStyleButtonClicked(row); });
       itemStyleButtons[1].push_back(pushButton);
     }
 

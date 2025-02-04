@@ -196,7 +196,7 @@ public:
     {
       // We must wait until the worker is done.
       DEBUG_CACHING("loadingThread::quitWhenDone waiting for worker to finish...");
-      connect(worker(), &loadingWorker::loadingFinished, this, [=] {
+      connect(worker(), &loadingWorker::loadingFinished, this, [=, this] {
         DEBUG_CACHING("loadingThread::quitWhenDone worker done -> quit");
         quit();
       });
@@ -264,8 +264,8 @@ VideoCache::VideoCache(PlaylistTreeWidget *playlistTreeWidget,
           &PlaybackController::signalPlaybackStarting,
           this,
           &VideoCache::updateCacheQueue);
-  connect(&statusUpdateTimer, &QTimer::timeout, this, [=] { emit updateCacheStatus(); });
-  connect(&testProgrssUpdateTimer, &QTimer::timeout, this, [=] { updateTestProgress(); });
+  connect(&statusUpdateTimer, &QTimer::timeout, this, [=, this] { emit updateCacheStatus(); });
+  connect(&testProgrssUpdateTimer, &QTimer::timeout, this, [=, this] { updateTestProgress(); });
 }
 
 VideoCache::~VideoCache()
