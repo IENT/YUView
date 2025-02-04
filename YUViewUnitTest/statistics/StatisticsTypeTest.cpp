@@ -72,11 +72,8 @@ TEST(StatisticsTypeTest, TestValueDataEqualityOperator)
 
   EXPECT_TRUE(options == identicalOptions);
   EXPECT_FALSE(options == optionsWithDifferentRenderFlag);
-  EXPECT_TRUE(options != optionsWithDifferentRenderFlag);
   EXPECT_FALSE(options == optionsWithDifferentScaleToBlockSize);
-  EXPECT_TRUE(options != optionsWithDifferentScaleToBlockSize);
   EXPECT_FALSE(options == optionsWithDifferentColorMapper);
-  EXPECT_TRUE(options != optionsWithDifferentColorMapper);
 }
 
 TEST(StatisticsTypeTest, TestVectorDataEqualityOperator)
@@ -164,19 +161,12 @@ TEST(StatisticsTypeTest, TestVectorDataEqualityOperator)
 
   EXPECT_TRUE(options == identicalOptions);
   EXPECT_FALSE(options == optionsWithDifferentRenderFlag);
-  EXPECT_TRUE(options != optionsWithDifferentRenderFlag);
   EXPECT_FALSE(options == optionsWithDifferentRenderDataValuesFlag);
-  EXPECT_TRUE(options != optionsWithDifferentRenderDataValuesFlag);
   EXPECT_FALSE(options == optionsWithDifferentScaleToZoomFlag);
-  EXPECT_TRUE(options != optionsWithDifferentScaleToZoomFlag);
   EXPECT_FALSE(options == optionsWithDifferentStyle);
-  EXPECT_TRUE(options != optionsWithDifferentStyle);
   EXPECT_FALSE(options == optionsWithDifferentScale);
-  EXPECT_TRUE(options != optionsWithDifferentScale);
   EXPECT_FALSE(options == optionsWithDifferentMapToColorFlag);
-  EXPECT_TRUE(options != optionsWithDifferentMapToColorFlag);
   EXPECT_FALSE(options == optionsWithDifferentArrowHead);
-  EXPECT_TRUE(options != optionsWithDifferentArrowHead);
 }
 
 TEST(StatisticsTypeTest, TestGridOptionsEqualityOperator)
@@ -200,11 +190,8 @@ TEST(StatisticsTypeTest, TestGridOptionsEqualityOperator)
 
   EXPECT_TRUE(options == identicalOptions);
   EXPECT_FALSE(options == optionsWithDifferentRenderFlag);
-  EXPECT_TRUE(options != optionsWithDifferentRenderFlag);
   EXPECT_FALSE(options == optionsWithDifferentStyle);
-  EXPECT_TRUE(options != optionsWithDifferentStyle);
   EXPECT_FALSE(options == optionsWithDifferentScaleToZoomFlag);
-  EXPECT_TRUE(options != optionsWithDifferentScaleToZoomFlag);
 }
 
 } // namespace stats::test

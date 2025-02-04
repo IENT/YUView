@@ -42,11 +42,6 @@ bool LineDrawStyle::operator==(const LineDrawStyle &other) const
   return color == other.color && width == other.width && pattern == other.pattern;
 }
 
-bool LineDrawStyle::operator!=(const LineDrawStyle &other) const
-{
-  return !(*this == other);
-}
-
 std::string StatisticsType::getValueText(const int val) const
 {
   if (this->valuesToText.contains(val))
