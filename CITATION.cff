@@ -1,0 +1,25 @@
+# This CITATION.cff file was generated with cffinit.
+# Visit https://bit.ly/cffinit to generate yours today!
+
+cff-version: 1.2.0
+title: YUView
+message: >-
+  If you use this software, please cite it using the
+  metadata from this file.
+type: software
+authors:
+  - given-names: Christian
+    family-names: Feldmann
+    email: christian.feldmann@gmx.de
+repository-code: 'https://github.com/IENT/YUView'
+url: 'https://ient.github.io/YUView/'
+repository-artifact: 'https://github.com/IENT/YUView/releases'
+abstract: >-
+  The Free and Open Source Cross Platform YUV Viewer with an
+  advanced analytics toolset.
+keywords:
+  - Qt
+  - YUV
+  - Player
+  - Analysis
+license: GPL-3.0-or-later
