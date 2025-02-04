@@ -131,7 +131,7 @@ jobs:
         zip -r ${{matrix.ARTIFACT_NAME}} YUView.app/
         mkdir $GITHUB_WORKSPACE/artifacts
         cp ${{matrix.ARTIFACT_NAME}} $GITHUB_WORKSPACE/artifacts/
-      if: matrix.os == 'macos-12' || matrix.os == 'macos-14'
+      if: matrix.os == 'macos-13' || matrix.os == 'macos-14'
     - name: Build Appimage (Linux)
       run: |
         cd build
