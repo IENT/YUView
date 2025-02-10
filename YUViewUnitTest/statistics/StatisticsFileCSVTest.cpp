@@ -200,8 +200,8 @@ TEST(StatisticsFileCSV, testCSVFileParsing)
   {
     const auto &t = types[i];
 
-    EXPECT_EQ(t.typeID, typeIDs[i]);
-    EXPECT_EQ(t.typeName, typeNameNames[i]);
+    EXPECT_EQ(t.getTypeID(), typeIDs[i]);
+    EXPECT_EQ(t.getTypeName(), typeNameNames[i]);
     if (t.vectorDataOptions)
     {
       EXPECT_EQ(t.vectorDataOptions->style->color.toHex(), vectorColors[i]);

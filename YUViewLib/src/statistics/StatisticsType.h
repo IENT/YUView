@@ -71,9 +71,9 @@ class StatisticsType
   friend class StatisticsTypePlaylistHandler;
 
 public:
-  int         typeID{};
-  std::string typeName{};
-  std::string description{};
+  int         getTypeID() const { return typeID; }
+  std::string getTypeName() const { return typeName; }
+  std::string getDescription() const { return description; }
 
   std::string getValueText(const int val) const;
 
@@ -130,6 +130,10 @@ public:
 private:
   StatisticsType() = delete;
   StatisticsType(int typeId, std::string typeName);
+
+  int         typeID{};
+  std::string typeName{};
+  std::string description{};
 
   std::map<int, std::string> valuesToText;
 

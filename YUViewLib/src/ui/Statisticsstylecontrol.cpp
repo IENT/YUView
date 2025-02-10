@@ -87,7 +87,7 @@ void StatisticsStyleControl::setStatsItem(stats::StatisticsType *item)
   DEBUG_STAT_STYLE("StatisticsStyleControl::setStatsItem %s", item->typeName.toStdString().c_str());
   this->currentItem = item;
   this->setWindowTitle("Edit statistics rendering: " +
-                       QString::fromStdString(this->currentItem->typeName));
+                       QString::fromStdString(this->currentItem->getTypeName()));
 
   if (this->currentItem->valueDataOptions)
   {

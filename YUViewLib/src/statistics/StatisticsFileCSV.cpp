@@ -319,7 +319,7 @@ void StatisticsFileCSV::loadStatisticData(StatisticsData &statisticsData, int po
       auto &statTypes = statisticsData.getStatisticsTypes();
       auto  statIt    = std::find_if(statTypes.begin(),
                                  statTypes.end(),
-                                 [type](StatisticsType &t) { return t.typeID == type; });
+                                 [type](StatisticsType &t) { return t.getTypeID() == type; });
       Q_ASSERT_X(statIt != statTypes.end(), Q_FUNC_INFO, "Stat type not found.");
 
       if (vectorData && statIt->vectorDataOptions)

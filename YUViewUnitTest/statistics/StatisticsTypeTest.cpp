@@ -41,9 +41,9 @@ TEST(StatisticsTypeTest, DefaultConstructorValues)
 {
   const auto statisticsType = StatisticsTypeBuilder(0, "").build();
 
-  EXPECT_EQ(statisticsType.typeID, 0);
-  EXPECT_TRUE(statisticsType.typeName.empty());
-  EXPECT_TRUE(statisticsType.description.empty());
+  EXPECT_EQ(statisticsType.getTypeID(), 0);
+  EXPECT_TRUE(statisticsType.getTypeName().empty());
+  EXPECT_TRUE(statisticsType.getDescription().empty());
   EXPECT_FALSE(statisticsType.render);
   EXPECT_EQ(statisticsType.alphaFactor, 50);
   EXPECT_FALSE(statisticsType.valueDataOptions);

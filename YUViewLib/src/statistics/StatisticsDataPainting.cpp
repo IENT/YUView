@@ -320,10 +320,10 @@ void stats::paintStatisticsData(QPainter              *painter,
 
   for (auto it = statsTypes.rbegin(); it != statsTypes.rend(); it++)
   {
-    if (!it->render || !statisticsData.hasDataForTypeID(it->typeID))
+    if (!it->render || !statisticsData.hasDataForTypeID(it->getTypeID()))
       continue;
 
-    for (const auto &valueItem : statisticsData[it->typeID].valueData)
+    for (const auto &valueItem : statisticsData[it->getTypeID()].valueData)
     {
       // Calculate the size and position of the rectangle to draw (zoomed in)
       auto rect = QRect(valueItem.pos[0], valueItem.pos[1], valueItem.size[0], valueItem.size[1]);
@@ -380,7 +380,7 @@ void stats::paintStatisticsData(QPainter              *painter,
         if (valTxt.empty() && it->valueDataOptions && it->valueDataOptions->scaleToBlockSize)
           valTxt = std::to_string(float(value) / (valueItem.size[0] * valueItem.size[1]));
 
-        auto typeTxt = it->typeName;
+        auto typeTxt = it->getTypeName();
         auto statTxt = moreThanOneBlockStatRendered ? typeTxt + ":" + valTxt : valTxt;
 
         int i = drawStatPoints.indexOf(displayRect.topLeft());
@@ -405,12 +405,12 @@ void stats::paintStatisticsData(QPainter              *painter,
   // drawn. This will be used as an offset.
   for (auto it = statsTypes.rbegin(); it != statsTypes.rend(); it++)
   {
-    if (!it->render || !statisticsData.hasDataForTypeID(it->typeID))
+    if (!it->render || !statisticsData.hasDataForTypeID(it->getTypeID()))
       // This statistics type is not rendered or could not be loaded.
       continue;
 
     // Go through all the value data
-    for (const auto &valueItem : statisticsData[it->typeID].polygonValueData)
+    for (const auto &valueItem : statisticsData[it->getTypeID()].polygonValueData)
     {
       // Calculate the size and position of the rectangle to draw (zoomed in)
       auto valuePoly           = convertToQPolygon(valueItem.corners);
@@ -471,7 +471,7 @@ void stats::paintStatisticsData(QPainter              *painter,
         if (zoomFactor >= STATISTICS_DRAW_VALUES_ZOOM)
         {
           auto valTxt  = it->getValueText(value);
-          auto typeTxt = it->typeName;
+          auto typeTxt = it->getTypeName();
           auto statTxt = moreThanOneBlockStatRendered ? typeTxt + ":" + valTxt : valTxt;
 
           int i = drawStatPoints.indexOf(getPolygonCenter(displayPolygon));
@@ -507,12 +507,12 @@ void stats::paintStatisticsData(QPainter              *painter,
   // Draw all the arrows
   for (auto it = statsTypes.rbegin(); it != statsTypes.rend(); it++)
   {
-    if (!it->render || !statisticsData.hasDataForTypeID(it->typeID))
+    if (!it->render || !statisticsData.hasDataForTypeID(it->getTypeID()))
       // This statistics type is not rendered or could not be loaded.
       continue;
 
     // Go through all the vector data
-    for (const auto &vectorItem : statisticsData[it->typeID].vectorData)
+    for (const auto &vectorItem : statisticsData[it->getTypeID()].vectorData)
     {
       // Calculate the size and position of the rectangle to draw (zoomed in)
       const auto rect =
@@ -722,7 +722,7 @@ void stats::paintStatisticsData(QPainter              *painter,
     }
 
     // Go through all the affine transform data
-    for (const auto &affineTFItem : statisticsData[it->typeID].affineTFData)
+    for (const auto &affineTFItem : statisticsData[it->getTypeID()].affineTFData)
     {
       // Calculate the size and position of the rectangle to draw (zoomed in)
       const auto rect = QRect(
@@ -831,12 +831,12 @@ void stats::paintStatisticsData(QPainter              *painter,
   // Draw all polygon vector data
   for (auto it = statsTypes.rbegin(); it != statsTypes.rend(); it++)
   {
-    if (!it->render || !statisticsData.hasDataForTypeID(it->typeID))
+    if (!it->render || !statisticsData.hasDataForTypeID(it->getTypeID()))
       // This statistics type is not rendered or could not be loaded.
       continue;
 
     // Go through all the vector data
-    for (const auto &vectorItem : statisticsData[it->typeID].polygonVectorData)
+    for (const auto &vectorItem : statisticsData[it->getTypeID()].polygonVectorData)
     {
       if (vectorItem.corners.size() < 3)
         continue; // need at least triangle -- or more corners

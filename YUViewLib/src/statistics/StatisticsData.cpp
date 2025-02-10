@@ -165,10 +165,10 @@ ItemLoadingState StatisticsData::needsLoading(int frameIndex) const
   {
     // If the statistics for this frame index were not loaded yet but will be rendered, load them
     // now.
-    if (it->render && this->frameCache.count(it->typeID) == 0)
+    if (it->render && this->frameCache.count(it->getTypeID()) == 0)
     {
       // Return that loading is needed before we can render the statitics.
-      DEBUG_STATDATA("StatisticsData::needsLoading type " << it->typeID << " LoadingNeeded");
+      DEBUG_STATDATA("StatisticsData::needsLoading type " << it->getTypeID() << " LoadingNeeded");
       return ItemLoadingState::LoadingNeeded;
     }
   }
@@ -184,8 +184,8 @@ std::vector<int> StatisticsData::getTypesThatNeedLoading(int frameIndex) const
   auto             loadAll = this->frameIdx != frameIndex;
   for (const auto &statsType : this->statsTypes)
   {
-    if (statsType.render && (loadAll || this->frameCache.count(statsType.typeID) == 0))
-      typesToLoad.push_back(statsType.typeID);
+    if (statsType.render && (loadAll || this->frameCache.count(statsType.getTypeID()) == 0))
+      typesToLoad.push_back(statsType.getTypeID());
   }
 
   DEBUG_STATDATA("StatisticsData::getTypesThatNeedLoading "
@@ -204,13 +204,13 @@ QStringPairList StatisticsData::getValuesAt(const QPoint &pos) const
 
   for (auto it = this->statsTypes.rbegin(); it != this->statsTypes.rend(); it++)
   {
-    if (it->typeID == INT_INVALID || this->frameCache.count(it->typeID) == 0)
+    if (it->getTypeID() == INT_INVALID || this->frameCache.count(it->getTypeID()) == 0)
       // no active statistics data
       continue;
 
     // Get all value data entries
     bool foundStats = false;
-    for (const auto &valueItem : this->frameCache.at(it->typeID).valueData)
+    for (const auto &valueItem : this->frameCache.at(it->getTypeID()).valueData)
     {
       auto rect = QRect(valueItem.pos[0], valueItem.pos[1], valueItem.size[0], valueItem.size[1]);
       if (rect.contains(pos))
@@ -221,12 +221,12 @@ QStringPairList StatisticsData::getValuesAt(const QPoint &pos) const
           valTxt = std::to_string(float(value) / (valueItem.size[0] * valueItem.size[1]));
 
         valueList.append(
-            QStringPair(QString::fromStdString(it->typeName), QString::fromStdString(valTxt)));
+            QStringPair(QString::fromStdString(it->getTypeName()), QString::fromStdString(valTxt)));
         foundStats = true;
       }
     }
 
-    for (const auto &vectorItem : this->frameCache.at(it->typeID).vectorData)
+    for (const auto &vectorItem : this->frameCache.at(it->getTypeID()).vectorData)
     {
       auto rect =
           QRect(vectorItem.pos[0], vectorItem.pos[1], vectorItem.size[0], vectorItem.size[1]);
@@ -245,13 +245,13 @@ QStringPairList StatisticsData::getValuesAt(const QPoint &pos) const
           x = double(vectorItem.point[0].x) / scale;
           y = double(vectorItem.point[0].y) / scale;
         }
-        valueList.append(QStringPair(QString("%1").arg(QString::fromStdString(it->typeName)),
+        valueList.append(QStringPair(QString("%1").arg(QString::fromStdString(it->getTypeName())),
                                      QString("(%1,%2)").arg(x).arg(y)));
         foundStats = true;
       }
     }
 
-    for (const auto &affineTFItem : this->frameCache.at(it->typeID).affineTFData)
+    for (const auto &affineTFItem : this->frameCache.at(it->getTypeID()).affineTFData)
     {
       const auto rect = QRect(
           affineTFItem.pos[0], affineTFItem.pos[1], affineTFItem.size[0], affineTFItem.size[1]);
@@ -263,17 +263,17 @@ QStringPairList StatisticsData::getValuesAt(const QPoint &pos) const
           auto xScaled = float(affineTFItem.point[i].x / scale);
           auto yScaled = float(affineTFItem.point[i].y / scale);
           valueList.append(
-              QStringPair(QString("%1_%2[x]").arg(QString::fromStdString(it->typeName)).arg(i),
+              QStringPair(QString("%1_%2[x]").arg(QString::fromStdString(it->getTypeName())).arg(i),
                           QString::number(xScaled)));
           valueList.append(
-              QStringPair(QString("%1_%2[y]").arg(QString::fromStdString(it->typeName)).arg(i),
+              QStringPair(QString("%1_%2[y]").arg(QString::fromStdString(it->getTypeName())).arg(i),
                           QString::number(yScaled)));
         }
         foundStats = true;
       }
     }
 
-    for (const auto &valueItem : this->frameCache.at(it->typeID).polygonValueData)
+    for (const auto &valueItem : this->frameCache.at(it->getTypeID()).polygonValueData)
     {
       if (valueItem.corners.size() < 3)
         continue; // need at least triangle -- or more corners
@@ -282,12 +282,12 @@ QStringPairList StatisticsData::getValuesAt(const QPoint &pos) const
         int  value  = valueItem.value;
         auto valTxt = it->getValueText(value);
         valueList.append(
-            QStringPair(QString::fromStdString(it->typeName), QString::fromStdString(valTxt)));
+            QStringPair(QString::fromStdString(it->getTypeName()), QString::fromStdString(valTxt)));
         foundStats = true;
       }
     }
 
-    for (const auto &polygonVectorItem : this->frameCache.at(it->typeID).polygonVectorData)
+    for (const auto &polygonVectorItem : this->frameCache.at(it->getTypeID()).polygonVectorData)
     {
       if (polygonVectorItem.corners.size() < 3)
         continue; // need at least triangle -- or more corners
@@ -299,17 +299,19 @@ QStringPairList StatisticsData::getValuesAt(const QPoint &pos) const
           const auto scale   = it->vectorDataOptions->scale;
           auto       xScaled = (float)polygonVectorItem.point.x / scale;
           auto       yScaled = (float)polygonVectorItem.point.y / scale;
-          valueList.append(QStringPair(QString("%1[x]").arg(QString::fromStdString(it->typeName)),
-                                       QString::number(xScaled)));
-          valueList.append(QStringPair(QString("%1[y]").arg(QString::fromStdString(it->typeName)),
-                                       QString::number(yScaled)));
+          valueList.append(
+              QStringPair(QString("%1[x]").arg(QString::fromStdString(it->getTypeName())),
+                          QString::number(xScaled)));
+          valueList.append(
+              QStringPair(QString("%1[y]").arg(QString::fromStdString(it->getTypeName())),
+                          QString::number(yScaled)));
           foundStats = true;
         }
       }
     }
 
     if (!foundStats)
-      valueList.append(QStringPair(QString::fromStdString(it->typeName), "-"));
+      valueList.append(QStringPair(QString::fromStdString(it->getTypeName()), "-"));
   }
 
   return valueList;
@@ -337,25 +339,7 @@ void StatisticsData::setFrameIndex(int frameIndex)
 
 void StatisticsData::addStatType(const StatisticsType &type)
 {
-  if (type.typeID == -1)
-  {
-    // stat source does not have type ids. need to auto assign an id for this type
-    // check if type not already in list
-    int maxTypeID = 0;
-    for (auto it = this->statsTypes.begin(); it != this->statsTypes.end(); it++)
-    {
-      if (it->typeName == type.typeName)
-        return;
-      if (it->typeID > maxTypeID)
-        maxTypeID = it->typeID;
-    }
-
-    auto newType   = type;
-    newType.typeID = maxTypeID + 1;
-    this->statsTypes.push_back(newType);
-  }
-  else
-    this->statsTypes.push_back(type);
+  this->statsTypes.push_back(type);
 }
 
 void StatisticsData::savePlaylist(YUViewDomElement &root) const
