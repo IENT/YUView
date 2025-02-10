@@ -226,7 +226,7 @@ void StatisticsTypePlaylistHandler::tryToLoadFromPlaylist(StatisticsType        
     }
     else if (name == "renderGrid")
       type.gridOptions.render = (value != "0");
-    else if (name == "gridPen")
+    else if (name == "gridStyle")
       type.gridOptions.style = convertStringToPen(value);
     else if (name == "scaleGridToZoom")
       type.gridOptions.scaleToZoom = (value != "0");
