@@ -37,6 +37,36 @@
 namespace stats::test
 {
 
+TEST(StatisticsTypeTest, DefaultConstructorValues)
+{
+  const auto statisticsType = StatisticsTypeBuilder(0, "").build();
+
+  EXPECT_EQ(statisticsType.typeID, 0);
+  EXPECT_TRUE(statisticsType.typeName.empty());
+  EXPECT_TRUE(statisticsType.description.empty());
+  EXPECT_FALSE(statisticsType.render);
+  EXPECT_EQ(statisticsType.alphaFactor, 50);
+  EXPECT_FALSE(statisticsType.valueDataOptions);
+  EXPECT_FALSE(statisticsType.vectorDataOptions);
+  EXPECT_FALSE(statisticsType.gridOptions.render);
+  EXPECT_EQ(statisticsType.gridOptions.style, LineDrawStyle());
+  EXPECT_FALSE(statisticsType.gridOptions.scaleToZoom);
+
+  StatisticsType::ValueDataOptions valueDataOptions;
+  EXPECT_TRUE(valueDataOptions.render);
+  EXPECT_FALSE(valueDataOptions.scaleToBlockSize);
+  EXPECT_EQ(valueDataOptions.colorMapper, color::ColorMapper());
+
+  StatisticsType::VectorDataOptions vectorDataOptions;
+  EXPECT_TRUE(vectorDataOptions.render);
+  EXPECT_TRUE(vectorDataOptions.renderDataValues);
+  EXPECT_FALSE(vectorDataOptions.scaleToZoom);
+  EXPECT_EQ(vectorDataOptions.style, LineDrawStyle());
+  EXPECT_EQ(vectorDataOptions.scale, 0);
+  EXPECT_FALSE(vectorDataOptions.mapToColor);
+  EXPECT_EQ(vectorDataOptions.arrowHead, StatisticsType::ArrowHead::arrow);
+}
+
 TEST(StatisticsTypeTest, GetValueText)
 {
   const auto statisticsType =
