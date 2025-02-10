@@ -141,7 +141,7 @@ TEST(StatisticsTypePlaylistHandlerTest,
 
   // Modify grid options
   statisticsType.gridOptions.render      = true;
-  statisticsType.gridOptions.style       = LineDrawStyle(Color(12, 15, 240), 1.25, Pattern::Dash);
+  statisticsType.gridOptions.style       = LineDrawStyle({Color(12, 15, 240), 1.25, Pattern::Dash});
   statisticsType.gridOptions.scaleToZoom = true;
 
   EXPECT_EQ(saveItemAndGetXmlAsText(statisticsType),
