@@ -80,6 +80,18 @@ StatisticsType::StatisticsType(int typeId, std::string typeName)
 {
 }
 
+bool StatisticsType::operator==(const StatisticsType &rhs) const
+{
+  return this->typeID == rhs.typeID &&                       //
+         this->typeName == rhs.typeName &&                   //
+         this->description == rhs.description &&             //
+         this->render == rhs.render &&                       //
+         this->alphaFactor == rhs.alphaFactor &&             //
+         this->valueDataOptions == rhs.valueDataOptions &&   //
+         this->vectorDataOptions == rhs.vectorDataOptions && //
+         this->gridOptions == rhs.gridOptions;
+}
+
 void StatisticsType::saveInitialState()
 {
   this->render.setUnmodified();

@@ -125,6 +125,8 @@ public:
 
   GridOptions gridOptions;
 
+  bool operator==(const StatisticsType &rhs) const;
+
 private:
   StatisticsType() = delete;
   StatisticsType(int typeId, std::string typeName);
