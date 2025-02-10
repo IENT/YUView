@@ -48,7 +48,7 @@ static std::string formatFileInfoForGuessForTestName(const FileInfoForGuess &fil
                                     fileInfoForGuess.fileSize);
 }
 
-static std::string formatGuessedFrameFormatForTestName(const GuessedFrameFormat &guessedFrameFormat)
+[[maybe_unused]] static std::string formatGuessedFrameFormatForTestName(const GuessedFrameFormat &guessedFrameFormat)
 {
   auto name = yuviewTest::formatTestName("frameSize",
                                          guessedFrameFormat.frameSize,

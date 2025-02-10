@@ -183,11 +183,11 @@ void StatisticsFileVTMBMS::readFrameAndTypePositionsFromFile(std::atomic_bool &b
   return;
 }
 
-void StatisticsFileVTMBMS::loadStatisticData(StatisticsData &statisticsData, int poc, int typeID)
+void StatisticsFileVTMBMS::loadStatisticData(StatisticsData &, int, int)
 {
 }
 
-void StatisticsFileVTMBMS::readHeaderFromFile(StatisticsData &statisticsData)
+void StatisticsFileVTMBMS::readHeaderFromFile(StatisticsData &)
 {
 }
 
