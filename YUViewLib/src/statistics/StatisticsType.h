@@ -107,7 +107,7 @@ public:
     modified<LineDrawStyle> style{};
     modified<int>           scale{};
     modified<bool>          mapToColor{};
-    modified<ArrowHead>     arrowHead{};
+    modified<ArrowHead>     arrowHead{ArrowHead::arrow};
 
     bool operator==(const VectorDataOptions &rhs) const;
   };

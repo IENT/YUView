@@ -65,6 +65,11 @@ TEST(StatisticsTypeTest, DefaultConstructorValues)
   EXPECT_EQ(vectorDataOptions.scale, 0);
   EXPECT_FALSE(vectorDataOptions.mapToColor);
   EXPECT_EQ(vectorDataOptions.arrowHead, StatisticsType::ArrowHead::arrow);
+
+  LineDrawStyle lineDrawStyle;
+  EXPECT_EQ(lineDrawStyle.color, Color());
+  EXPECT_EQ(lineDrawStyle.width, 0.25);
+  EXPECT_EQ(lineDrawStyle.pattern, Pattern::Solid);
 }
 
 TEST(StatisticsTypeTest, GetValueText)
