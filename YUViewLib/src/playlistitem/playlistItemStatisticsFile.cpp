@@ -77,9 +77,9 @@ playlistItemStatisticsFile::playlistItemStatisticsFile(const QString &itemNameOr
   this->openStatisticsFile();
   this->statisticsUIHandler.setStatisticsData(&this->statisticsData);
 
-  connect(&this->statisticsUIHandler, &stats::StatisticUIHandler::updateItem, [this](bool redraw) {
-    emit SignalItemChanged(redraw, RECACHE_NONE);
-  });
+  connect(&this->statisticsUIHandler,
+          &stats::StatisticUIHandler::updateItem,
+          [this](bool redraw) { emit SignalItemChanged(redraw, RECACHE_NONE); });
 }
 
 playlistItemStatisticsFile::~playlistItemStatisticsFile()
@@ -279,10 +279,12 @@ void playlistItemStatisticsFile::openStatisticsFile()
   auto suffix = QFileInfo(this->prop.name).suffix();
   if (this->openMode == OpenMode::CSVFile ||
       (this->openMode == OpenMode::Extension && suffix == "csv"))
-    this->file.reset(new stats::StatisticsFileCSV(this->prop.name, this->statisticsData));
+    this->file.reset(
+        new stats::StatisticsFileCSV(this->prop.name.toStdString(), this->statisticsData));
   else if (this->openMode == OpenMode::VTMBMSFile ||
            (this->openMode == OpenMode::Extension && suffix == "vtmbmsstats"))
-    this->file.reset(new stats::StatisticsFileVTMBMS(this->prop.name, this->statisticsData));
+    this->file.reset(
+        new stats::StatisticsFileVTMBMS(this->prop.name.toStdString(), this->statisticsData));
   else
     assert(false);
 
@@ -299,9 +301,8 @@ void playlistItemStatisticsFile::openStatisticsFile()
   this->timer.start(1000, this);
   this->breakBackgroundAtomic.store(false);
   this->backgroundParserFuture = QtConcurrent::run(
-      [=, this](stats::StatisticsFileBase *file) {
-        file->readFrameAndTypePositionsFromFile(std::ref(this->breakBackgroundAtomic));
-      },
+      [=, this](stats::StatisticsFileBase *file)
+      { file->readFrameAndTypePositionsFromFile(std::ref(this->breakBackgroundAtomic)); },
       this->file.get());
 
   DEBUG_STAT(

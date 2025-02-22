@@ -33,82 +33,23 @@
 #include <common/Testing.h>
 
 #include "CheckFunctions.h"
+#include "StatisticsFileCSVTestData.h"
 
 #include <TemporaryFile.h>
 #include <statistics/StatisticsFileCSV.h>
 
-namespace
+namespace stats::test
 {
-
-ByteVector getCSVTestData()
+class StatisticsFileCSVTest : public testing::Test
 {
-  const std::string stats_str =
-      R"(%;syntax-version;v1.2
-%;seq-specs;BasketballDrive_L1_1920x1080_50_encoder+randomaccess+main+B+2x_FTBE9_IBD08_IBD18_IBD08_IBD18_IP48_QPL1022_SEIDPH0_stats;0;1920;1080;0;
-%;type;9;MVDL0;vector;
-%;vectorColor;100;0;0;255
-%;scaleFactor;4
-%;type;10;MVDL1;vector;
-%;vectorColor;0;100;0;255
-%;scaleFactor;4
-%;type;11;MVL0;vector;
-%;vectorColor;200;0;0;255
-%;scaleFactor;4
-%;type;12;MVL1;vector;
-%;vectorColor;0;200;0;255
-%;scaleFactor;4
-%;type;7;MVPIdxL0;range;
-%;defaultRange;0;1;jet
-%;gridColor;255;255;255;
-%;type;8;MVPIdxL1;range;
-%;defaultRange;0;1;jet
-%;gridColor;255;255;255;
-%;type;5;MergeIdxL0;range;
-%;defaultRange;0;5;jet
-%;gridColor;255;255;255;
-%;type;6;MergeIdxL1;range;
-%;defaultRange;0;5;jet
-%;gridColor;255;255;255;
-%;type;0;PredMode;range;
-%;defaultRange;0;1;jet
-%;type;3;RefFrmIdxL0;range;
-%;defaultRange;0;3;jet
-%;gridColor;255;255;255;
-%;type;4;RefFrmIdxL1;range;
-%;defaultRange;0;3;jet
-%;gridColor;255;255;255;
-%;type;1;Skipflag;range;
-%;defaultRange;0;1;jet
-1;0;32;8;16;9;1;0
-1;8;32;8;16;9;0;0
-1;112;56;4;8;9;0;0
-1;116;56;4;8;9;0;0
-1;128;32;32;16;9;0;0
-1;128;48;32;16;9;0;0
-7;0;32;8;16;3;1
-7;128;48;32;16;3;0
-7;384;0;64;64;3;0
-7;520;32;24;32;3;0
-7;576;40;32;24;3;0
-1;0;32;8;16;11;31;0
-1;8;32;8;16;11;-33;0
-1;112;56;4;8;11;-30;0
-1;116;56;4;8;11;-30;0
-1;128;32;32;16;11;-31;0
-1;128;48;32;16;11;-31;0
-1;160;32;32;16;11;-31;0
-)";
+};
 
-  ByteVector data(stats_str.begin(), stats_str.end());
-  return data;
-}
-
-TEST(StatisticsFileCSV, testCSVFileParsing)
+TEST_F(StatisticsFileCSVTest, testCSVFileParsing)
 {
-  yuviewTest::TemporaryFile csvFile(getCSVTestData());
+  yuviewTest::TemporaryFile csvFile(getCSVTestData1());
 
   stats::StatisticsData    statData;
-  stats::StatisticsFileCSV statFile(QString::fromStdString(csvFile.getFilePathString()), statData);
+  stats::StatisticsFileCSV statFile(csvFile.getFilePathString(), statData);
 
   EXPECT_EQ(statData.getFrameSize(), Size(1920, 1080));
 
@@ -216,6 +157,9 @@ TEST(StatisticsFileCSV, testCSVFileParsing)
     }
   }
 
+  EXPECT_EQ(statFile.getParsingInfo().fileSorting,
+            StatisticsFileBase::ParsingInfo::FileSorting::SortedByType);
+
   // We did not let the file parse the positions of the start of each poc/type yet so loading should
   // not yield any data yet.
   statFile.loadStatisticData(statData, 1, 9);
@@ -225,6 +169,9 @@ TEST(StatisticsFileCSV, testCSVFileParsing)
     EXPECT_EQ(frameData.vectorData.size(), size_t(0));
     EXPECT_EQ(frameData.valueData.size(), size_t(0));
   }
+
+  EXPECT_EQ(statFile.getParsingInfo().fileSorting,
+            StatisticsFileBase::ParsingInfo::FileSorting::SortedByType);
 
   std::atomic_bool breakAtomic;
   breakAtomic.store(false);
@@ -241,6 +188,8 @@ TEST(StatisticsFileCSV, testCSVFileParsing)
                                            {128, 32, 32, 16, 0, 0},
                                            {128, 48, 32, 16, 0, 0}});
   EXPECT_EQ(statData[9].valueData.size(), size_t(0));
+  EXPECT_EQ(statFile.getParsingInfo().fileSorting,
+            StatisticsFileBase::ParsingInfo::FileSorting::SortedByType);
 
   statFile.loadStatisticData(statData, 1, 11);
   EXPECT_EQ(statData.getFrameIndex(), 1);
@@ -253,6 +202,8 @@ TEST(StatisticsFileCSV, testCSVFileParsing)
                                            {128, 48, 32, 16, -31, 0},
                                            {160, 32, 32, 16, -31, 0}});
   EXPECT_EQ(statData[11].valueData.size(), size_t(0));
+  EXPECT_EQ(statFile.getParsingInfo().fileSorting,
+            StatisticsFileBase::ParsingInfo::FileSorting::SortedByType);
 
   statFile.loadStatisticData(statData, 7, 3);
   EXPECT_EQ(statData.getFrameIndex(), 7);
@@ -263,6 +214,8 @@ TEST(StatisticsFileCSV, testCSVFileParsing)
                                           {384, 0, 64, 64, 0},
                                           {520, 32, 24, 32, 0},
                                           {576, 40, 32, 24, 0}});
+  EXPECT_EQ(statFile.getParsingInfo().fileSorting,
+            StatisticsFileBase::ParsingInfo::FileSorting::SortedByType);
 }
 
-} // namespace
+} // namespace stats::test

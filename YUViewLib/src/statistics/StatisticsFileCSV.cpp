@@ -40,6 +40,8 @@
 namespace stats
 {
 
+using FileSorting = StatisticsFileBase::ParsingInfo::FileSorting;
+
 namespace
 {
 
@@ -59,7 +61,7 @@ QStringList parseCSVLine(const QString &srcLine, char delimiter)
 
 } // namespace
 
-StatisticsFileCSV::StatisticsFileCSV(const QString &filename, StatisticsData &statisticsData)
+StatisticsFileCSV::StatisticsFileCSV(const std::string &filename, StatisticsData &statisticsData)
     : StatisticsFileBase(filename)
 {
   this->readHeaderFromFile(statisticsData);
@@ -94,9 +96,9 @@ void StatisticsFileCSV::readFrameAndTypePositionsFromFile(std::atomic_bool &brea
     int      lastType           = INT_INVALID;
     bool     sortingFixed       = false;
 
-    this->parsingProgress = 0;
+    this->parsingInfo.parsingProgress = 0.0;
 
-    while (!fileAtEnd && !breakFunction.load() && !this->abortParsingDestroy)
+    while (!fileAtEnd && !breakFunction.load())
     {
       // Fill the buffer
       auto bufferSize = inputFile.readBytes(inputBuffer, bufferStartPos, STAT_PARSING_BUFFER_SIZE);
@@ -138,9 +140,8 @@ void StatisticsFileCSV::readFrameAndTypePositionsFromFile(std::atomic_bool &brea
                 lastType = typeID;
                 lastPOC  = poc;
 
-                // update number of frames
-                if (poc > this->maxPOC)
-                  this->maxPOC = poc;
+                if (poc > this->parsingInfo.maxPocEncountered)
+                  this->parsingInfo.maxPocEncountered = poc;
               }
               else if (typeID != lastType && poc == lastPOC)
               {
@@ -152,8 +153,8 @@ void StatisticsFileCSV::readFrameAndTypePositionsFromFile(std::atomic_bool &brea
                   // we only check the first occurence of this, in a non-interleaved file
                   // the above condition can be met and will reset fileSortedByPOC
 
-                  this->fileSortedByPOC = true;
-                  sortingFixed          = true;
+                  this->parsingInfo.fileSorting = FileSorting::SortedByPOC;
+                  sortingFixed                  = true;
                 }
                 lastType = typeID;
                 if (this->pocTypeFileposMap[poc].count(typeID) == 0)
@@ -169,7 +170,7 @@ void StatisticsFileCSV::readFrameAndTypePositionsFromFile(std::atomic_bool &brea
                   sortingFixed = true;
 
                 // We found a new POC
-                if (this->fileSortedByPOC)
+                if (this->parsingInfo.fileSorting == FileSorting::SortedByPOC)
                 {
                   // There must not be a start position for any type with this POC already.
                   if (this->pocTypeFileposMap.count(poc) > 0)
@@ -191,14 +192,13 @@ void StatisticsFileCSV::readFrameAndTypePositionsFromFile(std::atomic_bool &brea
                 this->pocTypeFileposMap[poc][typeID] = lineBufferStartPos;
                 emit readPOCType(poc, typeID);
 
-                // update number of frames
-                if (poc > this->maxPOC)
-                  this->maxPOC = poc;
+                if (poc > this->parsingInfo.maxPocEncountered)
+                  this->parsingInfo.maxPocEncountered = poc;
 
                 // Update percent of file parsed
                 if (const auto fileSize = inputFile.getFileSize())
-                  this->parsingProgress = (static_cast<double>(lineBufferStartPos) * 100 /
-                                           static_cast<double>(*fileSize));
+                  this->parsingInfo.parsingProgress = (static_cast<double>(lineBufferStartPos) *
+                                                       100 / static_cast<double>(*fileSize));
               }
             }
           }
@@ -216,19 +216,15 @@ void StatisticsFileCSV::readFrameAndTypePositionsFromFile(std::atomic_bool &brea
       bufferStartPos += bufferSize;
     }
 
-    this->parsingProgress = 100.0;
+    this->parsingInfo.parsingProgress = 100.0;
   }
   catch (const char *str)
   {
-    std::cerr << "Error while parsing meta data: " << str << "\n";
-    this->errorMessage = QString("Error while parsing meta data: ") + QString(str);
-    this->error        = true;
+    this->parsingInfo.errorMessage = "Error while parsing meta data: " + std::string(str);
   }
   catch (const std::exception &ex)
   {
-    std::cerr << "Error while parsing:" << ex.what() << "\n";
-    this->errorMessage = QString("Error while parsing: ") + QString(ex.what());
-    this->error        = true;
+    this->parsingInfo.errorMessage = "Error while parsing meta data: " + std::string(ex.what());
   }
 }
 
@@ -249,7 +245,7 @@ void StatisticsFileCSV::loadStatisticData(StatisticsData &statisticsData, int po
     }
 
     auto startPos = this->pocTypeFileposMap[poc][typeID];
-    if (this->fileSortedByPOC)
+    if (this->parsingInfo.fileSorting == FileSorting::SortedByPOC)
     {
       // If the statistics file is sorted by POC we have to start at the first entry of this POC and
       // parse the file until another POC is encountered. If this is not done, some information from
@@ -281,7 +277,7 @@ void StatisticsFileCSV::loadStatisticData(StatisticsData &statisticsData, int po
       if (pocRow != poc)
         break;
       // if there is a new type and this is a non interleaved file, we are done here.
-      if (!this->fileSortedByPOC && type != typeID)
+      if (this->parsingInfo.fileSorting == FileSorting::SortedByType && type != typeID)
         break;
 
       int values[4] = {0};
@@ -310,11 +306,10 @@ void StatisticsFileCSV::loadStatisticData(StatisticsData &statisticsData, int po
       auto height = rowItemList[4].toUInt();
 
       // Check if block is within the image range
-      if (this->blockOutsideOfFramePOC == -1 &&
+      if (!this->parsingInfo.pocWithDataOutsideOfFrame &&
           (posX + int(width) > int(statisticsData.getFrameSize().width) ||
            posY + int(height) > int(statisticsData.getFrameSize().height)))
-        // Block not in image. Warn about this.
-        this->blockOutsideOfFramePOC = poc;
+        this->parsingInfo.pocWithDataOutsideOfFrame = poc;
 
       auto &statTypes = statisticsData.getStatisticsTypes();
       auto  statIt    = std::find_if(statTypes.begin(),
@@ -333,15 +328,11 @@ void StatisticsFileCSV::loadStatisticData(StatisticsData &statisticsData, int po
   }
   catch (const char *str)
   {
-    std::cerr << "Error while parsing: " << str << '\n';
-    this->errorMessage = QString("Error while parsing meta data: ") + QString(str);
-    this->error        = true;
+    this->parsingInfo.errorMessage = "Error while parsing meta data: " + std::string(str);
   }
   catch (...)
   {
-    std::cerr << "Error while parsing.";
-    this->errorMessage = QString("Error while parsing meta data.");
-    this->error        = true;
+    this->parsingInfo.errorMessage = "Error while parsing meta data.";
   }
 }
 
@@ -500,15 +491,11 @@ void StatisticsFileCSV::readHeaderFromFile(StatisticsData &statisticsData)
   }
   catch (const char *str)
   {
-    std::cerr << "Error while parsing meta data: " << str << '\n';
-    this->errorMessage = QString("Error while parsing meta data: ") + QString(str);
-    this->error        = true;
+    this->parsingInfo.errorMessage = "Error while parsing header: " + std::string(str);
   }
   catch (...)
   {
-    std::cerr << "Error while parsing meta data.";
-    this->errorMessage = QString("Error while parsing meta data.");
-    this->error        = true;
+    this->parsingInfo.errorMessage = "Error while parsing header.";
   }
 }
 

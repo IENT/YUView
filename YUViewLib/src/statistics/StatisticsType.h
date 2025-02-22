@@ -71,9 +71,9 @@ class StatisticsType
   friend class StatisticsTypePlaylistHandler;
 
 public:
-  int         getTypeID() const { return typeID; }
-  std::string getTypeName() const { return typeName; }
-  std::string getDescription() const { return description; }
+  int         getTypeID() const { return this->typeID; }
+  std::string getTypeName() const { return this->typeName; }
+  std::string getDescription() const { return this->description; }
 
   std::string getValueText(const int val) const;
 

@@ -1,6 +1,6 @@
 /*  This file is part of YUView - The YUV player with advanced analytics toolset
  *   <https://github.com/IENT/YUView>
- *   Copyright (C) 2015  Institut f�r Nachrichtentechnik, RWTH Aachen University, GERMANY
+ *   Copyright (C) 2015  Institut für Nachrichtentechnik, RWTH Aachen University, GERMANY
  *
  *   This program is free software; you can redistribute it and/or modify
  *   it under the terms of the GNU General Public License as published by
@@ -30,51 +30,13 @@
  *   along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "StatisticsFileBase.h"
+ #include <common/Typedef.h>
 
-using namespace std::string_view_literals;
-
-namespace stats
+namespace stats::test
 {
 
-namespace
-{
+ByteVector getCSVTestData1();
+ByteVector getCSVTestData2();
 
-std::string sortingToString(StatisticsFileBase::ParsingInfo::FileSorting fileSorting)
-{
-  using FileSorting = StatisticsFileBase::ParsingInfo::FileSorting;
-  if (fileSorting == FileSorting::SortedByPOC)
-    return "By POC";
-  return "By Type";
+
 }
-
-} // namespace
-
-StatisticsFileBase::StatisticsFileBase(const std::string &filename)
-{
-  this->file.openFile(filename);
-  if (!this->file.isOk())
-    this->parsingInfo.errorMessage = "Error opening file " + filename;
-}
-
-InfoData StatisticsFileBase::getInfo() const
-{
-  InfoData info("Statistics File info");
-
-  for (const auto &infoItem : this->file.getFileInfoList())
-    info.items.append(infoItem);
-  info.items.append(InfoItem("Sorting"sv, sortingToString(this->parsingInfo.fileSorting)));
-  info.items.append(
-      InfoItem("Parsing:", std::to_string(this->parsingInfo.parsingProgress) + "..."));
-  if (this->parsingInfo.pocWithDataOutsideOfFrame)
-    info.items.append(InfoItem("Warning",
-                               "A block in frame " +
-                                   std::to_string(*this->parsingInfo.pocWithDataOutsideOfFrame) +
-                                   " is outside of the given size of the statistics."));
-  if (this->parsingInfo.errorMessage)
-    info.items.append(InfoItem("Parsing Error:", *this->parsingInfo.errorMessage));
-
-  return info;
-}
-
-} // namespace stats

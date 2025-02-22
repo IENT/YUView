@@ -46,7 +46,8 @@ namespace stats
 constexpr unsigned STAT_PARSING_BUFFER_SIZE = 1048576u;
 constexpr unsigned STAT_MAX_STRING_SIZE     = 1u << 28;
 
-StatisticsFileVTMBMS::StatisticsFileVTMBMS(const QString &filename, StatisticsData &statisticsData)
+StatisticsFileVTMBMS::StatisticsFileVTMBMS(const std::string &filename,
+                                           StatisticsData    &statisticsData)
     : StatisticsFileBase(filename)
 {
   this->readHeaderFromFile(statisticsData);
@@ -80,7 +81,7 @@ void StatisticsFileVTMBMS::readFrameAndTypePositionsFromFile(std::atomic_bool &b
     int      lastPOC            = INT_INVALID;
     bool     sortingFixed       = false;
 
-    while (!fileAtEnd && !breakFunction.load() && !this->abortParsingDestroy)
+    while (!fileAtEnd && !breakFunction.load())
     {
       // Fill the buffer
       auto bufferSize = inputFile.readBytes(inputBuffer, bufferStartPos, STAT_PARSING_BUFFER_SIZE);
@@ -123,9 +124,8 @@ void StatisticsFileVTMBMS::readFrameAndTypePositionsFromFile(std::atomic_bool &b
 
                 lastPOC = poc;
 
-                // update number of frames
-                if (poc > this->maxPOC)
-                  this->maxPOC = poc;
+                if (poc > this->parsingInfo.maxPocEncountered)
+                  this->parsingInfo.maxPocEncountered = poc;
               }
               else if (poc != lastPOC)
               {
@@ -137,14 +137,13 @@ void StatisticsFileVTMBMS::readFrameAndTypePositionsFromFile(std::atomic_bool &b
                 this->pocStartList[poc] = lineBufferStartPos;
                 emit readPOC(poc);
 
-                // update number of frames
-                if (poc > this->maxPOC)
-                  this->maxPOC = poc;
+                if (poc > this->parsingInfo.maxPocEncountered)
+                  this->parsingInfo.maxPocEncountered = poc;
 
                 // Update percent of file parsed
                 if (const auto fileSize = inputFile.getFileSize())
-                  this->parsingProgress = (static_cast<double>(lineBufferStartPos) * 100 /
-                                           static_cast<double>(*fileSize));
+                  this->parsingInfo.parsingProgress = (static_cast<double>(lineBufferStartPos) *
+                                                       100 / static_cast<double>(*fileSize));
               }
             }
           }
@@ -163,21 +162,15 @@ void StatisticsFileVTMBMS::readFrameAndTypePositionsFromFile(std::atomic_bool &b
     }
 
     // Parsing complete
-    this->parsingProgress = 100.0;
+    this->parsingInfo.parsingProgress = 100.0;
   }
   catch (const char *str)
   {
-    std::cerr << "Error while parsing meta data: " << str << "\n";
-    this->errorMessage = QString("Error while parsing meta data: ") + QString(str);
-    this->error        = true;
-    return;
+    this->parsingInfo.errorMessage = "Error while parsing meta data: " + std::string(str);
   }
   catch (const std::exception &ex)
   {
-    std::cerr << "Error while parsing:" << ex.what() << "\n";
-    this->errorMessage = QString("Error while parsing: ") + QString(ex.what());
-    this->error        = true;
-    return;
+    this->parsingInfo.errorMessage = "Error while parsing meta data: " + std::string(ex.what());
   }
 
   return;
