@@ -44,7 +44,7 @@ class AVPixFmtDescriptorWrapper
 {
 public:
   AVPixFmtDescriptorWrapper() = default;
-  AVPixFmtDescriptorWrapper(AVPixFmtDescriptor *sideData, LibraryVersion libVer);
+  explicit AVPixFmtDescriptorWrapper(AVPixFmtDescriptor *sideData, LibraryVersion libVer);
 
   video::RawFormat           getRawFormat() const;
   video::yuv::PixelFormatYUV getPixelFormatYUV() const;
@@ -103,7 +103,7 @@ public:
   QString               aliases{};
   AVComponentDescriptor comp[4];
 
-  bool operator==(const AVPixFmtDescriptorWrapper &a);
+  bool operator==(const AVPixFmtDescriptorWrapper &a) const;
 };
 
 } // namespace FFmpeg

@@ -133,7 +133,7 @@ std::optional<int64_t> FileSource::getFileSize() const
     const auto size = std::filesystem::file_size(this->fullFilePath);
     return static_cast<int64_t>(size);
   }
-  catch (const std::filesystem::filesystem_error &e)
+  catch (const std::filesystem::filesystem_error &)
   {
     return {};
   }

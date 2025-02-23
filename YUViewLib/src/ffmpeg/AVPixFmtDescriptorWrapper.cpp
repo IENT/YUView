@@ -379,7 +379,7 @@ bool AVPixFmtDescriptorWrapper::Flags::operator==(
          this->floatValues == other.floatValues;
 }
 
-bool AVPixFmtDescriptorWrapper::operator==(const AVPixFmtDescriptorWrapper &other)
+bool AVPixFmtDescriptorWrapper::operator==(const AVPixFmtDescriptorWrapper &other) const
 {
   if (this->nb_components != other.nb_components)
     return false;

@@ -30,13 +30,12 @@
  *   along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
- #include <common/Typedef.h>
+#include <common/Typedef.h>
 
 namespace stats::test
 {
 
-ByteVector getCSVTestData1();
-ByteVector getCSVTestData2();
+const char *getCSVTestData1();
+const char *getCSVTestData2();
 
-
-}
+} // namespace stats::test
