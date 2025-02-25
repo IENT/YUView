@@ -37,14 +37,14 @@
 
 #include <TemporaryFile.h>
 #include <statistics/StatisticsFileCSV.h>
+#include <statistics/StatisticsTypeBuilder.h>
 
 namespace stats::test
 {
-class StatisticsFileCSVTest : public testing::Test
-{
-};
 
-TEST_F(StatisticsFileCSVTest, testCSVFileParsing)
+using stats::color::ColorMapper;
+
+TEST(StatisticsFileCSVTest, testCSVFileParsing)
 {
   yuviewTest::TemporaryFile csvFile(getCSVTestData1());
 
@@ -216,6 +216,34 @@ TEST_F(StatisticsFileCSVTest, testCSVFileParsing)
                                           {576, 40, 32, 24, 0}});
   EXPECT_EQ(statFile.getParsingInfo().fileSorting,
             StatisticsFileBase::ParsingInfo::FileSorting::SortedByType);
+}
+
+TEST(StatisticsFileCSVTest, testCSVFileParsingRealFile)
+{
+  yuviewTest::TemporaryFile csvFile(getCSVTestData2());
+
+  stats::StatisticsData    statData;
+  stats::StatisticsFileCSV statFile(csvFile.getFilePathString(), statData);
+
+  EXPECT_EQ(statData.getFrameSize(), Size(832, 480));
+
+  const auto types = statData.getStatisticsTypes();
+  EXPECT_EQ(types.size(), size_t(3));
+
+  const StatisticsTypesVec expectedTypes = {
+      StatisticsTypeBuilder(0, "PredictionMode")
+          .withValueDataOptions(
+              {.colorMapper = ColorMapper(
+                   {{0, Color(0, 0, 255)}, {1, Color(255, 0, 255)}, {2, Color(0, 255, 255)}}, {})})
+          .build(),
+      StatisticsTypeBuilder(1, "MotionVector0")
+          .withVectorDataOptions({.style = LineDrawStyle({.color = Color(0, 0, 0)}), .scale = 4})
+          .build(),
+      StatisticsTypeBuilder(1, "MotionVector1")
+          .withVectorDataOptions({.style = LineDrawStyle({.color = Color(0, 0, 0)}), .scale = 4})
+          .build()};
+
+  EXPECT_EQ(statData.getStatisticsTypes(), expectedTypes);
 }
 
 } // namespace stats::test
