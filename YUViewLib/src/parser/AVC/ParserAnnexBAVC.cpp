@@ -47,7 +47,7 @@
 #include "slice_rbsp.h"
 #include <parser/common/Functions.h>
 
-#define PARSER_AVC_DEBUG_OUTPUT 0
+#define PARSER_AVC_DEBUG_OUTPUT 1
 #if PARSER_AVC_DEBUG_OUTPUT && !NDEBUG
 #include <QDebug>
 #define DEBUG_AVC(msg) qDebug() << msg
@@ -366,7 +366,7 @@ ParserAnnexBAVC::parseAndAddNALUnit(int                                         
       currentSliceType  = to_string(newSliceHeader->slice_type);
 
       DEBUG_AVC("ParserAnnexBAVC::parseAndAddNALUnit Parsed Slice ("
-                << QString::fromStdString(NalTypeMapper.getName(nalAVC->header.nal_unit_type))
+                << NalTypeMapper.getName(nalAVC->header.nal_unit_type)
                 << ") POC " << newSliceHeader->globalPOC);
       parseResult.nalTypeName = "Slice(POC " + std::to_string(newSliceHeader->globalPOC) + ") ";
     }

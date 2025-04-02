@@ -31,6 +31,7 @@
  */
 
 #include "AVStreamWrapper.h"
+#include "AVStreamGroupWrapper.h"
 #include "AVPacketWrapper.h"
 
 namespace FFmpeg
@@ -196,7 +197,7 @@ typedef struct AVStream_59
   AVRational         sample_aspect_ratio;
   AVDictionary *     metadata;
   AVRational         avg_frame_rate;
-  AVPacket_59_60     attached_pic;
+  AVPacket_59_60_61  attached_pic;
   AVPacketSideData * side_data;
   int                nb_side_data;
   int                event_flags;
@@ -221,13 +222,37 @@ typedef struct AVStream_60
   AVRational         sample_aspect_ratio;
   AVDictionary *     metadata;
   AVRational         avg_frame_rate;
-  AVPacket_59_60     attached_pic;
+  AVPacket_59_60_61  attached_pic;
   AVPacketSideData * side_data;
   int                nb_side_data;
   int                event_flags;
   AVRational         r_frame_rate;
   int                pts_wrap_bits;
 } AVStream_60;
+
+typedef struct AVStream_61
+{
+  const AVClass *    av_class;
+  int                index;
+  int                id;
+  AVCodecParameters *codecpar;
+  void *             priv_data;
+  AVRational         time_base;
+  int64_t            start_time;
+  int64_t            duration;
+  int64_t            nb_frames;
+  int                disposition;
+  enum AVDiscard     discard;
+  AVRational         sample_aspect_ratio;
+  AVDictionary *     metadata;
+  AVRational         avg_frame_rate;
+  AVPacket_59_60_61  attached_pic;
+  AVPacketSideData * side_data;
+  int                nb_side_data;
+  int                event_flags;
+  AVRational         r_frame_rate;
+  int                pts_wrap_bits;
+} AVStream_61;
 
 } // namespace
 
@@ -418,6 +443,23 @@ void AVStreamWrapper::update()
   else if (libVer.avformat.major == 60)
   {
     auto p                    = reinterpret_cast<AVStream_60 *>(this->stream);
+    this->index               = p->index;
+    this->id                  = p->id;
+    this->time_base           = p->time_base;
+    this->start_time          = p->start_time;
+    this->duration            = p->duration;
+    this->nb_frames           = p->nb_frames;
+    this->disposition         = p->nb_frames;
+    this->discard             = p->discard;
+    this->sample_aspect_ratio = p->sample_aspect_ratio;
+    this->avg_frame_rate      = p->avg_frame_rate;
+    this->nb_side_data        = p->nb_side_data;
+    this->event_flags         = p->event_flags;
+    this->codecpar            = AVCodecParametersWrapper(p->codecpar, libVer);
+  }
+  else if (libVer.avformat.major == 61)
+  {
+    auto p                    = reinterpret_cast<AVStream_61 *>(this->stream);
     this->index               = p->index;
     this->id                  = p->id;
     this->time_base           = p->time_base;

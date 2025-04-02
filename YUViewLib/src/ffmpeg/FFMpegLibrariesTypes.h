@@ -64,6 +64,7 @@ struct AVStreamInternal;
 struct AVFrameSideData;
 struct AVMotionVector;
 struct AVStream;
+struct AVStreamGroup;
 struct AVProgram;
 struct AVChapter;
 struct AVPixFmtDescriptor;

@@ -95,7 +95,7 @@ typedef struct AVPacket_57_58
   int64_t           convergence_duration;
 } AVPacket_57_58;
 
-typedef struct AVPacket_59_60
+typedef struct AVPacket_59_60_61
 {
   AVBufferRef *     buf;
   int64_t           pts;
@@ -111,7 +111,7 @@ typedef struct AVPacket_59_60
   void *            opaque;
   AVBufferRef *     opaque_ref;
   AVRational        time_base;
-} AVPacket_59_60;
+} AVPacket_59_60_61;
 
 // A wrapper around the different versions of the AVPacket versions.
 // It also adds some functions like automatic deletion when it goes out of scope.
