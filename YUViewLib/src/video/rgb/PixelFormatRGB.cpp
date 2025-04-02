@@ -85,7 +85,7 @@ PixelFormatRGB::PixelFormatRGB(const std::string &name)
 
 bool PixelFormatRGB::isValid() const
 {
-  return this->bitsPerSample >= 8 && this->bitsPerSample <= 16;
+  return this->bitsPerSample >= 8 && this->bitsPerSample <= 32;
 }
 
 unsigned PixelFormatRGB::nrChannels() const
@@ -123,7 +123,7 @@ std::string PixelFormatRGB::getName() const
  */
 std::size_t PixelFormatRGB::bytesPerFrame(Size frameSize) const
 {
-  auto bpsValid = this->bitsPerSample >= 8 && this->bitsPerSample <= 16;
+  auto bpsValid = this->bitsPerSample >= 8 && this->bitsPerSample <= 32;
   if (!bpsValid || !frameSize.isValid())
     return 0;
 

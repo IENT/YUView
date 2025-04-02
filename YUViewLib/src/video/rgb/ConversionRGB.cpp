@@ -40,9 +40,22 @@ namespace video::rgb
 namespace
 {
 
-template <typename T> T swapLowestBytes(const T &val)
+template<int bitDepth>
+using UintValueType = typename std::conditional_t<bitDepth == 8,
+                                                  uint8_t*,
+                                                  std::conditional_t<bitDepth == 16, uint16_t*, uint32_t*>>;
+
+template <int bitDepth, typename T> T swapLowestBytes(const T &val)
 {
-  return ((val & 0xff) << 8) + ((val & 0xff00) >> 8);
+  if (bitDepth <= 8) {
+    return val;
+  }
+  if (bitDepth <= 16) {
+    return ((val & 0xff) << 8) | ((val & 0xff00) >> 8);
+  }
+  if (bitDepth <= 32) {
+    return ((val & 0xff) << 24) | ((val & 0xff00) << 8) | ((val & 0xff0000) >> 8) | ((val & 0xff000000) >> 24);
+  }
 };
 
 int getOffsetToFirstByteOfComponent(const Channel         channel,
@@ -73,7 +86,7 @@ void convertRGBToARGB(const QByteArray &    sourceBuffer,
   const auto offsetToNextValue =
       srcPixelFormat.getDataLayout() == DataLayout::Planar ? 1 : srcPixelFormat.nrChannels();
 
-  typedef typename std::conditional<bitDepth == 8, uint8_t *, uint16_t *>::type InValueType;
+  using InValueType = UintValueType<bitDepth>;
   const auto setAlpha = outputHasAlpha && srcPixelFormat.hasAlpha();
 
   const auto rawData = (InValueType)sourceBuffer.data();
@@ -96,9 +109,9 @@ void convertRGBToARGB(const QByteArray &    sourceBuffer,
     const auto isBigEndian  = bitDepth > 8 && srcPixelFormat.getEndianess() == Endianness::Big;
     auto       convertValue = [&isBigEndian, &rightShift](
                             const InValueType sourceData, const int scale, const bool invert) {
-      auto value = static_cast<int>(sourceData[0]);
+      auto value = static_cast<int64_t>(sourceData[0]);
       if (isBigEndian)
-        value = swapLowestBytes(value);
+        value = swapLowestBytes<bitDepth>(value);
       value = ((value * scale) >> rightShift);
       value = functions::clip(value, 0, 255);
       if (invert)
@@ -161,7 +174,7 @@ void convertRGBPlaneToARGB(const QByteArray &    sourceBuffer,
   const auto offsetToNextValue =
       srcPixelFormat.getDataLayout() == DataLayout::Planar ? 1 : srcPixelFormat.nrChannels();
 
-  typedef typename std::conditional<bitDepth == 8, uint8_t *, uint16_t *>::type InValueType;
+  using InValueType = UintValueType<bitDepth>;
 
   auto       src                    = (InValueType)sourceBuffer.data();
   const auto displayComponentOffset = srcPixelFormat.getChannelPosition(displayChannel);
@@ -172,9 +185,9 @@ void convertRGBPlaneToARGB(const QByteArray &    sourceBuffer,
 
   for (size_t i = 0; i < frameSize.width * frameSize.height; i++)
   {
-    auto val = static_cast<int>(src[0]);
+    auto val = static_cast<int64_t>(src[0]);
     if (bitDepth > 8 && srcPixelFormat.getEndianess() == Endianness::Big)
-      val = swapLowestBytes(val);
+      val = swapLowestBytes<bitDepth>(val);
     val = (val * scale) >> shiftTo8Bit;
     val = functions::clip(val, 0, 255);
     if (invert)
@@ -202,7 +215,7 @@ rgba_t getPixelValue(const QByteArray &    sourceBuffer,
       srcPixelFormat.getDataLayout() == DataLayout::Planar ? 1 : srcPixelFormat.nrChannels();
   const auto offsetPixelPos = frameSize.width * pixelPos.y() + pixelPos.x();
 
-  typedef typename std::conditional<bitDepth == 8, uint8_t *, uint16_t *>::type InValueType;
+  using InValueType = UintValueType<bitDepth>;
 
   const auto rawData  = (InValueType)sourceBuffer.data();
   auto       srcPixel = rawData + offsetPixelPos * offsetToNextValue;
@@ -218,7 +231,7 @@ rgba_t getPixelValue(const QByteArray &    sourceBuffer,
     auto src = srcPixel + offset;
     auto val = (unsigned)src[0];
     if (bitDepth > 8 && srcPixelFormat.getEndianess() == Endianness::Big)
-      val = swapLowestBytes(val);
+      val = swapLowestBytes<bitDepth>(val);
     value[channel] = val;
   }
 
@@ -238,7 +251,7 @@ void convertInputRGBToARGB(const QByteArray &    sourceBuffer,
                            const bool            premultiplyAlpha)
 {
   const auto bitsPerSample = srcPixelFormat.getBitsPerSample();
-  if (bitsPerSample < 8 || bitsPerSample > 16)
+  if (bitsPerSample < 8 || bitsPerSample > 32)
     throw std::invalid_argument("Invalid bit depth in pixel format for conversion");
 
   if (bitsPerSample == 8)
@@ -251,8 +264,18 @@ void convertInputRGBToARGB(const QByteArray &    sourceBuffer,
                         limitedRange,
                         outputHasAlpha,
                         premultiplyAlpha);
-  else
+  else if (9 <= bitsPerSample && bitsPerSample <= 16)
     convertRGBToARGB<16>(sourceBuffer,
+                         srcPixelFormat,
+                         targetBuffer,
+                         frameSize,
+                         componentInvert,
+                         componentScale,
+                         limitedRange,
+                         outputHasAlpha,
+                         premultiplyAlpha);
+  else
+    convertRGBToARGB<32>(sourceBuffer,
                          srcPixelFormat,
                          targetBuffer,
                          frameSize,
@@ -273,7 +296,7 @@ void convertSinglePlaneOfRGBToGreyscaleARGB(const QByteArray &    sourceBuffer,
                                             const bool            limitedRange)
 {
   const auto bitsPerSample = srcPixelFormat.getBitsPerSample();
-  if (bitsPerSample < 8 || bitsPerSample > 16)
+  if (bitsPerSample < 8 || bitsPerSample > 32)
     throw std::invalid_argument("Invalid bit depth in pixel format for conversion");
 
   if (bitsPerSample == 8)
@@ -285,8 +308,17 @@ void convertSinglePlaneOfRGBToGreyscaleARGB(const QByteArray &    sourceBuffer,
                              scale,
                              invert,
                              limitedRange);
-  else
+  else if (9 <= bitsPerSample && bitsPerSample <= 16)
     convertRGBPlaneToARGB<16>(sourceBuffer,
+                              srcPixelFormat,
+                              targetBuffer,
+                              frameSize,
+                              displayChannel,
+                              scale,
+                              invert,
+                              limitedRange);
+  else
+    convertRGBPlaneToARGB<32>(sourceBuffer,
                               srcPixelFormat,
                               targetBuffer,
                               frameSize,
@@ -302,13 +334,15 @@ rgba_t getPixelValueFromBuffer(const QByteArray &    sourceBuffer,
                                const QPoint &        pixelPos)
 {
   const auto bitsPerSample = srcPixelFormat.getBitsPerSample();
-  if (bitsPerSample < 8 || bitsPerSample > 16)
+  if (bitsPerSample < 8 || bitsPerSample > 32)
     throw std::invalid_argument("Invalid bit depth in pixel format for conversion");
 
   if (bitsPerSample == 8)
     return getPixelValue<8>(sourceBuffer, srcPixelFormat, frameSize, pixelPos);
-  else
+  else if (9 <= bitsPerSample && bitsPerSample <= 16)
     return getPixelValue<16>(sourceBuffer, srcPixelFormat, frameSize, pixelPos);
+  else
+    return getPixelValue<32>(sourceBuffer, srcPixelFormat, frameSize, pixelPos);
 }
 
 } // namespace video::rgb

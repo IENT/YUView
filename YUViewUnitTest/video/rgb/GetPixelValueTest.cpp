@@ -48,7 +48,6 @@ void testGetPixelValueFromBuffer(const QByteArray     &sourceBuffer,
                                  const PixelFormatRGB &srcPixelFormat)
 {
   const auto bitDepth = srcPixelFormat.getBitsPerSample();
-  const auto shift    = 12 - bitDepth;
 
   int testValueIndex = 0;
   for (int y : {0, 1, 2, 3})
@@ -60,8 +59,7 @@ void testGetPixelValueFromBuffer(const QByteArray     &sourceBuffer,
           getPixelValueFromBuffer(sourceBuffer, srcPixelFormat, TEST_FRAME_SIZE, pixelPos);
 
       const auto testValue     = TEST_VALUES_12BIT[testValueIndex++];
-      auto       expectedValue = rgba_t(
-          {testValue.R >> shift, testValue.G >> shift, testValue.B >> shift, testValue.A >> shift});
+      auto       expectedValue = convertBitness(testValue, 12, bitDepth);
       if (!srcPixelFormat.hasAlpha())
         expectedValue.A = 0;
 
@@ -78,7 +76,7 @@ TEST(GetPixelValueTest, TestGetPixelValueFromBuffer)
 {
   for (const auto endianness : EndianessMapper.getValues())
   {
-    for (auto bitDepth : {8, 10, 12})
+    for (auto bitDepth : {8, 10, 12, 16, 32})
     {
       for (const auto &alphaMode : AlphaModeMapper.getValues())
       {

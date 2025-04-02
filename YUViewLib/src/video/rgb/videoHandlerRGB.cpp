@@ -624,7 +624,7 @@ void videoHandlerRGB::convertRGBToImage(const QByteArray &sourceBuffer, QImage &
   }
 
   const auto bps = this->srcPixelFormat.getBitsPerSample();
-  if (bps < 8 || bps > 16)
+  if (bps < 8 || bps > 32)
   {
     DEBUG_RGB("Unsupported bit depth. 8-16 bit are supported.");
     return;
@@ -902,7 +902,7 @@ QImage videoHandlerRGB::calculateDifference(FrameHandler    *item2,
   const auto posG     = srcPixelFormat.getChannelPosition(Channel::Green);
   const auto posB     = srcPixelFormat.getChannelPosition(Channel::Blue);
 
-  if (bitDepth >= 8 && bitDepth <= 16)
+  if (bitDepth >= 8 && bitDepth <= 32)
   {
     // How many values do we have to skip in src to get to the next input value?
     // In case of 8 or less bits this is 1 byte per value, for 9 to 16 bits it is 2 bytes per value.
@@ -910,7 +910,7 @@ QImage videoHandlerRGB::calculateDifference(FrameHandler    *item2,
     if (srcPixelFormat.getDataLayout() == DataLayout::Planar)
       offsetToNextValue = 1;
 
-    if (bitDepth > 8 && bitDepth <= 16)
+    if (bitDepth > 8 && bitDepth <= 32)
     {
       // 9 to 16 bits per component. We assume two bytes per value.
       // First get the pointer to the first value of each channel. (this item)
