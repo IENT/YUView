@@ -79,9 +79,9 @@ void addModifiedValuesToElement(YUViewDomElement                                
     options->colorMapper->savePlaylist(element);
 }
 
-std::vector<StatisticsType::ArrowHead> AllArrowHeads = {StatisticsType::ArrowHead::arrow,
-                                                        StatisticsType::ArrowHead::circle,
-                                                        StatisticsType::ArrowHead::none};
+std::vector<ArrowHead> AllArrowHeads = {ArrowHead::arrow,
+                                                        ArrowHead::circle,
+                                                        ArrowHead::none};
 
 void addModifiedValuesToElement(YUViewDomElement                                       &element,
                                 const std::optional<StatisticsType::VectorDataOptions> &options)

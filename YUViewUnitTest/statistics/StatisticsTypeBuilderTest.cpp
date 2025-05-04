@@ -108,7 +108,7 @@ TEST(StatisticsTypeBuilderTest, SetVectorDataDefaultValues)
   EXPECT_EQ(statisticsType.vectorDataOptions->style, LineDrawStyle());
   EXPECT_EQ(statisticsType.vectorDataOptions->scale, 0);
   EXPECT_FALSE(statisticsType.vectorDataOptions->mapToColor);
-  EXPECT_EQ(statisticsType.vectorDataOptions->arrowHead, StatisticsType::ArrowHead::arrow);
+  EXPECT_EQ(statisticsType.vectorDataOptions->arrowHead, ArrowHead::arrow);
 }
 
 TEST(StatisticsTypeBuilderTest, SetVectorDataCustomValues)
@@ -123,7 +123,7 @@ TEST(StatisticsTypeBuilderTest, SetVectorDataCustomValues)
                                       .style            = lineDrawStyle,
                                       .scale            = 3,
                                       .mapToColor       = true,
-                                      .arrowHead        = StatisticsType::ArrowHead::circle,
+                                      .arrowHead        = ArrowHead::circle,
                                   })
                                   .build();
 
@@ -134,7 +134,7 @@ TEST(StatisticsTypeBuilderTest, SetVectorDataCustomValues)
   EXPECT_EQ(statisticsType.vectorDataOptions->style, lineDrawStyle);
   EXPECT_EQ(statisticsType.vectorDataOptions->scale, 3);
   EXPECT_TRUE(statisticsType.vectorDataOptions->mapToColor);
-  EXPECT_EQ(statisticsType.vectorDataOptions->arrowHead, StatisticsType::ArrowHead::circle);
+  EXPECT_EQ(statisticsType.vectorDataOptions->arrowHead, ArrowHead::circle);
 }
 
 TEST(StatisticsTypeBuilderTest, SetGridOptionsDefaultValues)

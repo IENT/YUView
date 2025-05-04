@@ -49,8 +49,26 @@ enum class Pattern
   DashDotDot
 };
 
+constexpr EnumMapper<Pattern, 5> PatternMapper = {
+    std::make_pair(Pattern::Solid, "Solid"),
+    std::make_pair(Pattern::Dash, "Dash"),
+    std::make_pair(Pattern::Dot, "Dot"),
+    std::make_pair(Pattern::DashDot, "DashDot"),
+    std::make_pair(Pattern::DashDotDot, "DashDotDot")};
+
 const std::vector<Pattern> AllPatterns = {
     Pattern::Solid, Pattern::Dash, Pattern::Dot, Pattern::DashDot, Pattern::DashDotDot};
+
+enum class ArrowHead
+{
+  arrow,
+  circle,
+  none
+};
+
+constexpr EnumMapper<ArrowHead, 5> ArrowHeadMapper = {std::make_pair(ArrowHead::arrow, "arrow"),
+                                                      std::make_pair(ArrowHead::circle, "circle"),
+                                                      std::make_pair(ArrowHead::none, "none")};
 
 struct LineDrawStyle
 {
@@ -91,13 +109,6 @@ public:
   };
 
   std::optional<ValueDataOptions> valueDataOptions;
-
-  enum class ArrowHead
-  {
-    arrow,
-    circle,
-    none
-  };
 
   struct VectorDataOptions
   {

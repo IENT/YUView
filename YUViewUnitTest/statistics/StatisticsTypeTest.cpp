@@ -64,7 +64,7 @@ TEST(StatisticsTypeTest, DefaultConstructorValues)
   EXPECT_EQ(vectorDataOptions.style, LineDrawStyle());
   EXPECT_EQ(vectorDataOptions.scale, 0);
   EXPECT_FALSE(vectorDataOptions.mapToColor);
-  EXPECT_EQ(vectorDataOptions.arrowHead, StatisticsType::ArrowHead::arrow);
+  EXPECT_EQ(vectorDataOptions.arrowHead, ArrowHead::arrow);
 
   LineDrawStyle lineDrawStyle;
   EXPECT_EQ(lineDrawStyle.color, Color());
@@ -120,7 +120,7 @@ TEST(StatisticsTypeTest, TestVectorDataEqualityOperator)
                                                      .scale            = 3,
                                                      .mapToColor       = true,
                                                      .arrowHead =
-                                                         StatisticsType::ArrowHead::circle};
+                                                         ArrowHead::circle};
 
   const StatisticsType::VectorDataOptions identicalOptions = {
       .render           = true,
@@ -129,7 +129,7 @@ TEST(StatisticsTypeTest, TestVectorDataEqualityOperator)
       .style            = LineDrawStyle(),
       .scale            = 3,
       .mapToColor       = true,
-      .arrowHead        = StatisticsType::ArrowHead::circle};
+      .arrowHead        = ArrowHead::circle};
 
   const StatisticsType::VectorDataOptions optionsWithDifferentRenderFlag = {
       .render           = false,
@@ -138,7 +138,7 @@ TEST(StatisticsTypeTest, TestVectorDataEqualityOperator)
       .style            = LineDrawStyle(),
       .scale            = 3,
       .mapToColor       = true,
-      .arrowHead        = StatisticsType::ArrowHead::circle};
+      .arrowHead        = ArrowHead::circle};
 
   const StatisticsType::VectorDataOptions optionsWithDifferentRenderDataValuesFlag = {
       .render           = true,
@@ -147,7 +147,7 @@ TEST(StatisticsTypeTest, TestVectorDataEqualityOperator)
       .style            = LineDrawStyle(),
       .scale            = 3,
       .mapToColor       = true,
-      .arrowHead        = StatisticsType::ArrowHead::circle};
+      .arrowHead        = ArrowHead::circle};
 
   const StatisticsType::VectorDataOptions optionsWithDifferentScaleToZoomFlag = {
       .render           = true,
@@ -156,7 +156,7 @@ TEST(StatisticsTypeTest, TestVectorDataEqualityOperator)
       .style            = LineDrawStyle(),
       .scale            = 3,
       .mapToColor       = true,
-      .arrowHead        = StatisticsType::ArrowHead::circle};
+      .arrowHead        = ArrowHead::circle};
 
   const StatisticsType::VectorDataOptions optionsWithDifferentStyle = {
       .render           = true,
@@ -165,7 +165,7 @@ TEST(StatisticsTypeTest, TestVectorDataEqualityOperator)
       .style            = LineDrawStyle({Color(255, 0, 0), 2, Pattern::DashDot}),
       .scale            = 3,
       .mapToColor       = true,
-      .arrowHead        = StatisticsType::ArrowHead::circle};
+      .arrowHead        = ArrowHead::circle};
 
   const StatisticsType::VectorDataOptions optionsWithDifferentScale = {
       .render           = true,
@@ -174,7 +174,7 @@ TEST(StatisticsTypeTest, TestVectorDataEqualityOperator)
       .style            = LineDrawStyle(),
       .scale            = 4,
       .mapToColor       = true,
-      .arrowHead        = StatisticsType::ArrowHead::circle};
+      .arrowHead        = ArrowHead::circle};
 
   const StatisticsType::VectorDataOptions optionsWithDifferentMapToColorFlag = {
       .render           = true,
@@ -183,7 +183,7 @@ TEST(StatisticsTypeTest, TestVectorDataEqualityOperator)
       .style            = LineDrawStyle(),
       .scale            = 3,
       .mapToColor       = false,
-      .arrowHead        = StatisticsType::ArrowHead::circle};
+      .arrowHead        = ArrowHead::circle};
 
   const StatisticsType::VectorDataOptions optionsWithDifferentArrowHead = {
       .render           = true,
@@ -192,7 +192,7 @@ TEST(StatisticsTypeTest, TestVectorDataEqualityOperator)
       .style            = LineDrawStyle(),
       .scale            = 3,
       .mapToColor       = true,
-      .arrowHead        = StatisticsType::ArrowHead::arrow};
+      .arrowHead        = ArrowHead::arrow};
 
   EXPECT_TRUE(options == identicalOptions);
   EXPECT_FALSE(options == optionsWithDifferentRenderFlag);

@@ -405,7 +405,7 @@ void StatisticsFileCSV::readHeaderFromFile(StatisticsData &statisticsData)
           {
             type->vectorDataOptions = StatisticsType::VectorDataOptions();
             if (rowItemList[4] == "line")
-              type->vectorDataOptions->arrowHead = StatisticsType::ArrowHead::none;
+              type->vectorDataOptions->arrowHead = ArrowHead::none;
           }
         }
       }

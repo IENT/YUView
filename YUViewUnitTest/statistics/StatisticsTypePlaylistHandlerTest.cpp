@@ -165,7 +165,7 @@ TEST(StatisticsTypePlaylistHandlerTest,
       LineDrawStyle({Color(128, 22, 76), 2.0, Pattern::DashDot});
   statisticsType.vectorDataOptions->scale      = 4;
   statisticsType.vectorDataOptions->mapToColor = true;
-  statisticsType.vectorDataOptions->arrowHead  = StatisticsType::ArrowHead::circle;
+  statisticsType.vectorDataOptions->arrowHead  = ArrowHead::circle;
 
   const auto item = saveItemAndTryGetAsElement(statisticsType);
   EXPECT_FALSE(item.isNull());
@@ -311,7 +311,7 @@ TEST(StatisticsTypePlaylistHandlerTest,
             LineDrawStyle({Color(128, 22, 76), 2.0, Pattern::DashDot}));
   EXPECT_EQ(statisticsType.vectorDataOptions->scale, 4);
   EXPECT_EQ(statisticsType.vectorDataOptions->mapToColor, true);
-  EXPECT_EQ(statisticsType.vectorDataOptions->arrowHead, StatisticsType::ArrowHead::circle);
+  EXPECT_EQ(statisticsType.vectorDataOptions->arrowHead, ArrowHead::circle);
 
   EXPECT_FALSE(statisticsType.valueDataOptions);
   EXPECT_EQ(statisticsType.gridOptions, StatisticsType::GridOptions());

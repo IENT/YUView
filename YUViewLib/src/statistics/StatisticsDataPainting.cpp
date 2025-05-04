@@ -147,12 +147,11 @@ void paintVector(QPainter                    *painter,
         const int headSize =
             (zoomFactor >= STATISTICS_DRAW_VALUES_ZOOM && !vector.scaleToZoom) ? 8 : zoomFactor / 2;
 
-        if (vector.arrowHead != stats::StatisticsType::ArrowHead::none)
+        if (vector.arrowHead != stats::ArrowHead::none)
         {
           // We draw an arrow head. This means that we will have to draw a shortened line
-          const int shorten = (vector.arrowHead == stats::StatisticsType::ArrowHead::arrow)
-                                  ? headSize * 2
-                                  : headSize * 0.5;
+          const int shorten =
+              (vector.arrowHead == stats::ArrowHead::arrow) ? headSize * 2 : headSize * 0.5;
 
           if (std::sqrt(vx * vx * zoomFactor * zoomFactor + vy * vy * zoomFactor * zoomFactor) >
               shorten)
@@ -169,7 +168,7 @@ void paintVector(QPainter                    *painter,
           // Draw the not shortened line
           painter->drawLine(x1, y1, x2, y2);
 
-        if (vector.arrowHead == stats::StatisticsType::ArrowHead::arrow)
+        if (vector.arrowHead == stats::ArrowHead::arrow)
         {
           // Save the painter state, translate to the arrow tip, rotate the painter and draw the
           // normal triangle.
@@ -185,7 +184,7 @@ void paintVector(QPainter                    *painter,
           // Restore. Revert translation/rotation of the painter.
           painter->restore();
         }
-        else if (vector.arrowHead == stats::StatisticsType::ArrowHead::circle)
+        else if (vector.arrowHead == stats::ArrowHead::circle)
           painter->drawEllipse(x2 - headSize / 2, y2 - headSize / 2, headSize, headSize);
       }
 
@@ -591,11 +590,11 @@ void stats::paintStatisticsData(QPainter              *painter,
                       : zoomFactor / 2;
 
               const auto &arrowHead = it->vectorDataOptions->arrowHead;
-              if (arrowHead != StatisticsType::ArrowHead::none)
+              if (arrowHead != ArrowHead::none)
               {
                 // We draw an arrow head. This means that we will have to draw a shortened line
                 const int shorten =
-                    (arrowHead == StatisticsType::ArrowHead::arrow) ? headSize * 2 : headSize * 0.5;
+                    (arrowHead == ArrowHead::arrow) ? headSize * 2 : headSize * 0.5;
                 if (std::sqrt(vx * vx * zoomFactor * zoomFactor +
                               vy * vy * zoomFactor * zoomFactor) > shorten)
                 {
@@ -611,7 +610,7 @@ void stats::paintStatisticsData(QPainter              *painter,
                 // Draw the not shortened line
                 painter->drawLine(x1, y1, x2, y2);
 
-              if (arrowHead == StatisticsType::ArrowHead::arrow)
+              if (arrowHead == ArrowHead::arrow)
               {
                 // Save the painter state, translate to the arrow tip, rotate the painter and draw
                 // the normal triangle.
@@ -628,7 +627,7 @@ void stats::paintStatisticsData(QPainter              *painter,
                 // Restore. Revert translation/rotation of the painter.
                 painter->restore();
               }
-              else if (arrowHead == StatisticsType::ArrowHead::circle)
+              else if (arrowHead == ArrowHead::circle)
                 painter->drawEllipse(x2 - headSize / 2, y2 - headSize / 2, headSize, headSize);
             }
 
@@ -915,11 +914,11 @@ void stats::paintStatisticsData(QPainter              *painter,
                       : zoomFactor / 2;
 
               const auto &arrowHead = it->vectorDataOptions->arrowHead;
-              if (arrowHead != StatisticsType::ArrowHead::none)
+              if (arrowHead != ArrowHead::none)
               {
                 // We draw an arrow head. This means that we will have to draw a shortened line
                 const int shorten =
-                    (arrowHead == StatisticsType::ArrowHead::arrow) ? headSize * 2 : headSize * 0.5;
+                    (arrowHead == ArrowHead::arrow) ? headSize * 2 : headSize * 0.5;
                 if (std::sqrt(vx * vx * zoomFactor * zoomFactor +
                               vy * vy * zoomFactor * zoomFactor) > shorten)
                 {
@@ -935,7 +934,7 @@ void stats::paintStatisticsData(QPainter              *painter,
                 // Draw the not shortened line
                 painter->drawLine(center_x, center_y, head_x, head_y);
 
-              if (arrowHead == StatisticsType::ArrowHead::arrow)
+              if (arrowHead == ArrowHead::arrow)
               {
                 // Save the painter state, translate to the arrow tip, rotate the painter and draw
                 // the normal triangle.
@@ -952,7 +951,7 @@ void stats::paintStatisticsData(QPainter              *painter,
                 // Restore. Revert translation/rotation of the painter.
                 painter->restore();
               }
-              else if (arrowHead == StatisticsType::ArrowHead::circle)
+              else if (arrowHead == ArrowHead::circle)
                 painter->drawEllipse(
                     head_x - headSize / 2, head_y - headSize / 2, headSize, headSize);
             }

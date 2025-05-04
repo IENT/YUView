@@ -32,10 +32,13 @@
 
 #include <common/Testing.h>
 
+#include <common/PrettyPrinting/Statistics.h>
+
 #include "CheckFunctions.h"
 #include "StatisticsFileCSVTestData.h"
 
 #include <TemporaryFile.h>
+#include <statistics/ColorMapper.h>
 #include <statistics/StatisticsFileCSV.h>
 #include <statistics/StatisticsTypeBuilder.h>
 
@@ -239,11 +242,20 @@ TEST(StatisticsFileCSVTest, testCSVFileParsingRealFile)
       StatisticsTypeBuilder(1, "MotionVector0")
           .withVectorDataOptions({.style = LineDrawStyle({.color = Color(0, 0, 0)}), .scale = 4})
           .build(),
-      StatisticsTypeBuilder(1, "MotionVector1")
+      StatisticsTypeBuilder(2, "MotionVector1")
           .withVectorDataOptions({.style = LineDrawStyle({.color = Color(0, 0, 0)}), .scale = 4})
           .build()};
 
   EXPECT_EQ(statData.getStatisticsTypes(), expectedTypes);
+
+  const auto frameIndex = 0;
+
+  EXPECT_EQ(statData.getTypesThatNeedLoading(frameIndex).size(), 0u)
+      << "As long as no types are set the render, none need loading.";
+
+  const auto typesThatNeedLoading = statData.getTypesThatNeedLoading(frameIndex);
+
+  int debugStop = 22;
 }
 
 } // namespace stats::test

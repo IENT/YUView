@@ -436,7 +436,7 @@ void StatisticsStyleControl::on_checkBoxVectorScaleToZoom_stateChanged(int arg1)
 
 void StatisticsStyleControl::on_comboBoxVectorHeadStyle_currentIndexChanged(int index)
 {
-  this->currentItem->vectorDataOptions->arrowHead = (stats::StatisticsType::ArrowHead)(index);
+  this->currentItem->vectorDataOptions->arrowHead = (stats::ArrowHead)(index);
   emit StyleChanged();
 }
 
