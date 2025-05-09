@@ -73,11 +73,12 @@ public:
   {
     enum class FileSorting
     {
+      Unknown,
       SortedByPOC,
       SortedByType
     };
 
-    FileSorting fileSorting{FileSorting::SortedByType};
+    FileSorting fileSorting{FileSorting::Unknown};
 
     int                maxPocEncountered{};
     std::optional<int> pocWithDataOutsideOfFrame{};
