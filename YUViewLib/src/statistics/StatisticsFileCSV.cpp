@@ -73,8 +73,6 @@ std::optional<Color> toColorWithClipping(const QString &textR,
                                          const QString &textB,
                                          const QString &textA)
 {
-  bool ok = true;
-
   const auto r = toInteger(textR);
   const auto g = toInteger(textG);
   const auto b = toInteger(textB);
@@ -113,15 +111,15 @@ void checkAndAddTypeToStatisticsData(StatisticsData                  &statistics
   if (!type)
     return;
 
-  const bool hasNoValueOrDataOptions = (!type->valueDataOptions && !type->vectorDataOptions);
-  if (hasNoValueOrDataOptions)
+  const bool isValid = (type->valueDataOptions || type->vectorDataOptions);
+  if (!isValid)
     return;
 
   statisticsData.addStatType(StatisticsTypeBuilder(type->typeID, type->typeName)
-                                 .withOptionalValueDataOptions(type->valueDataOptions)
-                                 .withOptionalVectorDataOptions(type->vectorDataOptions)
-                                 .withGridOptions(type->gridOptions)
-                                 .build());
+                               .withOptionalValueDataOptions(type->valueDataOptions)
+                               .withOptionalVectorDataOptions(type->vectorDataOptions)
+                               .withGridOptions(type->gridOptions)
+                               .build());
 }
 
 std::optional<ParsedType> parseHeaderLine(const QStringList &lineItems)
@@ -150,6 +148,12 @@ std::optional<ParsedType> parseHeaderLine(const QStringList &lineItems)
   else
     return {};
 
+  // The vector/line type is valid without any additional options. We can just draw a vector.
+  // The map and range types must have additional options. They are invalid by default.
+  if (newType.specifiedType == SpecifiedType::vector ||
+      newType.specifiedType == SpecifiedType::line)
+    newType.vectorDataOptions.emplace();
+
   return newType;
 }
 
@@ -160,11 +164,11 @@ std::optional<color::ColorMapper> parseColorMapperFromRange(const QStringList &l
 
   const auto minValue = toInteger(lineItems[2]);
   const auto minColor =
-      toColorWithClipping(lineItems[4], lineItems[6], lineItems[8], lineItems[10]);
+    toColorWithClipping(lineItems[4], lineItems[6], lineItems[8], lineItems[10]);
 
   const auto maxValue = toInteger(lineItems[3]);
   const auto maxColor =
-      toColorWithClipping(lineItems[5], lineItems[7], lineItems[9], lineItems[11]);
+    toColorWithClipping(lineItems[5], lineItems[7], lineItems[9], lineItems[11]);
 
   if (!minValue || !minColor || !maxValue || !maxColor)
     return {};
@@ -427,7 +431,7 @@ void StatisticsFileCSV::loadStatisticData(StatisticsData &statisticsData, int po
         statisticsData[type].addBlockVector(posX, posY, width, height, values[0], values[1]);
       else if (lineData && statIt->vectorDataOptions)
         statisticsData[type].addLine(
-            posX, posY, width, height, values[0], values[1], values[2], values[3]);
+          posX, posY, width, height, values[0], values[1], values[2], values[3]);
       else
         statisticsData[type].addBlockValue(posX, posY, width, height, values[0]);
     }
@@ -459,8 +463,7 @@ void StatisticsFileCSV::readHeaderFromFile(StatisticsData &statisticsData)
       auto    aLineByteArray = this->file.readLine();
       QString aLine(aLineByteArray);
 
-      // get components of this line
-      auto rowItemList = parseCSVLine(aLine, ';');
+      const auto rowItemList = parseCSVLine(aLine, ';');
 
       if (rowItemList[0].isEmpty())
         continue;
@@ -481,18 +484,20 @@ void StatisticsFileCSV::readHeaderFromFile(StatisticsData &statisticsData)
       }
       else if (rowItemList[1] == "mapColor")
       {
-        int id = rowItemList[2].toInt();
+        if (currentType->specifiedType == SpecifiedType::map)
+        {
+          const auto id = toInteger(rowItemList[2]);
+          const auto color =
+            toColorWithClipping(rowItemList[3], rowItemList[4], rowItemList[5], rowItemList[6]);
 
-        // assign color
-        auto r = (unsigned char)rowItemList[3].toInt();
-        auto g = (unsigned char)rowItemList[4].toInt();
-        auto b = (unsigned char)rowItemList[5].toInt();
-        auto a = (unsigned char)rowItemList[6].toInt();
-
-        if (!currentType->valueDataOptions)
-          currentType->valueDataOptions.emplace();
-        currentType->valueDataOptions->colorMapper->mappingType  = color::MappingType::Map;
-        currentType->valueDataOptions->colorMapper->colorMap[id] = Color(r, g, b, a);
+          if (id && color)
+          {
+            if (!currentType->valueDataOptions)
+              currentType->valueDataOptions.emplace();
+            currentType->valueDataOptions->colorMapper->mappingType   = color::MappingType::Map;
+            currentType->valueDataOptions->colorMapper->colorMap[*id] = *color;
+          }
+        }
       }
       else if (rowItemList[1] == "range")
       {
@@ -506,12 +511,17 @@ void StatisticsFileCSV::readHeaderFromFile(StatisticsData &statisticsData)
       }
       else if (rowItemList[1] == "defaultRange")
       {
-        int  min       = rowItemList[2].toInt();
-        int  max       = rowItemList[3].toInt();
-        auto rangeName = rowItemList[4].toStdString();
+        if (currentType->specifiedType == SpecifiedType::range)
+        {
+          int  min       = rowItemList[2].toInt();
+          int  max       = rowItemList[3].toInt();
+          auto rangeName = rowItemList[4].toStdString();
 
-        currentType->valueDataOptions->colorMapper->mappingType = color::MappingType::Predefined;
-        currentType->valueDataOptions->colorMapper = color::ColorMapper({min, max}, rangeName);
+          if (!currentType->valueDataOptions)
+            currentType->valueDataOptions.emplace();
+          currentType->valueDataOptions = StatisticsType::ValueDataOptions(
+            {.colorMapper = color::ColorMapper({min, max}, rangeName)});
+        }
       }
       else if (rowItemList[1] == "vectorColor")
       {
@@ -531,11 +541,13 @@ void StatisticsFileCSV::readHeaderFromFile(StatisticsData &statisticsData)
       }
       else if (rowItemList[1] == "scaleFactor")
       {
-        currentType->vectorDataOptions->scale = rowItemList[2].toInt();
+        if (currentType->vectorDataOptions)
+          currentType->vectorDataOptions->scale = rowItemList[2].toInt();
       }
       else if (rowItemList[1] == "scaleToBlockSize")
       {
-        currentType->valueDataOptions->scaleToBlockSize = (rowItemList[2] == "1");
+        if (currentType->valueDataOptions)
+          currentType->valueDataOptions->scaleToBlockSize = (rowItemList[2] == "1");
       }
       else if (rowItemList[1] == "seq-specs")
       {

@@ -111,6 +111,12 @@ ColorMapper::ColorMapper(const ColorMap &colorMap, Color other)
   this->colorMapOther = other;
 }
 
+ColorMapper::ColorMapper(const ColorMap &colorMap)
+{
+  this->mappingType = MappingType::Map;
+  this->colorMap    = colorMap;
+}
+
 ColorMapper::ColorMapper(Range<int> valueRange, PredefinedType predefinedType)
 {
   this->mappingType    = MappingType::Predefined;
@@ -152,7 +158,8 @@ Color ColorMapper::getColor(double value) const
     // The value scaled from 0 to 1 within the range (rangeMin ... rangeMax)
     auto valScaled = (value - this->valueRange.min) / rangeWidth;
 
-    auto interpolate = [&valScaled](int start, int end) {
+    auto interpolate = [&valScaled](int start, int end)
+    {
       auto range       = end - start;
       auto rangeScaled = std::floor(valScaled * double(range) + 0.5);
       return start + int(rangeScaled);

@@ -47,9 +47,6 @@ namespace stats::test
 
 using stats::color::ColorMapper;
 
-// The first tests should be about just parsing the individual types. This could be a parameterized
-// test with all cases for all different types and also edge things that do not work and should fail
-
 struct TestParameters
 {
   std::string                   testName;
@@ -57,13 +54,15 @@ struct TestParameters
   std::optional<StatisticsType> expectedType;
 };
 
+using Tc = TestParameters;
+
 class TestParsingOfCSVTypesFormatV12 : public TestWithParam<TestParameters>
 {
 };
 
-std::string getTestName(const testing::TestParamInfo<TestParameters> &testParametersInfo)
+std::string getTestName(const testing::TestParamInfo<TestParameters> &TestCaseInfo)
 {
-  return testParametersInfo.param.testName;
+  return TestCaseInfo.param.testName;
 }
 
 TEST_P(TestParsingOfCSVTypesFormatV12, TestParsing)
@@ -87,54 +86,228 @@ TEST_P(TestParsingOfCSVTypesFormatV12, TestParsing)
 }
 
 INSTANTIATE_TEST_SUITE_P(
-    StatisticsFileCSVTest,
-    TestParsingOfCSVTypesFormatV12,
-    Values(
-        TestParameters(
-            {.testName     = "RangeTypeWithCustomRange_ShouldParse",
-             .csv          = "%;type;0;RangeTypeColor;range;\n"
-                             "%;range;12;24;126;77;127;78;128;79;129;80\n",
-             .expectedType = StatisticsTypeBuilder(0, "RangeTypeColor")
-                                 .withValueDataOptions(
-                                     {.colorMapper = color::ColorMapper({12, 24},
-                                                                        Color(126, 127, 128, 129),
-                                                                        Color(77, 78, 79, 80))})
-                                 .build()}),
-        TestParameters(
-            {.testName     = "RangeTypeWithCustomRange_NegativeRange_ShouldParse",
-             .csv          = "%;type;0;RangeTypeColor;range;\n"
-                             "%;range;-12;-7;126;77;127;78;128;79;129;80\n",
-             .expectedType = StatisticsTypeBuilder(0, "RangeTypeColor")
-                                 .withValueDataOptions(
-                                     {.colorMapper = color::ColorMapper({-12, -7},
-                                                                        Color(126, 127, 128, 129),
-                                                                        Color(77, 78, 79, 80))})
-                                 .build()}),
-        TestParameters(
-            {.testName     = "RangeTypeWithCustomRange_BackwardsRange_ShouldParse",
-             .csv          = "%;type;0;RangeTypeColor;range;\n"
-                             "%;range;30;10;126;77;127;78;128;79;129;80\n",
-             .expectedType = StatisticsTypeBuilder(0, "RangeTypeColor")
-                                 .withValueDataOptions(
-                                     {.colorMapper = color::ColorMapper({30, 10},
-                                                                        Color(126, 127, 128, 129),
-                                                                        Color(77, 78, 79, 80))})
-                                 .build()}),
-        TestParameters(
-            {.testName     = "RangeTypeWithCustomRange_OutOfRangeRGBValues_ShouldBeClippedTo0To255",
-             .csv          = "%;type;0;RangeTypeColor;range;\n"
-                             "%;range;12;24;-792;-1;0;1;128;255;256;812372\n",
-             .expectedType = StatisticsTypeBuilder(0, "RangeTypeColor")
-                                 .withValueDataOptions(
-                                     {.colorMapper = color::ColorMapper({12, 24},
-                                                                        Color(0, 0, 128, 255),
-                                                                        Color(0, 1, 255, 255))})
-                                 .build()}),
-        TestParameters({.testName = "RangeTypeWithCustomRange_InvalidRGBValues_RangeShouldNotParse",
-                        .csv      = "%;type;0;RangeTypeColor;range;\n"
-                                    "%;range;12;AA;-792;-1;0;1;128;255;256;812372\n",
-                        .expectedType = {}})),
-    getTestName);
+  StatisticsFileCSVTest,
+  TestParsingOfCSVTypesFormatV12,
+  Values(
+
+    // Range with a custom range (min/max values and min/max color)
+    Tc({.testName = "RangeTypeWithCustomRange_ShouldParse",
+        .csv      = "%;type;0;RangeTypeColor;range;\n"
+                    "%;range;12;24;126;77;127;78;128;79;129;80\n",
+        .expectedType =
+          StatisticsTypeBuilder(0, "RangeTypeColor")
+            .withValueDataOptions({.colorMapper = color::ColorMapper(
+                                     {12, 24}, Color(126, 127, 128, 129), Color(77, 78, 79, 80))})
+            .build()}),
+    Tc({.testName = "RangeTypeWithCustomRange_NegativeRange_ShouldParse",
+        .csv      = "%;type;0;RangeTypeColor;range;\n"
+                    "%;range;-12;-7;126;77;127;78;128;79;129;80\n",
+        .expectedType =
+          StatisticsTypeBuilder(0, "RangeTypeColor")
+            .withValueDataOptions({.colorMapper = color::ColorMapper(
+                                     {-12, -7}, Color(126, 127, 128, 129), Color(77, 78, 79, 80))})
+            .build()}),
+    Tc({.testName = "RangeTypeWithCustomRange_BackwardsRange_ShouldParse",
+        .csv      = "%;type;0;RangeTypeColor;range;\n"
+                    "%;range;30;10;126;77;127;78;128;79;129;80\n",
+        .expectedType =
+          StatisticsTypeBuilder(0, "RangeTypeColor")
+            .withValueDataOptions({.colorMapper = color::ColorMapper(
+                                     {30, 10}, Color(126, 127, 128, 129), Color(77, 78, 79, 80))})
+            .build()}),
+    Tc({.testName = "RangeTypeWithCustomRange_WithGridColor_ShouldParse",
+        .csv      = "%;type;0;RangeTypeColor;range;\n"
+                    "%;range;30;10;126;77;127;78;128;79;129;80\n"
+                    "%;gridColor;123;124;125;\n",
+        .expectedType =
+          StatisticsTypeBuilder(0, "RangeTypeColor")
+            .withValueDataOptions({.colorMapper = color::ColorMapper(
+                                     {30, 10}, Color(126, 127, 128, 129), Color(77, 78, 79, 80))})
+            .withGridOptions({.style = LineDrawStyle({.color = Color(123, 124, 125)})})
+            .build()}),
+    Tc({.testName = "RangeTypeWithCustomRange_WithScaleFactor_ScaleFactorShouldNotBeParsed",
+        .csv      = "%;type;0;RangeTypeColor;range;\n"
+                    "%;range;12;24;126;77;127;78;128;79;129;80\n"
+                    "%;scaleFactor;11\n",
+        .expectedType =
+          StatisticsTypeBuilder(0, "RangeTypeColor")
+            .withValueDataOptions({.colorMapper = color::ColorMapper(
+                                     {12, 24}, Color(126, 127, 128, 129), Color(77, 78, 79, 80))})
+            .build()}),
+    Tc({.testName = "RangeTypeWithCustomRange_WithSacleToBlockSize_ShouldParse",
+        .csv      = "%;type;0;RangeTypeColor;range;\n"
+                    "%;range;12;24;126;77;127;78;128;79;129;80\n"
+                    "%;scaleToBlockSize;1\n",
+        .expectedType =
+          StatisticsTypeBuilder(0, "RangeTypeColor")
+            .withValueDataOptions({.scaleToBlockSize = true,
+                                   .colorMapper      = color::ColorMapper(
+                                     {12, 24}, Color(126, 127, 128, 129), Color(77, 78, 79, 80))})
+            .build()}),
+    Tc({.testName = "RangeTypeWithCustomRange_OutOfRangeRGBValues_ShouldBeClippedTo0To255",
+        .csv      = "%;type;0;RangeTypeColor;range;\n"
+                    "%;range;12;24;-792;-1;0;1;128;255;256;812372\n",
+        .expectedType =
+          StatisticsTypeBuilder(0, "RangeTypeColor")
+            .withValueDataOptions({.colorMapper = color::ColorMapper(
+                                     {12, 24}, Color(0, 0, 128, 255), Color(0, 1, 255, 255))})
+            .build()}),
+    Tc({.testName     = "RangeTypeWithCustomRange_InvalidRGBValues_ShouldNotAddType",
+        .csv          = "%;type;0;RangeTypeColor;range;\n"
+                        "%;range;12;AA;-792;-1;0;1;128;255;256;812372\n",
+        .expectedType = {}}),
+    Tc({.testName = "RangeTypeWithCustomRange_WithTwoRanges_SecondShouldOverrideFirstOne",
+        .csv      = "%;type;0;RangeTypeColor;range;\n"
+                    "%;range;0;7;122;123;124;78;82;11;234;22\n"
+                    "%;range;30;10;126;77;127;78;128;79;129;80\n",
+        .expectedType =
+          StatisticsTypeBuilder(0, "RangeTypeColor")
+            .withValueDataOptions({.colorMapper = color::ColorMapper(
+                                     {30, 10}, Color(126, 127, 128, 129), Color(77, 78, 79, 80))})
+            .build()}),
+
+    // Range with default color mapper (e.g. jet)
+    Tc({.testName     = "RangeTypeWithDefaultRange_ShouldParse",
+        .csv          = "%;type;0;RangeTypeColor;range;\n"
+                        "%;defaultRange;0;11;jet\n",
+        .expectedType = StatisticsTypeBuilder(0, "RangeTypeColor")
+                          .withValueDataOptions({.colorMapper = color::ColorMapper(
+                                                   {0, 11}, color::PredefinedType::Jet)})
+                          .build()}),
+    Tc({.testName     = "RangeTypeWithDefaultRange_WithUpperCase_ShouldParse",
+        .csv          = "%;type;0;RangeTypeColor;range;\n"
+                        "%;defaultRange;0;11;jET\n",
+        .expectedType = StatisticsTypeBuilder(0, "RangeTypeColor")
+                          .withValueDataOptions({.colorMapper = color::ColorMapper(
+                                                   {0, 11}, color::PredefinedType::Jet)})
+                          .build()}),
+    Tc({.testName     = "RangeTypeWithDefaultRange_WithTwoRangeDefinitions_"
+                        "SecondOneShouldOverrideFirstOne",
+        .csv          = "%;type;0;RangeTypeColor;range;\n"
+                        "%;defaultRange;29;119;jET\n"
+                        "%;defaultRange;0;11;Winter\n",
+        .expectedType = StatisticsTypeBuilder(0, "RangeTypeColor")
+                          .withValueDataOptions({.colorMapper = color::ColorMapper(
+                                                   {0, 11}, color::PredefinedType::Winter)})
+                          .build()}),
+
+    // Range type with wrong options or none at all
+    Tc({.testName     = "RangeType_WithMapColor_ShouldNotAddType",
+        .csv          = "%;type;0;RangeTypeColor;range;\n"
+                        "%;mapColor;12;124;125;126;127\n",
+        .expectedType = {}}),
+    Tc({.testName     = "RangeType_WithVectorColor_ShouldNotAddType",
+        .csv          = "%;type;0;RangeTypeColor;range;\n"
+                        "%;vectorColor;22;23;24;25\n",
+        .expectedType = {}}),
+    Tc({.testName     = "RangeType_WithNoOptions_ShouldNotAddType",
+        .csv          = "%;type;0;RangeTypeColor;range;\n",
+        .expectedType = {}}),
+
+    // Mapping type
+    Tc({.testName     = "MapType_WithSingleMapColor_ShouldParse",
+        .csv          = "%;type;1;MapType;map;\n"
+                        "%;mapColor;12;124;125;126;127\n",
+        .expectedType = StatisticsTypeBuilder(1, "MapType")
+                          .withValueDataOptions(
+                            {.colorMapper = color::ColorMapper({{12, Color(124, 125, 126, 127)}})})
+                          .build()}),
+    Tc({.testName     = "MapType_WithMultipleMapColor_ShouldParse",
+        .csv          = "%;type;1;MapType;map;\n"
+                        "%;mapColor;1;124;125;126;127\n"
+                        "%;mapColor;2;22;23;24;25\n"
+                        "%;mapColor;9;77;78;79;80\n",
+        .expectedType = StatisticsTypeBuilder(1, "MapType")
+                          .withValueDataOptions(
+                            {.colorMapper = color::ColorMapper({{1, Color(124, 125, 126, 127)},
+                                                                {2, Color(22, 23, 24, 25)},
+                                                                {9, Color(77, 78, 79, 80)}})})
+                          .build()}),
+    Tc({.testName     = "MapType_WithNegativeMapIndex_ShouldParse",
+        .csv          = "%;type;1;MapType;map;\n"
+                        "%;mapColor;-56;124;125;126;127\n",
+        .expectedType = StatisticsTypeBuilder(1, "MapType")
+                          .withValueDataOptions(
+                            {.colorMapper = color::ColorMapper({{-56, Color(124, 125, 126, 127)}})})
+                          .build()}),
+    Tc(
+      {.testName     = "MapType_WithGridColor_ShouldParse",
+       .csv          = "%;type;1;MapType;map;\n"
+                       "%;mapColor;12;124;125;126;127\n"
+                       "%;gridColor;123;124;125;\n",
+       .expectedType = StatisticsTypeBuilder(1, "MapType")
+                         .withValueDataOptions(
+                           {.colorMapper = color::ColorMapper({{12, Color(124, 125, 126, 127)}})})
+                         .withGridOptions({.style = LineDrawStyle({.color = Color(123, 124, 125)})})
+                         .build()}),
+    Tc({.testName     = "MapType_WithScaleFactor_ScaleFactorShouldNotBeParsed",
+        .csv          = "%;type;1;MapType;map;\n"
+                        "%;mapColor;12;124;125;126;127\n"
+                        "%;scaleFactor;11\n",
+        .expectedType = StatisticsTypeBuilder(1, "MapType")
+                          .withValueDataOptions(
+                            {.colorMapper = color::ColorMapper({{12, Color(124, 125, 126, 127)}})})
+                          .build()}),
+    Tc({.testName     = "MapType_WithSacleToBlockSize_ShouldParse",
+        .csv          = "%;type;1;MapType;map;\n"
+                        "%;mapColor;12;124;125;126;127\n"
+                        "%;scaleToBlockSize;1\n",
+        .expectedType = StatisticsTypeBuilder(1, "MapType")
+                          .withValueDataOptions(
+                            {.scaleToBlockSize = true,
+                             .colorMapper = color::ColorMapper({{12, Color(124, 125, 126, 127)}})})
+                          .build()}),
+    Tc({.testName     = "MapType_OutOfRangeRGBValues_ShouldBeClippedTo0To255",
+        .csv          = "%;type;1;MapType;map;\n"
+                        "%;mapColor;12;-77;-1;0;1\n"
+                        "%;mapColor;13;255;256;257;81239842\n",
+        .expectedType = StatisticsTypeBuilder(1, "MapType")
+                          .withValueDataOptions(
+                            {.colorMapper = color::ColorMapper({{12, Color(0, 0, 0, 1)},
+                                                                {13, Color(255, 255, 255, 255)}})})
+                          .build()}),
+    Tc({.testName = "MapType_WithSuplicateMapEntries_SecondShouldOverrideFirstOne",
+        .csv      = "%;type;1;MapType;map;\n"
+                    "%;mapColor;12;124;125;126;127\n"
+                    "%;mapColor;12;88;2;1;90\n",
+        .expectedType =
+          StatisticsTypeBuilder(1, "MapType")
+            .withValueDataOptions({.colorMapper = color::ColorMapper({{12, Color(88, 2, 1, 90)}})})
+            .build()}),
+
+    // Mapping type with wrong data
+    Tc({.testName     = "MapType_InvalidRGBValues_ShouldNotAddType",
+        .csv          = "%;type;1;MapType;map;\n"
+                        "%;mapColor;FF;-77;-1;0;1\n",
+        .expectedType = {}}),
+    Tc({.testName     = "MapType_WithRangeColor_ShouldNotAddType",
+        .csv          = "%;type;0;MapType;map;\n"
+                        "%;range;12;24;126;77;127;78;128;79;129;80\n",
+        .expectedType = {}}),
+    Tc({.testName     = "MapType_WithDefaultRange_ShouldNotAddType",
+        .csv          = "%;type;0;MapType;map;\n"
+                        "%;defaultRange;0;11;jet\n",
+        .expectedType = {}}),
+    Tc({.testName     = "MapType_WithVectorColor_ShouldNotAddType",
+        .csv          = "%;type;0;MapType;map;\n"
+                        "%;vectorColor;22;23;24;25\n",
+        .expectedType = {}}),
+    Tc({.testName     = "MapType_WithNoOptions_ShouldNotAddType",
+        .csv          = "%;type;0;MapType;map;\n",
+        .expectedType = {}}),
+    Tc({.testName     = "MapType_NoMapColor_ShouldNotAddType",
+        .csv          = "%;type;1;MapType;map;\n",
+        .expectedType = {}}),
+
+    // Vector type
+    Tc({.testName     = "VectorType_Default_ShouldParse",
+        .csv          = "%;type;2;VectorType;vector;\n",
+        .expectedType = StatisticsTypeBuilder(2, "VectorType").withVectorDataOptions({}).build()})
+
+      ),
+
+
+  getTestName);
 
 // TEST(StatisticsFileCSVTest,
 // loadingFromTestData1_ShouldLoadFramesizeAndTypesAndFileSortingCorrectly)
@@ -164,7 +337,8 @@ INSTANTIATE_TEST_SUITE_P(
 //       StatisticsTypeBuilder(3, "MapType")
 //           .withValueDataOptions(
 //               {.colorMapper = color::ColorMapper(
-//                    {{12, Color(124, 125, 126, 127)}, {15, Color(224, 225, 226, 227)}}, Color())})
+//                    {{12, Color(124, 125, 126, 127)}, {15, Color(224, 225, 226, 227)}},
+//                    Color())})
 //           .build(),
 //       StatisticsTypeBuilder(4, "VectorDefault").withVectorDataOptions({}).build(),
 //       StatisticsTypeBuilder(5, "VectorWithColor")
@@ -187,7 +361,7 @@ TEST(StatisticsFileCSVTest, loadingFromTestData1_testStateBeforeLoadingData_Shou
 
   EXPECT_EQ(statFile.getParsingInfo().fileSorting,
             StatisticsFileBase::ParsingInfo::FileSorting::Unknown)
-      << "At this point (before reading frame and type positions from file) this is unknown";
+    << "At this point (before reading frame and type positions from file) this is unknown";
 
   // We did not let the file parse the positions of the start of each poc/type yet so loading
   // should not yield any data yet.
@@ -219,7 +393,7 @@ TEST(StatisticsFileCSVTest, loadingFromTestData1_ShouldLoadTypesCorrectly)
 
   EXPECT_EQ(statFile.getParsingInfo().fileSorting,
             StatisticsFileBase::ParsingInfo::FileSorting::Unknown)
-      << "At this point (before reading frame and type positions from file) this is unknown";
+    << "At this point (before reading frame and type positions from file) this is unknown";
 
   // We did not let the file parse the positions of the start of each poc/type yet so loading
   // should not yield any data yet.
@@ -289,17 +463,17 @@ TEST(StatisticsFileCSVTest, testCSVFileParsingRealFile)
   EXPECT_EQ(statData.getFrameSize(), Size(832, 480));
 
   const StatisticsTypesVec expectedTypes = {
-      StatisticsTypeBuilder(0, "PredictionMode")
-          .withValueDataOptions(
-              {.colorMapper = ColorMapper(
-                   {{0, Color(0, 0, 255)}, {1, Color(255, 0, 255)}, {2, Color(0, 255, 255)}}, {})})
-          .build(),
-      StatisticsTypeBuilder(1, "MotionVector0")
-          .withVectorDataOptions({.style = LineDrawStyle({.color = Color(0, 0, 0)}), .scale = 4})
-          .build(),
-      StatisticsTypeBuilder(2, "MotionVector1")
-          .withVectorDataOptions({.style = LineDrawStyle({.color = Color(0, 0, 0)}), .scale = 4})
-          .build()};
+    StatisticsTypeBuilder(0, "PredictionMode")
+      .withValueDataOptions(
+        {.colorMapper = ColorMapper(
+           {{0, Color(0, 0, 255)}, {1, Color(255, 0, 255)}, {2, Color(0, 255, 255)}}, {})})
+      .build(),
+    StatisticsTypeBuilder(1, "MotionVector0")
+      .withVectorDataOptions({.style = LineDrawStyle({.color = Color(0, 0, 0)}), .scale = 4})
+      .build(),
+    StatisticsTypeBuilder(2, "MotionVector1")
+      .withVectorDataOptions({.style = LineDrawStyle({.color = Color(0, 0, 0)}), .scale = 4})
+      .build()};
 
   auto &statTypes = statData.getStatisticsTypes();
   EXPECT_EQ(statTypes, expectedTypes);
@@ -307,7 +481,7 @@ TEST(StatisticsFileCSVTest, testCSVFileParsingRealFile)
   const auto frameIndex = 0;
 
   EXPECT_EQ(statData.getTypesThatNeedLoading(frameIndex).size(), 0u)
-      << "As long as no types are set the render, none need loading.";
+    << "As long as no types are set the render, none need loading.";
 
   statTypes[0].render = true;
   statTypes[1].render = true;
@@ -315,7 +489,7 @@ TEST(StatisticsFileCSVTest, testCSVFileParsingRealFile)
   const auto typesThatNeedLoading = statData.getTypesThatNeedLoading(frameIndex);
 
   EXPECT_EQ(typesThatNeedLoading.size(), 2u)
-      << "After types are set to render, they should need loading.";
+    << "After types are set to render, they should need loading.";
 
   int debugStop = 22;
 }

@@ -119,6 +119,7 @@ public:
   ColorMapper() = default;
   ColorMapper(Range<int> valueRange, Color gradientColorStart, Color gradientColorEnd);
   ColorMapper(const ColorMap &colorMap, Color other);
+  ColorMapper(const ColorMap &colorMap);
   ColorMapper(Range<int> valueRange, PredefinedType predefinedType);
   ColorMapper(Range<int> valueRange, std::string predefinedTypeName);
 
