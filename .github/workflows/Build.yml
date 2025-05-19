@@ -51,27 +51,11 @@ jobs:
   #       make -j $(sysctl -n hw.logicalcpu)
   #   - name: Run Unittests
   #     run: $GITHUB_WORKSPACE/build/YUViewUnitTest/YUViewUnitTest
-  build-unix:
+  build-linux-mac:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        include: 
-          - os: ubuntu-22.04
-            LIBDE265_REMOTE: libde265.so
-            LIBDE265_LOCAL: libde265-internals.so
-            CPU_COUNT_COMMAND: nproc
-          # - os: macos-13
-          #   QT_FILE: qtBase_6.7.2_mac13.zip
-          #   LIBDE265_REMOTE: libde265.dylib
-          #   LIBDE265_LOCAL: libde265-internals.dylib
-          #   ARTIFACT_NAME: YUView-Mac13-Monterey.zip
-          #   CPU_COUNT_COMMAND: sysctl -n hw.logicalcpu
-          # - os: macos-15
-          #   QT_FILE: qtBase_6.7.2_mac15.zip
-          #   LIBDE265_REMOTE: libde265.dylib
-          #   LIBDE265_LOCAL: libde265-internals.dylib
-          #   ARTIFACT_NAME: YUView-Mac15-Sequoia.zip
-          #   CPU_COUNT_COMMAND: sysctl -n hw.logicalcpu
+        os: [ubuntu-22.04, macos-13, macos-15]
     steps:
     - uses: actions/checkout@v4
       with:
@@ -81,9 +65,7 @@ jobs:
       id: artifacts
       shell: bash
       run: |
-        echo "OpenSSL file: qt=qtBase-6-9-0-${{ matrix.os }}"
         echo "qt=qtBase-6-9-0-${{ matrix.os }}" >> "$GITHUB_OUTPUT"
-        echo "Artifact output: output=YUView-${{ matrix.os }}"
         echo "output=YUView-${{ matrix.os }}" >> "$GITHUB_OUTPUT"
     - name: Install Qt base
       run: |
@@ -104,19 +86,23 @@ jobs:
       run: |
         sudo apt-get update
         sudo apt-get install libgl1-mesa-dev libxkbcommon-x11-0 libpcre2-16-0 '^libxcb.*-dev' libx11-xcb-dev libglu1-mesa-dev libxi-dev libxkbcommon-dev libxkbcommon-x11-dev libatspi2.0-dev libfuse2
-    - name: Install libde265
-      run: |
-        curl -L https://github.com/ChristianFeldmann/libde265/releases/download/v1.1/${{matrix.LIBDE265_REMOTE}} -o ${{matrix.LIBDE265_LOCAL}}
-        curl -L https://raw.githubusercontent.com/ChristianFeldmann/libde265/master/COPYING -o libde265License.txt
+    - name: Download libde265 (Linux)
+      if: runner.os == 'Linux'
+      run: curl -L https://github.com/ChristianFeldmann/libde265/releases/download/v1.1/libde265.so -o libde265-internals.so
+    - name: Download libde265 (Mac)
+      if: runner.os == 'macOS'
+      run: curl -L https://github.com/ChristianFeldmann/libde265/releases/download/v1.1/libde265.dylib -o libde265-internals.dylib
+    - name: Download libde265 license file
+      run: curl -L https://raw.githubusercontent.com/ChristianFeldmann/libde265/master/COPYING -o libde265License.txt
       shell: bash
-    - name: Build
+    - name: Build (Qmake + Make)
       run: |
         cd $GITHUB_WORKSPACE
         export PATH=$GITHUB_WORKSPACE/../../YUViewQt/YUViewQt/Qt/bin:$PATH
         mkdir build
         cd build
         qmake CONFIG+=UNITTESTS ..
-        make -j $(${{matrix.CPU_COUNT_COMMAND}})
+        make -j 4
     - name: Run Unittests
       run: $GITHUB_WORKSPACE/build/YUViewUnitTest/YUViewUnitTest
     - name: Build App (Mac)
