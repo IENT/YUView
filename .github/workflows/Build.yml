@@ -141,7 +141,11 @@ jobs:
         autoUpdate: [true]
     steps:
     - name: Debug path
-      run: dir 'C:\Program Files (x86)\Microsoft Visual Studio\2022\Enterprise\VC\Redist\MSVC\'
+      run: |
+        dir 'C:\Program Files (x86)\Microsoft Visual Studio'
+        dir 'C:\Program Files (x86)\Microsoft Visual Studio\2022'
+        dir 'C:\Program Files (x86)\Microsoft Visual Studio\2022\Enterprise'
+        dir 'C:\Program Files (x86)\Microsoft Visual Studio\2022\Enterprise\VC'
     # - uses: actions/checkout@v4
     #   with:
     #     submodules: true
