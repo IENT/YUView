@@ -142,8 +142,12 @@ jobs:
     steps:
     - name: Debug path
       run: |
-        dir 'C:\Program Files (x86)\Microsoft Visual Studio'
-        dir 'C:\Program Files (x86)\Microsoft Visual Studio\Shared'
+        dir 'C:\Program Files\Microsoft Visual Studio'
+        dir 'C:\Program Files\Microsoft Visual Studio\2022'
+        dir 'C:\Program Files\Microsoft Visual Studio\2022\Community'
+        dir 'C:\Program Files\Microsoft Visual Studio\2022\Community\VC'
+        dir 'C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Redist'
+        dir 'C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Redist\MSVC'
     # - uses: actions/checkout@v4
     #   with:
     #     submodules: true
