@@ -109,7 +109,7 @@ jobs:
       if: runner.os	== 'macOS'
       run: |
         macdeployqt build/YUViewApp/YUView.app -always-overwrite -verbose=2
-        cp ${{matrix.LIBDE265_LOCAL}} build/YUViewApp/YUView.app/Contents/MacOS/.
+        cp libde265-internals.dylib build/YUViewApp/YUView.app/Contents/MacOS/.
         cd build/YUViewApp
         # Zip
         zip -r ${{steps.artifacts.outputs.output}} YUView.app/
