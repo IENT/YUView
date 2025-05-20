@@ -138,7 +138,7 @@ jobs:
     runs-on: windows-2022
     strategy:
       matrix:
-        autoUpdate: [true]
+        autoUpdate: [true, false]
     steps:
     - uses: actions/checkout@v4
       with:
@@ -214,19 +214,19 @@ jobs:
       if: matrix.autoUpdate == true
       uses: actions/upload-artifact@v4
       with:
-        name: YUView-{{matrix.os}}-autoupdate.zip
+        name: YUView-windows-2022-autoupdate.zip
         path: artifacts
     - name: Upload Artifact (Autoupdate disabled)
       if: matrix.autoUpdate == false
       uses: actions/upload-artifact@v4
       with:
-        name: YUView-{{matrix.os}}.zip
+        name: YUView-windows-2022.zip
         path: artifacts
     - name: Upload Windows installer Artifact
       if: matrix.autoUpdate == true
       uses: actions/upload-artifact@v4
       with:
-        name: YUViewSetup.msi
+        name: YYUView-windows-2022.msi
         path: ./YUViewSetup.msi
     - name: Release Zip
       uses: softprops/action-gh-release@v1
