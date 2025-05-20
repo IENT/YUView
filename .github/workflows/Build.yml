@@ -142,12 +142,8 @@ jobs:
     steps:
     - name: Debug path
       run: |
-        dir 'C:\Program Files\Microsoft Visual Studio'
-        dir 'C:\Program Files\Microsoft Visual Studio\2022'
-        dir 'C:\Program Files\Microsoft Visual Studio\2022\Enterprise'
-        dir 'C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC'
-        dir 'C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Redist'
-        dir 'C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Redist\MSVC'
+        dir 'C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Redist\MSVC\v143'
+        dir 'C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Redist\MSVC\v143\MergeModules'
     # - uses: actions/checkout@v4
     #   with:
     #     submodules: true
