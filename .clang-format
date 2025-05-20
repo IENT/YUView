@@ -1,5 +1,5 @@
-# We'll use defaults from the LLVM style, but with 4 columns indentation.
 IndentWidth: 2
+ContinuationIndentWidth: 2
 ---
 Language: Cpp
 Standard: c++17
