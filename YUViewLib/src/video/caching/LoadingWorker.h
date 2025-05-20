@@ -32,60 +32,44 @@
 
 #pragma once
 
-#include <QWidget>
+#include "playlistitem/playlistItem.h"
 
-#include "PlaylistTreeWidget.h"
-#include <video/caching/VideoCache.h>
+#include <QObject>
+#include <QString>
 
-namespace VideoCacheStatusWidgetNamespace
+namespace video
 {
-class VideoCacheStatusWidget : public QWidget
-{
-  Q_OBJECT
 
-public:
-  VideoCacheStatusWidget(QWidget *parent)
-      : QWidget(parent), cacheLevelMB(0), cacheRateInBytesPerMs(0), cacheLevelMaxMB(0)
-  {
-  }
-  // Override the paint event
-  virtual void paintEvent(QPaintEvent *event) override;
-  void         updateStatus(PlaylistTreeWidget *playlistWidget, unsigned int cacheRate);
-
-private:
-  // The floating point values (0 to 1) of the end positions of the blocks to draw
-  QList<float> relativeValsEnd;
-  unsigned int cacheLevelMB;
-  unsigned int cacheRateInBytesPerMs;
-  int64_t      cacheLevelMaxMB;
-};
-} // namespace VideoCacheStatusWidgetNamespace
-
-class VideoCacheInfoWidget : public QWidget
+class LoadingWorker : public QObject
 {
   Q_OBJECT
-
 public:
-  VideoCacheInfoWidget(QWidget *parent = 0);
+  LoadingWorker(QObject *parent);
+  ~LoadingWorker() {}
 
-  void setPlaylistAndCache(PlaylistTreeWidget *plist, video::VideoCache *vCache)
-  {
-    playlist = plist;
-    cache    = vCache;
-  };
+  playlistItem *getCacheItem() { return this->currentCacheItem; }
+  int           getCacheFrame() { return this->currentFrame; }
+  void          setJob(playlistItem *item, int frame, bool test = false);
+  void          setWorking(bool state) { this->working = state; }
+  bool          isWorking() { return this->working; }
+  QString       getStatus();
 
-public slots:
-  void onUpdateCacheStatus();
-
+  // Process the job in the thread that this worker was moved to. This function can be directly
+  // called from the main thread. It will still process the call in the separate thread.
+  void processCacheJob();
+  void processLoadingJob(bool playing, bool loadRawData);
+signals:
+  void loadingFinished();
 private slots:
-  void onGroupBoxToggled(bool on);
+  void processCacheJobInternal();
+  void processLoadingJobInternal(bool playing, bool loadRawData);
 
 private:
-  VideoCacheStatusWidgetNamespace::VideoCacheStatusWidget *statusWidget{nullptr};
-  QLabel *                                                 cachingInfoLabel{nullptr};
-
-  PlaylistTreeWidget *playlist{nullptr};
-  video::VideoCache * cache{nullptr};
-
-  unsigned int cacheRateInBytesPerMs{0};
+  playlistItem *currentCacheItem{};
+  int           currentFrame{};
+  bool          working{};
+  bool          testMode{};
+  int           id{}; // A static ID of the thread. Only used in getStatus().
 };
+
+} // namespace video

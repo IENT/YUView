@@ -35,7 +35,7 @@
 #include <playlistitem/playlistItem.h>
 #include <ui/PlaybackController.h>
 #include <video/FrameHandler.h>
-#include <video/VideoCache.h>
+#include <video/caching/VideoCache.h>
 
 #include <QActionGroup>
 #include <QBackingStore>

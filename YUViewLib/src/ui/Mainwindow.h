@@ -38,7 +38,7 @@
 
 #include <handler/UpdateHandler.h>
 #include <ui/SeparateWindow.h>
-#include <video/VideoCache.h>
+#include <video/caching/VideoCache.h>
 
 #include "ui_mainwindow.h"
 
