@@ -150,7 +150,7 @@ jobs:
         cd ../../
         mkdir -p YUViewQt/YUViewQt
         cd YUViewQt/YUViewQt
-        curl -L https://github.com/ChristianFeldmann/YUViewQt/releases/download/QtBase-6.9.0/qtBase-6-9-0-{{matrix.os}}.zip -o Qt.zip
+        curl -L https://github.com/ChristianFeldmann/YUViewQt/releases/download/QtBase-6.9.0/qtBase-6-9-0-${{matrix.os}}.zip -o Qt.zip
         7z x  Qt.zip
         echo "${{ github.workspace }}\..\..\YUViewQt\YUViewQt\Qt\bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
     - name: Install libde265
@@ -164,7 +164,7 @@ jobs:
       run: |
         mkdir openSSL
         cd openSSL
-        curl -L https://github.com/ChristianFeldmann/YUViewQt/releases/download/openSSL3.5.0/openSSL-3-5-0-{{matrix.os}}.zip -o openSSL.zip
+        curl -L https://github.com/ChristianFeldmann/YUViewQt/releases/download/openSSL3.5.0/openSSL-3-5-0-${{matrix.os}}.zip -o openSSL.zip
         7z x openSSL.zip
         cd ..
     - name: Activate auto update
