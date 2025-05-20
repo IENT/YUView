@@ -143,9 +143,7 @@ jobs:
     - name: Debug path
       run: |
         dir 'C:\Program Files (x86)\Microsoft Visual Studio'
-        dir 'C:\Program Files (x86)\Microsoft Visual Studio\2022'
-        dir 'C:\Program Files (x86)\Microsoft Visual Studio\2022\Enterprise'
-        dir 'C:\Program Files (x86)\Microsoft Visual Studio\2022\Enterprise\VC'
+        dir 'C:\Program Files (x86)\Microsoft Visual Studio\Shared'
     # - uses: actions/checkout@v4
     #   with:
     #     submodules: true
