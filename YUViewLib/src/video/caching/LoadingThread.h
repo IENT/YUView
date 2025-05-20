@@ -32,60 +32,61 @@
 
 #pragma once
 
-#include <QWidget>
+#include <QThread>
 
-#include "PlaylistTreeWidget.h"
-#include <video/caching/VideoCache.h>
+#include "LoadingWorker.h"
 
-namespace VideoCacheStatusWidgetNamespace
+namespace video
 {
-class VideoCacheStatusWidget : public QWidget
+
+#define LOADINGTHREAD_DEBUG_LOADING 0
+#if LOADINGTHREAD_DEBUG_LOADING && !NDEBUG
+#define DEBUG_THREAD qDebug
+#else
+#define DEBUG_THREAD(fmt, ...) ((void)0)
+#endif
+
+class LoadingThread : public QThread
 {
   Q_OBJECT
-
 public:
-  VideoCacheStatusWidget(QWidget *parent)
-      : QWidget(parent), cacheLevelMB(0), cacheRateInBytesPerMs(0), cacheLevelMaxMB(0)
+  LoadingThread(QObject *parent) : QThread(parent)
   {
+    // Create a new worker and move it to this thread
+    this->threadWorker.reset(new LoadingWorker(nullptr));
+    this->threadWorker->moveToThread(this);
   }
-  // Override the paint event
-  virtual void paintEvent(QPaintEvent *event) override;
-  void         updateStatus(PlaylistTreeWidget *playlistWidget, unsigned int cacheRate);
+  ~LoadingThread() {}
 
-private:
-  // The floating point values (0 to 1) of the end positions of the blocks to draw
-  QList<float> relativeValsEnd;
-  unsigned int cacheLevelMB;
-  unsigned int cacheRateInBytesPerMs;
-  int64_t      cacheLevelMaxMB;
-};
-} // namespace VideoCacheStatusWidgetNamespace
-
-class VideoCacheInfoWidget : public QWidget
-{
-  Q_OBJECT
-
-public:
-  VideoCacheInfoWidget(QWidget *parent = 0);
-
-  void setPlaylistAndCache(PlaylistTreeWidget *plist, video::VideoCache *vCache)
+  void quitWhenDone()
   {
-    playlist = plist;
-    cache    = vCache;
-  };
+    this->quitting = true;
+    if (this->threadWorker->isWorking())
+    {
+      // We must wait until the worker is done.
+      DEBUG_THREAD("loadingThread::quitWhenDone waiting for worker to finish...");
+      connect(worker(),
+              &LoadingWorker::loadingFinished,
+              this,
+              [=]
+              {
+                DEBUG_THREAD("loadingThread::quitWhenDone worker done -> quit");
+                quit();
+              });
+    }
+    else
+    {
+      DEBUG_THREAD("loadingThread::quitWhenDone quit now");
+      quit();
+    }
+  }
 
-public slots:
-  void onUpdateCacheStatus();
-
-private slots:
-  void onGroupBoxToggled(bool on);
+  LoadingWorker *worker() { return this->threadWorker.get(); }
+  bool           isQuitting() { return this->quitting; }
 
 private:
-  VideoCacheStatusWidgetNamespace::VideoCacheStatusWidget *statusWidget{nullptr};
-  QLabel *                                                 cachingInfoLabel{nullptr};
-
-  PlaylistTreeWidget *playlist{nullptr};
-  video::VideoCache * cache{nullptr};
-
-  unsigned int cacheRateInBytesPerMs{0};
+  std::unique_ptr<LoadingWorker> threadWorker{};
+  bool quitting{}; // Are er quitting the job? If yes, do not push new jobs to it.
 };
+
+} // namespace video
