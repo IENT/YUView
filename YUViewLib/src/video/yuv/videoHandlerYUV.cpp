@@ -3035,9 +3035,9 @@ void videoHandlerYUV::guessAndSetPixelFormat(
 {
   auto format = guessPixelFormatFromSizeAndName(frameFormat, fileInfo);
   if (format.isValid())
-    this->setSrcPixelFormat(format);
+    this->setSrcPixelFormat(format, false);
   else
-    this->setSrcPixelFormat(PixelFormatYUV(Subsampling::YUV_420, 8, PlaneOrder::YUV));
+    this->setSrcPixelFormat(PixelFormatYUV(Subsampling::YUV_420, 8, PlaneOrder::YUV), false);
 }
 
 /** Try to guess the format of the raw YUV data. A list of candidates is tried (candidateModes) and
