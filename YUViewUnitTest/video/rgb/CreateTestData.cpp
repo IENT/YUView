@@ -43,12 +43,12 @@ void scaleValueToBitDepthAndPushIntoArra(QByteArray      &data,
                                          const int        bitDepth,
                                          const Endianness endianness)
 {
-  const auto shift = 12 - bitDepth;
+  const auto scaledValue = convertBitness(value, 12, bitDepth);
+
   if (bitDepth == 8)
-    data.push_back(value >> shift);
-  else
+    data.push_back(scaledValue);
+  else if (bitDepth <= 16)
   {
-    const auto scaledValue = (value >> shift);
     const auto upperByte   = ((scaledValue & 0xff00) >> 8);
     const auto lowerByte   = (scaledValue & 0xff);
     if (endianness == Endianness::Little)
@@ -60,6 +60,21 @@ void scaleValueToBitDepthAndPushIntoArra(QByteArray      &data,
     {
       data.push_back(upperByte);
       data.push_back(lowerByte);
+    }
+  } else {
+    if (endianness == Endianness::Little)
+    {
+      data.push_back((scaledValue >> 0) & 0xFF);
+      data.push_back((scaledValue >> 8) & 0xFF);
+      data.push_back((scaledValue >> 16) & 0xFF);
+      data.push_back((scaledValue >> 24) & 0xFF);
+    }
+    else
+    {
+      data.push_back((scaledValue >> 24) & 0xFF);
+      data.push_back((scaledValue >> 16) & 0xFF);
+      data.push_back((scaledValue >> 8) & 0xFF);
+      data.push_back((scaledValue >> 0) & 0xFF);
     }
   }
 }

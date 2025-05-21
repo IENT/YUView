@@ -97,6 +97,23 @@ struct rgba_t
   };
 };
 
+template<typename T>
+inline T convertBitness(T value, unsigned src_bitness, unsigned dst_bitness) {
+  if (src_bitness > dst_bitness)
+    return value >> (src_bitness - dst_bitness);
+  else
+    return value << (dst_bitness - src_bitness);
+}
+
+inline rgba_t convertBitness(rgba_t value, unsigned src_bitness, unsigned dst_bitness) {
+  return rgba_t({
+    convertBitness(value.R, src_bitness, dst_bitness),
+    convertBitness(value.G, src_bitness, dst_bitness),
+    convertBitness(value.B, src_bitness, dst_bitness),
+    convertBitness(value.A, src_bitness, dst_bitness)
+  });
+}
+
 enum class ChannelOrder
 {
   RGB,

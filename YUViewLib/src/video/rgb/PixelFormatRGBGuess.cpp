@@ -97,7 +97,10 @@ std::optional<PixelFormatRGB> checkForPixelFormatIndicatorInName(
                                               {12, "12"},
                                               {16, "16"},
                                               {16, "64"},
-                                              {16, "48"}})
+                                              {16, "48"},
+                                              {32, "32"},
+                                              {32, "96"},
+                                              {32, "128"}})
       {
         for (auto [endianness, endiannessName] :
              {std::pair<Endianness, std::string>{Endianness::Little, ""},

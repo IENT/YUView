@@ -148,6 +148,12 @@ INSTANTIATE_TEST_SUITE_P(
                         PixelFormatRGB(16, DataLayout::Packed, ChannelOrder::RGB)}),
         TestParameters({FileInfoForGuess({"something_1920x1080_rgb64.yuv", "", BytesNoAlpha}),
                         PixelFormatRGB(16, DataLayout::Packed, ChannelOrder::RGB)}),
+        TestParameters({FileInfoForGuess({"something_1920x1080_rgb32.yuv", "", BytesNoAlpha}),
+                        PixelFormatRGB(32, DataLayout::Packed, ChannelOrder::RGB)}),
+        TestParameters({FileInfoForGuess({"something_1920x1080_rgb96.yuv", "", BytesNoAlpha}),
+                        PixelFormatRGB(32, DataLayout::Packed, ChannelOrder::RGB)}),
+        TestParameters({FileInfoForGuess({"something_1920x1080_rgb128.yuv", "", BytesNoAlpha}),
+                        PixelFormatRGB(32, DataLayout::Packed, ChannelOrder::RGB)}),
         TestParameters({FileInfoForGuess({"something_1920x1080_rgb11.yuv", "", BytesNoAlpha}),
                         PixelFormatRGB(8, DataLayout::Packed, ChannelOrder::RGB)}),
 
