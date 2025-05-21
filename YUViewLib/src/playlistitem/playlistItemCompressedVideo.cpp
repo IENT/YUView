@@ -61,7 +61,7 @@
 using namespace functions;
 using namespace decoder;
 
-#define COMPRESSED_VIDEO_DEBUG_OUTPUT 0
+#define COMPRESSED_VIDEO_DEBUG_OUTPUT 1
 #if COMPRESSED_VIDEO_DEBUG_OUTPUT
 #include <QDebug>
 #define DEBUG_COMPRESSED(f) qDebug() << f
@@ -346,7 +346,8 @@ playlistItemCompressedVideo::playlistItemCompressedVideo(const QString &compress
 
   // Allocate the decoders
   DEBUG_COMPRESSED("playlistItemCompressedVideo::playlistItemCompressedVideo Initializing "
-                   << QString::fromStdString(DecoderEngineMapper.getName(this->decoderEngine))
+                   /* error: no viable conversion from 'std::string_view' (aka 'basic_string_view<char>') to 'const std::string' (aka 'const basic_string<char>') */
+                   /* << QString::fromStdString(DecoderEngineMapper.getName(this->decoderEngine)) */
                    << " decoder");
   if (!this->allocateDecoder(displayComponent))
     return;
@@ -1039,18 +1040,18 @@ bool playlistItemCompressedVideo::allocateDecoder(int displayComponent)
       auto ratio        = this->inputFileAnnexBParser->getSampleAspectRatio();
 
       DEBUG_COMPRESSED("playlistItemCompressedVideo::allocateDecoder Initializing interactive "
-                       "ffmpeg decoder from raw anexB stream. frameSize "
+                       "ffmpeg decoder from raw annexB stream. frameSize "
                        << frameSize.width << "x" << frameSize.height << " extradata length "
                        << extradata.length() << " PixelFormatYUV "
                        << QString::fromStdString(fmt.getName()) << " profile/level "
-                       << profileLevel.first << "/" << profileLevel.second << ", aspect raio "
+                       << profileLevel.first << "/" << profileLevel.second << ", aspect ratio "
                        << ratio.num << "/" << ratio.den);
       this->loadingDecoder = std::make_unique<decoder::decoderFFmpeg>(
           ffmpegCodec, frameSize, extradata, fmt, profileLevel, ratio);
       if (this->cachingEnabled)
       {
         DEBUG_COMPRESSED("playlistItemCompressedVideo::allocateDecoder Initializing caching ffmpeg "
-                         "decoder from raw anexB stream. Same settings.");
+                         "decoder from raw annexB stream. Same settings.");
         this->cachingDecoder = std::make_unique<decoder::decoderFFmpeg>(
             ffmpegCodec, frameSize, extradata, fmt, profileLevel, ratio, true);
       }

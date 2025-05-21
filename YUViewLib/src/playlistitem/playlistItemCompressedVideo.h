@@ -195,7 +195,7 @@ protected:
   int decodingNotPossibleAfter{-1};
 
 private slots:
-  // Load the raw (YUV or RGN) data for the given frame index from file. This slot is called by the
+  // Load the raw (YUV or RGB) data for the given frame index from file. This slot is called by the
   // videoHandler if the frame that is requested to be drawn has not been loaded yet.
   virtual void loadRawData(int frameIdx, bool forceDecodingNow);
 

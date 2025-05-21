@@ -41,7 +41,7 @@
 #include <parser/AV1/obu_header.h>
 #include <parser/common/SubByteReaderLogging.h>
 
-#define FILESOURCEFFMPEGFILE_DEBUG_OUTPUT 0
+#define FILESOURCEFFMPEGFILE_DEBUG_OUTPUT 1
 #if FILESOURCEFFMPEGFILE_DEBUG_OUTPUT && !NDEBUG
 #include <QDebug>
 #define DEBUG_FFMPEG qDebug
@@ -341,7 +341,7 @@ QList<QByteArray> FileSourceFFmpegFile::getParameterSets()
   else if (codecID.isAVC())
   {
     // Note: Actually we would only need this if we would feed the AVC bitstream to a different
-    // decoder then ffmpeg.
+    // decoder than ffmpeg.
     //       So this function is so far not called (and not tested).
 
     // First byte is 1, length must be at least 7 bytes
@@ -383,7 +383,8 @@ QList<QByteArray> FileSourceFFmpegFile::getParameterSets()
     catch (const std::exception &e)
     {
       (void)e;
-      DEBUG_FFMPEG("Error parsing OBU header " + e.what());
+      // DEBUG_FFMPEG("Error parsing OBU header " + e.what());
+      DEBUG_FFMPEG(e.what());
       return retArray;
     }
 

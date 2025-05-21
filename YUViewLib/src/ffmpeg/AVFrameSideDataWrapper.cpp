@@ -48,14 +48,14 @@ typedef struct AVFrameSideData_54_55_56
   AVBufferRef *            buf;
 } AVFrameSideData_54_55_56;
 
-typedef struct AVFrameSideData_57_58
+typedef struct AVFrameSideData_57_58_59
 {
   enum AVFrameSideDataType type;
   uint8_t *                data;
   size_t                   size;
   AVDictionary *           metadata;
   AVBufferRef *            buf;
-} AVFrameSideData_57_58;
+} AVFrameSideData_57_58_59;
 
 } // namespace
 
@@ -98,9 +98,10 @@ void AVFrameSideDataWrapper::update()
     this->metadata = p->metadata;
     this->buf      = p->buf;
   }
-  else if (this->libVer.avutil.major == 57 || this->libVer.avutil.major == 58)
+  else if (this->libVer.avutil.major == 57 || this->libVer.avutil.major == 58 ||
+    this->libVer.avutil.major == 59)
   {
-    auto p         = reinterpret_cast<AVFrameSideData_57_58 *>(sideData);
+    auto p         = reinterpret_cast<AVFrameSideData_57_58_59 *>(sideData);
     this->type     = p->type;
     this->data     = p->data;
     this->size     = p->size;

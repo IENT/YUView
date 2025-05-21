@@ -75,6 +75,9 @@ private:
   AVCodecID                     codec_id{};
   uint32_t                      codec_tag{};
   QByteArray                    extradata{};
+  int                           extradata_size{};
+  AVPacketSideData *            coded_side_data{};
+  int                           nb_coded_side_data{};
   int                           format{};
   int64_t                       bit_rate{};
   int                           bits_per_coded_sample{};
@@ -84,6 +87,7 @@ private:
   int                           width{};
   int                           height{};
   AVRational                    sample_aspect_ratio{};
+  AVRational                    framerate{};
   AVFieldOrder                  field_order{};
   AVColorRange                  color_range{};
   AVColorPrimaries              color_primaries{};

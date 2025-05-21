@@ -32,6 +32,7 @@
 
 #include "AVFormatContextWrapper.h"
 #include "AVStreamWrapper.h"
+#include "AVStreamGroupWrapper.h"
 
 namespace FFmpeg
 {
@@ -181,6 +182,42 @@ typedef struct AVFormatContext_59_60
 
   // Actually, there is more here, but the variables above are the only we need.
 } AVFormatContext_59_60;
+
+typedef struct AVFormatContext_61
+{
+  const AVClass *        av_class;
+  struct AVInputFormat * iformat;
+  struct AVOutputFormat *oformat;
+  void *                 priv_data;
+  AVIOContext *          pb;
+  int                    ctx_flags;
+  unsigned int           nb_streams;
+  AVStream **            streams;
+  unsigned int           nb_stream_groups;
+  AVStreamGroup **       stream_groups;
+  unsigned int           nb_chapters;
+  AVChapter **           chapters;
+  char *                 url;
+  int64_t                start_time;
+  int64_t                duration;
+  int64_t                bit_rate;
+  unsigned int           packet_size;
+  int                    max_delay;
+  int                    flags;
+  int64_t                probesize;
+  int64_t                max_analyze_duration;
+  const uint8_t *        key;
+  int                    keylen;
+  unsigned int           nb_programs;
+  AVProgram **           programs;
+  enum AVCodecID         video_codec_id;
+  enum AVCodecID         audio_codec_id;
+  enum AVCodecID         subtitle_codec_id;
+  enum AVCodecID         data_codec_id;
+  AVDictionary *         metadata;
+
+  // Actually, there is more here, but the variables above are the only we need.
+} AVFormatContext_61;
 
 } // namespace
 
@@ -359,6 +396,36 @@ void AVFormatContextWrapper::update()
     this->subtitle_codec_id    = p->subtitle_codec_id;
     this->max_index_size       = p->max_index_size;
     this->max_picture_buffer   = p->max_picture_buffer;
+    this->nb_chapters          = p->nb_chapters;
+    this->metadata             = AVDictionaryWrapper(p->metadata);
+
+    this->iformat = AVInputFormatWrapper(p->iformat, this->libVer);
+  }
+  else if (this->libVer.avformat.major == 61)
+  {
+    auto p           = reinterpret_cast<AVFormatContext_61 *>(this->ctx);
+    this->ctx_flags  = p->ctx_flags;
+    this->nb_streams = p->nb_streams;
+    for (unsigned i = 0; i < nb_streams; i++)
+      this->streams.append(AVStreamWrapper(p->streams[i], this->libVer));
+    this->nb_stream_groups = p->nb_stream_groups;
+    // for (unsigned i = 0; i < nb_stream_groups; i++)
+    //   this->stream_groups.append(AVStreamGroupWrapper(p->stream_groups[i], this->libVer));
+    this->filename             = QString(p->url);
+    this->start_time           = p->start_time;
+    this->duration             = p->duration;
+    this->bit_rate             = p->bit_rate;
+    this->packet_size          = p->packet_size;
+    this->max_delay            = p->max_delay;
+    this->flags                = p->flags;
+    this->probesize            = p->probesize;
+    this->max_analyze_duration = p->max_analyze_duration;
+    this->key                  = QString::fromLatin1((const char *)p->key, p->keylen);
+    this->nb_programs          = p->nb_programs;
+    this->video_codec_id       = p->video_codec_id;
+    this->audio_codec_id       = p->audio_codec_id;
+    this->subtitle_codec_id    = p->subtitle_codec_id;
+    this->data_codec_id        = p->data_codec_id;
     this->nb_chapters          = p->nb_chapters;
     this->metadata             = AVDictionaryWrapper(p->metadata);
 

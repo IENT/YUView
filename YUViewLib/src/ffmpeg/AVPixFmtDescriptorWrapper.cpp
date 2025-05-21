@@ -109,7 +109,7 @@ typedef struct AVComponentDescriptor_57
   int depth;
 } AVComponentDescriptor_57;
 
-typedef struct AVPixFmtDescriptor_57_58
+typedef struct AVPixFmtDescriptor_57_58_59
 {
   const char *             name;
   uint8_t                  nb_components;
@@ -118,7 +118,7 @@ typedef struct AVPixFmtDescriptor_57_58
   uint64_t                 flags;
   AVComponentDescriptor_57 comp[4];
   const char *             alias;
-} AVPixFmtDescriptor_57_58;
+} AVPixFmtDescriptor_57_58_59;
 
 AVPixFmtDescriptorWrapper::Flags parseFlags(uint8_t flagsValue)
 {
@@ -218,9 +218,10 @@ AVPixFmtDescriptorWrapper::AVPixFmtDescriptorWrapper(AVPixFmtDescriptor *descrip
     aliases = QString(p->alias);
   }
   else if (libVer.avutil.major == 57 || //
-           libVer.avutil.major == 58)
+           libVer.avutil.major == 58 ||
+           libVer.avutil.major == 59)
   {
-    auto p              = reinterpret_cast<AVPixFmtDescriptor_57_58 *>(descriptor);
+    auto p              = reinterpret_cast<AVPixFmtDescriptor_57_58_59 *>(descriptor);
     this->name          = QString(p->name);
     this->nb_components = p->nb_components;
     this->log2_chroma_w = p->log2_chroma_w;
