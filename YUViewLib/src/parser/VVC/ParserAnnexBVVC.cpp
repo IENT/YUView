@@ -52,7 +52,7 @@
 #include "slice_layer_rbsp.h"
 #include "video_parameter_set_rbsp.h"
 
-#define PARSER_VVC_DEBUG_OUTPUT 1
+#define PARSER_VVC_DEBUG_OUTPUT 0
 #if PARSER_VVC_DEBUG_OUTPUT && !NDEBUG
 #include <QDebug>
 #define DEBUG_VVC(msg) qDebug() << msg

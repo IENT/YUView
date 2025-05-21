@@ -36,7 +36,6 @@
 #include "AVInputFormatWrapper.h"
 #include "AVPacketWrapper.h"
 #include "AVStreamWrapper.h"
-#include "AVStreamGroupWrapper.h"
 #include "FFMpegLibrariesTypes.h"
 #include <common/Typedef.h>
 
@@ -58,7 +57,7 @@ public:
   AVInputFormatWrapper getInputFormat();
   int64_t              getStartTime();
   int64_t              getDuration();
-  AVFormatContext *    getFormatCtx() const;
+  AVFormatContext     *getFormatCtx() const;
   AVDictionaryWrapper  getMetadata();
 
 private:
@@ -68,18 +67,16 @@ private:
   AVInputFormatWrapper iformat{};
 
   // These are private. Use "update" to update them from the AVFormatContext
-  int                    ctx_flags{0};
-  unsigned int           nb_streams{0};
-  QList<AVStreamWrapper> streams;
-  unsigned int           nb_stream_groups{0};
-  QList<AVStreamGroupWrapper> stream_groups;
-  QString                filename{};
-  int64_t                start_time{-1};
-  int64_t                duration{-1};
-  int                    bit_rate{0};
-  unsigned int           packet_size{0};
-  int                    max_delay{0};
-  int                    flags{0};
+  int                         ctx_flags{0};
+  unsigned int                nb_streams{0};
+  QList<AVStreamWrapper>      streams;
+  QString                     filename{};
+  int64_t                     start_time{-1};
+  int64_t                     duration{-1};
+  int                         bit_rate{0};
+  unsigned int                packet_size{0};
+  int                         max_delay{0};
+  int                         flags{0};
 
   unsigned int        probesize{0};
   int                 max_analyze_duration{0};

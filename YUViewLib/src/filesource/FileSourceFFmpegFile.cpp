@@ -41,7 +41,7 @@
 #include <parser/AV1/obu_header.h>
 #include <parser/common/SubByteReaderLogging.h>
 
-#define FILESOURCEFFMPEGFILE_DEBUG_OUTPUT 1
+#define FILESOURCEFFMPEGFILE_DEBUG_OUTPUT 0
 #if FILESOURCEFFMPEGFILE_DEBUG_OUTPUT && !NDEBUG
 #include <QDebug>
 #define DEBUG_FFMPEG qDebug
@@ -383,8 +383,7 @@ QList<QByteArray> FileSourceFFmpegFile::getParameterSets()
     catch (const std::exception &e)
     {
       (void)e;
-      // DEBUG_FFMPEG("Error parsing OBU header " + e.what());
-      DEBUG_FFMPEG(e.what());
+      DEBUG_FFMPEG("Error parsing OBU header %s", e.what());
       return retArray;
     }
 

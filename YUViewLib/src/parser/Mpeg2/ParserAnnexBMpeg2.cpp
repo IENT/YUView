@@ -43,7 +43,7 @@
 
 #include <algorithm>
 
-#define PARSER_MPEG2_DEBUG_OUTPUT 1
+#define PARSER_MPEG2_DEBUG_OUTPUT 0
 #if PARSER_MPEG2_DEBUG_OUTPUT && !NDEBUG
 #include <QDebug>
 #define DEBUG_MPEG2(msg) qDebug() << msg

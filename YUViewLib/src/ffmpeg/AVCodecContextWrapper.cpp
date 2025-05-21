@@ -746,7 +746,7 @@ void AVCodecContextWrapper::update()
     this->compression_level       = p->compression_level;
     this->flags                   = p->flags;
     this->flags2                  = p->flags2;
-    // this->extradata               = QByteArray((const char *)p->extradata, p->extradata_size);
+    this->extradata               = QByteArray((const char *)p->extradata, p->extradata_size);
     this->time_base               = p->time_base;
     this->ticks_per_frame         = p->ticks_per_frame;
     this->delay                   = p->delay;
