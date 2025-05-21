@@ -57,7 +57,7 @@ public:
   AVInputFormatWrapper getInputFormat();
   int64_t              getStartTime();
   int64_t              getDuration();
-  AVFormatContext *    getFormatCtx() const;
+  AVFormatContext     *getFormatCtx() const;
   AVDictionaryWrapper  getMetadata();
 
 private:
@@ -67,16 +67,16 @@ private:
   AVInputFormatWrapper iformat{};
 
   // These are private. Use "update" to update them from the AVFormatContext
-  int                    ctx_flags{0};
-  unsigned int           nb_streams{0};
-  QList<AVStreamWrapper> streams;
-  QString                filename{};
-  int64_t                start_time{-1};
-  int64_t                duration{-1};
-  int                    bit_rate{0};
-  unsigned int           packet_size{0};
-  int                    max_delay{0};
-  int                    flags{0};
+  int                         ctx_flags{0};
+  unsigned int                nb_streams{0};
+  QList<AVStreamWrapper>      streams;
+  QString                     filename{};
+  int64_t                     start_time{-1};
+  int64_t                     duration{-1};
+  int                         bit_rate{0};
+  unsigned int                packet_size{0};
+  int                         max_delay{0};
+  int                         flags{0};
 
   unsigned int        probesize{0};
   int                 max_analyze_duration{0};
@@ -85,6 +85,7 @@ private:
   AVCodecID           video_codec_id{AV_CODEC_ID_NONE};
   AVCodecID           audio_codec_id{AV_CODEC_ID_NONE};
   AVCodecID           subtitle_codec_id{AV_CODEC_ID_NONE};
+  AVCodecID           data_codec_id{AV_CODEC_ID_NONE};
   unsigned int        max_index_size{0};
   unsigned int        max_picture_buffer{0};
   unsigned int        nb_chapters{0};

@@ -102,6 +102,7 @@ LibraryVersion addMinorAndMicroVersion(FFmpegLibraryFunctions &lib, LibraryVersi
 // the following libraries in this order: Util, codec, format, swresample
 // The versions are sorted from newest to oldest, so that we try to open the newest ones first.
 auto SupportedLibraryVersionCombinations = {
+    LibraryVersion(59, 61, 61, 5),
     LibraryVersion(58, 60, 60, 4),
     LibraryVersion(57, 59, 59, 4),
     LibraryVersion(56, 58, 58, 3),
