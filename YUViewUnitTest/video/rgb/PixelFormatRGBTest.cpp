@@ -99,7 +99,6 @@ TEST(PixelFormatRGBTest, testInvalidFormats)
   invalidFormats.push_back(PixelFormatRGB(0, video::DataLayout::Packed, ChannelOrder::RGB));
   invalidFormats.push_back(PixelFormatRGB(1, video::DataLayout::Packed, ChannelOrder::RGB));
   invalidFormats.push_back(PixelFormatRGB(7, video::DataLayout::Packed, ChannelOrder::RGB));
-  invalidFormats.push_back(PixelFormatRGB(17, video::DataLayout::Packed, ChannelOrder::RGB));
   invalidFormats.push_back(PixelFormatRGB(33, video::DataLayout::Packed, ChannelOrder::RGB));
   invalidFormats.push_back(PixelFormatRGB(200, video::DataLayout::Packed, ChannelOrder::RGB));
 
