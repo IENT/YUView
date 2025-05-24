@@ -50,7 +50,7 @@ std::vector<PixelFormatRGB> getAllFormats()
         for (auto alphaMode : AlphaModeMapper.getValues())
           for (auto endianness : EndianessMapper.getValues())
             allFormats.push_back(
-                PixelFormatRGB(bitsPerPixel, dataLayout, channelOrder, alphaMode, endianness));
+              PixelFormatRGB(bitsPerPixel, dataLayout, channelOrder, alphaMode, endianness));
 
   return allFormats;
 }
@@ -70,17 +70,17 @@ TEST(PixelFormatRGBTest, testFormatFromToString)
                            << name;
 
     EXPECT_EQ(fmt.getChannelPosition(Channel::Red), fmtNew.getChannelPosition(Channel::Red))
-        << "Format " << name << " channel position R missmatch";
+      << "Format " << name << " channel position R missmatch";
     EXPECT_EQ(fmt.getChannelPosition(Channel::Green), fmtNew.getChannelPosition(Channel::Green))
-        << "Format " << name << " channel position G missmatch";
+      << "Format " << name << " channel position G missmatch";
     EXPECT_EQ(fmt.getChannelPosition(Channel::Blue), fmtNew.getChannelPosition(Channel::Blue))
-        << "Format " << name << " channel position B missmatch";
+      << "Format " << name << " channel position B missmatch";
     EXPECT_EQ(fmt.getChannelPosition(Channel::Alpha), fmtNew.getChannelPosition(Channel::Alpha))
-        << "Format " << name << " channel position A missmatch";
+      << "Format " << name << " channel position A missmatch";
     EXPECT_EQ(fmt.getBitsPerSample(), fmtNew.getBitsPerSample())
-        << "Format " << name << " bits per sample missmatch";
+      << "Format " << name << " bits per sample missmatch";
     EXPECT_EQ(fmt.getDataLayout(), fmtNew.getDataLayout())
-        << "Format " << name << " data layout missmatch";
+      << "Format " << name << " data layout missmatch";
 
     if (fmt.hasAlpha())
     {
@@ -99,6 +99,7 @@ TEST(PixelFormatRGBTest, testInvalidFormats)
   invalidFormats.push_back(PixelFormatRGB(0, video::DataLayout::Packed, ChannelOrder::RGB));
   invalidFormats.push_back(PixelFormatRGB(1, video::DataLayout::Packed, ChannelOrder::RGB));
   invalidFormats.push_back(PixelFormatRGB(7, video::DataLayout::Packed, ChannelOrder::RGB));
+  invalidFormats.push_back(PixelFormatRGB(17, video::DataLayout::Packed, ChannelOrder::RGB));
   invalidFormats.push_back(PixelFormatRGB(33, video::DataLayout::Packed, ChannelOrder::RGB));
   invalidFormats.push_back(PixelFormatRGB(200, video::DataLayout::Packed, ChannelOrder::RGB));
 

@@ -123,7 +123,7 @@ std::string PixelFormatRGB::getName() const
  */
 std::size_t PixelFormatRGB::bytesPerFrame(Size frameSize) const
 {
-  auto bpsValid = this->bitsPerSample >= 8 && this->bitsPerSample <= 32;
+  const auto bpsValid = this->bitsPerSample >= 8 && this->bitsPerSample <= 32;
   if (!bpsValid || !frameSize.isValid())
     return 0;
 
