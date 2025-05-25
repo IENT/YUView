@@ -82,7 +82,7 @@ int scaleShiftClipInvertValue(const int  value,
                               const int  scale,
                               const bool invert)
 {
-  const auto valueOriginalDepth = (value >> (12 - bitDepth));
+  const auto valueOriginalDepth = static_cast<int64_t>(convertBitness(value, 12, bitDepth));
   const auto valueScaled        = valueOriginalDepth * scale;
   const auto value8BitDepth     = (valueScaled >> (bitDepth - 8));
   const auto valueClipped       = functions::clip(value8BitDepth, 0, 255);
@@ -244,7 +244,7 @@ void runTestForAllParameters(TestingFunction testingFunction)
 {
   for (const auto endianness : {Endianness::Little, Endianness::Big})
   {
-    for (const auto bitDepth : {8, 10, 12})
+    for (const auto bitDepth : {8, 10, 12, 16, 32})
     {
       for (const auto &alphaMode : AlphaModeMapper.getValues())
       {
