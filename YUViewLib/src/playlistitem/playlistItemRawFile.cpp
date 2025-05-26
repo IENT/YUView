@@ -320,50 +320,101 @@ bool playlistItemRawFile::parseY4MFile()
     }
     else if (parameterIndicator == 'C')
     {
-      // Get 3 bytes and check them
-      auto formatName = rawData.mid(offset, 3);
-      offset += 3;
-
-      // The YUV format. By default, YUV420 is setup.
-      // TDOO: What is the difference between these two formats?
-      // 'C420' = 4:2:0 with coincident chroma planes
-      // 'C420jpeg' = 4:2 : 0 with biaxially - displaced chroma planes
-      // 'C420paldv' = 4 : 2 : 0 with vertically - displaced chroma planes
+      // get the full word
+      int space_index = rawData.indexOf(' ', offset);
+      auto formatName = rawData.mid(offset, space_index - offset);
+      offset = space_index;
+      unsigned bitsPerSample = 8;
       auto subsampling = video::yuv::Subsampling::YUV_420;
-      if (formatName == "422")
+      if ((formatName == "420") ||
+          // 'C420' = 4:2:0 with coincident chroma planes
+          (formatName == "420jpeg") ||
+          // 'C420jpeg' = 4:2 : 0 with biaxially - displaced chroma planes
+          (formatName == "420mpeg2") ||
+          (formatName == "420paldv")) {
+          // 'C420paldv' = 4 : 2 : 0 with vertically - displaced chroma planes
+        bitsPerSample = 8;
+        subsampling = video::yuv::Subsampling::YUV_420;
+
+      } else if (formatName == "422") {
+        bitsPerSample = 8;
         subsampling = video::yuv::Subsampling::YUV_422;
-      else if (formatName == "444")
+
+      } else if (formatName == "444") {
+        bitsPerSample = 8;
         subsampling = video::yuv::Subsampling::YUV_444;
 
-      unsigned bitsPerSample = 8;
+      } else if (formatName == "mono") {
+        bitsPerSample = 8;
+        subsampling = video::yuv::Subsampling::YUV_400;
 
-      if (rawData.at(offset) == 'p')
-      {
-        offset++;
-        if (rawData.at(offset) == '1')
-        {
-          offset++;
-          if (rawData.at(offset) == '0')
-          {
-            bitsPerSample = 10;
-            offset++;
-          }
-          else if (rawData.at(offset) == '2')
-          {
-            bitsPerSample = 12;
-            offset++;
-          }
-          else if (rawData.at(offset) == '4')
-          {
-            bitsPerSample = 14;
-            offset++;
-          }
-          else if (rawData.at(offset) == '6')
-          {
-            bitsPerSample = 16;
-            offset++;
-          }
-        }
+      } else if (formatName == "411") {
+        bitsPerSample = 8;
+        subsampling = video::yuv::Subsampling::YUV_411;
+
+      // 10-bit components
+      } else if (formatName == "420p10") {
+        bitsPerSample = 10;
+        subsampling = video::yuv::Subsampling::YUV_420;
+
+      } else if (formatName == "422p10") {
+        bitsPerSample = 10;
+        subsampling = video::yuv::Subsampling::YUV_422;
+
+      } else if (formatName == "444p10") {
+        bitsPerSample = 10;
+        subsampling = video::yuv::Subsampling::YUV_444;
+
+      } else if (formatName == "mono10") {
+        bitsPerSample = 10;
+        subsampling = video::yuv::Subsampling::YUV_400;
+
+      // 12-bit components
+      } else if (formatName == "420p12") {
+        bitsPerSample = 12;
+        subsampling = video::yuv::Subsampling::YUV_420;
+
+      } else if (formatName == "422p12") {
+          bitsPerSample = 12;
+          subsampling = video::yuv::Subsampling::YUV_422;
+
+      } else if (formatName == "444p12") {
+          bitsPerSample = 12;
+          subsampling = video::yuv::Subsampling::YUV_444;
+
+      } else if (formatName == "mono12") {
+        bitsPerSample = 12;
+        subsampling = video::yuv::Subsampling::YUV_400;
+
+        // 14-bit components
+      } else if (formatName == "420p14") {
+        bitsPerSample = 14;
+        subsampling = video::yuv::Subsampling::YUV_420;
+
+      } else if (formatName == "422p14") {
+        bitsPerSample = 14;
+        subsampling = video::yuv::Subsampling::YUV_422;
+
+      } else if (formatName == "444p14") {
+        bitsPerSample = 14;
+        subsampling = video::yuv::Subsampling::YUV_444;
+
+        // 16-bit components
+      } else if (formatName == "420p16") {
+        bitsPerSample = 16;
+        subsampling = video::yuv::Subsampling::YUV_420;
+
+      } else if (formatName == "422p16") {
+        bitsPerSample = 16;
+        subsampling = video::yuv::Subsampling::YUV_422;
+
+      } else if (formatName == "444p16") {
+        bitsPerSample = 16;
+        subsampling = video::yuv::Subsampling::YUV_444;
+
+      } else if (formatName == "mono16") {
+        bitsPerSample = 16;
+        subsampling = video::yuv::Subsampling::YUV_400;
       }
 
       format = video::yuv::PixelFormatYUV(subsampling, bitsPerSample);
