@@ -447,11 +447,13 @@ bool playlistItemRawFile::parseY4MFile()
   // parameters is also terminated by 0x0A.
 
   // The offset in bytes to the next frame
-  auto stride = width * height * 3 / 2;
+  auto ypixels = width * height;
+  auto cpixels = ((width + 1) / 2) * ((height + 1) / 2);
   if (format.getSubsampling() == video::yuv::Subsampling::YUV_422)
-    stride = width * height * 2;
+    cpixels = ((width + 1) / 2) * height;
   else if (format.getSubsampling() == video::yuv::Subsampling::YUV_444)
-    stride = width * height * 3;
+    cpixels = width * height;
+  auto stride = ypixels + 2 * cpixels;
   if (format.getBitsPerSample() > 8)
     stride *= 2;
 
