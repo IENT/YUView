@@ -49,8 +49,8 @@ void scaleValueToBitDepthAndPushIntoArra(QByteArray      &data,
     data.push_back(scaledValue);
   else if (bitDepth <= 16)
   {
-    const auto upperByte   = ((scaledValue & 0xff00) >> 8);
-    const auto lowerByte   = (scaledValue & 0xff);
+    const auto upperByte = ((scaledValue & 0xff00) >> 8);
+    const auto lowerByte = (scaledValue & 0xff);
     if (endianness == Endianness::Little)
     {
       data.push_back(lowerByte);
@@ -61,7 +61,9 @@ void scaleValueToBitDepthAndPushIntoArra(QByteArray      &data,
       data.push_back(upperByte);
       data.push_back(lowerByte);
     }
-  } else {
+  }
+  else
+  {
     if (endianness == Endianness::Little)
     {
       data.push_back((scaledValue >> 0) & 0xFF);
@@ -84,14 +86,14 @@ void scaleValueToBitDepthAndPushIntoArra(QByteArray      &data,
 auto createRawRGBData(const PixelFormatRGB &format) -> QByteArray
 {
   QByteArray data;
-  const auto bitDepth   = format.getBitsPerSample();
+  const auto bitDepth   = format.getBitsPerComponent();
   const auto endianness = format.getEndianess();
 
   if (format.getDataLayout() == DataLayout::Packed)
   {
     for (auto value : TEST_VALUES_12BIT)
     {
-      for (int channelPosition = 0; channelPosition < static_cast<int>(format.nrChannels());
+      for (int channelPosition = 0; channelPosition < static_cast<int>(format.getNrChannels());
            channelPosition++)
       {
         const auto channel = format.getChannelAtPosition(channelPosition);
@@ -101,7 +103,7 @@ auto createRawRGBData(const PixelFormatRGB &format) -> QByteArray
   }
   else
   {
-    for (int channelPosition = 0; channelPosition < static_cast<int>(format.nrChannels());
+    for (int channelPosition = 0; channelPosition < static_cast<int>(format.getNrChannels());
          channelPosition++)
     {
       const auto channel = format.getChannelAtPosition(channelPosition);

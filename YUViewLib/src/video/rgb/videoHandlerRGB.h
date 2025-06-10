@@ -80,7 +80,7 @@ public:
   // Get the number of bytes for one RGB frame with the current format
   virtual int64_t getBytesPerFrame() const override
   {
-    return srcPixelFormat.bytesPerFrame(frameSize);
+    return srcPixelFormat.getBytesPerFrame(frameSize);
   }
 
   // Try to guess and set the format (frameSize/srcPixelFormat) from the raw RGB data.

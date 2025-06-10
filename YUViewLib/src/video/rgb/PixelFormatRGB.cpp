@@ -44,53 +44,67 @@
 namespace video::rgb
 {
 
-PixelFormatRGB::PixelFormatRGB(unsigned     bitsPerSample,
-                               DataLayout   dataLayout,
-                               ChannelOrder channelOrder,
-                               AlphaMode    alphaMode,
-                               Endianness   endianness)
-    : bitsPerSample(bitsPerSample), dataLayout(dataLayout), channelOrder(channelOrder),
+PixelFormatRGB::PixelFormatRGB(const int          bitsPerComponent,
+                               const DataLayout   dataLayout,
+                               const ChannelOrder channelOrder,
+                               const AlphaMode    alphaMode,
+                               const Endianness   endianness)
+    : bitsPerComponent(bitsPerComponent), dataLayout(dataLayout), channelOrder(channelOrder),
       alphaMode(alphaMode), endianness(endianness)
 {
 }
 
 PixelFormatRGB::PixelFormatRGB(const std::string &name)
 {
-  if (name != "Unknown Pixel Format")
-  {
-    auto channelOrderString = name.substr(0, 3);
-    if (name[0] == 'a' || name[0] == 'A')
-    {
-      this->alphaMode    = AlphaMode::First;
-      channelOrderString = name.substr(1, 3);
-    }
-    else if (name[3] == 'a' || name[3] == 'A')
-    {
-      this->alphaMode    = AlphaMode::Last;
-      channelOrderString = name.substr(0, 3);
-    }
-    auto order = ChannelOrderMapper.getValue(channelOrderString);
-    if (order)
-      this->channelOrder = *order;
+  if (name == "Unknown Pixel Format")
+    return;
 
-    auto bitIdx = name.find("bit");
-    if (bitIdx != std::string::npos)
-      this->bitsPerSample = std::stoi(name.substr(bitIdx - 2, 2), nullptr);
-    if (name.find("planar") != std::string::npos)
-      this->dataLayout = DataLayout::Planar;
-    if (this->bitsPerSample > 8 && name.find("BE") != std::string::npos)
-      this->endianness = Endianness::Big;
+  if (name.substr(0, 8) == "RGB565BE")
+  {
+    this->predefinedPixelFormat = PredefinedPixelFormat::RGB565BE;
+    return;
   }
+  if (name.substr(0, 6) == "RGB565")
+  {
+    this->predefinedPixelFormat = PredefinedPixelFormat::RGB565;
+    return;
+  }
+
+  auto channelOrderString = name.substr(0, 3);
+  if (name[0] == 'a' || name[0] == 'A')
+  {
+    this->alphaMode    = AlphaMode::First;
+    channelOrderString = name.substr(1, 3);
+  }
+  else if (name[3] == 'a' || name[3] == 'A')
+  {
+    this->alphaMode    = AlphaMode::Last;
+    channelOrderString = name.substr(0, 3);
+  }
+  auto order = ChannelOrderMapper.getValue(channelOrderString);
+  if (order)
+    this->channelOrder = *order;
+
+  auto bitIdx = name.find("bit");
+  if (bitIdx != std::string::npos)
+    this->bitsPerComponent = std::stoi(name.substr(bitIdx - 2, 2), nullptr);
+  if (name.find("planar") != std::string::npos)
+    this->dataLayout = DataLayout::Planar;
+  if (this->bitsPerComponent > 8 && name.find("BE") != std::string::npos)
+    this->endianness = Endianness::Big;
+}
+
+PixelFormatRGB::PixelFormatRGB(const PredefinedPixelFormat predefinedPixelFormat)
+{
+  this->predefinedPixelFormat = predefinedPixelFormat;
 }
 
 bool PixelFormatRGB::isValid() const
 {
-  return this->bitsPerSample >= 8 && this->bitsPerSample <= 32;
-}
+  if (this->predefinedPixelFormat)
+    return true;
 
-unsigned PixelFormatRGB::nrChannels() const
-{
-  return this->alphaMode != AlphaMode::None ? 4 : 3;
+  return this->bitsPerComponent >= 8 && this->bitsPerComponent <= 32;
 }
 
 bool PixelFormatRGB::hasAlpha() const
@@ -103,6 +117,11 @@ std::string PixelFormatRGB::getName() const
   if (!this->isValid())
     return "Unknown Pixel Format";
 
+  if (this->predefinedPixelFormat == PredefinedPixelFormat::RGB565)
+    return "RGB565";
+  if (this->predefinedPixelFormat == PredefinedPixelFormat::RGB565BE)
+    return "RGB565BE";
+
   std::string name;
   if (this->alphaMode == AlphaMode::First)
     name += "A";
@@ -110,30 +129,80 @@ std::string PixelFormatRGB::getName() const
   if (this->alphaMode == AlphaMode::Last)
     name += "A";
 
-  name += " " + std::to_string(this->bitsPerSample) + "bit";
+  name += " " + std::to_string(this->bitsPerComponent) + "bit";
   if (this->dataLayout == DataLayout::Planar)
     name += " planar";
-  if (this->bitsPerSample > 8 && this->endianness == Endianness::Big)
+  if (this->bitsPerComponent > 8 && this->endianness == Endianness::Big)
     name += " BE";
 
   return name;
 }
 
-/* Get the number of bytes for a frame with this RGB format and the given size
- */
-std::size_t PixelFormatRGB::bytesPerFrame(Size frameSize) const
+int PixelFormatRGB::getBitsPerComponent() const
 {
-  const auto bpsValid = this->bitsPerSample >= 8 && this->bitsPerSample <= 32;
-  if (!bpsValid || !frameSize.isValid())
+  return this->bitsPerComponent;
+}
+
+DataLayout PixelFormatRGB::getDataLayout() const
+{
+  return this->dataLayout;
+}
+
+ChannelOrder PixelFormatRGB::getChannelOrder() const
+{
+  return this->channelOrder;
+}
+
+AlphaMode PixelFormatRGB::getAlphaMode() const
+{
+  return this->alphaMode;
+}
+
+Endianness PixelFormatRGB::getEndianess() const
+{
+  return this->endianness;
+}
+
+std::optional<PredefinedPixelFormat> PixelFormatRGB::getPredefinedPixelFormat() const
+{
+  return this->predefinedPixelFormat;
+}
+
+int PixelFormatRGB::getNrChannels() const
+{
+  if (this->predefinedPixelFormat == PredefinedPixelFormat::RGB565 ||
+      this->predefinedPixelFormat == PredefinedPixelFormat::RGB565BE)
+    return 3;
+
+  return this->alphaMode != AlphaMode::None ? 4 : 3;
+}
+
+int PixelFormatRGB::getBytesPerFrame(const Size frameSize) const
+{
+  if (!this->isValid() || !frameSize.isValid())
     return 0;
 
-  auto numSamples = std::size_t(frameSize.height) * std::size_t(frameSize.width);
-  auto nrBytes    = numSamples * this->nrChannels() * ((this->bitsPerSample + 7) / 8);
-  DEBUG_RGB_FORMAT("PixelFormatRGB::bytesPerFrame samples %d channels %d bytes %d",
-                   int(numSamples),
-                   this->nrChannels(),
-                   nrBytes);
-  return nrBytes;
+  const auto numberSamples = std::size_t(frameSize.height) * std::size_t(frameSize.width);
+
+  int numberBytesPerFrame;
+  if (this->predefinedPixelFormat == PredefinedPixelFormat::RGB565 ||
+      this->predefinedPixelFormat == PredefinedPixelFormat::RGB565BE)
+  {
+    numberBytesPerFrame = numberSamples * 2;
+  }
+  else
+  {
+    const auto numberBytesPerComponent = ((this->bitsPerComponent + 7) / 8);
+    numberBytesPerFrame = numberSamples * numberBytesPerComponent * this->getNrChannels();
+  }
+
+  DEBUG_RGB_FORMAT(
+    "PixelFormatRGB::bytesPerFrame numberSamples %d numberSamples %d numberBytesPerFrame %d",
+    int(numberSamples),
+    this->nrChannels(),
+    numberBytesPerFrame);
+
+  return numberBytesPerFrame;
 }
 
 int PixelFormatRGB::getChannelPosition(Channel channel) const
@@ -227,6 +296,11 @@ Channel PixelFormatRGB::getChannelAtPosition(int position) const
   }
 
   throw std::invalid_argument("Invalid argument for channel position");
+}
+
+void PrintTo(const PixelFormatRGB &pixelFormatRGB, std::ostream *os)
+{
+  *os << pixelFormatRGB.getName();
 }
 
 } // namespace video::rgb

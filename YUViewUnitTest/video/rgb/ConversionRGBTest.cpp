@@ -110,13 +110,13 @@ void checkOutputValues(const UChaVector            &data,
     auto expectedValue = TEST_VALUES_12BIT.at(i);
 
     expectedValue.R =
-        scaleShiftClipInvertValue(expectedValue.R, bitDepth, scaling[0], inversion[0]);
+      scaleShiftClipInvertValue(expectedValue.R, bitDepth, scaling[0], inversion[0]);
     expectedValue.G =
-        scaleShiftClipInvertValue(expectedValue.G, bitDepth, scaling[1], inversion[1]);
+      scaleShiftClipInvertValue(expectedValue.G, bitDepth, scaling[1], inversion[1]);
     expectedValue.B =
-        scaleShiftClipInvertValue(expectedValue.B, bitDepth, scaling[2], inversion[2]);
+      scaleShiftClipInvertValue(expectedValue.B, bitDepth, scaling[2], inversion[2]);
     expectedValue.A =
-        scaleShiftClipInvertValue(expectedValue.A, bitDepth, scaling[3], inversion[3]);
+      scaleShiftClipInvertValue(expectedValue.A, bitDepth, scaling[3], inversion[3]);
 
     if (limitedRange)
     {
@@ -148,16 +148,16 @@ void checkOutputValuesForPlane(const UChaVector            &data,
     auto expectedPlaneValue = TEST_VALUES_12BIT[i].at(channel);
 
     const auto channelIndex = ChannelMapper.indexOf(channel);
-    const auto bitDepth     = pixelFormat.getBitsPerSample();
+    const auto bitDepth     = pixelFormat.getBitsPerComponent();
 
     expectedPlaneValue = scaleShiftClipInvertValue(
-        expectedPlaneValue, bitDepth, scaling[channelIndex], inversion[channelIndex]);
+      expectedPlaneValue, bitDepth, scaling[channelIndex], inversion[channelIndex]);
 
     if (limitedRange)
       expectedPlaneValue = LimitedRangeToFullRange.at(expectedPlaneValue);
 
     const auto expectedValue =
-        rgba_t({expectedPlaneValue, expectedPlaneValue, expectedPlaneValue, 255});
+      rgba_t({expectedPlaneValue, expectedPlaneValue, expectedPlaneValue, 255});
 
     const auto actualValue = getARGBValueFromDataLittleEndian(data, i);
 
@@ -188,7 +188,7 @@ void testConversionToRGBA(const QByteArray            &sourceBuffer,
 
   const auto alphaShouldBeSet = (outputHasAlpha && srcPixelFormat.hasAlpha());
   checkOutputValues(outputBuffer,
-                    srcPixelFormat.getBitsPerSample(),
+                    srcPixelFormat.getBitsPerComponent(),
                     componentScale,
                     limitedRange,
                     inversion,
@@ -222,7 +222,7 @@ void testConversionToRGBASinglePlane(const QByteArray            &sourceBuffer,
                                            limitedRange);
 
     checkOutputValuesForPlane(
-        outputBuffer, srcPixelFormat, componentScale, limitedRange, inversion, channel);
+      outputBuffer, srcPixelFormat, componentScale, limitedRange, inversion, channel);
   }
 }
 
@@ -253,7 +253,7 @@ void runTestForAllParameters(TestingFunction testingFunction)
           for (const auto &channelOrder : video::rgb::ChannelOrderMapper.getValues())
           {
             const video::rgb::PixelFormatRGB format(
-                bitDepth, dataLayout, channelOrder, alphaMode, endianness);
+              bitDepth, dataLayout, channelOrder, alphaMode, endianness);
             const auto data = createRawRGBData(format);
 
             for (const auto outputHasAlpha : {false, true})
@@ -265,8 +265,8 @@ void runTestForAllParameters(TestingFunction testingFunction)
                   for (const auto limitedRange : {false, true})
                   {
                     EXPECT_NO_THROW(testingFunction(
-                        data, format, inversion, componentScale, limitedRange, outputHasAlpha))
-                        << "parametersAsString";
+                      data, format, inversion, componentScale, limitedRange, outputHasAlpha))
+                      << "parametersAsString";
                   }
                 }
               }

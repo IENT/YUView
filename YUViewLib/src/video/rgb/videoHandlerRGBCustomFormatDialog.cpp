@@ -38,7 +38,7 @@ namespace video::rgb
 {
 
 videoHandlerRGBCustomFormatDialog::videoHandlerRGBCustomFormatDialog(
-    const PixelFormatRGB &rgbFormat)
+  const PixelFormatRGB &rgbFormat)
 {
   this->ui.setupUi(this);
 
@@ -62,7 +62,7 @@ videoHandlerRGBCustomFormatDialog::videoHandlerRGBCustomFormatDialog(
     this->ui.rgbOrderComboBox->setCurrentIndex(int(index));
   }
 
-  auto bitDepth = rgbFormat.getBitsPerSample();
+  const auto bitDepth = rgbFormat.getBitsPerComponent();
   this->ui.bitDepthSpinBox->setValue(bitDepth);
   this->ui.comboBoxEndianness->setEnabled(bitDepth > 8);
   this->ui.comboBoxEndianness->setCurrentIndex(rgbFormat.getEndianess() == Endianness::Big ? 0 : 1);

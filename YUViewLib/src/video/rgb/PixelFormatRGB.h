@@ -97,22 +97,27 @@ struct rgba_t
   };
 };
 
-template<typename T>
-inline T convertBitness(T value, unsigned src_bitness, unsigned dst_bitness) {
+template <typename T> inline T convertBitness(T value, unsigned src_bitness, unsigned dst_bitness)
+{
   if (src_bitness > dst_bitness)
     return value >> (src_bitness - dst_bitness);
   else
     return value << (dst_bitness - src_bitness);
 }
 
-inline rgba_t convertBitness(rgba_t value, unsigned src_bitness, unsigned dst_bitness) {
-  return rgba_t({
-    convertBitness(value.R, src_bitness, dst_bitness),
-    convertBitness(value.G, src_bitness, dst_bitness),
-    convertBitness(value.B, src_bitness, dst_bitness),
-    convertBitness(value.A, src_bitness, dst_bitness)
-  });
+inline rgba_t convertBitness(rgba_t value, unsigned src_bitness, unsigned dst_bitness)
+{
+  return rgba_t({convertBitness(value.R, src_bitness, dst_bitness),
+                 convertBitness(value.G, src_bitness, dst_bitness),
+                 convertBitness(value.B, src_bitness, dst_bitness),
+                 convertBitness(value.A, src_bitness, dst_bitness)});
 }
+
+enum class PredefinedPixelFormat
+{
+  RGB565,   // 16 bits packed as R:5, G:6, B:5
+  RGB565BE, // 16 bits packed as R:5, G:6, B:5 Big Endian
+};
 
 enum class ChannelOrder
 {
@@ -125,12 +130,12 @@ enum class ChannelOrder
 };
 
 constexpr EnumMapper<ChannelOrder, 6> ChannelOrderMapper = {
-    std::make_pair(ChannelOrder::RGB, "RGB"),
-    std::make_pair(ChannelOrder::RBG, "RBG"),
-    std::make_pair(ChannelOrder::GRB, "GRB"),
-    std::make_pair(ChannelOrder::GBR, "GBR"),
-    std::make_pair(ChannelOrder::BRG, "BRG"),
-    std::make_pair(ChannelOrder::BGR, "BGR")};
+  std::make_pair(ChannelOrder::RGB, "RGB"),
+  std::make_pair(ChannelOrder::RBG, "RBG"),
+  std::make_pair(ChannelOrder::GRB, "GRB"),
+  std::make_pair(ChannelOrder::GBR, "GBR"),
+  std::make_pair(ChannelOrder::BRG, "BRG"),
+  std::make_pair(ChannelOrder::BGR, "BGR")};
 
 enum class AlphaMode
 {
@@ -143,36 +148,34 @@ constexpr EnumMapper<AlphaMode, 3> AlphaModeMapper = {std::make_pair(AlphaMode::
                                                       std::make_pair(AlphaMode::First, "First"),
                                                       std::make_pair(AlphaMode::Last, "Last")};
 
-// This class defines a specific RGB format with all properties like order of R/G/B, bitsPerValue,
-// planarity...
 class PixelFormatRGB
 {
 public:
-  // The default constructor (will create an "Unknown Pixel Format")
+  // The default constructed Pixel format will be invalid
   PixelFormatRGB() = default;
   PixelFormatRGB(const std::string &name);
-  PixelFormatRGB(unsigned     bitsPerSample,
-                 DataLayout   dataLayout,
-                 ChannelOrder channelOrder,
-                 AlphaMode    alphaMode  = AlphaMode::None,
-                 Endianness   endianness = Endianness::Little);
+  PixelFormatRGB(const int          bitsPerComponent,
+                 const DataLayout   dataLayout,
+                 const ChannelOrder channelOrder,
+                 const AlphaMode    alphaMode  = AlphaMode::None,
+                 const Endianness   endianness = Endianness::Little);
+  PixelFormatRGB(const PredefinedPixelFormat predefinedPixelFormat);
 
-  bool        isValid() const;
-  unsigned    nrChannels() const;
-  bool        hasAlpha() const;
-  std::string getName() const;
+  [[nodiscard]] bool        isValid() const;
+  [[nodiscard]] bool        hasAlpha() const;
+  [[nodiscard]] std::string getName() const;
 
-  unsigned     getBitsPerSample() const { return this->bitsPerSample; }
-  DataLayout   getDataLayout() const { return this->dataLayout; }
-  ChannelOrder getChannelOrder() const { return this->channelOrder; }
-  Endianness   getEndianess() const { return this->endianness; }
+  [[nodiscard]] int                                  getBitsPerComponent() const;
+  [[nodiscard]] DataLayout                           getDataLayout() const;
+  [[nodiscard]] ChannelOrder                         getChannelOrder() const;
+  [[nodiscard]] AlphaMode                            getAlphaMode() const;
+  [[nodiscard]] Endianness                           getEndianess() const;
+  [[nodiscard]] std::optional<PredefinedPixelFormat> getPredefinedPixelFormat() const;
 
-  void setBitsPerSample(unsigned bitsPerSample) { this->bitsPerSample = bitsPerSample; }
-  void setDataLayout(DataLayout dataLayout) { this->dataLayout = dataLayout; }
-
-  std::size_t bytesPerFrame(Size frameSize) const;
-  int         getChannelPosition(Channel channel) const;
-  Channel     getChannelAtPosition(int position) const;
+  [[nodiscard]] int     getNrChannels() const;
+  [[nodiscard]] int     getBytesPerFrame(const Size frameSize) const;
+  [[nodiscard]] int     getChannelPosition(const Channel channel) const;
+  [[nodiscard]] Channel getChannelAtPosition(const int position) const;
 
   bool operator==(const PixelFormatRGB &a) const { return getName() == a.getName(); }
   bool operator!=(const PixelFormatRGB &a) const { return getName() != a.getName(); }
@@ -180,11 +183,19 @@ public:
   bool operator!=(const std::string &a) const { return getName() != a; }
 
 private:
-  unsigned     bitsPerSample{0};
+  // If this is set, the format is defined according to a specific standard and does not
+  // conform to the definition below (using
+  // dataLayout/bitsPerSample/ChannelOder/alphaMode/Endianess). If this is set, none of the values
+  // below matter.
+  std::optional<PredefinedPixelFormat> predefinedPixelFormat;
+
+  int          bitsPerComponent{0};
   DataLayout   dataLayout{DataLayout::Packed};
   ChannelOrder channelOrder{ChannelOrder::RGB};
   AlphaMode    alphaMode{AlphaMode::None};
   Endianness   endianness{Endianness::Little};
 };
+
+void PrintTo(const PixelFormatRGB &point, std::ostream *os);
 
 } // namespace video::rgb

@@ -47,7 +47,7 @@ namespace
 void testGetPixelValueFromBuffer(const QByteArray     &sourceBuffer,
                                  const PixelFormatRGB &srcPixelFormat)
 {
-  const auto bitDepth = srcPixelFormat.getBitsPerSample();
+  const auto bitDepth = srcPixelFormat.getBitsPerComponent();
 
   int testValueIndex = 0;
   for (int y : {0, 1, 2, 3})
@@ -56,7 +56,7 @@ void testGetPixelValueFromBuffer(const QByteArray     &sourceBuffer,
     {
       const QPoint pixelPos(x, y);
       const auto   actualValue =
-          getPixelValueFromBuffer(sourceBuffer, srcPixelFormat, TEST_FRAME_SIZE, pixelPos);
+        getPixelValueFromBuffer(sourceBuffer, srcPixelFormat, TEST_FRAME_SIZE, pixelPos);
 
       const auto testValue     = TEST_VALUES_12BIT[testValueIndex++];
       auto       expectedValue = convertBitness(testValue, 12, bitDepth);
@@ -85,11 +85,11 @@ TEST(GetPixelValueTest, TestGetPixelValueFromBuffer)
           for (const auto &channelOrder : ChannelOrderMapper.getValues())
           {
             const PixelFormatRGB pixelFormat(
-                bitDepth, dataLayout, channelOrder, alphaMode, endianness);
+              bitDepth, dataLayout, channelOrder, alphaMode, endianness);
             const auto data = createRawRGBData(pixelFormat);
 
             EXPECT_NO_THROW(testGetPixelValueFromBuffer(data, pixelFormat))
-                << "Failed for pixel format " << pixelFormat.getName();
+              << "Failed for pixel format " << pixelFormat.getName();
           }
         }
       }

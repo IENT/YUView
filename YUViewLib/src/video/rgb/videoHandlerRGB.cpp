@@ -51,20 +51,20 @@ namespace
 {
 
 constexpr EnumMapper<ComponentDisplayMode, 6> ComponentShowMapper = {
-    std::make_pair(ComponentDisplayMode::RGBA, "RGBA"),
-    std::make_pair(ComponentDisplayMode::RGB, "RGB"),
-    std::make_pair(ComponentDisplayMode::R, "R"),
-    std::make_pair(ComponentDisplayMode::G, "G"),
-    std::make_pair(ComponentDisplayMode::B, "B"),
-    std::make_pair(ComponentDisplayMode::A, "A")};
+  std::make_pair(ComponentDisplayMode::RGBA, "RGBA"),
+  std::make_pair(ComponentDisplayMode::RGB, "RGB"),
+  std::make_pair(ComponentDisplayMode::R, "R"),
+  std::make_pair(ComponentDisplayMode::G, "G"),
+  std::make_pair(ComponentDisplayMode::B, "B"),
+  std::make_pair(ComponentDisplayMode::A, "A")};
 
 constexpr EnumMapper<ComponentDisplayMode, 6> ComponentShowMapperToDisplayText = {
-    std::make_pair(ComponentDisplayMode::RGBA, "RGBA"),
-    std::make_pair(ComponentDisplayMode::RGB, "RGB"),
-    std::make_pair(ComponentDisplayMode::R, "Red Only"),
-    std::make_pair(ComponentDisplayMode::G, "Green Only"),
-    std::make_pair(ComponentDisplayMode::B, "Blue Only"),
-    std::make_pair(ComponentDisplayMode::A, "Alpha Only")};
+  std::make_pair(ComponentDisplayMode::RGBA, "RGBA"),
+  std::make_pair(ComponentDisplayMode::RGB, "RGB"),
+  std::make_pair(ComponentDisplayMode::R, "Red Only"),
+  std::make_pair(ComponentDisplayMode::G, "Green Only"),
+  std::make_pair(ComponentDisplayMode::B, "Blue Only"),
+  std::make_pair(ComponentDisplayMode::A, "Alpha Only")};
 
 void addConversionInformationToInfoList(QList<InfoItem> &differenceInfoList,
                                         const int        width,
@@ -76,15 +76,14 @@ void addConversionInformationToInfoList(QList<InfoItem> &differenceInfoList,
 
   const auto nrPixels = static_cast<double>(width * height);
   differenceInfoList.append(
-      InfoItem("MSE R", std::to_string(static_cast<double>(mseAdd[0]) / nrPixels)));
+    InfoItem("MSE R", std::to_string(static_cast<double>(mseAdd[0]) / nrPixels)));
   differenceInfoList.append(
-      InfoItem("MSE G", std::to_string(static_cast<double>(mseAdd[1]) / nrPixels)));
+    InfoItem("MSE G", std::to_string(static_cast<double>(mseAdd[1]) / nrPixels)));
   differenceInfoList.append(
-      InfoItem("MSE B", std::to_string(static_cast<double>(mseAdd[2]) / nrPixels)));
+    InfoItem("MSE B", std::to_string(static_cast<double>(mseAdd[2]) / nrPixels)));
 
-  differenceInfoList.append(
-      InfoItem("MSE All",
-               std::to_string(static_cast<double>(mseAdd[0] + mseAdd[1] + mseAdd[2]) / nrPixels)));
+  differenceInfoList.append(InfoItem(
+    "MSE All", std::to_string(static_cast<double>(mseAdd[0] + mseAdd[1] + mseAdd[2]) / nrPixels)));
 }
 
 } // namespace
@@ -115,12 +114,12 @@ void addConversionInformationToInfoList(QList<InfoItem> &differenceInfoList,
 #endif
 
 std::vector<rgb::PixelFormatRGB> videoHandlerRGB::formatPresetList = {
-    PixelFormatRGB(8, DataLayout::Packed, ChannelOrder::RGB),
-    PixelFormatRGB(10, DataLayout::Packed, ChannelOrder::RGB),
-    PixelFormatRGB(8, DataLayout::Packed, ChannelOrder::RGB, AlphaMode::First),
-    PixelFormatRGB(8, DataLayout::Packed, ChannelOrder::BRG),
-    PixelFormatRGB(10, DataLayout::Packed, ChannelOrder::BRG),
-    PixelFormatRGB(10, DataLayout::Planar, ChannelOrder::RGB)};
+  PixelFormatRGB(8, DataLayout::Packed, ChannelOrder::RGB),
+  PixelFormatRGB(10, DataLayout::Packed, ChannelOrder::RGB),
+  PixelFormatRGB(8, DataLayout::Packed, ChannelOrder::RGB, AlphaMode::First),
+  PixelFormatRGB(8, DataLayout::Packed, ChannelOrder::BRG),
+  PixelFormatRGB(10, DataLayout::Packed, ChannelOrder::BRG),
+  PixelFormatRGB(10, DataLayout::Planar, ChannelOrder::RGB)};
 
 videoHandlerRGB::videoHandlerRGB() : videoHandler()
 {
@@ -260,7 +259,7 @@ QLayout *videoHandlerRGB::createVideoHandlerControls(bool isSizeFixed)
     ui.rgbFormatComboBox->addItem(QString::fromStdString(format.getName()));
 
   const auto currentFormatInPresetList =
-      vectorContains(videoHandlerRGB::formatPresetList, this->srcPixelFormat);
+    vectorContains(videoHandlerRGB::formatPresetList, this->srcPixelFormat);
   if (!currentFormatInPresetList && this->srcPixelFormat.isValid())
   {
     videoHandlerRGB::formatPresetList.push_back(this->srcPixelFormat);
@@ -270,7 +269,7 @@ QLayout *videoHandlerRGB::createVideoHandlerControls(bool isSizeFixed)
   ui.rgbFormatComboBox->setEnabled(!isSizeFixed);
 
   if (const auto presetIndex =
-          vectorIndexOf(videoHandlerRGB::formatPresetList, this->srcPixelFormat))
+        vectorIndexOf(videoHandlerRGB::formatPresetList, this->srcPixelFormat))
     ui.rgbFormatComboBox->setCurrentIndex(static_cast<int>(*presetIndex));
 
   ui.RScaleSpinBox->setValue(componentScale[0]);
@@ -390,9 +389,9 @@ void videoHandlerRGB::updateControlsForNewPixelFormat()
       this->componentDisplayMode = ComponentDisplayMode::RGBA;
 
     ui.colorComponentsComboBox->addItems(
-        functions::toQStringList(ComponentShowMapperToDisplayText.getNames()));
+      functions::toQStringList(ComponentShowMapperToDisplayText.getNames()));
     ui.colorComponentsComboBox->setCurrentText(QString::fromStdString(
-        std::string(ComponentShowMapperToDisplayText.getName(this->componentDisplayMode))));
+      std::string(ComponentShowMapperToDisplayText.getName(this->componentDisplayMode))));
   }
 }
 
@@ -401,7 +400,7 @@ void videoHandlerRGB::slotRGBFormatControlChanged(int selectionIndex)
   const auto nrBytesOldFormat = getBytesPerFrame();
 
   const auto customFormatSelected =
-      (selectionIndex == static_cast<int>(videoHandlerRGB::formatPresetList.size()));
+    (selectionIndex == static_cast<int>(videoHandlerRGB::formatPresetList.size()));
   if (customFormatSelected)
   {
     DEBUG_RGB("videoHandlerRGB::slotRGBFormatControlChanged custom format");
@@ -411,7 +410,7 @@ void videoHandlerRGB::slotRGBFormatControlChanged(int selectionIndex)
       this->srcPixelFormat = dialog.getSelectedRGBFormat();
 
     const auto isInPresetList =
-        vectorContains(videoHandlerRGB::formatPresetList, this->srcPixelFormat);
+      vectorContains(videoHandlerRGB::formatPresetList, this->srcPixelFormat);
     if (!isInPresetList && this->srcPixelFormat.isValid())
     {
       videoHandlerRGB::formatPresetList.push_back(this->srcPixelFormat);
@@ -422,7 +421,7 @@ void videoHandlerRGB::slotRGBFormatControlChanged(int selectionIndex)
     }
 
     if (const auto presetIndex =
-            vectorIndexOf(videoHandlerRGB::formatPresetList, this->srcPixelFormat))
+          vectorIndexOf(videoHandlerRGB::formatPresetList, this->srcPixelFormat))
     {
       const QSignalBlocker blocker(this->ui.rgbFormatComboBox);
       selectionIndex = static_cast<int>(*presetIndex);
@@ -623,8 +622,8 @@ void videoHandlerRGB::convertRGBToImage(const QByteArray &sourceBuffer, QImage &
     return;
   }
 
-  const auto bps = this->srcPixelFormat.getBitsPerSample();
-  if (bps < 8 || bps > 32)
+  const auto bpc = this->srcPixelFormat.getBitsPerComponent();
+  if (bpc < 8 || bpc > 32)
   {
     DEBUG_RGB("Unsupported bit depth. 8-16 bit are supported.");
     return;
@@ -663,7 +662,7 @@ void videoHandlerRGB::convertSourceToRGBA32Bit(const QByteArray &sourceBuffer,
              "The source buffer does not hold enough data.");
 
   const auto outputSupportsAlpha =
-      imageFormat == QImage::Format_ARGB32 || imageFormat == QImage::Format_ARGB32_Premultiplied;
+    imageFormat == QImage::Format_ARGB32 || imageFormat == QImage::Format_ARGB32_Premultiplied;
   const auto premultiplyAlpha = imageFormat == QImage::Format_ARGB32_Premultiplied;
   const auto inputHasAlpha    = srcPixelFormat.hasAlpha();
 
@@ -695,10 +694,10 @@ void videoHandlerRGB::convertSourceToRGBA32Bit(const QByteArray &sourceBuffer,
     const auto invert = this->componentInvert[displayIndex];
 
     auto componentToChannel = std::map<ComponentDisplayMode, rgb::Channel>(
-        {{ComponentDisplayMode::R, rgb::Channel::Red},
-         {ComponentDisplayMode::G, rgb::Channel::Green},
-         {ComponentDisplayMode::B, rgb::Channel::Blue},
-         {ComponentDisplayMode::A, rgb::Channel::Alpha}});
+      {{ComponentDisplayMode::R, rgb::Channel::Red},
+       {ComponentDisplayMode::G, rgb::Channel::Green},
+       {ComponentDisplayMode::B, rgb::Channel::Blue},
+       {ComponentDisplayMode::A, rgb::Channel::Alpha}});
     const auto displayChannel = componentToChannel[this->componentDisplayMode];
 
     convertSinglePlaneOfRGBToGreyscaleARGB(sourceBuffer,
@@ -715,12 +714,12 @@ void videoHandlerRGB::convertSourceToRGBA32Bit(const QByteArray &sourceBuffer,
 rgba_t videoHandlerRGB::getPixelValue(const QPoint &pixelPos) const
 {
   return getPixelValueFromBuffer(
-      this->currentFrameRawData, this->srcPixelFormat, this->frameSize, pixelPos);
+    this->currentFrameRawData, this->srcPixelFormat, this->frameSize, pixelPos);
 }
 
 void videoHandlerRGB::guessAndSetPixelFormat(
-    const filesource::frameFormatGuess::GuessedFrameFormat &frameFormat,
-    const filesource::frameFormatGuess::FileInfoForGuess   &fileInfo)
+  const filesource::frameFormatGuess::GuessedFrameFormat &frameFormat,
+  const filesource::frameFormatGuess::FileInfoForGuess   &fileInfo)
 {
   const auto pixelFormat = guessPixelFormatFromSizeAndName(frameFormat, fileInfo);
   if (pixelFormat.isValid())
@@ -760,7 +759,7 @@ void videoHandlerRGB::drawPixelValues(QPainter     *painter,
   {
     // The second item is not a videoHandlerRGB item
     FrameHandler::drawPixelValues(
-        painter, frameIdx, videoRect, zoomFactor, item2, markDifference, frameIdxItem1);
+      painter, frameIdx, videoRect, zoomFactor, item2, markDifference, frameIdxItem1);
     return;
   }
 
@@ -779,7 +778,7 @@ void videoHandlerRGB::drawPixelValues(QPainter     *painter,
   // This QRect has the size of one pixel and is moved on top of each pixel to draw the text
   QRect pixelRect;
   pixelRect.setSize(QSize(zoomFactor, zoomFactor));
-  const unsigned drawWhitLevel = 1 << (srcPixelFormat.getBitsPerSample() - 1);
+  const unsigned drawWhitLevel = 1 << (srcPixelFormat.getBitsPerComponent() - 1);
   for (int x = xMin; x <= xMax; x++)
   {
     for (int y = yMin; y <= yMax; y++)
@@ -807,8 +806,8 @@ void videoHandlerRGB::drawPixelValues(QPainter     *painter,
 
         if (markDifference)
           painter->setPen((R == 0 && G == 0 && B == 0 && (!srcPixelFormat.hasAlpha() || A == 0))
-                              ? Qt::white
-                              : Qt::black);
+                            ? Qt::white
+                            : Qt::black);
         else
           painter->setPen((R < 0 && G < 0 && B < 0) ? Qt::white : Qt::black);
 
@@ -825,19 +824,19 @@ void videoHandlerRGB::drawPixelValues(QPainter     *painter,
         rgba_t value = getPixelValue(QPoint(x, y));
         if (srcPixelFormat.hasAlpha())
           valText = QString("R%1\nG%2\nB%3\nA%4")
-                        .arg(value.R, 0, formatBase)
-                        .arg(value.G, 0, formatBase)
-                        .arg(value.B, 0, formatBase)
-                        .arg(value.A, 0, formatBase);
+                      .arg(value.R, 0, formatBase)
+                      .arg(value.G, 0, formatBase)
+                      .arg(value.B, 0, formatBase)
+                      .arg(value.A, 0, formatBase);
         else
           valText = QString("R%1\nG%2\nB%3")
-                        .arg(value.R, 0, formatBase)
-                        .arg(value.G, 0, formatBase)
-                        .arg(value.B, 0, formatBase);
+                      .arg(value.R, 0, formatBase)
+                      .arg(value.G, 0, formatBase)
+                      .arg(value.B, 0, formatBase);
         painter->setPen(
-            (value.R < drawWhitLevel && value.G < drawWhitLevel && value.B < drawWhitLevel)
-                ? Qt::white
-                : Qt::black);
+          (value.R < drawWhitLevel && value.G < drawWhitLevel && value.B < drawWhitLevel)
+            ? Qt::white
+            : Qt::black);
       }
 
       painter->drawText(pixelRect, Qt::AlignCenter, valText);
@@ -856,21 +855,13 @@ QImage videoHandlerRGB::calculateDifference(FrameHandler    *item2,
   if (rgbItem2 == nullptr)
     // The given item is not a RGB source. We cannot compare raw RGB values to non raw RGB values.
     // Call the base class comparison function to compare the items using the RGB 888 values.
-    return videoHandler::calculateDifference(item2,
-                                             frameIdxItem0,
-                                             frameIdxItem1,
-                                             differenceInfoList,
-                                             amplificationFactor,
-                                             markDifference);
+    return videoHandler::calculateDifference(
+      item2, frameIdxItem0, frameIdxItem1, differenceInfoList, amplificationFactor, markDifference);
 
-  if (srcPixelFormat.getBitsPerSample() != rgbItem2->srcPixelFormat.getBitsPerSample())
+  if (srcPixelFormat.getBitsPerComponent() != rgbItem2->srcPixelFormat.getBitsPerComponent())
     // The two items have different bit depths. Compare RGB 888 values instead.
-    return videoHandler::calculateDifference(item2,
-                                             frameIdxItem0,
-                                             frameIdxItem1,
-                                             differenceInfoList,
-                                             amplificationFactor,
-                                             markDifference);
+    return videoHandler::calculateDifference(
+      item2, frameIdxItem0, frameIdxItem1, differenceInfoList, amplificationFactor, markDifference);
 
   const int width  = std::min(frameSize.width, rgbItem2->frameSize.width);
   const int height = std::min(frameSize.height, rgbItem2->frameSize.height);
@@ -892,12 +883,12 @@ QImage videoHandlerRGB::calculateDifference(FrameHandler    *item2,
   // (each 8 bit).
   auto qFrameSize = QSize(this->frameSize.width, this->frameSize.height);
   auto outputImage =
-      QImage(qFrameSize, functionsGui::platformImageFormat(this->srcPixelFormat.hasAlpha()));
+    QImage(qFrameSize, functionsGui::platformImageFormat(this->srcPixelFormat.hasAlpha()));
 
   // We directly write the difference values into the QImage buffer in the right format (ABGR).
   unsigned char *restrict dst = outputImage.bits();
 
-  const auto bitDepth = srcPixelFormat.getBitsPerSample();
+  const auto bitDepth = srcPixelFormat.getBitsPerComponent();
   const auto posR     = srcPixelFormat.getChannelPosition(Channel::Red);
   const auto posG     = srcPixelFormat.getChannelPosition(Channel::Green);
   const auto posB     = srcPixelFormat.getChannelPosition(Channel::Blue);
@@ -906,7 +897,7 @@ QImage videoHandlerRGB::calculateDifference(FrameHandler    *item2,
   {
     // How many values do we have to skip in src to get to the next input value?
     // In case of 8 or less bits this is 1 byte per value, for 9 to 16 bits it is 2 bytes per value.
-    int offsetToNextValue = srcPixelFormat.nrChannels();
+    int offsetToNextValue = srcPixelFormat.getNrChannels();
     if (srcPixelFormat.getDataLayout() == DataLayout::Planar)
       offsetToNextValue = 1;
 
@@ -996,12 +987,12 @@ QImage videoHandlerRGB::calculateDifference(FrameHandler    *item2,
       unsigned char *srcR0, *srcG0, *srcB0;
       if (srcPixelFormat.getDataLayout() == DataLayout::Planar)
       {
-        srcR0 = (unsigned char *)currentFrameRawData.data() +
-                (posR * frameSize.width * frameSize.height);
-        srcG0 = (unsigned char *)currentFrameRawData.data() +
-                (posG * frameSize.width * frameSize.height);
-        srcB0 = (unsigned char *)currentFrameRawData.data() +
-                (posB * frameSize.width * frameSize.height);
+        srcR0 =
+          (unsigned char *)currentFrameRawData.data() + (posR * frameSize.width * frameSize.height);
+        srcG0 =
+          (unsigned char *)currentFrameRawData.data() + (posG * frameSize.width * frameSize.height);
+        srcB0 =
+          (unsigned char *)currentFrameRawData.data() + (posB * frameSize.width * frameSize.height);
       }
       else
       {
@@ -1071,7 +1062,7 @@ QImage videoHandlerRGB::calculateDifference(FrameHandler    *item2,
     }
     else
       Q_ASSERT_X(
-          false, Q_FUNC_INFO, "No RGB format with less than 8 or more than 16 bits supported yet.");
+        false, Q_FUNC_INFO, "No RGB format with less than 8 or more than 16 bits supported yet.");
   }
 
   addConversionInformationToInfoList(differenceInfoList, width, height, bitDepth, mseAdd);

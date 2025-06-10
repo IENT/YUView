@@ -52,6 +52,9 @@ std::vector<PixelFormatRGB> getAllFormats()
             allFormats.push_back(
               PixelFormatRGB(bitsPerPixel, dataLayout, channelOrder, alphaMode, endianness));
 
+  allFormats.push_back(PixelFormatRGB(PredefinedPixelFormat::RGB565));
+  allFormats.push_back(PixelFormatRGB(PredefinedPixelFormat::RGB565BE));
+
   return allFormats;
 }
 
@@ -77,18 +80,18 @@ TEST(PixelFormatRGBTest, testFormatFromToString)
       << "Format " << name << " channel position B missmatch";
     EXPECT_EQ(fmt.getChannelPosition(Channel::Alpha), fmtNew.getChannelPosition(Channel::Alpha))
       << "Format " << name << " channel position A missmatch";
-    EXPECT_EQ(fmt.getBitsPerSample(), fmtNew.getBitsPerSample())
+    EXPECT_EQ(fmt.getBitsPerComponent(), fmtNew.getBitsPerComponent())
       << "Format " << name << " bits per sample missmatch";
     EXPECT_EQ(fmt.getDataLayout(), fmtNew.getDataLayout())
       << "Format " << name << " data layout missmatch";
 
     if (fmt.hasAlpha())
     {
-      EXPECT_EQ(fmt.nrChannels(), 4u) << "Format " << name << " alpha channel indication wrong. ";
+      EXPECT_EQ(fmt.getNrChannels(), 4) << "Format " << name << " alpha channel indication wrong. ";
     }
     else
     {
-      EXPECT_EQ(fmt.nrChannels(), 3u) << "Format " << name << " alpha channel indication wrong. ";
+      EXPECT_EQ(fmt.getNrChannels(), 3) << "Format " << name << " alpha channel indication wrong. ";
     }
   }
 }
