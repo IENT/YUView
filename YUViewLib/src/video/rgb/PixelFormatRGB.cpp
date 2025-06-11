@@ -44,6 +44,8 @@
 namespace video::rgb
 {
 
+constexpr auto UNKNOWN_FORMAT_NAME = "Unknown Pixel Format";
+
 PixelFormatRGB::PixelFormatRGB(const int          bitsPerComponent,
                                const DataLayout   dataLayout,
                                const ChannelOrder channelOrder,
@@ -56,7 +58,7 @@ PixelFormatRGB::PixelFormatRGB(const int          bitsPerComponent,
 
 PixelFormatRGB::PixelFormatRGB(const std::string &name)
 {
-  if (name == "Unknown Pixel Format")
+  if (name == UNKNOWN_FORMAT_NAME)
     return;
 
   if (name.substr(0, 8) == "RGB565BE")
@@ -104,6 +106,9 @@ bool PixelFormatRGB::isValid() const
   if (this->predefinedPixelFormat)
     return true;
 
+  if (this->bitsPerComponent == 8 && this->endianness == Endianness::Big)
+    return false;
+
   return this->bitsPerComponent >= 8 && this->bitsPerComponent <= 32;
 }
 
@@ -115,7 +120,7 @@ bool PixelFormatRGB::hasAlpha() const
 std::string PixelFormatRGB::getName() const
 {
   if (!this->isValid())
-    return "Unknown Pixel Format";
+    return UNKNOWN_FORMAT_NAME;
 
   if (this->predefinedPixelFormat == PredefinedPixelFormat::RGB565)
     return "RGB565";
@@ -296,6 +301,40 @@ Channel PixelFormatRGB::getChannelAtPosition(int position) const
   }
 
   throw std::invalid_argument("Invalid argument for channel position");
+}
+
+bool PixelFormatRGB::operator==(const PixelFormatRGB &a) const
+{
+  if (!this->isValid() || !a.isValid())
+    return false;
+
+  if (this->predefinedPixelFormat)
+    return this->predefinedPixelFormat == a.predefinedPixelFormat;
+
+  return this->bitsPerComponent == a.bitsPerComponent && this->dataLayout == a.dataLayout &&
+         this->channelOrder == a.channelOrder && this->alphaMode == a.alphaMode &&
+         this->endianness == a.endianness;
+}
+
+bool PixelFormatRGB::operator!=(const PixelFormatRGB &a) const
+{
+  return !(*this == a);
+}
+
+bool PixelFormatRGB::operator==(const std::string &a) const
+{
+  if (!this->isValid() || a == UNKNOWN_FORMAT_NAME)
+    return false;
+
+  return this->getName() == a;
+}
+
+bool PixelFormatRGB::operator!=(const std::string &a) const
+{
+  if (!this->isValid() || a == UNKNOWN_FORMAT_NAME)
+    return true;
+
+  return this->getName() != a;
 }
 
 void PrintTo(const PixelFormatRGB &pixelFormatRGB, std::ostream *os)

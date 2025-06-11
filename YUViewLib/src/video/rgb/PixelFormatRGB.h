@@ -177,10 +177,10 @@ public:
   [[nodiscard]] int     getChannelPosition(const Channel channel) const;
   [[nodiscard]] Channel getChannelAtPosition(const int position) const;
 
-  bool operator==(const PixelFormatRGB &a) const { return getName() == a.getName(); }
-  bool operator!=(const PixelFormatRGB &a) const { return getName() != a.getName(); }
-  bool operator==(const std::string &a) const { return getName() == a; }
-  bool operator!=(const std::string &a) const { return getName() != a; }
+  bool operator==(const PixelFormatRGB &a) const;
+  bool operator!=(const PixelFormatRGB &a) const;
+  bool operator==(const std::string &a) const;
+  bool operator!=(const std::string &a) const;
 
 private:
   // If this is set, the format is defined according to a specific standard and does not

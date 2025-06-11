@@ -40,7 +40,7 @@ namespace video::rgb::test
 namespace
 {
 
-std::vector<PixelFormatRGB> getAllFormats()
+std::vector<PixelFormatRGB> getAllValidFormats()
 {
   std::vector<PixelFormatRGB> allFormats;
 
@@ -49,8 +49,13 @@ std::vector<PixelFormatRGB> getAllFormats()
       for (auto channelOrder : ChannelOrderMapper.getValues())
         for (auto alphaMode : AlphaModeMapper.getValues())
           for (auto endianness : EndianessMapper.getValues())
+          {
+            if (endianness == Endianness::Big && bitsPerPixel == 8)
+              continue;
+
             allFormats.push_back(
               PixelFormatRGB(bitsPerPixel, dataLayout, channelOrder, alphaMode, endianness));
+          }
 
   allFormats.push_back(PixelFormatRGB(PredefinedPixelFormat::RGB565));
   allFormats.push_back(PixelFormatRGB(PredefinedPixelFormat::RGB565BE));
@@ -58,11 +63,34 @@ std::vector<PixelFormatRGB> getAllFormats()
   return allFormats;
 }
 
+std::vector<PixelFormatRGB> getInvalidFormats()
+{
+  std::vector<PixelFormatRGB> invalidFormats;
+
+  invalidFormats.push_back(PixelFormatRGB());
+
+  // If the bitrate is < 8 or > 32, the format is invalid. We can not add all cases to the list
+  // though.
+  invalidFormats.push_back(PixelFormatRGB(0, video::DataLayout::Packed, ChannelOrder::RGB));
+  invalidFormats.push_back(PixelFormatRGB(1, video::DataLayout::Packed, ChannelOrder::RGB));
+  invalidFormats.push_back(PixelFormatRGB(7, video::DataLayout::Packed, ChannelOrder::RGB));
+  invalidFormats.push_back(PixelFormatRGB(33, video::DataLayout::Packed, ChannelOrder::RGB));
+  invalidFormats.push_back(PixelFormatRGB(200, video::DataLayout::Packed, ChannelOrder::RGB));
+
+  for (auto dataLayout : DataLayoutMapper.getValues())
+    for (auto channelOrder : ChannelOrderMapper.getValues())
+      for (auto alphaMode : AlphaModeMapper.getValues())
+        invalidFormats.push_back(
+          PixelFormatRGB(8, dataLayout, channelOrder, alphaMode, Endianness::Big));
+
+  return invalidFormats;
+}
+
 } // namespace
 
 TEST(PixelFormatRGBTest, testFormatFromToString)
 {
-  for (auto fmt : getAllFormats())
+  for (auto fmt : getAllValidFormats())
   {
     const auto name = fmt.getName();
     EXPECT_TRUE(fmt.isValid()) << "Format " << name << " is invalid.";
@@ -98,15 +126,60 @@ TEST(PixelFormatRGBTest, testFormatFromToString)
 
 TEST(PixelFormatRGBTest, testInvalidFormats)
 {
-  std::vector<PixelFormatRGB> invalidFormats;
-  invalidFormats.push_back(PixelFormatRGB(0, video::DataLayout::Packed, ChannelOrder::RGB));
-  invalidFormats.push_back(PixelFormatRGB(1, video::DataLayout::Packed, ChannelOrder::RGB));
-  invalidFormats.push_back(PixelFormatRGB(7, video::DataLayout::Packed, ChannelOrder::RGB));
-  invalidFormats.push_back(PixelFormatRGB(33, video::DataLayout::Packed, ChannelOrder::RGB));
-  invalidFormats.push_back(PixelFormatRGB(200, video::DataLayout::Packed, ChannelOrder::RGB));
+  for (const auto &format : getInvalidFormats())
+    EXPECT_FALSE(format.isValid()) << "Format " << format.getName() << " should be invalid.";
+}
 
-  for (auto fmt : invalidFormats)
-    EXPECT_FALSE(fmt.isValid()) << "Format " << fmt.getName() << " should be invalid.";
+TEST(PixelFormatRGBTest, testComparisonOperatorsForValidFormat)
+{
+  const auto allValidFormats = getAllValidFormats();
+
+  for (size_t i = 0; i < allValidFormats.size(); ++i)
+    for (size_t j = 0; j < allValidFormats.size(); ++j)
+    {
+      const auto shouldBeEqual = (i == j);
+      if (shouldBeEqual)
+      {
+        EXPECT_TRUE(allValidFormats.at(i) == allValidFormats.at(j));
+        EXPECT_FALSE(allValidFormats.at(i) != allValidFormats.at(j));
+        EXPECT_TRUE(allValidFormats.at(i) == allValidFormats.at(j).getName());
+        EXPECT_FALSE(allValidFormats.at(i) != allValidFormats.at(j).getName());
+      }
+      else
+      {
+        EXPECT_FALSE(allValidFormats.at(i) == allValidFormats.at(j));
+        EXPECT_TRUE(allValidFormats.at(i) != allValidFormats.at(j));
+        EXPECT_FALSE(allValidFormats.at(i) == allValidFormats.at(j).getName());
+        EXPECT_TRUE(allValidFormats.at(i) != allValidFormats.at(j).getName());
+      }
+    }
+}
+
+TEST(PixelFormatRGBTest, testComparisonOperators_ComparingToInvalidFormat_shouldAlwaysBeUnequal)
+{
+  const PixelFormatRGB invalidFormat;
+
+  for (const auto &format : getAllValidFormats())
+  {
+    EXPECT_FALSE(format == invalidFormat);
+    EXPECT_TRUE(format != invalidFormat);
+    EXPECT_FALSE(format == invalidFormat.getName());
+    EXPECT_TRUE(format != invalidFormat.getName());
+  }
+}
+
+TEST(PixelFormatRGBTest, testComparisonOperators_ComparingTwoInvalidFormats_shouldAlwaysBeUnequal)
+{
+  const auto invalidFormats = getInvalidFormats();
+
+  for (size_t i = 0; i < invalidFormats.size(); ++i)
+    for (size_t j = 0; j < invalidFormats.size(); ++j)
+    {
+      EXPECT_FALSE(invalidFormats.at(i) == invalidFormats.at(j));
+      EXPECT_TRUE(invalidFormats.at(i) != invalidFormats.at(j));
+      EXPECT_FALSE(invalidFormats.at(i) == invalidFormats.at(j).getName());
+      EXPECT_TRUE(invalidFormats.at(i) != invalidFormats.at(j).getName());
+    }
 }
 
 } // namespace video::rgb::test
