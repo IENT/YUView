@@ -63,6 +63,12 @@ enum class DataLayout
 constexpr EnumMapper<DataLayout, 2> DataLayoutMapper = {
     std::make_pair(DataLayout::Packed, "Packed"), std::make_pair(DataLayout::Planar, "Planar")};
 
+enum class TextRendering
+{
+  White,
+  Black
+};
+
 } // namespace video
 
 Q_DECLARE_METATYPE(video::DataLayout);

@@ -43,12 +43,12 @@ void getColorConversionCoefficients(ColorConversion colorConversion, int RGBConv
   // The first index is the index of the ColorConversion enum. The second index is [Y, cRV, cGU,
   // cGV, cBU].
   const int yuvRgbConvCoeffs[6][5] = {
-      {76309, 117489, -13975, -34925, 138438}, // BT709_LimitedRange
-      {65536, 103206, -12276, -30679, 121608}, // BT709_FullRange
-      {76309, 104597, -25675, -53279, 132201}, // BT601_LimitedRange
-      {65536, 91881, -22553, -46802, 116129},  // BT601_FullRange
-      {76309, 110013, -12276, -42626, 140363}, // BT2020_LimitedRange
-      {65536, 96638, -10783, -37444, 123299}   // BT2020_FullRange
+    {76309, 117489, -13975, -34925, 138438}, // BT709_LimitedRange
+    {65536, 103206, -12276, -30679, 121608}, // BT709_FullRange
+    {76309, 104597, -25675, -53279, 132201}, // BT601_LimitedRange
+    {65536, 91881, -22553, -46802, 116129},  // BT601_FullRange
+    {76309, 110013, -12276, -42626, 140363}, // BT2020_LimitedRange
+    {65536, 96638, -10783, -37444, 123299}   // BT2020_FullRange
   };
   const auto index = ColorConversionMapper.indexOf(colorConversion);
   for (unsigned i = 0; i < 5; i++)
@@ -78,7 +78,7 @@ std::vector<PackingOrder> getSupportedPackingFormats(Subsampling subsampling)
 {
   if (subsampling == Subsampling::YUV_422)
     return std::vector<PackingOrder>(
-        {PackingOrder::UYVY, PackingOrder::VYUY, PackingOrder::YUYV, PackingOrder::YVYU});
+      {PackingOrder::UYVY, PackingOrder::VYUY, PackingOrder::YUYV, PackingOrder::YVYU});
   if (subsampling == Subsampling::YUV_444)
     return std::vector<PackingOrder>({PackingOrder::YUV,
                                       PackingOrder::YVU,
@@ -129,8 +129,8 @@ PixelFormatYUV::PixelFormatYUV(const std::string &name)
   }
 
   std::regex strExpr(
-      "([YUVA]{3,6}(?:\\(IL\\))?) (4:[4210]{1}:[4210]{1}) ([0-9]{1,2})-bit[ ]?([BL]{1}E)?[ "
-      "]?(packed-B|packed)?[ ]?(Cx[0-9]+)?[ ]?(Cy[0-9]+)?");
+    "([YUVA]{3,6}(?:\\(IL\\))?) (4:[4210]{1}:[4210]{1}) ([0-9]{1,2})-bit[ ]?([BL]{1}E)?[ "
+    "]?(packed-B|packed)?[ ]?(Cx[0-9]+)?[ ]?(Cy[0-9]+)?");
 
   std::smatch sm;
   if (!std::regex_match(name, sm, strExpr))
@@ -394,8 +394,8 @@ int64_t PixelFormatYUV::bytesPerFrame(const Size &frameSize) const
     if (this->subsampling == Subsampling::YUV_444)
       bytes += frameSize.width * frameSize.height * bytesPerSample * 2; // U/V planes
     else if (this->subsampling == Subsampling::YUV_422 || this->subsampling == Subsampling::YUV_440)
-      bytes += (frameSize.width / 2) * frameSize.height * bytesPerSample *
-               2; // U/V planes, half the width
+      bytes +=
+        (frameSize.width / 2) * frameSize.height * bytesPerSample * 2; // U/V planes, half the width
     else if (this->subsampling == Subsampling::YUV_420)
       bytes += (frameSize.width / 2) * (frameSize.height / 2) * bytesPerSample *
                2; // U/V planes, half the width and height
@@ -462,11 +462,7 @@ std::string PixelFormatYUV::getName() const
   if (!this->isValid())
     return "Invalid";
   if (this->predefinedPixelFormat)
-  {
-    if (*this->predefinedPixelFormat == PredefinedPixelFormat::V210)
-      return "V210";
-    return "Invalid";
-  }
+    return std::string(PredefinedPixelFormatMapper.getName(*this->predefinedPixelFormat));
 
   std::stringstream ss;
 

@@ -61,16 +61,12 @@ PixelFormatRGB::PixelFormatRGB(const std::string &name)
   if (name == UNKNOWN_FORMAT_NAME)
     return;
 
-  if (name.substr(0, 8) == "RGB565BE")
-  {
-    this->predefinedPixelFormat = PredefinedPixelFormat::RGB565BE;
-    return;
-  }
-  if (name.substr(0, 6) == "RGB565")
-  {
-    this->predefinedPixelFormat = PredefinedPixelFormat::RGB565;
-    return;
-  }
+  for (const auto predefinedFormat : PredefinedPixelFormatMapper)
+    if (name == predefinedFormat.second)
+    {
+      this->predefinedPixelFormat = predefinedFormat.first;
+      return;
+    }
 
   auto channelOrderString = name.substr(0, 3);
   if (name[0] == 'a' || name[0] == 'A')
@@ -122,10 +118,8 @@ std::string PixelFormatRGB::getName() const
   if (!this->isValid())
     return UNKNOWN_FORMAT_NAME;
 
-  if (this->predefinedPixelFormat == PredefinedPixelFormat::RGB565)
-    return "RGB565";
-  if (this->predefinedPixelFormat == PredefinedPixelFormat::RGB565BE)
-    return "RGB565BE";
+  if (this->predefinedPixelFormat)
+    return std::string(PredefinedPixelFormatMapper.getName(*this->predefinedPixelFormat));
 
   std::string name;
   if (this->alphaMode == AlphaMode::First)
@@ -301,6 +295,28 @@ Channel PixelFormatRGB::getChannelAtPosition(int position) const
   }
 
   throw std::invalid_argument("Invalid argument for channel position");
+}
+
+TextRendering PixelFormatRGB::getPixelValueTextRendering(rgba_t value) const
+{
+  // Shift the values to 8 bit
+  if (this->predefinedPixelFormat)
+  {
+    value.R = (value.R << 3);
+    value.G = (value.G << 2);
+    value.B = (value.B << 3);
+  }
+  else if (this->bitsPerComponent > 8)
+  {
+    const auto shift = (this->bitsPerComponent - 8);
+    value.R          = (value.R >> shift);
+    value.G          = (value.G >> shift);
+    value.B          = (value.B >> shift);
+  }
+
+  // Approximation of Y = 0.375 R + 0.5 G + 0.125 B to be closer to the percieved brightness.
+  const auto luminance = (3 * value.R + 4 * value.B + value.B) >> 3;
+  return luminance < 128 ? TextRendering::White : TextRendering::Black;
 }
 
 bool PixelFormatRGB::operator==(const PixelFormatRGB &a) const

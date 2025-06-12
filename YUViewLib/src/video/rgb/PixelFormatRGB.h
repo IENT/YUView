@@ -119,6 +119,10 @@ enum class PredefinedPixelFormat
   RGB565BE, // 16 bits packed as R:5, G:6, B:5 Big Endian
 };
 
+constexpr EnumMapper<PredefinedPixelFormat, 2> PredefinedPixelFormatMapper = {
+  std::make_pair(PredefinedPixelFormat::RGB565, "RGB565"),
+  std::make_pair(PredefinedPixelFormat::RGB565BE, "RGB565BE")};
+
 enum class ChannelOrder
 {
   RGB,
@@ -172,10 +176,11 @@ public:
   [[nodiscard]] Endianness                           getEndianess() const;
   [[nodiscard]] std::optional<PredefinedPixelFormat> getPredefinedPixelFormat() const;
 
-  [[nodiscard]] int     getNrChannels() const;
-  [[nodiscard]] int     getBytesPerFrame(const Size frameSize) const;
-  [[nodiscard]] int     getChannelPosition(const Channel channel) const;
-  [[nodiscard]] Channel getChannelAtPosition(const int position) const;
+  [[nodiscard]] int           getNrChannels() const;
+  [[nodiscard]] int           getBytesPerFrame(const Size frameSize) const;
+  [[nodiscard]] int           getChannelPosition(const Channel channel) const;
+  [[nodiscard]] Channel       getChannelAtPosition(const int position) const;
+  [[nodiscard]] TextRendering getPixelValueTextRendering(rgba_t value) const;
 
   bool operator==(const PixelFormatRGB &a) const;
   bool operator!=(const PixelFormatRGB &a) const;
