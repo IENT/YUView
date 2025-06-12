@@ -315,7 +315,7 @@ TextRendering PixelFormatRGB::getPixelValueTextRendering(rgba_t value) const
   }
 
   // Approximation of Y = 0.375 R + 0.5 G + 0.125 B to be closer to the percieved brightness.
-  const auto luminance = (3 * value.R + 4 * value.B + value.B) >> 3;
+  const auto luminance = (3 * value.R + 4 * value.G + value.B) >> 3;
   return luminance < 128 ? TextRendering::White : TextRendering::Black;
 }
 

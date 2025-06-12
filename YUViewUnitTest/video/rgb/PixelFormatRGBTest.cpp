@@ -182,4 +182,37 @@ TEST(PixelFormatRGBTest, testComparisonOperators_ComparingTwoInvalidFormats_shou
     }
 }
 
+TEST(PixelFormatRGBTest, testBrightnessCalculation)
+{
+  constexpr rgba_t black           = {0, 0, 0, 255};
+  constexpr rgba_t lowerLuminance  = {126, 125, 124, 255};
+  constexpr rgba_t higherLuminance = {130, 130, 130, 255};
+  constexpr rgba_t white           = {255, 255, 255, 255};
+
+  auto scaleRgbToPixelFormatBitDepth = [](const PixelFormatRGB &pixelFormat, rgba_t value) -> rgba_t
+  {
+    if (pixelFormat.getPredefinedPixelFormat())
+      return {value.R >> 3, value.G << 2, value.B << 3, 255};
+
+    const auto shift = pixelFormat.getBitsPerComponent() - 8;
+    return {value.R >> shift, value.G >> shift, value.B >> shift, 255};
+  };
+
+  for (const auto &format : getAllValidFormats())
+  {
+    EXPECT_EQ(format.getPixelValueTextRendering(scaleRgbToPixelFormatBitDepth(format, black)),
+              TextRendering::White);
+    EXPECT_EQ(
+      format.getPixelValueTextRendering(scaleRgbToPixelFormatBitDepth(format, lowerLuminance)),
+      TextRendering::White);
+    EXPECT_EQ(
+      format.getPixelValueTextRendering(scaleRgbToPixelFormatBitDepth(format, higherLuminance)),
+      TextRendering::Black);
+    EXPECT_EQ(format.getPixelValueTextRendering(scaleRgbToPixelFormatBitDepth(format, white)),
+              TextRendering::Black);
+
+    break;
+  }
+}
+
 } // namespace video::rgb::test
