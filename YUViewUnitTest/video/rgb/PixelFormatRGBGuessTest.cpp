@@ -213,9 +213,14 @@ INSTANTIATE_TEST_SUITE_P(
                     PixelFormatRGB(8, DataLayout::Packed, ChannelOrder::RGB, AlphaMode::Last)}),
 
     // RGB565
-    TestParameters({FileInfoForGuess({"something_512x768.rgb565", "", BytesRGB565File}),
+    TestParameters({FileInfoForGuess({"something_512x768_rgb565.rgb", "", BytesRGB565File}),
                     PixelFormatRGB(PredefinedPixelFormat::RGB565)}),
-    TestParameters({FileInfoForGuess({"something_512x768.rgb565be", "", BytesRGB565File}),
+    TestParameters(
+      {FileInfoForGuess({"something_512x768_rgb565_something.rgb", "", BytesRGB565File}),
+       PixelFormatRGB(PredefinedPixelFormat::RGB565)}),
+    TestParameters({FileInfoForGuess({"something_512x768_rgb565le.rgb", "", BytesRGB565File}),
+                    PixelFormatRGB(PredefinedPixelFormat::RGB565)}),
+    TestParameters({FileInfoForGuess({"something_512x768_rgb565be.rgb", "", BytesRGB565File}),
                     PixelFormatRGB(PredefinedPixelFormat::RGB565BE)})
 
       ),

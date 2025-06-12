@@ -122,7 +122,13 @@ std::optional<PixelFormatRGB> checkForPixelFormatIndicatorInName(
     }
   }
 
-  matcher.pop_back(); // Remove last |
+  stringToMatchingFormat["rgb565"] = PixelFormatRGB(PredefinedPixelFormat::RGB565);
+  matcher += "rgb565|";
+  stringToMatchingFormat["rgb565le"] = PixelFormatRGB(PredefinedPixelFormat::RGB565);
+  matcher += "rgb565le|";
+  stringToMatchingFormat["rgb565be"] = PixelFormatRGB(PredefinedPixelFormat::RGB565BE);
+  matcher += "rgb565be";
+
   matcher += ")(?:_|\\.|-)";
 
   std::smatch sm;
@@ -136,6 +142,9 @@ std::optional<PixelFormatRGB> checkForPixelFormatIndicatorInName(
   auto format = stringToMatchingFormat[matchName];
   if (doesPixelFormatMatchFileSize(format, frameSize, fileSize))
   {
+    if (format.getPredefinedPixelFormat())
+      return format;
+
     const auto dataLayout = findDataLayoutInName(filename);
     return PixelFormatRGB(format.getBitsPerComponent(),
                           dataLayout,

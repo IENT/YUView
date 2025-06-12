@@ -55,7 +55,7 @@ namespace
 {
 
 constexpr auto YUV_EXTENSIONS  = {"yuv", "nv12", "y4m"};
-constexpr auto RGB_EXTENSIONS  = {"rgb", "gbr", "bgr", "brg", "rgb565", "rgb565be"};
+constexpr auto RGB_EXTENSIONS  = {"rgb", "gbr", "bgr", "brg"};
 constexpr auto RGBA_EXTENSIONS = {"rgba", "gbra", "bgra", "brga", "argb", "agbr", "abgr", "abrg"};
 constexpr auto RAW_BAYER_EXTENSIONS = {"raw"};
 constexpr auto CMYK_EXTENSIONS      = {"cmyk"};
@@ -583,7 +583,7 @@ void playlistItemRawFile::getSupportedFileExtensions(QStringList &allExtensions,
       allExtensions.append(QString(extension));
 
   filters.append("Raw YUV File (*.yuv *.nv21)");
-  filters.append("Raw RGB File (*.rgb *.rbg *.grb *.gbr *.brg *.bgr, *.rgb565, *.rgb565be)");
+  filters.append("Raw RGB File (*.rgb *.rbg *.grb *.gbr *.brg *.bgr)");
   filters.append("Raw RGBA File (*.rgba *.rbga *.grba *.gbra *.brga *.bgra *.argb *.arbg *.agrb "
                  "*.agbr *.abrg *.abgr)");
   filters.append("YUV4MPEG2 File (*.y4m)");
