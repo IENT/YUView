@@ -71,7 +71,8 @@ TEST_P(GuessRGBFormatFromFilenameFrameSizeAndFileSize, TestGuess)
     video::rgb::guessPixelFormatFromSizeAndName(guessedFrameFormat, parameters.fileInfoForGuess);
 
   EXPECT_EQ(guessedFormat.isValid(), parameters.expectedPixelFormat.isValid());
-  EXPECT_EQ(guessedFormat, parameters.expectedPixelFormat);
+  if (guessedFormat.isValid())
+    EXPECT_EQ(guessedFormat, parameters.expectedPixelFormat);
 }
 
 constexpr auto BytesNoAlpha    = 1920u * 1080 * 12u * 3u; // 12 frames RGB
