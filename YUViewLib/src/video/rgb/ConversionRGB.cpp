@@ -229,6 +229,52 @@ void convertRGBToARGB(const QByteArray     &sourceBuffer,
   }
 }
 
+void convertPredefinedPixelFormatRGBPlaneToARGB(const QByteArray     &sourceBuffer,
+                                                const PixelFormatRGB &srcPixelFormat,
+                                                unsigned char        *targetBuffer,
+                                                const Size            frameSize,
+                                                const Channel         displayChannel,
+                                                const int             scale,
+                                                const bool            invert,
+                                                const bool            limitedRange)
+{
+  auto rawData = reinterpret_cast<const unsigned char *>(sourceBuffer.data());
+
+  const auto endianness = srcPixelFormat.getEndianess();
+  for (unsigned i = 0; i < frameSize.width * frameSize.height; i++)
+  {
+    int byte1 = *rawData;
+    int byte2 = *(rawData + 1);
+
+    if (endianness == Endianness::Big)
+      std::swap(byte1, byte2);
+
+    const auto value = byte1 + (byte2 << 8);
+
+    int greyscaleValue = 0;
+    if (displayChannel == Channel::Red)
+      greyscaleValue = ((value & 0b00000000'00011111) << 3);
+    else if (displayChannel == Channel::Green)
+      greyscaleValue = ((value & 0b00000111'11100000) >> 3);
+    else if (displayChannel == Channel::Blue)
+      greyscaleValue = ((value & 0b11111000'00000000) >> 8);
+
+    greyscaleValue = functions::clip(greyscaleValue * scale, 0, 255);
+    if (invert)
+      greyscaleValue = (255 - greyscaleValue);
+    if (limitedRange)
+      greyscaleValue = LimitedRangeToFullRange.at(greyscaleValue);
+
+    targetBuffer[0] = greyscaleValue;
+    targetBuffer[1] = greyscaleValue;
+    targetBuffer[2] = greyscaleValue;
+    targetBuffer[3] = 255;
+
+    rawData += 2;
+    targetBuffer += 4;
+  }
+}
+
 // Convert one single plane of the input format to RGBA. This is used to visualize the individual
 // components.
 template <int bitDepth>
@@ -399,10 +445,19 @@ void convertSinglePlaneOfRGBToGreyscaleARGB(const QByteArray     &sourceBuffer,
                                             const bool            limitedRange)
 {
   const auto bitsPerComponent = srcPixelFormat.getBitsPerComponent();
-  if (bitsPerComponent < 8 || bitsPerComponent > 32)
-    throw std::invalid_argument("Invalid bit depth in pixel format for conversion");
 
-  if (bitsPerComponent == 8)
+  if (srcPixelFormat.getPredefinedPixelFormat())
+  {
+    convertPredefinedPixelFormatRGBPlaneToARGB(sourceBuffer,
+                                               srcPixelFormat,
+                                               targetBuffer,
+                                               frameSize,
+                                               displayChannel,
+                                               scale,
+                                               invert,
+                                               limitedRange);
+  }
+  else if (bitsPerComponent == 8)
     convertRGBPlaneToARGB<8>(sourceBuffer,
                              srcPixelFormat,
                              targetBuffer,
@@ -420,7 +475,7 @@ void convertSinglePlaneOfRGBToGreyscaleARGB(const QByteArray     &sourceBuffer,
                               scale,
                               invert,
                               limitedRange);
-  else
+  else if (bitsPerComponent <= 32)
     convertRGBPlaneToARGB<32>(sourceBuffer,
                               srcPixelFormat,
                               targetBuffer,
@@ -429,6 +484,8 @@ void convertSinglePlaneOfRGBToGreyscaleARGB(const QByteArray     &sourceBuffer,
                               scale,
                               invert,
                               limitedRange);
+  else
+    throw std::invalid_argument("Invalid bit depth in pixel format for conversion");
 }
 
 rgba_t getPixelValueFromBuffer(const QByteArray     &sourceBuffer,
