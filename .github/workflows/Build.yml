@@ -7,133 +7,133 @@ on:
       - created
 
 jobs:
-  # build-unix-native:
-  #   runs-on: ${{ matrix.os }}
-  #   strategy:
-  #     matrix:
-  #       os: [ubuntu-22.04, ubuntu-24.04]
-  #   steps:
-  #   - uses: actions/checkout@v4
-  #     with:
-  #       submodules: true
-  #   - run: git fetch --prune --unshallow
-  #   - name: Install Linux packages
-  #     run: |
-  #       sudo apt-get update
-  #       sudo apt-get install qt6-base-dev
-  #   - name: Build
-  #     run: |
-  #       cd $GITHUB_WORKSPACE
-  #       mkdir build
-  #       cd build
-  #       qmake6 CONFIG+=UNITTESTS ..
-  #       make -j$(nproc)
-  #   - name: Run Unittests
-  #     run: $GITHUB_WORKSPACE/build/YUViewUnitTest/YUViewUnitTest
-  # build-mac-native:
-  #   runs-on: ${{ matrix.os }}
-  #   strategy:
-  #     matrix:
-  #       os: [macos-13, macos-15]
-  #   steps:
-  #   - uses: actions/checkout@v4
-  #     with:
-  #       submodules: true
-  #   - run: git fetch --prune --unshallow
-  #   - name: Install packages
-  #     run: brew install qt
-  #   - name: Build
-  #     run: |
-  #       cd $GITHUB_WORKSPACE
-  #       mkdir build
-  #       cd build
-  #       qmake6 CONFIG+=UNITTESTS ..
-  #       make -j $(sysctl -n hw.logicalcpu)
-  #   - name: Run Unittests
-  #     run: $GITHUB_WORKSPACE/build/YUViewUnitTest/YUViewUnitTest
-  # build-linux-mac:
-  #   runs-on: ${{ matrix.os }}
-  #   strategy:
-  #     matrix:
-  #       os: [ubuntu-22.04, macos-13, macos-15]
-  #   steps:
-  #   - uses: actions/checkout@v4
-  #     with:
-  #       submodules: true
-  #   - run: git fetch --prune --unshallow
-  #   - name: Set artifact name
-  #     id: artifacts
-  #     shell: bash
-  #     run: |
-  #       echo "qt=qtBase-6-9-0-${{ matrix.os }}" >> "$GITHUB_OUTPUT"
-  #       echo "outputZip=YUView-${{ matrix.os }}.zip" >> "$GITHUB_OUTPUT"
-  #   - name: Install Qt base
-  #     run: |
-  #       cd ../../
-  #       mkdir -p YUViewQt/YUViewQt
-  #       cd YUViewQt/YUViewQt
-  #       curl -L https://github.com/ChristianFeldmann/YUViewQt/releases/download/QtBase-6.9.0/${{steps.artifacts.outputs.qt}}.zip -o Qt.zip
-  #       unzip -qa Qt.zip
-  #       echo "$GITHUB_WORKSPACE/../../YUViewQt/YUViewQt/Qt/bin" >> $GITHUB_PATH
-  #     shell: bash
-  #   - name: Install Linuxdeployqt
-  #     if: runner.os == 'Linux'
-  #     run: |
-  #       curl -L https://github.com/probonopd/linuxdeployqt/releases/download/continuous/linuxdeployqt-continuous-x86_64.AppImage -o linuxdeployqt-6-x86_64.AppImage
-  #       chmod a+x linuxdeployqt-6-x86_64.AppImage
-  #   - name: Install Linux packages
-  #     if: runner.os == 'Linux'
-  #     run: |
-  #       sudo apt-get update
-  #       sudo apt-get install libgl1-mesa-dev libxkbcommon-x11-0 libpcre2-16-0 '^libxcb.*-dev' libx11-xcb-dev libglu1-mesa-dev libxi-dev libxkbcommon-dev libxkbcommon-x11-dev libatspi2.0-dev libfuse2
-  #   - name: Download libde265 (Linux)
-  #     if: runner.os == 'Linux'
-  #     run: curl -L https://github.com/ChristianFeldmann/libde265/releases/download/v1.1/libde265.so -o libde265-internals.so
-  #   - name: Download libde265 (Mac)
-  #     if: runner.os == 'macOS'
-  #     run: curl -L https://github.com/ChristianFeldmann/libde265/releases/download/v1.1/libde265.dylib -o libde265-internals.dylib
-  #   - name: Download libde265 license file
-  #     run: curl -L https://raw.githubusercontent.com/ChristianFeldmann/libde265/master/COPYING -o libde265License.txt
-  #     shell: bash
-  #   - name: Build (Qmake + Make)
-  #     run: |
-  #       cd $GITHUB_WORKSPACE
-  #       export PATH=$GITHUB_WORKSPACE/../../YUViewQt/YUViewQt/Qt/bin:$PATH
-  #       mkdir build
-  #       cd build
-  #       qmake CONFIG+=UNITTESTS ..
-  #       make -j 4
-  #   - name: Run Unittests
-  #     run: $GITHUB_WORKSPACE/build/YUViewUnitTest/YUViewUnitTest
-  #   - name: Build App (Mac)
-  #     if: runner.os	== 'macOS'
-  #     run: |
-  #       macdeployqt build/YUViewApp/YUView.app -always-overwrite -verbose=2
-  #       cp libde265-internals.dylib build/YUViewApp/YUView.app/Contents/MacOS/.
-  #       cd build/YUViewApp
-  #       # Zip
-  #       zip -r ${{steps.artifacts.outputs.outputZip}} YUView.app/
-  #       mkdir $GITHUB_WORKSPACE/artifacts
-  #       cp ${{steps.artifacts.outputs.outputZip}} $GITHUB_WORKSPACE/artifacts/
-  #   - name: Build Appimage (Linux)
-  #     if: runner.os == 'Linux'
-  #     run: |
-  #       cd build
-  #       make INSTALL_ROOT=appdir install
-  #       $GITHUB_WORKSPACE/linuxdeployqt-6-x86_64.AppImage YUViewApp/appdir/usr/local/share/applications/de.rwth_aachen.ient.YUView.desktop -appimage -bundle-non-qt-libs -verbose=2
-  #       mv YUView-*.AppImage YUView.AppImage
-  #       mkdir $GITHUB_WORKSPACE/artifacts
-  #       cp YUView.AppImage $GITHUB_WORKSPACE/artifacts/
-  #   - name: Upload Artifact
-  #     uses: actions/upload-artifact@v4
-  #     with:
-  #       name: ${{steps.artifacts.outputs.outputZip}}
-  #       path: artifacts
-  #   - name: Release
-  #     uses: softprops/action-gh-release@v1
-  #     if: startsWith(github.ref, 'refs/tags/')
-  #     with:
-  #       files: artifacts/${{steps.artifacts.outputs.outputZip}}
+  build-unix-native:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-22.04, ubuntu-24.04]
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        submodules: true
+    - run: git fetch --prune --unshallow
+    - name: Install Linux packages
+      run: |
+        sudo apt-get update
+        sudo apt-get install qt6-base-dev
+    - name: Build
+      run: |
+        cd $GITHUB_WORKSPACE
+        mkdir build
+        cd build
+        qmake6 CONFIG+=UNITTESTS ..
+        make -j$(nproc)
+    - name: Run Unittests
+      run: $GITHUB_WORKSPACE/build/YUViewUnitTest/YUViewUnitTest
+  build-mac-native:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [macos-13, macos-15]
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        submodules: true
+    - run: git fetch --prune --unshallow
+    - name: Install packages
+      run: brew install qt
+    - name: Build
+      run: |
+        cd $GITHUB_WORKSPACE
+        mkdir build
+        cd build
+        qmake6 CONFIG+=UNITTESTS ..
+        make -j $(sysctl -n hw.logicalcpu)
+    - name: Run Unittests
+      run: $GITHUB_WORKSPACE/build/YUViewUnitTest/YUViewUnitTest
+  build-linux-mac:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-22.04, macos-13, macos-15]
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        submodules: true
+    - run: git fetch --prune --unshallow
+    - name: Set artifact name
+      id: artifacts
+      shell: bash
+      run: |
+        echo "qt=qtBase-6-9-0-${{ matrix.os }}" >> "$GITHUB_OUTPUT"
+        echo "outputZip=YUView-${{ matrix.os }}.zip" >> "$GITHUB_OUTPUT"
+    - name: Install Qt base
+      run: |
+        cd ../../
+        mkdir -p YUViewQt/YUViewQt
+        cd YUViewQt/YUViewQt
+        curl -L https://github.com/ChristianFeldmann/YUViewQt/releases/download/QtBase-6.9.0/${{steps.artifacts.outputs.qt}}.zip -o Qt.zip
+        unzip -qa Qt.zip
+        echo "$GITHUB_WORKSPACE/../../YUViewQt/YUViewQt/Qt/bin" >> $GITHUB_PATH
+      shell: bash
+    - name: Install Linuxdeployqt
+      if: runner.os == 'Linux'
+      run: |
+        curl -L https://github.com/probonopd/linuxdeployqt/releases/download/continuous/linuxdeployqt-continuous-x86_64.AppImage -o linuxdeployqt-6-x86_64.AppImage
+        chmod a+x linuxdeployqt-6-x86_64.AppImage
+    - name: Install Linux packages
+      if: runner.os == 'Linux'
+      run: |
+        sudo apt-get update
+        sudo apt-get install libgl1-mesa-dev libxkbcommon-x11-0 libpcre2-16-0 '^libxcb.*-dev' libx11-xcb-dev libglu1-mesa-dev libxi-dev libxkbcommon-dev libxkbcommon-x11-dev libatspi2.0-dev libfuse2
+    - name: Download libde265 (Linux)
+      if: runner.os == 'Linux'
+      run: curl -L https://github.com/ChristianFeldmann/libde265/releases/download/v1.1/libde265.so -o libde265-internals.so
+    - name: Download libde265 (Mac)
+      if: runner.os == 'macOS'
+      run: curl -L https://github.com/ChristianFeldmann/libde265/releases/download/v1.1/libde265.dylib -o libde265-internals.dylib
+    - name: Download libde265 license file
+      run: curl -L https://raw.githubusercontent.com/ChristianFeldmann/libde265/master/COPYING -o libde265License.txt
+      shell: bash
+    - name: Build (Qmake + Make)
+      run: |
+        cd $GITHUB_WORKSPACE
+        export PATH=$GITHUB_WORKSPACE/../../YUViewQt/YUViewQt/Qt/bin:$PATH
+        mkdir build
+        cd build
+        qmake CONFIG+=UNITTESTS ..
+        make -j 4
+    - name: Run Unittests
+      run: $GITHUB_WORKSPACE/build/YUViewUnitTest/YUViewUnitTest
+    - name: Build App (Mac)
+      if: runner.os	== 'macOS'
+      run: |
+        macdeployqt build/YUViewApp/YUView.app -always-overwrite -verbose=2
+        cp libde265-internals.dylib build/YUViewApp/YUView.app/Contents/MacOS/.
+        cd build/YUViewApp
+        # Zip
+        zip -r ${{steps.artifacts.outputs.outputZip}} YUView.app/
+        mkdir $GITHUB_WORKSPACE/artifacts
+        cp ${{steps.artifacts.outputs.outputZip}} $GITHUB_WORKSPACE/artifacts/
+    - name: Build Appimage (Linux)
+      if: runner.os == 'Linux'
+      run: |
+        cd build
+        make INSTALL_ROOT=appdir install
+        $GITHUB_WORKSPACE/linuxdeployqt-6-x86_64.AppImage YUViewApp/appdir/usr/local/share/applications/de.rwth_aachen.ient.YUView.desktop -appimage -bundle-non-qt-libs -verbose=2
+        mv YUView-*.AppImage YUView.AppImage
+        mkdir $GITHUB_WORKSPACE/artifacts
+        cp YUView.AppImage $GITHUB_WORKSPACE/artifacts/
+    - name: Upload Artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: ${{steps.artifacts.outputs.outputZip}}
+        path: artifacts
+    - name: Release
+      uses: softprops/action-gh-release@v1
+      if: startsWith(github.ref, 'refs/tags/')
+      with:
+        files: artifacts/${{steps.artifacts.outputs.outputZip}}
   build-windows:
     runs-on: windows-2022
     strategy:
