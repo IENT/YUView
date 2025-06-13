@@ -153,9 +153,8 @@ jobs:
         curl -L https://github.com/ChristianFeldmann/YUViewQt/releases/download/QtBase-6.9.0/qtBase-6-9-0-windows-2022.zip -o Qt.zip
         7z x  Qt.zip
         echo "${{ github.workspace }}\..\..\YUViewQt\YUViewQt\Qt\bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
-        dir
-        cd Qt 
-        dir
+        echo "Qmake Version:"
+        qmake --version
     - name: Install libde265
       run: |
         curl -L https://github.com/ChristianFeldmann/libde265/releases/download/v1.1/libde265.dll -o libde265.dll
@@ -179,20 +178,18 @@ jobs:
         echo "Creating Build dir and entering it"
         mkdir build
         cd build
-        echo "Qmake Version:"
-        qmake --version
         echo "Executing qmake..."
         qmake CONFIG+=UNITTESTS ..
         echo "Executing jom:"
         jom
     - name: Run Unittests
-      run: D:\a\YUView\YUView\build\YUViewUnitTest\YUViewUnitTest
+      run: ${{ github.workspace }}\build\YUViewUnitTest\YUViewUnitTest
     - name: WindeployQT
       run: |
         mkdir deploy
         cd deploy
         cp ../build/YUViewApp/YUView.exe .
-        d:\a\YUViewQt\YUViewQt\Qt\bin\windeployqt.exe --release --no-compiler-runtime YUView.exe
+        windeployqt --release --no-compiler-runtime YUView.exe
         cp ../openSSL/*.dll .
         mkdir decoder
         cp ..\libde265.dll decoder
