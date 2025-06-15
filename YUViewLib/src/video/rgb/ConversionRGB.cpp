@@ -95,7 +95,10 @@ void convertRGB565ToARGB(const QByteArray     &sourceBuffer,
 {
   auto rawData = reinterpret_cast<const unsigned char *>(sourceBuffer.data());
 
-  const auto endianness = srcPixelFormat.getEndianess();
+  const auto endianness =
+    (srcPixelFormat.getPredefinedPixelFormat() == PredefinedPixelFormat::RGB565BE
+       ? Endianness::Big
+       : Endianness::Little);
   for (unsigned i = 0; i < frameSize.width * frameSize.height; i++)
   {
     int byte1 = *rawData;
@@ -240,7 +243,10 @@ void convertPredefinedPixelFormatRGBPlaneToARGB(const QByteArray     &sourceBuff
 {
   auto rawData = reinterpret_cast<const unsigned char *>(sourceBuffer.data());
 
-  const auto endianness = srcPixelFormat.getEndianess();
+  const auto endianness =
+    (srcPixelFormat.getPredefinedPixelFormat() == PredefinedPixelFormat::RGB565BE
+       ? Endianness::Big
+       : Endianness::Little);
   for (unsigned i = 0; i < frameSize.width * frameSize.height; i++)
   {
     int byte1 = *rawData;
@@ -334,7 +340,11 @@ rgba_t getPixelValueForPredefiendFormat(const QByteArray     &sourceBuffer,
   int byte1 = *rawData;
   int byte2 = *(rawData + 1);
 
-  if (srcPixelFormat.getEndianess() == Endianness::Big)
+  const auto endianness =
+    (srcPixelFormat.getPredefinedPixelFormat() == PredefinedPixelFormat::RGB565BE
+       ? Endianness::Big
+       : Endianness::Little);
+  if (endianness == Endianness::Big)
     std::swap(byte1, byte2);
 
   const auto value = byte1 + (byte2 << 8);
