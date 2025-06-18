@@ -37,6 +37,7 @@
 #include <common/Functions.h>
 #include <common/FunctionsGui.h>
 #include <common/InfoItemAndData.h>
+#include <video/rgb/ConversionDifferenceRGB.h>
 #include <video/rgb/ConversionRGB.h>
 #include <video/rgb/PixelFormatRGBGuess.h>
 #include <video/rgb/videoHandlerRGBCustomFormatDialog.h>
@@ -860,7 +861,9 @@ QImage videoHandlerRGB::calculateDifference(FrameHandler    *item2,
     return videoHandler::calculateDifference(
       item2, frameIdxItem0, frameIdxItem1, differenceInfoList, amplificationFactor, markDifference);
 
-  if (srcPixelFormat.getBitsPerComponent() != rgbItem2->srcPixelFormat.getBitsPerComponent())
+  if (srcPixelFormat.getBitsPerComponent() != rgbItem2->srcPixelFormat.getBitsPerComponent() ||
+      srcPixelFormat.getPredefinedPixelFormat() !=
+        rgbItem2->srcPixelFormat.getPredefinedPixelFormat())
     // The two items have different bit depths. Compare RGB 888 values instead.
     return videoHandler::calculateDifference(
       item2, frameIdxItem0, frameIdxItem1, differenceInfoList, amplificationFactor, markDifference);
@@ -895,17 +898,19 @@ QImage videoHandlerRGB::calculateDifference(FrameHandler    *item2,
   const auto posG     = srcPixelFormat.getChannelPosition(Channel::Green);
   const auto posB     = srcPixelFormat.getChannelPosition(Channel::Blue);
 
-  if (bitDepth >= 8 && bitDepth <= 32)
+  if (srcPixelFormat.getPredefinedPixelFormat())
+  {
+  }
+  else if (bitDepth >= 8 && bitDepth <= 32)
   {
     // How many values do we have to skip in src to get to the next input value?
     // In case of 8 or less bits this is 1 byte per value, for 9 to 16 bits it is 2 bytes per value.
-    int offsetToNextValue = srcPixelFormat.getNrChannels();
-    if (srcPixelFormat.getDataLayout() == DataLayout::Planar)
-      offsetToNextValue = 1;
+    const auto offsetToNextValue =
+      (srcPixelFormat.getDataLayout() == DataLayout::Planar ? 1 : srcPixelFormat.getNrChannels());
 
-    if (bitDepth > 8 && bitDepth <= 32)
+    if (bitDepth > 8)
     {
-      // 9 to 16 bits per component. We assume two bytes per value.
+      // 9 to 32 bits per component. We assume two bytes per value.
       // First get the pointer to the first value of each channel. (this item)
       unsigned short *srcR0, *srcG0, *srcB0;
       if (srcPixelFormat.getDataLayout() == DataLayout::Planar)
