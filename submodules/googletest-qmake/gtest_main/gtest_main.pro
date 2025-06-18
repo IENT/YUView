@@ -5,7 +5,7 @@ TEMPLATE = lib
 
 CONFIG += staticlib
 CONFIG -= debug_and_release
-CONFIG += c++17
+CONFIG += c++20
 
 INCLUDEPATH += \
     ../../googletest/googletest/include
