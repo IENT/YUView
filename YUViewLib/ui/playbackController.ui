@@ -61,6 +61,44 @@
     </widget>
    </item>
    <item>
+    <widget class="QLabel" name="offsetLabel">
+     <property name="minimumSize">
+      <size>
+       <width>40</width>
+       <height>0</height>
+      </size>
+     </property>
+     <property name="toolTip">
+      <string>Frame offset for video synchronization</string>
+     </property>
+     <property name="text">
+      <string>Offset</string>
+     </property>
+    </widget>
+   </item>
+   <item>
+    <widget class="QSpinBox" name="offsetSpinBox">
+     <property name="minimumSize">
+      <size>
+       <width>60</width>
+       <height>0</height>
+      </size>
+     </property>
+     <property name="toolTip">
+      <string>Set frame offset for video synchronization. Positive values delay the video, negative values advance it.</string>
+     </property>
+     <property name="minimum">
+      <number>-99999</number>
+     </property>
+     <property name="maximum">
+      <number>99999</number>
+     </property>
+     <property name="value">
+      <number>0</number>
+     </property>
+    </widget>
+   </item>
+   <item>
     <widget class="QLabel" name="fpsLabel">
      <property name="minimumSize">
       <size>

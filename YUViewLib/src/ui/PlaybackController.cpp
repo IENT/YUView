@@ -118,6 +118,10 @@ PlaybackController::PlaybackController()
 
   this->updateSettings();
   this->enableControls(false);
+
+  // Initialize offset spinbox
+  this->ui.offsetSpinBox->setValue(0);
+  this->frameOffset = 0;
 }
 
 void PlaybackController::setSplitViews(splitViewWidget *primary, splitViewWidget *separate)
@@ -150,6 +154,13 @@ bool PlaybackController::isWaitingForCaching() const
 int PlaybackController::getCurrentFrame() const
 {
   return this->currentFrameIdx;
+}
+
+int PlaybackController::getCurrentFrameWithOffset() const
+{
+  if (this->currentFrameIdx == -1)
+    return -1;
+  return this->getEffectiveFrame(this->currentFrameIdx);
 }
 
 void PlaybackController::setRepeatModeAndUpdateIcons(const RepeatMode mode)
@@ -304,6 +315,12 @@ void PlaybackController::currentSelectedItemsChanged(playlistItem *item1,
                                                      playlistItem *item2,
                                                      bool          chageByPlayback)
 {
+  // Save the current offset for the previous item
+  if (this->currentItem[0] && this->frameOffset != 0)
+  {
+    this->itemFrameOffsets[this->currentItem[0]->properties().id] = this->frameOffset;
+  }
+  
   QSettings settings;
   auto continuePlayback = settings.value("ContinuePlaybackOnSequenceSelection", false).toBool();
 
@@ -312,6 +329,17 @@ void PlaybackController::currentSelectedItemsChanged(playlistItem *item1,
 
   this->currentItem[0] = item1;
   this->currentItem[1] = item2;
+
+  // Restore the offset for the new item
+  if (item1)
+  {
+    int savedOffset = this->itemFrameOffsets.value(item1->properties().id, 0);
+    this->setFrameOffset(savedOffset);
+  }
+  else
+  {
+    this->setFrameOffset(0);
+  }
 
   if (!this->anyItemIndexedByFrame())
   {
@@ -583,6 +611,7 @@ void PlaybackController::enableControls(bool enable)
 {
   this->ui.frameSlider->setEnabled(enable);
   this->ui.frameSpinBox->setEnabled(enable);
+  this->ui.offsetSpinBox->setEnabled(enable);
   this->ui.fpsLabel->setEnabled(enable);
 
   const auto resetControls = !enable;
@@ -711,4 +740,49 @@ double PlaybackController::getCurrentItemsFrameRate() const
   if (frameRate < lowestPossibleFps)
     frameRate = lowestPossibleFps;
   return frameRate;
+}
+
+void PlaybackController::setFrameOffset(int offset)
+{
+  this->frameOffset = offset;
+  this->ui.offsetSpinBox->blockSignals(true);
+  this->ui.offsetSpinBox->setValue(offset);
+  this->ui.offsetSpinBox->blockSignals(false);
+  
+  // Update current frame display
+  if (this->anyItemIndexedByFrame())
+  {
+    this->splitViewPrimary->update(true);
+    this->splitViewSeparate->update();
+  }
+}
+
+int PlaybackController::getFrameOffset() const
+{
+  return this->frameOffset;
+}
+
+int PlaybackController::getEffectiveFrame(int displayFrame) const
+{
+  return displayFrame + this->frameOffset;
+}
+
+int PlaybackController::getDisplayFrame(int effectiveFrame) const
+{
+  return effectiveFrame - this->frameOffset;
+}
+
+void PlaybackController::on_offsetSpinBox_valueChanged(int value)
+{
+  if (value != this->frameOffset)
+  {
+    this->frameOffset = value;
+    
+    // Update the view to show the frame with the new offset
+    if (this->anyItemIndexedByFrame())
+    {
+      this->splitViewPrimary->update(true);
+      this->splitViewSeparate->update();
+    }
+  }
 }

@@ -195,7 +195,7 @@ void splitViewWidget::paintEvent(QPaintEvent *)
                   << (isMasterView ? " separate widget" : ""));
 
   // Get the current frame to draw
-  const auto frame = playback->getCurrentFrame();
+  const auto frame = playback->getCurrentFrameWithOffset();
 
   // Is playback running?
   const bool playing = (playback) ? playback->playing() : false;
@@ -1449,7 +1449,7 @@ QImage splitViewWidget::getScreenshot(bool fullItem)
     QPainter painter(&screenshot);
 
     // Get the current frame to draw
-    int frame = playback->getCurrentFrame();
+    int frame = playback->getCurrentFrameWithOffset();
 
     // Translate the painter to the position where we want the item to be
     QPoint center = QRect(QPoint(0, 0), item[0]->getSize()).center();

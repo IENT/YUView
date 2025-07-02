@@ -42,6 +42,7 @@
 #include <QPointer>
 #include <QTime>
 #include <QWidget>
+#include <QMap>
 
 #include "ui_playbackController.h"
 
@@ -87,8 +88,15 @@ public:
   bool playing() const;
   bool isWaitingForCaching() const;
   int  getCurrentFrame() const;
+  int  getCurrentFrameWithOffset() const;
 
   bool setCurrentFrameAndUpdate(int frame, bool updateView = true);
+
+  // Frame offset functions for video synchronization
+  void setFrameOffset(int offset);
+  int  getFrameOffset() const;
+  int  getEffectiveFrame(int displayFrame) const;
+  int  getDisplayFrame(int effectiveFrame) const;
 
   enum class RepeatMode
   {
@@ -138,6 +146,7 @@ public slots:
 private slots:
   void on_frameSlider_valueChanged(int val);
   void on_frameSpinBox_valueChanged(int val) { this->on_frameSlider_valueChanged(val); }
+  void on_offsetSpinBox_valueChanged(int val);
 
 private:
   std::optional<int> getNextFrameIndexInCurrentItem();
@@ -153,6 +162,12 @@ private:
   // contains the last valid frame index which will be restored if a valid indexed item is selected.
   int currentFrameIdx{-1};
   int lastValidFrameIdx{-1};
+
+  // Frame offset for video synchronization
+  int frameOffset{0};
+
+  // Store frame offsets for each playlist item
+  QMap<int, int> itemFrameOffsets;
 
   void startOrUpdateTimer();
   void startPlayback();
