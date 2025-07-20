@@ -4,7 +4,17 @@
       "Bash(grep:*)",
       "Bash(make:*)",
       "Bash(find:*)",
-      "Bash(git add:*)"
+      "Bash(git add:*)",
+      "Bash(qmake:*)",
+      "Bash(dir:*)",
+      "Bash(ls:*)",
+      "Bash(mingw32-make:*)",
+      "Bash(git push:*)",
+      "Bash(ssh:*)",
+      "Bash(git remote set-url:*)",
+      "Bash(git pull:*)",
+      "Bash(git commit:*)",
+      "Bash(rm:*)"
     ],
     "deny": []
   }
