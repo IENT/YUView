@@ -196,6 +196,29 @@
          </property>
         </widget>
        </item>
+       <item row="4" column="0">
+        <widget class="QLabel" name="label_10bit">
+         <property name="toolTip">
+          <string>Enable native 10-bit display support for 10-bit YUV sources. This preserves 10-bit precision during YUV to RGB conversion.</string>
+         </property>
+         <property name="text">
+          <string>10-bit Display</string>
+         </property>
+        </widget>
+       </item>
+       <item row="4" column="1">
+        <widget class="QCheckBox" name="checkBoxEnable10BitDisplay">
+         <property name="toolTip">
+          <string>Enable native 10-bit display support for 10-bit YUV sources. This preserves 10-bit precision during YUV to RGB conversion.</string>
+         </property>
+         <property name="text">
+          <string>Enable native 10-bit display</string>
+         </property>
+         <property name="checked">
+          <bool>false</bool>
+         </property>
+        </widget>
+       </item>
       </layout>
      </item>
     </layout>

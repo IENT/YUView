@@ -238,6 +238,8 @@ private slots:
   void slotYUVControlChanged();
   // The YUV format combo box was changed
   void slotYUVFormatControlChanged(int idx);
+  // The 10-bit display checkbox was changed
+  void slot10BitDisplayChanged();
 };
 
 } // namespace video::yuv

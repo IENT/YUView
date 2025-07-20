@@ -583,8 +583,8 @@ bool convertYUV420ToRGB16Bit(const QByteArray         &sourceBuffer,
 
   // Get/set the parameters used for YUV -> RGB conversion
   const bool fullRange = isFullRange(conversionSettings.colorConversion);
-  const int  yOffset   = (fullRange ? 0 : 16);  // No bit shifting for 10-bit
-  const int  cZero     = 128;                     // No bit shifting for 10-bit
+  const int  yOffset   = (fullRange ? 0 : 64);  // 10-bit offset: 16 * 4
+  const int  cZero     = 512;                    // 10-bit zero: 128 * 4
   int        RGBConv[5];
   getColorConversionCoefficients(conversionSettings.colorConversion, RGBConv);
 
@@ -612,7 +612,7 @@ bool convertYUV420ToRGB16Bit(const QByteArray         &sourceBuffer,
     {
       // Process four pixels (the ones for which U/V are valid
 
-      // Load UV and pre-multiply (NO rightShift for native 10-bit)
+      // Load UV values directly (testing without rightShift)
       const int U_tmp_G = (((int)srcU[srcAddrUV + xh]) - cZero) * RGBConv[2];
       const int U_tmp_B = (((int)srcU[srcAddrUV + xh]) - cZero) * RGBConv[4];
       const int V_tmp_R = (((int)srcV[srcAddrUV + xh]) - cZero) * RGBConv[1];
@@ -626,10 +626,12 @@ bool convertYUV420ToRGB16Bit(const QByteArray         &sourceBuffer,
         const int G_tmp = (Y_tmp + U_tmp_G + V_tmp_G) >> 16;
         const int B_tmp = (Y_tmp + U_tmp_B) >> 16;
 
-        // Scale 8-bit values to 16-bit and clamp
-        dst[dstAddr1]     = static_cast<quint16>(std::max(0, std::min(255, B_tmp)) << 8);
-        dst[dstAddr1 + 1] = static_cast<quint16>(std::max(0, std::min(255, G_tmp)) << 8);
-        dst[dstAddr1 + 2] = static_cast<quint16>(std::max(0, std::min(255, R_tmp)) << 8);
+        // Scale 10-bit values to 16-bit and clamp (10-bit max: 1023, 16-bit max: 65535)
+        // Use 6-bit left shift to scale from 10-bit to 16-bit (1023 << 6 = 65472)
+        // Note: Format_RGBA64_Premultiplied expects R,G,B,A order (not B,G,R,A like ARGB32)
+        dst[dstAddr1]     = static_cast<quint16>(std::max(0, std::min(1023, R_tmp)) << 6);
+        dst[dstAddr1 + 1] = static_cast<quint16>(std::max(0, std::min(1023, G_tmp)) << 6);
+        dst[dstAddr1 + 2] = static_cast<quint16>(std::max(0, std::min(1023, B_tmp)) << 6);
         dst[dstAddr1 + 3] = 65535; // Alpha = 65535 for 16-bit
         dstAddr1 += 4;
       }
@@ -641,10 +643,12 @@ bool convertYUV420ToRGB16Bit(const QByteArray         &sourceBuffer,
         const int G_tmp = (Y_tmp + U_tmp_G + V_tmp_G) >> 16;
         const int B_tmp = (Y_tmp + U_tmp_B) >> 16;
 
-        // Scale 8-bit values to 16-bit and clamp
-        dst[dstAddr1]     = static_cast<quint16>(std::max(0, std::min(255, B_tmp)) << 8);
-        dst[dstAddr1 + 1] = static_cast<quint16>(std::max(0, std::min(255, G_tmp)) << 8);
-        dst[dstAddr1 + 2] = static_cast<quint16>(std::max(0, std::min(255, R_tmp)) << 8);
+        // Scale 10-bit values to 16-bit and clamp (10-bit max: 1023, 16-bit max: 65535)
+        // Use 6-bit left shift to scale from 10-bit to 16-bit (1023 << 6 = 65472)
+        // Note: Format_RGBA64_Premultiplied expects R,G,B,A order (not B,G,R,A like ARGB32)
+        dst[dstAddr1]     = static_cast<quint16>(std::max(0, std::min(1023, R_tmp)) << 6);
+        dst[dstAddr1 + 1] = static_cast<quint16>(std::max(0, std::min(1023, G_tmp)) << 6);
+        dst[dstAddr1 + 2] = static_cast<quint16>(std::max(0, std::min(1023, B_tmp)) << 6);
         dst[dstAddr1 + 3] = 65535; // Alpha = 65535 for 16-bit
         dstAddr1 += 4;
       }
@@ -656,10 +660,12 @@ bool convertYUV420ToRGB16Bit(const QByteArray         &sourceBuffer,
         const int G_tmp = (Y_tmp + U_tmp_G + V_tmp_G) >> 16;
         const int B_tmp = (Y_tmp + U_tmp_B) >> 16;
 
-        // Scale 8-bit values to 16-bit and clamp
-        dst[dstAddr2]     = static_cast<quint16>(std::max(0, std::min(255, B_tmp)) << 8);
-        dst[dstAddr2 + 1] = static_cast<quint16>(std::max(0, std::min(255, G_tmp)) << 8);
-        dst[dstAddr2 + 2] = static_cast<quint16>(std::max(0, std::min(255, R_tmp)) << 8);
+        // Scale 10-bit values to 16-bit and clamp (10-bit max: 1023, 16-bit max: 65535)
+        // Use 6-bit left shift to scale from 10-bit to 16-bit (1023 << 6 = 65472)
+        // Note: Format_RGBA64_Premultiplied expects R,G,B,A order (not B,G,R,A like ARGB32)
+        dst[dstAddr2]     = static_cast<quint16>(std::max(0, std::min(1023, R_tmp)) << 6);
+        dst[dstAddr2 + 1] = static_cast<quint16>(std::max(0, std::min(1023, G_tmp)) << 6);
+        dst[dstAddr2 + 2] = static_cast<quint16>(std::max(0, std::min(1023, B_tmp)) << 6);
         dst[dstAddr2 + 3] = 65535; // Alpha = 65535 for 16-bit
         dstAddr2 += 4;
       }
@@ -671,10 +677,12 @@ bool convertYUV420ToRGB16Bit(const QByteArray         &sourceBuffer,
         const int G_tmp = (Y_tmp + U_tmp_G + V_tmp_G) >> 16;
         const int B_tmp = (Y_tmp + U_tmp_B) >> 16;
 
-        // Scale 8-bit values to 16-bit and clamp
-        dst[dstAddr2]     = static_cast<quint16>(std::max(0, std::min(255, B_tmp)) << 8);
-        dst[dstAddr2 + 1] = static_cast<quint16>(std::max(0, std::min(255, G_tmp)) << 8);
-        dst[dstAddr2 + 2] = static_cast<quint16>(std::max(0, std::min(255, R_tmp)) << 8);
+        // Scale 10-bit values to 16-bit and clamp (10-bit max: 1023, 16-bit max: 65535)
+        // Use 6-bit left shift to scale from 10-bit to 16-bit (1023 << 6 = 65472)
+        // Note: Format_RGBA64_Premultiplied expects R,G,B,A order (not B,G,R,A like ARGB32)
+        dst[dstAddr2]     = static_cast<quint16>(std::max(0, std::min(1023, R_tmp)) << 6);
+        dst[dstAddr2 + 1] = static_cast<quint16>(std::max(0, std::min(1023, G_tmp)) << 6);
+        dst[dstAddr2 + 2] = static_cast<quint16>(std::max(0, std::min(1023, B_tmp)) << 6);
         dst[dstAddr2 + 3] = 65535; // Alpha = 65535 for 16-bit
         dstAddr2 += 4;
       }
@@ -2425,8 +2433,8 @@ bool convertYUVPlanarToRGB16Bit(const QByteArray         &sourceBuffer,
   }
   
   const bool fullRange = isFullRange(conversionSettings.colorConversion);
-  const int yOffset = (fullRange ? 0 : 16);
-  const int cZero = 128;
+  const int yOffset = (fullRange ? 0 : 64);  // 10-bit offset: 16 * 4
+  const int cZero = 512;                      // 10-bit zero: 128 * 4
   int RGBConv[5];
   getColorConversionCoefficients(conversionSettings.colorConversion, RGBConv);
   
@@ -2451,8 +2459,8 @@ bool convertYUVPlanarToRGB16Bit(const QByteArray         &sourceBuffer,
       for (unsigned x = 0; x < w; x += 2) {
         // Get chroma values for this 2x2 block
         const int chromaIdx = (y / 2) * (w / 2) + (x / 2);
-        const int U_val = ((int)srcU[chromaIdx] - cZero);
-        const int V_val = ((int)srcV[chromaIdx] - cZero);
+        const int U_val = ((int)srcU[chromaIdx]) - cZero;
+        const int V_val = ((int)srcV[chromaIdx]) - cZero;
         
         const int U_tmp_G = U_val * RGBConv[2];
         const int U_tmp_B = U_val * RGBConv[4];
@@ -2471,10 +2479,12 @@ bool convertYUVPlanarToRGB16Bit(const QByteArray         &sourceBuffer,
             
             const int dstIdx = ((y + dy) * w + (x + dx)) * 4;
             
-            // Scale 8-bit values to 16-bit and clamp
-            dst[dstIdx]     = static_cast<quint16>(std::max(0, std::min(255, B_tmp)) << 8);
-            dst[dstIdx + 1] = static_cast<quint16>(std::max(0, std::min(255, G_tmp)) << 8);
-            dst[dstIdx + 2] = static_cast<quint16>(std::max(0, std::min(255, R_tmp)) << 8);
+            // Scale 10-bit values to 16-bit and clamp (10-bit max: 1023, 16-bit max: 65535)
+            // Use 6-bit left shift to scale from 10-bit to 16-bit (1023 << 6 = 65472)
+            // Note: Format_RGBA64_Premultiplied expects R,G,B,A order (not B,G,R,A like ARGB32)
+            dst[dstIdx]     = static_cast<quint16>(std::max(0, std::min(1023, R_tmp)) << 6);
+            dst[dstIdx + 1] = static_cast<quint16>(std::max(0, std::min(1023, G_tmp)) << 6);
+            dst[dstIdx + 2] = static_cast<quint16>(std::max(0, std::min(1023, B_tmp)) << 6);
             dst[dstIdx + 3] = 65535; // Alpha = 65535 for 16-bit
           }
         }
@@ -2487,8 +2497,8 @@ bool convertYUVPlanarToRGB16Bit(const QByteArray         &sourceBuffer,
         const int idx = y * w + x;
         
         const int Y_tmp = (((int)srcY[idx]) - yOffset) * RGBConv[0];
-        const int U_val = ((int)srcU[idx] - cZero);
-        const int V_val = ((int)srcV[idx] - cZero);
+        const int U_val = ((int)srcU[idx]) - cZero;
+        const int V_val = ((int)srcV[idx]) - cZero;
         
         const int U_tmp_G = U_val * RGBConv[2];
         const int U_tmp_B = U_val * RGBConv[4];
@@ -2501,10 +2511,12 @@ bool convertYUVPlanarToRGB16Bit(const QByteArray         &sourceBuffer,
         
         const int dstIdx = idx * 4;
         
-        // Scale 8-bit values to 16-bit and clamp
-        dst[dstIdx]     = static_cast<quint16>(std::max(0, std::min(255, B_tmp)) << 8);
-        dst[dstIdx + 1] = static_cast<quint16>(std::max(0, std::min(255, G_tmp)) << 8);
-        dst[dstIdx + 2] = static_cast<quint16>(std::max(0, std::min(255, R_tmp)) << 8);
+        // Scale 10-bit values to 16-bit and clamp (10-bit max: 1023, 16-bit max: 65535)
+        // Use 6-bit left shift to scale from 10-bit to 16-bit (1023 << 6 = 65472)
+        // Note: Format_RGBA64_Premultiplied expects R,G,B,A order (not B,G,R,A like ARGB32)
+        dst[dstIdx]     = static_cast<quint16>(std::max(0, std::min(1023, R_tmp)) << 6);
+        dst[dstIdx + 1] = static_cast<quint16>(std::max(0, std::min(1023, G_tmp)) << 6);
+        dst[dstIdx + 2] = static_cast<quint16>(std::max(0, std::min(1023, B_tmp)) << 6);
         dst[dstIdx + 3] = 65535; // Alpha = 65535 for 16-bit
       }
     }
@@ -2534,10 +2546,13 @@ void convertYUVToImage(const QByteArray         &sourceBuffer,
   }
 
   DEBUG_YUV("videoHandlerYUV::convertYUVToImage");
-
+  DEBUG_YUV("enable10BitDisplay: " << enable10BitDisplay);
+  DEBUG_YUV("yuvFormat.getBitsPerSample(): " << yuvFormat.getBitsPerSample());
+  
   // If 10-bit display is enabled and the source is a 10-bit format
   if (enable10BitDisplay && yuvFormat.getBitsPerSample() == 10)
   {
+    DEBUG_YUV("*** USING 16-BIT CONVERSION PATH ***");
     // Allocate a QImage with a 16-bit format
     auto qFrameSize = QSize(int(curFrameSize.width), int(curFrameSize.height));
     outputImage = QImage(qFrameSize, QImage::Format_RGBA64_Premultiplied);
@@ -2834,6 +2849,10 @@ QLayout *videoHandlerYUV::createVideoHandlerControls(bool isSizeAndFormatFixed)
       this->conversionSettings.mathParameters[Component::Chroma].offset);
   ui.chromaInvertCheckBox->setChecked(
       this->conversionSettings.mathParameters[Component::Chroma].invert);
+  
+  // Load 10-bit display setting from QSettings
+  QSettings settings;
+  ui.checkBoxEnable10BitDisplay->setChecked(settings.value("Enable10BitDisplay", false).toBool());
 
   // Connect all the change signals from the controls to "connectWidgetSignals()"
   connect(ui.yuvFormatComboBox,
@@ -2876,6 +2895,10 @@ QLayout *videoHandlerYUV::createVideoHandlerControls(bool isSizeAndFormatFixed)
           &QCheckBox::stateChanged,
           this,
           &videoHandlerYUV::slotYUVControlChanged);
+  connect(ui.checkBoxEnable10BitDisplay,
+          &QCheckBox::stateChanged,
+          this,
+          &videoHandlerYUV::slot10BitDisplayChanged);
 
   if (!isSizeAndFormatFixed && newVBoxLayout)
     newVBoxLayout->addLayout(ui.topVBoxLayout);
@@ -3023,6 +3046,21 @@ void videoHandlerYUV::slotYUVControlChanged()
     this->setCacheInvalid();
     emit signalHandlerChanged(true, RECACHE_CLEAR);
   }
+}
+
+void videoHandlerYUV::slot10BitDisplayChanged()
+{
+  // Save the 10-bit display setting to QSettings
+  QSettings settings;
+  settings.setValue("Enable10BitDisplay", ui.checkBoxEnable10BitDisplay->isChecked());
+  
+  // Set the current frame in the buffer to be invalid and clear the cache.
+  // Emit that this item needs redraw and the cache needs updating.
+  this->currentImageIndex       = -1;
+  this->currentImage_frameIndex = -1;
+  this->currentFrameRawData_frameIndex = -1; // Raw data needs to be reprocessed
+  this->setCacheInvalid();
+  emit signalHandlerChanged(true, RECACHE_CLEAR);
 }
 
 /* Get the pixels values so we can show them in the info part of the zoom box.
