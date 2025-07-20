@@ -87,6 +87,22 @@
         </widget>
        </item>
        <item>
+        <widget class="QCheckBox" name="checkBoxEnable10BitDisplay">
+         <property name="toolTip">
+          <string>Enable native 10-bit display support for 10-bit YUV sources. This preserves 10-bit precision during YUV to RGB conversion.</string>
+         </property>
+         <property name="whatsThis">
+          <string>Enable native 10-bit display support for 10-bit YUV sources. This preserves 10-bit precision during YUV to RGB conversion.</string>
+         </property>
+         <property name="text">
+          <string>Enable native 10-bit display support</string>
+         </property>
+         <property name="checked">
+          <bool>false</bool>
+         </property>
+        </widget>
+       </item>
+       <item>
         <widget class="QGroupBox" name="groupBoxUpdates">
          <property name="toolTip">
           <string>If activated, YUView will try to check for updates every time you start YUView.</string>

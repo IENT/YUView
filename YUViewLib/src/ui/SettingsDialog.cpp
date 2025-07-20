@@ -68,6 +68,7 @@ SettingsDialog::SettingsDialog(QWidget *parent) : QDialog(parent)
   ui.checkBoxSavePositionPerItem->setChecked(
       settings.value("SavePositionAndZoomPerItem", false).toBool());
   ui.checkBoxAutodetectFileType->setChecked(settings.value("AutodetectFileType", true).toBool());
+  ui.checkBoxEnable10BitDisplay->setChecked(settings.value("Enable10BitDisplay", false).toBool());
 
   settings.beginGroup("updates");
   const auto checkForUpdates = settings.value("checkForUpdates", true).toBool();
@@ -433,6 +434,7 @@ void SettingsDialog::on_pushButtonSave_clicked()
                     ui.checkBoxContinuePlaybackNewSelection->isChecked());
   settings.setValue("SavePositionAndZoomPerItem", ui.checkBoxSavePositionPerItem->isChecked());
   settings.setValue("AutodetectFileType", ui.checkBoxAutodetectFileType->isChecked());
+  settings.setValue("Enable10BitDisplay", ui.checkBoxEnable10BitDisplay->isChecked());
 
   settings.beginGroup("updates");
   settings.setValue("checkForUpdates", ui.groupBoxUpdates->isChecked());
