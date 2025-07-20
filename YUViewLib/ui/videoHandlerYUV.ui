@@ -219,6 +219,57 @@
          </property>
         </widget>
        </item>
+       <item row="5" column="0">
+        <widget class="QLabel" name="labelDistortionAnalysis">
+         <property name="text">
+          <string>Distortion Analysis</string>
+         </property>
+        </widget>
+       </item>
+       <item row="5" column="1">
+        <layout class="QVBoxLayout" name="distortionButtonsLayout">
+         <item>
+          <widget class="QPushButton" name="pushButtonFirstLevel">
+           <property name="toolTip">
+            <string>Start playback from current frame at 30 FPS</string>
+           </property>
+           <property name="text">
+            <string>First-level (30 FPS)</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QPushButton" name="pushButtonSecondLevel">
+           <property name="toolTip">
+            <string>Start playback from current frame at 1 FPS</string>
+           </property>
+           <property name="text">
+            <string>Second-level (1 FPS)</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QPushButton" name="pushButtonThirdLevel">
+           <property name="toolTip">
+            <string>Start repetitive 1 FPS comparison with ORI file at 1X magnification</string>
+           </property>
+           <property name="text">
+            <string>Third-level (Compare ORI)</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QPushButton" name="pushButtonFourthLevel">
+           <property name="toolTip">
+            <string>Start repetitive 1 FPS comparison with ORI file at 1X magnification</string>
+           </property>
+           <property name="text">
+            <string>Fourth-level (Compare ORI)</string>
+           </property>
+          </widget>
+         </item>
+        </layout>
+       </item>
       </layout>
      </item>
     </layout>

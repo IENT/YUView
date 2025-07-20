@@ -39,6 +39,10 @@
 #include "ui_videoHandlerYUV.h"
 
 #include <map>
+#include <QTimer>
+#include <QDir>
+#include <QFileInfo>
+#include <QMessageBox>
 
 namespace video::yuv
 {
@@ -232,6 +236,11 @@ private:
 
   static std::vector<PixelFormatYUV> formatPresetList;
 
+  // Distortion analysis members
+  QTimer* distortionTimer;
+  bool isDistortionActive;
+  int currentDistortionLevel;
+
 private slots:
 
   // All the valueChanged() signals from the controls are connected here.
@@ -240,6 +249,20 @@ private slots:
   void slotYUVFormatControlChanged(int idx);
   // The 10-bit display checkbox was changed
   void slot10BitDisplayChanged();
+  
+  // Distortion analysis button slots
+  void slotFirstLevelDistortion();
+  void slotSecondLevelDistortion();
+  void slotThirdLevelDistortion();
+  void slotFourthLevelDistortion();
+
+private:
+  // Helper methods for ORI file detection and validation
+  QString getCurrentFilePath() const;
+  QString findOriFile(const QString& currentFilePath);
+  bool validateOriFile(const QString& oriFilePath, const QString& currentFilePath);
+  bool isCurrentFileOri(const QString& currentFilePath);
+  void showOriNotification(const QString& message);
 };
 
 } // namespace video::yuv

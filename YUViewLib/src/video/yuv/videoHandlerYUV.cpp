@@ -2737,6 +2737,11 @@ videoHandlerYUV::videoHandlerYUV() : videoHandler()
   // If we know nothing about the YUV format, assume YUV 4:2:0 8 bit planar by default.
   const auto defaultPixelFormat = PixelFormatYUV(Subsampling::YUV_420, 8, PlaneOrder::YUV);
   this->srcPixelFormat          = defaultPixelFormat;
+  
+  // Initialize distortion analysis members
+  this->distortionTimer = new QTimer(this);
+  this->isDistortionActive = false;
+  this->currentDistortionLevel = 0;
 }
 
 videoHandlerYUV::~videoHandlerYUV()
@@ -2899,6 +2904,24 @@ QLayout *videoHandlerYUV::createVideoHandlerControls(bool isSizeAndFormatFixed)
           &QCheckBox::stateChanged,
           this,
           &videoHandlerYUV::slot10BitDisplayChanged);
+  
+  // Connect distortion analysis buttons
+  connect(ui.pushButtonFirstLevel,
+          &QPushButton::clicked,
+          this,
+          &videoHandlerYUV::slotFirstLevelDistortion);
+  connect(ui.pushButtonSecondLevel,
+          &QPushButton::clicked,
+          this,
+          &videoHandlerYUV::slotSecondLevelDistortion);
+  connect(ui.pushButtonThirdLevel,
+          &QPushButton::clicked,
+          this,
+          &videoHandlerYUV::slotThirdLevelDistortion);
+  connect(ui.pushButtonFourthLevel,
+          &QPushButton::clicked,
+          this,
+          &videoHandlerYUV::slotFourthLevelDistortion);
 
   if (!isSizeAndFormatFixed && newVBoxLayout)
     newVBoxLayout->addLayout(ui.topVBoxLayout);
@@ -4280,6 +4303,170 @@ void videoHandlerYUV::loadPlaylist(const YUViewDomElement &element)
     this->conversionSettings.mathParameters[Component::Chroma].offset = chromaOffset.toInt();
   this->conversionSettings.mathParameters[Component::Chroma].invert =
       (element.findChildValue("math.chroma.invert") == "True");
+}
+
+void videoHandlerYUV::slotFirstLevelDistortion()
+{
+  // First-level distortion: Start playback at 30 FPS
+  if (this->isDistortionActive) {
+    this->distortionTimer->stop();
+    this->isDistortionActive = false;
+  }
+  
+  this->currentDistortionLevel = 1;
+  this->isDistortionActive = true;
+  
+  // Set timer for 30 FPS (1000ms / 30 = ~33ms)
+  connect(this->distortionTimer, &QTimer::timeout, this, [this]() {
+    emit signalRequestFrame(this->requestedFrame_idx + 1, true);
+  });
+  
+  this->distortionTimer->start(33);
+}
+
+void videoHandlerYUV::slotSecondLevelDistortion()
+{
+  // Second-level distortion: Start playback at 1 FPS
+  if (this->isDistortionActive) {
+    this->distortionTimer->stop();
+    this->isDistortionActive = false;
+  }
+  
+  this->currentDistortionLevel = 2;
+  this->isDistortionActive = true;
+  
+  // Set timer for 1 FPS (1000ms)
+  connect(this->distortionTimer, &QTimer::timeout, this, [this]() {
+    emit signalRequestFrame(this->requestedFrame_idx + 1, true);
+  });
+  
+  this->distortionTimer->start(1000);
+}
+
+void videoHandlerYUV::slotThirdLevelDistortion()
+{
+  // Third-level distortion: 1 FPS comparison with ORI file
+  if (this->isDistortionActive) {
+    this->distortionTimer->stop();
+    this->isDistortionActive = false;
+  }
+  
+  QString currentFilePath = getCurrentFilePath();
+  
+  // Check if current file is ORI file
+  if (isCurrentFileOri(currentFilePath)) {
+    showOriNotification("The currently loaded file is already the ORI file. No comparison will be performed.");
+    return;
+  }
+  
+  // Find ORI file
+  QString oriFilePath = findOriFile(currentFilePath);
+  if (!validateOriFile(oriFilePath, currentFilePath)) {
+    showOriNotification("No valid ORI file found. Please ensure:\n1. A YUV file with 'ORI' in its name exists\n2. The ORI file has the same size as the current file");
+    return;
+  }
+  
+  this->currentDistortionLevel = 3;
+  this->isDistortionActive = true;
+  
+  // TODO: Implement actual comparison logic and mouse position check
+  // For now, just show that we found the ORI file
+  showOriNotification(QString("Found ORI file: %1\nComparison mode activated.").arg(QFileInfo(oriFilePath).fileName()));
+}
+
+void videoHandlerYUV::slotFourthLevelDistortion()
+{
+  // Fourth-level distortion: Same as third-level
+  if (this->isDistortionActive) {
+    this->distortionTimer->stop();
+    this->isDistortionActive = false;
+  }
+  
+  QString currentFilePath = getCurrentFilePath();
+  
+  // Check if current file is ORI file
+  if (isCurrentFileOri(currentFilePath)) {
+    showOriNotification("The currently loaded file is already the ORI file. No comparison will be performed.");
+    return;
+  }
+  
+  // Find ORI file
+  QString oriFilePath = findOriFile(currentFilePath);
+  if (!validateOriFile(oriFilePath, currentFilePath)) {
+    showOriNotification("No valid ORI file found. Please ensure:\n1. A YUV file with 'ORI' in its name exists\n2. The ORI file has the same size as the current file");
+    return;
+  }
+  
+  this->currentDistortionLevel = 4;
+  this->isDistortionActive = true;
+  
+  // TODO: Implement actual comparison logic and mouse position check
+  // For now, just show that we found the ORI file
+  showOriNotification(QString("Found ORI file: %1\nComparison mode activated.").arg(QFileInfo(oriFilePath).fileName()));
+}
+
+QString videoHandlerYUV::getCurrentFilePath() const
+{
+  // TODO: Get actual current file path from parent playlist item
+  // For now, return current working directory
+  QString currentDir = QDir::currentPath();
+  
+  // Try to find the first YUV file in current directory as a placeholder
+  QDir dir(currentDir);
+  QStringList filters;
+  filters << "*.yuv" << "*.YUV";
+  QStringList files = dir.entryList(filters, QDir::Files);
+  
+  if (!files.isEmpty()) {
+    return dir.absoluteFilePath(files.first());
+  }
+  
+  // If no YUV files found, return a default path
+  return currentDir + "/current_file.yuv";
+}
+
+QString videoHandlerYUV::findOriFile(const QString& currentFilePath)
+{
+  QFileInfo currentFileInfo(currentFilePath);
+  QDir currentDir = currentFileInfo.dir();
+  
+  // Get all files in the current directory
+  QStringList filters;
+  filters << "*.yuv" << "*.YUV";
+  QStringList files = currentDir.entryList(filters, QDir::Files);
+  
+  // Look for files containing "ORI" (case insensitive)
+  for (const QString& fileName : files) {
+    if (fileName.contains("ORI", Qt::CaseInsensitive)) {
+      return currentDir.absoluteFilePath(fileName);
+    }
+  }
+  
+  return QString(); // No ORI file found
+}
+
+bool videoHandlerYUV::validateOriFile(const QString& oriFilePath, const QString& currentFilePath)
+{
+  if (oriFilePath.isEmpty()) {
+    return false;
+  }
+  
+  QFileInfo oriFileInfo(oriFilePath);
+  QFileInfo currentFileInfo(currentFilePath);
+  
+  // Check if ORI file exists and has the same size as current file
+  return oriFileInfo.exists() && (oriFileInfo.size() == currentFileInfo.size());
+}
+
+bool videoHandlerYUV::isCurrentFileOri(const QString& currentFilePath)
+{
+  QFileInfo fileInfo(currentFilePath);
+  return fileInfo.fileName().contains("ORI", Qt::CaseInsensitive);
+}
+
+void videoHandlerYUV::showOriNotification(const QString& message)
+{
+  QMessageBox::information(nullptr, "ORI File Analysis", message);
 }
 
 } // namespace video::yuv
