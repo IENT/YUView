@@ -8,7 +8,7 @@ This document outlines the implementation and debugging tasks for two distinct i
 ### **Task 1: Resolve 10-Bit Display Color Banding Artifacts**
 
 **Background:**
-The "enable 10bit native display" feature, when tested on a 10-bit capable HDR monitor with a 10-bit linear grayscale gradient (luma 0-1023), still produces significant color banding. The transition is not smooth, indicating a loss of precision in the rendering pipeline.
+The "enable 10bit native display" feature, when tested on a 10-bit capable HDR monitor with a 10-bit linear grayscale gradient (luma 0-1023) YUV420 or YUV444, still produces significant color banding. The transition is not smooth, indicating a loss of precision in the rendering pipeline.
 
 **Key Observation:**
 However, the banding pattern is different from the 8-bit path, confirming the new YUV-to-RGB conversion is active, but still not able to retain the 10bit precision. The issue likely lies further down the pipeline.
