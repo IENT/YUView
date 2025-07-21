@@ -24,7 +24,7 @@ Your task is to investigate and fix the entire rendering pipeline to ensure true
 
 1.  **Verify `QImage` Data Integrity:**
     * **Action:** Before any rendering call, directly inspect the `QImage` object holding the gradient data.
-    * **Goal:** Programmatically read the pixel values from the `QImage` (`QImage::Format_Grayscale16`) and confirm they represent a full 16-bit range that correctly maps the original 10-bit (0-1023) YUV data. Log these values to ensure no precision was lost during the YUV-to-`QImage` conversion.
+    * **Goal:** Programmatically read the pixel values from the `QImage` (`QImage::Format_RGBA64_Premultiplied`) and confirm they represent a full 16-bit range that correctly maps the original 10-bit (0-1023) YUV data. Log these values to ensure no precision was lost during the YUV-to-`QImage` conversion.
 
 2.  **Analyze and Configure the Qt Rendering Backend:**
     * **Action:** Investigate which rendering backend Qt is currently using (e.g., OpenGL, DirectX, Vulkan).
