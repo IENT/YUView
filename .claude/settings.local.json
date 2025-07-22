@@ -14,7 +14,19 @@
       "Bash(git remote set-url:*)",
       "Bash(git pull:*)",
       "Bash(git commit:*)",
-      "Bash(rm:*)"
+      "Bash(rm:*)",
+      "Bash(git restore:*)",
+      "Bash(cat:*)",
+      "Bash(wc:*)",
+      "Bash(\"C:\\Qt\\6.9.1\\mingw_64\\bin\\qmake.exe\" -o Makefile YUViewLib.pro -spec win32-g++ \"CONFIG+=qtquickcompiler\")",
+      "Bash(PATH=\"/c/Qt/Tools/mingw1310_64/bin:$PATH\")",
+      "Bash(\"C:\\Qt\\6.9.1\\mingw_64\\bin\\qmake.exe\" -o Makefile YUViewLib.pro -spec win32-g++)",
+      "Bash(cmake:*)",
+      "Bash(C:Qt6.9.1mingw_64binqmake.exe -o Makefile D:YUViewYUViewLibYUViewLib.pro -spec win32-g++ \"CONFIG+=qtquickcompiler\")",
+      "Bash(\"C:/Qt/6.9.1/mingw_64/bin/qmake.exe\" -o Makefile \"D:\\YUView\\YUViewLib\\YUViewLib.pro\" -spec win32-g++ \"CONFIG+=qtquickcompiler\")",
+      "Bash(\"C:/Qt/Tools/mingw1310_64/bin/mingw32-make\" -f Makefile)",
+      "Bash(git rm:*)",
+      "Bash(true)"
     ],
     "deny": []
   }

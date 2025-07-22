@@ -33,6 +33,11 @@
 #include "FrameHandler.h"
 
 #include <QPainter>
+#include <QSurfaceFormat>
+#include <QOpenGLContext>
+#include <QScreen>
+#include <QGuiApplication>
+#include <QDebug>
 
 #include <common/FunctionsGui.h>
 #include <decoder/decoderTarga.h>
@@ -50,6 +55,81 @@ namespace video
 #else
 #define DEBUG_FRAME(fmt, ...) ((void)0)
 #endif
+
+// Forward declaration
+void configureHighBitDepthRendering(QPainter *painter);
+
+// Configure high bit-depth rendering for 10-bit display support
+void configureHighBitDepthRendering(QPainter *painter)
+{
+  static bool configurationChecked = false;
+  if (configurationChecked)
+    return;
+    
+  configurationChecked = true;
+  
+  // Check if OpenGL is available
+  QOpenGLContext *context = QOpenGLContext::currentContext();
+  if (context)
+  {
+    QSurfaceFormat format = context->format();
+    qDebug() << "10-bit DEBUG: OpenGL Context found:";
+    qDebug() << "  - Red buffer size:" << format.redBufferSize();
+    qDebug() << "  - Green buffer size:" << format.greenBufferSize(); 
+    qDebug() << "  - Blue buffer size:" << format.blueBufferSize();
+    qDebug() << "  - Alpha buffer size:" << format.alphaBufferSize();
+    qDebug() << "  - Depth buffer size:" << format.depthBufferSize();
+    
+    // Check if we have adequate bit depth for 10-bit rendering
+    if (format.redBufferSize() >= 10 && format.greenBufferSize() >= 10 && format.blueBufferSize() >= 10)
+    {
+      qDebug() << "10-bit DEBUG: OpenGL context has sufficient bit depth for 10-bit rendering";
+    }
+    else
+    {
+      qDebug() << "10-bit DEBUG: WARNING - OpenGL context insufficient for 10-bit rendering";
+      qDebug() << "10-bit DEBUG: Attempting to reconfigure surface format...";
+      
+      // Try to request a higher bit depth format
+      QSurfaceFormat newFormat;
+      newFormat.setRedBufferSize(10);
+      newFormat.setGreenBufferSize(10);
+      newFormat.setBlueBufferSize(10);
+      newFormat.setAlphaBufferSize(2);
+      newFormat.setVersion(3, 3);
+      newFormat.setProfile(QSurfaceFormat::CoreProfile);
+      QSurfaceFormat::setDefaultFormat(newFormat);
+      qDebug() << "10-bit DEBUG: Set default surface format for 10-bit rendering";
+    }
+  }
+  else
+  {
+    qDebug() << "10-bit DEBUG: No OpenGL context found - using software rendering";
+    qDebug() << "10-bit DEBUG: WARNING - Software rendering may not preserve 16-bit precision";
+  }
+  
+  // Check screen capabilities
+  if (QGuiApplication::screens().size() > 0)
+  {
+    QScreen *screen = QGuiApplication::screens().first();
+    qDebug() << "10-bit DEBUG: Primary screen info:";
+    qDebug() << "  - Depth:" << screen->depth() << "bits";
+    qDebug() << "  - Physical DPI:" << screen->physicalDotsPerInch();
+    
+    if (screen->depth() >= 30) // 10 bits per channel = 30 bits total
+    {
+      qDebug() << "10-bit DEBUG: Screen supports high bit depth display";
+    }
+    else
+    {
+      qDebug() << "10-bit DEBUG: WARNING - Screen may not support 10-bit display";
+    }
+  }
+  
+  // Configure painter for high quality rendering
+  painter->setRenderHint(QPainter::SmoothPixmapTransform, true);
+  painter->setRenderHint(QPainter::Antialiasing, true);
+}
 
 class FrameHandler::frameSizePresetList
 {
@@ -268,6 +348,23 @@ void FrameHandler::drawFrame(QPainter *painter, double zoomFactor, bool drawRawV
   QRect videoRect;
   videoRect.setSize(QSize(frameSize.width * zoomFactor, frameSize.height * zoomFactor));
   videoRect.moveCenter(QPoint(0, 0));
+
+  // DEBUG: Verify 16-bit QImage data integrity before rendering
+  if (this->currentImage.format() == QImage::Format_RGBA64_Premultiplied)
+  {
+    // Sample a few pixels to verify 16-bit precision is preserved
+    for (int testY = 0; testY < std::min(5, this->currentImage.height()); testY += 2)
+    {
+      for (int testX = 0; testX < std::min(10, this->currentImage.width()); testX += 4)
+      {
+        QRgba64 pixel = this->currentImage.pixelColor(testX, testY).rgba64();
+        qDebug() << "10-bit DEBUG: Pixel(" << testX << "," << testY << ") R=" << pixel.red() << "G=" << pixel.green() << "B=" << pixel.blue();
+      }
+    }
+    
+    // Check and configure high bit-depth rendering backend
+    configureHighBitDepthRendering(painter);
+  }
 
   // Draw the current image (currentFrame)
   painter->drawImage(videoRect, this->currentImage);

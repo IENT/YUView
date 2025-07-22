@@ -37,15 +37,13 @@
 #include <video/yuv/PixelFormatYUV.h>
 
 #include "ui_videoHandlerYUV.h"
+#include <ui/PlaybackController.h>
 
 #include <map>
 #include <QTimer>
 #include <QDir>
 #include <QFileInfo>
 #include <QMessageBox>
-
-// Forward declaration
-class PlaybackController;
 
 namespace video::yuv
 {

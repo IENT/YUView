@@ -5,15 +5,17 @@
 #include <cmath>   // For round
 
 // --- 檔案參數 ---
-const int WIDTH = 640;
-const int HEIGHT = 480;
-const int FRAME_COUNT = 20;
-const char* FILENAME = "gradient_480p_10bit_20f.yuv";
+const int WIDTH = 1280;
+const int HEIGHT = 720;
+const int FRAME_COUNT = 10;
+const char* FILENAME = "gradient_720p_10bit_10f_yuv444.yuv";
 
-// YUV420 格式的平面大小計算
+// YUV444 格式的平面大小計算
 // 每個樣本使用 16 位元 (2 bytes) 來儲存 10-bit 數值
+// YUV444: U和V平面與Y平面相同大小（無子採樣）
 const int Y_PLANE_SIZE = WIDTH * HEIGHT;
-const int UV_PLANE_SIZE = (WIDTH / 2) * (HEIGHT / 2); // 寬度和高度都是 Y 平面的一半
+const int U_PLANE_SIZE = WIDTH * HEIGHT;  // YUV444: U平面與Y平面相同大小
+const int V_PLANE_SIZE = WIDTH * HEIGHT;  // YUV444: V平面與Y平面相同大小
 
 int main() {
     // 建立並以二進位模式開啟檔案
@@ -25,19 +27,19 @@ int main() {
     }
 
     std::cout << "Generating file: " << FILENAME << std::endl;
-    std::cout << "Resolution: " << WIDTH << "x" << HEIGHT << std::endl;
-    std::cout << "Format: YUV420 Planar 10-bit" << std::endl;
+    std::cout << "Resolution: " << WIDTH << "x" << HEIGHT << " (720p)" << std::endl;
+    std::cout << "Format: YUV444 Planar 10-bit" << std::endl;
     std::cout << "Frames: " << FRAME_COUNT << std::endl;
 
     // 建立 Y, U, V 平面的緩衝區
     // 使用 uint16_t 來儲存 10-bit 的資料
     std::vector<uint16_t> y_plane(Y_PLANE_SIZE);
-    std::vector<uint16_t> u_plane(UV_PLANE_SIZE);
-    std::vector<uint16_t> v_plane(UV_PLANE_SIZE);
+    std::vector<uint16_t> u_plane(U_PLANE_SIZE);
+    std::vector<uint16_t> v_plane(V_PLANE_SIZE);
 
     // --- 填充 U 和 V 平面 ---
     // 對於灰階影像，U 和 V 的值應為 10-bit 範圍的中點 (1024 / 2 = 512)
-    // 只需要設定一次，因為每一幀的色度都相同
+    // YUV444格式：U和V平面與Y平面相同大小，每個像素都有對應的U和V值
     const uint16_t neutral_chroma = 512;
     std::fill(u_plane.begin(), u_plane.end(), neutral_chroma);
     std::fill(v_plane.begin(), v_plane.end(), neutral_chroma);
@@ -72,8 +74,8 @@ int main() {
     std::cout << "Successfully generated YUV file." << std::endl;
     
     // 計算並印出檔案大小
-    long long expected_size = static_cast<long long>(Y_PLANE_SIZE + UV_PLANE_SIZE + UV_PLANE_SIZE) * sizeof(uint16_t) * FRAME_COUNT;
-    std::cout << "Expected file size: " << expected_size / 1024 << " KB" << std::endl;
+    long long expected_size = static_cast<long long>(Y_PLANE_SIZE + U_PLANE_SIZE + V_PLANE_SIZE) * sizeof(uint16_t) * FRAME_COUNT;
+    std::cout << "Expected file size: " << expected_size / 1024 / 1024 << " MB" << std::endl;
 
     return 0;
 }
