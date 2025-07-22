@@ -44,6 +44,9 @@
 #include <QFileInfo>
 #include <QMessageBox>
 
+// Forward declaration
+class PlaybackController;
+
 namespace video::yuv
 {
 
@@ -195,6 +198,9 @@ public:
   virtual void savePlaylist(YUViewDomElement &root) const override;
   virtual void loadPlaylist(const YUViewDomElement &root) override;
 
+signals:
+  // TODO: Add working signals for zoom and playback control when proper implementation is found
+
 protected:
   ConversionSettings conversionSettings{};
 
@@ -240,6 +246,12 @@ private:
   QTimer* distortionTimer;
   bool isDistortionActive;
   int currentDistortionLevel;
+  QString oriFilePath;
+  bool isShowingOriFile;
+  int playbackFrameIndex; // Track current frame for distortion playback
+  
+  // UI state management for active button tracking
+  QPushButton* activeDistortionButton;
 
 private slots:
 
@@ -255,14 +267,23 @@ private slots:
   void slotSecondLevelDistortion();
   void slotThirdLevelDistortion();
   void slotFourthLevelDistortion();
+  
+  // Distortion analysis helper functions
+  QString getCurrentFilePath() const;
+  bool isCurrentFileOri(const QString &filePath) const;
+  QString findOriFile(const QString &currentFilePath) const;
+  bool validateOriFile(const QString &oriFilePath, const QString &currentFilePath) const;
+  void setViewZoom(double zoomFactor);
+  void startDistortionPlayback(double fps);
+  void startManualFrameAdvancement(double fps);
+  bool isMouseHoveringOverOriElement() const;
+  void toggleOriComparison();
+  void showOriNotification(const QString &message) const;
+  void setButtonActiveState(QPushButton* button, bool active);
+  void resetAllDistortionButtons();
+  void setPlaybackControllerRepeatMode(PlaybackController* controller, PlaybackController::RepeatMode targetMode);
 
 private:
-  // Helper methods for ORI file detection and validation
-  QString getCurrentFilePath() const;
-  QString findOriFile(const QString& currentFilePath);
-  bool validateOriFile(const QString& oriFilePath, const QString& currentFilePath);
-  bool isCurrentFileOri(const QString& currentFilePath);
-  void showOriNotification(const QString& message);
 };
 
 } // namespace video::yuv

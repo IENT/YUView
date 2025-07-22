@@ -40,9 +40,19 @@
 #include <type_traits>
 #include <vector>
 
+#include <QApplication>
 #include <QDir>
+#include <QFileInfo>
+#include <QMainWindow>
+#include <QMessageBox>
+#include <QMetaObject>
 #include <QPainter>
+#include <QPushButton>
 #include <QSettings>
+#include <QSpinBox>
+#include <QTreeWidget>
+
+#include <ui/PlaybackController.h>
 
 #include <common/Formatting.h>
 #include <common/Functions.h>
@@ -2742,6 +2752,9 @@ videoHandlerYUV::videoHandlerYUV() : videoHandler()
   this->distortionTimer = new QTimer(this);
   this->isDistortionActive = false;
   this->currentDistortionLevel = 0;
+  this->isShowingOriFile = false;
+  this->playbackFrameIndex = 0;
+  this->activeDistortionButton = nullptr;
 }
 
 videoHandlerYUV::~videoHandlerYUV()
@@ -2885,7 +2898,7 @@ QLayout *videoHandlerYUV::createVideoHandlerControls(bool isSizeAndFormatFixed)
           this,
           &videoHandlerYUV::slotYUVControlChanged);
   connect(ui.lumaInvertCheckBox,
-          &QCheckBox::stateChanged,
+          &QCheckBox::checkStateChanged,
           this,
           &videoHandlerYUV::slotYUVControlChanged);
   connect(ui.chromaScaleSpinBox,
@@ -2897,11 +2910,11 @@ QLayout *videoHandlerYUV::createVideoHandlerControls(bool isSizeAndFormatFixed)
           this,
           &videoHandlerYUV::slotYUVControlChanged);
   connect(ui.chromaInvertCheckBox,
-          &QCheckBox::stateChanged,
+          &QCheckBox::checkStateChanged,
           this,
           &videoHandlerYUV::slotYUVControlChanged);
   connect(ui.checkBoxEnable10BitDisplay,
-          &QCheckBox::stateChanged,
+          &QCheckBox::checkStateChanged,
           this,
           &videoHandlerYUV::slot10BitDisplayChanged);
   
@@ -4307,40 +4320,138 @@ void videoHandlerYUV::loadPlaylist(const YUViewDomElement &element)
 
 void videoHandlerYUV::slotFirstLevelDistortion()
 {
-  // First-level distortion: Start playback at 30 FPS
-  if (this->isDistortionActive) {
-    this->distortionTimer->stop();
-    this->isDistortionActive = false;
+  QPushButton* clickedButton = ui.pushButtonFirstLevel;
+  
+  // Check if this button is currently active
+  if (this->activeDistortionButton == clickedButton) {
+    // Second click on active button - pause and reset
+    if (this->isDistortionActive) {
+      this->distortionTimer->stop();
+      this->distortionTimer->disconnect();
+      this->isDistortionActive = false;
+    }
+    
+    // Find PlaybackController and pause playback
+    QMainWindow* mainWindow = qobject_cast<QMainWindow*>(QApplication::activeWindow());
+    if (mainWindow) {
+      auto playbackController = mainWindow->findChild<PlaybackController*>();
+      if (playbackController) {
+        playbackController->pausePlayback();
+        // Reset repeat mode to off
+        setPlaybackControllerRepeatMode(playbackController, PlaybackController::RepeatMode::Off);
+      }
+    }
+    
+    // Reset button appearance
+    resetAllDistortionButtons();
+    qDebug() << "First-level distortion: Paused and reset";
+    return;
   }
   
+  // First click or click on different button - activate this button
+  
+  // Stop any existing distortion activity and reset other buttons
+  if (this->isDistortionActive) {
+    this->distortionTimer->stop();
+    this->distortionTimer->disconnect();
+    this->isDistortionActive = false;
+  }
+  resetAllDistortionButtons();
+  
+  // Set this button as active
+  this->activeDistortionButton = clickedButton;
+  setButtonActiveState(clickedButton, true);
+  
+  // Initialize distortion state
   this->currentDistortionLevel = 1;
   this->isDistortionActive = true;
+  this->playbackFrameIndex = this->currentImage_frameIndex;
   
-  // Set timer for 30 FPS (1000ms / 30 = ~33ms)
-  connect(this->distortionTimer, &QTimer::timeout, this, [this]() {
-    emit signalRequestFrame(this->requestedFrame_idx + 1, true);
-  });
+  // Set view to 1x zoom
+  setViewZoom(1.0);
   
-  this->distortionTimer->start(33);
+  // Find PlaybackController and enable loop mode
+  QMainWindow* mainWindow = qobject_cast<QMainWindow*>(QApplication::activeWindow());
+  if (mainWindow) {
+    auto playbackController = mainWindow->findChild<PlaybackController*>();
+    if (playbackController) {
+      // Enable loop mode for continuous playback
+      setPlaybackControllerRepeatMode(playbackController, PlaybackController::RepeatMode::One);
+    }
+  }
+  
+  // Start playback at 30 FPS
+  startDistortionPlayback(30.0);
+  
+  qDebug() << "First-level distortion: Started 30 FPS playback with loop from frame" << this->playbackFrameIndex;
 }
 
 void videoHandlerYUV::slotSecondLevelDistortion()
 {
-  // Second-level distortion: Start playback at 1 FPS
-  if (this->isDistortionActive) {
-    this->distortionTimer->stop();
-    this->isDistortionActive = false;
+  QPushButton* clickedButton = ui.pushButtonSecondLevel;
+  
+  // Check if this button is currently active
+  if (this->activeDistortionButton == clickedButton) {
+    // Second click on active button - pause and reset
+    if (this->isDistortionActive) {
+      this->distortionTimer->stop();
+      this->distortionTimer->disconnect();
+      this->isDistortionActive = false;
+    }
+    
+    // Find PlaybackController and pause playback
+    QMainWindow* mainWindow = qobject_cast<QMainWindow*>(QApplication::activeWindow());
+    if (mainWindow) {
+      auto playbackController = mainWindow->findChild<PlaybackController*>();
+      if (playbackController) {
+        playbackController->pausePlayback();
+        // Reset repeat mode to off
+        setPlaybackControllerRepeatMode(playbackController, PlaybackController::RepeatMode::Off);
+      }
+    }
+    
+    // Reset button appearance
+    resetAllDistortionButtons();
+    qDebug() << "Second-level distortion: Paused and reset";
+    return;
   }
   
+  // First click or click on different button - activate this button
+  
+  // Stop any existing distortion activity and reset other buttons
+  if (this->isDistortionActive) {
+    this->distortionTimer->stop();
+    this->distortionTimer->disconnect();
+    this->isDistortionActive = false;
+  }
+  resetAllDistortionButtons();
+  
+  // Set this button as active
+  this->activeDistortionButton = clickedButton;
+  setButtonActiveState(clickedButton, true);
+  
+  // Initialize distortion state
   this->currentDistortionLevel = 2;
   this->isDistortionActive = true;
+  this->playbackFrameIndex = this->currentImage_frameIndex;
   
-  // Set timer for 1 FPS (1000ms)
-  connect(this->distortionTimer, &QTimer::timeout, this, [this]() {
-    emit signalRequestFrame(this->requestedFrame_idx + 1, true);
-  });
+  // Set view to 1x zoom
+  setViewZoom(1.0);
   
-  this->distortionTimer->start(1000);
+  // Find PlaybackController and enable loop mode
+  QMainWindow* mainWindow = qobject_cast<QMainWindow*>(QApplication::activeWindow());
+  if (mainWindow) {
+    auto playbackController = mainWindow->findChild<PlaybackController*>();
+    if (playbackController) {
+      // Enable loop mode for continuous playback
+      setPlaybackControllerRepeatMode(playbackController, PlaybackController::RepeatMode::One);
+    }
+  }
+  
+  // Start playback at 1 FPS
+  startDistortionPlayback(1.0);
+  
+  qDebug() << "Second-level distortion: Started 1 FPS playback with loop from frame" << this->playbackFrameIndex;
 }
 
 void videoHandlerYUV::slotThirdLevelDistortion()
@@ -4368,15 +4479,29 @@ void videoHandlerYUV::slotThirdLevelDistortion()
   
   this->currentDistortionLevel = 3;
   this->isDistortionActive = true;
+  this->oriFilePath = oriFilePath;
   
-  // TODO: Implement actual comparison logic and mouse position check
-  // For now, just show that we found the ORI file
-  showOriNotification(QString("Found ORI file: %1\nComparison mode activated.").arg(QFileInfo(oriFilePath).fileName()));
+  // Set view to 1x zoom using QApplication to find the main window
+  setViewZoom(1.0);
+  
+  // Set timer for 1 FPS comparison
+  connect(this->distortionTimer, &QTimer::timeout, this, [this]() {
+    // Check mouse position - abort if hovering over ORI file UI element
+    if (isMouseHoveringOverOriElement()) {
+      return; // Skip this frame update
+    }
+    
+    // Toggle between current file and ORI file for comparison
+    toggleOriComparison();
+  });
+  
+  this->distortionTimer->start(1000);
+  showOriNotification(QString("Third-level distortion activated.\nComparing with ORI file: %1").arg(QFileInfo(oriFilePath).fileName()));
 }
 
 void videoHandlerYUV::slotFourthLevelDistortion()
 {
-  // Fourth-level distortion: Same as third-level
+  // Fourth-level distortion: Same as third-level but with 2x zoom
   if (this->isDistortionActive) {
     this->distortionTimer->stop();
     this->isDistortionActive = false;
@@ -4399,33 +4524,82 @@ void videoHandlerYUV::slotFourthLevelDistortion()
   
   this->currentDistortionLevel = 4;
   this->isDistortionActive = true;
+  this->oriFilePath = oriFilePath;
   
-  // TODO: Implement actual comparison logic and mouse position check
-  // For now, just show that we found the ORI file
-  showOriNotification(QString("Found ORI file: %1\nComparison mode activated.").arg(QFileInfo(oriFilePath).fileName()));
+  // Set view to 2x zoom using QApplication to find the main window
+  setViewZoom(2.0);
+  
+  // Set timer for 1 FPS comparison
+  connect(this->distortionTimer, &QTimer::timeout, this, [this]() {
+    // Check mouse position - abort if hovering over ORI file UI element
+    if (isMouseHoveringOverOriElement()) {
+      return; // Skip this frame update
+    }
+    
+    // Toggle between current file and ORI file for comparison
+    toggleOriComparison();
+  });
+  
+  this->distortionTimer->start(1000);
+  showOriNotification(QString("Fourth-level distortion activated (2x zoom).\nComparing with ORI file: %1").arg(QFileInfo(oriFilePath).fileName()));
 }
 
 QString videoHandlerYUV::getCurrentFilePath() const
 {
-  // TODO: Get actual current file path from parent playlist item
-  // For now, return current working directory
-  QString currentDir = QDir::currentPath();
-  
-  // Try to find the first YUV file in current directory as a placeholder
-  QDir dir(currentDir);
-  QStringList filters;
-  filters << "*.yuv" << "*.YUV";
-  QStringList files = dir.entryList(filters, QDir::Files);
-  
-  if (!files.isEmpty()) {
-    return dir.absoluteFilePath(files.first());
+  // Get the current file path from the playlist tree widget
+  QWidget* mainWindow = QApplication::activeWindow();
+  if (!mainWindow) {
+    qDebug() << "Could not find main window to get current file path";
+    return QString();
   }
   
-  // If no YUV files found, return a default path
-  return currentDir + "/current_file.yuv";
+  // Find the PlaylistTreeWidget to get the currently selected item
+  QWidget* playlistWidget = mainWindow->findChild<QWidget*>("playlistTreeWidget");
+  if (!playlistWidget) {
+    qDebug() << "Could not find playlistTreeWidget to get current file path";
+    return QString();
+  }
+  
+  // Use QMetaObject to call getSelectedItems() method
+  QVariant result;
+  bool success = QMetaObject::invokeMethod(playlistWidget, "getSelectedItems", 
+                                          Qt::DirectConnection, 
+                                          Q_RETURN_ARG(QVariant, result));
+  
+  if (!success) {
+    qDebug() << "Could not invoke getSelectedItems method";
+    return QString();
+  }
+  
+  // The result should be std::array<playlistItem*, 2>, we want the first item
+  // For now, fall back to getting the name/text from the widget directly
+  QTreeWidget* treeWidget = qobject_cast<QTreeWidget*>(playlistWidget);
+  if (treeWidget) {
+    QTreeWidgetItem* currentItem = treeWidget->currentItem();
+    if (currentItem) {
+      QString itemName = currentItem->text(0);
+      qDebug() << "Current playlist item name:" << itemName;
+      
+      // Check if this looks like a file path
+      QFileInfo fileInfo(itemName);
+      if (fileInfo.exists()) {
+        return fileInfo.absoluteFilePath();
+      }
+      
+      // If not an absolute path, try to find it in common locations
+      QDir currentDir = QDir::current();
+      QString fullPath = currentDir.absoluteFilePath(itemName);
+      if (QFileInfo::exists(fullPath)) {
+        return fullPath;
+      }
+    }
+  }
+  
+  qDebug() << "Could not determine current file path, using fallback";
+  return QString();
 }
 
-QString videoHandlerYUV::findOriFile(const QString& currentFilePath)
+QString videoHandlerYUV::findOriFile(const QString& currentFilePath) const
 {
   QFileInfo currentFileInfo(currentFilePath);
   QDir currentDir = currentFileInfo.dir();
@@ -4445,7 +4619,7 @@ QString videoHandlerYUV::findOriFile(const QString& currentFilePath)
   return QString(); // No ORI file found
 }
 
-bool videoHandlerYUV::validateOriFile(const QString& oriFilePath, const QString& currentFilePath)
+bool videoHandlerYUV::validateOriFile(const QString& oriFilePath, const QString& currentFilePath) const
 {
   if (oriFilePath.isEmpty()) {
     return false;
@@ -4458,15 +4632,175 @@ bool videoHandlerYUV::validateOriFile(const QString& oriFilePath, const QString&
   return oriFileInfo.exists() && (oriFileInfo.size() == currentFileInfo.size());
 }
 
-bool videoHandlerYUV::isCurrentFileOri(const QString& currentFilePath)
+bool videoHandlerYUV::isCurrentFileOri(const QString& currentFilePath) const
 {
   QFileInfo fileInfo(currentFilePath);
   return fileInfo.fileName().contains("ORI", Qt::CaseInsensitive);
 }
 
-void videoHandlerYUV::showOriNotification(const QString& message)
+void videoHandlerYUV::showOriNotification(const QString& message) const
 {
   QMessageBox::information(nullptr, "ORI File Analysis", message);
+}
+
+bool videoHandlerYUV::isMouseHoveringOverOriElement() const
+{
+  // TODO: Implement mouse position detection over ORI file UI element
+  // For now, return false to allow comparison to proceed
+  return false;
+}
+
+void videoHandlerYUV::toggleOriComparison()
+{
+  if (this->oriFilePath.isEmpty()) {
+    return;
+  }
+  
+  // Toggle between showing current file and ORI file
+  this->isShowingOriFile = !this->isShowingOriFile;
+  
+  if (this->isShowingOriFile) {
+    // Load and show ORI file frame at current frame index
+    // TODO: Implement loading of ORI file data
+    qDebug() << "Switching to ORI file:" << this->oriFilePath;
+    // emit signalLoadOriFrame(this->requestedFrame_idx);
+  } else {
+    // Show original file frame
+    qDebug() << "Switching back to original file";
+    emit signalRequestFrame(this->requestedFrame_idx, true);
+  }
+}
+
+void videoHandlerYUV::setViewZoom(double zoomFactor)
+{
+  // Find the main window and its split view widgets to set zoom
+  QWidget* mainWindow = QApplication::activeWindow();
+  if (!mainWindow) {
+    qDebug() << "Could not find main window for zoom control";
+    return;
+  }
+  
+  // Find splitViewWidget - this is typically named "primarySplitViewWidget"
+  QWidget* splitView = mainWindow->findChild<QWidget*>("primarySplitViewWidget");
+  if (!splitView) {
+    // Try alternative names
+    splitView = mainWindow->findChild<QWidget*>("splitViewWidget");
+  }
+  
+  if (splitView) {
+    // Call the appropriate zoom method based on the zoom factor
+    if (zoomFactor == 1.0) {
+      // Call zoomTo100 method if available
+      QMetaObject::invokeMethod(splitView, "zoomTo100", Qt::QueuedConnection, Q_ARG(bool, true));
+      qDebug() << "Set zoom to 100% (1x) via splitView";
+    } else if (zoomFactor == 2.0) {
+      // Call zoomTo200 method if available  
+      QMetaObject::invokeMethod(splitView, "zoomTo200", Qt::QueuedConnection, Q_ARG(bool, true));
+      qDebug() << "Set zoom to 200% (2x) via splitView";
+    } else {
+      // For other zoom factors, try a generic zoom method
+      QMetaObject::invokeMethod(splitView, "zoomToCustom", Qt::QueuedConnection, Q_ARG(bool, true));
+      qDebug() << "Set custom zoom factor:" << zoomFactor;
+    }
+  } else {
+    qDebug() << "Could not find splitViewWidget for zoom control";
+  }
+}
+
+void videoHandlerYUV::startDistortionPlayback(double fps)
+{
+  // For distortion analysis, we need precise timing control
+  // The best approach is to use manual frame advancement with proper timing
+  // since modifying the playlist item's frame rate is complex and can affect
+  // the overall playback experience for the user
+  
+  qDebug() << "Starting distortion playback at" << fps << "FPS using manual frame advancement";
+  startManualFrameAdvancement(fps);
+}
+
+void videoHandlerYUV::startManualFrameAdvancement(double fps)
+{
+  // Calculate timer interval for the specified FPS
+  int intervalMs = static_cast<int>(1000.0 / fps);
+  
+  // Find the PlaybackController to properly advance frames
+  QMainWindow* mainWindow = qobject_cast<QMainWindow*>(QApplication::activeWindow());
+  PlaybackController* playbackController = nullptr;
+  
+  if (mainWindow) {
+    playbackController = mainWindow->findChild<PlaybackController*>();
+  }
+  
+  // Start automatic frame advancement using the distortion timer
+  connect(this->distortionTimer, &QTimer::timeout, this, [this, playbackController]() {
+    if (playbackController) {
+      // Use PlaybackController to advance to next frame properly
+      playbackController->nextFrame();
+      qDebug() << "Advanced to next frame using PlaybackController";
+    } else {
+      // Fallback to manual advancement if PlaybackController not found
+      this->playbackFrameIndex++;
+      qDebug() << "Manual frame advancement to frame:" << this->playbackFrameIndex;
+      
+      // Request the frame through the proper signal mechanism
+      emit signalRequestFrame(this->playbackFrameIndex, false);
+      
+      // Force a screen update
+      emit signalHandlerChanged(true, RECACHE_NONE);
+    }
+  });
+  
+  this->distortionTimer->start(intervalMs);
+  qDebug() << "Started manual frame advancement at" << fps << "FPS (" << intervalMs << "ms interval)";
+}
+
+void videoHandlerYUV::setButtonActiveState(QPushButton* button, bool active)
+{
+  if (!button) return;
+  
+  if (active) {
+    // Set active appearance (light green background, bold font)
+    button->setStyleSheet("QPushButton { background-color: #90EE90; font-weight: bold; }");
+  } else {
+    // Reset to default appearance
+    button->setStyleSheet("");
+  }
+}
+
+void videoHandlerYUV::resetAllDistortionButtons()
+{
+  if (ui.pushButtonFirstLevel)
+    setButtonActiveState(ui.pushButtonFirstLevel, false);
+  if (ui.pushButtonSecondLevel)
+    setButtonActiveState(ui.pushButtonSecondLevel, false);
+  
+  this->activeDistortionButton = nullptr;
+}
+
+void videoHandlerYUV::setPlaybackControllerRepeatMode(PlaybackController* controller, PlaybackController::RepeatMode targetMode)
+{
+  if (!controller) return;
+  
+  // Since we can't access the private repeatMode member, we need to assume the current state.
+  // The RepeatMode cycles: Off -> One -> All -> Off
+  // Default mode is Off, so we click the button once to get to RepeatMode::One
+  // For RepeatMode::Off, we click 3 times (Off->One->All->Off)
+  
+  if (targetMode == PlaybackController::RepeatMode::One) {
+    // From default Off state, click once to get to One
+    controller->on_repeatModeButton_clicked();
+  } else if (targetMode == PlaybackController::RepeatMode::All) {
+    // From default Off state, click twice to get to All
+    controller->on_repeatModeButton_clicked(); // Off -> One
+    controller->on_repeatModeButton_clicked(); // One -> All
+  } else if (targetMode == PlaybackController::RepeatMode::Off) {
+    // Already at Off by default, but if we've changed it before, 
+    // we need to cycle back. Since we don't know current state,
+    // click 3 times to ensure we're back at Off regardless of current state
+    controller->on_repeatModeButton_clicked(); // Current -> Next
+    controller->on_repeatModeButton_clicked(); // Next -> Next+1
+    controller->on_repeatModeButton_clicked(); // Next+1 -> Back to current (full cycle)
+  }
 }
 
 } // namespace video::yuv
