@@ -2754,6 +2754,7 @@ videoHandlerYUV::videoHandlerYUV() : videoHandler()
   this->currentDistortionLevel = 0;
   this->isShowingOriFile = false;
   this->playbackFrameIndex = 0;
+  this->revertFrameNumber = -1;
   this->activeDistortionButton = nullptr;
 }
 
@@ -2927,14 +2928,16 @@ QLayout *videoHandlerYUV::createVideoHandlerControls(bool isSizeAndFormatFixed)
           &QPushButton::clicked,
           this,
           &videoHandlerYUV::slotSecondLevelDistortion);
-  connect(ui.pushButtonThirdLevel,
+  
+  // Connect revert buttons
+  connect(ui.revertButton_L1,
           &QPushButton::clicked,
           this,
-          &videoHandlerYUV::slotThirdLevelDistortion);
-  connect(ui.pushButtonFourthLevel,
+          &videoHandlerYUV::on_revertButton_L1_clicked);
+  connect(ui.revertButton_L2,
           &QPushButton::clicked,
           this,
-          &videoHandlerYUV::slotFourthLevelDistortion);
+          &videoHandlerYUV::on_revertButton_L2_clicked);
 
   if (!isSizeAndFormatFixed && newVBoxLayout)
     newVBoxLayout->addLayout(ui.topVBoxLayout);
@@ -4370,11 +4373,13 @@ void videoHandlerYUV::slotFirstLevelDistortion()
   // Set view to 1x zoom
   setViewZoom(1.0);
   
-  // Find PlaybackController and enable loop mode
+  // Find PlaybackController and capture current frame as revert point, then enable loop mode
   QMainWindow* mainWindow = qobject_cast<QMainWindow*>(QApplication::activeWindow());
   if (mainWindow) {
     auto playbackController = mainWindow->findChild<PlaybackController*>();
     if (playbackController) {
+      // Capture current frame as revert point before starting playback
+      this->revertFrameNumber = playbackController->getCurrentFrame();
       // Enable loop mode for continuous playback
       setPlaybackControllerRepeatMode(playbackController, PlaybackController::RepeatMode::One);
     }
@@ -4383,7 +4388,7 @@ void videoHandlerYUV::slotFirstLevelDistortion()
   // Start playback at 30 FPS
   startDistortionPlayback(30.0);
   
-  qDebug() << "First-level distortion: Started 30 FPS playback with loop from frame" << this->playbackFrameIndex;
+  qDebug() << "First-level distortion: Started 30 FPS playback with loop from frame" << this->playbackFrameIndex << ", revert point:" << this->revertFrameNumber;
 }
 
 void videoHandlerYUV::slotSecondLevelDistortion()
@@ -4438,11 +4443,13 @@ void videoHandlerYUV::slotSecondLevelDistortion()
   // Set view to 1x zoom
   setViewZoom(1.0);
   
-  // Find PlaybackController and enable loop mode
+  // Find PlaybackController and capture current frame as revert point, then enable loop mode
   QMainWindow* mainWindow = qobject_cast<QMainWindow*>(QApplication::activeWindow());
   if (mainWindow) {
     auto playbackController = mainWindow->findChild<PlaybackController*>();
     if (playbackController) {
+      // Capture current frame as revert point before starting playback
+      this->revertFrameNumber = playbackController->getCurrentFrame();
       // Enable loop mode for continuous playback
       setPlaybackControllerRepeatMode(playbackController, PlaybackController::RepeatMode::One);
     }
@@ -4451,97 +4458,75 @@ void videoHandlerYUV::slotSecondLevelDistortion()
   // Start playback at 1 FPS
   startDistortionPlayback(1.0);
   
-  qDebug() << "Second-level distortion: Started 1 FPS playback with loop from frame" << this->playbackFrameIndex;
+  qDebug() << "Second-level distortion: Started 1 FPS playback with loop from frame" << this->playbackFrameIndex << ", revert point:" << this->revertFrameNumber;
 }
 
-void videoHandlerYUV::slotThirdLevelDistortion()
+void videoHandlerYUV::on_revertButton_L1_clicked()
 {
-  // Third-level distortion: 1 FPS comparison with ORI file
+  // Revert to the frame where First-level analysis started
+  if (this->revertFrameNumber < 0) {
+    qDebug() << "No revert point set for First-level analysis";
+    return;
+  }
+  
+  // Stop any active distortion analysis
   if (this->isDistortionActive) {
     this->distortionTimer->stop();
+    this->distortionTimer->disconnect();
     this->isDistortionActive = false;
   }
   
-  QString currentFilePath = getCurrentFilePath();
-  
-  // Check if current file is ORI file
-  if (isCurrentFileOri(currentFilePath)) {
-    showOriNotification("The currently loaded file is already the ORI file. No comparison will be performed.");
-    return;
-  }
-  
-  // Find ORI file
-  QString oriFilePath = findOriFile(currentFilePath);
-  if (!validateOriFile(oriFilePath, currentFilePath)) {
-    showOriNotification("No valid ORI file found. Please ensure:\n1. A YUV file with 'ORI' in its name exists\n2. The ORI file has the same size as the current file");
-    return;
-  }
-  
-  this->currentDistortionLevel = 3;
-  this->isDistortionActive = true;
-  this->oriFilePath = oriFilePath;
-  
-  // Set view to 1x zoom using QApplication to find the main window
-  setViewZoom(1.0);
-  
-  // Set timer for 1 FPS comparison
-  connect(this->distortionTimer, &QTimer::timeout, this, [this]() {
-    // Check mouse position - abort if hovering over ORI file UI element
-    if (isMouseHoveringOverOriElement()) {
-      return; // Skip this frame update
+  QMainWindow* mainWindow = qobject_cast<QMainWindow*>(QApplication::activeWindow());
+  if (mainWindow) {
+    auto playbackController = mainWindow->findChild<PlaybackController*>();
+    if (playbackController) {
+      // Pause playback first
+      playbackController->pausePlayback();
+      // Reset repeat mode to off
+      setPlaybackControllerRepeatMode(playbackController, PlaybackController::RepeatMode::Off);
+      // Seek back to the revert point
+      playbackController->setCurrentFrameAndUpdate(this->revertFrameNumber);
+      qDebug() << "Reverted to frame" << this->revertFrameNumber << "for First-level analysis";
     }
-    
-    // Toggle between current file and ORI file for comparison
-    toggleOriComparison();
-  });
+  }
   
-  this->distortionTimer->start(1000);
-  showOriNotification(QString("Third-level distortion activated.\nComparing with ORI file: %1").arg(QFileInfo(oriFilePath).fileName()));
+  // Reset button appearance - turn off the green color
+  resetAllDistortionButtons();
+  this->activeDistortionButton = nullptr;
 }
 
-void videoHandlerYUV::slotFourthLevelDistortion()
+void videoHandlerYUV::on_revertButton_L2_clicked()
 {
-  // Fourth-level distortion: Same as third-level but with 2x zoom
+  // Revert to the frame where Second-level analysis started
+  if (this->revertFrameNumber < 0) {
+    qDebug() << "No revert point set for Second-level analysis";
+    return;
+  }
+  
+  // Stop any active distortion analysis
   if (this->isDistortionActive) {
     this->distortionTimer->stop();
+    this->distortionTimer->disconnect();
     this->isDistortionActive = false;
   }
   
-  QString currentFilePath = getCurrentFilePath();
-  
-  // Check if current file is ORI file
-  if (isCurrentFileOri(currentFilePath)) {
-    showOriNotification("The currently loaded file is already the ORI file. No comparison will be performed.");
-    return;
-  }
-  
-  // Find ORI file
-  QString oriFilePath = findOriFile(currentFilePath);
-  if (!validateOriFile(oriFilePath, currentFilePath)) {
-    showOriNotification("No valid ORI file found. Please ensure:\n1. A YUV file with 'ORI' in its name exists\n2. The ORI file has the same size as the current file");
-    return;
-  }
-  
-  this->currentDistortionLevel = 4;
-  this->isDistortionActive = true;
-  this->oriFilePath = oriFilePath;
-  
-  // Set view to 2x zoom using QApplication to find the main window
-  setViewZoom(2.0);
-  
-  // Set timer for 1 FPS comparison
-  connect(this->distortionTimer, &QTimer::timeout, this, [this]() {
-    // Check mouse position - abort if hovering over ORI file UI element
-    if (isMouseHoveringOverOriElement()) {
-      return; // Skip this frame update
+  QMainWindow* mainWindow = qobject_cast<QMainWindow*>(QApplication::activeWindow());
+  if (mainWindow) {
+    auto playbackController = mainWindow->findChild<PlaybackController*>();
+    if (playbackController) {
+      // Pause playback first
+      playbackController->pausePlayback();
+      // Reset repeat mode to off
+      setPlaybackControllerRepeatMode(playbackController, PlaybackController::RepeatMode::Off);
+      // Seek back to the revert point
+      playbackController->setCurrentFrameAndUpdate(this->revertFrameNumber);
+      qDebug() << "Reverted to frame" << this->revertFrameNumber << "for Second-level analysis";
     }
-    
-    // Toggle between current file and ORI file for comparison
-    toggleOriComparison();
-  });
+  }
   
-  this->distortionTimer->start(1000);
-  showOriNotification(QString("Fourth-level distortion activated (2x zoom).\nComparing with ORI file: %1").arg(QFileInfo(oriFilePath).fileName()));
+  // Reset button appearance - turn off the green color
+  resetAllDistortionButtons();
+  this->activeDistortionButton = nullptr;
 }
 
 QString videoHandlerYUV::getCurrentFilePath() const

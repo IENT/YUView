@@ -66,64 +66,60 @@ I need you to provide a complete, self-contained solution in the form of new C++
 The final output from you should be a set of C++ `.h` and `.cpp` files, and GLSL `.vert`/`.frag` files that I can directly add to my Qt project. The solution should be complete, well-commented, and encapsulate the entire HDR detection and rendering logic as requested. I will be responsible for integrating this `HDR_VideoWidget` into my application's UI and connecting its `updateFrame` slot.
 
 
-### **Task2: Enhancing UI/UX for "Video Distortion Analysis" Controls in a Qt Application**
+### **Task2: Refactor "Video Distortion Analysis" Controls and Implement a "Revert" Feature**
 
 **Your Role:** You are an expert C++ Qt developer with a strong focus on creating intuitive and responsive user interfaces.
 
 ### **High-Level Goal:**
 
-I need you to enhance the User Experience (UX) of two existing buttons in Your application's UI. The core playback functionality for these buttons is already working correctly. This task is purely about improving their visual feedback and interaction logic.
+I need you to refactor the "Video Distortion Analysis" section of our UI. This involves removing obsolete buttons and introducing a new "Revert" functionality that allows the user to instantly return to the starting frame of a distortion analysis playback loop.
 
-### **Context: Current Working Functionality**
+### **Context: Current UI Layout**
 
-I have a UI file (`videoHandlerYUV.ui`) with several "Video Distortion Analysis" buttons. Two of them, "First-level (30FPS)" and "Second-level (1FPS)", already function as follows:
-*   When clicked, they correctly start video playback at their specified speed (30 FPS or 1 FPS).
+Our application's UI is defined in a file named `videoHandlerYUV.ui`. Currently, this UI contains four buttons for distortion analysis: "First-level (30FPS)", "Second-level (1FPS)", "Third-level", and "Fourth-level". The playback logic for the first two buttons is already implemented.
 
-### **The Problem: The UI is Not Responsive**
+### **The Problem: Obsolete UI and Missing Functionality**
 
-The current user experience is poor because the buttons provide no visual feedback after being clicked. The user cannot tell which mode is active, and there is no intuitive way to stop the playback started by these buttons.
+The current UI has two major issues:
+1.  The "Third-level" and "Fourth-level" distortion buttons are no longer needed and clutter the interface.
+2.  When a user starts playback for "First-level" or "Second-level" analysis, there is no way to quickly return to the frame where the analysis began. This makes it difficult to compare the distorted video with the original starting point.
 
 ### **New Functional Requirements (Your Task):**
 
-I need you to implement the following UI/UX enhancements. You will likely need to modify the C++ slot connected to these buttons' `clicked()` signals.
+You will need to modify the UI file and the corresponding C++ handler class to implement the following changes.
 
-**1. Implement a Visual "Active State" for the Buttons:**
+**1. Modify the UI Layout:**
 
-*   **On the FIRST click** of either the "First-level (30FPS)" or "Second-level (1FPS)" button:
-    *   Start video playback at the specified speed (this part already works).
-    *   **Change the appearance of the clicked button to indicate it is "active".** Specifically:
-        *   Set the button's background color to a light green (e.g., `#90EE90`). You can achieve this using a stylesheet.
-        *   Make the button's font bold.
-    *   If another button is already in this "active" state, it should first be reset to its normal state before the newly clicked button becomes active. Only one button can be active at a time.
+*   **Analyze the `videoHandlerYUV.ui` file** to identify the object names for all distortion analysis buttons.
+*   **Remove the "Third-level" and "Fourth-level" distortion buttons** from the layout entirely.
+*   **Add a new `QPushButton` next to the "First-level (30FPS)" button.**
+    *   Set its display text to **"Revert"**.
+    *   Set its `objectName` to something clear, like `revertButton_L1`.
+*   **Add another new `QPushButton` next to the "Second-level (1FPS)" button.**
+    *   Set its display text to **"Revert"**.
+    *   Set its `objectName` to something clear, like `revertButton_L2`.
 
-**2. Implement Loop/Repeat Playback:**
+**2. Implement State-Aware Playback:**
 
-*   When playback is initiated by either of these two buttons, it must **automatically loop continuously**.
-*   Please find and enable the relevant setting in Your existing `PlaybackController` class. I believe there is a property or method related to a `repeatModeButton` that can be used to enable this.
+*   When the user clicks the "First-level (30FPS)" or "Second-level (1FPS)" button:
+    *   **Before starting playback, you must capture and store the current frame number.** This frame number is the "revert point". You will need a member variable in your handler class to store this state.
 
-**3. Implement Toggle-to-Pause Functionality:**
+**3. Implement "Revert" Button Functionality:**
 
-*   **On a SECOND click** on a button that is *already in the "active" state*:
-    *   The playback should **immediately pause**.
-    *   **Reset the button's appearance** back to its default (normal background color, normal font weight).
+*   Create new C++ slots connected to the `clicked()` signals of the new "Revert" buttons (`revertButton_L1` and `revertButton_L2`).
+*   When a "Revert" button is clicked:
+    *   The video playback must **immediately pause**.
+    *   The video must **seek back to the stored "revert point"** (the frame that was showing when the corresponding analysis button was initially clicked).
 
 ### **Implementation Plan:**
 
-Please provide the C++ code modifications to achieve this. Your plan should be:
+Please provide the C++ code modifications and UI change descriptions to achieve this. Your plan should be:
 
-1.  **Introduce State Management:** Add member variables to the C++ handler class to keep track of which button (if any) is currently active.
-2.  **Modify the Click Handler Slot:** Refactor the single slot connected to both buttons' `clicked()` signals.
-3.  **Implement State Logic:** Inside the slot, use `sender()` to identify which button was clicked.
-    *   If the clicked button is **not** the currently active one:
-        *   Reset any other active button to its default style.
-        *   Set the clicked button's style to "active" (green background, bold font).
-        *   Enable loop mode in the `PlaybackController`.
-        *   Start playback at the correct FPS.
-        *   Update the state variable to mark this button as active.
-    *   If the clicked button **is** the currently active one:
-        *   Pause playback.
-        *   Reset the button's style to default.
-        *   Update the state variable to indicate no button is active.
-4.  **Provide Stylesheet Code:** Provide the simple Qt Stylesheet strings needed to set and unset the button's appearance.
-
-By providing the updated C++ slot implementation and any necessary state variables, you will solve this UX problem completely.
+1.  **Update UI Definition:** Describe the changes needed in `videoHandlerYUV.ui` (removing two buttons and adding two new "Revert" buttons).
+2.  **Enhance State Management:** Add a member variable to your C++ handler class (e.g., `qint64 revertFrameNumber;`) to store the frame number when playback begins.
+3.  **Modify Existing Click Handlers:** In the existing slots for the "First-level" and "Second-level" buttons, add logic to get the current frame from the `PlaybackController` and store it in your new state variable before starting playback.
+4.  **Create New "Revert" Click Handlers:**
+    *   Implement the new slots (e.g., `on_revertButton_L1_clicked()`).
+    *   Inside these slots, call the necessary methods on your `PlaybackController` to:
+        *   First, pause the playback.
+        *   Second, seek the video to the frame number stored in your `revertFrameNumber` state variable.

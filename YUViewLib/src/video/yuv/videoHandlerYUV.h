@@ -247,6 +247,7 @@ private:
   QString oriFilePath;
   bool isShowingOriFile;
   int playbackFrameIndex; // Track current frame for distortion playback
+  int revertFrameNumber; // Store the frame number to revert to
   
   // UI state management for active button tracking
   QPushButton* activeDistortionButton;
@@ -263,8 +264,10 @@ private slots:
   // Distortion analysis button slots
   void slotFirstLevelDistortion();
   void slotSecondLevelDistortion();
-  void slotThirdLevelDistortion();
-  void slotFourthLevelDistortion();
+  
+  // Revert button slots
+  void on_revertButton_L1_clicked();
+  void on_revertButton_L2_clicked();
   
   // Distortion analysis helper functions
   QString getCurrentFilePath() const;
