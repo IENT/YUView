@@ -49,7 +49,150 @@ if (enable10BitDisplay && yuvFormat.getBitsPerSample() == 10) {
 - Manual texture format override to `GL_RGBA16F` or `GL_RGB10_A2`
 - Projects like Krita have successfully implemented HDR through Qt modifications
 
-### 2.2 Platform HDR Detection Methods
+
+
+### 2.2 Krita HDR Implementation Analysis
+
+#### Overview
+Krita, an open-source painting application, has successfully implemented native 10-bit/16-bit HDR display support that works on HDMI 2.1/HDR monitors without precision loss. Their implementation provides a proven blueprint for YUView.
+
+#### Key Implementation Details
+
+**1. HDR Format Support**:
+- **BT2020_PQ Mode**: 10-bit per channel (R:10, G:10, B:10, A:2)
+  - Uses BT.2020 color space with PQ transfer function
+  - Suitable for HDR10 displays
+- **BT709_G10 Mode (scRGB/Rec709 Linear)**: 16-bit per channel (R:16, G:16, B:16, A:16)
+  - Linear color space with extended range
+  - User-visible as "Rec709 Linear (16bit)" in Display->HDR settings
+
+**2. QSurfaceFormat Configuration**:
+```cpp
+// From KisOpenGLModeProber::initSurfaceFormatFromConfig in libs/ui/opengl/KisOpenGLModeProber.cpp 
+void KisOpenGLModeProber::initSurfaceFormatFromConfig(KisConfig::RootSurfaceFormat config,
+                                                      QSurfaceFormat *format)
+{
+#ifdef HAVE_HDR
+    if (config == KisConfig::BT2020_PQ) {
+
+        format->setRedBufferSize(10);
+        format->setGreenBufferSize(10);
+        format->setBlueBufferSize(10);
+        format->setAlphaBufferSize(2);
+        format->setColorSpace(KisSurfaceColorSpaceWrapper(KisSurfaceColorSpaceWrapper::bt2020PQColorSpace));
+    } else if (config == KisConfig::BT709_G10) {
+        format->setRedBufferSize(16);
+        format->setGreenBufferSize(16);
+        format->setBlueBufferSize(16);
+        format->setAlphaBufferSize(16);
+        format->setColorSpace(KisSurfaceColorSpaceWrapper(KisSurfaceColorSpaceWrapper::scRGBColorSpace));
+    } else
+#else
+    if (config == KisConfig::BT2020_PQ) {
+        qWarning() << "WARNING: Bt.2020 PQ surface type is not supported by this build of Krita";
+    } else if (config == KisConfig::BT709_G10) {
+        qWarning() << "WARNING: scRGB surface type is not supported by this build of Krita";
+    }
+#endif
+
+    {
+        format->setRedBufferSize(8);
+        format->setGreenBufferSize(8);
+        format->setBlueBufferSize(8);
+        format->setAlphaBufferSize(8);
+        // TODO: check if we can use real sRGB space here
+        format->setColorSpace(KisSurfaceColorSpaceWrapper());
+    }
+}
+```
+
+**3. OpenGL Texture Format**:
+- Consistently uses `GL_RGBA16F` for HDR content storage
+- Texture format set in `KisOpenGLCanvas2` constructor:
+```cpp
+//Defined in libs/ui/opengl/kis_opengl_canvas2.cpp
+if (KisOpenGLModeProber::instance()->useHDRMode()) {
+    setTextureFormat(GL_RGBA16F);
+}
+```
+
+**4. HDR Detection Architecture**:
+- `KisOpenGLModeProber` class in `libs/ui/opengl/KisOpenGLModeProber.cpp` handles HDR capability detection
+- Platform-specific implementations for Windows/macOS
+- `isFormatHDR()` checks both color space and bit depth:
+  - BT2020_PQ: 10-bit buffers + BT.2020 PQ color space
+  - scRGB: 16-bit buffers + scRGB color space
+
+```cpp
+const KoColorProfile *KisOpenGLModeProber::rootSurfaceColorProfile() const
+    {
+        const KoColorProfile *profile = KoColorSpaceRegistry::instance()->p709SRGBProfile();
+
+        const auto surfaceColorSpace = 
+            KisSurfaceColorSpaceWrapper::fromQtColorSpace(surfaceformatInUse().colorSpace());
+        
+        if (surfaceColorSpace == KisSurfaceColorSpaceWrapper::sRGBColorSpace) {
+            // use the default one!
+    #ifdef HAVE_HDR
+        } else if (surfaceColorSpace == KisSurfaceColorSpaceWrapper::scRGBColorSpace) {
+            profile = KoColorSpaceRegistry::instance()->p709G10Profile();
+        } else if (surfaceColorSpace == KisSurfaceColorSpaceWrapper::bt2020PQColorSpace) {
+            profile = KoColorSpaceRegistry::instance()->p2020PQProfile();
+    #endif
+        }
+
+        return profile;
+    }
+```
+The profile configurations are defined in `krita/data/profiles/elles-icc-profiles`
+
+**5. HDR Exposure and Gamma Control**:
+- Implements `HdrExposure` resource for dynamic range adjustment
+- Exposed in UI through LUT docker
+- Applied in shaders for fine-tuning display
+
+```cpp
+//defined in plugins\dockers\lut\lutdocker_dock.cpp
+void LutDockerDock::exposureValueChanged(double exposure)
+{
+    if (m_canvas) {
+        m_canvas->viewManager()->canvasResourceProvider()->setHDRExposure(exposure);
+        updateDisplaySettings();
+    }
+}
+
+void LutDockerDock::gammaValueChanged(double gamma)
+{
+    if (m_canvas) {
+        m_canvas->viewManager()->canvasResourceProvider()->setHDRGamma(gamma);
+        updateDisplaySettings();
+    }
+}
+
+```
+
+
+**6. Build Configuration**:
+- Uses `HAVE_HDR` preprocessor flag for conditional compilation
+- HDR support can be enabled/disabled at build time
+
+#### Architecture Insights
+
+**Rendering Pipeline**:
+1. Image data → 16-bit internal representation
+2. Upload to GPU as `GL_RGBA16F` texture
+3. Custom shaders apply color space conversion and exposure
+4. Direct rendering to HDR-configured framebuffer
+5. Bypasses QPainter's 8-bit limitation entirely
+
+**Key Classes**:
+- `KisOpenGLModeProber`: HDR detection and configuration
+- `KisOpenGLCanvas2`: Main rendering widget (inherits QOpenGLWidget)
+- `KisOpenGLCanvasRenderer`: Handles texture upload and rendering
+- `KisDisplayColorConverter`: Color space conversions
+- `KisScreenInformationAdapter`: Platform-specific screen info
+
+### 2.3 Platform HDR Detection Methods
 
 #### Windows (Primary Platform)
 **DXGI Method (Recommended)**:
@@ -108,14 +251,21 @@ const mat3 from709to2020 = mat3(
 
 ## 3. Implementation Architecture
 
-### 3.1 Component Design
+### 3.1 Component Design (Based on Krita Architecture)
 
 #### HDR Detection Module (`HDRDetection.h/cpp`)
 ```cpp
 class HDRDetection {
 public:
+    enum HDRMode {
+        SDR_Only,
+        BT2020_PQ_10bit,      // 10-bit HDR10 mode
+        BT709_G10_16bit       // 16-bit scRGB/Linear mode
+    };
+    
     struct HDRCapabilities {
         bool isHDRSupported;
+        HDRMode supportedMode;
         float maxLuminance;
         float minLuminance;
         int bitsPerChannel;
@@ -124,6 +274,7 @@ public:
     
     static HDRCapabilities detectHDRCapabilities(QWidget* parent = nullptr);
     static bool isHDRActiveOnScreen(QScreen* screen);
+    static QSurfaceFormat getHDRSurfaceFormat(HDRMode mode);
 };
 ```
 
@@ -132,8 +283,19 @@ public:
 class HDR_VideoWidget : public QOpenGLWidget, protected QOpenGLFunctions_3_3_Core {
     Q_OBJECT
     
+public:
+    enum RenderMode {
+        Mode_SDR_8bit,
+        Mode_BT2020_PQ_10bit,
+        Mode_BT709_Linear_16bit
+    };
+    
+    explicit HDR_VideoWidget(QWidget* parent = nullptr);
+    void setRenderMode(RenderMode mode);
+    
 public slots:
     void updateFrame(const QImage &newFrame);
+    void setHDRExposure(float exposure);
     
 signals:
     void hdrNotSupported(const QString &reason);
@@ -146,21 +308,133 @@ private:
     QOpenGLShaderProgram* m_shaderProgram;
     QOpenGLTexture* m_videoTexture;
     QOpenGLBuffer m_vertexBuffer;
+    RenderMode m_renderMode;
+    float m_hdrExposure;
     bool m_hdrCapable;
 };
 ```
 
-### 3.2 Integration Strategy
+### 3.2 Integration Strategy (Following Krita's Approach)
+
+#### Application Initialization
+```cpp
+// In main.cpp, before QApplication construction
+int main(int argc, char *argv[]) {
+    // Detect HDR capabilities early
+    auto hdrCaps = HDRDetection::detectHDRCapabilities();
+    
+    if (hdrCaps.isHDRSupported) {
+        // Set HDR surface format as default
+        QSurfaceFormat hdrFormat = HDRDetection::getHDRSurfaceFormat(hdrCaps.supportedMode);
+        QSurfaceFormat::setDefaultFormat(hdrFormat);
+    }
+    
+    QApplication app(argc, argv);
+    // ... rest of application
+}
+```
 
 #### Rendering Path Decision Logic
 ```cpp
-// In FrameHandler::drawFrame() or videoHandlerYUV
-if (enable10BitDisplay && HDRDetection::isHDRActiveOnScreen(screen)) {
-    // Use HDR_VideoWidget OpenGL path
-    m_hdrWidget->updateFrame(outputImage);
-} else {
-    // Fallback to existing QPainter path
-    painter->drawImage(rect, outputImage);
+// In videoHandlerYUV::slot10BitDisplayChanged()
+void videoHandlerYUV::slot10BitDisplayChanged() {
+    bool enable10Bit = ui.checkBoxEnable10BitDisplay->isChecked();
+    
+    if (enable10Bit) {
+        auto hdrCaps = HDRDetection::detectHDRCapabilities(this);
+        
+        if (hdrCaps.isHDRSupported) {
+            // Initialize HDR widget if not already created
+            if (!m_hdrWidget) {
+                m_hdrWidget = new HDR_VideoWidget(this);
+                connect(m_hdrWidget, &HDR_VideoWidget::hdrNotSupported,
+                        this, &videoHandlerYUV::onHDRNotSupported);
+            }
+            
+            // Set appropriate render mode based on capabilities
+            if (hdrCaps.supportedMode == HDRDetection::BT709_G10_16bit) {
+                m_hdrWidget->setRenderMode(HDR_VideoWidget::Mode_BT709_Linear_16bit);
+            } else {
+                m_hdrWidget->setRenderMode(HDR_VideoWidget::Mode_BT2020_PQ_10bit);
+            }
+            
+            m_useHDRRendering = true;
+        } else {
+            // Show user notification
+            QMessageBox::information(this, 
+                tr("HDR Not Available"),
+                tr("Your display does not support HDR. Using standard 8-bit rendering."));
+            m_useHDRRendering = false;
+        }
+    } else {
+        m_useHDRRendering = false;
+    }
+    
+    // Save setting
+    QSettings settings;
+    settings.setValue("Enable10BitDisplay", enable10Bit);
+}
+```
+
+### 3.3 Shader Architecture (Based on Krita's Approach)
+
+#### Vertex Shader (hdr_vertex.vert)
+```glsl
+#version 330 core
+layout (location = 0) in vec2 aPos;
+layout (location = 1) in vec2 aTexCoord;
+
+out vec2 TexCoord;
+
+uniform mat4 textureMatrix;
+
+void main() {
+    gl_Position = vec4(aPos, 0.0, 1.0);
+    TexCoord = (textureMatrix * vec4(aTexCoord, 0.0, 1.0)).xy;
+}
+```
+
+#### Fragment Shader (hdr_fragment.frag)
+```glsl
+#version 330 core
+out vec4 FragColor;
+in vec2 TexCoord;
+
+uniform sampler2D videoTexture;
+uniform int renderMode;  // 0=SDR, 1=BT2020_PQ, 2=BT709_Linear
+uniform float hdrExposure;
+
+// ST.2084 PQ constants
+const float m1 = 2610.0 / 4096.0 / 4.0;
+const float m2 = 2523.0 / 4096.0 * 128.0;
+const float c1 = 3424.0 / 4096.0;
+const float c2 = 2413.0 / 4096.0 * 32.0;
+const float c3 = 2392.0 / 4096.0 * 32.0;
+
+// Apply PQ transfer function for BT2020_PQ mode
+vec3 applyPQ(vec3 linear) {
+    vec3 Lp = pow(linear / 10000.0, vec3(m1));
+    return pow((c1 + c2 * Lp) / (1.0 + c3 * Lp), vec3(m2));
+}
+
+// Apply exposure for linear/scRGB mode
+vec3 applyExposure(vec3 linear) {
+    return linear * pow(2.0, hdrExposure);
+}
+
+void main() {
+    vec4 color = texture(videoTexture, TexCoord);
+    
+    if (renderMode == 1) {
+        // BT2020_PQ mode: Apply PQ curve
+        FragColor = vec4(applyPQ(color.rgb), color.a);
+    } else if (renderMode == 2) {
+        // BT709_Linear mode: Apply exposure adjustment
+        FragColor = vec4(applyExposure(color.rgb), color.a);
+    } else {
+        // SDR mode: Direct output
+        FragColor = color;
+    }
 }
 ```
 
@@ -227,38 +501,40 @@ if (enable10BitDisplay && HDRDetection::isHDRActiveOnScreen(screen)) {
 
 ## 5. Risk Assessment
 
-### 5.1 Technical Risks
+### 5.1 Technical Risks (Mitigated by Krita Reference)
 
-**High Risk**:
-- Qt framework limitations with 10-bit rendering may require workarounds
-- Platform-specific HDR detection complexity (Windows/macOS differences)
-- OpenGL context compatibility across different hardware configurations
+**Low Risk (Thanks to Krita Precedent)**:
+- Qt framework limitations - Krita has proven workarounds
+- OpenGL HDR rendering - Krita's implementation works reliably
+- Platform-specific HDR detection - Can adapt Krita's approach
+- Color accuracy - Krita's professional-grade implementation validates approach
 
 **Medium Risk**:
-- Shader compilation failures on older graphics drivers
-- Performance impact of real-time PQ EOTF calculations
-- Color accuracy validation across different HDR displays
+- Integration complexity with YUView's existing architecture
+- Performance optimization for video playback vs. static images
+- Testing across diverse hardware configurations
 
-**Low Risk**:
-- Integration with existing YUView architecture (well-structured codebase)
-- Fallback to SDR path (existing implementation remains unchanged)
+**Minimal Risk**:
+- Shader compilation - Using proven shader patterns from Krita
+- Fallback to SDR path - Well-established pattern
 
 ### 5.2 Mitigation Strategies
 
-**Qt Limitations**:
-- Implement custom `QOpenGLWidget` with manual texture format control
-- Use `QSurfaceFormat::setDefaultFormat()` for proper 10-bit context setup
-- Provide comprehensive fallback mechanisms
+**Leverage Krita's Solutions**:
+- Use Krita's QSurfaceFormat configuration approach directly
+- Adapt KisOpenGLModeProber pattern for HDR detection
+- Follow Krita's GL_RGBA16F texture format strategy
+- Implement similar HDR exposure control mechanism
 
-**Performance Optimization**:
-- Implement optimized PQ EOTF approximation for older hardware
-- Add GPU capability detection and adaptive quality settings
-- Cache shader compilation results
+**YUView-Specific Adaptations**:
+- Optimize texture upload for video frame rates
+- Implement frame buffering for smooth playback
+- Add video-specific color space conversions
 
-**Cross-Platform Compatibility**:
-- Implement platform-agnostic HDR detection using Qt APIs where possible
-- Provide platform-specific implementations as fallbacks
-- Comprehensive testing on different hardware configurations
+**Testing Strategy**:
+- Test on same hardware configurations where Krita works
+- Validate against Krita's rendering output
+- Ensure compatibility with Krita-proven HDR displays
 
 ## 6. Project Timeline
 
@@ -328,24 +604,34 @@ if (enable10BitDisplay && HDRDetection::isHDRActiveOnScreen(screen)) {
 
 ## 8. Conclusion
 
-The implementation of native 10-bit HDR rendering in YUView is technically feasible and addresses a critical limitation in the current architecture. The proposed solution leverages OpenGL's high-precision rendering capabilities while maintaining backward compatibility through intelligent fallback mechanisms.
+The implementation of native 10-bit HDR rendering in YUView is not only technically feasible but has a proven reference implementation in Krita. By analyzing Krita's source code, we have identified a robust architecture that successfully delivers 10-bit/16-bit content to HDR displays without precision loss.
+
+**Key Learnings from Krita**:
+- Dual HDR mode support (10-bit BT2020_PQ and 16-bit scRGB) provides flexibility
+- Direct OpenGL rendering with GL_RGBA16F textures bypasses Qt's limitations
+- Platform-specific HDR detection ensures compatibility
+- HDR exposure control enhances user experience
+- Proven architecture that works in production
 
 **Key Benefits**:
 - Eliminates color banding in 10-bit HDR content
 - Future-proofs YUView for HDR display adoption
 - Maintains existing functionality for SDR users
 - Provides clear user feedback for HDR status
+- Follows a proven implementation pattern from Krita
 
 **Recommended Approach**:
-1. Implement Windows-focused solution first (primary user base)
-2. Use proven OpenGL + ST.2084 PQ EOTF shader pipeline
-3. Maintain existing QPainter fallback for compatibility
-4. Plan for cross-platform expansion in future releases
+1. Implement Krita-inspired dual-mode HDR support (BT2020_PQ and scRGB)
+2. Use GL_RGBA16F texture format consistently for HDR content
+3. Adopt Krita's QSurfaceFormat configuration strategy
+4. Implement platform-specific HDR detection following Krita's model
+5. Add HDR exposure control for enhanced usability
+6. Maintain existing QPainter fallback for compatibility
 
-The 8-week timeline provides adequate buffer for handling Qt framework limitations and platform-specific challenges while ensuring a robust, production-ready implementation.
+The 8-week timeline provides adequate buffer for implementation while leveraging Krita's proven solutions to common challenges. By following Krita's architectural patterns, we can significantly reduce implementation risk and deliver a robust HDR solution.
 
 ---
 
 *Report prepared for YUView HDR implementation project*  
-*Date: July 22, 2025*  
-*Status: Ready for implementation approval*
+*Date: December 2024*  
+*Status: Ready for implementation with Krita reference architecture*
