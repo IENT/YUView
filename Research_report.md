@@ -49,8 +49,6 @@ if (enable10BitDisplay && yuvFormat.getBitsPerSample() == 10) {
 - Manual texture format override to `GL_RGBA16F` or `GL_RGB10_A2`
 - Projects like Krita have successfully implemented HDR through Qt modifications
 
-
-
 ### 2.2 Krita HDR Implementation Analysis
 
 #### Overview
@@ -68,41 +66,19 @@ Krita, an open-source painting application, has successfully implemented native 
 
 **2. QSurfaceFormat Configuration**:
 ```cpp
-// From KisOpenGLModeProber::initSurfaceFormatFromConfig in libs/ui/opengl/KisOpenGLModeProber.cpp 
-void KisOpenGLModeProber::initSurfaceFormatFromConfig(KisConfig::RootSurfaceFormat config,
-                                                      QSurfaceFormat *format)
-{
-#ifdef HAVE_HDR
-    if (config == KisConfig::BT2020_PQ) {
-
-        format->setRedBufferSize(10);
-        format->setGreenBufferSize(10);
-        format->setBlueBufferSize(10);
-        format->setAlphaBufferSize(2);
-        format->setColorSpace(KisSurfaceColorSpaceWrapper(KisSurfaceColorSpaceWrapper::bt2020PQColorSpace));
-    } else if (config == KisConfig::BT709_G10) {
-        format->setRedBufferSize(16);
-        format->setGreenBufferSize(16);
-        format->setBlueBufferSize(16);
-        format->setAlphaBufferSize(16);
-        format->setColorSpace(KisSurfaceColorSpaceWrapper(KisSurfaceColorSpaceWrapper::scRGBColorSpace));
-    } else
-#else
-    if (config == KisConfig::BT2020_PQ) {
-        qWarning() << "WARNING: Bt.2020 PQ surface type is not supported by this build of Krita";
-    } else if (config == KisConfig::BT709_G10) {
-        qWarning() << "WARNING: scRGB surface type is not supported by this build of Krita";
-    }
-#endif
-
-    {
-        format->setRedBufferSize(8);
-        format->setGreenBufferSize(8);
-        format->setBlueBufferSize(8);
-        format->setAlphaBufferSize(8);
-        // TODO: check if we can use real sRGB space here
-        format->setColorSpace(KisSurfaceColorSpaceWrapper());
-    }
+// From KisOpenGLModeProber::initSurfaceFormatFromConfig
+if (config == KisConfig::BT2020_PQ) {
+    format->setRedBufferSize(10);
+    format->setGreenBufferSize(10);
+    format->setBlueBufferSize(10);
+    format->setAlphaBufferSize(2);
+    format->setColorSpace(KisSurfaceColorSpaceWrapper::bt2020PQColorSpace);
+} else if (config == KisConfig::BT709_G10) {
+    format->setRedBufferSize(16);
+    format->setGreenBufferSize(16);
+    format->setBlueBufferSize(16);
+    format->setAlphaBufferSize(16);
+    format->setColorSpace(KisSurfaceColorSpaceWrapper::scRGBColorSpace);
 }
 ```
 
@@ -110,67 +86,22 @@ void KisOpenGLModeProber::initSurfaceFormatFromConfig(KisConfig::RootSurfaceForm
 - Consistently uses `GL_RGBA16F` for HDR content storage
 - Texture format set in `KisOpenGLCanvas2` constructor:
 ```cpp
-//Defined in libs/ui/opengl/kis_opengl_canvas2.cpp
 if (KisOpenGLModeProber::instance()->useHDRMode()) {
     setTextureFormat(GL_RGBA16F);
 }
 ```
 
 **4. HDR Detection Architecture**:
-- `KisOpenGLModeProber` class in `libs/ui/opengl/KisOpenGLModeProber.cpp` handles HDR capability detection
+- `KisOpenGLModeProber` class handles HDR capability detection
 - Platform-specific implementations for Windows/macOS
 - `isFormatHDR()` checks both color space and bit depth:
   - BT2020_PQ: 10-bit buffers + BT.2020 PQ color space
   - scRGB: 16-bit buffers + scRGB color space
 
-```cpp
-const KoColorProfile *KisOpenGLModeProber::rootSurfaceColorProfile() const
-    {
-        const KoColorProfile *profile = KoColorSpaceRegistry::instance()->p709SRGBProfile();
-
-        const auto surfaceColorSpace = 
-            KisSurfaceColorSpaceWrapper::fromQtColorSpace(surfaceformatInUse().colorSpace());
-        
-        if (surfaceColorSpace == KisSurfaceColorSpaceWrapper::sRGBColorSpace) {
-            // use the default one!
-    #ifdef HAVE_HDR
-        } else if (surfaceColorSpace == KisSurfaceColorSpaceWrapper::scRGBColorSpace) {
-            profile = KoColorSpaceRegistry::instance()->p709G10Profile();
-        } else if (surfaceColorSpace == KisSurfaceColorSpaceWrapper::bt2020PQColorSpace) {
-            profile = KoColorSpaceRegistry::instance()->p2020PQProfile();
-    #endif
-        }
-
-        return profile;
-    }
-```
-The profile configurations are defined in `krita/data/profiles/elles-icc-profiles`
-
-**5. HDR Exposure and Gamma Control**:
+**5. HDR Exposure Control**:
 - Implements `HdrExposure` resource for dynamic range adjustment
 - Exposed in UI through LUT docker
 - Applied in shaders for fine-tuning display
-
-```cpp
-//defined in plugins\dockers\lut\lutdocker_dock.cpp
-void LutDockerDock::exposureValueChanged(double exposure)
-{
-    if (m_canvas) {
-        m_canvas->viewManager()->canvasResourceProvider()->setHDRExposure(exposure);
-        updateDisplaySettings();
-    }
-}
-
-void LutDockerDock::gammaValueChanged(double gamma)
-{
-    if (m_canvas) {
-        m_canvas->viewManager()->canvasResourceProvider()->setHDRGamma(gamma);
-        updateDisplaySettings();
-    }
-}
-
-```
-
 
 **6. Build Configuration**:
 - Uses `HAVE_HDR` preprocessor flag for conditional compilation

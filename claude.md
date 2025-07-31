@@ -12,7 +12,7 @@ This document outlines the implementation and debugging tasks for two distinct i
 
 ### **High-Level Objective:**
 
-Provide a complete, drop-in C++ solution that enables my application to render 10-bit YUV video frames on a native 10-bit HDR display, while gracefully handling systems that do not support HDR. The final output must be free of color banding.
+Provide a complete, drop-in C++ solution that enables my application to render 10-bit YUV video frames on a native 10-bit HDR display, while gracefully handling systems that do not support HDR. The final output must be free of color banding. The implementation should follow the proven approach used by Krita, an open-source painting application that successfully displays 10-bit/16-bit content on HDR monitors.
 
 ### **Current Flawed Implementation:**
 
@@ -32,38 +32,63 @@ if (enable10BitDisplay && yuvFormat.getBitsPerSample() == 10)
 
 I understand this is incorrect because `QPainter`'s pipeline is limited to 8-bit SDR and downsamples the high-precision data.
 
+### **Krita's Proven Approach (Reference Implementation):**
+
+Based on analysis of Krita's source code, they successfully implement HDR display through:
+1. **QSurfaceFormat Configuration**: Setting buffer sizes to 10 or 16 bits per channel
+2. **HDR Format Support**: 
+   - BT2020_PQ: 10-bit per channel (R:10, G:10, B:10, A:2)
+   - BT709_G10 (scRGB/Rec709 Linear): 16-bit per channel (R:16, G:16, B:16, A:16)
+3. **OpenGL Texture Format**: Using `GL_RGBA16F` for HDR data storage
+4. **HDR Detection**: Platform-specific HDR capability detection
+5. **Custom QOpenGLWidget**: Direct OpenGL rendering bypassing QPainter
+
 ### **Requirements for the New Solution:**
 
 I need you to provide a complete, self-contained solution in the form of new C++ classes that accomplish the following. Please provide the full `.h` and `.cpp` file contents.
 
 **1. HDR Capability Detection:**
-   *   The solution must first robustly detect if the primary display a widget is on truly supports HDR output.
-   *   This check should be performed before attempting any HDR-specific rendering.
+   *   The solution must first robustly detect if the display truly supports HDR output, following Krita's approach.
+   *   Implement platform-specific detection (Windows primary, macOS/Linux later).
    *   **If HDR is NOT supported:** The code should trigger a signal or a callback that my application can connect to, in order to show the user a notification dialog (e.g., a `QMessageBox`) explaining that HDR mode is not active. The rendering should then automatically fall back to the existing 8-bit SDR path (i.e., do nothing and let the old `QPainter` path run).
-   *   **If HDR IS supported:** Proceed with the native 10-bit HDR rendering pipeline.
-   *   Provide a platform-agnostic way to do this if possible using Qt's APIs (e.g., checking `QScreen` properties), or provide platform-specific implementations for Windows and macOS if necessary.
+   *   **If HDR IS supported:** Proceed with the native 10-bit/16-bit HDR rendering pipeline.
+   *   Support both BT2020_PQ (10-bit) and scRGB/Rec709 Linear (16-bit) modes.
 
 **2. A New `HDR_VideoWidget` Class:**
-   *   Create a new widget class, for example, `HDR_VideoWidget`, that inherits from `QOpenGLWidget` and the appropriate `QOpenGLFunctions` class.
+   *   Create a new widget class, for example, `HDR_VideoWidget`, that inherits from `QOpenGLWidget` and the appropriate `QOpenGLFunctions` class (3.3 Core or higher).
    *   This widget will be responsible for the entire HDR rendering process.
    *   It should have a public slot or method, like `void updateFrame(const QImage &newFrame)`, that my application can call to pass in the new `QImage` (which is in `QImage::Format_RGBA64` format).
+   *   Support configuration for different HDR modes (10-bit vs 16-bit).
 
 **3. Correct OpenGL Context Setup:**
-   *   Provide the necessary `QSurfaceFormat` setup code that must be placed in `main.cpp`. This code must request a 10-bit-per-channel framebuffer to enable the hardware's 10-bit output mode.
+   *   Provide the necessary `QSurfaceFormat` setup code that must be placed in `main.cpp`. This code must request a 10-bit or 16-bit per channel framebuffer to enable the hardware's HDR output mode.
+   *   Follow Krita's approach with proper color space configuration (BT2020_PQ or scRGB).
 
 **4. GPU Texture Management:**
-   *   Inside `HDR_VideoWidget`, implement the logic to take the `QImage` passed to `updateFrame` and efficiently upload its pixel data to a `GL_RGBA16F` OpenGL texture. Handle both creating the texture for the first frame and updating it for subsequent frames.
+   *   Inside `HDR_VideoWidget`, implement the logic to take the `QImage` passed to `updateFrame` and efficiently upload its pixel data to a `GL_RGBA16F` OpenGL texture (following Krita's approach). Handle both creating the texture for the first frame and updating it for subsequent frames.
+   *   Ensure proper texture format selection based on HDR mode.
 
-**5. Complete GLSL Shaders for HDR10 Output:**
+**5. Complete GLSL Shaders for HDR Output:**
    *   Provide the full, production-quality GLSL source code for a vertex and fragment shader.
-   *   The fragment shader is critical. It must contain an accurate implementation of the **PQ EOTF (ST.2084)** function to transform linear color values from the 16-bit texture into the non-linear signal required by an HDR10 display.
+   *   The fragment shader must support:
+     - **For BT2020_PQ mode**: Accurate implementation of the **PQ EOTF (ST.2084)** function
+     - **For scRGB mode**: Linear color space handling with proper exposure adjustment
+     - Color space conversion if needed (Rec.709 to Rec.2020)
+   *   Include HDR metadata handling if required by the platform.
 
 **6. The Rendering Loop (`paintGL`)**
    *   Implement the `paintGL` method to execute the rendering. This should bind the shaders and texture, and draw a full-screen quad to display the video frame.
+   *   Support both 10-bit and 16-bit rendering paths.
+
+**7. HDR Exposure Control (Optional but Recommended)**
+   *   Following Krita's approach, implement an exposure control mechanism for fine-tuning HDR display.
+   *   This can be a simple uniform passed to the shader.
 
 ### **Final Deliverable:**
 
 The final output from you should be a set of C++ `.h` and `.cpp` files, and GLSL `.vert`/`.frag` files that I can directly add to my Qt project. The solution should be complete, well-commented, and encapsulate the entire HDR detection and rendering logic as requested. I will be responsible for integrating this `HDR_VideoWidget` into my application's UI and connecting its `updateFrame` slot.
+
+**Note:** The implementation should closely follow Krita's proven architecture, as they have successfully solved the same problem of displaying high bit-depth content on HDR monitors while maintaining backward compatibility with SDR displays.
 
 
 ### **Task2: Refactor "Video Distortion Analysis" Controls and Implement a "Revert" Feature**
