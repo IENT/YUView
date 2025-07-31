@@ -1,4 +1,4 @@
-QT += core gui widgets opengl xml concurrent network
+QT += core gui widgets opengl openglwidgets xml concurrent network
 
 TEMPLATE = lib
 CONFIG += staticlib
@@ -9,13 +9,22 @@ CONFIG += object_parallel_to_source
 SOURCES += $$files(src/*.cpp, true)
 HEADERS += $$files(src/*.h, true)
 
+# Explicitly include HDR classes to ensure they're built
+SOURCES += src/video/HDRDetectionWorker.cpp \
+           src/video/HDRDetection.cpp \
+           src/video/HDR_VideoWidget.cpp
+HEADERS += src/video/HDRDetectionWorker.h \
+           src/video/HDRDetection.h \
+           src/video/HDR_VideoWidget.h
+
 FORMS += $$files(ui/*.ui, false)
 
 INCLUDEPATH += src/
 
 RESOURCES += \
     images/images.qrc \
-    docs/docs.qrc
+    docs/docs.qrc \
+    resources/shaders/shaders.qrc
 
 contains(QT_ARCH, x86_32|i386) {
     warning("You are building for a 32 bit system. This is untested and not supported.")
@@ -32,6 +41,9 @@ isEmpty(SVNN) {
 
 win32 {
     DEFINES += NOMINMAX
+    # Windows-specific libraries for HDR detection
+    LIBS += -ldxgi -luser32 -lole32
+    # Note: WinRT support (-lwindowsapp) temporarily disabled for MinGW compatibility
 }
 
 win32-msvc* {

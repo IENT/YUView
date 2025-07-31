@@ -31,12 +31,20 @@
 */
 
 #include <QCoreApplication>
+#include <QSurfaceFormat>
+#include <QDebug>
 
 #include <common/Typedef.h>
 #include <ui/YUViewApplication.h>
+#include <video/HDRDetection.h>
 
 int main(int argc, char *argv[])
 {
+  // ========================================
+  // BASIC OPENGL SETUP - MUST BE FIRST
+  // ========================================
+  
+  // Set basic OpenGL attributes before any application creation
 #if QT_VERSION >= QT_VERSION_CHECK(5, 6, 0) && QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
   QCoreApplication::setAttribute(Qt::AA_EnableHighDpiScaling); // DPI support
   QCoreApplication::setAttribute(Qt::AA_UseHighDpiPixmaps); // DPI support
@@ -44,9 +52,46 @@ int main(int argc, char *argv[])
   QCoreApplication::setAttribute(Qt::AA_SynthesizeMouseForUnhandledTouchEvents,false);
   QCoreApplication::setAttribute(Qt::AA_SynthesizeTouchForUnhandledMouseEvents,false);
 
+  // Set default OpenGL format for fallback (will be overridden by HDR if available)
+  QSurfaceFormat defaultFormat;
+  defaultFormat.setProfile(QSurfaceFormat::CoreProfile);
+  defaultFormat.setVersion(3, 3);
+  defaultFormat.setSwapBehavior(QSurfaceFormat::DoubleBuffer);
+  defaultFormat.setSwapInterval(1);
+  defaultFormat.setRedBufferSize(8);
+  defaultFormat.setGreenBufferSize(8);
+  defaultFormat.setBlueBufferSize(8);
+  defaultFormat.setAlphaBufferSize(8);
+  QSurfaceFormat::setDefaultFormat(defaultFormat);
+
   qRegisterMetaType<recacheIndicator>("recacheIndicator");
   
+  // Create the main YUView application with basic OpenGL setup
   YUViewApplication app(argc, argv);
+  
+  // ========================================
+  // HDR DETECTION - AFTER GUI INITIALIZATION
+  // ========================================
+  
+  // Now that we have a proper GUI application, we can detect HDR capabilities
+  qDebug() << "YUView: Detecting HDR capabilities...";
+  
+  auto hdrDetection = HDRDetection::instance();
+  auto hdrCapabilities = hdrDetection->detectHDRCapabilities();
+  
+  if (hdrCapabilities.isHDRSupported) {
+    qDebug() << "HDR display detected:" << hdrCapabilities.displayName;
+    qDebug() << "HDR mode:" << HDRDetection::getHDRModeDescription(hdrCapabilities.supportedMode);
+    qDebug() << "Max luminance:" << hdrCapabilities.maxLuminance << "nits";
+    qDebug() << "Bits per channel:" << hdrCapabilities.bitsPerChannel;
+    
+    // TODO: Update surface format for existing widgets if needed
+    // For now, HDR will be handled by the HDR_VideoWidget when needed
+    
+  } else {
+    qDebug() << "HDR not supported:" << hdrCapabilities.errorMessage;
+    qDebug() << "Using standard 8-bit SDR rendering";
+  }
 
   return app.returnCode;
 }

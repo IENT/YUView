@@ -1,4 +1,4 @@
-QT += core gui widgets opengl xml concurrent network
+QT += core gui widgets opengl openglwidgets xml concurrent network
 
 TARGET = YUView
 TEMPLATE = app
@@ -78,6 +78,8 @@ win32 {
     RC_FILE += images/WindowsAppIcon.rc
     SVNN = $$system("git describe --tags")
     DEFINES += NOMINMAX
+    # Windows-specific libraries needed for HDR functionality
+    LIBS += -ldxgi -luser32 -lole32
 }
 
 LASTHASH = $$system("git rev-parse HEAD")

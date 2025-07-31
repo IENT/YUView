@@ -48,7 +48,10 @@
 #include <QMetaObject>
 #include <QPainter>
 #include <QPushButton>
+#include <QDebug>
 #include <QSettings>
+
+#include <video/HDRDetection.h>
 #include <QSpinBox>
 #include <QTreeWidget>
 
@@ -2748,6 +2751,12 @@ videoHandlerYUV::videoHandlerYUV() : videoHandler()
   const auto defaultPixelFormat = PixelFormatYUV(Subsampling::YUV_420, 8, PlaneOrder::YUV);
   this->srcPixelFormat          = defaultPixelFormat;
   
+  // Initialize HDR rendering members
+  m_hdrWidget = nullptr;
+  m_hdrDetectionWorker = nullptr;
+  m_useHDRRendering = false;
+  revertFrameNumber = -1;
+  
   // Initialize distortion analysis members
   this->distortionTimer = new QTimer(this);
   this->isDistortionActive = false;
@@ -2761,6 +2770,12 @@ videoHandlerYUV::videoHandlerYUV() : videoHandler()
 videoHandlerYUV::~videoHandlerYUV()
 {
   DEBUG_YUV("videoHandlerYUV destruction");
+  
+  // Clean up HDR widget
+  if (m_hdrWidget) {
+    delete m_hdrWidget;
+    m_hdrWidget = nullptr;
+  }
 }
 
 unsigned videoHandlerYUV::getCachingFrameSize() const
@@ -2780,6 +2795,17 @@ void videoHandlerYUV::drawFrame(QPainter *painter,
                                 double    zoomFactor,
                                 bool      drawRawData)
 {
+  // Check if we should use HDR rendering instead of QPainter
+  QSettings settings;
+  bool enable10BitDisplay = settings.value("Enable10BitDisplay", false).toBool();
+  
+  if (m_useHDRRendering && enable10BitDisplay && srcPixelFormat.getBitsPerSample() == 10 && m_hdrWidget) {
+    DEBUG_YUV("*** SKIPPING QPAINTER - USING HDR OPENGL RENDERING ***");
+    // HDR rendering is handled by HDR_VideoWidget, no need for QPainter
+    // The frame has already been passed to m_hdrWidget in loadFrame()
+    return;
+  }
+  
   std::string msg;
   if (!srcPixelFormat.canConvertToRGB(frameSize, &msg))
   {
@@ -3089,17 +3115,173 @@ void videoHandlerYUV::slotYUVControlChanged()
 
 void videoHandlerYUV::slot10BitDisplayChanged()
 {
+  bool enable10Bit = ui.checkBoxEnable10BitDisplay->isChecked();
+  
   // Save the 10-bit display setting to QSettings
   QSettings settings;
-  settings.setValue("Enable10BitDisplay", ui.checkBoxEnable10BitDisplay->isChecked());
+  settings.setValue("Enable10BitDisplay", enable10Bit);
   
-  // Set the current frame in the buffer to be invalid and clear the cache.
-  // Emit that this item needs redraw and the cache needs updating.
-  this->currentImageIndex       = -1;
-  this->currentImage_frameIndex = -1;
-  this->currentFrameRawData_frameIndex = -1; // Raw data needs to be reprocessed
+  if (enable10Bit) {
+    // Defer HDR detection to avoid blocking UI thread
+    qDebug() << "10-bit display requested, deferring HDR detection to background...";
+    m_useHDRRendering = false;
+    
+    // Use QTimer to defer HDR detection to next event loop iteration
+    QTimer::singleShot(100, this, [this]() {
+      performHDRDetection();
+    });
+    
+    // Don't clear cache immediately - wait for HDR detection results
+    // This prevents canvas from disappearing while detection is in progress
+    
+  } else {
+    // Disabling 10-bit display - clean up HDR resources
+    m_useHDRRendering = false;
+    
+    // Clean up HDR widget if it exists
+    if (m_hdrWidget) {
+      delete m_hdrWidget;
+      m_hdrWidget = nullptr;
+      qDebug() << "HDR widget cleaned up";
+    }
+    
+    qDebug() << "HDR rendering disabled, using standard 8-bit SDR";
+    
+    // Only clear cache when actually disabling HDR
+    this->currentImageIndex = -1;
+    this->setCacheInvalid();
+    emit signalHandlerChanged(true, RECACHE_CLEAR);
+  }
+}
+
+// HDR-related slot implementations
+void videoHandlerYUV::onHDRNotSupported(const QString& reason)
+{
+  qWarning() << "HDR not supported:" << reason;
+  QMessageBox::warning(nullptr, 
+      tr("HDR Error"),
+      tr("HDR rendering failed: %1\n\nFalling back to standard 8-bit rendering.").arg(reason));
+  m_useHDRRendering = false;
+  
+  // Force refresh
+  this->currentImageIndex = -1;
   this->setCacheInvalid();
   emit signalHandlerChanged(true, RECACHE_CLEAR);
+}
+
+void videoHandlerYUV::onHDRModeChanged(HDR_VideoWidget::RenderMode mode)
+{
+  QString modeDescription;
+  switch (mode) {
+  case HDR_VideoWidget::Mode_BT2020_PQ_10bit:
+    modeDescription = "HDR10/BT.2020 PQ (10-bit)";
+    break;
+  case HDR_VideoWidget::Mode_BT709_Linear_16bit:
+    modeDescription = "scRGB/Rec.709 Linear (16-bit)";
+    break;
+  case HDR_VideoWidget::Mode_SDR_8bit:
+  default:
+    modeDescription = "Standard Dynamic Range (8-bit)";
+    break;
+  }
+  
+  qDebug() << "HDR render mode changed to:" << modeDescription;
+}
+
+void videoHandlerYUV::performHDRDetection()
+{
+  qDebug() << "Starting background HDR detection...";
+  
+  // Create HDR detection worker if not already created
+  if (!m_hdrDetectionWorker) {
+    m_hdrDetectionWorker = new HDRDetectionWorker(this);
+    
+    // Connect signals for async communication
+    connect(m_hdrDetectionWorker, &HDRDetectionWorker::detectionComplete,
+            this, &videoHandlerYUV::onHDRDetectionComplete);
+    connect(m_hdrDetectionWorker, &HDRDetectionWorker::detectionFailed,
+            this, &videoHandlerYUV::onHDRDetectionFailed);
+  }
+  
+  // Start detection in background thread (non-blocking)
+  if (!m_hdrDetectionWorker->isDetecting()) {
+    m_hdrDetectionWorker->startDetection();
+    qDebug() << "HDR detection started in background thread";
+  } else {
+    qDebug() << "HDR detection already in progress";
+  }
+}
+
+void videoHandlerYUV::onHDRDetectionComplete(const HDRDetection::HDRCapabilities& capabilities)
+{
+  qDebug() << "HDR detection completed in main thread. Supported:" << capabilities.isHDRSupported;
+  
+  if (capabilities.isHDRSupported) {
+    qDebug() << "HDR capability detected - enabling HDR widget";
+    
+    // Initialize HDR widget if not already created
+    if (!m_hdrWidget) {
+      m_hdrWidget = new HDR_VideoWidget(nullptr);
+      connect(m_hdrWidget, &HDR_VideoWidget::hdrNotSupported,
+              this, &videoHandlerYUV::onHDRNotSupported);
+      connect(m_hdrWidget, &HDR_VideoWidget::renderModeChanged,
+              this, &videoHandlerYUV::onHDRModeChanged);
+    }
+    
+    // Set appropriate render mode based on capabilities
+    if (capabilities.supportedMode == HDRDetection::BT709_G10_16bit) {
+      m_hdrWidget->setRenderMode(HDR_VideoWidget::Mode_BT709_Linear_16bit);
+    } else {
+      m_hdrWidget->setRenderMode(HDR_VideoWidget::Mode_BT2020_PQ_10bit);
+    }
+    
+    m_useHDRRendering = true;
+    qDebug() << "HDR rendering enabled:" << HDRDetection::getHDRModeDescription(capabilities.supportedMode);
+    
+    // Force refresh to apply HDR rendering
+    this->currentImageIndex = -1;
+    this->setCacheInvalid();
+    emit signalHandlerChanged(true, RECACHE_CLEAR);
+    
+  } else {
+    // HDR not supported, fall back to SDR with same handling as detection failed
+    qDebug() << "HDR not supported:" << capabilities.errorMessage;
+    onHDRDetectionFailed(capabilities.errorMessage);
+  }
+}
+
+void videoHandlerYUV::onHDRDetectionFailed(const QString& error)
+{
+  qDebug() << "YUView HDR: Detection failed, falling back to standard rendering:" << error;
+  m_useHDRRendering = false;
+  
+  // Clean up any partially created HDR widget to avoid QPainter conflicts
+  if (m_hdrWidget) {
+    delete m_hdrWidget;
+    m_hdrWidget = nullptr;
+  }
+  
+  // Auto-disable the 10-bit display option since HDR is not supported
+  if (ui.created() && ui.checkBoxEnable10BitDisplay->isChecked()) {
+    ui.checkBoxEnable10BitDisplay->setChecked(false);
+    QSettings settings;
+    settings.setValue("Enable10BitDisplay", false);
+    qDebug() << "Auto-disabled 10-bit display option due to HDR not supported";
+  }
+  
+  // Show user-friendly notification
+  if (ui.created()) {
+    QTimer::singleShot(500, this, [this, error]() {
+      QMessageBox::information(nullptr,
+        tr("10-bit HDR Display"),
+        tr("Your display does not support native 10-bit HDR rendering.\n\n"
+           "YUView will continue using standard 8-bit rendering for optimal compatibility.\n\n"
+           "Technical details: %1").arg(error));
+    });
+  }
+  
+  // Don't force cache clear - keep existing video rendering intact
+  // User can continue using YUView normally with 8-bit rendering
 }
 
 /* Get the pixels values so we can show them in the info part of the zoom box.
@@ -3609,7 +3791,14 @@ void videoHandlerYUV::loadFrame(int frameIndex, bool loadToDoubleBuffer)
                       this->frameSize,
                       this->conversionSettings,
                       enable10BitDisplay);
-    doubleBufferImage           = newImage;
+    
+    // If HDR rendering is enabled and this is a 10-bit frame, use HDR pipeline
+    if (m_useHDRRendering && enable10BitDisplay && srcPixelFormat.getBitsPerSample() == 10 && m_hdrWidget) {
+      DEBUG_YUV("*** USING HDR PIPELINE FOR 10-BIT DISPLAY ***");
+      m_hdrWidget->updateFrame(newImage);
+    } else {
+      doubleBufferImage = newImage;
+    }
     doubleBufferImageFrameIndex = frameIndex;
   }
   else if (currentImageIndex != frameIndex)
@@ -3621,8 +3810,15 @@ void videoHandlerYUV::loadFrame(int frameIndex, bool loadToDoubleBuffer)
                       this->frameSize,
                       this->conversionSettings,
                       enable10BitDisplay);
-    QMutexLocker setLock(&currentImageSetMutex);
-    currentImage      = newImage;
+    
+    // If HDR rendering is enabled and this is a 10-bit frame, use HDR pipeline
+    if (m_useHDRRendering && enable10BitDisplay && srcPixelFormat.getBitsPerSample() == 10 && m_hdrWidget) {
+      DEBUG_YUV("*** USING HDR PIPELINE FOR 10-BIT DISPLAY ***");
+      m_hdrWidget->updateFrame(newImage);
+    } else {
+      QMutexLocker setLock(&currentImageSetMutex);
+      currentImage = newImage;
+    }
     currentImageIndex = frameIndex;
   }
 }
