@@ -9,13 +9,7 @@ CONFIG += object_parallel_to_source
 SOURCES += $$files(src/*.cpp, true)
 HEADERS += $$files(src/*.h, true)
 
-# Explicitly include HDR classes to ensure they're built
-SOURCES += src/video/HDRDetectionWorker.cpp \
-           src/video/HDRDetection.cpp \
-           src/video/HDR_VideoWidget.cpp
-HEADERS += src/video/HDRDetectionWorker.h \
-           src/video/HDRDetection.h \
-           src/video/HDR_VideoWidget.h
+# HDR files are automatically included by the recursive $$files() above
 
 FORMS += $$files(ui/*.ui, false)
 

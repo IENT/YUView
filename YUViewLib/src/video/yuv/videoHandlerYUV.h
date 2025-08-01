@@ -35,6 +35,8 @@
 #include <common/EnumMapper.h>
 #include <video/videoHandler.h>
 #include <video/yuv/PixelFormatYUV.h>
+#include <video/HDR_VideoWidget.h>
+#include <video/HDRDetectionWorker.h>
 
 #include "ui_videoHandlerYUV.h"
 #include <ui/PlaybackController.h>
@@ -247,10 +249,15 @@ private:
   QString oriFilePath;
   bool isShowingOriFile;
   int playbackFrameIndex; // Track current frame for distortion playback
-  int revertFrameNumber; // Store the frame number to revert to
+  qint64 revertFrameNumber; // Frame number to revert to for distortion analysis
   
   // UI state management for active button tracking
   QPushButton* activeDistortionButton;
+
+  // HDR rendering members
+  HDR_VideoWidget* m_hdrWidget;
+  HDRDetectionWorker* m_hdrDetectionWorker;
+  bool m_useHDRRendering;
 
 private slots:
 
@@ -260,6 +267,13 @@ private slots:
   void slotYUVFormatControlChanged(int idx);
   // The 10-bit display checkbox was changed
   void slot10BitDisplayChanged();
+
+  // HDR-related slots
+  void onHDRNotSupported(const QString& reason);
+  void onHDRModeChanged(HDR_VideoWidget::RenderMode mode);
+  void performHDRDetection();
+  void onHDRDetectionComplete(const HDRDetection::HDRCapabilities& capabilities);
+  void onHDRDetectionFailed(const QString& error);
   
   // Distortion analysis button slots
   void slotFirstLevelDistortion();

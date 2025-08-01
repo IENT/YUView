@@ -207,7 +207,7 @@ QLayout *videoHandlerDifference::createDifferenceHandlerControls()
 
   // Connect all the change signals from the controls to "connectWidgetSignals()"
   connect(ui.markDifferenceCheckBox,
-          &QCheckBox::stateChanged,
+          &QCheckBox::checkStateChanged,
           this,
           &videoHandlerDifference::slotDifferenceControlChanged);
   connect(ui.codingOrderComboBox,

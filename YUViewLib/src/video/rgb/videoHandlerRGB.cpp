@@ -307,7 +307,7 @@ QLayout *videoHandlerRGB::createVideoHandlerControls(bool isSizeFixed)
                         ui.BInvertCheckBox,
                         ui.AInvertCheckBox,
                         ui.limitedRangeCheckBox})
-    connect(checkBox, &QCheckBox::stateChanged, this, &videoHandlerRGB::slotDisplayOptionsChanged);
+    connect(checkBox, &QCheckBox::checkStateChanged, this, &videoHandlerRGB::slotDisplayOptionsChanged);
 
   this->updateControlsForNewPixelFormat();
 

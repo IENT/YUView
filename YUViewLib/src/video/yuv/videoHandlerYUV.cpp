@@ -4651,10 +4651,10 @@ void videoHandlerYUV::slotSecondLevelDistortion()
     }
   }
   
-  // Start playback at 1 FPS
-  startDistortionPlayback(1.0);
+  // Start playback at 1.5 FPS
+  startDistortionPlayback(1.5);
   
-  qDebug() << "Second-level distortion: Started 1 FPS playback with loop from frame" << this->playbackFrameIndex << ", revert point:" << this->revertFrameNumber;
+  qDebug() << "Second-level distortion: Started 1.5 FPS playback with loop from frame" << this->playbackFrameIndex << ", revert point:" << this->revertFrameNumber;
 }
 
 void videoHandlerYUV::on_revertButton_L1_clicked()

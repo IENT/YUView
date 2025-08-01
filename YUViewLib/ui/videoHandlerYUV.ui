@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>216</width>
-    <height>230</height>
+    <width>354</width>
+    <height>363</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -236,7 +236,7 @@
               <string>Start playback from current frame at 30 FPS</string>
              </property>
              <property name="text">
-              <string>First-level (30 FPS)</string>
+              <string>First-level </string>
              </property>
             </widget>
            </item>
@@ -260,7 +260,7 @@
               <string>Start playback from current frame at 1 FPS</string>
              </property>
              <property name="text">
-              <string>Second-level (1 FPS)</string>
+              <string>Second-level</string>
              </property>
             </widget>
            </item>

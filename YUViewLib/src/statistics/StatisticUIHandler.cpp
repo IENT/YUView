@@ -94,7 +94,7 @@ QLayout *StatisticUIHandler::createStatisticsHandlerControls(bool recreateContro
     itemNameCheck->setToolTip(statType.description);
     ui.gridLayout->addWidget(itemNameCheck, int(row + 2), 0);
     connect(itemNameCheck,
-            &QCheckBox::stateChanged,
+            &QCheckBox::checkStateChanged,
             this,
             &StatisticUIHandler::onStatisticsControlChanged);
     itemNameCheckBoxes[0].push_back(itemNameCheck);
@@ -159,7 +159,7 @@ QWidget *StatisticUIHandler::getSecondaryStatisticsHandlerControls(bool recreate
       itemNameCheck->setChecked(statType.render);
       ui2.gridLayout->addWidget(itemNameCheck, int(row + 2), 0);
       connect(itemNameCheck,
-              &QCheckBox::stateChanged,
+              &QCheckBox::checkStateChanged,
               this,
               &StatisticUIHandler::onSecondaryStatisticsControlChanged);
       itemNameCheckBoxes[1].push_back(itemNameCheck);
