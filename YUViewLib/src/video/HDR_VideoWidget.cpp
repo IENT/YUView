@@ -609,15 +609,12 @@ void HDR_VideoWidget::updateShaderUniforms()
     m_shaderProgram->setUniformValue(m_projectionMatrixLocation, m_projectionMatrix);
 }
 
-void HDR_VideoWidget::detectHDRCapabilities()
+void HDR_VideoWidget::setHDRCapabilities(const HDRDetection::HDRCapabilities& capabilities)
 {
-    auto hdrDetection = HDRDetection::instance();
-    auto capabilities = hdrDetection->detectHDRCapabilities(this);
-    
     m_hdrCapable = capabilities.isHDRSupported;
     
     if (m_hdrCapable) {
-        qDebug() << "HDR capabilities detected:"
+        qDebug() << "HDR capabilities set:"
                  << "Mode:" << HDRDetection::getHDRModeDescription(capabilities.supportedMode)
                  << "Max Luminance:" << capabilities.maxLuminance << "nits"
                  << "Bits per channel:" << capabilities.bitsPerChannel;
@@ -625,11 +622,12 @@ void HDR_VideoWidget::detectHDRCapabilities()
         // Set appropriate texture format based on detected capabilities
         if (capabilities.supportedMode == HDRDetection::BT2020_PQ_10bit) {
             setTextureFormat(Format_RGB10_A2);
-            setRenderMode(Mode_BT2020_PQ_10bit);
         } else if (capabilities.supportedMode == HDRDetection::BT709_G10_16bit) {
             setTextureFormat(Format_RGBA16F);
-            setRenderMode(Mode_BT709_Linear_16bit);
         }
+        
+        // Note: Render mode will be set by external caller (videoHandlerYUV)
+        // to avoid conflicts with async HDR detection timing
     } else {
         qDebug() << "HDR not supported:" << capabilities.errorMessage;
         setTextureFormat(Format_RGBA8);
@@ -638,12 +636,31 @@ void HDR_VideoWidget::detectHDRCapabilities()
     }
 }
 
+void HDR_VideoWidget::detectHDRCapabilities()
+{
+    // This method is now deprecated - HDR capabilities should be set externally
+    // via setHDRCapabilities() to avoid timing conflicts with async detection
+    qDebug() << "Warning: detectHDRCapabilities() called - this is deprecated. Use setHDRCapabilities() instead.";
+    
+    auto hdrDetection = HDRDetection::instance();
+    auto capabilities = hdrDetection->detectHDRCapabilities(this);
+    setHDRCapabilities(capabilities);
+}
+
 void HDR_VideoWidget::validateRenderMode()
 {
     if (!m_hdrCapable && m_renderMode != Mode_SDR_8bit) {
-        qWarning() << "HDR render mode requested but HDR not supported, falling back to SDR";
-        m_renderMode = Mode_SDR_8bit;
-        emit hdrNotSupported("HDR render mode not supported on this display");
+        qDebug() << "HDR render mode validation: HDR capability not yet determined, allowing mode to be set";
+        qDebug() << "Current HDR capable:" << m_hdrCapable << "Requested mode:" << getRenderModeString();
+        // Don't fallback immediately - HDR detection might still be in progress
+        // Let the external caller handle the final validation after HDR detection completes
+        return;
+    }
+    
+    if (m_hdrCapable) {
+        qDebug() << "HDR render mode validation: HDR supported, mode" << getRenderModeString() << "is valid";
+    } else {
+        qDebug() << "HDR render mode validation: HDR not supported, using SDR mode";
     }
 }
 

@@ -51,6 +51,9 @@ public:
     bool isHDRCapable() const { return m_hdrCapable; }
     bool isInitialized() const { return m_initialized; }
     
+    // HDR capability configuration
+    void setHDRCapabilities(const HDRDetection::HDRCapabilities& capabilities);
+    
 public slots:
     // Main method for updating video frames
     void updateFrame(const QImage& newFrame);

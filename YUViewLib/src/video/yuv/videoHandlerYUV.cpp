@@ -3228,6 +3228,9 @@ void videoHandlerYUV::onHDRDetectionComplete(const HDRDetection::HDRCapabilities
               this, &videoHandlerYUV::onHDRModeChanged);
     }
     
+    // Set HDR capabilities first before setting render mode
+    m_hdrWidget->setHDRCapabilities(capabilities);
+    
     // Set appropriate render mode based on capabilities
     if (capabilities.supportedMode == HDRDetection::BT709_G10_16bit) {
       m_hdrWidget->setRenderMode(HDR_VideoWidget::Mode_BT709_Linear_16bit);
