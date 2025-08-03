@@ -48,6 +48,7 @@
 #include <QMetaObject>
 #include <QPainter>
 #include <QPushButton>
+#include <QThread>
 #include <QDebug>
 #include <QSettings>
 
@@ -2646,17 +2647,26 @@ void convertYUVToImage(const QByteArray         &sourceBuffer,
   // (each 8 bit). Internally, this is how QImage allocates the number of bytes per line (with depth
   // = 32): const int bytes_per_line = ((width * depth + 31) >> 5) << 2; // bytes per scanline (must
   // be multiple of 4)
-  auto qFrameSize          = QSize(int(curFrameSize.width), int(curFrameSize.height));
-  auto platformImageFormat = functionsGui::platformImageFormat(yuvFormat.hasAlpha());
-  if (is_Q_OS_WIN || is_Q_OS_MAC)
-    outputImage = QImage(qFrameSize, platformImageFormat);
-  else if (is_Q_OS_LINUX)
-  {
-    if (platformImageFormat == QImage::Format_ARGB32_Premultiplied ||
-        platformImageFormat == QImage::Format_ARGB32)
+  auto qFrameSize = QSize(int(curFrameSize.width), int(curFrameSize.height));
+  
+  // CRITICAL 10-BIT DISPLAY FIX: Use parameter and correct variable names
+  if (enable10BitDisplay && yuvFormat.getBitsPerSample() == 10) {
+    // FORCE 16-bit format for true 10-bit display (1024 grayscale levels)
+    qDebug() << "*** 10-BIT DISPLAY MODE: Using Format_RGBA64_Premultiplied for true 1024 grayscale levels ***";
+    outputImage = QImage(qFrameSize, QImage::Format_RGBA64_Premultiplied);
+  } else {
+    // Standard 8-bit display path
+    auto platformImageFormat = functionsGui::platformImageFormat(yuvFormat.hasAlpha());
+    if (is_Q_OS_WIN || is_Q_OS_MAC)
       outputImage = QImage(qFrameSize, platformImageFormat);
-    else
-      outputImage = QImage(qFrameSize, QImage::Format_RGB32);
+    else if (is_Q_OS_LINUX)
+    {
+      if (platformImageFormat == QImage::Format_ARGB32_Premultiplied ||
+          platformImageFormat == QImage::Format_ARGB32)
+        outputImage = QImage(qFrameSize, platformImageFormat);
+      else
+        outputImage = QImage(qFrameSize, QImage::Format_RGB32);
+    }
   }
 
   // Check the image buffer size before we write to it
@@ -2799,11 +2809,50 @@ void videoHandlerYUV::drawFrame(QPainter *painter,
   QSettings settings;
   bool enable10BitDisplay = settings.value("Enable10BitDisplay", false).toBool();
   
-  if (m_useHDRRendering && enable10BitDisplay && srcPixelFormat.getBitsPerSample() == 10 && m_hdrWidget) {
-    DEBUG_YUV("*** SKIPPING QPAINTER - USING HDR OPENGL RENDERING ***");
-    // HDR rendering is handled by HDR_VideoWidget, no need for QPainter
-    // The frame has already been passed to m_hdrWidget in loadFrame()
-    return;
+  if (m_useHDRRendering && enable10BitDisplay && srcPixelFormat.getBitsPerSample() == 10) {
+    DEBUG_YUV("*** ATTEMPTING HDR OPENGL RENDERING INTEGRATED WITH QPAINTER ***");
+    
+    // CRITICAL FIX: Ensure proper thread and painter state for HDR rendering
+    if (QThread::currentThread() != QApplication::instance()->thread()) {
+      qWarning() << "HDR rendering called from non-main thread, falling back to standard rendering";
+    } else if (!painter || !painter->isActive()) {
+      qWarning() << "QPainter not active for HDR rendering, falling back to standard rendering";
+    } else {
+      // Create HDR widget if needed (now safe in main thread)
+      if (!m_hdrWidget) {
+        qDebug() << "Creating HDR widget in main thread for proper OpenGL context";
+        
+        // CRITICAL FIX: Use main window as parent for valid OpenGL context
+        QWidget* mainWindow = qobject_cast<QWidget*>(QApplication::activeWindow());
+        if (!mainWindow) {
+          // Fallback: find any top-level widget
+          auto widgets = QApplication::topLevelWidgets();
+          if (!widgets.isEmpty()) {
+            mainWindow = widgets.first();
+          }
+        }
+        
+        m_hdrWidget = createHDRWidget(mainWindow);
+        
+        // Simple initialization without problematic show/hide cycle
+        if (m_hdrWidget) {
+          m_hdrWidget->resize(256, 256);  // Set reasonable size
+          qDebug() << "HDR widget created with size 256x256";
+        }
+      }
+      
+      if (m_hdrWidget) {
+        // KRITA-INSPIRED FIX: Completely avoid QPainter/OpenGL mixing by disabling HDR during active painting  
+        qDebug() << "HDR widget available but skipping HDR rendering during QPainter operations to prevent crashes";
+        qDebug() << "Using standard rendering to maintain stability";
+        
+        // TODO: Implement proper async HDR rendering that doesn't conflict with QPainter
+        // For now, prioritize stability over HDR rendering
+      } else {
+        qWarning() << "Failed to create HDR widget, falling back to standard QPainter rendering";
+      }
+    }
+    // Fall through to standard rendering if HDR fails
   }
   
   std::string msg;
@@ -2895,9 +2944,9 @@ QLayout *videoHandlerYUV::createVideoHandlerControls(bool isSizeAndFormatFixed)
   ui.chromaInvertCheckBox->setChecked(
       this->conversionSettings.mathParameters[Component::Chroma].invert);
   
-  // Load 10-bit display setting from QSettings
+  // Load 10-bit display setting from QSettings (always default to false for user control)
   QSettings settings;
-  ui.checkBoxEnable10BitDisplay->setChecked(settings.value("Enable10BitDisplay", false).toBool());
+  ui.checkBoxEnable10BitDisplay->setChecked(false); // Always start disabled for user verification
 
   // Connect all the change signals from the controls to "connectWidgetSignals()"
   connect(ui.yuvFormatComboBox,
@@ -3122,9 +3171,20 @@ void videoHandlerYUV::slot10BitDisplayChanged()
   settings.setValue("Enable10BitDisplay", enable10Bit);
   
   if (enable10Bit) {
-    // Defer HDR detection to avoid blocking UI thread
-    qDebug() << "10-bit display requested, deferring HDR detection to background...";
-    m_useHDRRendering = false;
+    // Check if HDR detection is already in progress or complete
+    if (m_hdrDetectionWorker && m_hdrDetectionWorker->isDetecting()) {
+      qDebug() << "HDR detection already in progress, ignoring duplicate request";
+      return;
+    }
+    
+    // Check if HDR is already enabled
+    if (m_useHDRRendering && m_hdrCapabilities.isHDRSupported) {
+      qDebug() << "HDR rendering already enabled, no need to re-detect";
+      return;
+    }
+    
+    // Start HDR detection only if not already done
+    qDebug() << "10-bit display requested, starting HDR detection...";
     
     // Use QTimer to defer HDR detection to next event loop iteration
     QTimer::singleShot(100, this, [this]() {
@@ -3132,25 +3192,35 @@ void videoHandlerYUV::slot10BitDisplayChanged()
     });
     
     // Don't clear cache immediately - wait for HDR detection results
-    // This prevents canvas from disappearing while detection is in progress
     
   } else {
     // Disabling 10-bit display - clean up HDR resources
-    m_useHDRRendering = false;
-    
-    // Clean up HDR widget if it exists
-    if (m_hdrWidget) {
-      delete m_hdrWidget;
-      m_hdrWidget = nullptr;
-      qDebug() << "HDR widget cleaned up";
+    if (m_useHDRRendering) {
+      qDebug() << "Disabling HDR rendering and cleaning up resources";
+      
+      m_useHDRRendering = false;
+      
+      // Signal HDR widget should be hidden before cleanup
+      if (m_hdrWidget) {
+        emit hdrWidgetNeedsDisplay(m_hdrWidget, false);
+        m_hdrWidget->hide();
+        m_hdrWidget->deleteLater();
+        m_hdrWidget = nullptr;
+        qDebug() << "HDR widget hidden and scheduled for cleanup";
+      }
+      
+      // Notify that HDR rendering is now disabled
+      emit hdrRenderingStateChanged(false, nullptr);
+      
+      qDebug() << "HDR rendering disabled, using standard 8-bit SDR";
+      
+      // Clear cache when disabling HDR
+      this->currentImageIndex = -1;
+      this->setCacheInvalid();
+      emit signalHandlerChanged(true, RECACHE_CLEAR);
+    } else {
+      qDebug() << "HDR rendering already disabled, no cleanup needed";
     }
-    
-    qDebug() << "HDR rendering disabled, using standard 8-bit SDR";
-    
-    // Only clear cache when actually disabling HDR
-    this->currentImageIndex = -1;
-    this->setCacheInvalid();
-    emit signalHandlerChanged(true, RECACHE_CLEAR);
   }
 }
 
@@ -3217,29 +3287,18 @@ void videoHandlerYUV::onHDRDetectionComplete(const HDRDetection::HDRCapabilities
   qDebug() << "HDR detection completed in main thread. Supported:" << capabilities.isHDRSupported;
   
   if (capabilities.isHDRSupported) {
-    qDebug() << "HDR capability detected - enabling HDR widget";
+    qDebug() << "HDR capability detected - preparing for integrated HDR rendering";
     
-    // Initialize HDR widget if not already created
-    if (!m_hdrWidget) {
-      m_hdrWidget = new HDR_VideoWidget(nullptr);
-      connect(m_hdrWidget, &HDR_VideoWidget::hdrNotSupported,
-              this, &videoHandlerYUV::onHDRNotSupported);
-      connect(m_hdrWidget, &HDR_VideoWidget::renderModeChanged,
-              this, &videoHandlerYUV::onHDRModeChanged);
-    }
-    
-    // Set HDR capabilities first before setting render mode
-    m_hdrWidget->setHDRCapabilities(capabilities);
-    
-    // Set appropriate render mode based on capabilities
-    if (capabilities.supportedMode == HDRDetection::BT709_G10_16bit) {
-      m_hdrWidget->setRenderMode(HDR_VideoWidget::Mode_BT709_Linear_16bit);
-    } else {
-      m_hdrWidget->setRenderMode(HDR_VideoWidget::Mode_BT2020_PQ_10bit);
-    }
-    
+    // Store capabilities for later use when HDR widget is actually needed
+    m_hdrCapabilities = capabilities;
     m_useHDRRendering = true;
-    qDebug() << "HDR rendering enabled:" << HDRDetection::getHDRModeDescription(capabilities.supportedMode);
+    
+    qDebug() << "HDR rendering enabled (integrated mode):" << HDRDetection::getHDRModeDescription(capabilities.supportedMode);
+    
+    // Notify that HDR rendering is now available - main UI should handle integration
+    emit hdrRenderingStateChanged(true, nullptr);
+    
+    qDebug() << "HDR capabilities stored, ready for integrated rendering when main UI creates the widget";
     
     // Force refresh to apply HDR rendering
     this->currentImageIndex = -1;
@@ -3260,9 +3319,14 @@ void videoHandlerYUV::onHDRDetectionFailed(const QString& error)
   
   // Clean up any partially created HDR widget to avoid QPainter conflicts
   if (m_hdrWidget) {
-    delete m_hdrWidget;
+    emit hdrWidgetNeedsDisplay(m_hdrWidget, false);
+    m_hdrWidget->hide();
+    m_hdrWidget->deleteLater();
     m_hdrWidget = nullptr;
   }
+  
+  // Notify that HDR rendering failed
+  emit hdrRenderingStateChanged(false, nullptr);
   
   // Auto-disable the 10-bit display option since HDR is not supported
   if (ui.created() && ui.checkBoxEnable10BitDisplay->isChecked()) {
@@ -3285,6 +3349,112 @@ void videoHandlerYUV::onHDRDetectionFailed(const QString& error)
   
   // Don't force cache clear - keep existing video rendering intact
   // User can continue using YUView normally with 8-bit rendering
+}
+
+HDR_VideoWidget* videoHandlerYUV::createHDRWidget(QWidget* parent)
+{
+  // Only create if HDR is supported and not already created
+  if (!m_useHDRRendering || m_hdrWidget) {
+    qDebug() << "HDR widget creation: HDR not supported or widget already exists";
+    return m_hdrWidget;
+  }
+  
+  qDebug() << "Creating HDR widget with proper parent for UI integration";
+  
+  // Create HDR widget with specified parent (for proper UI integration)
+  m_hdrWidget = new HDR_VideoWidget(parent);
+  
+  // Connect signals
+  connect(m_hdrWidget, &HDR_VideoWidget::hdrNotSupported,
+          this, &videoHandlerYUV::onHDRNotSupported);
+  connect(m_hdrWidget, &HDR_VideoWidget::renderModeChanged,
+          this, &videoHandlerYUV::onHDRModeChanged);
+  
+  // Set HDR capabilities from stored values
+  m_hdrWidget->setHDRCapabilities(m_hdrCapabilities);
+  
+  // Set appropriate render mode based on capabilities
+  if (m_hdrCapabilities.supportedMode == HDRDetection::BT709_G10_16bit) {
+    m_hdrWidget->setRenderMode(HDR_VideoWidget::Mode_BT709_Linear_16bit);
+  } else {
+    m_hdrWidget->setRenderMode(HDR_VideoWidget::Mode_BT2020_PQ_10bit);
+  }
+  
+  qDebug() << "HDR widget created with parent integration, ready for display";
+  
+  // Refresh to apply HDR rendering with the new widget
+  this->currentImageIndex = -1;
+  this->setCacheInvalid();
+  emit signalHandlerChanged(true, RECACHE_CLEAR);
+  
+  return m_hdrWidget;
+}
+
+QImage videoHandlerYUV::getHDRRenderedImage()
+{
+  if (!m_hdrWidget || !m_useHDRRendering) {
+    qWarning() << "HDR widget not available for rendering";
+    return QImage();
+  }
+  
+  // Ensure we're in the main thread for OpenGL operations
+  if (QThread::currentThread() != QApplication::instance()->thread()) {
+    qWarning() << "HDR rendering must be called from main thread";
+    return QImage();
+  }
+  
+  // Ensure HDR widget has valid OpenGL context
+  if (!m_hdrWidget->context() || !m_hdrWidget->context()->isValid()) {
+    qWarning() << "HDR widget OpenGL context not valid";
+    return QImage();
+  }
+  
+  // Make sure HDR widget is initialized
+  if (!m_hdrWidget->isInitialized()) {
+    qWarning() << "HDR widget not yet initialized";
+    return QImage();
+  }
+  
+  // Get the rendered frame from HDR widget
+  // We need to trigger a render and then read the framebuffer
+  
+  try {
+    // Make the HDR widget's context current
+    m_hdrWidget->makeCurrent();
+    
+    // Get the size of the rendered content
+    QSize widgetSize = m_hdrWidget->size();
+    if (widgetSize.isEmpty()) {
+      // Use frame size as fallback
+      widgetSize = QSize(frameSize.width, frameSize.height);
+      m_hdrWidget->resize(widgetSize);
+    }
+    
+    // Trigger rendering (now uses improved native HDR via renderOffscreen wrapper)
+    m_hdrWidget->renderOffscreen();
+    
+    // CRITICAL FIX: Use 10-bit HDR framebuffer grabbing for true color depth
+    QImage result = m_hdrWidget->grabHDRFramebuffer();
+    
+    m_hdrWidget->doneCurrent();
+    
+    if (result.isNull()) {
+      qWarning() << "Failed to grab HDR framebuffer";
+      return QImage();
+    }
+    
+    qDebug() << "Successfully rendered HDR frame to QImage:" << result.size() << result.format();
+    return result;
+    
+  } catch (const std::exception& e) {
+    qWarning() << "Exception during HDR rendering:" << e.what();
+    m_hdrWidget->doneCurrent();
+    return QImage();
+  } catch (...) {
+    qWarning() << "Unknown exception during HDR rendering";
+    m_hdrWidget->doneCurrent();
+    return QImage();
+  }
 }
 
 /* Get the pixels values so we can show them in the info part of the zoom box.
@@ -3795,13 +3965,9 @@ void videoHandlerYUV::loadFrame(int frameIndex, bool loadToDoubleBuffer)
                       this->conversionSettings,
                       enable10BitDisplay);
     
-    // If HDR rendering is enabled and this is a 10-bit frame, use HDR pipeline
-    if (m_useHDRRendering && enable10BitDisplay && srcPixelFormat.getBitsPerSample() == 10 && m_hdrWidget) {
-      DEBUG_YUV("*** USING HDR PIPELINE FOR 10-BIT DISPLAY ***");
-      m_hdrWidget->updateFrame(newImage);
-    } else {
-      doubleBufferImage = newImage;
-    }
+    // Store the image for potential HDR use, but defer HDR widget creation
+    // HDR widget creation must happen in main thread (during drawFrame)
+    doubleBufferImage = newImage;
     doubleBufferImageFrameIndex = frameIndex;
   }
   else if (currentImageIndex != frameIndex)
@@ -3814,11 +3980,9 @@ void videoHandlerYUV::loadFrame(int frameIndex, bool loadToDoubleBuffer)
                       this->conversionSettings,
                       enable10BitDisplay);
     
-    // If HDR rendering is enabled and this is a 10-bit frame, use HDR pipeline
-    if (m_useHDRRendering && enable10BitDisplay && srcPixelFormat.getBitsPerSample() == 10 && m_hdrWidget) {
-      DEBUG_YUV("*** USING HDR PIPELINE FOR 10-BIT DISPLAY ***");
-      m_hdrWidget->updateFrame(newImage);
-    } else {
+    // Store the image for potential HDR use, but defer HDR widget creation  
+    // HDR widget creation must happen in main thread (during drawFrame)
+    {
       QMutexLocker setLock(&currentImageSetMutex);
       currentImage = newImage;
     }

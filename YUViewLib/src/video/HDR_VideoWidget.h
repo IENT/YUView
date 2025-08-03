@@ -47,6 +47,13 @@ public:
     void setHDRGamma(float gamma);  
     float getHDRGamma() const { return m_hdrGamma; }
     
+    // Physical luminance settings for proper HDR tone mapping
+    void setDisplayMaxLuminance(float maxLuminance);
+    float getDisplayMaxLuminance() const { return m_displayMaxLuminance; }
+    
+    void setSourceMaxLuminance(float maxLuminance);
+    float getSourceMaxLuminance() const { return m_sourceMaxLuminance; }
+    
     // Status queries
     bool isHDRCapable() const { return m_hdrCapable; }
     bool isInitialized() const { return m_initialized; }
@@ -64,6 +71,15 @@ public slots:
     // HDR control slots
     void setHDRExposureSlot(double exposure) { setHDRExposure(static_cast<float>(exposure)); }
     void setHDRGammaSlot(double gamma) { setHDRGamma(static_cast<float>(gamma)); }
+    
+    // Get native HDR framebuffer for direct display (replaces grabFramebuffer approach)
+    void renderNativeHDR();
+    
+    // Backward compatibility wrapper for legacy code
+    void renderOffscreen() { renderNativeHDR(); }
+    
+    // CRITICAL FIX: 10-bit HDR framebuffer grabbing
+    QImage grabHDRFramebuffer();
 
 signals:
     // Emitted when HDR is not supported and fallback is needed
@@ -83,6 +99,7 @@ protected:
     void initializeGL() override;
     void paintGL() override; 
     void resizeGL(int width, int height) override;
+    void paintEvent(QPaintEvent* event) override;
 
     // Event handling
     void wheelEvent(QWheelEvent* event) override;
@@ -119,6 +136,9 @@ private:
     // Error handling
     void handleInitializationError(const QString& error);
     void handleRenderingError(const QString& error);
+    
+    // HDR surface format validation (inspired by Krita)
+    static bool isHDRFormat(const QSurfaceFormat& format);
 
 private:
     // Rendering state
@@ -128,8 +148,10 @@ private:
     bool m_initialized;
     
     // HDR parameters
-    float m_hdrExposure;    // HDR exposure adjustment (-10.0 to +10.0)
-    float m_hdrGamma;       // Gamma correction (0.1 to 5.0)
+    float m_hdrExposure;         // HDR exposure adjustment (-10.0 to +10.0)
+    float m_hdrGamma;            // Gamma correction (0.1 to 5.0)
+    float m_displayMaxLuminance; // Display peak luminance in nits (from HDRDetection)
+    float m_sourceMaxLuminance;  // Source content peak luminance in nits (from video metadata)
     
     // OpenGL objects
     QOpenGLShaderProgram* m_shaderProgram;
@@ -143,6 +165,8 @@ private:
     int m_renderModeLocation;
     int m_hdrExposureLocation;
     int m_hdrGammaLocation;
+    int m_displayMaxLuminanceLocation;
+    int m_sourceMaxLuminanceLocation;
     int m_textureMatrixLocation;
     int m_projectionMatrixLocation;
     

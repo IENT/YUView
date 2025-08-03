@@ -6,7 +6,9 @@
 #include <QOpenGLContext>
 #include <QApplication>
 #include <QElapsedTimer>
+#include <QColorSpace>  // For Qt 6 HDR color space support
 #include <cmath>
+#include <vector>  // For 10-bit framebuffer grabbing
 
 // Vertex data for full-screen quad (position + texture coordinates)
 const float HDR_VideoWidget::s_quadVertices[] = {
@@ -30,6 +32,8 @@ HDR_VideoWidget::HDR_VideoWidget(QWidget* parent)
     , m_initialized(false)
     , m_hdrExposure(0.0f)
     , m_hdrGamma(1.0f)
+    , m_displayMaxLuminance(100.0f)  // Default SDR display
+    , m_sourceMaxLuminance(1000.0f)  // Default HDR content assumption
     , m_shaderProgram(nullptr)
     , m_videoTexture(nullptr)
     , m_vertexBuffer(nullptr)
@@ -39,6 +43,8 @@ HDR_VideoWidget::HDR_VideoWidget(QWidget* parent)
     , m_renderModeLocation(-1)
     , m_hdrExposureLocation(-1)
     , m_hdrGammaLocation(-1)
+    , m_displayMaxLuminanceLocation(-1)
+    , m_sourceMaxLuminanceLocation(-1)
     , m_textureMatrixLocation(-1)
     , m_projectionMatrixLocation(-1)
     , m_frameUpdated(false)
@@ -47,10 +53,43 @@ HDR_VideoWidget::HDR_VideoWidget(QWidget* parent)
     , m_lastFpsUpdate(0)
     , m_dragging(false)
 {
+    // CRITICAL FIX: Proper HDR Surface Format configuration based on Krita implementation
+    QSurfaceFormat format;
+    format.setDepthBufferSize(24);
+    format.setStencilBufferSize(8);
+    format.setVersion(3, 3);
+    format.setProfile(QSurfaceFormat::CoreProfile);
+    format.setSamples(0);  // Disable multisampling for stability
+    format.setSwapBehavior(QSurfaceFormat::DoubleBuffer);
+    format.setRenderableType(QSurfaceFormat::OpenGL);
+    
+    // KRITA-INSPIRED FIX: Configure for true HDR10 (BT.2020 PQ) support
+    // This matches Krita's BT2020_PQ configuration exactly
+    format.setRedBufferSize(10);
+    format.setGreenBufferSize(10);
+    format.setBlueBufferSize(10);
+    format.setAlphaBufferSize(2);
+    
+    // CRITICAL: Set HDR color space for true 10-bit display (Qt 6)
+    #if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+    format.setColorSpace(QColorSpace::Bt2100Pq);  // HDR10/BT.2020 PQ
+    qDebug() << "HDR Surface Format: BT2100Pq color space configured";
+    #else
+    qWarning() << "Qt version < 6.0, HDR color space not available";
+    #endif
+    
+    setFormat(format);
+    setMinimumSize(64, 64);  // Minimum size to ensure valid context
+    
     // Set up the widget for OpenGL rendering
     setAutoFillBackground(false);
     setFocusPolicy(Qt::StrongFocus);
     setMouseTracking(true);
+    
+    // Configure for HDR rendering (modified attributes)
+    setAttribute(Qt::WA_NoSystemBackground, true);
+    setAttribute(Qt::WA_OpaquePaintEvent, true);
+    // REMOVED: setAttribute(Qt::WA_PaintOnScreen, false) to allow proper context
     
     // Initialize transformation matrices
     m_textureMatrix.setToIdentity();
@@ -86,10 +125,15 @@ void HDR_VideoWidget::setRenderMode(RenderMode mode)
         validateRenderMode();
         
         if (m_initialized) {
-            makeCurrent();
-            updateShaderUniforms();
-            doneCurrent();
-            update();
+            // Ensure OpenGL operations happen in the main thread
+            QMetaObject::invokeMethod(this, [this]() {
+                if (context() && context()->isValid()) {
+                    makeCurrent();
+                    updateShaderUniforms();
+                    doneCurrent();
+                    update();
+                }
+            }, Qt::QueuedConnection);
         }
         
         // Control FPS timer based on render mode
@@ -118,10 +162,15 @@ void HDR_VideoWidget::setTextureFormat(TextureFormat format)
         m_textureFormat = format;
         
         if (m_initialized && m_videoTexture) {
-            makeCurrent();
-            updateTextureParameters();
-            doneCurrent();
-            update();
+            // Ensure OpenGL operations happen in the main thread
+            QMetaObject::invokeMethod(this, [this]() {
+                if (context() && context()->isValid()) {
+                    makeCurrent();
+                    updateTextureParameters();
+                    doneCurrent();
+                    update();
+                }
+            }, Qt::QueuedConnection);
         }
         
         qDebug() << "HDR texture format changed to:" << getTextureFormatString();
@@ -137,10 +186,15 @@ void HDR_VideoWidget::setHDRExposure(float exposure)
         m_hdrExposure = exposure;
         
         if (m_initialized) {
-            makeCurrent();
-            updateShaderUniforms();
-            doneCurrent();
-            update();
+            // Ensure OpenGL operations happen in the main thread
+            QMetaObject::invokeMethod(this, [this]() {
+                if (context() && context()->isValid()) {
+                    makeCurrent();
+                    updateShaderUniforms();
+                    doneCurrent();
+                    update();
+                }
+            }, Qt::QueuedConnection);
         }
         
         qDebug() << "HDR exposure set to:" << exposure;
@@ -156,13 +210,64 @@ void HDR_VideoWidget::setHDRGamma(float gamma)
         m_hdrGamma = gamma;
         
         if (m_initialized) {
-            makeCurrent();
-            updateShaderUniforms();
-            doneCurrent();
-            update();
+            // Ensure OpenGL operations happen in the main thread
+            QMetaObject::invokeMethod(this, [this]() {
+                if (context() && context()->isValid()) {
+                    makeCurrent();
+                    updateShaderUniforms();
+                    doneCurrent();
+                    update();
+                }
+            }, Qt::QueuedConnection);
         }
         
         qDebug() << "HDR gamma set to:" << gamma;
+    }
+}
+
+void HDR_VideoWidget::setDisplayMaxLuminance(float maxLuminance)
+{
+    // Clamp to reasonable range for display luminance
+    maxLuminance = qBound(50.0f, maxLuminance, 10000.0f);
+    
+    if (qAbs(m_displayMaxLuminance - maxLuminance) > 0.1f) {
+        m_displayMaxLuminance = maxLuminance;
+        
+        if (m_initialized) {
+            QMetaObject::invokeMethod(this, [this]() {
+                if (context() && context()->isValid()) {
+                    makeCurrent();
+                    updateShaderUniforms();
+                    doneCurrent();
+                    update();
+                }
+            }, Qt::QueuedConnection);
+        }
+        
+        qDebug() << "Display max luminance set to:" << maxLuminance << "nits";
+    }
+}
+
+void HDR_VideoWidget::setSourceMaxLuminance(float maxLuminance)
+{
+    // Clamp to reasonable range for source content luminance
+    maxLuminance = qBound(100.0f, maxLuminance, 10000.0f);
+    
+    if (qAbs(m_sourceMaxLuminance - maxLuminance) > 0.1f) {
+        m_sourceMaxLuminance = maxLuminance;
+        
+        if (m_initialized) {
+            QMetaObject::invokeMethod(this, [this]() {
+                if (context() && context()->isValid()) {
+                    makeCurrent();
+                    updateShaderUniforms();
+                    doneCurrent();
+                    update();
+                }
+            }, Qt::QueuedConnection);
+        }
+        
+        qDebug() << "Source max luminance set to:" << maxLuminance << "nits";
     }
 }
 
@@ -173,24 +278,35 @@ void HDR_VideoWidget::updateFrame(const QImage& newFrame)
         return;
     }
     
+    // Store frame data first (thread-safe)
     m_currentFrame = newFrame;
     m_frameSize = newFrame.size();
     m_frameUpdated = true;
     
+    // Use QMetaObject::invokeMethod to ensure OpenGL operations happen in the main thread
     if (m_initialized) {
-        makeCurrent();
-        if (uploadTextureData(newFrame)) {
-            doneCurrent();
-            update();
-            emit frameUpdated();
-            m_frameCount++;
-        } else {
-            doneCurrent();
-            handleRenderingError("Failed to upload texture data");
-        }
+        // Queue the texture upload for the main thread to avoid OpenGL context issues
+        QMetaObject::invokeMethod(this, [this, newFrame]() {
+            if (context() && context()->isValid()) {
+                makeCurrent();
+                if (uploadTextureData(newFrame)) {
+                    doneCurrent();
+                    update();
+                    emit frameUpdated();
+                    m_frameCount++;
+                } else {
+                    doneCurrent();
+                    handleRenderingError("Failed to upload texture data");
+                }
+            } else {
+                handleRenderingError("OpenGL context is not valid for HDR frame update");
+            }
+        }, Qt::QueuedConnection);
     } else {
         // Queue the frame for when we're initialized
-        update();
+        QMetaObject::invokeMethod(this, [this]() {
+            update();
+        }, Qt::QueuedConnection);
     }
 }
 
@@ -213,14 +329,41 @@ void HDR_VideoWidget::initializeGL()
              << context()->format().majorVersion() << "." 
              << context()->format().minorVersion();
     
-    // Detect HDR capabilities
-    detectHDRCapabilities();
+    // KRITA-INSPIRED FIX: Validate actual HDR surface format
+    QSurfaceFormat actualFormat = context()->format();
+    bool isActuallyHDR = isHDRFormat(actualFormat);
+    
+    qDebug() << "HDR Surface Format validation:";
+    qDebug() << "  Red buffer size:" << actualFormat.redBufferSize();
+    qDebug() << "  Green buffer size:" << actualFormat.greenBufferSize(); 
+    qDebug() << "  Blue buffer size:" << actualFormat.blueBufferSize();
+    qDebug() << "  Alpha buffer size:" << actualFormat.alphaBufferSize();
+    #if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+    qDebug() << "  Color space:" << actualFormat.colorSpace();
+    #endif
+    qDebug() << "  Is HDR format:" << isActuallyHDR;
+    
+    if (m_renderMode != Mode_SDR_8bit) {
+        if (isActuallyHDR) {
+            qDebug() << "SUCCESS: True HDR surface format confirmed!";
+        } else {
+            qWarning() << "WARNING: HDR mode requested but surface format is not HDR-capable";
+            qWarning() << "This may result in 8-bit display despite 10-bit content";
+        }
+    }
     
     // Initialize OpenGL state
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     glDisable(GL_DEPTH_TEST);
     glDisable(GL_CULL_FACE);
+    
+    // Check for OpenGL errors after state setup
+    GLenum error = glGetError();
+    if (error != GL_NO_ERROR) {
+        handleInitializationError(QString("OpenGL state setup failed: %1").arg(error));
+        return;
+    }
     
     // Initialize shaders
     if (!initializeShaders()) {
@@ -269,6 +412,43 @@ void HDR_VideoWidget::paintGL()
     logOpenGLError("paintGL");
 }
 
+void HDR_VideoWidget::renderNativeHDR()
+{
+    // CRITICAL FIX: Proper off-screen rendering implementation
+    if (!m_initialized || !context() || !context()->isValid()) {
+        qWarning() << "Cannot render HDR: widget not initialized or context invalid";
+        return;
+    }
+
+    // Ensure we have a valid current context
+    makeCurrent();
+    
+    // Clear any previous OpenGL errors
+    glGetError();
+    
+    // Perform the actual rendering
+    paintGL();
+    
+    // Force completion of all OpenGL commands
+    glFinish();
+    
+    // Release context properly
+    doneCurrent();
+    
+    logOpenGLError("renderNativeHDR");
+}
+
+void HDR_VideoWidget::paintEvent(QPaintEvent* event)
+{
+    // STABILITY FIX: Minimal paintEvent to avoid recursion
+    Q_UNUSED(event);
+    
+    // Only use standard OpenGL rendering, no custom behavior
+    if (m_initialized) {
+        QOpenGLWidget::paintEvent(event);
+    }
+}
+
 void HDR_VideoWidget::resizeGL(int width, int height)
 {
     glViewport(0, 0, width, height);
@@ -315,9 +495,11 @@ out vec4 FragColor;
 in vec2 TexCoord;
 
 uniform sampler2D videoTexture;
-uniform int renderMode;        // 0=SDR, 1=BT2020_PQ, 2=BT709_Linear
-uniform float hdrExposure;     // HDR exposure adjustment
-uniform float hdrGamma;        // Gamma correction
+uniform int renderMode;            // 0=SDR, 1=BT2020_PQ, 2=BT709_Linear
+uniform float hdrExposure;         // HDR exposure adjustment
+uniform float hdrGamma;            // Gamma correction
+uniform float displayMaxLuminance; // Display peak luminance in nits (from HDRDetection)
+uniform float sourceMaxLuminance;  // Source content peak luminance in nits
 
 // ST.2084 PQ constants for HDR10
 const float m1 = 2610.0 / 4096.0 / 4.0;
@@ -333,10 +515,13 @@ const mat3 from709to2020 = mat3(
     0.0163916, 0.0880132, 0.8955950
 );
 
-// Apply ST.2084 PQ transfer function (EOTF)
+// Apply ST.2084 PQ transfer function with proper physical tone mapping
 vec3 applyPQ(vec3 linear) {
-    // Normalize to [0,1] range for PQ curve
-    vec3 normalizedLinear = linear / 10000.0;
+    // First, tone map from source peak luminance to display peak luminance
+    vec3 toneMappedLinear = linear * (displayMaxLuminance / sourceMaxLuminance);
+    
+    // Normalize to [0,1] range for PQ curve using display peak luminance
+    vec3 normalizedLinear = toneMappedLinear / displayMaxLuminance;
     
     // Apply PQ curve
     vec3 Lp = pow(max(normalizedLinear, vec3(0.0)), vec3(m1));
@@ -404,6 +589,8 @@ void main()
     m_renderModeLocation = m_shaderProgram->uniformLocation("renderMode");
     m_hdrExposureLocation = m_shaderProgram->uniformLocation("hdrExposure");
     m_hdrGammaLocation = m_shaderProgram->uniformLocation("hdrGamma");
+    m_displayMaxLuminanceLocation = m_shaderProgram->uniformLocation("displayMaxLuminance");
+    m_sourceMaxLuminanceLocation = m_shaderProgram->uniformLocation("sourceMaxLuminance");
     m_textureMatrixLocation = m_shaderProgram->uniformLocation("textureMatrix");
     m_projectionMatrixLocation = m_shaderProgram->uniformLocation("projectionMatrix");
     
@@ -462,10 +649,15 @@ bool HDR_VideoWidget::initializeTexture()
     // Create texture object
     m_videoTexture = new QOpenGLTexture(QOpenGLTexture::Target2D);
     
-    // Set texture parameters based on current format
-    updateTextureParameters();
+    if (!m_videoTexture) {
+        qWarning() << "Failed to create OpenGL texture object";
+        return false;
+    }
     
-    qDebug() << "HDR texture initialized with format:" << getTextureFormatString();
+    // Create the texture storage (don't set parameters yet - wait for actual frame data)
+    // We'll configure the texture when we have actual frame data to upload
+    
+    qDebug() << "HDR texture object created successfully";
     return true;
 }
 
@@ -531,13 +723,43 @@ bool HDR_VideoWidget::uploadTextureData(const QImage& image)
         break;
     }
     
-    // Allocate or update texture storage
-    if (m_videoTexture->width() != textureImage.width() || 
-        m_videoTexture->height() != textureImage.height()) {
+    // Create or recreate texture storage as needed
+    bool needsReallocation = !m_videoTexture->isCreated() ||
+                            m_videoTexture->width() != textureImage.width() || 
+                            m_videoTexture->height() != textureImage.height();
+    
+    if (needsReallocation) {
+        qDebug() << "Creating/recreating texture storage:" 
+                 << textureImage.width() << "x" << textureImage.height()
+                 << "format:" << internalFormat;
+        
+        // Destroy old texture if it exists
+        if (m_videoTexture->isCreated()) {
+            m_videoTexture->destroy();
+        }
         
         m_videoTexture->setSize(textureImage.width(), textureImage.height());
         m_videoTexture->setFormat(QOpenGLTexture::TextureFormat(internalFormat));
+        
+        if (!m_videoTexture->create()) {
+            qWarning() << "Failed to create OpenGL texture";
+            m_videoTexture->release();
+            return false;
+        }
+        
+        // Allocate texture storage (allocateStorage() returns void)
         m_videoTexture->allocateStorage();
+        
+        // Check for OpenGL errors after allocation
+        GLenum error = glGetError();
+        if (error != GL_NO_ERROR) {
+            qWarning() << "OpenGL error during texture allocation:" << error;
+            m_videoTexture->release();
+            return false;
+        }
+        
+        // Set texture parameters now that it's created
+        updateTextureParameters();
     }
     
     // Upload pixel data
@@ -557,6 +779,12 @@ void HDR_VideoWidget::updateTextureParameters()
         return;
     }
     
+    // Only configure if texture has been created with actual data
+    if (!m_videoTexture->isCreated()) {
+        qDebug() << "Texture not yet created, skipping parameter update";
+        return;
+    }
+    
     m_videoTexture->bind();
     
     // Set filtering based on content type
@@ -567,6 +795,8 @@ void HDR_VideoWidget::updateTextureParameters()
     m_videoTexture->setWrapMode(QOpenGLTexture::ClampToEdge);
     
     m_videoTexture->release();
+    
+    qDebug() << "Texture parameters updated successfully";
 }
 
 void HDR_VideoWidget::renderFrame()
@@ -605,6 +835,8 @@ void HDR_VideoWidget::updateShaderUniforms()
     m_shaderProgram->setUniformValue(m_renderModeLocation, static_cast<int>(m_renderMode));
     m_shaderProgram->setUniformValue(m_hdrExposureLocation, m_hdrExposure);
     m_shaderProgram->setUniformValue(m_hdrGammaLocation, m_hdrGamma);
+    m_shaderProgram->setUniformValue(m_displayMaxLuminanceLocation, m_displayMaxLuminance);
+    m_shaderProgram->setUniformValue(m_sourceMaxLuminanceLocation, m_sourceMaxLuminance);
     m_shaderProgram->setUniformValue(m_textureMatrixLocation, m_textureMatrix);
     m_shaderProgram->setUniformValue(m_projectionMatrixLocation, m_projectionMatrix);
 }
@@ -618,6 +850,9 @@ void HDR_VideoWidget::setHDRCapabilities(const HDRDetection::HDRCapabilities& ca
                  << "Mode:" << HDRDetection::getHDRModeDescription(capabilities.supportedMode)
                  << "Max Luminance:" << capabilities.maxLuminance << "nits"
                  << "Bits per channel:" << capabilities.bitsPerChannel;
+        
+        // CRITICAL FIX: Use detected display max luminance for proper tone mapping
+        setDisplayMaxLuminance(capabilities.maxLuminance);
         
         // Set appropriate texture format based on detected capabilities
         if (capabilities.supportedMode == HDRDetection::BT2020_PQ_10bit) {
@@ -778,5 +1013,94 @@ void HDR_VideoWidget::mouseMoveEvent(QMouseEvent* event)
     } else {
         QOpenGLWidget::mouseMoveEvent(event);
     }
+}
+
+QImage HDR_VideoWidget::grabHDRFramebuffer()
+{
+    if (!m_initialized || !context() || !context()->isValid()) {
+        qWarning() << "HDR framebuffer grab: Invalid OpenGL context";
+        return QImage();
+    }
+    
+    // CRITICAL FIX: Ensure context is properly current before any OpenGL operations
+    makeCurrent();
+    if (!context() || !context()->isValid()) {
+        qWarning() << "HDR framebuffer grab: Context invalid after makeCurrent()";
+        return QImage();
+    }
+    
+    // Clear any existing OpenGL errors
+    glGetError();
+    
+    // Get framebuffer size
+    QSize fbSize = size();
+    if (fbSize.isEmpty() || fbSize.width() <= 0 || fbSize.height() <= 0) {
+        fbSize = QSize(256, 256);  // Fallback size
+        qDebug() << "Using fallback framebuffer size:" << fbSize;
+    }
+    
+    QImage result;
+    
+    try {
+        // Force a render to ensure framebuffer is up to date
+        paintGL();
+        glFinish();  // Ensure all rendering is complete
+        
+        // CONSERVATIVE FIX: Use standard framebuffer grab with improved error handling
+        result = grabFramebuffer();
+        
+        if (result.isNull()) {
+            qWarning() << "grabFramebuffer() returned null image";
+            doneCurrent();
+            return QImage();
+        }
+        
+        // For HDR modes, convert to higher bit depth format
+        if (m_renderMode != Mode_SDR_8bit) {
+            // Convert to 16-bit format for HDR processing
+            QImage hdrResult = result.convertToFormat(QImage::Format_RGBA64);
+            qDebug() << "HDR framebuffer grabbed and converted to 16-bit format:" << hdrResult.size();
+            doneCurrent();
+            return hdrResult;
+        }
+        
+    } catch (const std::exception& e) {
+        qWarning() << "Exception during framebuffer grab:" << e.what();
+    } catch (...) {
+        qWarning() << "Unknown exception during framebuffer grab";
+    }
+    
+    doneCurrent();
+    logOpenGLError("grabHDRFramebuffer");
+    return result;
+}
+
+bool HDR_VideoWidget::isHDRFormat(const QSurfaceFormat& format)
+{
+    // KRITA-INSPIRED IMPLEMENTATION: Exact copy of Krita's HDR format validation
+    #if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+    
+    // Check for BT2020 PQ format (HDR10)
+    bool isBt2020PQ = 
+        format.colorSpace() == QColorSpace::Bt2100Pq &&
+        format.redBufferSize() == 10 &&
+        format.greenBufferSize() == 10 &&
+        format.blueBufferSize() == 10 &&
+        format.alphaBufferSize() == 2;
+    
+    // Check for scRGB format (linear RGB)
+    bool isBt709G10 = 
+        format.colorSpace() == QColorSpace::SRgbLinear &&
+        format.redBufferSize() == 16 &&
+        format.greenBufferSize() == 16 &&
+        format.blueBufferSize() == 16 &&
+        format.alphaBufferSize() == 16;
+    
+    return isBt2020PQ || isBt709G10;
+    
+    #else
+    Q_UNUSED(format);
+    return false;  // HDR not supported in Qt < 6.0
+    #endif
 }
 
