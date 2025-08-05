@@ -35,8 +35,8 @@
 #include <common/EnumMapper.h>
 #include <video/videoHandler.h>
 #include <video/yuv/PixelFormatYUV.h>
-#include <video/HDR_VideoWidget.h>
-#include <video/HDRDetectionWorker.h>
+#include <video/HDRRenderingManager.h>
+#include <video/yuv/DistortionPlaybackController.h>
 
 #include "ui_videoHandlerYUV.h"
 #include <ui/PlaybackController.h>
@@ -198,15 +198,19 @@ public:
   virtual void savePlaylist(YUViewDomElement &root) const override;
   virtual void loadPlaylist(const YUViewDomElement &root) override;
   
-  // HDR widget access for UI integration
-  HDR_VideoWidget* getHDRWidget() const { return m_hdrWidget; }
-  bool isHDRRenderingActive() const { return m_useHDRRendering; }
+  // HDR widget access for UI integration (delegated to HDRRenderingManager)
+  HDR_VideoWidget* getHDRWidget() const;
+  bool isHDRRenderingActive() const;
   
   // Create HDR widget with proper parent for UI integration (called by main UI)  
   HDR_VideoWidget* createHDRWidget(QWidget* parent = nullptr);
   
   // Get HDR rendered frame as QImage for QPainter integration
   QImage getHDRRenderedImage();
+  
+  // Distortion control access (delegated to DistortionPlaybackController)
+  bool isDistortionActive() const;
+  int getCurrentDistortionLevel() const;
 
 signals:
   // TODO: Add working signals for zoom and playback control when proper implementation is found
@@ -256,23 +260,13 @@ private:
 
   static std::vector<PixelFormatYUV> formatPresetList;
 
-  // Distortion analysis members
-  QTimer* distortionTimer;
-  bool isDistortionActive;
-  int currentDistortionLevel;
+  // Component managers for separated concerns
+  HDRRenderingManager* m_hdrRenderingManager;
+  DistortionPlaybackController* m_distortionController;
+  
+  // Original file tracking (for distortion analysis)
   QString oriFilePath;
   bool isShowingOriFile;
-  int playbackFrameIndex; // Track current frame for distortion playback
-  qint64 revertFrameNumber; // Frame number to revert to for distortion analysis
-  
-  // UI state management for active button tracking
-  QPushButton* activeDistortionButton;
-
-  // HDR rendering members
-  HDR_VideoWidget* m_hdrWidget;
-  HDRDetectionWorker* m_hdrDetectionWorker;
-  bool m_useHDRRendering;
-  HDRDetection::HDRCapabilities m_hdrCapabilities;
 
 private slots:
 
@@ -283,35 +277,22 @@ private slots:
   // The 10-bit display checkbox was changed
   void slot10BitDisplayChanged();
 
-  // HDR-related slots
-  void onHDRNotSupported(const QString& reason);
-  void onHDRModeChanged(HDR_VideoWidget::RenderMode mode);
-  void performHDRDetection();
-  void onHDRDetectionComplete(const HDRDetection::HDRCapabilities& capabilities);
-  void onHDRDetectionFailed(const QString& error);
-  
-  // Distortion analysis button slots
+  // Distortion analysis button slots (now delegate to DistortionPlaybackController)
   void slotFirstLevelDistortion();
   void slotSecondLevelDistortion();
   
-  // Revert button slots
+  // Revert button slots (now delegate to DistortionPlaybackController)
   void on_revertButton_L1_clicked();
   void on_revertButton_L2_clicked();
   
-  // Distortion analysis helper functions
+  // Original file helper functions (still needed for distortion analysis)
   QString getCurrentFilePath() const;
   bool isCurrentFileOri(const QString &filePath) const;
   QString findOriFile(const QString &currentFilePath) const;
   bool validateOriFile(const QString &oriFilePath, const QString &currentFilePath) const;
-  void setViewZoom(double zoomFactor);
-  void startDistortionPlayback(double fps);
-  void startManualFrameAdvancement(double fps);
   bool isMouseHoveringOverOriElement() const;
   void toggleOriComparison();
   void showOriNotification(const QString &message) const;
-  void setButtonActiveState(QPushButton* button, bool active);
-  void resetAllDistortionButtons();
-  void setPlaybackControllerRepeatMode(PlaybackController* controller, PlaybackController::RepeatMode targetMode);
 
 private:
 };

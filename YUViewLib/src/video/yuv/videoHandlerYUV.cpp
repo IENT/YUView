@@ -2761,31 +2761,46 @@ videoHandlerYUV::videoHandlerYUV() : videoHandler()
   const auto defaultPixelFormat = PixelFormatYUV(Subsampling::YUV_420, 8, PlaneOrder::YUV);
   this->srcPixelFormat          = defaultPixelFormat;
   
-  // Initialize HDR rendering members
-  m_hdrWidget = nullptr;
-  m_hdrDetectionWorker = nullptr;
-  m_useHDRRendering = false;
-  revertFrameNumber = -1;
+  // Initialize component managers
+  m_hdrRenderingManager = new HDRRenderingManager(this);
+  m_distortionController = new DistortionPlaybackController(this);
   
-  // Initialize distortion analysis members
-  this->distortionTimer = new QTimer(this);
-  this->isDistortionActive = false;
-  this->currentDistortionLevel = 0;
-  this->isShowingOriFile = false;
-  this->playbackFrameIndex = 0;
-  this->revertFrameNumber = -1;
-  this->activeDistortionButton = nullptr;
+  // Connect HDR signals
+  connect(m_hdrRenderingManager, &HDRRenderingManager::hdrRenderingStateChanged,
+          this, &videoHandlerYUV::hdrRenderingStateChanged);
+  connect(m_hdrRenderingManager, &HDRRenderingManager::hdrWidgetNeedsDisplay,
+          this, &videoHandlerYUV::hdrWidgetNeedsDisplay);
+  
+  // Connect distortion signals
+  connect(m_distortionController, &DistortionPlaybackController::frameAdvanceRequested,
+          this, [this]() {
+            // Fallback manual frame advancement when PlaybackController not available
+            int nextFrame = m_distortionController->getCurrentPlaybackFrameIndex();
+            qDebug() << "Manual frame advancement fallback to frame:" << nextFrame;
+            
+            // Request the frame through the proper signal mechanism
+            emit signalRequestFrame(nextFrame, false);
+            
+            // Force a screen update
+            emit signalHandlerChanged(true, RECACHE_NONE);
+          });
+  connect(m_distortionController, &DistortionPlaybackController::frameRevertRequested,
+          this, [this](qint64 frameNumber) {
+            // Revert to specific frame
+            emit signalRequestFrame(frameNumber, true);
+          });
+  
+  // Initialize legacy members for backward compatibility
+  isShowingOriFile = false;
 }
 
 videoHandlerYUV::~videoHandlerYUV()
 {
   DEBUG_YUV("videoHandlerYUV destruction");
   
-  // Clean up HDR widget
-  if (m_hdrWidget) {
-    delete m_hdrWidget;
-    m_hdrWidget = nullptr;
-  }
+  // Clean up component managers
+  delete m_hdrRenderingManager;
+  delete m_distortionController;
 }
 
 unsigned videoHandlerYUV::getCachingFrameSize() const
@@ -2809,34 +2824,18 @@ void videoHandlerYUV::drawFrame(QPainter *painter,
   QSettings settings;
   bool enable10BitDisplay = settings.value("Enable10BitDisplay", false).toBool();
   
-  // ARCHITECTURAL FIX: Implement Principle #2 (Push Model) - Push frame data to HDR widget
-  if (m_useHDRRendering && enable10BitDisplay && srcPixelFormat.getBitsPerSample() == 10) {
+  // Check if HDR rendering is active and handle it via HDRRenderingManager
+  if (m_hdrRenderingManager->isHDRRenderingActive() && enable10BitDisplay && srcPixelFormat.getBitsPerSample() == 10) {
     DEBUG_YUV("*** IMPLEMENTING HDR PUSH MODEL ARCHITECTURE ***");
     
-    // Create HDR widget if needed (persistent lifecycle)
-    if (!m_hdrWidget) {
-      qDebug() << "Creating persistent HDR widget for push model architecture";
-      QWidget* mainWindow = qobject_cast<QWidget*>(QApplication::activeWindow());
-      if (!mainWindow) {
-        auto widgets = QApplication::topLevelWidgets();
-        if (!widgets.isEmpty()) {
-          mainWindow = widgets.first();
-        }
-      }
-      m_hdrWidget = createHDRWidget(mainWindow);
-    }
-    
-    if (m_hdrWidget) {
+    HDR_VideoWidget* hdrWidget = m_hdrRenderingManager->getHDRWidget();
+    if (hdrWidget) {
       // Get the current frame as QImage using standard rendering pipeline
       QImage currentFrameImage = getCurrentFrameAsImage();
       
       if (!currentFrameImage.isNull()) {
-        // PUSH MODEL: Push frame data to HDR widget instead of pulling rendered images
-        m_hdrWidget->updateFrame(currentFrameImage);
-        qDebug() << "Frame data pushed to HDR widget (push model architecture)";
-        
-        // Signal that HDR widget should be displayed instead of QPainter rendering
-        emit hdrWidgetNeedsDisplay(m_hdrWidget, true);
+        // PUSH MODEL: Push frame data to HDR widget via HDRRenderingManager
+        m_hdrRenderingManager->updateHDRFrame(currentFrameImage);
         return; // Skip QPainter rendering - use HDR widget instead
       } else {
         qWarning() << "Failed to get current frame image, falling back to standard QPainter rendering";
@@ -3159,223 +3158,16 @@ void videoHandlerYUV::slot10BitDisplayChanged()
   QSettings settings;
   settings.setValue("Enable10BitDisplay", enable10Bit);
   
-  if (enable10Bit) {
-    // Check if HDR detection is already in progress or complete
-    if (m_hdrDetectionWorker && m_hdrDetectionWorker->isDetecting()) {
-      qDebug() << "HDR detection already in progress, ignoring duplicate request";
-      return;
-    }
-    
-    // Check if HDR is already enabled
-    if (m_useHDRRendering && m_hdrCapabilities.isHDRSupported) {
-      qDebug() << "HDR rendering already enabled, no need to re-detect";
-      return;
-    }
-    
-    // Start HDR detection only if not already done
-    qDebug() << "10-bit display requested, starting HDR detection...";
-    
-    // Use QTimer to defer HDR detection to next event loop iteration
-    QTimer::singleShot(100, this, [this]() {
-      performHDRDetection();
-    });
-    
-    // Don't clear cache immediately - wait for HDR detection results
-    
-  } else {
-    // Disabling 10-bit display - clean up HDR resources
-    if (m_useHDRRendering) {
-      qDebug() << "Disabling HDR rendering and cleaning up resources";
-      
-      m_useHDRRendering = false;
-      
-      // ARCHITECTURAL FIX: Use hide() instead of deleteLater() for Principle #3 (Persistent Widget Lifecycle)
-      if (m_hdrWidget) {
-        emit hdrWidgetNeedsDisplay(m_hdrWidget, false);
-        m_hdrWidget->hide();
-        // *** REMOVED: deleteLater() call - Widget persists and is managed via show/hide ***
-        qDebug() << "HDR widget hidden (persistent lifecycle)";
-      }
-      
-      // Notify that HDR rendering is now disabled
-      emit hdrRenderingStateChanged(false, nullptr);
-      
-      qDebug() << "HDR rendering disabled, using standard 8-bit SDR";
-      
-      // Clear cache when disabling HDR
-      this->currentImageIndex = -1;
-      this->setCacheInvalid();
-      emit signalHandlerChanged(true, RECACHE_CLEAR);
-    } else {
-      qDebug() << "HDR rendering already disabled, no cleanup needed";
-    }
-  }
+  // Delegate to HDRRenderingManager
+  m_hdrRenderingManager->setHDRRenderingEnabled(enable10Bit);
 }
 
-// HDR-related slot implementations
-void videoHandlerYUV::onHDRNotSupported(const QString& reason)
-{
-  qWarning() << "HDR not supported:" << reason;
-  QMessageBox::warning(nullptr, 
-      tr("HDR Error"),
-      tr("HDR rendering failed: %1\n\nFalling back to standard 8-bit rendering.").arg(reason));
-  m_useHDRRendering = false;
-  
-  // Force refresh
-  this->currentImageIndex = -1;
-  this->setCacheInvalid();
-  emit signalHandlerChanged(true, RECACHE_CLEAR);
-}
-
-void videoHandlerYUV::onHDRModeChanged(HDR_VideoWidget::RenderMode mode)
-{
-  QString modeDescription;
-  switch (mode) {
-  case HDR_VideoWidget::Mode_BT2020_PQ_10bit:
-    modeDescription = "HDR10/BT.2020 PQ (10-bit)";
-    break;
-  case HDR_VideoWidget::Mode_BT709_Linear_16bit:
-    modeDescription = "scRGB/Rec.709 Linear (16-bit)";
-    break;
-  case HDR_VideoWidget::Mode_SDR_8bit:
-  default:
-    modeDescription = "Standard Dynamic Range (8-bit)";
-    break;
-  }
-  
-  qDebug() << "HDR render mode changed to:" << modeDescription;
-}
-
-void videoHandlerYUV::performHDRDetection()
-{
-  qDebug() << "Starting background HDR detection...";
-  
-  // Create HDR detection worker if not already created
-  if (!m_hdrDetectionWorker) {
-    m_hdrDetectionWorker = new HDRDetectionWorker(this);
-    
-    // Connect signals for async communication
-    connect(m_hdrDetectionWorker, &HDRDetectionWorker::detectionComplete,
-            this, &videoHandlerYUV::onHDRDetectionComplete);
-    connect(m_hdrDetectionWorker, &HDRDetectionWorker::detectionFailed,
-            this, &videoHandlerYUV::onHDRDetectionFailed);
-  }
-  
-  // Start detection in background thread (non-blocking)
-  if (!m_hdrDetectionWorker->isDetecting()) {
-    m_hdrDetectionWorker->startDetection();
-    qDebug() << "HDR detection started in background thread";
-  } else {
-    qDebug() << "HDR detection already in progress";
-  }
-}
-
-void videoHandlerYUV::onHDRDetectionComplete(const HDRDetection::HDRCapabilities& capabilities)
-{
-  qDebug() << "HDR detection completed in main thread. Supported:" << capabilities.isHDRSupported;
-  
-  if (capabilities.isHDRSupported) {
-    qDebug() << "HDR capability detected - preparing for integrated HDR rendering";
-    
-    // Store capabilities for later use when HDR widget is actually needed
-    m_hdrCapabilities = capabilities;
-    m_useHDRRendering = true;
-    
-    qDebug() << "HDR rendering enabled (integrated mode):" << HDRDetection::getHDRModeDescription(capabilities.supportedMode);
-    
-    // Notify that HDR rendering is now available - main UI should handle integration
-    emit hdrRenderingStateChanged(true, nullptr);
-    
-    qDebug() << "HDR capabilities stored, ready for integrated rendering when main UI creates the widget";
-    
-    // Force refresh to apply HDR rendering
-    this->currentImageIndex = -1;
-    this->setCacheInvalid();
-    emit signalHandlerChanged(true, RECACHE_CLEAR);
-    
-  } else {
-    // HDR not supported, fall back to SDR with same handling as detection failed
-    qDebug() << "HDR not supported:" << capabilities.errorMessage;
-    onHDRDetectionFailed(capabilities.errorMessage);
-  }
-}
-
-void videoHandlerYUV::onHDRDetectionFailed(const QString& error)
-{
-  qDebug() << "YUView HDR: Detection failed, falling back to standard rendering:" << error;
-  m_useHDRRendering = false;
-  
-  // ARCHITECTURAL FIX: Use hide() instead of deleteLater() for Principle #3 (Persistent Widget Lifecycle)
-  if (m_hdrWidget) {
-    emit hdrWidgetNeedsDisplay(m_hdrWidget, false);
-    m_hdrWidget->hide();
-    // *** REMOVED: deleteLater() call - Widget persists even when HDR not supported ***
-    qDebug() << "HDR widget hidden due to HDR not supported (persistent lifecycle)";
-  }
-  
-  // Notify that HDR rendering failed
-  emit hdrRenderingStateChanged(false, nullptr);
-  
-  // Auto-disable the 10-bit display option since HDR is not supported
-  if (ui.created() && ui.checkBoxEnable10BitDisplay->isChecked()) {
-    ui.checkBoxEnable10BitDisplay->setChecked(false);
-    QSettings settings;
-    settings.setValue("Enable10BitDisplay", false);
-    qDebug() << "Auto-disabled 10-bit display option due to HDR not supported";
-  }
-  
-  // Show user-friendly notification
-  if (ui.created()) {
-    QTimer::singleShot(500, this, [this, error]() {
-      QMessageBox::information(nullptr,
-        tr("10-bit HDR Display"),
-        tr("Your display does not support native 10-bit HDR rendering.\n\n"
-           "YUView will continue using standard 8-bit rendering for optimal compatibility.\n\n"
-           "Technical details: %1").arg(error));
-    });
-  }
-  
-  // Don't force cache clear - keep existing video rendering intact
-  // User can continue using YUView normally with 8-bit rendering
-}
+// HDR-related methods removed - now handled by HDRRenderingManager
 
 HDR_VideoWidget* videoHandlerYUV::createHDRWidget(QWidget* parent)
 {
-  // Only create if HDR is supported and not already created
-  if (!m_useHDRRendering || m_hdrWidget) {
-    qDebug() << "HDR widget creation: HDR not supported or widget already exists";
-    return m_hdrWidget;
-  }
-  
-  qDebug() << "Creating HDR widget with proper parent for UI integration";
-  
-  // Create HDR widget with specified parent (for proper UI integration)
-  m_hdrWidget = new HDR_VideoWidget(parent);
-  
-  // Connect signals
-  connect(m_hdrWidget, &HDR_VideoWidget::hdrNotSupported,
-          this, &videoHandlerYUV::onHDRNotSupported);
-  connect(m_hdrWidget, &HDR_VideoWidget::renderModeChanged,
-          this, &videoHandlerYUV::onHDRModeChanged);
-  
-  // Set HDR capabilities from stored values
-  m_hdrWidget->setHDRCapabilities(m_hdrCapabilities);
-  
-  // Set appropriate render mode based on capabilities
-  if (m_hdrCapabilities.supportedMode == HDRDetection::BT709_G10_16bit) {
-    m_hdrWidget->setRenderMode(HDR_VideoWidget::Mode_BT709_Linear_16bit);
-  } else {
-    m_hdrWidget->setRenderMode(HDR_VideoWidget::Mode_BT2020_PQ_10bit);
-  }
-  
-  qDebug() << "HDR widget created with parent integration, ready for display";
-  
-  // Refresh to apply HDR rendering with the new widget
-  this->currentImageIndex = -1;
-  this->setCacheInvalid();
-  emit signalHandlerChanged(true, RECACHE_CLEAR);
-  
-  return m_hdrWidget;
+  // Delegate to HDRRenderingManager
+  return m_hdrRenderingManager->createHDRWidget(parent);
 }
 
 // *** REMOVED: getHDRRenderedImage() - Violated Principle #2 (Push Model) ***
@@ -4611,210 +4403,26 @@ void videoHandlerYUV::loadPlaylist(const YUViewDomElement &element)
 
 void videoHandlerYUV::slotFirstLevelDistortion()
 {
-  QPushButton* clickedButton = ui.pushButtonFirstLevel;
-  
-  // Check if this button is currently active
-  if (this->activeDistortionButton == clickedButton) {
-    // Second click on active button - pause and reset
-    if (this->isDistortionActive) {
-      this->distortionTimer->stop();
-      this->distortionTimer->disconnect();
-      this->isDistortionActive = false;
-    }
-    
-    // Find PlaybackController and pause playback
-    QMainWindow* mainWindow = qobject_cast<QMainWindow*>(QApplication::activeWindow());
-    if (mainWindow) {
-      auto playbackController = mainWindow->findChild<PlaybackController*>();
-      if (playbackController) {
-        playbackController->pausePlayback();
-        // Reset repeat mode to off
-        setPlaybackControllerRepeatMode(playbackController, PlaybackController::RepeatMode::Off);
-      }
-    }
-    
-    // Reset button appearance
-    resetAllDistortionButtons();
-    qDebug() << "First-level distortion: Paused and reset";
-    return;
-  }
-  
-  // First click or click on different button - activate this button
-  
-  // Stop any existing distortion activity and reset other buttons
-  if (this->isDistortionActive) {
-    this->distortionTimer->stop();
-    this->distortionTimer->disconnect();
-    this->isDistortionActive = false;
-  }
-  resetAllDistortionButtons();
-  
-  // Set this button as active
-  this->activeDistortionButton = clickedButton;
-  setButtonActiveState(clickedButton, true);
-  
-  // Initialize distortion state
-  this->currentDistortionLevel = 1;
-  this->isDistortionActive = true;
-  this->playbackFrameIndex = this->currentImage_frameIndex;
-  
-  // Set view to 1x zoom
-  setViewZoom(1.0);
-  
-  // Find PlaybackController and capture current frame as revert point, then enable loop mode
-  QMainWindow* mainWindow = qobject_cast<QMainWindow*>(QApplication::activeWindow());
-  if (mainWindow) {
-    auto playbackController = mainWindow->findChild<PlaybackController*>();
-    if (playbackController) {
-      // Capture current frame as revert point before starting playback
-      this->revertFrameNumber = playbackController->getCurrentFrame();
-      // Enable loop mode for continuous playback
-      setPlaybackControllerRepeatMode(playbackController, PlaybackController::RepeatMode::One);
-    }
-  }
-  
-  // Start playback at 30 FPS
-  startDistortionPlayback(30.0);
-  
-  qDebug() << "First-level distortion: Started 30 FPS playback with loop from frame" << this->playbackFrameIndex << ", revert point:" << this->revertFrameNumber;
+  // Delegate to DistortionPlaybackController
+  m_distortionController->startFirstLevelDistortion(ui.pushButtonFirstLevel, this->currentImage_frameIndex);
 }
 
 void videoHandlerYUV::slotSecondLevelDistortion()
 {
-  QPushButton* clickedButton = ui.pushButtonSecondLevel;
-  
-  // Check if this button is currently active
-  if (this->activeDistortionButton == clickedButton) {
-    // Second click on active button - pause and reset
-    if (this->isDistortionActive) {
-      this->distortionTimer->stop();
-      this->distortionTimer->disconnect();
-      this->isDistortionActive = false;
-    }
-    
-    // Find PlaybackController and pause playback
-    QMainWindow* mainWindow = qobject_cast<QMainWindow*>(QApplication::activeWindow());
-    if (mainWindow) {
-      auto playbackController = mainWindow->findChild<PlaybackController*>();
-      if (playbackController) {
-        playbackController->pausePlayback();
-        // Reset repeat mode to off
-        setPlaybackControllerRepeatMode(playbackController, PlaybackController::RepeatMode::Off);
-      }
-    }
-    
-    // Reset button appearance
-    resetAllDistortionButtons();
-    qDebug() << "Second-level distortion: Paused and reset";
-    return;
-  }
-  
-  // First click or click on different button - activate this button
-  
-  // Stop any existing distortion activity and reset other buttons
-  if (this->isDistortionActive) {
-    this->distortionTimer->stop();
-    this->distortionTimer->disconnect();
-    this->isDistortionActive = false;
-  }
-  resetAllDistortionButtons();
-  
-  // Set this button as active
-  this->activeDistortionButton = clickedButton;
-  setButtonActiveState(clickedButton, true);
-  
-  // Initialize distortion state
-  this->currentDistortionLevel = 2;
-  this->isDistortionActive = true;
-  this->playbackFrameIndex = this->currentImage_frameIndex;
-  
-  // Set view to 1x zoom
-  setViewZoom(1.0);
-  
-  // Find PlaybackController and capture current frame as revert point, then enable loop mode
-  QMainWindow* mainWindow = qobject_cast<QMainWindow*>(QApplication::activeWindow());
-  if (mainWindow) {
-    auto playbackController = mainWindow->findChild<PlaybackController*>();
-    if (playbackController) {
-      // Capture current frame as revert point before starting playback
-      this->revertFrameNumber = playbackController->getCurrentFrame();
-      // Enable loop mode for continuous playback
-      setPlaybackControllerRepeatMode(playbackController, PlaybackController::RepeatMode::One);
-    }
-  }
-  
-  // Start playback at 1.5 FPS
-  startDistortionPlayback(1.5);
-  
-  qDebug() << "Second-level distortion: Started 1.5 FPS playback with loop from frame" << this->playbackFrameIndex << ", revert point:" << this->revertFrameNumber;
+  // Delegate to DistortionPlaybackController
+  m_distortionController->startSecondLevelDistortion(ui.pushButtonSecondLevel, this->currentImage_frameIndex);
 }
 
 void videoHandlerYUV::on_revertButton_L1_clicked()
 {
-  // Revert to the frame where First-level analysis started
-  if (this->revertFrameNumber < 0) {
-    qDebug() << "No revert point set for First-level analysis";
-    return;
-  }
-  
-  // Stop any active distortion analysis
-  if (this->isDistortionActive) {
-    this->distortionTimer->stop();
-    this->distortionTimer->disconnect();
-    this->isDistortionActive = false;
-  }
-  
-  QMainWindow* mainWindow = qobject_cast<QMainWindow*>(QApplication::activeWindow());
-  if (mainWindow) {
-    auto playbackController = mainWindow->findChild<PlaybackController*>();
-    if (playbackController) {
-      // Pause playback first
-      playbackController->pausePlayback();
-      // Reset repeat mode to off
-      setPlaybackControllerRepeatMode(playbackController, PlaybackController::RepeatMode::Off);
-      // Seek back to the revert point
-      playbackController->setCurrentFrameAndUpdate(this->revertFrameNumber);
-      qDebug() << "Reverted to frame" << this->revertFrameNumber << "for First-level analysis";
-    }
-  }
-  
-  // Reset button appearance - turn off the green color
-  resetAllDistortionButtons();
-  this->activeDistortionButton = nullptr;
+  // Delegate to DistortionPlaybackController
+  m_distortionController->revertToFirstLevel();
 }
 
 void videoHandlerYUV::on_revertButton_L2_clicked()
 {
-  // Revert to the frame where Second-level analysis started
-  if (this->revertFrameNumber < 0) {
-    qDebug() << "No revert point set for Second-level analysis";
-    return;
-  }
-  
-  // Stop any active distortion analysis
-  if (this->isDistortionActive) {
-    this->distortionTimer->stop();
-    this->distortionTimer->disconnect();
-    this->isDistortionActive = false;
-  }
-  
-  QMainWindow* mainWindow = qobject_cast<QMainWindow*>(QApplication::activeWindow());
-  if (mainWindow) {
-    auto playbackController = mainWindow->findChild<PlaybackController*>();
-    if (playbackController) {
-      // Pause playback first
-      playbackController->pausePlayback();
-      // Reset repeat mode to off
-      setPlaybackControllerRepeatMode(playbackController, PlaybackController::RepeatMode::Off);
-      // Seek back to the revert point
-      playbackController->setCurrentFrameAndUpdate(this->revertFrameNumber);
-      qDebug() << "Reverted to frame" << this->revertFrameNumber << "for Second-level analysis";
-    }
-  }
-  
-  // Reset button appearance - turn off the green color
-  resetAllDistortionButtons();
-  this->activeDistortionButton = nullptr;
+  // Delegate to DistortionPlaybackController
+  m_distortionController->revertToSecondLevel();
 }
 
 QString videoHandlerYUV::getCurrentFilePath() const
@@ -4944,136 +4552,37 @@ void videoHandlerYUV::toggleOriComparison()
   }
 }
 
-void videoHandlerYUV::setViewZoom(double zoomFactor)
+// setViewZoom method removed - now handled by DistortionPlaybackController
+
+// Distortion playback methods removed - now handled by DistortionPlaybackController
+
+// setPlaybackControllerRepeatMode method removed - now handled by DistortionPlaybackController
+
+// HDR widget access methods (delegated to HDRRenderingManager)
+HDR_VideoWidget* videoHandlerYUV::getHDRWidget() const
 {
-  // Find the main window and its split view widgets to set zoom
-  QWidget* mainWindow = QApplication::activeWindow();
-  if (!mainWindow) {
-    qDebug() << "Could not find main window for zoom control";
-    return;
-  }
-  
-  // Find splitViewWidget - this is typically named "primarySplitViewWidget"
-  QWidget* splitView = mainWindow->findChild<QWidget*>("primarySplitViewWidget");
-  if (!splitView) {
-    // Try alternative names
-    splitView = mainWindow->findChild<QWidget*>("splitViewWidget");
-  }
-  
-  if (splitView) {
-    // Call the appropriate zoom method based on the zoom factor
-    if (zoomFactor == 1.0) {
-      // Call zoomTo100 method if available
-      QMetaObject::invokeMethod(splitView, "zoomTo100", Qt::QueuedConnection, Q_ARG(bool, true));
-      qDebug() << "Set zoom to 100% (1x) via splitView";
-    } else if (zoomFactor == 2.0) {
-      // Call zoomTo200 method if available  
-      QMetaObject::invokeMethod(splitView, "zoomTo200", Qt::QueuedConnection, Q_ARG(bool, true));
-      qDebug() << "Set zoom to 200% (2x) via splitView";
-    } else {
-      // For other zoom factors, try a generic zoom method
-      QMetaObject::invokeMethod(splitView, "zoomToCustom", Qt::QueuedConnection, Q_ARG(bool, true));
-      qDebug() << "Set custom zoom factor:" << zoomFactor;
-    }
-  } else {
-    qDebug() << "Could not find splitViewWidget for zoom control";
-  }
+  return m_hdrRenderingManager->getHDRWidget();
 }
 
-void videoHandlerYUV::startDistortionPlayback(double fps)
+bool videoHandlerYUV::isHDRRenderingActive() const
 {
-  // For distortion analysis, we need precise timing control
-  // The best approach is to use manual frame advancement with proper timing
-  // since modifying the playlist item's frame rate is complex and can affect
-  // the overall playback experience for the user
-  
-  qDebug() << "Starting distortion playback at" << fps << "FPS using manual frame advancement";
-  startManualFrameAdvancement(fps);
+  return m_hdrRenderingManager->isHDRRenderingActive();
 }
 
-void videoHandlerYUV::startManualFrameAdvancement(double fps)
+QImage videoHandlerYUV::getHDRRenderedImage()
 {
-  // Calculate timer interval for the specified FPS
-  int intervalMs = static_cast<int>(1000.0 / fps);
-  
-  // Find the PlaybackController to properly advance frames
-  QMainWindow* mainWindow = qobject_cast<QMainWindow*>(QApplication::activeWindow());
-  PlaybackController* playbackController = nullptr;
-  
-  if (mainWindow) {
-    playbackController = mainWindow->findChild<PlaybackController*>();
-  }
-  
-  // Start automatic frame advancement using the distortion timer
-  connect(this->distortionTimer, &QTimer::timeout, this, [this, playbackController]() {
-    if (playbackController) {
-      // Use PlaybackController to advance to next frame properly
-      playbackController->nextFrame();
-      qDebug() << "Advanced to next frame using PlaybackController";
-    } else {
-      // Fallback to manual advancement if PlaybackController not found
-      this->playbackFrameIndex++;
-      qDebug() << "Manual frame advancement to frame:" << this->playbackFrameIndex;
-      
-      // Request the frame through the proper signal mechanism
-      emit signalRequestFrame(this->playbackFrameIndex, false);
-      
-      // Force a screen update
-      emit signalHandlerChanged(true, RECACHE_NONE);
-    }
-  });
-  
-  this->distortionTimer->start(intervalMs);
-  qDebug() << "Started manual frame advancement at" << fps << "FPS (" << intervalMs << "ms interval)";
+  return m_hdrRenderingManager->getHDRRenderedImage();
 }
 
-void videoHandlerYUV::setButtonActiveState(QPushButton* button, bool active)
+// Distortion control access methods (delegated to DistortionPlaybackController)
+bool videoHandlerYUV::isDistortionActive() const
 {
-  if (!button) return;
-  
-  if (active) {
-    // Set active appearance (light green background, bold font)
-    button->setStyleSheet("QPushButton { background-color: #90EE90; font-weight: bold; }");
-  } else {
-    // Reset to default appearance
-    button->setStyleSheet("");
-  }
+  return m_distortionController->isDistortionActive();
 }
 
-void videoHandlerYUV::resetAllDistortionButtons()
+int videoHandlerYUV::getCurrentDistortionLevel() const
 {
-  if (ui.pushButtonFirstLevel)
-    setButtonActiveState(ui.pushButtonFirstLevel, false);
-  if (ui.pushButtonSecondLevel)
-    setButtonActiveState(ui.pushButtonSecondLevel, false);
-  
-  this->activeDistortionButton = nullptr;
-}
-
-void videoHandlerYUV::setPlaybackControllerRepeatMode(PlaybackController* controller, PlaybackController::RepeatMode targetMode)
-{
-  if (!controller) return;
-  
-  // Since we can't access the private repeatMode member, we need to assume the current state.
-  // The RepeatMode cycles: Off -> One -> All -> Off
-  // Default mode is Off, so we click the button once to get to RepeatMode::One
-  // For RepeatMode::Off, we click 3 times (Off->One->All->Off)
-  
-  if (targetMode == PlaybackController::RepeatMode::One) {
-    // From default Off state, click once to get to One
-    controller->on_repeatModeButton_clicked();
-  } else if (targetMode == PlaybackController::RepeatMode::All) {
-    // From default Off state, click twice to get to All
-    controller->on_repeatModeButton_clicked(); // Off -> One
-    controller->on_repeatModeButton_clicked(); // One -> All
-  } else if (targetMode == PlaybackController::RepeatMode::Off) {
-    // Already at Off by default, but if we've changed it before, 
-    // we need to cycle back. Since we don't know current state,
-    // click 3 times to ensure we're back at Off regardless of current state
-    controller->on_repeatModeButton_clicked(); // Current -> Next
-    controller->on_repeatModeButton_clicked(); // Next -> Next+1
-    controller->on_repeatModeButton_clicked(); // Next+1 -> Back to current (full cycle)
-  }
+  return m_distortionController->getCurrentDistortionLevel();
 }
 
 } // namespace video::yuv
