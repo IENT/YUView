@@ -85,8 +85,29 @@ int main(int argc, char *argv[])
     qDebug() << "Max luminance:" << hdrCapabilities.maxLuminance << "nits";
     qDebug() << "Bits per channel:" << hdrCapabilities.bitsPerChannel;
     
-    // TODO: Update surface format for existing widgets if needed
-    // For now, HDR will be handled by the HDR_VideoWidget when needed
+    // Configure HDR surface format based on detected capabilities
+    QSurfaceFormat hdrFormat = defaultFormat;
+    
+    if (hdrCapabilities.supportedMode == HDRDetection::BT2020_PQ_10bit) {
+      // Configure for BT.2020 PQ (10-bit per channel)
+      hdrFormat.setRedBufferSize(10);
+      hdrFormat.setGreenBufferSize(10);
+      hdrFormat.setBlueBufferSize(10);
+      hdrFormat.setAlphaBufferSize(2);
+      qDebug() << "Configured 10-bit buffer sizes for BT.2020 PQ HDR rendering";
+      
+    } else if (hdrCapabilities.supportedMode == HDRDetection::BT709_G10_16bit) {
+      // Configure for scRGB/Rec.709 Linear (16-bit per channel) 
+      hdrFormat.setRedBufferSize(16);
+      hdrFormat.setGreenBufferSize(16);
+      hdrFormat.setBlueBufferSize(16);
+      hdrFormat.setAlphaBufferSize(16);
+      qDebug() << "Configured 16-bit buffer sizes for scRGB HDR rendering";
+    }
+    
+    // Apply the HDR surface format as the new default
+    QSurfaceFormat::setDefaultFormat(hdrFormat);
+    qDebug() << "Updated default surface format for HDR rendering";
     
   } else {
     qDebug() << "HDR not supported:" << hdrCapabilities.errorMessage;

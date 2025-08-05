@@ -1,0 +1,6 @@
+<RCC>
+    <qresource prefix="/shaders">
+        <file>hdr_vertex.vert</file>
+        <file>hdr_fragment.frag</file>
+    </qresource>
+</RCC>

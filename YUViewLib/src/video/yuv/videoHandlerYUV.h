@@ -197,9 +197,23 @@ public:
 
   virtual void savePlaylist(YUViewDomElement &root) const override;
   virtual void loadPlaylist(const YUViewDomElement &root) override;
+  
+  // HDR widget access for UI integration
+  HDR_VideoWidget* getHDRWidget() const { return m_hdrWidget; }
+  bool isHDRRenderingActive() const { return m_useHDRRendering; }
+  
+  // Create HDR widget with proper parent for UI integration (called by main UI)  
+  HDR_VideoWidget* createHDRWidget(QWidget* parent = nullptr);
+  
+  // Get HDR rendered frame as QImage for QPainter integration
+  QImage getHDRRenderedImage();
 
 signals:
   // TODO: Add working signals for zoom and playback control when proper implementation is found
+  
+  // HDR rendering state change signals
+  void hdrRenderingStateChanged(bool enabled, HDR_VideoWidget* widget);
+  void hdrWidgetNeedsDisplay(HDR_VideoWidget* widget, bool show);
 
 protected:
   ConversionSettings conversionSettings{};
@@ -258,6 +272,7 @@ private:
   HDR_VideoWidget* m_hdrWidget;
   HDRDetectionWorker* m_hdrDetectionWorker;
   bool m_useHDRRendering;
+  HDRDetection::HDRCapabilities m_hdrCapabilities;
 
 private slots:
 

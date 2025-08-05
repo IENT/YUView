@@ -208,6 +208,9 @@
        </item>
        <item row="4" column="1">
         <widget class="QCheckBox" name="checkBoxEnable10BitDisplay">
+         <property name="enabled">
+          <bool>true</bool>
+         </property>
          <property name="toolTip">
           <string>Enable native 10-bit display support for 10-bit YUV sources. This preserves 10-bit precision during YUV to RGB conversion.</string>
          </property>
