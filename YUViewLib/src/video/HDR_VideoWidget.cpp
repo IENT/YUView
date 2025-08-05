@@ -412,31 +412,8 @@ void HDR_VideoWidget::paintGL()
     logOpenGLError("paintGL");
 }
 
-void HDR_VideoWidget::renderNativeHDR()
-{
-    // CRITICAL FIX: Proper off-screen rendering implementation
-    if (!m_initialized || !context() || !context()->isValid()) {
-        qWarning() << "Cannot render HDR: widget not initialized or context invalid";
-        return;
-    }
-
-    // Ensure we have a valid current context
-    makeCurrent();
-    
-    // Clear any previous OpenGL errors
-    glGetError();
-    
-    // Perform the actual rendering
-    paintGL();
-    
-    // Force completion of all OpenGL commands
-    glFinish();
-    
-    // Release context properly
-    doneCurrent();
-    
-    logOpenGLError("renderNativeHDR");
-}
+// *** REMOVED: renderNativeHDR() - Violated Principle #1 (Single Rendering Path) ***
+// All rendering now occurs exclusively through paintGL() as per architectural mandate
 
 void HDR_VideoWidget::paintEvent(QPaintEvent* event)
 {
@@ -1015,65 +992,9 @@ void HDR_VideoWidget::mouseMoveEvent(QMouseEvent* event)
     }
 }
 
-QImage HDR_VideoWidget::grabHDRFramebuffer()
-{
-    if (!m_initialized || !context() || !context()->isValid()) {
-        qWarning() << "HDR framebuffer grab: Invalid OpenGL context";
-        return QImage();
-    }
-    
-    // CRITICAL FIX: Ensure context is properly current before any OpenGL operations
-    makeCurrent();
-    if (!context() || !context()->isValid()) {
-        qWarning() << "HDR framebuffer grab: Context invalid after makeCurrent()";
-        return QImage();
-    }
-    
-    // Clear any existing OpenGL errors
-    glGetError();
-    
-    // Get framebuffer size
-    QSize fbSize = size();
-    if (fbSize.isEmpty() || fbSize.width() <= 0 || fbSize.height() <= 0) {
-        fbSize = QSize(256, 256);  // Fallback size
-        qDebug() << "Using fallback framebuffer size:" << fbSize;
-    }
-    
-    QImage result;
-    
-    try {
-        // Force a render to ensure framebuffer is up to date
-        paintGL();
-        glFinish();  // Ensure all rendering is complete
-        
-        // CONSERVATIVE FIX: Use standard framebuffer grab with improved error handling
-        result = grabFramebuffer();
-        
-        if (result.isNull()) {
-            qWarning() << "grabFramebuffer() returned null image";
-            doneCurrent();
-            return QImage();
-        }
-        
-        // For HDR modes, convert to higher bit depth format
-        if (m_renderMode != Mode_SDR_8bit) {
-            // Convert to 16-bit format for HDR processing
-            QImage hdrResult = result.convertToFormat(QImage::Format_RGBA64);
-            qDebug() << "HDR framebuffer grabbed and converted to 16-bit format:" << hdrResult.size();
-            doneCurrent();
-            return hdrResult;
-        }
-        
-    } catch (const std::exception& e) {
-        qWarning() << "Exception during framebuffer grab:" << e.what();
-    } catch (...) {
-        qWarning() << "Unknown exception during framebuffer grab";
-    }
-    
-    doneCurrent();
-    logOpenGLError("grabHDRFramebuffer");
-    return result;
-}
+// *** REMOVED: grabHDRFramebuffer() - Violated Principle #1 (Single Rendering Path) ***
+// Manual framebuffer grabbing with context management created race conditions
+// New architecture uses pure push model - external code should not pull rendered images
 
 bool HDR_VideoWidget::isHDRFormat(const QSurfaceFormat& format)
 {

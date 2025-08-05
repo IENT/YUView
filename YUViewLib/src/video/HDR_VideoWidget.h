@@ -72,14 +72,8 @@ public slots:
     void setHDRExposureSlot(double exposure) { setHDRExposure(static_cast<float>(exposure)); }
     void setHDRGammaSlot(double gamma) { setHDRGamma(static_cast<float>(gamma)); }
     
-    // Get native HDR framebuffer for direct display (replaces grabFramebuffer approach)
-    void renderNativeHDR();
-    
-    // Backward compatibility wrapper for legacy code
-    void renderOffscreen() { renderNativeHDR(); }
-    
-    // CRITICAL FIX: 10-bit HDR framebuffer grabbing
-    QImage grabHDRFramebuffer();
+    // *** REMOVED: All manual rendering methods to comply with architectural mandate ***
+    // These methods violated Principle #1 (Single Rendering Path) and caused race conditions
 
 signals:
     // Emitted when HDR is not supported and fallback is needed

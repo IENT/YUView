@@ -2809,50 +2809,39 @@ void videoHandlerYUV::drawFrame(QPainter *painter,
   QSettings settings;
   bool enable10BitDisplay = settings.value("Enable10BitDisplay", false).toBool();
   
+  // ARCHITECTURAL FIX: Implement Principle #2 (Push Model) - Push frame data to HDR widget
   if (m_useHDRRendering && enable10BitDisplay && srcPixelFormat.getBitsPerSample() == 10) {
-    DEBUG_YUV("*** ATTEMPTING HDR OPENGL RENDERING INTEGRATED WITH QPAINTER ***");
+    DEBUG_YUV("*** IMPLEMENTING HDR PUSH MODEL ARCHITECTURE ***");
     
-    // CRITICAL FIX: Ensure proper thread and painter state for HDR rendering
-    if (QThread::currentThread() != QApplication::instance()->thread()) {
-      qWarning() << "HDR rendering called from non-main thread, falling back to standard rendering";
-    } else if (!painter || !painter->isActive()) {
-      qWarning() << "QPainter not active for HDR rendering, falling back to standard rendering";
-    } else {
-      // Create HDR widget if needed (now safe in main thread)
-      if (!m_hdrWidget) {
-        qDebug() << "Creating HDR widget in main thread for proper OpenGL context";
-        
-        // CRITICAL FIX: Use main window as parent for valid OpenGL context
-        QWidget* mainWindow = qobject_cast<QWidget*>(QApplication::activeWindow());
-        if (!mainWindow) {
-          // Fallback: find any top-level widget
-          auto widgets = QApplication::topLevelWidgets();
-          if (!widgets.isEmpty()) {
-            mainWindow = widgets.first();
-          }
-        }
-        
-        m_hdrWidget = createHDRWidget(mainWindow);
-        
-        // Simple initialization without problematic show/hide cycle
-        if (m_hdrWidget) {
-          m_hdrWidget->resize(256, 256);  // Set reasonable size
-          qDebug() << "HDR widget created with size 256x256";
+    // Create HDR widget if needed (persistent lifecycle)
+    if (!m_hdrWidget) {
+      qDebug() << "Creating persistent HDR widget for push model architecture";
+      QWidget* mainWindow = qobject_cast<QWidget*>(QApplication::activeWindow());
+      if (!mainWindow) {
+        auto widgets = QApplication::topLevelWidgets();
+        if (!widgets.isEmpty()) {
+          mainWindow = widgets.first();
         }
       }
+      m_hdrWidget = createHDRWidget(mainWindow);
+    }
+    
+    if (m_hdrWidget) {
+      // Get the current frame as QImage using standard rendering pipeline
+      QImage currentFrameImage = getCurrentFrameAsImage();
       
-      if (m_hdrWidget) {
-        // KRITA-INSPIRED FIX: Completely avoid QPainter/OpenGL mixing by disabling HDR during active painting  
-        qDebug() << "HDR widget available but skipping HDR rendering during QPainter operations to prevent crashes";
-        qDebug() << "Using standard rendering to maintain stability";
+      if (!currentFrameImage.isNull()) {
+        // PUSH MODEL: Push frame data to HDR widget instead of pulling rendered images
+        m_hdrWidget->updateFrame(currentFrameImage);
+        qDebug() << "Frame data pushed to HDR widget (push model architecture)";
         
-        // TODO: Implement proper async HDR rendering that doesn't conflict with QPainter
-        // For now, prioritize stability over HDR rendering
+        // Signal that HDR widget should be displayed instead of QPainter rendering
+        emit hdrWidgetNeedsDisplay(m_hdrWidget, true);
+        return; // Skip QPainter rendering - use HDR widget instead
       } else {
-        qWarning() << "Failed to create HDR widget, falling back to standard QPainter rendering";
+        qWarning() << "Failed to get current frame image, falling back to standard QPainter rendering";
       }
     }
-    // Fall through to standard rendering if HDR fails
   }
   
   std::string msg;
@@ -3200,13 +3189,12 @@ void videoHandlerYUV::slot10BitDisplayChanged()
       
       m_useHDRRendering = false;
       
-      // Signal HDR widget should be hidden before cleanup
+      // ARCHITECTURAL FIX: Use hide() instead of deleteLater() for Principle #3 (Persistent Widget Lifecycle)
       if (m_hdrWidget) {
         emit hdrWidgetNeedsDisplay(m_hdrWidget, false);
         m_hdrWidget->hide();
-        m_hdrWidget->deleteLater();
-        m_hdrWidget = nullptr;
-        qDebug() << "HDR widget hidden and scheduled for cleanup";
+        // *** REMOVED: deleteLater() call - Widget persists and is managed via show/hide ***
+        qDebug() << "HDR widget hidden (persistent lifecycle)";
       }
       
       // Notify that HDR rendering is now disabled
@@ -3317,12 +3305,12 @@ void videoHandlerYUV::onHDRDetectionFailed(const QString& error)
   qDebug() << "YUView HDR: Detection failed, falling back to standard rendering:" << error;
   m_useHDRRendering = false;
   
-  // Clean up any partially created HDR widget to avoid QPainter conflicts
+  // ARCHITECTURAL FIX: Use hide() instead of deleteLater() for Principle #3 (Persistent Widget Lifecycle)
   if (m_hdrWidget) {
     emit hdrWidgetNeedsDisplay(m_hdrWidget, false);
     m_hdrWidget->hide();
-    m_hdrWidget->deleteLater();
-    m_hdrWidget = nullptr;
+    // *** REMOVED: deleteLater() call - Widget persists even when HDR not supported ***
+    qDebug() << "HDR widget hidden due to HDR not supported (persistent lifecycle)";
   }
   
   // Notify that HDR rendering failed
@@ -3390,72 +3378,9 @@ HDR_VideoWidget* videoHandlerYUV::createHDRWidget(QWidget* parent)
   return m_hdrWidget;
 }
 
-QImage videoHandlerYUV::getHDRRenderedImage()
-{
-  if (!m_hdrWidget || !m_useHDRRendering) {
-    qWarning() << "HDR widget not available for rendering";
-    return QImage();
-  }
-  
-  // Ensure we're in the main thread for OpenGL operations
-  if (QThread::currentThread() != QApplication::instance()->thread()) {
-    qWarning() << "HDR rendering must be called from main thread";
-    return QImage();
-  }
-  
-  // Ensure HDR widget has valid OpenGL context
-  if (!m_hdrWidget->context() || !m_hdrWidget->context()->isValid()) {
-    qWarning() << "HDR widget OpenGL context not valid";
-    return QImage();
-  }
-  
-  // Make sure HDR widget is initialized
-  if (!m_hdrWidget->isInitialized()) {
-    qWarning() << "HDR widget not yet initialized";
-    return QImage();
-  }
-  
-  // Get the rendered frame from HDR widget
-  // We need to trigger a render and then read the framebuffer
-  
-  try {
-    // Make the HDR widget's context current
-    m_hdrWidget->makeCurrent();
-    
-    // Get the size of the rendered content
-    QSize widgetSize = m_hdrWidget->size();
-    if (widgetSize.isEmpty()) {
-      // Use frame size as fallback
-      widgetSize = QSize(frameSize.width, frameSize.height);
-      m_hdrWidget->resize(widgetSize);
-    }
-    
-    // Trigger rendering (now uses improved native HDR via renderOffscreen wrapper)
-    m_hdrWidget->renderOffscreen();
-    
-    // CRITICAL FIX: Use 10-bit HDR framebuffer grabbing for true color depth
-    QImage result = m_hdrWidget->grabHDRFramebuffer();
-    
-    m_hdrWidget->doneCurrent();
-    
-    if (result.isNull()) {
-      qWarning() << "Failed to grab HDR framebuffer";
-      return QImage();
-    }
-    
-    qDebug() << "Successfully rendered HDR frame to QImage:" << result.size() << result.format();
-    return result;
-    
-  } catch (const std::exception& e) {
-    qWarning() << "Exception during HDR rendering:" << e.what();
-    m_hdrWidget->doneCurrent();
-    return QImage();
-  } catch (...) {
-    qWarning() << "Unknown exception during HDR rendering";
-    m_hdrWidget->doneCurrent();
-    return QImage();
-  }
-}
+// *** REMOVED: getHDRRenderedImage() - Violated Principle #2 (Push Model) ***
+// This method implemented a "pull" model where external code pulled rendered images
+// New architecture uses "push" model where frame data is pushed to HDR widget via updateFrame()
 
 /* Get the pixels values so we can show them in the info part of the zoom box.
  * If a second frame handler is provided, the difference values from that item will be returned.
