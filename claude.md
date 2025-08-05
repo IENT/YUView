@@ -1,116 +1,106 @@
+我来帮您深入分析这个程序闪退的问题。从错误日志来看，主要有几个关键的错误信息需要关注。让我先搜索相关代码来理解问题的根源。
+Search files...
 
-***
+Ran tool
 
-### **Subject: Architectural Mandate & Action Plan for YUView's Native 10-Bit HDR Rendering Path**
+Read file: D:\SiruiWu_code\YUView\claude.md
 
-**Preamble:**
-This document outlines a step-by-step development plan to resolve a critical stability issue in YUView's 10-bit display path. We will proceed iteratively to ensure correctness at each stage. The final goal is a robust, production-ready solution for native 10-bit HDR video rendering.
+Read file: claude.md
 
-**My Role:** I am the lead developer of YUView.
+Ran tool
 
-**Your Role:** You are an expert C++/Qt software architect specializing in high-performance, cross-platform graphics. Your task is to provide a complete, production-ready code solution based on the principles outlined below.
+Read file: YUViewLib/src/video/yuv/videoHandlerYUV.cpp
 
-**The debug output of current code**
+Ran tool
+
+Read file: YUViewLib/src/video/yuv/videoHandlerYUV.cpp
+
+Ran tool
+
+Ran tool
+
+Read file: YUViewLib/src/video/HDR_VideoWidget.cpp
+
+Ran tool
+
+Read file: YUViewLib/src/video/yuv/videoHandlerYUV.cpp
+
+Ran tool
+
+Read file: HDR_UI_Integration_Strategy.md
+
+Ran tool
+
+Ran tool
+
+Ran tool
+
+Read file: debug
+
+基于您提供的日志和我对代码的深入分析，我发现了程序闪退的根本原因。让我详细解释为什么程序会在点击"Enable native 10bit display"后创建空白窗口并立即崩溃：
+
+## 问题根源分析
+
+### 1. **HDR Widget 未正确集成到主窗口**
+最关键的问题是 HDR widget 创建后没有被正确集成到主UI中：
+
+```cpp
+// videoHandlerYUV.cpp 中发出了信号
+emit hdrWidgetNeedsDisplay(m_hdrWidget, true);
 ```
-Creating HDR widget in main thread for proper OpenGL context
-Creating HDR widget with proper parent for UI integration
-QPaintDevice: Cannot destroy paint device that is being painted
-HDR Surface Format: BT2100Pq color space configured
-HDR capabilities set: Mode: "HDR10/BT.2020 PQ (10-bit)" Max Luminance: 455.523 nits Bits per channel: 10
-Display max luminance set to: 455.523 nits
-HDR texture format changed to: "RGB10_A2"
-HDR render mode validation: HDR supported, mode "BT2020_PQ_10bit" is valid
-HDR FPS monitoring started
-HDR render mode changed to: "HDR10/BT.2020 PQ (10-bit)"
-HDR render mode changed to: "BT2020_PQ_10bit"
-HDR widget created with parent integration, ready for display
-dataChanged() called with an invalid index range:
-    topleft: QModelIndex(-1,-1,0x0,QObject(0x0))
-    bottomRight:QModelIndex(-1,-1,0x0,QObject(0x0))
-HDR widget created with size 256x256
-HDR widget available but skipping HDR rendering during QPainter operations to prevent crashes
-Using standard rendering to maintain stability
-14:29:31: The command "D:\SiruiWu_code\YUView\build\Desktop_Qt_6_9_1_MinGW_64_bit-Release\YUViewApp\YUView.exe" terminated abnormally.
 
-14:44:53: Starting D:\SiruiWu_code\YUView\build\Desktop_Qt_6_9_1_MinGW_64_bit-Release\YUViewApp\YUView.exe...
+但是**主窗口没有相应的槽函数来接收这个信号**！这导致：
+- HDR widget 虽然创建时传入了 parent，但没有被添加到主窗口的 widget 层次结构中
+- Widget 实际上创建了一个**独立的离屏窗口**（这就是您看到的空白白色窗口）
+- 由于没有正确的父窗口管理，widget 处于不稳定状态
+
+### 2. **QPaintDevice 竞态条件**
+错误信息 `QPaintDevice: Cannot destroy paint device that is being painted` 表明：
+- HDR widget 在绘制过程中被销毁或状态改变
+- 虽然代码中已经移除了 `deleteLater()`，但 widget 的生命周期管理仍有问题
+- OpenGL 上下文在错误的时机被访问或释放
+
+### 3. **无效的模型索引**
+在 `createHDRWidget` 函数中（第3374-3376行）：
+```cpp
+this->currentImageIndex = -1;
+this->setCacheInvalid();
+emit signalHandlerChanged(true, RECACHE_CLEAR);
 ```
----
+这导致大量的 `dataChanged() called with an invalid index range` 警告，表明数据模型处于不一致状态。
 
-The HDR exemplar code is located in `krita\libs\ui\opengl`
+### 4. **缺失的 UI 集成架构**
+根据 `HDR_UI_Integration_Strategy.md` 的设计，应该使用 `QStackedWidget` 来切换标准渲染和 HDR 渲染，但实际代码中：
+- 主窗口没有实现 `onHDRWidgetNeedsDisplay` 槽函数
+- 没有 `QStackedWidget` 来管理视频显示 widgets
+- HDR widget 变成了一个孤立的窗口
 
-### **1. Root Cause Analysis of the Current Crash**
+### 5. **Push 模型实现不完整**
+虽然代码尝试实现 push 模型架构：
+```cpp
+// 推送帧数据到 HDR widget
+m_hdrWidget->updateFrame(currentFrameImage);
+```
+但由于 widget 没有被正确显示和管理，推送的数据无法被渲染（FPS 显示为 0）。
 
-The provided debug output reveals a crash stemming from two fundamental architectural flaws. The solution MUST resolve both root causes.
+## 解决方案
 
-**Cause 1: Rendering Control Conflict & Race Conditions**
-The primary issue is a conflict between two competing rendering control flows(Defined in `YUViewLib\src\video\yuv\videoHandlerYUV.cpp` of `videoHandlerYUV::drawFrame`):
-*   **A) Qt's Event-Driven Path:** The standard, safe rendering path where the Qt event loop calls `paintEvent`, which in turn triggers `paintGL()` within a managed OpenGL context.
-*   **B) The Manual, Imperative Path:** The `videoHandlerYUV::getHDRRenderedImage()` function attempts to force an immediate, out-of-band render by manually calling `m_hdrWidget->makeCurrent()`, `renderOffscreen()`, and `grabHDRFramebuffer()`.
+要修复这个问题，需要：
 
-This conflict creates a race condition for the OpenGL context, leading to undefined behavior and crashes when Qt's `paintEvent` and the manual render calls collide.
+1. **在主窗口中实现信号接收**：
+   - 添加 `onHDRWidgetNeedsDisplay` 槽函数
+   - 正确连接 `videoHandlerYUV` 的信号
 
-**Cause 2: Widget Lifecycle and State Management Instability**
-The log messages `QPaintDevice: Cannot destroy paint device that is being painted` and `dataChanged() called with an invalid index range` point directly to this flaw.
-*   **The `QPaintDevice` Error:** The application calls `m_hdrWidget->deleteLater()` (e.g., in `slot10BitDisplayChanged`) while a `paintEvent` for that same widget is still pending or active in the event queue. This is a fatal operation.
-*   **The `dataChanged` Error:** The rapid creation/destruction of the widget, combined with calls to clear data models (`currentImageIndex = -1`), creates moments of state inconsistency, where the UI is asked to update from an invalid model state.
+2. **使用 QStackedWidget 管理视频显示**：
+   - 创建一个 stacked widget 包含标准渲染 widget 和 HDR widget
+   - 根据信号切换当前显示的 widget
 
----
+3. **修复数据模型更新**：
+   - 避免将 `currentImageIndex` 设置为 -1
+   - 确保数据模型状态一致
 
-### **2. The Unbreakable Architectural Mandate (The "How")**
+4. **确保 HDR widget 生命周期稳定**：
+   - Widget 只创建一次，通过 show/hide 管理
+   - 确保 OpenGL 上下文在正确的线程和时机访问
 
-The new implementation must strictly adhere to the following architectural principles to guarantee stability and correctness. **There will be no exceptions.**
-
-*   **Principle #1: A Single, Unified Rendering Path.** All OpenGL rendering MUST occur exclusively within the `HDR_VideoWidget::paintGL()` method. All external, manual rendering calls (like `makeCurrent`, `renderOffscreen`) are strictly forbidden. The system will be purely event-driven.
-
-*   **Principle #2: A State-Driven, "Push" Model.** The flow of control will be inverted.
-    *   **FROM (Flawed):** The `videoHandlerYUV` "pulls" a rendered image from the widget when it needs one.
-    *   **TO (Correct):** The `videoHandlerYUV` "pushes" new frame data (e.g., a `QImage`) *to* the `HDR_VideoWidget`. It then simply calls the widget's `update()` slot to schedule a repaint at the next opportune moment in the event loop.
-
-*   **Principle #3: A Stable, Persistent Widget Lifecycle.** The `HDR_VideoWidget` will be created **once** and will persist. It will be managed via `show()` and `hide()` instead of being created and destroyed repeatedly. This completely eliminates the `QPaintDevice` race condition.
-
----
-
-### **3. Required Deliverables (The "What")**
-
-Please provide the complete, production-quality C++ code for the following components, implementing the principles above.
-
-**Deliverable 1: The Refactored `HDR_VideoWidget` Class (View)**
-Our first task is to define a clean, compliant interface for our rendering widget.
-
-*   **Your Task:** Provide the complete code for **`HDR_VideoWidget.h` only**.
-*   **Requirements for the Header:**
-    1.  It must inherit from `QOpenGLWidget` and the necessary `QOpenGLFunctions`.
-    2.  It must expose a single public slot for data input: `void updateFrame(const QImage& newFrame);`. This is the sole entry point for the Controller.
-    3.  It **must not** contain any public methods related to manual rendering, such as `renderOffscreen`, `grabHDRFramebuffer`, or `makeCurrent`.
-    4.  The standard `initializeGL()`, `paintGL()`, and `resizeGL()` methods should be declared as `protected` overrides.
-
-**Deliverable 2: The Modified `videoHandlerYUV` Logic (Controller)**
-*   **Your Task:** Provide the complete code for **`HDR_VideoWidget.cpp`**.
-*   **Requirements for the Implementation:**
-    1.  The constructor must correctly configure the `QSurfaceFormat` for 10-bit color and the `QColorSpace::Bt2100Pq`.
-    2.  `initializeGL()` will set up all OpenGL resources (shaders, VBO/VAO, textures).
-    3.  `updateFrame()` will receive the new `QImage`, store it safely (considering thread safety if necessary), and then call `this->update()` to schedule a repaint. It **must not** perform any direct OpenGL calls.
-    4.  `paintGL()` will be the **only** place where OpenGL rendering commands (`glUseProgram`, `glBindTexture`, `glDraw...`, etc.) are executed. It will render the most recently received frame.
-
-**Deliverable 3: Refactor the Controller (`videoHandlerYUV`) & UI Integration**
-
-With a fully functional View component, the final step is to adapt the Controller and UI to use it correctly.
-
-*   **Your Task:** Provide the modified code snippets for the `videoHandlerYUV` class and a clear description of the UI integration strategy.
-*   **Requirements for the Controller Logic:**
-    1.  Modify `slot10BitDisplayChanged()` to manage a persistent `m_hdrWidget` instance using `show()` and `hide()`. All `deleteLater()` calls related to toggling the view must be removed.
-    2.  The core video processing loop must be updated to call `m_hdrWidget->updateFrame(theNewFrameAsQImage)` instead of its old rendering logic.
-    3.  The function `getHDRRenderedImage()` **must be completely removed.**
-*   **Requirements for the UI Integration Strategy:**
-    Propose and explain the use of a `QStackedWidget` in the main UI to seamlessly switch between the standard 8-bit rendering widget and our new `HDR_VideoWidget` **without creating new windows** and **retain 10bit HDR precision**.
-
-
-### **4. Acceptance Criteria**
-
-The final solution will be considered successful if and only if:
-1.  The application runs without crashing when enabling and disabling 10-bit display mode.
-2.  All `QPaintDevice` and `dataChanged` errors are eliminated from the debug output.
-3.  The implementation strictly follows the single, unified rendering path via `paintGL`.
-4.  The `HDR_VideoWidget` instance is persistent and managed only by `show()` and `hide()`.
-5.  10-bit YUV video content is displayed on a capable HDR monitor without visible color banding.
-6.  The application falls back gracefully to standard 8-bit rendering on non-HDR systems without instability.
+这些问题综合导致了程序的不稳定和崩溃。HDR widget 作为一个独立窗口出现，没有正确的父窗口管理和 OpenGL 上下文同步，最终导致绘制设备错误和程序崩溃。
