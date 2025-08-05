@@ -1,43 +1,111 @@
-我来帮您深入分析这个程序闪退的问题。从错误日志来看，主要有几个关键的错误信息需要关注。让我先搜索相关代码来理解问题的根源。
-Search files...
+日志：
+```
+20:59:21: Starting D:\SiruiWu_code\YUView\build\Desktop_Qt_6_9_1_MinGW_64_bit-Release\YUViewApp\YUView.exe...
+dataChanged() called with an invalid index range:
+    topleft: QModelIndex(-1,-1,0x0,QObject(0x0))
+    bottomRight:QModelIndex(-1,-1,0x0,QObject(0x0))
+dataChanged() called with an invalid index range:
+    topleft: QModelIndex(-1,-1,0x0,QObject(0x0))
+    bottomRight:QModelIndex(-1,-1,0x0,QObject(0x0))
+dataChanged() called with an invalid index range:
+    topleft: QModelIndex(-1,-1,0x0,QObject(0x0))
+    bottomRight:QModelIndex(-1,-1,0x0,QObject(0x0))
+dataChanged() called with an invalid index range:
+    topleft: QModelIndex(-1,-1,0x0,QObject(0x0))
+    bottomRight:QModelIndex(-1,-1,0x0,QObject(0x0))
+dataChanged() called with an invalid index range:
+    topleft: QModelIndex(-1,-1,0x0,QObject(0x0))
+    bottomRight:QModelIndex(-1,-1,0x0,QObject(0x0))
+dataChanged() called with an invalid index range:
+    topleft: QModelIndex(-1,-1,0x0,QObject(0x0))
+    bottomRight:QModelIndex(-1,-1,0x0,QObject(0x0))
+dataChanged() called with an invalid index range:
+    topleft: QModelIndex(-1,-1,0x0,QObject(0x0))
+    bottomRight:QModelIndex(-1,-1,0x0,QObject(0x0))
+dataChanged() called with an invalid index range:
+    topleft: QModelIndex(-1,-1,0x0,QObject(0x0))
+    bottomRight:QModelIndex(-1,-1,0x0,QObject(0x0))
+dataChanged() called with an invalid index range:
+    topleft: QModelIndex(-1,-1,0x0,QObject(0x0))
+    bottomRight:QModelIndex(-1,-1,0x0,QObject(0x0))
+dataChanged() called with an invalid index range:
+    topleft: QModelIndex(-1,-1,0x0,QObject(0x0))
+    bottomRight:QModelIndex(-1,-1,0x0,QObject(0x0))
+dataChanged() called with an invalid index range:
+    topleft: QModelIndex(-1,-1,0x0,QObject(0x0))
+    bottomRight:QModelIndex(-1,-1,0x0,QObject(0x0))
+dataChanged() called with an invalid index range:
+    topleft: QModelIndex(-1,-1,0x0,QObject(0x0))
+    bottomRight:QModelIndex(-1,-1,0x0,QObject(0x0))
+dataChanged() called with an invalid index range:
+    topleft: QModelIndex(-1,-1,0x0,QObject(0x0))
+    bottomRight:QModelIndex(-1,-1,0x0,QObject(0x0))
+dataChanged() called with an invalid index range:
+    topleft: QModelIndex(-1,-1,0x0,QObject(0x0))
+    bottomRight:QModelIndex(-1,-1,0x0,QObject(0x0))
+dataChanged() called with an invalid index range:
+    topleft: QModelIndex(-1,-1,0x0,QObject(0x0))
+    bottomRight:QModelIndex(-1,-1,0x0,QObject(0x0))
+dataChanged() called with an invalid index range:
+    topleft: QModelIndex(-1,-1,0x0,QObject(0x0))
+    bottomRight:QModelIndex(-1,-1,0x0,QObject(0x0))
+dataChanged() called with an invalid index range:
+    topleft: QModelIndex(-1,-1,0x0,QObject(0x0))
+    bottomRight:QModelIndex(-1,-1,0x0,QObject(0x0))
+dataChanged() called with an invalid index range:
+    topleft: QModelIndex(-1,-1,0x0,QObject(0x0))
+    bottomRight:QModelIndex(-1,-1,0x0,QObject(0x0))
+dataChanged() called with an invalid index range:
+    topleft: QModelIndex(-1,-1,0x0,QObject(0x0))
+    bottomRight:QModelIndex(-1,-1,0x0,QObject(0x0))
+dataChanged() called with an invalid index range:
+    topleft: QModelIndex(-1,-1,0x0,QObject(0x0))
+    bottomRight:QModelIndex(-1,-1,0x0,QObject(0x0))
+10-bit display requested, starting HDR detection...
+Starting background HDR detection...
+Starting simplified HDR detection (non-blocking)...
+HDR detection started in background thread
+HDR detection worker started (simplified, non-blocking)
+YUView HDR Detection: Starting display capability analysis...
+YUView HDR Detection: Analyzing screen: "CG319X" Depth: 32 bits
+Performing DXGI HDR detection for display: "CG319X"
+YUView HDR Detection: ? HDR display detected! Mode: "HDR10/BT.2020 PQ (10-bit)" Max luminance: 455.523 nits
+HDR detection completed. Supported: true
+HDR detection completed in main thread. Supported: true
+HDR capability detected - preparing for integrated HDR rendering
+HDR rendering enabled (integrated mode): "HDR10/BT.2020 PQ (10-bit)"
+HDR capabilities stored, ready for integrated rendering when main UI creates the widget
+dataChanged() called with an invalid index range:
+    topleft: QModelIndex(-1,-1,0x0,QObject(0x0))
+    bottomRight:QModelIndex(-1,-1,0x0,QObject(0x0))
+dataChanged() called with an invalid index range:
+    topleft: QModelIndex(-1,-1,0x0,QObject(0x0))
+    bottomRight:QModelIndex(-1,-1,0x0,QObject(0x0))
+dataChanged() called with an invalid index range:
+    topleft: QModelIndex(-1,-1,0x0,QObject(0x0))
+    bottomRight:QModelIndex(-1,-1,0x0,QObject(0x0))
+Creating persistent HDR widget for push model architecture
+Creating HDR widget with proper parent for UI integration
+QPaintDevice: Cannot destroy paint device that is being painted
+HDR Surface Format: BT2100Pq color space configured
+HDR capabilities set: Mode: "HDR10/BT.2020 PQ (10-bit)" Max Luminance: 455.523 nits Bits per channel: 10
+Display max luminance set to: 455.523 nits
+HDR texture format changed to: "RGB10_A2"
+HDR render mode validation: HDR supported, mode "BT2020_PQ_10bit" is valid
+HDR FPS monitoring started
+HDR render mode changed to: "HDR10/BT.2020 PQ (10-bit)"
+HDR render mode changed to: "BT2020_PQ_10bit"
+HDR widget created with parent integration, ready for display
+dataChanged() called with an invalid index range:
+    topleft: QModelIndex(-1,-1,0x0,QObject(0x0))
+    bottomRight:QModelIndex(-1,-1,0x0,QObject(0x0))
+dataChanged() called with an invalid index range:
+    topleft: QModelIndex(-1,-1,0x0,QObject(0x0))
+    bottomRight:QModelIndex(-1,-1,0x0,QObject(0x0))
+Frame data pushed to HDR widget (push model architecture)
+20:59:32: The command "D:\SiruiWu_code\YUView\build\Desktop_Qt_6_9_1_MinGW_64_bit-Release\YUViewApp\YUView.exe" terminated abnormally.
 
-Ran tool
-
-Read file: D:\SiruiWu_code\YUView\claude.md
-
-Read file: claude.md
-
-Ran tool
-
-Read file: YUViewLib/src/video/yuv/videoHandlerYUV.cpp
-
-Ran tool
-
-Read file: YUViewLib/src/video/yuv/videoHandlerYUV.cpp
-
-Ran tool
-
-Ran tool
-
-Read file: YUViewLib/src/video/HDR_VideoWidget.cpp
-
-Ran tool
-
-Read file: YUViewLib/src/video/yuv/videoHandlerYUV.cpp
-
-Ran tool
-
-Read file: HDR_UI_Integration_Strategy.md
-
-Ran tool
-
-Ran tool
-
-Ran tool
-
-Read file: debug
-
-基于您提供的日志和我对代码的深入分析，我发现了程序闪退的根本原因。让我详细解释为什么程序会在点击"Enable native 10bit display"后创建空白窗口并立即崩溃：
+```
 
 ## 问题根源分析
 
