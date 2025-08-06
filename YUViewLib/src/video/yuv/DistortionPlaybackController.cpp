@@ -32,7 +32,6 @@ void DistortionPlaybackController::startFirstLevelDistortion(QPushButton* button
     // Second click on active button - pause and reset
     stopDistortion();
     resetAllButtons();
-    qDebug() << "First-level distortion: Paused and reset";
     return;
   }
   
@@ -53,8 +52,6 @@ void DistortionPlaybackController::startFirstLevelDistortion(QPushButton* button
   
   // Start playback at 30 FPS
   startDistortionPlayback(30.0);
-  
-  qDebug() << "First-level distortion: Started 30 FPS playback with loop from frame" << m_playbackFrameIndex << ", revert point:" << m_revertFrameNumber;
 }
 
 void DistortionPlaybackController::startSecondLevelDistortion(QPushButton* button, int currentFrameIndex)
@@ -64,7 +61,6 @@ void DistortionPlaybackController::startSecondLevelDistortion(QPushButton* butto
     // Second click on active button - pause and reset
     stopDistortion();
     resetAllButtons();
-    qDebug() << "Second-level distortion: Paused and reset";
     return;
   }
   
@@ -85,8 +81,6 @@ void DistortionPlaybackController::startSecondLevelDistortion(QPushButton* butto
   
   // Start playback at 1.5 FPS
   startDistortionPlayback(1.5);
-  
-  qDebug() << "Second-level distortion: Started 1.5 FPS playback with loop from frame" << m_playbackFrameIndex << ", revert point:" << m_revertFrameNumber;
 }
 
 void DistortionPlaybackController::stopDistortion()
@@ -108,14 +102,9 @@ void DistortionPlaybackController::stopDistortion()
 
 void DistortionPlaybackController::revertToFirstLevel()
 {
-  qDebug() << "=== First-level revert requested ===";
-  
   if (m_revertFrameNumber < 0) {
-    qDebug() << "ERROR: No revert point set for First-level analysis (revert frame:" << m_revertFrameNumber << ")";
     return;
   }
-  
-  qDebug() << "Stopping distortion and reverting to frame:" << m_revertFrameNumber;
   
   // Stop any active distortion analysis
   stopDistortion();
@@ -150,19 +139,13 @@ void DistortionPlaybackController::revertToFirstLevel()
   
   // Reset button appearance
   resetAllButtons();
-  qDebug() << "First-level distortion: Reverted and reset successfully";
 }
 
 void DistortionPlaybackController::revertToSecondLevel()
 {
-  qDebug() << "=== Second-level revert requested ===";
-  
   if (m_revertFrameNumber < 0) {
-    qDebug() << "ERROR: No revert point set for Second-level analysis (revert frame:" << m_revertFrameNumber << ")";
     return;
   }
-  
-  qDebug() << "Stopping distortion and reverting to frame:" << m_revertFrameNumber;
   
   // Stop any active distortion analysis
   stopDistortion();
@@ -197,7 +180,6 @@ void DistortionPlaybackController::revertToSecondLevel()
   
   // Reset button appearance
   resetAllButtons();
-  qDebug() << "Second-level distortion: Reverted and reset successfully";
 }
 
 void DistortionPlaybackController::setActiveButton(QPushButton* button)
@@ -227,11 +209,9 @@ void DistortionPlaybackController::onDistortionTimerTimeout()
   if (playbackController) {
     // Use PlaybackController to advance to next frame properly
     playbackController->nextFrame();
-    qDebug() << "Advanced to next frame using PlaybackController";
   } else {
     // Fallback to manual advancement if PlaybackController not found
     m_playbackFrameIndex++;
-    qDebug() << "Manual frame advancement to frame:" << m_playbackFrameIndex;
     
     // Emit signal for manual frame advancement
     emit frameAdvanceRequested();
@@ -260,7 +240,6 @@ void DistortionPlaybackController::startDistortionPlayback(double fps)
   // since modifying the playlist item's frame rate is complex and can affect
   // the overall playback experience for the user
   
-  qDebug() << "Starting distortion playback at" << fps << "FPS using manual frame advancement";
   startManualFrameAdvancement(fps);
 }
 
@@ -280,8 +259,6 @@ void DistortionPlaybackController::startManualFrameAdvancement(double fps)
   
   // Start the timer
   m_distortionTimer->start(intervalMs);
-  
-  qDebug() << "Manual frame advancement started with interval:" << intervalMs << "ms (" << fps << "FPS)";
 }
 
 void DistortionPlaybackController::setButtonActiveState(QPushButton* button, bool active)
@@ -290,28 +267,22 @@ void DistortionPlaybackController::setButtonActiveState(QPushButton* button, boo
   
   if (active) {
     button->setStyleSheet("QPushButton { background-color: #4CAF50; color: white; font-weight: bold; }");
-    qDebug() << "Button activated:" << button->text();
   } else {
     button->setStyleSheet("");
-    qDebug() << "Button deactivated:" << button->text();
   }
 }
 
 void DistortionPlaybackController::setViewZoom(double zoomFactor)
 {
-  qDebug() << "=== Setting view zoom to:" << zoomFactor << "===";
-  
   // Use PlaybackController to access the split view widgets
   PlaybackController* playbackController = findPlaybackController();
   if (!playbackController) {
-    qDebug() << "ERROR: Could not find PlaybackController for zoom control";
     return;
   }
   
   // Get the main window and try to find split view widgets
   QMainWindow* mainWindow = qobject_cast<QMainWindow*>(QApplication::activeWindow());
   if (!mainWindow) {
-    qDebug() << "ERROR: Could not find main window for zoom control";
     return;
   }
   
@@ -319,36 +290,22 @@ void DistortionPlaybackController::setViewZoom(double zoomFactor)
   QList<splitViewWidget*> splitViews = mainWindow->findChildren<splitViewWidget*>();
   
   if (splitViews.isEmpty()) {
-    qDebug() << "ERROR: Could not find any splitViewWidget objects for zoom control";
     return;
   }
-  
-  qDebug() << "Found" << splitViews.size() << "split view widgets";
   
   // Apply zoom to all found split view widgets
   for (splitViewWidget* splitView : splitViews) {
     if (splitView) {
-      qDebug() << "Applying zoom" << zoomFactor << "to split view:" << splitView->objectName();
-      
       // Call the appropriate zoom method based on the zoom factor
       if (zoomFactor == 1.0) {
         splitView->zoomTo100(true);
-        qDebug() << "Applied zoom to 100% (1x)";
       } else if (zoomFactor == 2.0) {
         splitView->zoomTo200(true);
-        qDebug() << "Applied zoom to 200% (2x)";
       } else if (zoomFactor == 0.5) {
         splitView->zoomTo50(true);
-        qDebug() << "Applied zoom to 50% (0.5x)";
-      } else {
-        // For other zoom factors, use the generic zoom method with custom factor
-        // Note: zoomToCustom may not exist, so let's use the direct zoom method
-        qDebug() << "Custom zoom factor" << zoomFactor << "- using direct zoom method";
       }
     }
   }
-  
-  qDebug() << "Zoom setting completed for factor:" << zoomFactor;
 }
 
 PlaybackController* DistortionPlaybackController::findPlaybackController()
