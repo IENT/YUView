@@ -1,7 +1,9 @@
 #include "HDRRenderingManager.h"
+#include "qmainwindow.h"
 #include <QApplication>
 #include <QDebug>
 #include <QTimer>
+
 
 HDRRenderingManager::HDRRenderingManager(QObject* parent)
   : QObject(parent)
@@ -195,28 +197,38 @@ bool HDRRenderingManager::isHDRDetectionInProgress() const
 void HDRRenderingManager::updateHDRFrame(const QImage& frame)
 {
   qDebug() << "=== HDRRenderingManager::updateHDRFrame() called ===";
-  qDebug() << "HDRRenderingManager: Frame update requested";
   qDebug() << "HDRRenderingManager: Frame size:" << frame.size();
   qDebug() << "HDRRenderingManager: Frame format:" << frame.format();
-  qDebug() << "HDRRenderingManager: Frame is null:" << frame.isNull();
   qDebug() << "HDRRenderingManager: HDR widget exists:" << (m_hdrWidget != nullptr);
   qDebug() << "HDRRenderingManager: HDR rendering active:" << m_useHDRRendering;
-  
+
   if (m_hdrWidget && m_useHDRRendering) {
     qDebug() << "HDRRenderingManager: === PUSHING FRAME TO HDR WIDGET ===";
+
+    // Ensure widget is visible
+    if (!m_hdrWidget->isVisible()) {
+      qDebug() << "HDRRenderingManager: HDR widget is hidden, showing it now";
+      m_hdrWidget->show();
+      m_hdrWidget->raise();
+    }
+
     qDebug() << "HDRRenderingManager: Calling HDR_VideoWidget::updateFrame()...";
     m_hdrWidget->updateFrame(frame);
-    qDebug() << "HDRRenderingManager: Frame data successfully pushed to HDR widget (push model architecture)";
+    qDebug() << "HDRRenderingManager: Frame data successfully pushed to HDR widget";
+
+    // Force immediate update
+    m_hdrWidget->update();
   } else {
     if (!m_hdrWidget) {
       qDebug() << "HDRRenderingManager: ERROR - Cannot update frame: HDR widget is null";
+      // Try to create it if it doesn't exist
+      onHDRDetectionComplete(m_hdrCapabilities);
     }
     if (!m_useHDRRendering) {
       qDebug() << "HDRRenderingManager: ERROR - Cannot update frame: HDR rendering is disabled";
     }
   }
 }
-
 QImage HDRRenderingManager::getHDRRenderedImage()
 {
   if (m_hdrWidget) {
@@ -254,39 +266,55 @@ void HDRRenderingManager::onHDRDetectionComplete(const HDRDetection::HDRCapabili
   qDebug() << "HDRRenderingManager: Min luminance:" << capabilities.minLuminance << "nits";
   qDebug() << "HDRRenderingManager: Bits per channel:" << capabilities.bitsPerChannel;
   qDebug() << "HDRRenderingManager: Display name:" << capabilities.displayName;
-  
+
   if (capabilities.isHDRSupported) {
     qDebug() << "HDRRenderingManager: === HDR IS SUPPORTED ===";
-    
+
     // Store capabilities and enable HDR rendering
     qDebug() << "HDRRenderingManager: Storing HDR capabilities...";
     m_hdrCapabilities = capabilities;
     m_useHDRRendering = true;
     qDebug() << "HDRRenderingManager: HDR capabilities stored and rendering enabled";
-    
+
     QString modeDescription = HDRDetection::getHDRModeDescription(capabilities.supportedMode);
     qDebug() << "HDRRenderingManager: HDR rendering enabled (integrated mode):" << modeDescription;
-    
-    qDebug() << "HDRRenderingManager: Emitting HDR rendering state changed signal (enabled)";
-    emit hdrRenderingStateChanged(true, m_hdrWidget);
-    qDebug() << "HDRRenderingManager: Emitting HDR detection completed signal (success)";
-    emit hdrDetectionCompleted(true);
-    
-    // If widget is already created, update its capabilities
-    if (m_hdrWidget) {
-      qDebug() << "HDRRenderingManager: HDR widget already exists, updating its capabilities";
-      m_hdrWidget->setHDRCapabilities(m_hdrCapabilities);
-      qDebug() << "HDRRenderingManager: HDR widget capabilities updated successfully";
-    } else {
-      qDebug() << "HDRRenderingManager: HDR widget not yet created, capabilities will be set during creation";
+    if (!m_hdrWidget) {
+      qDebug() << "HDRRenderingManager: Looking for split view widget...";
+
+      // Find the split view widget
+      splitViewWidget* splitView = nullptr;
+      QWidgetList topLevelWidgets = QApplication::topLevelWidgets();
+      for (QWidget* widget : topLevelWidgets) {
+        if (QMainWindow* mainWindow = qobject_cast<QMainWindow*>(widget)) {
+          // Find split view widget in main window
+          splitView = mainWindow->findChild<splitViewWidget*>();
+          if (splitView) {
+            qDebug() << "HDRRenderingManager: Found split view widget:" << splitView;
+            break;
+          }
+        }
+      }
+
+      if (splitView) {
+        // Create HDR widget with split view as parent
+        createHDRWidget(splitView);
+
+        if (m_hdrWidget) {
+          // Integrate with split view
+          splitView->setHDROverlayWidget(m_hdrWidget);
+          splitView->showHDROverlay(true);
+
+          qDebug() << "HDRRenderingManager: HDR widget integrated with split view";
+        }
+      } else {
+        qDebug() << "HDRRenderingManager: WARNING - Split view widget not found";
+        // Fallback to creating widget with main window as parent
+        QWidget* parentWidget = QApplication::activeWindow();
+        if (parentWidget) {
+          createHDRWidget(parentWidget);
+        }
+      }
     }
-    
-    qDebug() << "HDRRenderingManager: HDR detection and setup completed successfully";
-  } else {
-    qDebug() << "HDRRenderingManager: === HDR IS NOT SUPPORTED ===";
-    qDebug() << "HDRRenderingManager: Error message:" << capabilities.errorMessage;
-    qDebug() << "HDRRenderingManager: Falling back to standard rendering";
-    onHDRDetectionFailed(capabilities.errorMessage);
   }
 }
 
