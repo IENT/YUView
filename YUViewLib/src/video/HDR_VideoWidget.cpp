@@ -53,7 +53,7 @@ HDR_VideoWidget::HDR_VideoWidget(QWidget* parent)
     , m_lastFpsUpdate(0)
     , m_dragging(false)
 {
-    // CRITICAL FIX: Proper HDR Surface Format configuration based on Krita implementation
+    // CRITICAL FIX: Progressive HDR Surface Format configuration with fallback
     QSurfaceFormat format;
     format.setDepthBufferSize(24);
     format.setStencilBufferSize(8);
@@ -63,33 +63,31 @@ HDR_VideoWidget::HDR_VideoWidget(QWidget* parent)
     format.setSwapBehavior(QSurfaceFormat::DoubleBuffer);
     format.setRenderableType(QSurfaceFormat::OpenGL);
     
-    // KRITA-INSPIRED FIX: Configure for true HDR10 (BT.2020 PQ) support
-    // This matches Krita's BT2020_PQ configuration exactly
-    format.setRedBufferSize(10);
-    format.setGreenBufferSize(10);
-    format.setBlueBufferSize(10);
-    format.setAlphaBufferSize(2);
+    // CRITICAL: Start with standard format, will be upgraded to HDR when capabilities are confirmed
+    format.setRedBufferSize(8);
+    format.setGreenBufferSize(8);
+    format.setBlueBufferSize(8);
+    format.setAlphaBufferSize(8);
     
-    // CRITICAL: Set HDR color space for true 10-bit display (Qt 6)
-    #if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
-    format.setColorSpace(QColorSpace::Bt2100Pq);  // HDR10/BT.2020 PQ
-    qDebug() << "HDR Surface Format: BT2100Pq color space configured";
-    #else
-    qWarning() << "Qt version < 6.0, HDR color space not available";
-    #endif
+    qDebug() << "HDR Surface Format: Starting with standard 8-bit format for stability";
     
     setFormat(format);
     setMinimumSize(64, 64);  // Minimum size to ensure valid context
     
-    // Set up the widget for OpenGL rendering
+    // Set up the widget for OpenGL rendering with conservative attributes
     setAutoFillBackground(false);
     setFocusPolicy(Qt::StrongFocus);
     setMouseTracking(true);
     
-    // Configure for HDR rendering (modified attributes)
-    setAttribute(Qt::WA_NoSystemBackground, true);
-    setAttribute(Qt::WA_OpaquePaintEvent, true);
-    // REMOVED: setAttribute(Qt::WA_PaintOnScreen, false) to allow proper context
+    // CRITICAL FIX: Proper OpenGL widget attributes to prevent QPainter conflicts
+    setAttribute(Qt::WA_NoSystemBackground, true);      // OpenGL handles all background drawing
+    setAttribute(Qt::WA_OpaquePaintEvent, true);        // We handle all paint events via OpenGL
+    setAttribute(Qt::WA_PaintOnScreen, false);          // Use double buffering
+    setAttribute(Qt::WA_NativeWindow, false);           // Don't force native window
+    
+    // CRITICAL: Ensure we don't interfere with parent widget's paint device
+    setAttribute(Qt::WA_TranslucentBackground, false);  // Solid background for HDR
+    setAttribute(Qt::WA_AlwaysStackOnTop, true);        // Stay on top as overlay
     
     // Initialize transformation matrices
     m_textureMatrix.setToIdentity();
@@ -291,9 +289,9 @@ void HDR_VideoWidget::updateFrame(const QImage& newFrame)
                 makeCurrent();
                 if (uploadTextureData(newFrame)) {
                     doneCurrent();
-                    update();
+                    update();  // This triggers paintGL() which will increment m_frameCount
                     emit frameUpdated();
-                    m_frameCount++;
+                    qDebug() << "HDR_VideoWidget::updateFrame: Texture uploaded, triggering repaint";
                 } else {
                     doneCurrent();
                     handleRenderingError("Failed to upload texture data");
@@ -329,7 +327,13 @@ void HDR_VideoWidget::initializeGL()
              << context()->format().majorVersion() << "." 
              << context()->format().minorVersion();
     
-    // KRITA-INSPIRED FIX: Validate actual HDR surface format
+    // STABILITY FIX: Validate OpenGL context before proceeding
+    if (!context() || !context()->isValid()) {
+        handleInitializationError("OpenGL context is not valid");
+        return;
+    }
+    
+    // CRITICAL: Validate actual surface format and adjust expectations
     QSurfaceFormat actualFormat = context()->format();
     bool isActuallyHDR = isHDRFormat(actualFormat);
     
@@ -343,41 +347,41 @@ void HDR_VideoWidget::initializeGL()
     #endif
     qDebug() << "  Is HDR format:" << isActuallyHDR;
     
-    if (m_renderMode != Mode_SDR_8bit) {
-        if (isActuallyHDR) {
-            qDebug() << "SUCCESS: True HDR surface format confirmed!";
-        } else {
-            qWarning() << "WARNING: HDR mode requested but surface format is not HDR-capable";
-            qWarning() << "This may result in 8-bit display despite 10-bit content";
-        }
+    // CRITICAL: If HDR was requested but not obtained, adjust accordingly
+    if (m_renderMode != Mode_SDR_8bit && !isActuallyHDR) {
+        qDebug() << "HDR format requested but not available, will simulate HDR in shaders";
+        // Don't fail - we can still do HDR processing in shaders even with 8-bit framebuffer
+    } else if (isActuallyHDR) {
+        qDebug() << "SUCCESS: True HDR surface format confirmed!";
+        // Enable HDR-optimized attributes now that we have a valid HDR context
+        setAttribute(Qt::WA_NoSystemBackground, true);
+        setAttribute(Qt::WA_OpaquePaintEvent, true);
     }
     
-    // Initialize OpenGL state
+    // Initialize OpenGL state with error checking
     glEnable(GL_BLEND);
+    if (logOpenGLError("Enable blend")) return;
+    
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    if (logOpenGLError("Set blend func")) return;
+    
     glDisable(GL_DEPTH_TEST);
+    if (logOpenGLError("Disable depth test")) return;
+    
     glDisable(GL_CULL_FACE);
+    if (logOpenGLError("Disable cull face")) return;
     
-    // Check for OpenGL errors after state setup
-    GLenum error = glGetError();
-    if (error != GL_NO_ERROR) {
-        handleInitializationError(QString("OpenGL state setup failed: %1").arg(error));
-        return;
-    }
-    
-    // Initialize shaders
+    // Initialize components with proper error checking
     if (!initializeShaders()) {
         handleInitializationError("Failed to initialize shaders");
         return;
     }
     
-    // Initialize geometry
     if (!initializeGeometry()) {
         handleInitializationError("Failed to initialize geometry");
         return;
     }
     
-    // Initialize texture
     if (!initializeTexture()) {
         handleInitializationError("Failed to initialize texture");
         return;
@@ -385,6 +389,7 @@ void HDR_VideoWidget::initializeGL()
     
     // Set clear color
     glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+    if (logOpenGLError("Set clear color")) return;
     
     m_initialized = true;
     qDebug() << "HDR Video Widget initialized successfully";
@@ -394,7 +399,7 @@ void HDR_VideoWidget::initializeGL()
         uploadTextureData(m_currentFrame);
     }
     
-    logOpenGLError("initializeGL");
+    logOpenGLError("initializeGL complete");
 }
 
 void HDR_VideoWidget::paintGL()
@@ -405,8 +410,22 @@ void HDR_VideoWidget::paintGL()
     
     glClear(GL_COLOR_BUFFER_BIT);
     
-    if (!m_currentFrame.isNull() && m_videoTexture) {
+    if (!m_currentFrame.isNull() && m_videoTexture && m_videoTexture->isCreated()) {
         renderFrame();
+        
+        // CRITICAL FIX: Actually increment FPS counter when we render a frame
+        m_frameCount++;
+        
+        qDebug() << "HDR_VideoWidget::paintGL: Frame rendered successfully";
+    } else {
+        // DEBUGGING: Log why we're not rendering
+        if (m_currentFrame.isNull()) {
+            qDebug() << "HDR_VideoWidget::paintGL: No frame to render (frame is null)";
+        } else if (!m_videoTexture) {
+            qDebug() << "HDR_VideoWidget::paintGL: No video texture available";
+        } else if (!m_videoTexture->isCreated()) {
+            qDebug() << "HDR_VideoWidget::paintGL: Video texture not created yet";
+        }
     }
     
     logOpenGLError("paintGL");
@@ -417,12 +436,25 @@ void HDR_VideoWidget::paintGL()
 
 void HDR_VideoWidget::paintEvent(QPaintEvent* event)
 {
-    // STABILITY FIX: Minimal paintEvent to avoid recursion
-    Q_UNUSED(event);
+    // CRITICAL FIX: Properly handle OpenGL rendering without QPainter conflicts
+    if (!m_initialized || !context() || !context()->isValid()) {
+        return;
+    }
     
-    // Only use standard OpenGL rendering, no custom behavior
-    if (m_initialized) {
+    // IMPORTANT: We must still call the base class paintEvent to trigger OpenGL rendering
+    // But only if we're properly initialized and have a valid context
+    try {
+        // Ensure we have the correct context active
+        makeCurrent();
+        
+        // Call base class to trigger paintGL() - this is safe now with proper attributes set
         QOpenGLWidget::paintEvent(event);
+        
+        doneCurrent();
+        
+    } catch (...) {
+        qCritical() << "Exception in HDR_VideoWidget::paintEvent - OpenGL context issue";
+        handleRenderingError("Exception during OpenGL paint event");
     }
 }
 
@@ -916,6 +948,9 @@ void HDR_VideoWidget::setHDRCapabilities(const HDRDetection::HDRCapabilities& ca
             setTextureFormat(Format_RGBA16F);
         }
         
+        // CRITICAL: Upgrade surface format to HDR if not already done
+        upgradeToHDRFormat(capabilities.supportedMode);
+        
         // Note: Render mode will be set by external caller (videoHandlerYUV)
         // to avoid conflicts with async HDR detection timing
     } else {
@@ -980,7 +1015,7 @@ QString HDR_VideoWidget::getTextureFormatString() const
     }
 }
 
-void HDR_VideoWidget::logOpenGLError(const QString& operation)
+bool HDR_VideoWidget::logOpenGLError(const QString& operation)
 {
     GLenum error = glGetError();
     if (error != GL_NO_ERROR) {
@@ -1006,7 +1041,9 @@ void HDR_VideoWidget::logOpenGLError(const QString& operation)
         QString fullError = QString("OpenGL error in %1: %2").arg(operation, errorString);
         qCritical() << fullError;
         emit openGLError(fullError);
+        return true;  // Error occurred
     }
+    return false;  // No error
 }
 
 void HDR_VideoWidget::handleInitializationError(const QString& error)
@@ -1073,6 +1110,54 @@ void HDR_VideoWidget::mouseMoveEvent(QMouseEvent* event)
 // *** REMOVED: grabHDRFramebuffer() - Violated Principle #1 (Single Rendering Path) ***
 // Manual framebuffer grabbing with context management created race conditions
 // New architecture uses pure push model - external code should not pull rendered images
+
+void HDR_VideoWidget::upgradeToHDRFormat(HDRDetection::HDRMode hdrMode)
+{
+    #if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+    
+    // Check if we already have the right HDR format
+    QSurfaceFormat currentFormat = context() ? context()->format() : format();
+    if (isHDRFormat(currentFormat)) {
+        qDebug() << "HDR format already active, no upgrade needed";
+        return;
+    }
+    
+    qDebug() << "Upgrading surface format to HDR for mode:" << HDRDetection::getHDRModeDescription(hdrMode);
+    
+    // Create new HDR format based on detected mode
+    QSurfaceFormat hdrFormat = currentFormat;
+    
+    if (hdrMode == HDRDetection::BT2020_PQ_10bit) {
+        // Configure for BT2020 PQ (HDR10)
+        hdrFormat.setRedBufferSize(10);
+        hdrFormat.setGreenBufferSize(10);
+        hdrFormat.setBlueBufferSize(10);
+        hdrFormat.setAlphaBufferSize(2);
+        hdrFormat.setColorSpace(QColorSpace::Bt2100Pq);
+        qDebug() << "Upgrading to BT2020 PQ 10-bit format";
+    } else if (hdrMode == HDRDetection::BT709_G10_16bit) {
+        // Configure for scRGB/Linear RGB
+        hdrFormat.setRedBufferSize(16);
+        hdrFormat.setGreenBufferSize(16);
+        hdrFormat.setBlueBufferSize(16);
+        hdrFormat.setAlphaBufferSize(16);
+        hdrFormat.setColorSpace(QColorSpace::SRgbLinear);
+        qDebug() << "Upgrading to BT709 Linear 16-bit format";
+    } else {
+        qWarning() << "Unknown HDR mode for surface format upgrade:" << hdrMode;
+        return;
+    }
+    
+    // Apply the new format
+    setFormat(hdrFormat);
+    
+    qDebug() << "HDR surface format upgrade requested - will take effect on next context creation";
+    
+    #else
+    Q_UNUSED(hdrMode);
+    qWarning() << "HDR surface format upgrade not supported in Qt < 6.0";
+    #endif
+}
 
 bool HDR_VideoWidget::isHDRFormat(const QSurfaceFormat& format)
 {

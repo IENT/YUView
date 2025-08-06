@@ -159,6 +159,13 @@ void splitViewWidget::paintEvent(QPaintEvent *)
     // The playlist was not initialized yet. Nothing to draw (yet)
     return;
 
+  // CRITICAL FIX: Avoid QPainter conflicts when HDR overlay is active
+  if (m_hdrOverlayWidget && m_hdrOverlayWidget->isVisible()) {
+    // HDR OpenGL widget is handling all rendering - don't interfere with QPainter
+    qDebug() << "SplitViewWidget: Skipping QPainter rendering - HDR overlay active";
+    return;
+  }
+
   QPainter painter(this);
 
   // Get the full size of the area that we can draw on (from the paint device base)
@@ -538,13 +545,29 @@ void splitViewWidget::setHDROverlayWidget(HDR_VideoWidget* hdrWidget)
   m_hdrOverlayWidget = hdrWidget;
 
   if (m_hdrOverlayWidget) {
-    // Set this as parent and position correctly
+    // CRITICAL FIX: Proper overlay setup with OpenGL widget
     m_hdrOverlayWidget->setParent(this);
-    m_hdrOverlayWidget->setGeometry(rect());
+    
+    // Ensure geometry is set correctly for OpenGL context
+    QRect targetGeometry = rect();
+    if (targetGeometry.width() < 64 || targetGeometry.height() < 64) {
+      targetGeometry = QRect(0, 0, 640, 480);  // Fallback minimum size
+    }
+    
+    m_hdrOverlayWidget->setGeometry(targetGeometry);
+    
+    // Ensure the widget is properly configured for overlay rendering
+    m_hdrOverlayWidget->setAttribute(Qt::WA_TransparentForMouseEvents, false);  // Accept mouse events
+    m_hdrOverlayWidget->setFocusPolicy(Qt::StrongFocus);
+    
+    // Show and raise to top
     m_hdrOverlayWidget->show();
-    m_hdrOverlayWidget->raise();  // Bring to front
-
-    qDebug() << "splitViewWidget: HDR overlay widget set and shown";
+    m_hdrOverlayWidget->raise();
+    m_hdrOverlayWidget->activateWindow();  // Ensure OpenGL context activation
+    
+    qDebug() << "splitViewWidget: HDR overlay widget configured - geometry:" << targetGeometry;
+    qDebug() << "splitViewWidget: HDR overlay widget visible:" << m_hdrOverlayWidget->isVisible();
+    qDebug() << "splitViewWidget: HDR overlay widget size:" << m_hdrOverlayWidget->size();
   }
 }
 

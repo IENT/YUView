@@ -123,11 +123,12 @@ private:
     // HDR capability detection
     void detectHDRCapabilities();
     void validateRenderMode();
+    void upgradeToHDRFormat(HDRDetection::HDRMode hdrMode);
     
     // Utility methods
     QString getRenderModeString() const;
     QString getTextureFormatString() const;
-    void logOpenGLError(const QString& operation);
+    bool logOpenGLError(const QString& operation);
     
     // Error handling
     void handleInitializationError(const QString& error);
