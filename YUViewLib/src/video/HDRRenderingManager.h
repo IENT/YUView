@@ -8,6 +8,7 @@
 #include "HDR_VideoWidget.h"
 #include "HDRDetectionWorker.h"
 #include "HDRDetection.h"
+#include "ui/views/SplitViewWidget.h"
 
 class videoHandlerYUV;
 
