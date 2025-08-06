@@ -45,7 +45,7 @@
 #include <QPointer>
 #include <QProgressDialog>
 #include <QTimer>
-
+#include "video/HDR_VideoWidget.h"
 #include <memory>
 
 class QDockWidget;
@@ -117,7 +117,12 @@ public:
   // Add the split views menu items to the given menu. This is called from the main window.
   void addMenuActions(QMenu *menu);
 
+  void setHDROverlayWidget(HDR_VideoWidget* hdrWidget);
+  void showHDROverlay(bool show);
+  void resizeEvent(QResizeEvent* event);
+
   virtual void resetViewInternal() override;
+
 
 signals:
 
@@ -155,6 +160,7 @@ private slots:
   void toggleFullScreen(bool checked);
 
 protected:
+  QPointer<HDR_VideoWidget> m_hdrOverlayWidget;
   // Set the widget to the given view mode
   enum ViewSplitMode
   {
