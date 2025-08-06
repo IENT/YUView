@@ -105,6 +105,8 @@ private:
     bool initializeShaders();
     bool initializeGeometry();
     bool initializeTexture();
+    QImage convertTo10BitFormat(const QImage& source);
+    QImage convertToFloatFormat(const QImage& source);
     
     // Shader management
     bool loadShaderProgram();
@@ -133,6 +135,7 @@ private:
     
     // HDR surface format validation (inspired by Krita)
     static bool isHDRFormat(const QSurfaceFormat& format);
+
 
 private:
     // Rendering state
