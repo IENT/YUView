@@ -527,6 +527,51 @@ void splitViewWidget::paintEvent(QPaintEvent *)
   }
 }
 
+void splitViewWidget::setHDROverlayWidget(HDR_VideoWidget* hdrWidget)
+{
+  if (m_hdrOverlayWidget && m_hdrOverlayWidget != hdrWidget) {
+    // Remove old widget
+    m_hdrOverlayWidget->setParent(nullptr);
+    m_hdrOverlayWidget->hide();
+  }
+
+  m_hdrOverlayWidget = hdrWidget;
+
+  if (m_hdrOverlayWidget) {
+    // Set this as parent and position correctly
+    m_hdrOverlayWidget->setParent(this);
+    m_hdrOverlayWidget->setGeometry(rect());
+    m_hdrOverlayWidget->show();
+    m_hdrOverlayWidget->raise();  // Bring to front
+
+    qDebug() << "splitViewWidget: HDR overlay widget set and shown";
+  }
+}
+
+void splitViewWidget::showHDROverlay(bool show)
+{
+  if (m_hdrOverlayWidget) {
+    m_hdrOverlayWidget->setVisible(show);
+    if (show) {
+      m_hdrOverlayWidget->raise();  // Ensure it's on top
+      m_hdrOverlayWidget->setGeometry(rect());  // Update geometry
+    }
+    qDebug() << "splitViewWidget: HDR overlay visibility set to:" << show;
+  }
+}
+
+// Override resizeEvent to keep HDR widget sized correctly
+void splitViewWidget::resizeEvent(QResizeEvent* event)
+{
+  MoveAndZoomableView::resizeEvent(event);
+
+  if (m_hdrOverlayWidget && m_hdrOverlayWidget->isVisible()) {
+    m_hdrOverlayWidget->setGeometry(rect());
+    qDebug() << "splitViewWidget: HDR overlay resized to match view";
+  }
+}
+
+
 void splitViewWidget::updatePixelPositions()
 {
   // Get the selected item(s)
