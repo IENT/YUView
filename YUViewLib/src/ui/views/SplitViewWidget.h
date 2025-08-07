@@ -121,6 +121,10 @@ public:
   void showHDROverlay(bool show);
   void resizeEvent(QResizeEvent* event);
 
+  // Multi-monitor HDR support
+  void checkCurrentDisplayHDRSupport();
+  QScreen* getCurrentScreen() const;
+  
   virtual void resetViewInternal() override;
 
 
@@ -130,6 +134,9 @@ signals:
   void signalShowSeparateWindow(bool show);
 
   void signalToggleFullScreen();
+
+  // Multi-monitor HDR support - emitted when display HDR capabilities change
+  void signalDisplayHDRSupportChanged(bool hdrSupported, const QString& displayName);
 
 public slots:
 
@@ -161,6 +168,12 @@ private slots:
 
 protected:
   QPointer<HDR_VideoWidget> m_hdrOverlayWidget;
+  
+  // Multi-monitor HDR support tracking
+  QScreen* m_currentScreen;
+  bool m_currentDisplaySupportsHDR;
+  QString m_currentDisplayName;
+  
   // Set the widget to the given view mode
   enum ViewSplitMode
   {

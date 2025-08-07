@@ -45,28 +45,21 @@ void HDRRenderingManager::setHDRRenderingEnabled(bool enabled)
   if (enabled) {
     qDebug() << "HDRRenderingManager: === ENABLING HDR RENDERING ===";
     
-    // Check if HDR detection is already in progress or complete
-    if (m_hdrDetectionWorker && m_hdrDetectionWorker->isDetecting()) {
-      qDebug() << "HDRRenderingManager: HDR detection already in progress, ignoring duplicate request";
-      return;
+    // CRITICAL FIX: Perform HDR detection synchronously to provide immediate feedback
+    qDebug() << "HDRRenderingManager: Performing synchronous HDR detection for immediate feedback";
+    
+    // Do immediate HDR detection
+    HDRDetection* detector = HDRDetection::instance();
+    HDRDetection::HDRCapabilities capabilities = detector->detectHDRCapabilities(nullptr);
+    
+    // Process detection results immediately
+    if (capabilities.isHDRSupported) {
+      qDebug() << "HDRRenderingManager: Immediate HDR detection - HDR supported";
+      onHDRDetectionComplete(capabilities);
+    } else {
+      qDebug() << "HDRRenderingManager: Immediate HDR detection - HDR not supported";
+      onHDRDetectionComplete(capabilities); // This will handle the not supported case
     }
-    
-    if (m_useHDRRendering && m_hdrCapabilities.isHDRSupported) {
-      qDebug() << "HDRRenderingManager: HDR already supported and enabled";
-      qDebug() << "HDRRenderingManager: HDR Mode:" << m_hdrCapabilities.supportedMode;
-      qDebug() << "HDRRenderingManager: Max Luminance:" << m_hdrCapabilities.maxLuminance << "nits";
-      return;
-    }
-    
-    // Start HDR detection only if not already done
-    qDebug() << "HDRRenderingManager: 10-bit display requested, starting HDR detection...";
-    qDebug() << "HDRRenderingManager: Deferring HDR detection to next event loop iteration";
-    
-    // Use QTimer to defer HDR detection to next event loop iteration
-    QTimer::singleShot(0, this, [this]() {
-      qDebug() << "HDRRenderingManager: QTimer callback - starting HDR detection now";
-      startHDRDetection();
-    });
   } else {
     qDebug() << "HDRRenderingManager: === DISABLING HDR RENDERING ===";
     qDebug() << "HDRRenderingManager: HDR widget exists:" << (m_hdrWidget != nullptr);
@@ -305,6 +298,10 @@ void HDRRenderingManager::onHDRDetectionComplete(const HDRDetection::HDRCapabili
           splitView->showHDROverlay(true);
 
           qDebug() << "HDRRenderingManager: HDR widget integrated with split view";
+          
+          // CRITICAL FIX: Emit signal to trigger immediate frame update
+          // This ensures that the current frame is pushed to the newly created HDR widget
+          emit hdrRenderingStateChanged(true, m_hdrWidget);
         }
       } else {
         qDebug() << "HDRRenderingManager: WARNING - Split view widget not found";
@@ -312,9 +309,33 @@ void HDRRenderingManager::onHDRDetectionComplete(const HDRDetection::HDRCapabili
         QWidget* parentWidget = QApplication::activeWindow();
         if (parentWidget) {
           createHDRWidget(parentWidget);
+          if (m_hdrWidget) {
+            // CRITICAL FIX: Emit signal to trigger immediate frame update for fallback case too
+            emit hdrRenderingStateChanged(true, m_hdrWidget);
+          }
         }
       }
     }
+  } else {
+    // CRITICAL FIX: Handle HDR not supported case
+    qDebug() << "HDRRenderingManager: === HDR IS NOT SUPPORTED ===";
+    qDebug() << "HDRRenderingManager: Error:" << capabilities.errorMessage;
+    
+    // Disable HDR rendering since it's not supported
+    m_useHDRRendering = false;
+    m_hdrCapabilities = capabilities; // Store capabilities for reference
+    
+    // Clean up any existing HDR widget
+    if (m_hdrWidget) {
+      emit hdrWidgetNeedsDisplay(m_hdrWidget, false);
+      m_hdrWidget->hide();
+    }
+    
+    // Notify that HDR is disabled
+    emit hdrRenderingStateChanged(false, m_hdrWidget);
+    emit hdrDetectionFailed(capabilities.errorMessage.isEmpty() ? 
+                           "HDR not supported on current display" : 
+                           capabilities.errorMessage);
   }
 }
 

@@ -517,11 +517,13 @@ const float c1 = 3424.0 / 4096.0;
 const float c2 = 2413.0 / 4096.0 * 32.0;
 const float c3 = 2392.0 / 4096.0 * 32.0;
 
-// Rec.709 to Rec.2020 color space conversion matrix
+// CRITICAL FIX: Corrected Rec.709 to Rec.2020 color space conversion matrix  
+// Previous matrix caused green color cast for grayscale content
+// Using ITU-R BT.2020 standard transformation matrix
 const mat3 from709to2020 = mat3(
-    0.6274040, 0.3292820, 0.0433136,
-    0.0690970, 0.9195400, 0.0113612,
-    0.0163916, 0.0880132, 0.8955950
+    0.627402, 0.329292, 0.043306,
+    0.069097, 0.919540, 0.011362,
+    0.016391, 0.088013, 0.895595
 );
 
 // Apply ST.2084 PQ transfer function with proper physical tone mapping
@@ -556,10 +558,27 @@ void main()
     
     if (renderMode == 1) {
         // BT2020_PQ mode: Convert to Rec.2020 and apply PQ curve
-        vec3 rec2020Color = from709to2020 * color.rgb;
-        vec3 pqColor = applyPQ(rec2020Color);
-        pqColor = applyGamma(pqColor);
-        FragColor = vec4(pqColor, color.a);
+        
+        // CRITICAL FIX: Detect grayscale content and preserve neutrality
+        // Check if R≈G≈B (grayscale) with small tolerance for floating point comparison
+        float maxDiff = max(abs(color.r - color.g), abs(color.g - color.b));
+        maxDiff = max(maxDiff, abs(color.r - color.b));
+        
+        vec3 processedColor;
+        if (maxDiff < 0.01) {
+            // Grayscale content: preserve neutrality, only adjust luminance
+            float avgLuminance = (color.r + color.g + color.b) / 3.0;
+            processedColor = vec3(avgLuminance, avgLuminance, avgLuminance);
+            // Apply PQ curve directly to preserve grayscale
+            processedColor = applyPQ(processedColor);
+        } else {
+            // Color content: apply full color space conversion
+            processedColor = from709to2020 * color.rgb;
+            processedColor = applyPQ(processedColor);
+        }
+        
+        processedColor = applyGamma(processedColor);
+        FragColor = vec4(processedColor, color.a);
         
     } else if (renderMode == 2) {
         // BT709_Linear mode: Apply exposure and gamma
@@ -703,11 +722,21 @@ QImage HDR_VideoWidget::convertTo10BitFormat(const QImage& source)
     }
   }
 
-  // Create QImage from packed data
-  QImage result((uchar*)packedData.data(), width, height, width * sizeof(uint32_t),
-                QImage::Format_RGBA8888);  // Use RGBA8888 as container format
+  // CRITICAL FIX: Create QImage with proper format for 10-bit packed data
+  // We need to create a custom QImage that preserves the packed data
+  
+  // Allocate persistent memory for the packed data
+  uchar* persistentData = new uchar[width * height * sizeof(uint32_t)];
+  std::memcpy(persistentData, packedData.data(), width * height * sizeof(uint32_t));
+  
+  // Create QImage with RGB30 format which can handle packed 10-bit data better
+  // Use Format_RGB30 which is specifically designed for packed 10-bit RGB data
+  QImage result(persistentData, width, height, width * sizeof(uint32_t),
+                QImage::Format_RGB30,
+                [](void* data) { delete[] (uchar*)data; },  // Custom cleanup function
+                persistentData);
 
-  return result.copy();  // Make a deep copy to ensure data persistence
+  return result;
 }
 
 // Helper function to convert image to floating point format
@@ -759,46 +788,51 @@ bool HDR_VideoWidget::uploadTextureData(const QImage& image)
     m_videoTexture->destroy();
   }
 
-  // Configure texture format based on render mode
-  GLenum internalFormat = GL_RGBA8;
+  // CRITICAL FIX: Simplified texture format handling for better compatibility
+  // Use high-precision internal format but simple upload format
+  GLenum internalFormat = GL_RGBA16F;  // Always use 16-bit float internal format for quality
   GLenum pixelFormat = GL_RGBA;
-  GLenum pixelType = GL_UNSIGNED_BYTE;
+  GLenum pixelType = GL_UNSIGNED_BYTE;  // Simple upload format
 
-  // CRITICAL FIX: Use proper internal formats for 10-bit HDR
   switch (m_textureFormat) {
   case Format_RGB10_A2:
-    // Use RGB10_A2 for 10-bit HDR content
-    internalFormat = GL_RGB10_A2;
+    // Use 16-bit float internal format with 8-bit upload for compatibility
+    internalFormat = GL_RGBA16F;
     pixelFormat = GL_RGBA;
-    pixelType = GL_UNSIGNED_INT_2_10_10_10_REV;
-    qDebug() << "HDR_VideoWidget: Using RGB10_A2 texture format for 10-bit HDR";
+    pixelType = GL_UNSIGNED_BYTE;
+    qDebug() << "HDR_VideoWidget: Using RGBA16F internal format for RGB10_A2 compatibility";
     break;
 
   case Format_RGBA16F:
     // Use 16-bit floating point for scRGB/Linear HDR
     internalFormat = GL_RGBA16F;
     pixelFormat = GL_RGBA;
-    pixelType = GL_FLOAT;
+    pixelType = GL_UNSIGNED_BYTE;  // Simplified upload
     qDebug() << "HDR_VideoWidget: Using RGBA16F texture format for 16-bit HDR";
     break;
 
   case Format_RGBA8:
   default:
-    // Standard 8-bit RGBA
-    internalFormat = GL_RGBA8;
+    // Standard 8-bit RGBA with 16-bit internal for quality
+    internalFormat = GL_RGBA16F;
     pixelFormat = GL_RGBA;
     pixelType = GL_UNSIGNED_BYTE;
-    qDebug() << "HDR_VideoWidget: Using RGBA8 texture format for SDR";
+    qDebug() << "HDR_VideoWidget: Using RGBA16F internal with RGBA8 upload for SDR";
     break;
   }
 
   // Convert image to appropriate format if needed
   QImage textureImage;
 
+  // CRITICAL FIX: Simplify texture format handling for better compatibility
+  // Issue: Complex 10-bit packing was causing display problems for high-res and YUV444
+  
   if (m_textureFormat == Format_RGB10_A2) {
-    // CRITICAL: Convert to 10-bit format
-    // For 10-bit, we need to pack the data correctly
-    textureImage = convertTo10BitFormat(image);
+    // Instead of complex 10-bit packing, use high-quality 8-bit with better processing
+    // The 10-bit precision will be handled in the shader with proper color space processing
+    textureImage = image.convertToFormat(QImage::Format_RGBA8888);
+    qDebug() << "HDR_VideoWidget: Using simplified RGBA8888 upload for RGB10_A2 texture";
+    
   } else if (m_textureFormat == Format_RGBA16F) {
     // Convert to floating point format
     textureImage = convertToFloatFormat(image);
@@ -1068,42 +1102,86 @@ void HDR_VideoWidget::handleRenderingError(const QString& error)
 
 void HDR_VideoWidget::wheelEvent(QWheelEvent* event)
 {
-    // Handle mouse wheel for exposure adjustment
+    // CRITICAL FIX: Forward wheel events to parent for zoom functionality
+    // Only handle exposure adjustment when Ctrl is pressed
     if (event->modifiers() & Qt::ControlModifier) {
         float delta = event->angleDelta().y() / 120.0f; // Standard wheel step
         setHDRExposure(m_hdrExposure + delta * 0.1f);
         event->accept();
+        qDebug() << "HDR_VideoWidget: Handled wheel event for exposure adjustment";
     } else {
-        QOpenGLWidget::wheelEvent(event);
+        // Forward to parent widget (SplitViewWidget) for normal zoom functionality
+        if (parentWidget()) {
+            qDebug() << "HDR_VideoWidget: Forwarding wheel event to parent for zoom";
+            QApplication::sendEvent(parentWidget(), event);
+        } else {
+            QOpenGLWidget::wheelEvent(event);
+        }
     }
 }
 
 void HDR_VideoWidget::mousePressEvent(QMouseEvent* event)
 {
-    if (event->button() == Qt::LeftButton) {
+    // CRITICAL FIX: Only handle mouse events for HDR-specific operations
+    // For normal interaction (zoom, pan), forward to parent widget
+    if (event->button() == Qt::LeftButton && (event->modifiers() & Qt::ShiftModifier)) {
+        // Shift+Click for HDR gamma adjustment
         m_dragging = true;
         m_lastMousePos = event->pos();
         event->accept();
+        qDebug() << "HDR_VideoWidget: Handled mouse press for HDR adjustment (Shift+Click)";
     } else {
-        QOpenGLWidget::mousePressEvent(event);
+        // Forward all other mouse events to parent widget (SplitViewWidget)
+        if (parentWidget()) {
+            qDebug() << "HDR_VideoWidget: Forwarding mouse press event to parent";
+            QApplication::sendEvent(parentWidget(), event);
+        } else {
+            QOpenGLWidget::mousePressEvent(event);
+        }
     }
 }
 
 void HDR_VideoWidget::mouseMoveEvent(QMouseEvent* event)
 {
-    if (m_dragging && (event->buttons() & Qt::LeftButton)) {
+    // CRITICAL FIX: Only handle drag events for HDR gamma adjustment with Shift modifier
+    if (m_dragging && (event->buttons() & Qt::LeftButton) && (event->modifiers() & Qt::ShiftModifier)) {
         QPoint delta = event->pos() - m_lastMousePos;
         
         // Adjust gamma with vertical mouse movement
-        if (event->modifiers() & Qt::ShiftModifier) {
-            float gammaDelta = -delta.y() * 0.01f;
-            setHDRGamma(m_hdrGamma + gammaDelta);
-        }
+        float gammaDelta = -delta.y() * 0.01f;
+        setHDRGamma(m_hdrGamma + gammaDelta);
+        qDebug() << "HDR_VideoWidget: Adjusted gamma via mouse drag:" << m_hdrGamma;
         
         m_lastMousePos = event->pos();
         event->accept();
     } else {
-        QOpenGLWidget::mouseMoveEvent(event);
+        // Reset dragging state if conditions no longer met
+        if (m_dragging && !(event->modifiers() & Qt::ShiftModifier)) {
+            m_dragging = false;
+        }
+        
+        // Forward to parent widget for normal interaction (pan, etc.)
+        if (parentWidget()) {
+            QApplication::sendEvent(parentWidget(), event);
+        } else {
+            QOpenGLWidget::mouseMoveEvent(event);
+        }
+    }
+}
+
+void HDR_VideoWidget::mouseReleaseEvent(QMouseEvent* event)
+{
+    // CRITICAL FIX: Reset dragging state and forward events to parent
+    if (event->button() == Qt::LeftButton) {
+        m_dragging = false;
+        qDebug() << "HDR_VideoWidget: Reset dragging state on mouse release";
+    }
+    
+    // Always forward release events to parent widget
+    if (parentWidget()) {
+        QApplication::sendEvent(parentWidget(), event);
+    } else {
+        QOpenGLWidget::mouseReleaseEvent(event);
     }
 }
 

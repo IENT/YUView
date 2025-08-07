@@ -2768,6 +2768,8 @@ videoHandlerYUV::videoHandlerYUV() : videoHandler()
   // Connect HDR signals
   connect(m_hdrRenderingManager, &HDRRenderingManager::hdrRenderingStateChanged,
           this, &videoHandlerYUV::hdrRenderingStateChanged);
+  connect(m_hdrRenderingManager, &HDRRenderingManager::hdrRenderingStateChanged,
+          this, &videoHandlerYUV::onHDRRenderingStateChanged);
   connect(m_hdrRenderingManager, &HDRRenderingManager::hdrWidgetNeedsDisplay,
           this, &videoHandlerYUV::hdrWidgetNeedsDisplay);
   
@@ -2839,8 +2841,17 @@ void videoHandlerYUV::drawFrame(QPainter *painter,
     
     if (hdrWidget) {
       qDebug() << "videoHandlerYUV: Getting current frame as QImage for HDR rendering...";
-      // Get the current frame as QImage using standard rendering pipeline
+      
+      // CRITICAL FIX: Ensure frame is loaded before attempting HDR rendering
       QImage currentFrameImage = getCurrentFrameAsImage();
+      if (currentFrameImage.isNull() && frameIdx >= 0) {
+        qDebug() << "videoHandlerYUV: Current frame image is null, forcing frame load for HDR rendering";
+        // Force load the current frame to ensure we have valid image data
+        loadFrame(frameIdx);
+        currentFrameImage = getCurrentFrameAsImage();
+        qDebug() << "videoHandlerYUV: After forced load - frame image is null:" << currentFrameImage.isNull();
+      }
+      
       qDebug() << "videoHandlerYUV: Current frame image size:" << currentFrameImage.size();
       qDebug() << "videoHandlerYUV: Current frame image is null:" << currentFrameImage.isNull();
       
@@ -2851,7 +2862,7 @@ void videoHandlerYUV::drawFrame(QPainter *painter,
         qDebug() << "videoHandlerYUV: HDR frame update completed, skipping QPainter rendering";
         return; // Skip QPainter rendering - use HDR widget instead
       } else {
-        qDebug() << "videoHandlerYUV: ERROR - Failed to get current frame image";
+        qDebug() << "videoHandlerYUV: ERROR - Failed to get current frame image even after forced load";
         qWarning() << "Failed to get current frame image, falling back to standard QPainter rendering";
       }
     } else {
@@ -3175,6 +3186,47 @@ void videoHandlerYUV::slot10BitDisplayChanged()
   bool enable10Bit = ui.checkBoxEnable10BitDisplay->isChecked();
   qDebug() << "videoHandlerYUV: 10-bit display checkbox state:" << enable10Bit;
   
+  // CRITICAL FIX: Check HDR support before enabling
+  if (enable10Bit) {
+    // Pre-check HDR support to give user immediate feedback
+    HDRDetection* detector = HDRDetection::instance();
+    HDRDetection::HDRCapabilities capabilities = detector->detectHDRCapabilities(nullptr);
+    
+    if (!capabilities.isHDRSupported) {
+      qDebug() << "videoHandlerYUV: HDR not supported on current display";
+      
+      // Find parent widget for message box
+      QWidget* parentWidget = QApplication::activeWindow();
+      if (!parentWidget) {
+        // Fallback to main window if no active window
+        QWidgetList topLevelWidgets = QApplication::topLevelWidgets();
+        for (QWidget* widget : topLevelWidgets) {
+          if (QMainWindow* mainWindow = qobject_cast<QMainWindow*>(widget)) {
+            parentWidget = mainWindow;
+            break;
+          }
+        }
+      }
+      
+      // Show user-friendly warning message
+      QMessageBox::warning(parentWidget, 
+                          "HDR Not Supported", 
+                          QString("HDR (High Dynamic Range) is not supported on the current display.\n\n"
+                                  "Reason: %1\n\n"
+                                  "Requirements for HDR:\n"
+                                  "• Display must support 10-bit color depth\n"
+                                  "• HDR must be enabled in Windows display settings\n"
+                                  "• Display must support HDR10 or Dolby Vision")
+                          .arg(capabilities.errorMessage.isEmpty() ? "Display does not support HDR" : capabilities.errorMessage));
+      
+      // Uncheck the checkbox and return without enabling HDR
+      ui.checkBoxEnable10BitDisplay->setChecked(false);
+      return;
+    }
+    
+    qDebug() << "videoHandlerYUV: HDR supported - proceeding with activation";
+  }
+  
   // Save the 10-bit display setting to QSettings
   QSettings settings;
   settings.setValue("Enable10BitDisplay", enable10Bit);
@@ -3184,6 +3236,45 @@ void videoHandlerYUV::slot10BitDisplayChanged()
   qDebug() << "videoHandlerYUV: Delegating HDR enable request to HDRRenderingManager";
   m_hdrRenderingManager->setHDRRenderingEnabled(enable10Bit);
   qDebug() << "videoHandlerYUV: HDR enable request completed";
+}
+
+void videoHandlerYUV::onHDRRenderingStateChanged(bool enabled, HDR_VideoWidget* widget)
+{
+  qDebug() << "=== videoHandlerYUV::onHDRRenderingStateChanged() called ===";
+  qDebug() << "videoHandlerYUV: HDR rendering state changed to:" << enabled;
+  qDebug() << "videoHandlerYUV: HDR widget pointer:" << widget;
+  
+  if (enabled && widget) {
+    qDebug() << "videoHandlerYUV: HDR enabled - triggering immediate frame update";
+    
+    // CRITICAL FIX: Trigger immediate frame update when HDR is enabled
+    // This ensures the current frame is immediately pushed to the newly created HDR widget
+    QSettings settings;
+    bool enable10BitDisplay = settings.value("Enable10BitDisplay", false).toBool();
+    
+    if (enable10BitDisplay && srcPixelFormat.getBitsPerSample() == 10) {
+      qDebug() << "videoHandlerYUV: Conditions met for HDR rendering - forcing frame update";
+      
+      // Force get current frame and push to HDR widget
+      QImage currentFrameImage = getCurrentFrameAsImage();
+      if (currentFrameImage.isNull() && currentImageIndex >= 0) {
+        qDebug() << "videoHandlerYUV: Current frame is null, loading frame" << currentImageIndex;
+        loadFrame(currentImageIndex);
+        currentFrameImage = getCurrentFrameAsImage();
+      }
+      
+      if (!currentFrameImage.isNull()) {
+        qDebug() << "videoHandlerYUV: Pushing current frame to HDR widget";
+        m_hdrRenderingManager->updateHDRFrame(currentFrameImage);
+      } else {
+        qDebug() << "videoHandlerYUV: WARNING - Still no frame available for HDR update";
+      }
+    }
+  } else if (!enabled) {
+    qDebug() << "videoHandlerYUV: HDR disabled - no action needed";
+  }
+  
+  qDebug() << "videoHandlerYUV: HDR state change handling completed";
 }
 
 // HDR-related methods removed - now handled by HDRRenderingManager

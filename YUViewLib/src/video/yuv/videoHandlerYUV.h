@@ -277,6 +277,9 @@ private slots:
   // The 10-bit display checkbox was changed
   void slot10BitDisplayChanged();
 
+  // HDR rendering state change handler
+  void onHDRRenderingStateChanged(bool enabled, HDR_VideoWidget* widget);
+
   // Distortion analysis button slots (now delegate to DistortionPlaybackController)
   void slotFirstLevelDistortion();
   void slotSecondLevelDistortion();

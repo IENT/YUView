@@ -81,6 +81,9 @@ private slots:
   void showFileOpenDialog();
   void resetWindowLayout();
   void closeAndClearSettings();
+  
+  // Multi-monitor HDR support
+  void onDisplayHDRSupportChanged(bool hdrSupported, const QString& displayName);
 
   void onMenuResetView(bool checked)
   {

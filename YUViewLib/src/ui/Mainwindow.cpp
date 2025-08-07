@@ -79,6 +79,12 @@ MainWindow::MainWindow(bool useAlternativeSources, QWidget *parent) : QMainWindo
           &splitViewWidget::signalToggleFullScreen,
           this,
           &MainWindow::toggleFullscreen);
+  
+  // Multi-monitor HDR support - forward display change signals to video handlers
+  connect(ui.displaySplitView,
+          &splitViewWidget::signalDisplayHDRSupportChanged,
+          this,
+          &MainWindow::onDisplayHDRSupportChanged);
 
   // Setup primary/separate splitView
   ui.displaySplitView->addSlaveView(&separateViewWindow.splitView);
@@ -1028,6 +1034,43 @@ void MainWindow::performanceTest()
       info.append(QString("systemMemorySizeInMB %1\n").arg(functions::systemMemorySizeInMB()));
 
       QMessageBox::information(this, "Internal Info", info);
+    }
+  }
+}
+
+void MainWindow::onDisplayHDRSupportChanged(bool hdrSupported, const QString& displayName)
+{
+  qDebug() << "=== MainWindow::onDisplayHDRSupportChanged() called ===";
+  qDebug() << "Display:" << displayName << "HDR supported:" << hdrSupported;
+  
+  // Get current selected items to update their HDR capabilities
+  auto selectedItems = ui.playlistTreeWidget->getSelectedItems();
+  
+  for (auto item : selectedItems) {
+    // Check if this is a YUV video handler
+    if (auto yuvHandler = dynamic_cast<video::yuv::videoHandlerYUV*>(item)) {
+      qDebug() << "Found YUV handler - updating HDR display support status";
+      
+      if (!hdrSupported) {
+        // Display doesn't support HDR - disable HDR rendering if currently enabled
+        if (yuvHandler->isHDRRenderingActive()) {
+          qDebug() << "Disabling HDR rendering - moved to non-HDR display";
+          
+          // Update the checkbox to reflect the disabled state
+          QSettings settings;
+          settings.setValue("Enable10BitDisplay", false);
+          
+          // This will trigger the HDRRenderingManager to disable HDR
+          QMetaObject::invokeMethod(yuvHandler, "slot10BitDisplayChanged", Qt::QueuedConnection);
+        }
+        
+        // Also disable the UI control and show tooltip
+        // Note: This would require access to the UI controls, which we don't have directly here
+        // The actual UI update should be handled in the video handler or through a signal
+      }
+      
+      // Note: When moved to HDR-capable display, we don't automatically enable HDR
+      // User should manually enable it when they want HDR rendering
     }
   }
 }

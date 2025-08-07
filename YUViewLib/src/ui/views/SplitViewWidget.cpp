@@ -50,6 +50,10 @@
 #include <QPainter>
 #include <QSettings>
 #include <QTextDocument>
+#include <QScreen>
+#include <QGuiApplication>
+#include <QWindow>
+#include <video/HDRDetection.h>
 
 // The splitter can be grabbed with a certain margin of pixels to the left and right. The margin
 // in pixels is calculated depending on the logical DPI of the user using:
@@ -94,6 +98,11 @@ splitViewWidget::splitViewWidget(QWidget *parent) : MoveAndZoomableView(parent)
 {
   paletteBackgroundColorSettingsTag = "View/BackgroundColor";
 
+  // Initialize multi-monitor HDR support tracking
+  m_currentScreen = nullptr;
+  m_currentDisplaySupportsHDR = false;
+  m_currentDisplayName = "";
+
   setFocusPolicy(Qt::NoFocus);
   setViewSplitMode(DISABLED);
   updateSettings();
@@ -111,6 +120,18 @@ splitViewWidget::splitViewWidget(QWidget *parent) : MoveAndZoomableView(parent)
   waitingForCachingPixmap = QPixmap(":/img_hourglass.png");
 
   this->createMenuActions();
+  
+  // Initialize display monitoring for HDR support
+  checkCurrentDisplayHDRSupport();
+  
+  // Connect to screen change signals for multi-monitor HDR support
+  QGuiApplication* app = qobject_cast<QGuiApplication*>(QGuiApplication::instance());
+  if (app) {
+    connect(app, &QGuiApplication::screenAdded,
+            this, &splitViewWidget::checkCurrentDisplayHDRSupport);
+    connect(app, &QGuiApplication::screenRemoved,
+            this, &splitViewWidget::checkCurrentDisplayHDRSupport);
+  }
 }
 
 void splitViewWidget::setPlaylistTreeWidget(PlaylistTreeWidget *p)
@@ -592,6 +613,9 @@ void splitViewWidget::resizeEvent(QResizeEvent* event)
     m_hdrOverlayWidget->setGeometry(rect());
     qDebug() << "splitViewWidget: HDR overlay resized to match view";
   }
+  
+  // Check for display changes when window is resized (may indicate move to different screen)
+  checkCurrentDisplayHDRSupport();
 }
 
 
@@ -2142,4 +2166,64 @@ void splitViewWidget::getStateFromMaster()
   update();
 
   MoveAndZoomableView::getStateFromMaster();
+}
+
+QScreen* splitViewWidget::getCurrentScreen() const
+{
+  // Get the screen that contains the center of this widget
+  QWidget* topLevel = window();
+  if (!topLevel) {
+    return QGuiApplication::primaryScreen();
+  }
+  
+  QPoint widgetCenter = topLevel->geometry().center();
+  
+  // Find the screen that contains this point
+  for (QScreen* screen : QGuiApplication::screens()) {
+    if (screen->geometry().contains(widgetCenter)) {
+      return screen;
+    }
+  }
+  
+  // Fallback to primary screen
+  return QGuiApplication::primaryScreen();
+}
+
+void splitViewWidget::checkCurrentDisplayHDRSupport()
+{
+  QScreen* currentScreen = getCurrentScreen();
+  
+  if (currentScreen == m_currentScreen) {
+    // No change in screen, no need to check again
+    return;
+  }
+  
+  qDebug() << "=== splitViewWidget::checkCurrentDisplayHDRSupport() - Screen changed ===";
+  qDebug() << "Previous screen:" << (m_currentScreen ? m_currentScreen->name() : "null");
+  qDebug() << "Current screen:" << (currentScreen ? currentScreen->name() : "null");
+  
+  m_currentScreen = currentScreen;
+  
+  if (!currentScreen) {
+    m_currentDisplaySupportsHDR = false;
+    m_currentDisplayName = "Unknown Display";
+    emit signalDisplayHDRSupportChanged(false, m_currentDisplayName);
+    return;
+  }
+  
+  m_currentDisplayName = currentScreen->name();
+  
+  // Use HDRDetection to check if current display supports HDR
+  HDRDetection* detector = HDRDetection::instance();
+  HDRDetection::HDRCapabilities capabilities = detector->detectHDRCapabilities(this);
+  bool hdrSupported = capabilities.isHDRSupported;
+  
+  qDebug() << "Display:" << m_currentDisplayName << "HDR supported:" << hdrSupported;
+  
+  // Update state and emit signal if changed
+  if (hdrSupported != m_currentDisplaySupportsHDR) {
+    m_currentDisplaySupportsHDR = hdrSupported;
+    emit signalDisplayHDRSupportChanged(hdrSupported, m_currentDisplayName);
+    qDebug() << "HDR support changed - emitting signal:" << hdrSupported;
+  }
 }
