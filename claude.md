@@ -1,28 +1,67 @@
-### 现状与任务
-目前的程序离成功实现原生10bit HDR输出的目标很近了，但是输出仍未达预期。
-我按照如下步骤操作才能获得HDR显示支持：
-- 在Debug模式下运行，加载1024灰阶，420p10le格式的YUV；
-- 点击`Enable native 10-bit display`之后，整个软件的窗口会被重新加载，渲染画面变为纯黑色；
-- 再次点击`Enable native 10-bit display`，关闭此选项后，YUV回到了原来的QPainter SDR画面；
-- 再次点击`Enable native 10-bit display`，再次勾选此选项，并滚动鼠标滚轮更改放大率后，才能显示完整灰阶的HDR的画面；
-显示完HDR画面后，画面也完全不能通过鼠标滚轮进行放大、缩小，也不能在playlist当中正常的播放视频。
+### **总任务：修复原生10bit HDR输出功能，并完善多显示器支持**
 
-另外，这个画面的颜色明显偏绿，而我的输入是灰阶图像，图像的显示也明显的不正常。
+### **1. 目标 (Goal)**
 
-请你仔细阅读我的问题单描述、调式日志和边界条件，修复代码以完成我的需求
-### 设备、边界条件
-双屏幕，其中一台在windows11中已开启HDR显示的功能，另一台不支持HDR。
-当您的YUView软件被拖动到HDR屏幕的时候，您应该在点击`Enable native 10-bit display`之后，正确的调用OpenGL实现HDR的输出；
-如果软件被拖动到SDR屏幕中，您应该在点击`Enable native 10-bit display`之后，明确提示当前屏幕不支持HDR，并自动关闭`Enable native 10-bit display`可操作性。
-边界条件可能有：
-- 软件在SDR单屏幕上运行；
-- 软件在HDR单屏幕上运行；
-- 软件在SDR单屏幕上被启动，然后被拖动到HDR屏幕上；
-- 软件在HDR单屏幕上被启动，然后被拖动到SDR屏幕上；
+修复当前程序在启用原生10-bit HDR输出时遇到的激活流程、画面显示错误和功能限制问题。最终目标是实现稳定、正确且用户友好的原生10-bit HDR渲染功能，并能正确处理在HDR与SDR显示器间的切换。
 
-### 调试日志
-我们目前已经在程序的每个HDR的渲染步骤中打了调试日志：
-在缩放图像，点击`Enable native 10-bit display`前后，其日志输出是：
+### **2. 系统环境 (System Environment)**
+
+*   **操作系统**: Windows 11
+*   **显示设置**: 双显示器配置，其中一个为已在系统设置中启用HDR的主显示器，另一个为SDR显示器。
+*   **测试文件**: 1024级灰阶图像，720p, YUV 4:2:0, 10-bit `420p10le` 格式。
+
+### **3. 问题描述 (Problem Description)**
+
+当前实现存在三个主要问题：激活流程异常、视觉显示错误以及多显示器环境处理不当。
+
+#### **3.1. 主要问题：HDR激活流程异常且功能不完整 (Main Issue: Abnormal HDR Activation and Incomplete Functionality)**
+
+**复现步骤 (Steps to Reproduce):**
+
+1.  在Debug模式下运行程序。
+2.  加载指定的1024级灰阶10bit yuv420p10le的YUV文件。
+3.  点击 `Enable native 10-bit display` 复选框。
+4.  再次点击复选框以禁用该选项。
+5.  再次点击复选框以重新启用该选项。
+6.  滚动鼠标滚轮尝试缩放。
+
+**预期行为 (Expected Behavior):**
+
+*   在HDR显示器上，首次点击 `Enable native 10-bit display` 后，应立即切换到OpenGL渲染，并正确显示HDR灰阶图像。
+*   启用HDR模式后，鼠标滚轮缩放、视频播放列表控制等原有YUVuew的核心功能应保持正常工作。
+*   禁用该选项后，应平滑地回退到原始的QPainter SDR渲染模式。
+
+**实际行为 (Actual Behavior):**
+
+1.  首次启用 `Enable native 10-bit display` 后，渲染窗口变为空白/纯黑色。
+2.  必须**禁用**并**再次启用**该选项，然后**滚动鼠标滚轮**（触发缩放事件），才能不完整地显示出HDR图像。
+3.  成功显示HDR图像后，**所有交互功能失效**，包括鼠标滚轮缩放和播放列表控制。
+
+#### **3.2. 视觉问题：颜色显示不正确 (Visual Issue: Incorrect Color Display)**
+
+*   **问题**: 输入的灰阶图像在HDR模式下显示时，**画面明显偏绿**，在另一个1080p的案例中，点击`Enable native 10-bit display`后，画面变为纯灰色，完全不能显示任何画面，在取消勾选后画面恢复正常。
+*   **预期**: 灰阶图像应仅包含从黑到白的亮度信息，不应出现任何颜色（Color Cast）。这表明YUV到RGB的转换或颜色空间处理可能存在问题。
+
+#### **3.3. 逻辑问题：多显示器处理不当 (Logic Issue: Improper Multi-monitor Handling)**
+
+*   **问题**: 程序没有根据当前所在的显示器特性来动态调整HDR功能的可用性。
+*   **需求**:
+    *   当软件窗口位于**HDR显示器**上时，`Enable native 10-bit display` 选项应可用，并能成功激活HDR渲染。
+    *   当软件窗口被拖动到**SDR显示器**上时，如果 `Enable native 10-bit display` 已启用，应自动禁用它。同时，该选项本身应变为灰色不可用状态，并向用户提供明确提示（如 "当前显示器不支持HDR"）。
+
+### **4. 边界条件测试场景 (Boundary Condition Test Scenarios)**
+
+修复后的代码应能正确处理以下所有场景：
+
+*   **场景1**: 程序在SDR单屏幕上启动并运行。
+*   **场景2**: 程序在HDR单屏幕上启动并运行。
+*   **场景3**: 程序在SDR屏幕上启动，然后被拖动到HDR屏幕上。
+*   **场景4**: 程序在HDR屏幕上启动，然后被拖动到SDR屏幕上。
+
+### **5. 调试日志 (Debug Logs)**
+
+为了进一步分析，以下是在触发问题（缩放图像、点击 `Enable native 10-bit display`）前后捕获的调试日志。
+
 ```
 === videoHandlerYUV::drawFrame() HDR Check ===
 videoHandlerYUV: HDR rendering active: false
@@ -201,7 +240,7 @@ HDR Video Widget FPS: 0 frames/sec
 HDR Video Widget FPS: 0 frames/sec
 .......
 ```
-堆栈日志是：
+GDB堆栈日志是：
 
 ```asm
 1 ntdll!DbgBreakPoint            0x7ff818613641 
