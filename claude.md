@@ -36,9 +36,9 @@
 1.  打开YUView之后，必须在程序启动之后**立即**勾选`Enable native 10-bit display`，才有较小的几率显示出HDR图像，这时整个YUView的Windows界面都会被重新加载,然后可以正确的弹出HDR的界面；
 2.  对于绝大多数的情况，勾选`Enable native 10-bit display`之后，根本就不会有任何反应，**滚动鼠标滚轮**后，整个图像会全部变成灰色（无论缩放为多大的放大倍率），取消勾选`Enable native 10-bit display`之后，图像恢复正常。
 - 对于其他情况：
-图像完全变成灰色。
+图像完全变成灰色，输出同2。
 
-### **5. 调试日志 (Debug Logs)**
+### **4. 调试日志 (Debug Logs)**
 
 1. 程序可以
 为了进一步分析，以下是在可以成功显示HDR的前后，点击 `Enable native 10-bit display`前后捕获的调试日志。
@@ -216,6 +216,30 @@ HDR Video Widget FPS: 0 frames/sec
 
 
 在1 operator() HDR_VideoWidget.cpp 101 0x7ff667cc040f打完断点后，
+堆栈回溯：
+```
+1   operator()                                                                                                                                                                                                                                                                                                                HDR_VideoWidget.cpp   100 0x7ff667cc040f
+2   operator()                                                                                                                                                                                                                                                                                                                qobjectdefs_impl.h    116 0x7ff667cc8643
+3   QtPrivate::FunctorCallBase::call_internal<void, QtPrivate::FunctorCall<std::integer_sequence<long long unsigned int>, QtPrivate::List<>, void, HDR_VideoWidget::HDR_VideoWidget(QWidget *)::<lambda()>>::call(HDR_VideoWidget::HDR_VideoWidget(QWidget *)::<lambda()>&, void * *)::<lambda()>>(void * *, struct {...} &&) qobjectdefs_impl.h    65  0x7ff667cc8875
+4   QtPrivate::FunctorCall<std::integer_sequence<long long unsigned int>, QtPrivate::List<>, void, HDR_VideoWidget::HDR_VideoWidget(QWidget *)::<lambda()>>::call(struct {...} &, void * *)                                                                                                                                   qobjectdefs_impl.h    115 0x7ff667cc867a
+5   QtPrivate::FunctorCallable<HDR_VideoWidget::HDR_VideoWidget(QWidget *)::<lambda()>>::call<QtPrivate::List<>, void>(struct {...} &, void *, void * *)                                                                                                                                                                      qobjectdefs_impl.h    337 0x7ff667cc8090
+6   QtPrivate::QCallableObject<HDR_VideoWidget::HDR_VideoWidget(QWidget *)::<lambda()>, QtPrivate::List<>, void>::impl(int, QtPrivate::QSlotObjectBase *, QObject *, void * *, bool *)                                                                                                                                        qobjectdefs_impl.h    547 0x7ff667cc7dac
+7   z_adler32_combine                                                                                                                                                                                                                                                                                                                                   0x7fff96c6d50e
+8   QTimer::timerEvent(QTimerEvent *)                                                                                                                                                                                                                                                                                                                   0x7fff9696ba0a
+9   QObject::event(QEvent *)                                                                                                                                                                                                                                                                                                                            0x7fff96951fe9
+10  QApplicationPrivate::notify_helper(QObject *, QEvent *)                                                                                                                                                                                                                                                                                             0x7fffd2265f7c
+11  QCoreApplication::notifyInternal2(QObject *, QEvent *)                                                                                                                                                                                                                                                                                              0x7fff9691557a
+12  QEventDispatcherWin32Private::sendTimerEvent(int)                                                                                                                                                                                                                                                                                                   0x7fff96acdb55
+13  QEventDispatcherWin32Private::sendTimerEvent(int)                                                                                                                                                                                                                                                                                                   0x7fff96ace44c
+14  USER32!DispatchMessageW                                                                                                                                                                                                                                                                                                                             0x7ff8165189a1
+15  USER32!DispatchMessageW                                                                                                                                                                                                                                                                                                                             0x7ff816518461
+16  QEventDispatcherWin32::processEvents(QFlagsQEventLoop::ProcessEventsFlag)                                                                                                                                                                                                                                                                         0x7fff96aca50a
+17  QWindowsGuiEventDispatcher::processEvents(QFlagsQEventLoop::ProcessEventsFlag)                                                                                                                                                                                                                                                                    0x7fff72351069
+18  QEventLoop::exec(QFlagsQEventLoop::ProcessEventsFlag)                                                                                                                                                                                                                                                                                             0x7fff9692009a
+19  QCoreApplication::exec()                                                                                                                                                                                                                                                                                                                            0x7fff9691e056
+20  YUViewApplication::YUViewApplication                                                                                                                                                                                                                                                                                      YUViewApplication.cpp 131 0x7ff667c02175
+```
+
 - 对于极少数可以正确的显示HDR的情况：
 ```
 		__closure	@0x20c2633e780	struct {...}
@@ -325,3 +349,23 @@ HDR Video Widget FPS: 0 frames/sec
 			m_videoTexture	0x0	QOpenGLTexture*
 			staticMetaObject	@0x7ff6681668e0	QMetaObject
 ```
+
+### **5.初步分析与排查**
+在 `HDR_VideoWidget::initializeGL()` 函数的第一行和最后一行分别设置断点。当函数执行失败时，这两个断点根本就没有被触发过。
+这是一个典型的 **竞态条件 (Race Condition)** 或 **事件顺序错误**。
+
+1.  在Qt中，一个 `QOpenGLWidget` 的初始化工作主要在 `initializeGL()` 这个虚函数中完成。这个函数由Qt框架在控件第一次被显示（show）且OpenGL上下文准备好后自动调用。`m_initialized` 标志位很可能就是在 `initializeGL()` 执行成功后被设为 `true` 的。
+
+2.  **失败流程推测：**
+    a. 用户勾选 `Enable native 10-bit display` 复选框。
+    b. `videoHandlerYUV::slot10BitDisplayChanged()` 槽函数被调用。
+    c. `HDRRenderingManager` 创建了 `HDR_VideoWidget` 实例。
+    d. **问题点：** 在 `initializeGL()` 有机会被Qt事件循环调用之前，某个操作（比如您的日志中显示的 `videoHandlerYUV: Pushing current frame to HDR widget`，或者用户滚动鼠标滚轮触发的 `update()`/`repaint()`）**过早地**触发了 `paintGL()` 的执行。
+    e. 此时 `paintGL()` 开始执行，但由于 `initializeGL()` 还没运行，所有OpenGL资源都是空的，`m_initialized` 也是 `false`，渲染出来的自然是一片灰色或未定义的颜色。
+
+3.  **成功流程推测：**
+    *   在极少数情况下，由于操作系统线程调度和Qt事件处理的偶然时机，`initializeGL()` 恰好在第一次调用 `paintGL()` 之前执行完毕了，所以一切正常。
+
+**为什么滚动鼠标滚轮会触发问题？**
+
+因为滚动滚轮会改变视图的缩放，这个操作几乎总会立即触发一次 `repaint()` 请求，强制调用 `paintGL()`，从而暴露了`HDR_VideoWidget`还未初始化的事实。
