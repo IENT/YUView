@@ -12,7 +12,7 @@
 
 ### **3. 问题描述 (Problem Description)**
 
-当前实现存在三个主要问题：激活流程异常、视觉显示错误以及多显示器环境处理不当。
+当前实现存在主要问题：激活流程异常，用户交互错误。
 
 #### **3.1. 主要问题：HDR激活流程异常且功能不完整 (Main Issue: Abnormal HDR Activation and Incomplete Functionality)**
 
@@ -21,56 +21,75 @@
 1.  在Debug模式下运行程序。
 2.  加载指定的1024级灰阶10bit yuv420p10le的YUV文件。
 3.  点击 `Enable native 10-bit display` 复选框。
-4.  再次点击复选框以禁用该选项。
-5.  再次点击复选框以重新启用该选项。
-6.  滚动鼠标滚轮尝试缩放。
+
 
 **预期行为 (Expected Behavior):**
 
-*   在HDR显示器上，首次点击 `Enable native 10-bit display` 后，应立即切换到OpenGL渲染，并正确显示HDR灰阶图像。
+*   在HDR显示器上，点击 `Enable native 10-bit display`,使得该`QCheckbox`被正确的勾选上之后，应立即切换到OpenGL渲染，并正确显示HDR灰阶图像。
 *   启用HDR模式后，鼠标滚轮缩放、视频播放列表控制等原有YUVuew的核心功能应保持正常工作。
-*   禁用该选项后，应平滑地回退到原始的QPainter SDR渲染模式。
+*   `QCheckbox`被取消勾选之后，应平滑地回退到原始的QPainter SDR渲染模式。
 
 **实际行为 (Actual Behavior):**
 
-1.  首次启用 `Enable native 10-bit display` 后，渲染窗口变为空白/纯黑色。
-2.  必须**禁用**并**再次启用**该选项，然后**滚动鼠标滚轮**（触发缩放事件），才能不完整地显示出HDR图像。
-3.  成功显示HDR图像后，**所有交互功能失效**，包括鼠标滚轮缩放和播放列表控制。
+- 测试用例是YUV420p10le, 720p的YUV图像，且使用Debug调试模式启动程序的时候：
 
-#### **3.2. 视觉问题：颜色显示不正确 (Visual Issue: Incorrect Color Display)**
-
-*   **问题**: 输入的灰阶图像在HDR模式下显示时，**画面明显偏绿**，对于1080p以上的分辨率或者是YUV444的采样格式，在点击`Enable native 10-bit display`后，画面变为纯灰色，完全不能显示任何画面，在取消勾选后画面恢复正常。
-*   **预期**: 灰阶图像应仅包含从黑到白的亮度信息，不应出现任何颜色（Color Cast）。这表明YUV到RGB的转换或颜色空间处理可能存在问题。
-*   **预期**: 灰阶图像应仅包含从黑到白的亮度信息，不应出现任何颜色（Color Cast）。这表明YUV到RGB的转换或颜色空间处理可能存在问题。
-
-#### **3.3. 逻辑问题：多显示器处理不当 (Logic Issue: Improper Multi-monitor Handling)**
-
-*   **问题**: 程序没有根据当前所在的显示器特性来动态调整HDR功能的可用性。
-*   **需求**:
-    *   当软件窗口位于**HDR显示器**上时，`Enable native 10-bit display` 选项应可用，并能成功激活HDR渲染。
-    *   当软件窗口被拖动到**SDR显示器**上时，如果 `Enable native 10-bit display` 已启用，应自动禁用它。同时，该选项本身应变为灰色不可用状态，并向用户提供明确提示（如 "当前显示器不支持HDR"）。
-
-### **4. 边界条件测试场景 (Boundary Condition Test Scenarios)**
-
-修复后的代码应能正确处理以下所有场景：
-
-*   **场景1**: 程序在SDR单屏幕上启动并运行。
-*   **场景2**: 程序在HDR单屏幕上启动并运行。
-*   **场景3**: 程序在SDR屏幕上启动，然后被拖动到HDR屏幕上。
-*   **场景4**: 程序在HDR屏幕上启动，然后被拖动到SDR屏幕上。
+1.  打开YUView之后，必须在程序启动之后**立即**勾选`Enable native 10-bit display`，才有较小的几率显示出HDR图像，这时整个YUView的Windows界面都会被重新加载,然后可以正确的弹出HDR的界面；
+2.  对于绝大多数的情况，勾选`Enable native 10-bit display`之后，根本就不会有任何反应，**滚动鼠标滚轮**后，整个图像会全部变成灰色（无论缩放为多大的放大倍率），取消勾选`Enable native 10-bit display`之后，图像恢复正常。
+- 对于其他情况：
+图像完全变成灰色。
 
 ### **5. 调试日志 (Debug Logs)**
 
-为了进一步分析，以下是在触发问题（缩放图像、点击 `Enable native 10-bit display`）前后捕获的调试日志。
-
+1. 程序可以
+为了进一步分析，以下是在可以成功显示HDR的前后，点击 `Enable native 10-bit display`前后捕获的调试日志。
+- 对于可以成功加载HDR的情况
 ```
-=== videoHandlerYUV::drawFrame() HDR Check ===
+14:41:18: Debugging D:\SiruiWu_code\YUView\build\Desktop_Qt_6_9_1_MinGW_64_bit-Debug\YUViewApp\YUView.exe ...
+=== splitViewWidget::checkCurrentDisplayHDRSupport() - Screen changed ===
+Previous screen: "null"
+Current screen: "CG319X"
+YUView HDR Detection: Starting display capability analysis...
+YUView HDR Detection: Analyzing screen: "CG319X" Depth: 32 bits
+Performing DXGI HDR detection for display: "CG319X"
+YUView HDR Detection: ? HDR display detected! Mode: "HDR10/BT.2020 PQ (10-bit)" Max luminance: 455.523 nits
+Display: "CG319X" HDR supported: true
+HDR support changed - emitting signal: true
+=== splitViewWidget::checkCurrentDisplayHDRSupport() - Screen changed ===
+Previous screen: "null"
+Current screen: "CG319X"
+YUView HDR Detection: Starting display capability analysis...
+YUView HDR Detection: Analyzing screen: "CG319X" Depth: 32 bits
+Performing DXGI HDR detection for display: "CG319X"
+YUView HDR Detection: ? HDR display detected! Mode: "HDR10/BT.2020 PQ (10-bit)" Max luminance: 455.523 nits
+Display: "CG319X" HDR supported: true
+HDR support changed - emitting signal: true
+=== splitViewWidget::checkCurrentDisplayHDRSupport() - Screen changed ===
+Previous screen: "CG319X"
+Current screen: "XWU-CBA"
+YUView HDR Detection: Starting display capability analysis...
+YUView HDR Detection: Analyzing screen: "XWU-CBA" Depth: 32 bits
+Performing DXGI HDR detection for display: "XWU-CBA"
+YUView HDR Detection: ? HDR display detected! Mode: "HDR10/BT.2020 PQ (10-bit)" Max luminance: 455.523 nits
+Display: "XWU-CBA" HDR supported: true
+onecoreuap\internal\shell\inc\private\SharedStorageSources\dvthumbnail.cpp(2295)\SHELL32.dll!00007FF81741DBF8: (caller: 00007FF8172D497F) ReturnHr(1) tid(5a34) 80070057 ����������
+onecore\vm\dv\storage\plan9\rdr\dll\util.cpp(99)\p9np.dll!00007FFFC639F0CC: (caller: 00007FFFC63993B0) LogHr(1) tid(1b38) C0000034     Msg:[�����V���꾴?���Pɢ?�L?�u����??����������?��î�b��?���N�ᠹ????߾?��?Ҳ�y?????߲??��?????߲??��??��??��?�珔??????��ƫ��???߲��?�ֵ͵�?����??߼?���H��??)] 
+=== HDRRenderingManager: Constructor called ===
+HDRRenderingManager: Initializing with parent: video::yuv::videoHandlerYUV(0x190f532e340)
+HDRRenderingManager: HDR capabilities initialized to NOT SUPPORTED
+HDRRenderingManager: Constructor completed successfully
 videoHandlerYUV: HDR rendering active: false
-videoHandlerYUV: 10-bit display enabled: true
+videoHandlerYUV: 10-bit display enabled: false
 videoHandlerYUV: Pixel format bits per sample: 10
 videoHandlerYUV: Using standard QPainter rendering (HDR conditions not met)
-=== videoHandlerYUV::slot10BitDisplayChanged() called ===
+dataChanged() called with an invalid index range:
+    topleft: QModelIndex(-1,-1,0x0,QObject(0x0))
+    bottomRight:QModelIndex(-1,-1,0x0,QObject(0x0))=== videoHandlerYUV::slot10BitDisplayChanged() called ===
 videoHandlerYUV: 10-bit display checkbox state: true
+YUView HDR Detection: Starting display capability analysis...
+YUView HDR Detection: Analyzing screen: "CG319X" Depth: 32 bits
+Performing DXGI HDR detection for display: "CG319X"
+YUView HDR Detection: ? HDR display detected! Mode: "HDR10/BT.2020 PQ (10-bit)" Max luminance: 455.523 nits
+videoHandlerYUV: HDR supported - proceeding with activation
 videoHandlerYUV: Saved Enable10BitDisplay setting to: true
 videoHandlerYUV: Delegating HDR enable request to HDRRenderingManager
 === HDRRenderingManager::setHDRRenderingEnabled() called ===
@@ -78,27 +97,12 @@ HDRRenderingManager: HDR rendering enable request: true
 HDRRenderingManager: Current HDR state: false
 HDRRenderingManager: Changing HDR state from false to true
 HDRRenderingManager: === ENABLING HDR RENDERING ===
-HDRRenderingManager: 10-bit display requested, starting HDR detection...
-HDRRenderingManager: Deferring HDR detection to next event loop iteration
-videoHandlerYUV: HDR enable request completed
-HDRRenderingManager: QTimer callback - starting HDR detection now
-=== HDRRenderingManager::startHDRDetection() called ===
-HDRRenderingManager: Starting background HDR detection...
-HDRRenderingManager: HDR detection worker exists: false
-HDRRenderingManager: Creating new HDRDetectionWorker...
-HDRRenderingManager: HDRDetectionWorker created at: HDRDetectionWorker(0x1e106814790)
-HDRRenderingManager: Connecting HDR detection signals...
-HDRRenderingManager: HDR detection signals connected successfully
-HDRRenderingManager: Checking if HDR detection is already in progress...
-HDRRenderingManager: Starting HDR detection in background thread...
-Starting simplified HDR detection (non-blocking)...
-HDRRenderingManager: HDR detection started successfully in background thread
-HDR detection worker started (simplified, non-blocking)
+HDRRenderingManager: Performing synchronous HDR detection for immediate feedback
 YUView HDR Detection: Starting display capability analysis...
 YUView HDR Detection: Analyzing screen: "CG319X" Depth: 32 bits
 Performing DXGI HDR detection for display: "CG319X"
 YUView HDR Detection: ? HDR display detected! Mode: "HDR10/BT.2020 PQ (10-bit)" Max luminance: 455.523 nits
-HDR detection completed. Supported: true
+HDRRenderingManager: Immediate HDR detection - HDR supported
 === HDRRenderingManager::onHDRDetectionComplete() called ===
 HDRRenderingManager: HDR detection completed in main thread
 HDRRenderingManager: HDR supported: true
@@ -112,17 +116,17 @@ HDRRenderingManager: Storing HDR capabilities...
 HDRRenderingManager: HDR capabilities stored and rendering enabled
 HDRRenderingManager: HDR rendering enabled (integrated mode): "HDR10/BT.2020 PQ (10-bit)"
 HDRRenderingManager: Looking for split view widget...
-HDRRenderingManager: Found split view widget: splitViewWidget(0x1e1066f23c0, name="displaySplitView")
+HDRRenderingManager: Found split view widget: splitViewWidget(0x190cd822b30, name="displaySplitView")
 === HDRRenderingManager::createHDRWidget() called ===
-HDRRenderingManager: HDR widget creation requested with parent: splitViewWidget(0x1e1066f23c0, name="displaySplitView")
+HDRRenderingManager: HDR widget creation requested with parent: splitViewWidget(0x190cd822b30, name="displaySplitView")
 HDRRenderingManager: Current HDR rendering state: true
 HDRRenderingManager: HDR widget exists: false
 HDRRenderingManager: === CREATING NEW HDR WIDGET ===
 HDRRenderingManager: Creating persistent HDR widget for push model architecture
-HDRRenderingManager: Parent widget pointer: splitViewWidget(0x1e1066f23c0, name="displaySplitView")
+HDRRenderingManager: Parent widget pointer: splitViewWidget(0x190cd822b30, name="displaySplitView")
 HDRRenderingManager: HDR capabilities supported: true
 HDR Surface Format: Starting with standard 8-bit format for stability
-HDRRenderingManager: HDR_VideoWidget object created at: HDR_VideoWidget(0x1e12e17de80)
+HDRRenderingManager: HDR_VideoWidget object created at: HDR_VideoWidget(0x190f516d170)
 HDRRenderingManager: Connecting HDR widget signals...
 HDRRenderingManager: HDR widget signals connected successfully
 HDRRenderingManager: Setting HDR capabilities on widget...
@@ -163,66 +167,42 @@ splitViewWidget: HDR overlay widget visible: true
 splitViewWidget: HDR overlay widget size: QSize(1427, 969)
 splitViewWidget: HDR overlay visibility set to: true
 HDRRenderingManager: HDR widget integrated with split view
-SplitViewWidget: Skipping QPainter rendering - HDR overlay active
-HDR_VideoWidget::paintGL: No frame to render (frame is null)
-SplitViewWidget: Skipping QPainter rendering - HDR overlay active
-SplitViewWidget: Skipping QPainter rendering - HDR overlay active
-HDR Video Widget FPS: 0 frames/sec
-HDR Video Widget FPS: 0 frames/sec
-SplitViewWidget: Skipping QPainter rendering - HDR overlay active
-HDR Video Widget FPS: 0 frames/sec
-HDR Video Widget FPS: 0 frames/sec
-SplitViewWidget: Skipping QPainter rendering - HDR overlay active
-SplitViewWidget: Skipping QPainter rendering - HDR overlay active
-SplitViewWidget: Skipping QPainter rendering - HDR overlay active
-HDR Video Widget FPS: 0 frames/sec
-=== videoHandlerYUV::slot10BitDisplayChanged() called ===
-videoHandlerYUV: 10-bit display checkbox state: false
-videoHandlerYUV: Saved Enable10BitDisplay setting to: false
-videoHandlerYUV: Delegating HDR enable request to HDRRenderingManager
-=== HDRRenderingManager::setHDRRenderingEnabled() called ===
-HDRRenderingManager: HDR rendering enable request: false
-HDRRenderingManager: Current HDR state: true
-HDRRenderingManager: Changing HDR state from true to false
-HDRRenderingManager: === DISABLING HDR RENDERING ===
+=== videoHandlerYUV::onHDRRenderingStateChanged() called ===
+videoHandlerYUV: HDR rendering state changed to: true
+videoHandlerYUV: HDR widget pointer: HDR_VideoWidget(0x190f516d170)
+videoHandlerYUV: HDR enabled - triggering immediate frame update
+videoHandlerYUV: Conditions met for HDR rendering - forcing frame update
+videoHandlerYUV: Pushing current frame to HDR widget
+=== HDRRenderingManager::updateHDRFrame() called ===
+HDRRenderingManager: Frame size: QSize(1280, 720)
+HDRRenderingManager: Frame format: QImage::Format_ARGB32_Premultiplied
 HDRRenderingManager: HDR widget exists: true
-HDRRenderingManager: Hiding HDR widget and emitting display signal
-HDRRenderingManager: HDR widget hidden successfully
-HDRRenderingManager: Emitting HDR rendering state changed signal (disabled)
-HDRRenderingManager: HDR rendering disabled successfully
+HDRRenderingManager: HDR rendering active: true
+HDRRenderingManager: === PUSHING FRAME TO HDR WIDGET ===
+HDRRenderingManager: Calling HDR_VideoWidget::updateFrame()...
+HDRRenderingManager: Frame data successfully pushed to HDR widget
+videoHandlerYUV: HDR state change handling completed
 videoHandlerYUV: HDR enable request completed
-=== videoHandlerYUV::drawFrame() HDR Check ===
-videoHandlerYUV: HDR rendering active: false
-videoHandlerYUV: 10-bit display enabled: false
-videoHandlerYUV: Pixel format bits per sample: 10
-videoHandlerYUV: Using standard QPainter rendering (HDR conditions not met)
-=== videoHandlerYUV::slot10BitDisplayChanged() called ===
-videoHandlerYUV: 10-bit display checkbox state: true
-videoHandlerYUV: Saved Enable10BitDisplay setting to: true
-videoHandlerYUV: Delegating HDR enable request to HDRRenderingManager
-=== HDRRenderingManager::setHDRRenderingEnabled() called ===
-HDRRenderingManager: HDR rendering enable request: true
-HDRRenderingManager: Current HDR state: false
-HDRRenderingManager: Changing HDR state from false to true
-HDRRenderingManager: === ENABLING HDR RENDERING ===
-HDRRenderingManager: HDR already supported and enabled
-HDRRenderingManager: HDR Mode: 1
-HDRRenderingManager: Max Luminance: 455.523 nits
-videoHandlerYUV: HDR enable request completed
-HDR Video Widget FPS: 0 frames/sec
-=== videoHandlerYUV::drawFrame() HDR Check ===
-videoHandlerYUV: HDR rendering active: true
-videoHandlerYUV: 10-bit display enabled: true
-videoHandlerYUV: Pixel format bits per sample: 10
-videoHandlerYUV: *** IMPLEMENTING HDR PUSH MODEL ARCHITECTURE ***
-videoHandlerYUV: HDR widget retrieved: true
-videoHandlerYUV: Getting current frame as QImage for HDR rendering...
-videoHandlerYUV: Current frame image size: QSize(1280, 720)
-videoHandlerYUV: Current frame image is null: false
+SplitViewWidget: Skipping QPainter rendering - HDR overlay active
+HDR_VideoWidget::paintGL: Video texture not created yet
+HDR_VideoWidget: Using RGBA16F internal format for RGB10_A2 compatibility
+HDR_VideoWidget: Using simplified RGBA8888 upload for RGB10_A2 texture
+HDR_VideoWidget: Texture uploaded successfully - size: 1280 x 720 format: "RGB10_A2"
+HDR_VideoWidget::updateFrame: Texture uploaded, triggering repaint
+SplitViewWidget: Skipping QPainter rendering - HDR overlay active
+HDR_VideoWidget::paintGL: Frame rendered successfully
+SplitViewWidget: Skipping QPainter rendering - HDR overlay active
+HDR Video Widget FPS: 1 frames/sec
+
+```
+
+对于图像显示为灰色的情况：
+
+```
 videoHandlerYUV: === USING HDR RENDERING PATH ===
 === HDRRenderingManager::updateHDRFrame() called ===
 HDRRenderingManager: Frame size: QSize(1280, 720)
-HDRRenderingManager: Frame format: QImage::Format_RGBA64_Premultiplied
+HDRRenderingManager: Frame format: QImage::Format_ARGB32_Premultiplied
 HDRRenderingManager: HDR widget exists: true
 HDRRenderingManager: HDR rendering active: true
 HDRRenderingManager: === PUSHING FRAME TO HDR WIDGET ===
@@ -230,44 +210,118 @@ HDRRenderingManager: HDR widget is hidden, showing it now
 HDRRenderingManager: Calling HDR_VideoWidget::updateFrame()...
 HDRRenderingManager: Frame data successfully pushed to HDR widget
 videoHandlerYUV: HDR frame update completed, skipping QPainter rendering
-HDR_VideoWidget: Using RGB10_A2 texture format for 10-bit HDR
-HDR_VideoWidget: Texture uploaded successfully - size: 1280 x 720 format: "RGB10_A2"
-HDR_VideoWidget::updateFrame: Texture uploaded, triggering repaint
-SplitViewWidget: Skipping QPainter rendering - HDR overlay active
-HDR_VideoWidget::paintGL: Frame rendered successfully
-SplitViewWidget: Skipping QPainter rendering - HDR overlay active
-HDR Video Widget FPS: 1 frames/sec
 HDR Video Widget FPS: 0 frames/sec
 HDR Video Widget FPS: 0 frames/sec
-.......
-```
-GDB堆栈日志是：
-
-```asm
-1 ntdll!DbgBreakPoint            0x7ff818613641 
-
-0x7ff818613640                  cc                       int3
-0x7ff818613641  <+    1>        c3                       ret ; 我们位于此处
-0x7ff818613642  <+    2>        cc                       int3
-0x7ff818613643  <+    3>        cc                       int3
-0x7ff818613644  <+    4>        cc                       int3
-0x7ff818613645  <+    5>        cc                       int3
-2 ntdll!DbgUiRemoteBreakin       0x7ff818646f6e 
-0x7ff818646f5f  <+   63>        48 85 c0                    test   %rax,%rax
-0x7ff818646f62  <+   66>        74 05                       je     0x7ff818646f69 <ntdll!DbgUiRemoteBreakin+73>
-0x7ff818646f64  <+   68>        ff d0                       call   *%rax
-0x7ff818646f66  <+   70>        0f 1f 00                    nopl   (%rax)
-0x7ff818646f69  <+   73>        e8 d2 c6 fc ff              call   0x7ff818613640 <ntdll!DbgBreakPoint>
-0x7ff818646f6e  <+   78>        eb 00                       jmp    0x7ff818646f70 <ntdll!DbgUiRemoteBreakin+80> ;位于此处
-0x7ff818646f70  <+   80>        33 c9                       xor    %ecx,%ecx
-0x7ff818646f72  <+   82>        e8 09 3b f8 ff              call   0x7ff8185caa80 <ntdll!RtlExitUserThread>
-0x7ff818646f77  <+   87>        90                          nop
-0x7ff818646f78  <+   88>        71 90                       jno    0x7ff818646f0a <ntdll!DbgUiIssueRemoteBreakin+90>
-0x7ff818646f7a  <+   90>        5b                          pop    %rbx
-0x7ff818646f7b  <+   91>        12 e7                       adc    %bh,%ah
-0x7ff818646f7d  <+   93>        9e                          sahf
-0x7ff818646f7e  <+   94>        70 ce                       jo     0x7ff818646f4e <ntdll!DbgUiRemoteBreakin+46>
-3 KERNEL32!BaseThreadInitThunk   0x7ff8170a257d 
-4 ntdll!RtlUserThreadStart       0x7ff8185caa48 
 ```
 
+
+在1 operator() HDR_VideoWidget.cpp 101 0x7ff667cc040f打完断点后，
+- 对于极少数可以正确的显示HDR的情况：
+```
+		__closure	@0x20c2633e780	struct {...}
+		this	<无法访问>	HDR_VideoWidget
+			[QOpenGLWidget]	@0x20c2623f0d0	QOpenGLWidget
+			[QOpenGLFunctions_3_3_Core]	<无法访问>	QOpenGLFunctions_3_3_Core
+				[0]		
+			[34]		
+			m_currentFrame	(1280x720)	QImage
+				width	1280	int
+				height	720	int
+				nbytes	7372800	int
+				format	27	int
+				data	0x20c221c7040	void *
+			m_displayMaxLuminance	455.523193	float
+			m_displayMaxLuminanceLocation	2	int
+			m_dragging	false	bool
+			m_fpsTimer	<无法访问>	QTimer
+				[0]		
+			m_frameCount	0	int
+			m_frameSize	(1280, 720)	QSize
+			m_frameUpdated	true	bool
+			m_hdrCapable	true	bool
+			m_hdrExposure	0	float
+			m_hdrExposureLocation	5	int
+			m_hdrGamma	1	float
+			m_hdrGammaLocation	4	int
+			m_indexBuffer	@0x20c26345930	QOpenGLBuffer
+				d_ptr	@0x20c26345970	QOpenGLBufferPrivate
+			m_initialized	true	bool
+			m_lastFpsUpdate	0	qint64
+			m_lastMousePos	(0, 0)	QPoint
+				xp	0	int
+				yp	0	int
+			m_projectionMatrix	@0x20c2623f214	QMatrix4x4
+				flagBits	QMatrix4x4::Identity (0x00000000)	QMatrix4x4::Flags
+				m	@0x20c2623f214	float[4][4]
+			m_projectionMatrixLocation	0	int
+			m_renderMode	HDR_VideoWidget::Mode_BT2020_PQ_10bit (1)	HDR_VideoWidget::RenderMode
+			m_renderModeLocation	7	int
+			m_shaderProgram	<无法访问>	QOpenGLShaderProgram
+				[0]		
+			m_sourceMaxLuminance	1000	float
+			m_sourceMaxLuminanceLocation	3	int
+			m_textureFormat	HDR_VideoWidget::Format_RGB10_A2 (2)	HDR_VideoWidget::TextureFormat
+			m_textureLocation	6	int
+			m_textureMatrix	@0x20c2623f1d0	QMatrix4x4
+				flagBits	QMatrix4x4::Identity (0x00000000)	QMatrix4x4::Flags
+				m	@0x20c2623f1d0	float[4][4]
+			m_textureMatrixLocation	1	int
+			m_vertexArrayObject	<无法访问>	QOpenGLVertexArrayObject
+				[0]		
+			m_vertexBuffer	@0x20c263452e0	QOpenGLBuffer
+				d_ptr	@0x20c2633e720	QOpenGLBufferPrivate
+			m_videoTexture	@0x20c26345a50	QOpenGLTexture
+				d_ptr	@0x20c26345a90	QScopedPointer<QOpenGLTexturePrivate>
+			staticMetaObject	@0x7ff6681668e0	QMetaObject
+
+```
+
+- 对于极大多数根本就不能显示HDR的情况：
+```
+		__closure	@0x152998cfef0	struct {...}
+		this	<无法访问>	HDR_VideoWidget
+			[QOpenGLWidget]	@0x152998e88c0	QOpenGLWidget
+			[QOpenGLFunctions_3_3_Core]	<无法访问>	QOpenGLFunctions_3_3_Core
+				[0]		
+			[34]		
+			m_currentFrame	(1280x720)	QImage
+				width	1280	int
+				height	720	int
+				nbytes	7372800	int
+				format	27	int
+				data	0x152a0ce5040	void *
+			m_displayMaxLuminance	455.523193	float
+			m_displayMaxLuminanceLocation	-1	int
+			m_dragging	false	bool
+			m_fpsTimer	<无法访问>	QTimer
+				[0]		
+			m_frameCount	0	int
+			m_frameSize	(1280, 720)	QSize
+			m_frameUpdated	true	bool
+			m_hdrCapable	true	bool
+			m_hdrExposure	0	float
+			m_hdrExposureLocation	-1	int
+			m_hdrGamma	1	float
+			m_hdrGammaLocation	-1	int
+			m_indexBuffer	0x0	QOpenGLBuffer*
+			m_initialized	false	bool
+			m_lastFpsUpdate	0	qint64
+			m_lastMousePos	(0, 0)	QPoint
+			m_projectionMatrix	@0x152998e8a04	QMatrix4x4
+			m_projectionMatrixLocation	-1	int
+			m_renderMode	HDR_VideoWidget::Mode_BT2020_PQ_10bit (1)	HDR_VideoWidget::RenderMode
+			m_renderModeLocation	-1	int
+			m_shaderProgram	0x0	QOpenGLShaderProgram*
+			m_sourceMaxLuminance	1000	float
+			m_sourceMaxLuminanceLocation	-1	int
+			m_textureFormat	HDR_VideoWidget::Format_RGB10_A2 (2)	HDR_VideoWidget::TextureFormat
+			m_textureLocation	-1	int
+			m_textureMatrix	@0x152998e89c0	QMatrix4x4
+				flagBits	QMatrix4x4::Identity (0x00000000)	QMatrix4x4::Flags
+				m	@0x152998e89c0	float[4][4]
+			m_textureMatrixLocation	-1	int
+			m_vertexArrayObject	0x0	QOpenGLVertexArrayObject*
+			m_vertexBuffer	0x0	QOpenGLBuffer*
+			m_videoTexture	0x0	QOpenGLTexture*
+			staticMetaObject	@0x7ff6681668e0	QMetaObject
+```
