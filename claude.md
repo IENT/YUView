@@ -12,7 +12,7 @@
 
 ### **3. 问题描述 (Problem Description)**
 
-当前实现存在主要问题：激活流程异常，用户交互错误。
+当前实现存在主要问题：激活流程异常，用户交互错误，且显示异常。
 
 #### **3.1. 主要问题：HDR激活流程异常且功能不完整 (Main Issue: Abnormal HDR Activation and Incomplete Functionality)**
 
@@ -34,7 +34,8 @@
 - 测试用例是YUV420p10le, 720p的YUV图像，且使用Debug调试模式启动程序的时候：
 
 1.  打开YUView之后，必须在程序启动之后**立即**勾选`Enable native 10-bit display`，才有较小的几率显示出HDR图像，这时整个YUView的Windows界面都会被重新加载,然后可以正确的弹出HDR的界面；
-2.  对于绝大多数的情况，勾选`Enable native 10-bit display`之后，根本就不会有任何反应，**滚动鼠标滚轮**后，整个图像会全部变成灰色（无论缩放为多大的放大倍率），取消勾选`Enable native 10-bit display`之后，图像恢复正常。
+2.  即使可以弹出HDR的界面，显示的也是完全颠倒的图像，且色彩明显不符合要求，仅对于灰度图像，可以正确显示内容。
+3.  对于绝大多数的情况，勾选`Enable native 10-bit display`之后，根本就不会有任何反应，**滚动鼠标滚轮**后，整个图像会全部变成灰色（无论缩放为多大的放大倍率），取消勾选`Enable native 10-bit display`之后，图像恢复正常。
 - 对于其他情况：
 图像完全变成灰色，输出同2。
 
