@@ -41,11 +41,28 @@
 
 为了进一步分析，以下是在可以成功显示HDR的前后，点击 `Enable native 10-bit display`前后捕获的调试日志。
 
-对于图像显示为灰色的情况：
+对于图像显示失败，只能呈现为灰色的情况：
 
 ```
-QPainter::setPen: Painter not active
-QPainter::end: Painter not active, aborted
+22:39:33: Debugging D:\YUView\build\Desktop_Qt_6_9_1_MinGW_64_bit-Debug_software\YUViewApp\YUView.exe ...
+=== splitViewWidget::checkCurrentDisplayHDRSupport() - Screen changed ===
+Previous screen: "null"
+Current screen: "\\\\.\\DISPLAY1"
+YUView HDR Detection: Starting display capability analysis...
+YUView HDR Detection: Analyzing screen: "\\\\.\\DISPLAY1" Depth: 32 bits
+Performing DXGI HDR detection for display: "\\\\.\\DISPLAY1"
+YUView HDR Detection: ? HDR display detected! Mode: "HDR10/BT.2020 PQ (10-bit)" Max luminance: 1015.27 nits
+Display: "\\\\.\\DISPLAY1" HDR supported: true
+HDR support changed - emitting signal: true
+=== splitViewWidget::checkCurrentDisplayHDRSupport() - Screen changed ===
+Previous screen: "null"
+Current screen: "\\\\.\\DISPLAY1"
+YUView HDR Detection: Starting display capability analysis...
+YUView HDR Detection: Analyzing screen: "\\\\.\\DISPLAY1" Depth: 32 bits
+Performing DXGI HDR detection for display: "\\\\.\\DISPLAY1"
+YUView HDR Detection: ? HDR display detected! Mode: "HDR10/BT.2020 PQ (10-bit)" Max luminance: 1015.27 nits
+Display: "\\\\.\\DISPLAY1" HDR supported: true
+HDR support changed - emitting signal: true
 === splitViewWidget::checkCurrentDisplayHDRSupport() - Screen changed ===
 Previous screen: "\\\\.\\DISPLAY1"
 Current screen: "27G7K-PRO"
@@ -54,6 +71,30 @@ YUView HDR Detection: Analyzing screen: "27G7K-PRO" Depth: 32 bits
 Performing DXGI HDR detection for display: "27G7K-PRO"
 YUView HDR Detection: ? HDR display detected! Mode: "HDR10/BT.2020 PQ (10-bit)" Max luminance: 1015.27 nits
 Display: "27G7K-PRO" HDR supported: true
+QPainter::begin: Paint device returned engine == 0, type: 3
+QPainter::setCompositionMode: Painter not active
+QPainter::fillRect: Painter not active
+QPainter::setCompositionMode: Painter not active
+QPainter::setBrush: Painter not active
+QPainter::setPen: Painter not active
+QPainter::drawPath: Painter not active
+QPainter::setPen: Painter not active
+QPainter::setFont: Painter not active
+QPainter::setFont: Painter not active
+QPainter::setBrush: Painter not active
+QPainter::setPen: Painter not active
+QPainter::setPen: Painter not active
+QPainter::setBrush: Painter not active
+QPainter::setPen: Painter not active
+QPainter::setPen: Painter not active
+QPainter::setBrush: Painter not active
+QPainter::setPen: Painter not active
+QPainter::setPen: Painter not active
+QPainter::end: Painter not active, aborted
+onecore\vm\dv\storage\plan9\rdr\dll\util.cpp(99)\p9np.dll!00007FF82DFB32F0: (caller: 00007FF82DFAA6EA) LogHr(1) tid(3984) C0000034     Msg:[NtCreateFile(&device, SYNCHRONIZE, &attributes, &ioStatus, nullptr, FILE_ATTRIBUTE_NORMAL, (FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE), FILE_OPEN, FILE_SYNCHRONOUS_IO_NONALERT, nullptr, 0)] 
+onecoreuap\internal\shell\inc\SrcPkg\FileExplorerSessionWatcher\inc\FileExplorerSessionWatcher.h(1762)\SHELL32.dll!00007FF8463DECA8: (caller: 00007FF8462EB092) ReturnHr(1) tid(3204) 80004001 Not implemented
+shell\SrcPkg\FileExplorer\DefView\src\DefView.cpp(17832)\SHELL32.dll!00007FF8462EB0B1: (caller: 00007FF80DDD79BF) LogHr(1) tid(3204) 80004001 Not implemented
+shell\explorerframe\navbar.cpp(82)\explorerframe.dll!00007FF80DEDAD05: (caller: 00007FF80DDBFE7E) LogHr(1) tid(3204) 80070057 The parameter is incorrect.
 YUView HDR Detection: Starting display capability analysis...
 YUView HDR Detection: Analyzing screen: "\\\\.\\DISPLAY1" Depth: 32 bits
 Performing DXGI HDR detection for display: "\\\\.\\DISPLAY1"
@@ -77,7 +118,7 @@ HDRRenderingManager: Storing HDR capabilities...
 HDRRenderingManager: HDR capabilities stored and rendering enabled
 HDRRenderingManager: HDR rendering enabled (integrated mode): "HDR10/BT.2020 PQ (10-bit)"
 HDRRenderingManager: Looking for split view widget...
-HDRRenderingManager: Found split view widget: splitViewWidget(0xe082bfeea8)
+HDRRenderingManager: Found split view widget: splitViewWidget(0x344cfff518)
 HDR Surface Format: Starting with standard 8-bit format for stability
 HDR capabilities set: Mode: "HDR10/BT.2020 PQ (10-bit)" Max Luminance: 1015.27 nits Bits per channel: 10
 Upgrading surface format to HDR for mode: "HDR10/BT.2020 PQ (10-bit)"
@@ -86,11 +127,39 @@ HDR surface format upgrade requested - will take effect on next context creation
 HDR render mode validation: HDR supported, mode "BT2020_PQ_10bit" is valid
 YUView HDR: Render mode changed
 HDRRenderingManager: HDR widget integrated with split view
+SplitViewWidget: Using fallback geometry for HDR widget
 HDR widget failed to become visible, forcing show
+HDR widget not visible after show, forcing activation
+CRITICAL: HDR widget failed to initialize properly
+videoHandlerYUV: Preserving 16-bit image format for true 10-bit HDR rendering
+HDRRenderingManager: Widget not ready, attempting frame push anyway
+HDR_VideoWidget::updateFrame: Received frame QSize(1280, 720) format: QImage::Format_RGBA64_Premultiplied initialized: false
+HDR_VideoWidget::updateFrame: Frame stored, size: QSize(1280, 720) updated flag: true
+HDR_VideoWidget::updateFrame: Widget not initialized, frame queued for later processing
+HDR_VideoWidget::updateFrame: Cannot initialize yet - context: null size: 640 x 480
+videoHandlerYUV: Preserving 16-bit image format for true 10-bit HDR rendering
+HDRRenderingManager: Widget not ready, attempting frame push anyway
+HDR_VideoWidget::updateFrame: Received frame QSize(1280, 720) format: QImage::Format_RGBA64_Premultiplied initialized: false
+HDR_VideoWidget::updateFrame: Frame stored, size: QSize(1280, 720) updated flag: true
+HDR_VideoWidget::updateFrame: Widget not initialized, frame queued for later processing
+HDR_VideoWidget::updateFrame: Cannot initialize yet - context: null size: 640 x 480
+videoHandlerYUV: Preserving 16-bit image format for true 10-bit HDR rendering
+HDRRenderingManager: Widget not ready, attempting frame push anyway
+HDR_VideoWidget::updateFrame: Received frame QSize(1280, 720) format: QImage::Format_RGBA64_Premultiplied initialized: false
+HDR_VideoWidget::updateFrame: Frame stored, size: QSize(1280, 720) updated flag: true
+HDR_VideoWidget::updateFrame: Widget not initialized, frame queued for later processing
+HDR_VideoWidget::updateFrame: Cannot initialize yet - context: null size: 640 x 480
+videoHandlerYUV: Preserving 16-bit image format for true 10-bit HDR rendering
+HDRRenderingManager: Widget not ready, attempting frame push anyway
+HDR_VideoWidget::updateFrame: Received frame QSize(1280, 720) format: QImage::Format_RGBA64_Premultiplied initialized: false
+HDR_VideoWidget::updateFrame: Frame stored, size: QSize(1280, 720) updated flag: true
+HDR_VideoWidget::updateFrame: Widget not initialized, frame queued for later processing
+HDR_VideoWidget::updateFrame: Cannot initialize yet - context: null size: 640 x 480
+
 ```
 
 
-在1 operator() HDR_VideoWidget.cpp 108行打完断点后，
+在1 operator() HDR_VideoWidget.cpp 108行打断点时，断点不会被触发。
 
 **堆栈回溯：**
 ```                                                                                                                                                                                                                                                                                                       qobjectdefs_impl.h    116 0x7ff72c499851 
