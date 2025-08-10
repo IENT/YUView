@@ -298,8 +298,18 @@ void HDR_VideoWidget::updateFrame(const QImage& newFrame)
     // CRITICAL FIX: Handle different initialization states properly
     if (!m_initialized) {
         qDebug() << "HDR_VideoWidget::updateFrame: Widget not initialized, frame queued for later processing";
+        
+        // Try to force initialization if we have proper context and size
+        if (context() && context()->isValid() && width() >= 64 && height() >= 64) {
+            qDebug() << "HDR_VideoWidget::updateFrame: Attempting initialization with current context";
+            update(); // This will trigger paintGL which has initialization retry logic
+        } else {
+            qDebug() << "HDR_VideoWidget::updateFrame: Cannot initialize yet - context:" << (context() ? "valid" : "null") 
+                     << "size:" << width() << "x" << height();
+        }
+        
         // Widget not initialized yet, queue the frame for later
-        // The frame will be processed in initializeGL() when it completes
+        // The frame will be processed when initialization completes
         return;
     }
     
@@ -462,12 +472,47 @@ void HDR_VideoWidget::initializeGL()
 
 void HDR_VideoWidget::paintGL()
 {
-    // CRITICAL FIX: Properly check initialization state
+    // CRITICAL FIX: Attempt initialization if not yet done but context is available
     if (!m_initialized) {
-        // Widget not initialized yet, clear to black and return
-        glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
-        glClear(GL_COLOR_BUFFER_BIT);
-        return;
+        // Try to initialize now if we have a valid context and proper size
+        if (context() && context()->isValid() && width() >= 64 && height() >= 64) {
+            qDebug() << "HDR_VideoWidget::paintGL: Attempting delayed initialization";
+            // Attempt to initialize the widget now
+            if (initializeOpenGLFunctions()) {
+                // Try to complete initialization
+                bool initSuccess = true;
+                if (!initializeShaders()) {
+                    qWarning() << "HDR_VideoWidget::paintGL: Shader initialization failed";
+                    initSuccess = false;
+                }
+                if (initSuccess && !initializeGeometry()) {
+                    qWarning() << "HDR_VideoWidget::paintGL: Geometry initialization failed";
+                    initSuccess = false;
+                }
+                if (initSuccess && !initializeTexture()) {
+                    qWarning() << "HDR_VideoWidget::paintGL: Texture initialization failed";
+                    initSuccess = false;
+                }
+                
+                if (initSuccess) {
+                    glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+                    m_initialized = true;
+                    qDebug() << "HDR_VideoWidget::paintGL: Delayed initialization successful";
+                    emit widgetInitialized();
+                } else {
+                    qWarning() << "HDR_VideoWidget::paintGL: Delayed initialization failed";
+                }
+            } else {
+                qWarning() << "HDR_VideoWidget::paintGL: OpenGL function initialization failed";
+            }
+        }
+        
+        // If still not initialized, clear to black and return
+        if (!m_initialized) {
+            glClearColor(0.5f, 0.5f, 0.5f, 1.0f);  // Gray color to indicate error state
+            glClear(GL_COLOR_BUFFER_BIT);
+            return;
+        }
     }
     
     glClear(GL_COLOR_BUFFER_BIT);
@@ -523,6 +568,15 @@ void HDR_VideoWidget::resizeGL(int width, int height)
     
     // Update projection matrix for proper aspect ratio
     m_projectionMatrix.setToIdentity();
+    
+    // CRITICAL FIX: If not initialized and we now have proper size, try initialization
+    if (!m_initialized && width >= 64 && height >= 64) {
+        qDebug() << "HDR_VideoWidget::resizeGL: Widget now has proper size, attempting initialization";
+        // Trigger initialization attempt via update (which calls paintGL with retry logic)
+        QTimer::singleShot(0, this, [this]() {
+            update();
+        });
+    }
     
     if (m_initialized && m_shaderProgram) {
         m_shaderProgram->bind();
@@ -1166,7 +1220,27 @@ void HDR_VideoWidget::handleInitializationError(const QString& error)
         qDebug() << "HDR FPS monitoring stopped due to initialization error";
     }
     
-    emit hdrNotSupported(error);
+    // CRITICAL FIX: Add retry mechanism instead of immediately giving up
+    static int retryCount = 0;
+    const int maxRetries = 3;
+    
+    if (retryCount < maxRetries) {
+        retryCount++;
+        qWarning() << "HDR_VideoWidget: Scheduling initialization retry" << retryCount << "of" << maxRetries;
+        
+        // Schedule retry with increasing delay
+        QTimer::singleShot(retryCount * 100, this, [this]() {
+            if (!m_initialized && context() && context()->isValid()) {
+                qDebug() << "HDR_VideoWidget: Retrying OpenGL initialization...";
+                // Trigger another initialization attempt
+                update();  // This will call paintGL which has retry logic
+            }
+        });
+    } else {
+        qCritical() << "HDR_VideoWidget: Maximum initialization retries exceeded, giving up";
+        retryCount = 0;  // Reset for next time
+        emit hdrNotSupported(error);
+    }
 }
 
 void HDR_VideoWidget::handleRenderingError(const QString& error)
