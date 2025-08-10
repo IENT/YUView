@@ -7,16 +7,19 @@
 #include <QApplication>
 #include <QElapsedTimer>
 #include <QColorSpace>  // For Qt 6 HDR color space support
+#include <QThread>      // For thread safety checks
+#include <QDateTime>    // For FPS timing
 #include <cmath>
 #include <vector>  // For 10-bit framebuffer grabbing
 
 // Vertex data for full-screen quad (position + texture coordinates)
+// CRITICAL FIX: Use standard texture coordinates, flip image during upload instead
 const float HDR_VideoWidget::s_quadVertices[] = {
-    // Positions   // Texture Coords
-    -1.0f, -1.0f,  0.0f, 0.0f,   // Bottom Left
-     1.0f, -1.0f,  1.0f, 0.0f,   // Bottom Right
-     1.0f,  1.0f,  1.0f, 1.0f,   // Top Right
-    -1.0f,  1.0f,  0.0f, 1.0f    // Top Left
+    // Positions   // Texture Coords (standard)
+    -1.0f, -1.0f,  0.0f, 0.0f,   // Bottom Left  -> Bottom Left in texture
+     1.0f, -1.0f,  1.0f, 0.0f,   // Bottom Right -> Bottom Right in texture
+     1.0f,  1.0f,  1.0f, 1.0f,   // Top Right    -> Top Right in texture
+    -1.0f,  1.0f,  0.0f, 1.0f    // Top Left     -> Top Left in texture
 };
 
 const unsigned int HDR_VideoWidget::s_quadIndices[] = {
@@ -79,27 +82,35 @@ HDR_VideoWidget::HDR_VideoWidget(QWidget* parent)
     setFocusPolicy(Qt::StrongFocus);
     setMouseTracking(true);
     
-    // CRITICAL FIX: Proper OpenGL widget attributes to prevent QPainter conflicts
-    setAttribute(Qt::WA_NoSystemBackground, true);      // OpenGL handles all background drawing
-    setAttribute(Qt::WA_OpaquePaintEvent, true);        // We handle all paint events via OpenGL
-    setAttribute(Qt::WA_PaintOnScreen, false);          // Use double buffering
-    setAttribute(Qt::WA_NativeWindow, false);           // Don't force native window
-    
-    // CRITICAL: Ensure we don't interfere with parent widget's paint device
-    setAttribute(Qt::WA_TranslucentBackground, false);  // Solid background for HDR
-    setAttribute(Qt::WA_AlwaysStackOnTop, true);        // Stay on top as overlay
+    // Set critical attributes for HDR rendering
+    setAttribute(Qt::WA_NativeWindow, true);
+    setAttribute(Qt::WA_PaintOnScreen, false);
+    setAttribute(Qt::WA_DontCreateNativeAncestors, true);
+    setAttribute(Qt::WA_OpaquePaintEvent, false);
+    setAttribute(Qt::WA_NoSystemBackground, false);
     
     // Initialize transformation matrices
     m_textureMatrix.setToIdentity();
     m_projectionMatrix.setToIdentity();
     
-    // Set up FPS monitoring timer (but don't start it yet)
+    // CRITICAL FIX: Defer OpenGL initialization until widget is properly sized and visible
+    // Don't force immediate initialization - let it happen naturally when widget is ready
+    
+    // Setup FPS monitoring timer - but don't start it until OpenGL is initialized
     m_fpsTimer = new QTimer(this);
     connect(m_fpsTimer, &QTimer::timeout, this, [this]() {
-        qDebug() << "HDR Video Widget FPS:" << m_frameCount << "frames/sec";
+        if (!m_initialized) {
+            return;  // Don't run FPS monitoring until OpenGL is ready
+        }
+        qint64 currentTime = QDateTime::currentMSecsSinceEpoch();
+        if (m_lastFpsUpdate > 0) {
+            qint64 elapsed = currentTime - m_lastFpsUpdate;
+            float fps = (m_frameCount * 1000.0f) / elapsed;
+            qDebug() << "HDR Video Widget FPS:" << fps << "frames/sec";
+        }
         m_frameCount = 0;
+        m_lastFpsUpdate = currentTime;
     });
-    // Note: Timer will be started only when HDR rendering is successfully initialized
 }
 
 HDR_VideoWidget::~HDR_VideoWidget()
@@ -139,18 +150,15 @@ void HDR_VideoWidget::setRenderMode(RenderMode mode)
             // HDR mode - start FPS monitoring
             if (!m_fpsTimer->isActive()) {
                 m_fpsTimer->start(1000);
-                qDebug() << "HDR FPS monitoring started";
             }
         } else {
             // SDR mode - stop FPS monitoring
             if (m_fpsTimer->isActive()) {
                 m_fpsTimer->stop();
-                qDebug() << "HDR FPS monitoring stopped";
             }
         }
         
         emit renderModeChanged(mode);
-        qDebug() << "HDR render mode changed to:" << getRenderModeString();
     }
 }
 
@@ -171,7 +179,7 @@ void HDR_VideoWidget::setTextureFormat(TextureFormat format)
             }, Qt::QueuedConnection);
         }
         
-        qDebug() << "HDR texture format changed to:" << getTextureFormatString();
+        // Texture format updated
     }
 }
 
@@ -195,7 +203,7 @@ void HDR_VideoWidget::setHDRExposure(float exposure)
             }, Qt::QueuedConnection);
         }
         
-        qDebug() << "HDR exposure set to:" << exposure;
+        // HDR exposure updated
     }
 }
 
@@ -219,7 +227,7 @@ void HDR_VideoWidget::setHDRGamma(float gamma)
             }, Qt::QueuedConnection);
         }
         
-        qDebug() << "HDR gamma set to:" << gamma;
+        // HDR gamma updated
     }
 }
 
@@ -242,7 +250,7 @@ void HDR_VideoWidget::setDisplayMaxLuminance(float maxLuminance)
             }, Qt::QueuedConnection);
         }
         
-        qDebug() << "Display max luminance set to:" << maxLuminance << "nits";
+        // Display max luminance updated
     }
 }
 
@@ -265,7 +273,7 @@ void HDR_VideoWidget::setSourceMaxLuminance(float maxLuminance)
             }, Qt::QueuedConnection);
         }
         
-        qDebug() << "Source max luminance set to:" << maxLuminance << "nits";
+        // Source max luminance updated
     }
 }
 
@@ -276,36 +284,64 @@ void HDR_VideoWidget::updateFrame(const QImage& newFrame)
         return;
     }
     
+    qDebug() << "HDR_VideoWidget::updateFrame: Received frame" << newFrame.size() << "format:" << newFrame.format()
+             << "initialized:" << m_initialized;
+    
     // Store frame data first (thread-safe)
     m_currentFrame = newFrame;
     m_frameSize = newFrame.size();
     m_frameUpdated = true;
     
-    // Use QMetaObject::invokeMethod to ensure OpenGL operations happen in the main thread
-    if (m_initialized) {
-        // Queue the texture upload for the main thread to avoid OpenGL context issues
-        QMetaObject::invokeMethod(this, [this, newFrame]() {
-            if (context() && context()->isValid()) {
-                makeCurrent();
-                if (uploadTextureData(newFrame)) {
-                    doneCurrent();
-                    update();  // This triggers paintGL() which will increment m_frameCount
-                    emit frameUpdated();
-                    qDebug() << "HDR_VideoWidget::updateFrame: Texture uploaded, triggering repaint";
-                } else {
-                    doneCurrent();
-                    handleRenderingError("Failed to upload texture data");
-                }
-            } else {
-                handleRenderingError("OpenGL context is not valid for HDR frame update");
-            }
-        }, Qt::QueuedConnection);
-    } else {
-        // Queue the frame for when we're initialized
-        QMetaObject::invokeMethod(this, [this]() {
-            update();
-        }, Qt::QueuedConnection);
+    qDebug() << "HDR_VideoWidget::updateFrame: Frame stored, size:" << m_frameSize 
+             << "updated flag:" << m_frameUpdated;
+    
+    // CRITICAL FIX: Handle different initialization states properly
+    if (!m_initialized) {
+        qDebug() << "HDR_VideoWidget::updateFrame: Widget not initialized, frame queued for later processing";
+        // Widget not initialized yet, queue the frame for later
+        // The frame will be processed in initializeGL() when it completes
+        return;
     }
+    
+    // Widget is initialized, process the frame
+    if (context() && context()->isValid()) {
+        // Use direct invocation if we're in the GUI thread
+        if (QThread::currentThread() == QApplication::instance()->thread()) {
+            makeCurrent();
+            if (uploadTextureData(newFrame)) {
+                doneCurrent();
+                update();  // Trigger repaint
+                emit frameUpdated();
+                // qDebug() << "HDR_VideoWidget::updateFrame: Texture uploaded, triggering repaint";
+            } else {
+                doneCurrent();
+                handleRenderingError("Failed to upload texture data");
+            }
+        } else {
+            // Use queued invocation for thread safety
+            QMetaObject::invokeMethod(this, [this, newFrame]() {
+                if (context() && context()->isValid()) {
+                    makeCurrent();
+                    if (uploadTextureData(newFrame)) {
+                        doneCurrent();
+                        update();
+                        emit frameUpdated();
+                    } else {
+                        doneCurrent();
+                        handleRenderingError("Failed to upload texture data");
+                    }
+                }
+            }, Qt::QueuedConnection);
+        }
+    } else {
+        qWarning() << "HDR_VideoWidget::updateFrame: OpenGL context not valid";
+    }
+}
+
+// Add this helper method to check if widget is ready for rendering
+bool HDR_VideoWidget::isReadyForRendering() const
+{
+    return m_initialized && context() && context()->isValid();
 }
 
 void HDR_VideoWidget::clearFrame()
@@ -323,9 +359,23 @@ void HDR_VideoWidget::initializeGL()
         return;
     }
     
-    qDebug() << "Initializing HDR Video Widget with OpenGL" 
-             << context()->format().majorVersion() << "." 
-             << context()->format().minorVersion();
+    // CRITICAL FIX: Ensure widget has proper geometry before OpenGL initialization  
+    if (width() < 64 || height() < 64) {
+        qWarning() << "HDR_VideoWidget: Widget too small for OpenGL initialization:" << width() << "x" << height();
+        // Widget doesn't have proper size yet, defer initialization
+        QTimer::singleShot(50, this, [this]() {
+            if (width() >= 64 && height() >= 64 && !m_initialized) {
+                qDebug() << "HDR_VideoWidget: Retrying initialization with size:" << width() << "x" << height();
+                // Trigger re-initialization when widget has proper size
+                update();
+            } else if (!m_initialized) {
+                qWarning() << "HDR_VideoWidget: Still unable to initialize, size:" << width() << "x" << height();
+            }
+        });
+        return;
+    }
+    
+    qDebug() << "HDR_VideoWidget: Starting OpenGL initialization, size:" << width() << "x" << height();
     
     // STABILITY FIX: Validate OpenGL context before proceeding
     if (!context() || !context()->isValid()) {
@@ -349,13 +399,10 @@ void HDR_VideoWidget::initializeGL()
     
     // CRITICAL: If HDR was requested but not obtained, adjust accordingly
     if (m_renderMode != Mode_SDR_8bit && !isActuallyHDR) {
-        qDebug() << "HDR format requested but not available, will simulate HDR in shaders";
         // Don't fail - we can still do HDR processing in shaders even with 8-bit framebuffer
     } else if (isActuallyHDR) {
-        qDebug() << "SUCCESS: True HDR surface format confirmed!";
-        // Enable HDR-optimized attributes now that we have a valid HDR context
-        setAttribute(Qt::WA_NoSystemBackground, true);
-        setAttribute(Qt::WA_OpaquePaintEvent, true);
+        // True HDR surface format confirmed
+        // Note: Widget attributes should be set in constructor, not here during GL initialization
     }
     
     // Initialize OpenGL state with error checking
@@ -392,19 +439,34 @@ void HDR_VideoWidget::initializeGL()
     if (logOpenGLError("Set clear color")) return;
     
     m_initialized = true;
-    qDebug() << "HDR Video Widget initialized successfully";
+    qDebug() << "HDR_VideoWidget: OpenGL initialization completed successfully";
     
     // Upload any pending frame
     if (m_frameUpdated && !m_currentFrame.isNull()) {
+        qDebug() << "HDR_VideoWidget: Uploading pending frame after initialization";
         uploadTextureData(m_currentFrame);
+        update();  // Trigger immediate repaint
     }
+    
+    // CRITICAL: Emit signal to notify that widget is ready for frame data
+    qDebug() << "HDR_VideoWidget: Emitting widgetInitialized signal";
+    emit widgetInitialized();
+    
+    // Force an immediate update to ensure first render
+    QTimer::singleShot(0, this, [this]() {
+        update();
+    });
     
     logOpenGLError("initializeGL complete");
 }
 
 void HDR_VideoWidget::paintGL()
 {
+    // CRITICAL FIX: Properly check initialization state
     if (!m_initialized) {
+        // Widget not initialized yet, clear to black and return
+        glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+        glClear(GL_COLOR_BUFFER_BIT);
         return;
     }
     
@@ -412,15 +474,12 @@ void HDR_VideoWidget::paintGL()
     
     if (!m_currentFrame.isNull() && m_videoTexture && m_videoTexture->isCreated()) {
         renderFrame();
-        
-        // CRITICAL FIX: Actually increment FPS counter when we render a frame
         m_frameCount++;
-        
-        qDebug() << "HDR_VideoWidget::paintGL: Frame rendered successfully";
+        // qDebug() << "HDR_VideoWidget::paintGL: Frame rendered successfully";
     } else {
-        // DEBUGGING: Log why we're not rendering
+        // Only log in debug mode to avoid spam
         if (m_currentFrame.isNull()) {
-            qDebug() << "HDR_VideoWidget::paintGL: No frame to render (frame is null)";
+            // qDebug() << "HDR_VideoWidget::paintGL: No frame to render (frame is null)";
         } else if (!m_videoTexture) {
             qDebug() << "HDR_VideoWidget::paintGL: No video texture available";
         } else if (!m_videoTexture->isCreated()) {
@@ -824,21 +883,29 @@ bool HDR_VideoWidget::uploadTextureData(const QImage& image)
   // Convert image to appropriate format if needed
   QImage textureImage;
 
-  // CRITICAL FIX: Simplify texture format handling for better compatibility
-  // Issue: Complex 10-bit packing was causing display problems for high-res and YUV444
+  // CRITICAL FIX: Flip image vertically to match OpenGL coordinate system
+  QImage flippedImage = image.flipped(Qt::Vertical);  // Flip vertically only
   
-  if (m_textureFormat == Format_RGB10_A2) {
-    // Instead of complex 10-bit packing, use high-quality 8-bit with better processing
-    // The 10-bit precision will be handled in the shader with proper color space processing
-    textureImage = image.convertToFormat(QImage::Format_RGBA8888);
-    qDebug() << "HDR_VideoWidget: Using simplified RGBA8888 upload for RGB10_A2 texture";
+  // CRITICAL FIX: Check for native 16-bit input formats first
+  if (flippedImage.format() == QImage::Format_RGBA64 || 
+      flippedImage.format() == QImage::Format_RGBA64_Premultiplied) {
+    
+    // Use 16-bit texture formats for maximum precision
+    internalFormat = GL_RGBA16F;
+    pixelFormat = GL_RGBA;
+    pixelType = GL_UNSIGNED_SHORT;  // 16-bit per channel
+    textureImage = flippedImage;  // Use flipped 16-bit image directly
+    
+  } else if (m_textureFormat == Format_RGB10_A2) {
+    // For 8-bit input with RGB10_A2 texture format
+    textureImage = flippedImage.convertToFormat(QImage::Format_RGBA8888);
     
   } else if (m_textureFormat == Format_RGBA16F) {
     // Convert to floating point format
-    textureImage = convertToFloatFormat(image);
+    textureImage = convertToFloatFormat(flippedImage);
   } else {
     // Ensure RGBA8888 format for standard upload
-    textureImage = image.convertToFormat(QImage::Format_RGBA8888);
+    textureImage = flippedImage.convertToFormat(QImage::Format_RGBA8888);
   }
 
   if (!m_videoTexture->isCreated()) {
@@ -886,9 +953,17 @@ bool HDR_VideoWidget::uploadTextureData(const QImage& image)
   // Trigger repaint
   update();
 
-  qDebug() << "HDR_VideoWidget: Texture uploaded successfully - size:"
-           << textureImage.width() << "x" << textureImage.height()
-           << "format:" << getTextureFormatString();
+  // Log detailed texture upload information
+  if (image.format() == QImage::Format_RGBA64 || 
+      image.format() == QImage::Format_RGBA64_Premultiplied) {
+    qDebug() << "HDR_VideoWidget: 16-bit texture uploaded successfully - size:"
+             << textureImage.width() << "x" << textureImage.height()
+             << "format:" << getTextureFormatString() << "(true 10-bit precision)";
+  } else {
+    qDebug() << "HDR_VideoWidget: Texture uploaded successfully - size:"
+             << textureImage.width() << "x" << textureImage.height()
+             << "format:" << getTextureFormatString();
+  }
 
   return true;
 }
@@ -1112,8 +1187,25 @@ void HDR_VideoWidget::wheelEvent(QWheelEvent* event)
     } else {
         // Forward to parent widget (SplitViewWidget) for normal zoom functionality
         if (parentWidget()) {
-            qDebug() << "HDR_VideoWidget: Forwarding wheel event to parent for zoom";
-            QApplication::sendEvent(parentWidget(), event);
+            // CRITICAL FIX: Use direct event forwarding instead of sendEvent for better reliability
+            // Translate event coordinates to parent widget's coordinate system
+            QWheelEvent parentEvent(
+                parentWidget()->mapFromGlobal(mapToGlobal(event->position().toPoint())),
+                event->globalPosition(),
+                event->pixelDelta(),
+                event->angleDelta(),
+                event->buttons(),
+                event->modifiers(),
+                event->phase(),
+                event->inverted(),
+                event->source()
+            );
+            
+            // Forward to parent's wheel event handler
+            QApplication::sendEvent(parentWidget(), &parentEvent);
+            
+            // Accept the original event to prevent further propagation
+            event->accept();
         } else {
             QOpenGLWidget::wheelEvent(event);
         }
@@ -1133,8 +1225,20 @@ void HDR_VideoWidget::mousePressEvent(QMouseEvent* event)
     } else {
         // Forward all other mouse events to parent widget (SplitViewWidget)
         if (parentWidget()) {
-            qDebug() << "HDR_VideoWidget: Forwarding mouse press event to parent";
-            QApplication::sendEvent(parentWidget(), event);
+            // CRITICAL FIX: Translate coordinates to parent widget's coordinate system
+            QPointF parentPos = parentWidget()->mapFromGlobal(mapToGlobal(event->pos()));
+            QMouseEvent parentEvent(
+                event->type(),
+                parentPos,
+                event->globalPosition(),
+                event->button(),
+                event->buttons(),
+                event->modifiers()
+            );
+            
+            // Forward to parent's mouse event handler
+            QApplication::sendEvent(parentWidget(), &parentEvent);
+            event->accept();
         } else {
             QOpenGLWidget::mousePressEvent(event);
         }
@@ -1162,7 +1266,19 @@ void HDR_VideoWidget::mouseMoveEvent(QMouseEvent* event)
         
         // Forward to parent widget for normal interaction (pan, etc.)
         if (parentWidget()) {
-            QApplication::sendEvent(parentWidget(), event);
+            // CRITICAL FIX: Translate coordinates for proper parent widget interaction
+            QPointF parentPos = parentWidget()->mapFromGlobal(mapToGlobal(event->pos()));
+            QMouseEvent parentEvent(
+                event->type(),
+                parentPos,
+                event->globalPosition(),
+                event->button(),
+                event->buttons(),
+                event->modifiers()
+            );
+            
+            QApplication::sendEvent(parentWidget(), &parentEvent);
+            event->accept();
         } else {
             QOpenGLWidget::mouseMoveEvent(event);
         }
@@ -1179,7 +1295,19 @@ void HDR_VideoWidget::mouseReleaseEvent(QMouseEvent* event)
     
     // Always forward release events to parent widget
     if (parentWidget()) {
-        QApplication::sendEvent(parentWidget(), event);
+        // CRITICAL FIX: Translate coordinates for proper parent widget interaction
+        QPointF parentPos = parentWidget()->mapFromGlobal(mapToGlobal(event->pos()));
+        QMouseEvent parentEvent(
+            event->type(),
+            parentPos,
+            event->globalPosition(),
+            event->button(),
+            event->buttons(),
+            event->modifiers()
+        );
+        
+        QApplication::sendEvent(parentWidget(), &parentEvent);
+        event->accept();
     } else {
         QOpenGLWidget::mouseReleaseEvent(event);
     }

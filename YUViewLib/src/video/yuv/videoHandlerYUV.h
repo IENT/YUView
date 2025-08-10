@@ -208,6 +208,9 @@ public:
   // Get HDR rendered frame as QImage for QPainter integration
   QImage getHDRRenderedImage();
   
+  // Get current frame as QImage for HDR rendering
+  QImage getCurrentFrameAsImage();
+  
   // Distortion control access (delegated to DistortionPlaybackController)
   bool isDistortionActive() const;
   int getCurrentDistortionLevel() const;
@@ -267,6 +270,10 @@ private:
   // Original file tracking (for distortion analysis)
   QString oriFilePath;
   bool isShowingOriFile;
+  
+  // HDR timing fix members
+  QImage m_pendingHDRFrame;
+  QMetaObject::Connection m_hdrWidgetInitConnection;
 
 private slots:
 

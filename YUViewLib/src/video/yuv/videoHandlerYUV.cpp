@@ -2826,51 +2826,38 @@ void videoHandlerYUV::drawFrame(QPainter *painter,
   QSettings settings;
   bool enable10BitDisplay = settings.value("Enable10BitDisplay", false).toBool();
   
-  qDebug() << "=== videoHandlerYUV::drawFrame() HDR Check ===";
-  qDebug() << "videoHandlerYUV: HDR rendering active:" << m_hdrRenderingManager->isHDRRenderingActive();
-  qDebug() << "videoHandlerYUV: 10-bit display enabled:" << enable10BitDisplay;
-  qDebug() << "videoHandlerYUV: Pixel format bits per sample:" << srcPixelFormat.getBitsPerSample();
+  // Check HDR rendering conditions
   
-  // Check if HDR rendering is active and handle it via HDRRenderingManager
-  if (m_hdrRenderingManager->isHDRRenderingActive() && enable10BitDisplay && srcPixelFormat.getBitsPerSample() == 10) {
-    qDebug() << "videoHandlerYUV: *** IMPLEMENTING HDR PUSH MODEL ARCHITECTURE ***";
-    DEBUG_YUV("*** IMPLEMENTING HDR PUSH MODEL ARCHITECTURE ***");
+  // Check if we should use HDR rendering
+  if (m_hdrRenderingManager && 
+      m_hdrRenderingManager->isHDRRenderingActive() && 
+      enable10BitDisplay && 
+      srcPixelFormat.getBitsPerSample() == 10) {
     
-    HDR_VideoWidget* hdrWidget = m_hdrRenderingManager->getHDRWidget();
-    qDebug() << "videoHandlerYUV: HDR widget retrieved:" << (hdrWidget != nullptr);
+    // Using HDR rendering path
     
-    if (hdrWidget) {
-      qDebug() << "videoHandlerYUV: Getting current frame as QImage for HDR rendering...";
-      
-      // CRITICAL FIX: Ensure frame is loaded before attempting HDR rendering
-      QImage currentFrameImage = getCurrentFrameAsImage();
-      if (currentFrameImage.isNull() && frameIdx >= 0) {
-        qDebug() << "videoHandlerYUV: Current frame image is null, forcing frame load for HDR rendering";
-        // Force load the current frame to ensure we have valid image data
-        loadFrame(frameIdx);
-        currentFrameImage = getCurrentFrameAsImage();
-        qDebug() << "videoHandlerYUV: After forced load - frame image is null:" << currentFrameImage.isNull();
-      }
-      
-      qDebug() << "videoHandlerYUV: Current frame image size:" << currentFrameImage.size();
-      qDebug() << "videoHandlerYUV: Current frame image is null:" << currentFrameImage.isNull();
-      
-      if (!currentFrameImage.isNull()) {
-        qDebug() << "videoHandlerYUV: === USING HDR RENDERING PATH ===";
-        // PUSH MODEL: Push frame data to HDR widget via HDRRenderingManager
-        m_hdrRenderingManager->updateHDRFrame(currentFrameImage);
-        qDebug() << "videoHandlerYUV: HDR frame update completed, skipping QPainter rendering";
-        return; // Skip QPainter rendering - use HDR widget instead
-      } else {
-        qDebug() << "videoHandlerYUV: ERROR - Failed to get current frame image even after forced load";
-        qWarning() << "Failed to get current frame image, falling back to standard QPainter rendering";
-      }
-    } else {
-      qDebug() << "videoHandlerYUV: ERROR - HDR widget is null, cannot use HDR rendering";
+    // Load the frame if needed
+    if (frameIdx != currentImageIndex) {
+      loadFrame(frameIdx);
     }
-  } else {
-    qDebug() << "videoHandlerYUV: Using standard QPainter rendering (HDR conditions not met)";
+    
+    // Get current frame as QImage
+    QImage frameImage = getCurrentFrameAsImage();
+    
+    if (!frameImage.isNull()) {
+      // Update HDR frame - the manager will handle initialization state
+      m_hdrRenderingManager->updateHDRFrame(frameImage);
+    } else {
+      qWarning() << "videoHandlerYUV: ERROR - Failed to get current frame for HDR rendering";
+    }
+    
+    // Skip standard QPainter rendering when HDR is active
+    return;
   }
+  
+  // Using standard QPainter rendering
+  
+  // Standard rendering path (existing code)
   
   std::string msg;
   if (!srcPixelFormat.canConvertToRGB(frameSize, &msg))
@@ -3181,10 +3168,18 @@ void videoHandlerYUV::slotYUVControlChanged()
 
 void videoHandlerYUV::slot10BitDisplayChanged()
 {
-  qDebug() << "=== videoHandlerYUV::slot10BitDisplayChanged() called ===";
+  static bool isProcessing = false;
+  
+  // CRITICAL FIX: Prevent multiple simultaneous activation attempts
+  if (isProcessing) {
+    // Reset checkbox state and return
+    ui.checkBoxEnable10BitDisplay->setChecked(m_hdrRenderingManager->isHDRRenderingActive());
+    return;
+  }
+  
+  isProcessing = true;
   
   bool enable10Bit = ui.checkBoxEnable10BitDisplay->isChecked();
-  qDebug() << "videoHandlerYUV: 10-bit display checkbox state:" << enable10Bit;
   
   // CRITICAL FIX: Check HDR support before enabling
   if (enable10Bit) {
@@ -3221,6 +3216,7 @@ void videoHandlerYUV::slot10BitDisplayChanged()
       
       // Uncheck the checkbox and return without enabling HDR
       ui.checkBoxEnable10BitDisplay->setChecked(false);
+      isProcessing = false;
       return;
     }
     
@@ -3232,10 +3228,37 @@ void videoHandlerYUV::slot10BitDisplayChanged()
   settings.setValue("Enable10BitDisplay", enable10Bit);
   qDebug() << "videoHandlerYUV: Saved Enable10BitDisplay setting to:" << enable10Bit;
   
-  // Delegate to HDRRenderingManager
-  qDebug() << "videoHandlerYUV: Delegating HDR enable request to HDRRenderingManager";
-  m_hdrRenderingManager->setHDRRenderingEnabled(enable10Bit);
-  qDebug() << "videoHandlerYUV: HDR enable request completed";
+  // Delegate to HDRRenderingManager with error handling
+  try {
+    m_hdrRenderingManager->setHDRRenderingEnabled(enable10Bit);
+    
+    // CRITICAL FIX: Add verification step with timeout
+    if (enable10Bit) {
+      QTimer::singleShot(2000, this, [this]() {
+        // Verify HDR activation was successful
+        if (!m_hdrRenderingManager->isHDRRenderingActive()) {
+          qWarning() << "HDR activation failed - timeout waiting for widget initialization";
+          // Reset checkbox to reflect actual state
+          ui.checkBoxEnable10BitDisplay->setChecked(false);
+          
+          QWidget* parentWidget = QApplication::activeWindow();
+          QMessageBox::warning(parentWidget,
+                              "HDR Activation Failed",
+                              "HDR display activation timed out. Please try again.\n\n"
+                              "If the problem persists:\n"
+                              "• Check that the video is 10-bit YUV format\n"
+                              "• Ensure the display supports HDR\n"
+                              "• Try restarting the application");
+        }
+      });
+    }
+    
+  } catch (...) {
+    qCritical() << "Exception during HDR enable request";
+    ui.checkBoxEnable10BitDisplay->setChecked(!enable10Bit);
+  }
+  
+  isProcessing = false;
 }
 
 void videoHandlerYUV::onHDRRenderingStateChanged(bool enabled, HDR_VideoWidget* widget)
@@ -3245,17 +3268,17 @@ void videoHandlerYUV::onHDRRenderingStateChanged(bool enabled, HDR_VideoWidget* 
   qDebug() << "videoHandlerYUV: HDR widget pointer:" << widget;
   
   if (enabled && widget) {
-    qDebug() << "videoHandlerYUV: HDR enabled - triggering immediate frame update";
+    qDebug() << "videoHandlerYUV: HDR enabled - will push frame when widget is ready";
     
-    // CRITICAL FIX: Trigger immediate frame update when HDR is enabled
-    // This ensures the current frame is immediately pushed to the newly created HDR widget
+    // CRITICAL FIX: Don't push frame immediately, wait for widget to be ready
+    // The widget will be initialized asynchronously
     QSettings settings;
     bool enable10BitDisplay = settings.value("Enable10BitDisplay", false).toBool();
     
     if (enable10BitDisplay && srcPixelFormat.getBitsPerSample() == 10) {
-      qDebug() << "videoHandlerYUV: Conditions met for HDR rendering - forcing frame update";
+      qDebug() << "videoHandlerYUV: Conditions met for HDR rendering";
       
-      // Force get current frame and push to HDR widget
+      // Get current frame but don't push it yet
       QImage currentFrameImage = getCurrentFrameAsImage();
       if (currentFrameImage.isNull() && currentImageIndex >= 0) {
         qDebug() << "videoHandlerYUV: Current frame is null, loading frame" << currentImageIndex;
@@ -3264,14 +3287,58 @@ void videoHandlerYUV::onHDRRenderingStateChanged(bool enabled, HDR_VideoWidget* 
       }
       
       if (!currentFrameImage.isNull()) {
-        qDebug() << "videoHandlerYUV: Pushing current frame to HDR widget";
-        m_hdrRenderingManager->updateHDRFrame(currentFrameImage);
+        // Store the frame for later update
+        m_pendingHDRFrame = currentFrameImage;
+        
+        // Connect to widget's initialized signal if not already connected
+        if (!m_hdrWidgetInitConnection) {
+          m_hdrWidgetInitConnection = connect(widget, &HDR_VideoWidget::widgetInitialized,
+                                             this, [this]() {
+            qDebug() << "videoHandlerYUV: HDR widget initialized, pushing pending frame";
+            if (!m_pendingHDRFrame.isNull() && m_hdrRenderingManager) {
+              m_hdrRenderingManager->updateHDRFrame(m_pendingHDRFrame);
+              m_pendingHDRFrame = QImage(); // Clear pending frame
+            }
+          });
+        }
+        
+        // CRITICAL FIX: Try multiple fallback strategies to ensure frame gets pushed
+        // Strategy 1: Immediate attempt (in case widget is already ready)
+        QTimer::singleShot(50, this, [this, currentFrameImage]() {
+          if (m_hdrRenderingManager && m_hdrRenderingManager->isHDRRenderingActive()) {
+            qDebug() << "videoHandlerYUV: Strategy 1 - Immediate push attempt";
+            m_hdrRenderingManager->updateHDRFrame(currentFrameImage);
+          }
+        });
+        
+        // Strategy 2: Delayed attempt (in case widget needs more time to initialize)
+        QTimer::singleShot(500, this, [this, currentFrameImage]() {
+          if (m_hdrRenderingManager && m_hdrRenderingManager->isHDRRenderingActive() && 
+              m_pendingHDRFrame.isNull()) {  // Only if signal-based push didn't work
+            qDebug() << "videoHandlerYUV: Strategy 2 - Delayed fallback push";
+            m_hdrRenderingManager->updateHDRFrame(currentFrameImage);
+          }
+        });
+        
+        // Strategy 3: Final attempt (ensure we don't leave user hanging)
+        QTimer::singleShot(2000, this, [this, currentFrameImage]() {
+          if (m_hdrRenderingManager && m_hdrRenderingManager->isHDRRenderingActive()) {
+            HDR_VideoWidget* hdrWidget = m_hdrRenderingManager->getHDRWidget();
+            if (hdrWidget && !hdrWidget->isInitialized()) {
+              qWarning() << "videoHandlerYUV: Strategy 3 - HDR widget still not initialized after 2s, forcing frame push";
+              m_hdrRenderingManager->updateHDRFrame(currentFrameImage);
+            }
+          }
+        });
       } else {
-        qDebug() << "videoHandlerYUV: WARNING - Still no frame available for HDR update";
+        qDebug() << "videoHandlerYUV: No frame available to push to HDR widget";
       }
     }
-  } else if (!enabled) {
-    qDebug() << "videoHandlerYUV: HDR disabled - no action needed";
+  } else if (!enabled && m_hdrWidgetInitConnection) {
+    // Disconnect the signal when HDR is disabled
+    disconnect(m_hdrWidgetInitConnection);
+    m_hdrWidgetInitConnection = QMetaObject::Connection();
+    m_pendingHDRFrame = QImage();
   }
   
   qDebug() << "videoHandlerYUV: HDR state change handling completed";
@@ -3283,6 +3350,45 @@ HDR_VideoWidget* videoHandlerYUV::createHDRWidget(QWidget* parent)
 {
   // Delegate to HDRRenderingManager
   return m_hdrRenderingManager->createHDRWidget(parent);
+}
+
+QImage videoHandlerYUV::getCurrentFrameAsImage()
+{
+  // CRITICAL FIX: Ensure we always return a valid image for HDR rendering
+  if (currentImage.isNull() && currentImageIndex >= 0) {
+    // Try to load the current frame if not already loaded
+    loadFrame(currentImageIndex);
+  }
+  
+  if (!currentImage.isNull()) {
+    // Check if we need to convert the format for HDR
+    QSettings settings;
+    bool enable10BitDisplay = settings.value("Enable10BitDisplay", false).toBool();
+    
+    if (enable10BitDisplay && srcPixelFormat.getBitsPerSample() == 10) {
+      // CRITICAL FIX: For 10-bit HDR content, preserve 16-bit format to maintain precision
+      if (currentImage.format() == QImage::Format_RGBA64 ||
+          currentImage.format() == QImage::Format_RGBA64_Premultiplied) {
+        qDebug() << "videoHandlerYUV: Preserving 16-bit image format for true 10-bit HDR rendering";
+        return currentImage;  // Return 16-bit format directly, DO NOT convert!
+      }
+      
+      // For other formats with 10-bit data, convert to standard format as fallback
+      if (currentImage.format() != QImage::Format_ARGB32_Premultiplied &&
+          currentImage.format() != QImage::Format_RGB32) {
+        qDebug() << "videoHandlerYUV: Converting to 8-bit format (precision may be reduced)";
+        return currentImage.convertToFormat(QImage::Format_ARGB32_Premultiplied);
+      }
+    } else {
+      // For 8-bit content or when HDR is disabled, use standard format
+      if (currentImage.format() != QImage::Format_ARGB32_Premultiplied &&
+          currentImage.format() != QImage::Format_RGB32) {
+        return currentImage.convertToFormat(QImage::Format_ARGB32_Premultiplied);
+      }
+    }
+  }
+  
+  return currentImage;
 }
 
 // *** REMOVED: getHDRRenderedImage() - Violated Principle #2 (Push Model) ***

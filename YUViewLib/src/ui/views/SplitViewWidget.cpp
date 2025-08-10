@@ -180,14 +180,49 @@ void splitViewWidget::paintEvent(QPaintEvent *)
     // The playlist was not initialized yet. Nothing to draw (yet)
     return;
 
-  // CRITICAL FIX: Avoid QPainter conflicts when HDR overlay is active
+  // CRITICAL FIX: Check HDR overlay state properly with paint device validation
   if (m_hdrOverlayWidget && m_hdrOverlayWidget->isVisible()) {
-    // HDR OpenGL widget is handling all rendering - don't interfere with QPainter
-    qDebug() << "SplitViewWidget: Skipping QPainter rendering - HDR overlay active";
+    // HDR OpenGL widget is handling all rendering
+    
+    // Check if the HDR widget is ready
+    HDR_VideoWidget* hdrWidget = qobject_cast<HDR_VideoWidget*>(m_hdrOverlayWidget.data());
+    if (hdrWidget && hdrWidget->isReadyForRendering()) {
+      // HDR widget is ready and rendering, skip ALL QPainter operations
+      return;
+    } else {
+      // HDR widget exists but not ready yet - show loading indicator safely
+      // CRITICAL FIX: Validate paint device thoroughly before QPainter creation
+      if (isVisible() && width() > 0 && height() > 0 && !paintingActive()) {
+        try {
+          QPainter painter(this);
+          if (painter.isActive() && painter.device()) {
+            painter.fillRect(rect(), Qt::black);
+            
+            // Show loading indicator with better formatting
+            painter.setPen(Qt::white);
+            QFont font = painter.font();
+            font.setPointSize(12);
+            painter.setFont(font);
+            painter.drawText(rect(), Qt::AlignCenter, "Initializing HDR display...");
+            painter.end();  // Explicitly end painter
+          }
+        } catch (...) {
+          // Ignore any painting errors during HDR initialization
+        }
+      }
+      return;
+    }
+  }
+
+  // CRITICAL FIX: Validate widget state before creating QPainter
+  if (!isVisible() || width() <= 0 || height() <= 0 || paintingActive()) {
     return;
   }
 
   QPainter painter(this);
+  if (!painter.isActive()) {
+    return;  // Failed to activate painter
+  }
 
   // Get the full size of the area that we can draw on (from the paint device base)
   QPoint drawArea_botR(width(), height());
@@ -581,26 +616,89 @@ void splitViewWidget::setHDROverlayWidget(HDR_VideoWidget* hdrWidget)
     m_hdrOverlayWidget->setAttribute(Qt::WA_TransparentForMouseEvents, false);  // Accept mouse events
     m_hdrOverlayWidget->setFocusPolicy(Qt::StrongFocus);
     
-    // Show and raise to top
-    m_hdrOverlayWidget->show();
-    m_hdrOverlayWidget->raise();
-    m_hdrOverlayWidget->activateWindow();  // Ensure OpenGL context activation
-    
-    qDebug() << "splitViewWidget: HDR overlay widget configured - geometry:" << targetGeometry;
-    qDebug() << "splitViewWidget: HDR overlay widget visible:" << m_hdrOverlayWidget->isVisible();
-    qDebug() << "splitViewWidget: HDR overlay widget size:" << m_hdrOverlayWidget->size();
+    // CRITICAL FIX: Proper HDR widget initialization sequence
+    // Use progressive showing with validation
+    QTimer::singleShot(0, this, [this, targetGeometry]() {
+      if (!m_hdrOverlayWidget) return;
+      
+      // Step 1: Ensure proper parent and geometry
+      QRect currentGeometry = rect();
+      if (currentGeometry.width() >= 64 && currentGeometry.height() >= 64) {
+        m_hdrOverlayWidget->setGeometry(currentGeometry);
+      } else {
+        // Force minimum size for OpenGL context creation
+        m_hdrOverlayWidget->setGeometry(0, 0, 640, 480);
+        qDebug() << "SplitViewWidget: Using fallback geometry for HDR widget";
+      }
+      
+      // Step 2: Show the widget
+      m_hdrOverlayWidget->show();
+      m_hdrOverlayWidget->raise();
+      m_hdrOverlayWidget->setFocus();
+      
+      // Step 3: Force OpenGL context creation with validation
+      QTimer::singleShot(100, this, [this]() {
+        if (!m_hdrOverlayWidget) return;
+        
+        // Verify widget is actually visible
+        if (!m_hdrOverlayWidget->isVisible()) {
+          qWarning() << "HDR widget not visible after show, forcing activation";
+          m_hdrOverlayWidget->show();
+          m_hdrOverlayWidget->raise();
+          m_hdrOverlayWidget->activateWindow();
+        }
+        
+        // Trigger OpenGL initialization
+        m_hdrOverlayWidget->update();
+        
+        // Final verification after another delay
+        QTimer::singleShot(200, this, [this]() {
+          if (m_hdrOverlayWidget && !m_hdrOverlayWidget->isVisible()) {
+            qCritical() << "CRITICAL: HDR widget failed to initialize properly";
+          } else {
+            qDebug() << "HDR widget initialization sequence completed";
+          }
+        });
+      });
+    });
   }
 }
 
 void splitViewWidget::showHDROverlay(bool show)
 {
   if (m_hdrOverlayWidget) {
-    m_hdrOverlayWidget->setVisible(show);
     if (show) {
-      m_hdrOverlayWidget->raise();  // Ensure it's on top
-      m_hdrOverlayWidget->setGeometry(rect());  // Update geometry
+      // CRITICAL FIX: Ensure proper geometry before showing
+      QRect currentGeometry = rect();
+      if (currentGeometry.width() >= 64 && currentGeometry.height() >= 64) {
+        m_hdrOverlayWidget->setGeometry(currentGeometry);
+      } else {
+        // Use minimum size if parent isn't ready yet
+        m_hdrOverlayWidget->setGeometry(0, 0, 640, 480);
+      }
+      
+      m_hdrOverlayWidget->show();
+      m_hdrOverlayWidget->raise();
+      m_hdrOverlayWidget->setFocus();  // Ensure it receives input events
+      
+      // CRITICAL FIX: Verify visibility after show
+      QTimer::singleShot(10, this, [this]() {
+        if (m_hdrOverlayWidget && !m_hdrOverlayWidget->isVisible()) {
+          qWarning() << "HDR widget failed to become visible, forcing show";
+          m_hdrOverlayWidget->show();
+          m_hdrOverlayWidget->raise();
+          m_hdrOverlayWidget->activateWindow();
+        }
+      });
+      
+      // Force an update to trigger OpenGL initialization if needed
+      m_hdrOverlayWidget->update();
+    } else {
+      m_hdrOverlayWidget->hide();
     }
-    qDebug() << "splitViewWidget: HDR overlay visibility set to:" << show;
+    
+    // Trigger a repaint of the split view to update rendering
+    update();
   }
 }
 
@@ -610,7 +708,12 @@ void splitViewWidget::resizeEvent(QResizeEvent* event)
   MoveAndZoomableView::resizeEvent(event);
 
   if (m_hdrOverlayWidget && m_hdrOverlayWidget->isVisible()) {
+    // Update HDR widget geometry to match
     m_hdrOverlayWidget->setGeometry(rect());
+    
+    // Force update to handle OpenGL viewport changes
+    m_hdrOverlayWidget->update();
+    
     qDebug() << "splitViewWidget: HDR overlay resized to match view";
   }
   

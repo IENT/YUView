@@ -57,6 +57,7 @@ public:
     // Status queries
     bool isHDRCapable() const { return m_hdrCapable; }
     bool isInitialized() const { return m_initialized; }
+    bool isReadyForRendering() const;  // NEW: Check if widget is ready
     
     // HDR capability configuration
     void setHDRCapabilities(const HDRDetection::HDRCapabilities& capabilities);
@@ -76,6 +77,9 @@ public slots:
     // These methods violated Principle #1 (Single Rendering Path) and caused race conditions
 
 signals:
+    // NEW: Emitted when widget is fully initialized and ready
+    void widgetInitialized();
+    
     // Emitted when HDR is not supported and fallback is needed
     void hdrNotSupported(const QString& reason);
     
