@@ -631,12 +631,12 @@ const float c2 = 2413.0 / 4096.0 * 32.0;
 const float c3 = 2392.0 / 4096.0 * 32.0;
 
 // CRITICAL FIX: Corrected Rec.709 to Rec.2020 color space conversion matrix  
-// Previous matrix caused green color cast for grayscale content
-// Using ITU-R BT.2020 standard transformation matrix
+// Using ITU-R BT.2020 standard transformation matrix (row-major order)
+// This matrix converts from Rec.709 RGB to Rec.2020 RGB  
 const mat3 from709to2020 = mat3(
-    0.627402, 0.329292, 0.043306,
-    0.069097, 0.919540, 0.011362,
-    0.016391, 0.088013, 0.895595
+    0.6274, 0.0691, 0.0164,  // Red channel coefficients
+    0.3293, 0.9195, 0.0880,  // Green channel coefficients  
+    0.0433, 0.0114, 0.8956   // Blue channel coefficients
 );
 
 // Apply ST.2084 PQ transfer function with proper physical tone mapping
@@ -672,22 +672,30 @@ void main()
     if (renderMode == 1) {
         // BT2020_PQ mode: Convert to Rec.2020 and apply PQ curve
         
-        // CRITICAL FIX: Detect grayscale content and preserve neutrality
-        // Check if R≈G≈B (grayscale) with small tolerance for floating point comparison
-        float maxDiff = max(abs(color.r - color.g), abs(color.g - color.b));
-        maxDiff = max(maxDiff, abs(color.r - color.b));
+        // CRITICAL FIX: Improved grayscale detection and color processing
+        // Calculate luminance using ITU-R BT.709 coefficients for better detection
+        float luma = dot(color.rgb, vec3(0.2126, 0.7152, 0.0722));
+        
+        // Check if content is grayscale by comparing each channel to the calculated luma
+        float redDiff = abs(color.r - luma);
+        float greenDiff = abs(color.g - luma);  
+        float blueDiff = abs(color.b - luma);
+        float maxDiff = max(max(redDiff, greenDiff), blueDiff);
         
         vec3 processedColor;
-        if (maxDiff < 0.01) {
-            // Grayscale content: preserve neutrality, only adjust luminance
-            float avgLuminance = (color.r + color.g + color.b) / 3.0;
-            processedColor = vec3(avgLuminance, avgLuminance, avgLuminance);
-            // Apply PQ curve directly to preserve grayscale
-            processedColor = applyPQ(processedColor);
+        if (maxDiff < 0.02) {
+            // Grayscale content: preserve neutrality, use luma directly
+            // This prevents any color matrix artifacts for grayscale images
+            processedColor = vec3(luma);
+            // Apply tone mapping and PQ curve
+            processedColor = processedColor * (displayMaxLuminance / sourceMaxLuminance);
+            processedColor = applyPQ(processedColor / displayMaxLuminance);
         } else {
-            // Color content: apply full color space conversion
-            processedColor = from709to2020 * color.rgb;
-            processedColor = applyPQ(processedColor);
+            // Color content: apply color space conversion carefully
+            // Apply tone mapping first, then color space conversion
+            vec3 toneMapped = color.rgb * (displayMaxLuminance / sourceMaxLuminance);
+            processedColor = from709to2020 * toneMapped;
+            processedColor = applyPQ(processedColor / displayMaxLuminance);
         }
         
         processedColor = applyGamma(processedColor);
@@ -1259,10 +1267,10 @@ void HDR_VideoWidget::wheelEvent(QWheelEvent* event)
         event->accept();
         qDebug() << "HDR_VideoWidget: Handled wheel event for exposure adjustment";
     } else {
-        // Forward to parent widget (SplitViewWidget) for normal zoom functionality
+        // CRITICAL FIX: Always forward to parent for zoom functionality
+        // This ensures continuous interaction even in HDR mode
         if (parentWidget()) {
-            // CRITICAL FIX: Use direct event forwarding instead of sendEvent for better reliability
-            // Translate event coordinates to parent widget's coordinate system
+            // Create proper wheel event for parent with correct coordinates
             QWheelEvent parentEvent(
                 parentWidget()->mapFromGlobal(mapToGlobal(event->position().toPoint())),
                 event->globalPosition(),
@@ -1275,12 +1283,15 @@ void HDR_VideoWidget::wheelEvent(QWheelEvent* event)
                 event->source()
             );
             
-            // Forward to parent's wheel event handler
+            // Forward to parent widget's event handler
+            // This maintains zoom and pan functionality during HDR rendering
             QApplication::sendEvent(parentWidget(), &parentEvent);
             
-            // Accept the original event to prevent further propagation
+            // Accept the event - parent has handled it
             event->accept();
+            qDebug() << "HDR_VideoWidget: Forwarded wheel event to parent for zoom/interaction";
         } else {
+            // Fallback to default handling
             QOpenGLWidget::wheelEvent(event);
         }
     }
