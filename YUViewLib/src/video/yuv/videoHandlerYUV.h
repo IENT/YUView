@@ -286,6 +286,9 @@ private slots:
 
   // HDR rendering state change handler
   void onHDRRenderingStateChanged(bool enabled, HDR_VideoWidget* widget);
+  
+  // HDR detection failed handler - resets checkbox and shows error message
+  void onHDRDetectionFailed(const QString& error);
 
   // Distortion analysis button slots (now delegate to DistortionPlaybackController)
   void slotFirstLevelDistortion();

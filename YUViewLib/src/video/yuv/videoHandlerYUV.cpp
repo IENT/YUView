@@ -2772,6 +2772,9 @@ videoHandlerYUV::videoHandlerYUV() : videoHandler()
           this, &videoHandlerYUV::onHDRRenderingStateChanged);
   connect(m_hdrRenderingManager, &HDRRenderingManager::hdrWidgetNeedsDisplay,
           this, &videoHandlerYUV::hdrWidgetNeedsDisplay);
+  // CRITICAL FIX: Connect HDR detection failed signal to handle checkbox reset
+  connect(m_hdrRenderingManager, &HDRRenderingManager::hdrDetectionFailed,
+          this, &videoHandlerYUV::onHDRDetectionFailed);
   
   // Connect distortion signals
   connect(m_distortionController, &DistortionPlaybackController::frameAdvanceRequested,
@@ -3342,6 +3345,31 @@ void videoHandlerYUV::onHDRRenderingStateChanged(bool enabled, HDR_VideoWidget* 
   }
   
   qDebug() << "videoHandlerYUV: HDR state change handling completed";
+}
+
+void videoHandlerYUV::onHDRDetectionFailed(const QString& error)
+{
+  qDebug() << "=== videoHandlerYUV::onHDRDetectionFailed() called ===";
+  qDebug() << "videoHandlerYUV: HDR detection failed with error:" << error;
+  
+  // CRITICAL FIX: Reset checkbox state to unchecked
+  ui.checkBoxEnable10BitDisplay->setChecked(false);
+  
+  // Clear any stored settings to prevent inconsistency
+  QSettings settings;
+  settings.setValue("Enable10BitDisplay", false);
+  
+  // Show user-friendly error message
+  QWidget* parentWidget = QApplication::activeWindow();
+  if (parentWidget) {
+    QMessageBox::warning(parentWidget, 
+                        "HDR Display Not Supported", 
+                        QString("Unable to enable native 10-bit HDR display:\n\n%1\n\n"
+                               "The checkbox has been reset to disabled state.")
+                        .arg(error));
+  }
+  
+  qDebug() << "videoHandlerYUV: HDR detection failure handled - checkbox reset and error shown";
 }
 
 // HDR-related methods removed - now handled by HDRRenderingManager
