@@ -13,6 +13,11 @@ DistortionPlaybackController::DistortionPlaybackController(QObject* parent)
   , m_playbackFrameIndex(0)
   , m_revertFrameNumber(-1)
   , m_activeDistortionButton(nullptr)
+  , m_waitingForBuffer(false)
+  , m_bufferCheckTimer(new QTimer(this))
+  , m_lastKnownFrame(-1)
+  , m_frameStallCounter(0)
+  , m_playbackStarted(false)
 {
   // Connect timer
   connect(m_distortionTimer, &QTimer::timeout, this, &DistortionPlaybackController::onDistortionTimerTimeout);
@@ -22,6 +27,10 @@ DistortionPlaybackController::~DistortionPlaybackController()
 {
   if (m_distortionTimer) {
     m_distortionTimer->stop();
+  }
+  
+  if (m_bufferCheckTimer) {
+    m_bufferCheckTimer->stop();
   }
 }
 
@@ -88,7 +97,9 @@ void DistortionPlaybackController::stopDistortion()
   if (m_isDistortionActive) {
     m_distortionTimer->stop();
     m_distortionTimer->disconnect();
+    m_bufferCheckTimer->stop();
     m_isDistortionActive = false;
+    m_waitingForBuffer = false;
   }
   
   // Find PlaybackController and pause playback
@@ -199,22 +210,56 @@ void DistortionPlaybackController::resetAllButtons()
 void DistortionPlaybackController::onDistortionTimerTimeout()
 {
   // Find PlaybackController to properly advance frames
-  QMainWindow* mainWindow = qobject_cast<QMainWindow*>(QApplication::activeWindow());
-  PlaybackController* playbackController = nullptr;
+  PlaybackController* playbackController = findPlaybackController();
   
-  if (mainWindow) {
-    playbackController = mainWindow->findChild<PlaybackController*>();
-  }
-  
-  if (playbackController) {
-    // Use PlaybackController to advance to next frame properly
-    playbackController->nextFrame();
-  } else {
+  if (!playbackController) {
+    qDebug() << "ERROR: PlaybackController not found during timer timeout";
     // Fallback to manual advancement if PlaybackController not found
     m_playbackFrameIndex++;
-    
-    // Emit signal for manual frame advancement
     emit frameAdvanceRequested();
+    return;
+  }
+  
+  // Simple buffer check - if waiting for caching, just skip this frame
+  if (playbackController->isWaitingForCaching()) {
+    qDebug() << "Waiting for caching, skipping frame advancement";
+    return;
+  }
+  
+  // Get current frame before advancing
+  int currentFrame = playbackController->getCurrentFrame();
+  
+  // Check if playback has started (frame changed from initial position)
+  if (!m_playbackStarted && currentFrame != m_lastKnownFrame) {
+    m_playbackStarted = true;
+    qDebug() << "Distortion playback started, frame:" << currentFrame;
+  }
+  
+  // Use PlaybackController to advance to next frame properly
+  playbackController->nextFrame();
+  
+  // After advancing, check if frame actually changed
+  int newFrame = playbackController->getCurrentFrame();
+  
+  if (m_playbackStarted) {
+    // Only check for completion after playback has truly started
+    if (newFrame == currentFrame) {
+      // Frame didn't advance, increment stall counter
+      m_frameStallCounter++;
+      qDebug() << "Frame stalled at:" << newFrame << ", stall count:" << m_frameStallCounter;
+      
+      // If frame hasn't advanced for 3 consecutive timer ticks, consider playback complete
+      if (m_frameStallCounter >= 3) {
+        qDebug() << "Playback completed - frame stalled for too long, auto-resetting distortion buttons";
+        stopDistortion();
+        resetAllButtons();
+        return;
+      }
+    } else {
+      // Frame advanced successfully, reset stall counter
+      m_frameStallCounter = 0;
+      m_lastKnownFrame = newFrame;
+    }
   }
 }
 
@@ -231,6 +276,11 @@ void DistortionPlaybackController::initializeDistortionState(QPushButton* button
   m_currentDistortionLevel = level;
   m_isDistortionActive = true;
   m_playbackFrameIndex = currentFrameIndex;
+  
+  // Reset playback completion tracking
+  m_lastKnownFrame = currentFrameIndex;
+  m_frameStallCounter = 0;
+  m_playbackStarted = false;
 }
 
 void DistortionPlaybackController::startDistortionPlayback(double fps)
@@ -349,4 +399,77 @@ void DistortionPlaybackController::setPlaybackControllerRepeatMode(PlaybackContr
     case PlaybackController::RepeatMode::All: modeStr = "All"; break;
   }
   qDebug() << "Repeat mode set to:" << modeStr;
+}
+
+void DistortionPlaybackController::checkBufferStatus()
+{
+  if (!m_waitingForBuffer) {
+    m_bufferCheckTimer->stop();
+    return;
+  }
+  
+  PlaybackController* playbackController = findPlaybackController();
+  if (!playbackController) {
+    qDebug() << "ERROR: PlaybackController not found during buffer check";
+    m_bufferCheckTimer->stop();
+    m_waitingForBuffer = false;
+    return;
+  }
+  
+  // Check if buffering is complete
+  if (!playbackController->isWaitingForCaching()) {
+    qDebug() << "Buffering complete, starting distortion analysis...";
+    m_bufferCheckTimer->stop();
+    m_waitingForBuffer = false;
+    
+    // Get the stored FPS and start manual frame advancement
+    double fps = m_distortionTimer->property("targetFPS").toDouble();
+    if (fps > 0) {
+      startManualFrameAdvancement(fps);
+    } else {
+      qDebug() << "ERROR: Invalid FPS stored during buffering wait";
+    }
+  }
+}
+
+void DistortionPlaybackController::connectPlaybackControllerSignals()
+{
+  PlaybackController* playbackController = findPlaybackController();
+  if (playbackController) {
+    // Connect to itemCachingFinished signal for buffer completion
+    connect(playbackController, &PlaybackController::itemCachingFinished, 
+            this, &DistortionPlaybackController::onCachingFinished, 
+            Qt::UniqueConnection);
+  }
+}
+
+void DistortionPlaybackController::disconnectPlaybackControllerSignals()
+{
+  PlaybackController* playbackController = findPlaybackController();
+  if (playbackController) {
+    // Disconnect all our connections to the playback controller
+    disconnect(playbackController, nullptr, this, nullptr);
+  }
+}
+
+void DistortionPlaybackController::onPlaybackStateChanged()
+{
+  PlaybackController* playbackController = findPlaybackController();
+  if (!playbackController || !m_isDistortionActive) {
+    return;
+  }
+  
+  // Check if playback has stopped or completed
+  if (!playbackController->playing()) {
+    qDebug() << "Playback stopped, auto-resetting distortion buttons";
+    stopDistortion();
+  }
+}
+
+void DistortionPlaybackController::onCachingFinished()
+{
+  qDebug() << "Caching finished signal received";
+  if (m_waitingForBuffer) {
+    checkBufferStatus();
+  }
 }

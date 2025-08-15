@@ -58,9 +58,15 @@ signals:
   // Playback control signals
   void playbackControlRequested(bool pause);
   void repeatModeChangeRequested(PlaybackController::RepeatMode mode);
+  
+  // Auto-reset when playback completes
+  void playbackCompleted();
+  void bufferingCompleted();
 
 private slots:
   void onDistortionTimerTimeout();
+  void onPlaybackStateChanged();
+  void onCachingFinished();
 
 private:
   // Distortion state
@@ -73,6 +79,15 @@ private:
   // UI state management
   QPushButton* m_activeDistortionButton;
   
+  // Buffering control
+  bool m_waitingForBuffer;
+  QTimer* m_bufferCheckTimer;
+  
+  // Playback completion tracking
+  int m_lastKnownFrame;
+  int m_frameStallCounter;
+  bool m_playbackStarted;
+  
   // Helper methods
   void initializeDistortionState(QPushButton* button, int level, int currentFrameIndex);
   void startDistortionPlayback(double fps);
@@ -81,4 +96,7 @@ private:
   void setViewZoom(double zoomFactor);
   PlaybackController* findPlaybackController();
   void setPlaybackControllerRepeatMode(PlaybackController* controller, PlaybackController::RepeatMode targetMode);
+  void checkBufferStatus();
+  void connectPlaybackControllerSignals();
+  void disconnectPlaybackControllerSignals();
 };
