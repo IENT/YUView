@@ -70,3 +70,37 @@
 
 *   **缺陷B：无缓冲等待机制导致画面冻结与丢帧 (Lack of Buffering Logic Causing Frozen Video and Frame Drops)**
     *   当视频缓存未加载完毕时，点击分析按钮并**不会**触发或等待数据缓冲，而是**强行启动播放进程**。这直接导致了严重的**视觉与数据不同步**问题：视频画面会**卡死在当前帧**，完全静止不动，而后台的帧计数器 (`playbackController.ui`中) 却在继续独立地向后计数。直到数据缓冲最终追赶上来时，画面会突然**跳跃**到计数器所指向的未来某一帧，从而导致**中间所有本应被分析的视频帧被完全跳过**。这种行为不仅破坏了分析的完整性和准确性，也给用户带来了极差的卡顿和不可靠的体验。
+ 
+
+### **4. 问题分析**
+### **问题二：Distortion Analysis 交互逻辑缺陷分析**
+
+这部分的问题完全是由 `YUViewLib\src\video\yuv\DistortionPlaybackController.cpp` 的内部逻辑引起的。
+
+#### **缺陷A：按钮状态粘滞导致交互冲突 (Sticky Button State)**
+
+**问题现象**：分析按钮在视频播放结束后不会自动复位，持续保持激活状态（例如绿色），干扰了其他UI操作。
+
+**代码原因分析**：
+
+1.  **状态设置**：在 `startFirstLevelDistortion` 和 `startSecondLevelDistortion` 函数中，程序通过调用 `setActiveButton(button)` 将按钮的样式设置为高亮的“激活”状态。
+2.  **缺少自动重置机制**：`DistortionPlaybackController` 的代码中**没有任何逻辑来监听视频播放是否已经结束**。它只管通过 `QTimer` (`m_distortionTimer`) 不断触发 `onDistortionTimerTimeout` 来请求下一帧。
+3.  **重置的唯一途径**：按钮状态的重置（调用 `resetAllButtons()`）只在以下几种情况发生：
+    *   用户**再次点击同一个已激活的**分析按钮。
+    *   用户点击**另一个**分析按钮（先重置所有按钮，再激活新的）。
+    *   用户手动调用 `revertToFirstLevel()` 或 `revertToSecondLevel()`。
+
+**结论**：由于 `DistortionPlaybackController` 模块没有与主播放器（`PlaybackController`）建立“播放结束”的信号连接，它无法得知分析任务已完成，因此不会自动调用 `stopDistortion()` 和 `resetAllButtons()` 来恢复按钮的初始状态。这导致了按钮状态“粘滞”的现象。
+
+#### **缺陷B：无缓冲等待机制导致画面冻结与丢帧 (Lack of Buffering Logic)**
+
+**问题现象**：在视频数据未完全缓冲时启动分析，导致画面卡死在当前帧，而后台帧计数器在持续前进，最终导致画面跳跃和大量丢帧。
+
+**代码原因分析**：
+
+1.  **强制启动播放**：当用户点击分析按钮时，`startDistortionPlayback` 函数会立即调用 `startManualFrameAdvancement(fps)`。
+2.  **无条件的帧推进**：`startManualFrameAdvancement` 会启动一个 `QTimer`，该定时器以固定的频率（例如30fps对应约33毫秒）触发 `onDistortionTimerTimeout` 槽函数。
+3.  **忽略缓冲状态**：在 `onDistortionTimerTimeout` 函数中，程序找到 `PlaybackController` 并直接调用 `playbackController->nextFrame()`。**这个调用是无条件的，它完全不检查所需的数据帧是否已经被加载到内存（缓冲）中**。
+4.  **数据与逻辑分离**：因此，`QTimer` 驱动的逻辑层（帧索引 `m_playbackFrameIndex` 和 `PlaybackController` 的内部计数器）在不断前进，而渲染层因为没有可用的视频数据而无法更新画面，导致画面冻结。当缓冲最终赶上时，渲染层会直接获取当前计数器指向的那个“未来”的帧数据并显示出来，中间的所有帧都被跳过了。
+
+**结论**：`DistortionPlaybackController` 的设计缺陷在于，它强行用自己的定时器来驱动播放，且没有集成任何检查视频缓冲状态的机制。这完全违背了“先缓冲、后播放”的原则，是导致画面冻结和丢帧的直接原因。
