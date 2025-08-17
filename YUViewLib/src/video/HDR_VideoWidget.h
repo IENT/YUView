@@ -69,6 +69,9 @@ public slots:
     // Clear the current frame 
     void clearFrame();
     
+    // Force OpenGL context reinitialization (for parent changes)
+    void forceReinitializeContext();
+    
     // HDR control slots
     void setHDRExposureSlot(double exposure) { setHDRExposure(static_cast<float>(exposure)); }
     void setHDRGammaSlot(double gamma) { setHDRGamma(static_cast<float>(gamma)); }

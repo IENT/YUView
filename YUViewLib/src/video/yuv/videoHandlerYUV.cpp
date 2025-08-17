@@ -2854,18 +2854,14 @@ void videoHandlerYUV::drawFrame(QPainter *painter,
       qWarning() << "videoHandlerYUV: ERROR - Failed to get current frame for HDR rendering";
     }
     
-    // CRITICAL FIX: Don't return early - continue with standard rendering pipeline
-    // This ensures timer-driven updates and proper event handling continue
-    // The HDR widget will overlay the standard rendering, so both can coexist
-    
     // Clear the painter's background to black since HDR widget handles the actual rendering
     if (painter) {
       painter->fillRect(painter->viewport(), Qt::black);
     }
     
-    // Continue to standard rendering path to maintain proper update loops
-    // The actual pixel data won't be visible due to HDR overlay, but the 
-    // infrastructure (timers, event handling, etc.) will continue working
+    // CRITICAL FIX: Return early to prevent rendering path conflict
+    // This ensures HDR and SDR rendering don't interfere with each other
+    return;
   }
   
   // Using standard QPainter rendering

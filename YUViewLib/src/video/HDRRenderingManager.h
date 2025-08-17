@@ -67,6 +67,7 @@ private:
   HDR_VideoWidget* m_hdrWidget;
   HDRDetectionWorker* m_hdrDetectionWorker;
   bool m_useHDRRendering;
+  bool m_isHDRWidgetReady;  // CRITICAL FIX: Track HDR widget readiness state
   HDRDetection::HDRCapabilities m_hdrCapabilities;
   
   // Helper methods

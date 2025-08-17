@@ -259,6 +259,9 @@
           <layout class="QHBoxLayout" name="secondLevelLayout">
            <item>
             <widget class="QPushButton" name="pushButtonSecondLevel">
+             <property name="enabled">
+              <bool>true</bool>
+             </property>
              <property name="toolTip">
               <string>Start playback from current frame at 1 FPS</string>
              </property>

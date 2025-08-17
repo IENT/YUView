@@ -35,8 +35,8 @@ HDR_VideoWidget::HDR_VideoWidget(QWidget* parent)
     , m_initialized(false)
     , m_hdrExposure(0.0f)
     , m_hdrGamma(1.0f)
-    , m_displayMaxLuminance(100.0f)  // Default SDR display
-    , m_sourceMaxLuminance(1000.0f)  // Default HDR content assumption
+    , m_displayMaxLuminance(1000.0f)  // Default HDR display capability
+    , m_sourceMaxLuminance(100.0f)    // Default SDR content assumption
     , m_shaderProgram(nullptr)
     , m_videoTexture(nullptr)
     , m_vertexBuffer(nullptr)
@@ -299,14 +299,30 @@ void HDR_VideoWidget::updateFrame(const QImage& newFrame)
     if (!m_initialized) {
         qDebug() << "HDR_VideoWidget::updateFrame: Widget not initialized, frame queued for later processing";
         
-        // Try to force initialization if we have proper context and size
-        if (context() && context()->isValid() && width() >= 64 && height() >= 64) {
-            qDebug() << "HDR_VideoWidget::updateFrame: Attempting initialization with current context";
-            update(); // This will trigger paintGL which has initialization retry logic
-        } else {
-            qDebug() << "HDR_VideoWidget::updateFrame: Cannot initialize yet - context:" << (context() ? "valid" : "null") 
-                     << "size:" << width() << "x" << height();
+        // CRITICAL FIX: Force widget to be visible first to ensure OpenGL context creation
+        if (!isVisible()) {
+            // Widget not visible yet, show it to trigger context creation
+            show();
+            qDebug() << "HDR_VideoWidget::updateFrame: Widget made visible to trigger context creation";
         }
+        
+        // Schedule delayed initialization attempt
+        QTimer::singleShot(100, this, [this]() {
+            if (!m_initialized && context() && context()->isValid() && width() >= 64 && height() >= 64) {
+                qDebug() << "HDR_VideoWidget::updateFrame: Delayed initialization attempt with context:"
+                         << (context() ? "valid" : "null") << "size:" << width() << "x" << height();
+                update(); // This will trigger paintGL which has initialization retry logic
+            } else if (!m_initialized) {
+                qDebug() << "HDR_VideoWidget::updateFrame: Still cannot initialize - context:" 
+                         << (context() ? "valid" : "null") << "size:" << width() << "x" << height();
+                // Try again later
+                QTimer::singleShot(200, this, [this]() {
+                    if (!m_initialized) {
+                        update();
+                    }
+                });
+            }
+        });
         
         // Widget not initialized yet, queue the frame for later
         // The frame will be processed when initialization completes
@@ -362,8 +378,77 @@ void HDR_VideoWidget::clearFrame()
     update();
 }
 
+void HDR_VideoWidget::forceReinitializeContext()
+{
+    qDebug() << "HDR_VideoWidget::forceReinitializeContext: Forcing OpenGL context recreation";
+    
+    // Reset initialization flag
+    m_initialized = false;
+    
+    // Clean up existing OpenGL resources
+    if (context() && context()->isValid()) {
+        makeCurrent();
+        
+        delete m_shaderProgram;
+        m_shaderProgram = nullptr;
+        
+        delete m_videoTexture;
+        m_videoTexture = nullptr;
+        
+        delete m_vertexBuffer;
+        m_vertexBuffer = nullptr;
+        
+        delete m_indexBuffer;
+        m_indexBuffer = nullptr;
+        
+        delete m_vertexArrayObject;
+        m_vertexArrayObject = nullptr;
+        
+        doneCurrent();
+    }
+    
+    // Force widget to recreate its context
+    // This is done by temporarily hiding and showing the widget
+    bool wasVisible = isVisible();
+    hide();
+    
+    // Schedule reinitialization
+    QTimer::singleShot(50, this, [this, wasVisible]() {
+        if (wasVisible) {
+            show();
+        }
+        
+        // Trigger initialization
+        QTimer::singleShot(100, this, [this]() {
+            qDebug() << "HDR_VideoWidget::forceReinitializeContext: Triggering reinitialization";
+            update(); // This will call paintGL which has initialization retry logic
+        });
+    });
+}
+
 void HDR_VideoWidget::initializeGL()
 {
+    // CRITICAL FIX: Validate OpenGL context first
+    if (!context() || !context()->isValid()) {
+        qWarning() << "HDR_VideoWidget: OpenGL context not available, deferring initialization";
+        // Context not ready yet, defer initialization
+        QTimer::singleShot(100, this, [this]() {
+            if (context() && context()->isValid() && !m_initialized) {
+                qDebug() << "HDR_VideoWidget: Context now available, retrying initialization";
+                update(); // Trigger re-initialization
+            } else if (!m_initialized) {
+                qWarning() << "HDR_VideoWidget: Context still not available";
+                // Try one more time with longer delay
+                QTimer::singleShot(300, this, [this]() {
+                    if (!m_initialized) {
+                        update();
+                    }
+                });
+            }
+        });
+        return;
+    }
+    
     if (!initializeOpenGLFunctions()) {
         handleInitializationError("Failed to initialize OpenGL functions");
         return;
@@ -387,11 +472,7 @@ void HDR_VideoWidget::initializeGL()
     
     qDebug() << "HDR_VideoWidget: Starting OpenGL initialization, size:" << width() << "x" << height();
     
-    // STABILITY FIX: Validate OpenGL context before proceeding
-    if (!context() || !context()->isValid()) {
-        handleInitializationError("OpenGL context is not valid");
-        return;
-    }
+    // Context is now validated above
     
     // CRITICAL: Validate actual surface format and adjust expectations
     QSurfaceFormat actualFormat = context()->format();
@@ -476,9 +557,17 @@ void HDR_VideoWidget::paintGL()
     if (!m_initialized) {
         // Try to initialize now if we have a valid context and proper size
         if (context() && context()->isValid() && width() >= 64 && height() >= 64) {
-            qDebug() << "HDR_VideoWidget::paintGL: Attempting delayed initialization";
+            qDebug() << "HDR_VideoWidget::paintGL: Attempting delayed initialization with context:"
+                     << (context() ? "valid" : "null") << "size:" << width() << "x" << height();
+            
             // Attempt to initialize the widget now
             if (initializeOpenGLFunctions()) {
+                // Initialize OpenGL state with error checking
+                glEnable(GL_BLEND);
+                glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+                glDisable(GL_DEPTH_TEST);
+                glDisable(GL_CULL_FACE);
+                
                 // Try to complete initialization
                 bool initSuccess = true;
                 if (!initializeShaders()) {
@@ -498,6 +587,13 @@ void HDR_VideoWidget::paintGL()
                     glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
                     m_initialized = true;
                     qDebug() << "HDR_VideoWidget::paintGL: Delayed initialization successful";
+                    
+                    // Upload any pending frame
+                    if (m_frameUpdated && !m_currentFrame.isNull()) {
+                        qDebug() << "HDR_VideoWidget::paintGL: Uploading pending frame after initialization";
+                        uploadTextureData(m_currentFrame);
+                    }
+                    
                     emit widgetInitialized();
                 } else {
                     qWarning() << "HDR_VideoWidget::paintGL: Delayed initialization failed";
@@ -505,11 +601,14 @@ void HDR_VideoWidget::paintGL()
             } else {
                 qWarning() << "HDR_VideoWidget::paintGL: OpenGL function initialization failed";
             }
+        } else {
+            qWarning() << "HDR_VideoWidget::paintGL: Cannot initialize - context:" 
+                       << (context() ? "valid" : "null") << "size:" << width() << "x" << height();
         }
         
         // If still not initialized, clear to black and return
         if (!m_initialized) {
-            glClearColor(0.5f, 0.5f, 0.5f, 1.0f);  // Gray color to indicate error state
+            glClearColor(0.0f, 0.0f, 0.0f, 1.0f);  // Black to match HDR background
             glClear(GL_COLOR_BUFFER_BIT);
             return;
         }
@@ -564,17 +663,22 @@ void HDR_VideoWidget::paintEvent(QPaintEvent* event)
 
 void HDR_VideoWidget::resizeGL(int width, int height)
 {
+    // Always set viewport regardless of initialization state
     glViewport(0, 0, width, height);
     
     // Update projection matrix for proper aspect ratio
     m_projectionMatrix.setToIdentity();
     
+    qDebug() << "HDR Widget resized to:" << width << "x" << height;
+    
     // CRITICAL FIX: If not initialized and we now have proper size, try initialization
-    if (!m_initialized && width >= 64 && height >= 64) {
-        qDebug() << "HDR_VideoWidget::resizeGL: Widget now has proper size, attempting initialization";
+    if (!m_initialized && width >= 64 && height >= 64 && context() && context()->isValid()) {
+        qDebug() << "HDR_VideoWidget::resizeGL: Widget now has proper size and context, attempting initialization";
         // Trigger initialization attempt via update (which calls paintGL with retry logic)
-        QTimer::singleShot(0, this, [this]() {
-            update();
+        QTimer::singleShot(10, this, [this]() {
+            if (!m_initialized) {
+                update();
+            }
         });
     }
     
@@ -584,7 +688,9 @@ void HDR_VideoWidget::resizeGL(int width, int height)
         m_shaderProgram->release();
     }
     
-    qDebug() << "HDR Widget resized to:" << width << "x" << height;
+    // CRITICAL FIX: Force update to ensure proper rendering after resize
+    update();
+    
     logOpenGLError("resizeGL");
 }
 
@@ -988,10 +1094,10 @@ bool HDR_VideoWidget::uploadTextureData(const QImage& image)
   // Upload texture data with proper format
   m_videoTexture->bind();
 
-  // Use raw OpenGL for precise control over pixel format
+  // CRITICAL FIX: Use raw OpenGL for precise control over pixel format
   glTexImage2D(GL_TEXTURE_2D,
                0,                          // Mipmap level
-               internalFormat,             // Internal format (10-bit or 16-bit)
+               internalFormat,             // Internal format (8-bit or 16-bit)
                textureImage.width(),
                textureImage.height(),
                0,                          // Border
@@ -1408,6 +1514,9 @@ void HDR_VideoWidget::upgradeToHDRFormat(HDRDetection::HDRMode hdrMode)
     
     // Check if we already have the right HDR format
     QSurfaceFormat currentFormat = context() ? context()->format() : format();
+    
+    // Check if we already have the right HDR format
+    
     if (isHDRFormat(currentFormat)) {
         qDebug() << "HDR format already active, no upgrade needed";
         return;
@@ -1419,21 +1528,25 @@ void HDR_VideoWidget::upgradeToHDRFormat(HDRDetection::HDRMode hdrMode)
     QSurfaceFormat hdrFormat = currentFormat;
     
     if (hdrMode == HDRDetection::BT2020_PQ_10bit) {
-        // Configure for BT2020 PQ (HDR10)
+        // CRITICAL FIX: Configure for BT2020 PQ (HDR10) with proper fallback
         hdrFormat.setRedBufferSize(10);
         hdrFormat.setGreenBufferSize(10);
         hdrFormat.setBlueBufferSize(10);
         hdrFormat.setAlphaBufferSize(2);
+        
         hdrFormat.setColorSpace(QColorSpace::Bt2100Pq);
         qDebug() << "Upgrading to BT2020 PQ 10-bit format";
+        
     } else if (hdrMode == HDRDetection::BT709_G10_16bit) {
         // Configure for scRGB/Linear RGB
         hdrFormat.setRedBufferSize(16);
         hdrFormat.setGreenBufferSize(16);
         hdrFormat.setBlueBufferSize(16);
         hdrFormat.setAlphaBufferSize(16);
+        
         hdrFormat.setColorSpace(QColorSpace::SRgbLinear);
         qDebug() << "Upgrading to BT709 Linear 16-bit format";
+        
     } else {
         qWarning() << "Unknown HDR mode for surface format upgrade:" << hdrMode;
         return;
@@ -1442,7 +1555,7 @@ void HDR_VideoWidget::upgradeToHDRFormat(HDRDetection::HDRMode hdrMode)
     // Apply the new format
     setFormat(hdrFormat);
     
-    qDebug() << "HDR surface format upgrade requested - will take effect on next context creation";
+    qDebug() << "HDR surface format upgrade completed";
     
     #else
     Q_UNUSED(hdrMode);

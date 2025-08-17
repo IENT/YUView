@@ -604,6 +604,14 @@ void splitViewWidget::setHDROverlayWidget(HDR_VideoWidget* hdrWidget)
     // CRITICAL FIX: Proper overlay setup with OpenGL widget
     m_hdrOverlayWidget->setParent(this);
     
+    // CRITICAL FIX: Re-establish OpenGL widget attributes after parent change
+    // These attributes are essential for OpenGL context creation
+    m_hdrOverlayWidget->setAttribute(Qt::WA_NativeWindow, true);
+    m_hdrOverlayWidget->setAttribute(Qt::WA_PaintOnScreen, false);
+    m_hdrOverlayWidget->setAttribute(Qt::WA_DontCreateNativeAncestors, true);
+    m_hdrOverlayWidget->setAttribute(Qt::WA_OpaquePaintEvent, false);
+    m_hdrOverlayWidget->setAttribute(Qt::WA_NoSystemBackground, false);
+    
     // Ensure geometry is set correctly for OpenGL context
     QRect targetGeometry = rect();
     if (targetGeometry.width() < 64 || targetGeometry.height() < 64) {
@@ -615,6 +623,9 @@ void splitViewWidget::setHDROverlayWidget(HDR_VideoWidget* hdrWidget)
     // Ensure the widget is properly configured for overlay rendering
     m_hdrOverlayWidget->setAttribute(Qt::WA_TransparentForMouseEvents, false);  // Accept mouse events
     m_hdrOverlayWidget->setFocusPolicy(Qt::StrongFocus);
+    
+    // CRITICAL FIX: Force OpenGL context recreation after parent and attribute changes
+    m_hdrOverlayWidget->forceReinitializeContext();
     
     // CRITICAL FIX: Proper HDR widget initialization sequence
     // Use progressive showing with validation
@@ -668,6 +679,14 @@ void splitViewWidget::showHDROverlay(bool show)
 {
   if (m_hdrOverlayWidget) {
     if (show) {
+      // CRITICAL FIX: Re-establish OpenGL widget attributes before showing
+      // These may have been lost during parent changes or other operations
+      m_hdrOverlayWidget->setAttribute(Qt::WA_NativeWindow, true);
+      m_hdrOverlayWidget->setAttribute(Qt::WA_PaintOnScreen, false);
+      m_hdrOverlayWidget->setAttribute(Qt::WA_DontCreateNativeAncestors, true);
+      m_hdrOverlayWidget->setAttribute(Qt::WA_OpaquePaintEvent, false);
+      m_hdrOverlayWidget->setAttribute(Qt::WA_NoSystemBackground, false);
+      
       // CRITICAL FIX: Ensure proper geometry before showing
       QRect currentGeometry = rect();
       if (currentGeometry.width() >= 64 && currentGeometry.height() >= 64) {
