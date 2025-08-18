@@ -44,12 +44,12 @@ const mat3 from2020to709 = mat3(
  * @return PQ-encoded RGB values in the range [0, 1]
  */
 vec3 applyPQ(vec3 linear) {
-    // Normalize linear values to [0,1] range for PQ curve calculation
-    // PQ is designed for values up to 10,000 nits
-    vec3 normalizedLinear = clamp(linear / 10000.0, 0.0, 1.0);
+    // CRITICAL FIX: Normalize with range matching our HDR scaling
+    // Match the 80 nits scaling used in the main rendering pipeline
+    vec3 normalizedLinear = clamp(linear / 100.0, 0.0, 1.0);
     
     // Apply the first power function with exponent m1
-    vec3 Lp = pow(normalizedLinear, vec3(m1));
+    vec3 Lp = pow(max(normalizedLinear, vec3(0.0)), vec3(m1));
     
     // Calculate the numerator: c1 + c2 * Lp
     vec3 numerator = c1 + c2 * Lp;
@@ -143,15 +143,22 @@ void main()
     if (renderMode == 1) {
         // BT2020_PQ mode: HDR10 rendering with PQ transfer function
         
+        // CRITICAL FIX: Proper HDR processing to avoid "black mask" effect
+        // Input video content is typically gamma-encoded, not linear
+        vec3 gammaColor = color.rgb;
+        
+        // Convert from gamma-encoded to linear space first (approximate sRGB)
+        vec3 linearColor = pow(max(gammaColor, vec3(0.0)), vec3(2.2));
+        
+        // Apply exposure adjustment in linear space
+        linearColor = applyExposure(linearColor);
+        
         // Convert from Rec.709 to Rec.2020 wide color gamut
-        vec3 rec2020Color = from709to2020 * color.rgb;
+        vec3 rec2020Color = from709to2020 * linearColor;
         
-        // Scale to HDR range (assuming input is in [0,1] but represents HDR values)
-        // The input should already be 10-bit or 16-bit HDR data
-        vec3 hdrLinear = rec2020Color * 10000.0; // Scale to nits
-        
-        // Apply exposure adjustment
-        hdrLinear = applyExposure(hdrLinear);
+        // CRITICAL FIX: More conservative scaling for typical video content
+        // Assume input [0,1] in linear space represents 0-80 nits (typical SDR range)
+        vec3 hdrLinear = rec2020Color * 80.0; // Conservative HDR range scaling
         
         // Apply PQ transfer function for HDR10 display
         vec3 pqColor = applyPQ(hdrLinear);

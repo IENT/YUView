@@ -352,6 +352,7 @@ protected:
 
   QPointer<splitViewWidget> getOtherWidget() const;
   void                      getStateFromMaster() override;
+  void                      updateHDROverlayGeometry();
 };
 
 #endif // SPLITVIEWWIDGET_H

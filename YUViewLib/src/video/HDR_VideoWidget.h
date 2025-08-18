@@ -89,6 +89,9 @@ signals:
     // Emitted when rendering mode changes
     void renderModeChanged(RenderMode mode);
     
+    // CRITICAL FIX: Zoom request signal to replace manual event forwarding
+    void zoomRequested(int delta, QPoint position);
+    
     // Emitted when frame is updated successfully
     void frameUpdated();
     

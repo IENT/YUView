@@ -3030,6 +3030,9 @@ QLayout *videoHandlerYUV::createVideoHandlerControls(bool isSizeAndFormatFixed)
   if (!isSizeAndFormatFixed && newVBoxLayout)
     newVBoxLayout->addLayout(ui.topVBoxLayout);
 
+  // Initial check of HDR availability based on current format
+  updateHDRAvailability();
+
   return (isSizeAndFormatFixed) ? ui.topVBoxLayout : newVBoxLayout;
 }
 
@@ -3101,6 +3104,9 @@ void videoHandlerYUV::setSrcPixelFormat(PixelFormatYUV format, bool emitSignal)
     ui.lumaOffsetSpinBox->setValue(this->conversionSettings.mathParameters[Component::Luma].offset);
     ui.chromaOffsetSpinBox->setValue(
         this->conversionSettings.mathParameters[Component::Chroma].offset);
+    
+    // Check and update HDR availability based on bit depth
+    updateHDRAvailability();
   }
 
   if (emitSignal)
@@ -3190,47 +3196,8 @@ void videoHandlerYUV::slot10BitDisplayChanged()
   
   bool enable10Bit = ui.checkBoxEnable10BitDisplay->isChecked();
   
-  // CRITICAL FIX: Check HDR support before enabling
-  if (enable10Bit) {
-    // Pre-check HDR support to give user immediate feedback
-    HDRDetection* detector = HDRDetection::instance();
-    HDRDetection::HDRCapabilities capabilities = detector->detectHDRCapabilities(nullptr);
-    
-    if (!capabilities.isHDRSupported) {
-      qDebug() << "videoHandlerYUV: HDR not supported on current display";
-      
-      // Find parent widget for message box
-      QWidget* parentWidget = QApplication::activeWindow();
-      if (!parentWidget) {
-        // Fallback to main window if no active window
-        QWidgetList topLevelWidgets = QApplication::topLevelWidgets();
-        for (QWidget* widget : topLevelWidgets) {
-          if (QMainWindow* mainWindow = qobject_cast<QMainWindow*>(widget)) {
-            parentWidget = mainWindow;
-            break;
-          }
-        }
-      }
-      
-      // Show user-friendly warning message
-      QMessageBox::warning(parentWidget, 
-                          "HDR Not Supported", 
-                          QString("HDR (High Dynamic Range) is not supported on the current display.\n\n"
-                                  "Reason: %1\n\n"
-                                  "Requirements for HDR:\n"
-                                  "• Display must support 10-bit color depth\n"
-                                  "• HDR must be enabled in Windows display settings\n"
-                                  "• Display must support HDR10 or Dolby Vision")
-                          .arg(capabilities.errorMessage.isEmpty() ? "Display does not support HDR" : capabilities.errorMessage));
-      
-      // Uncheck the checkbox and return without enabling HDR
-      ui.checkBoxEnable10BitDisplay->setChecked(false);
-      isProcessing = false;
-      return;
-    }
-    
-    qDebug() << "videoHandlerYUV: HDR supported - proceeding with activation";
-  }
+  // Note: Prerequisites (10-bit format + HDR display support) have been verified
+  // in updateHDRAvailability(), so checkbox is only enabled when conditions are met
   
   // Save the 10-bit display setting to QSettings
   QSettings settings;
@@ -3254,10 +3221,7 @@ void videoHandlerYUV::slot10BitDisplayChanged()
           QMessageBox::warning(parentWidget,
                               "HDR Activation Failed",
                               "HDR display activation timed out. Please try again.\n\n"
-                              "If the problem persists:\n"
-                              "• Check that the video is 10-bit YUV format\n"
-                              "• Ensure the display supports HDR\n"
-                              "• Try restarting the application");
+                              "If the problem persists, try restarting the application.");
         }
       });
     }
@@ -3268,6 +3232,76 @@ void videoHandlerYUV::slot10BitDisplayChanged()
   }
   
   isProcessing = false;
+}
+
+void videoHandlerYUV::updateHDRAvailability()
+{
+  if (!ui.created()) {
+    return; // UI not created yet
+  }
+  
+  // Check if current YUV format supports 10-bit display
+  bool supports10BitFormat = (srcPixelFormat.getBitsPerSample() >= 10);
+  
+  // Check if display supports HDR
+  HDRDetection* detector = HDRDetection::instance();
+  HDRDetection::HDRCapabilities capabilities = detector->detectHDRCapabilities(nullptr);
+  bool supportsHDRDisplay = capabilities.isHDRSupported;
+  
+  // Enable checkbox only if BOTH conditions are met
+  bool shouldEnableHDR = supports10BitFormat && supportsHDRDisplay;
+  ui.checkBoxEnable10BitDisplay->setEnabled(shouldEnableHDR);
+  
+  if (!shouldEnableHDR) {
+    // Disable and uncheck the checkbox
+    QSignalBlocker blocker(ui.checkBoxEnable10BitDisplay);  // Prevent triggering slot
+    ui.checkBoxEnable10BitDisplay->setChecked(false);
+    
+    // If HDR was previously active, disable it
+    if (m_hdrRenderingManager && m_hdrRenderingManager->isHDRRenderingActive()) {
+      qDebug() << "videoHandlerYUV: Disabling HDR due to unsupported configuration";
+      m_hdrRenderingManager->setHDRRenderingEnabled(false);
+      
+      // Save disabled state to settings
+      QSettings settings;
+      settings.setValue("Enable10BitDisplay", false);
+    }
+    
+    // Update tooltip based on the specific reason for being disabled
+    QString tooltipText = "Enable native 10-bit display support for 10-bit YUV sources. "
+                         "This preserves 10-bit precision during YUV to RGB conversion.\n\n";
+    
+    if (!supports10BitFormat && !supportsHDRDisplay) {
+      tooltipText += QString("DISABLED: Current YUV format is %1-bit (requires 10-bit+) AND display does not support HDR.\n\n"
+                            "Requirements:\n"
+                            "• 10-bit or higher YUV source\n"
+                            "• HDR-capable display\n"
+                            "• HDR enabled in Windows display settings")
+                    .arg(srcPixelFormat.getBitsPerSample());
+    } else if (!supports10BitFormat) {
+      tooltipText += QString("DISABLED: Current YUV format is %1-bit. 10-bit display requires 10-bit or higher YUV sources.")
+                    .arg(srcPixelFormat.getBitsPerSample());
+    } else if (!supportsHDRDisplay) {
+      tooltipText += QString("DISABLED: Display does not support HDR.\n\n"
+                            "Reason: %1\n\n"
+                            "Requirements:\n"
+                            "• HDR-capable display\n"
+                            "• HDR enabled in Windows display settings\n"
+                            "• Display supporting HDR10 or Dolby Vision")
+                    .arg(capabilities.errorMessage.isEmpty() ? "HDR not supported" : capabilities.errorMessage);
+    }
+    
+    ui.checkBoxEnable10BitDisplay->setToolTip(tooltipText);
+  } else {
+    // Restore original tooltip for supported configurations
+    ui.checkBoxEnable10BitDisplay->setToolTip(
+      "Enable native 10-bit display support for 10-bit YUV sources. "
+      "This preserves 10-bit precision during YUV to RGB conversion.");
+  }
+  
+  qDebug() << "videoHandlerYUV: HDR availability updated - bit depth:" 
+           << srcPixelFormat.getBitsPerSample() << "HDR display support:" << supportsHDRDisplay 
+           << "checkbox enabled:" << shouldEnableHDR;
 }
 
 void videoHandlerYUV::onHDRRenderingStateChanged(bool enabled, HDR_VideoWidget* widget)

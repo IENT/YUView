@@ -283,6 +283,9 @@ private slots:
   void slotYUVFormatControlChanged(int idx);
   // The 10-bit display checkbox was changed
   void slot10BitDisplayChanged();
+  
+  // Check if 10-bit display should be available based on current YUV format
+  void updateHDRAvailability();
 
   // HDR rendering state change handler
   void onHDRRenderingStateChanged(bool enabled, HDR_VideoWidget* widget);

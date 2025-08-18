@@ -726,15 +726,7 @@ void splitViewWidget::resizeEvent(QResizeEvent* event)
 {
   MoveAndZoomableView::resizeEvent(event);
 
-  if (m_hdrOverlayWidget && m_hdrOverlayWidget->isVisible()) {
-    // Update HDR widget geometry to match
-    m_hdrOverlayWidget->setGeometry(rect());
-    
-    // Force update to handle OpenGL viewport changes
-    m_hdrOverlayWidget->update();
-    
-    qDebug() << "splitViewWidget: HDR overlay resized to match view";
-  }
+  updateHDROverlayGeometry();
   
   // Check for display changes when window is resized (may indicate move to different screen)
   checkCurrentDisplayHDRSupport();
@@ -1284,6 +1276,7 @@ void splitViewWidget::setMoveOffset(QPointF offset)
       }
     }
   }
+  updateHDROverlayGeometry();
 }
 
 QPoint splitViewWidget::getMoveOffsetCoordinateSystemOrigin(const QPointF zoomPoint) const
@@ -1350,6 +1343,7 @@ void splitViewWidget::setZoomFactor(double zoom)
       }
     }
   }
+  updateHDROverlayGeometry();
 }
 
 void splitViewWidget::updateMouseTracking()
@@ -2348,4 +2342,53 @@ void splitViewWidget::checkCurrentDisplayHDRSupport()
     emit signalDisplayHDRSupportChanged(hdrSupported, m_currentDisplayName);
     qDebug() << "HDR support changed - emitting signal:" << hdrSupported;
   }
+}
+
+void splitViewWidget::updateHDROverlayGeometry()
+{
+    // Only execute when HDR overlay exists and is visible
+    if (!m_hdrOverlayWidget || !m_hdrOverlayWidget->isVisible()) {
+        return;
+    }
+
+    // Get the currently displayed video item
+    auto items = playlist->getSelectedItems();
+    playlistItem* mainItem = items[0];
+    if (!mainItem) {
+        m_hdrOverlayWidget->hide(); // Hide overlay if no main item
+        return;
+    }
+
+    // Use getFrameHandler() to get the handler, with null pointer check
+    video::FrameHandler* handler = mainItem->getFrameHandler();
+    if (!handler) {
+        m_hdrOverlayWidget->hide(); // Hide overlay if handler is invalid
+        return;
+    }
+
+    // Get the video's original size
+    Size frameSize = handler->getFrameSize();
+    if (!frameSize.isValid()) {
+        m_hdrOverlayWidget->hide(); // Hide overlay if frame size is invalid
+        return;
+    }
+    
+    // If previously hidden, now show it
+    if (!m_hdrOverlayWidget->isVisible()) {
+        m_hdrOverlayWidget->show();
+    }
+
+    // Calculate scaled size
+    QSizeF scaledSize(frameSize.width * zoomFactor, frameSize.height * zoomFactor);
+
+    // Calculate center point (this is the drawing reference origin)
+    QPointF center = getMoveOffsetCoordinateSystemOrigin();
+    
+    // Calculate top-left position
+    // Formula: center point - (scaled size / 2) + move offset
+    QPointF topLeft = center - QPointF(scaledSize.width() / 2.0, scaledSize.height() / 2.0) + moveOffset;
+
+    // Create new geometry rectangle and apply to HDR overlay
+    QRect newGeometry(topLeft.toPoint(), scaledSize.toSize());
+    m_hdrOverlayWidget->setGeometry(newGeometry);
 }
