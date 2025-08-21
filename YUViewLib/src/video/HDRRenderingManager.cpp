@@ -3,6 +3,7 @@
 #include <QApplication>
 #include <QDebug>
 #include <QTimer>
+#include <QMutexLocker>
 
 
 HDRRenderingManager::HDRRenderingManager(QObject* parent)
@@ -24,29 +25,35 @@ HDRRenderingManager::~HDRRenderingManager()
 void HDRRenderingManager::setHDRRenderingEnabled(bool enabled)
 {
   if (enabled) {
-    // CRITICAL FIX: Always attempt HDR detection when user tries to enable HDR
-    // This allows retry after previous failures (e.g., after display driver updates)
-    qDebug() << "HDRRenderingManager: User requested HDR enable, starting detection...";
+    {
+      QMutexLocker locker(&m_stateMutex);
+      // CRITICAL FIX: Always attempt HDR detection when user tries to enable HDR
+      // This allows retry after previous failures (e.g., after display driver updates)
+      qDebug() << "HDRRenderingManager: User requested HDR enable, starting detection...";
+      
+      // Set state optimistically, will be corrected if detection fails
+      m_useHDRRendering = true;
+    }
     
-    // Set state optimistically, will be corrected if detection fails
-    m_useHDRRendering = true;
-    
-    // Start asynchronous HDR detection
+    // Start asynchronous HDR detection (outside lock to avoid deadlock)
     startHDRDetection();
     
   } else {
-    // User explicitly disabled HDR
-    if (m_useHDRRendering == false) {
-      // Already disabled, but ensure UI feedback is provided
-      qDebug() << "HDRRenderingManager: HDR already disabled, confirming state";
-    } else {
-      qDebug() << "HDRRenderingManager: User disabled HDR rendering";
+    {
+      QMutexLocker locker(&m_stateMutex);
+      // User explicitly disabled HDR
+      if (m_useHDRRendering == false) {
+        // Already disabled, but ensure UI feedback is provided
+        qDebug() << "HDRRenderingManager: HDR already disabled, confirming state";
+      } else {
+        qDebug() << "HDRRenderingManager: User disabled HDR rendering";
+      }
+      
+      m_useHDRRendering = false;
+      m_isHDRWidgetReady = false;  // CRITICAL FIX: Reset readiness flag when HDR is disabled
     }
     
-    m_useHDRRendering = false;
-    m_isHDRWidgetReady = false;  // CRITICAL FIX: Reset readiness flag when HDR is disabled
-    
-    // Clean up HDR widget if exists
+    // Clean up HDR widget if exists (cleanupHDRResources() has its own locking)
     cleanupHDRResources();
     
     // Notify that HDR is disabled
@@ -56,6 +63,8 @@ void HDRRenderingManager::setHDRRenderingEnabled(bool enabled)
 
 HDR_VideoWidget* HDRRenderingManager::createHDRWidget(QWidget* parent)
 {
+  QMutexLocker locker(&m_stateMutex);
+  
   // Only create if HDR is supported and not already created
   if (!m_useHDRRendering || m_hdrWidget) {
     return m_hdrWidget;
@@ -63,15 +72,18 @@ HDR_VideoWidget* HDRRenderingManager::createHDRWidget(QWidget* parent)
   
   m_hdrWidget = new HDR_VideoWidget(parent);
   
-  // CRITICAL FIX: Connect widgetInitialized signal
+  // CRITICAL FIX: Connect widgetInitialized signal with thread-safe readiness update
   // Only when widget completes OpenGL initialization, we consider HDR ready
   connect(m_hdrWidget, &HDR_VideoWidget::widgetInitialized,
           this, [this]() {
-      // Set readiness flag - this is the key fix for the race condition
-      m_isHDRWidgetReady = true;
-      qDebug() << "HDRRenderingManager: Widget initialization complete. HDR rendering is now ready.";
+      {
+        QMutexLocker readyLocker(&m_stateMutex);
+        // Set readiness flag - this is the key fix for the race condition
+        m_isHDRWidgetReady = true;
+        qDebug() << "HDRRenderingManager: Widget initialization complete. HDR rendering is now ready.";
+      }
       
-      // Notify external components that HDR rendering is now ready
+      // Notify external components that HDR rendering is now ready (outside lock)
       emit hdrRenderingStateChanged(true, m_hdrWidget);
   });
   
@@ -81,11 +93,15 @@ HDR_VideoWidget* HDRRenderingManager::createHDRWidget(QWidget* parent)
   connect(m_hdrWidget, &HDR_VideoWidget::renderModeChanged,
           this, &HDRRenderingManager::onHDRModeChanged);
   
+  // Set HDR capabilities (using local copy to avoid holding lock too long)
+  HDRDetection::HDRCapabilities capabilities = m_hdrCapabilities;
+  locker.unlock();  // Release lock before potentially expensive widget operations
+  
   // Set HDR capabilities
-  m_hdrWidget->setHDRCapabilities(m_hdrCapabilities);
+  m_hdrWidget->setHDRCapabilities(capabilities);
   
   // Set appropriate render mode based on capabilities
-  if (m_hdrCapabilities.supportedMode == HDRDetection::BT709_G10_16bit) {
+  if (capabilities.supportedMode == HDRDetection::BT709_G10_16bit) {
     m_hdrWidget->setRenderMode(HDR_VideoWidget::Mode_BT709_Linear_16bit);
   } else {
     m_hdrWidget->setRenderMode(HDR_VideoWidget::Mode_BT2020_PQ_10bit);
@@ -96,6 +112,7 @@ HDR_VideoWidget* HDRRenderingManager::createHDRWidget(QWidget* parent)
 
 void HDRRenderingManager::hideHDRWidget()
 {
+  QMutexLocker locker(&m_stateMutex);
   if (m_hdrWidget) {
     emit hdrWidgetNeedsDisplay(m_hdrWidget, false);
     m_hdrWidget->hide();
@@ -104,6 +121,7 @@ void HDRRenderingManager::hideHDRWidget()
 
 void HDRRenderingManager::showHDRWidget()
 {
+  QMutexLocker locker(&m_stateMutex);
   if (m_hdrWidget) {
     emit hdrWidgetNeedsDisplay(m_hdrWidget, true);
   }
@@ -113,6 +131,8 @@ void HDRRenderingManager::startHDRDetection()
 {
   qDebug() << "=== HDRRenderingManager::startHDRDetection() called ===";
   qDebug() << "HDRRenderingManager: Starting HDR detection...";
+  
+  QMutexLocker locker(&m_stateMutex);
   
   // Create HDR detection worker if not already created
   if (!m_hdrDetectionWorker) {
@@ -134,39 +154,51 @@ void HDRRenderingManager::startHDRDetection()
     // Note: HDRDetectionWorker's mutex will handle concurrent access safely
   }
   
+  // Get reference to worker and release lock before starting detection
+  HDRDetectionWorker* worker = m_hdrDetectionWorker;
+  locker.unlock();
+  
   qDebug() << "HDRRenderingManager: Starting HDR detection (attempt)...";
-  m_hdrDetectionWorker->startDetection();
+  worker->startDetection();
   qDebug() << "HDRRenderingManager: HDR detection start request sent";
 }
 
 bool HDRRenderingManager::isHDRDetectionInProgress() const
 {
+  QMutexLocker locker(&m_stateMutex);
   return m_hdrDetectionWorker && m_hdrDetectionWorker->isDetecting();
 }
 
 void HDRRenderingManager::updateHDRFrame(const QImage& frame)
 {
-  // CRITICAL FIX: Check manager's readiness flag first to prevent race condition
-  if (!m_hdrWidget || !m_useHDRRendering || !m_isHDRWidgetReady) {
-    if (!m_isHDRWidgetReady && m_hdrWidget) {
-      qDebug() << "HDRRenderingManager: Widget not ready for rendering. Waiting for initialization signal.";
+  // CRITICAL FIX: Thread-safe check of readiness flags to prevent race condition
+  HDR_VideoWidget* widget = nullptr;
+  {
+    QMutexLocker locker(&m_stateMutex);
+    
+    if (!m_hdrWidget || !m_useHDRRendering || !m_isHDRWidgetReady) {
+      if (!m_isHDRWidgetReady && m_hdrWidget) {
+        qDebug() << "HDRRenderingManager: Widget not ready for rendering. Waiting for initialization signal.";
+      }
+      return;  // Don't send frames until widget is fully ready
     }
-    return;  // Don't send frames until widget is fully ready
+    
+    widget = m_hdrWidget;  // Get reference while holding lock
   }
   
-  // Double-check widget's internal readiness state as additional safety
-  if (!m_hdrWidget->isReadyForRendering()) {
+  // Double-check widget's internal readiness state as additional safety (outside lock)
+  if (!widget->isReadyForRendering()) {
     qDebug() << "HDRRenderingManager: Widget internal state not ready. Skipping frame.";
     return;
   }
 
   // Ensure widget is visible (keep as double insurance)
-  if (!m_hdrWidget->isVisible()) {
-    m_hdrWidget->show();
+  if (!widget->isVisible()) {
+    widget->show();
   }
 
   // Push frame data to ready widget
-  m_hdrWidget->updateFrame(frame);
+  widget->updateFrame(frame);
 }
 QImage HDRRenderingManager::getHDRRenderedImage()
 {
@@ -182,18 +214,23 @@ void HDRRenderingManager::onHDRNotSupported(const QString& reason)
 {
   qDebug() << "YUView HDR: HDR not supported:" << reason;
   
-  // Fall back to standard rendering
-  m_useHDRRendering = false;
-  m_isHDRWidgetReady = false;  // CRITICAL FIX: Reset readiness flag on error
+  HDR_VideoWidget* widget = nullptr;
+  {
+    QMutexLocker locker(&m_stateMutex);
+    // Fall back to standard rendering
+    m_useHDRRendering = false;
+    m_isHDRWidgetReady = false;  // CRITICAL FIX: Reset readiness flag on error
+    widget = m_hdrWidget;
+  }
   
-  // Clean up HDR widget if exists
-  if (m_hdrWidget) {
-    emit hdrWidgetNeedsDisplay(m_hdrWidget, false);
-    m_hdrWidget->hide();
+  // Clean up HDR widget if exists (outside lock to avoid deadlock with signals)
+  if (widget) {
+    emit hdrWidgetNeedsDisplay(widget, false);
+    widget->hide();
   }
   
   // Notify that HDR rendering failed
-  emit hdrRenderingStateChanged(false, m_hdrWidget);
+  emit hdrRenderingStateChanged(false, widget);
   emit hdrDetectionFailed(reason);
 }
 
@@ -218,15 +255,25 @@ void HDRRenderingManager::onHDRDetectionComplete(const HDRDetection::HDRCapabili
   if (capabilities.isHDRSupported) {
     qDebug() << "HDRRenderingManager: === HDR IS SUPPORTED ===";
 
-    // Store capabilities and enable HDR rendering
-    qDebug() << "HDRRenderingManager: Storing HDR capabilities...";
-    m_hdrCapabilities = capabilities;
-    m_useHDRRendering = true;
-    qDebug() << "HDRRenderingManager: HDR capabilities stored and rendering enabled";
+    // Store capabilities and enable HDR rendering atomically
+    {
+      QMutexLocker locker(&m_stateMutex);
+      qDebug() << "HDRRenderingManager: Storing HDR capabilities...";
+      m_hdrCapabilities = capabilities;
+      m_useHDRRendering = true;
+      qDebug() << "HDRRenderingManager: HDR capabilities stored and rendering enabled";
+    }
 
     QString modeDescription = HDRDetection::getHDRModeDescription(capabilities.supportedMode);
     qDebug() << "HDRRenderingManager: HDR rendering enabled (integrated mode):" << modeDescription;
-    if (!m_hdrWidget) {
+    
+    bool needsWidgetCreation = false;
+    {
+      QMutexLocker locker(&m_stateMutex);
+      needsWidgetCreation = !m_hdrWidget;
+    }
+    
+    if (needsWidgetCreation) {
       qDebug() << "HDRRenderingManager: Looking for split view widget...";
 
       // Find the split view widget
@@ -244,13 +291,13 @@ void HDRRenderingManager::onHDRDetectionComplete(const HDRDetection::HDRCapabili
       }
 
       if (splitView) {
-        // Create HDR widget with split view as parent
-        createHDRWidget(splitView);
+        // Create HDR widget with split view as parent (createHDRWidget has its own locking)
+        HDR_VideoWidget* createdWidget = createHDRWidget(splitView);
 
-        if (m_hdrWidget) {
+        if (createdWidget) {
           // CRITICAL FIX: Synchronous UI integration to prevent race condition
           // Integrate widget immediately to ensure it has proper parent before frames arrive
-          splitView->setHDROverlayWidget(m_hdrWidget);
+          splitView->setHDROverlayWidget(createdWidget);
           splitView->showHDROverlay(true); // showHDROverlay will handle widget display
           qDebug() << "HDRRenderingManager: HDR widget integrated with split view synchronously.";
           
@@ -262,10 +309,10 @@ void HDRRenderingManager::onHDRDetectionComplete(const HDRDetection::HDRCapabili
         // Fallback to creating widget with main window as parent
         QWidget* parentWidget = QApplication::activeWindow();
         if (parentWidget) {
-          createHDRWidget(parentWidget);
-          if (m_hdrWidget) {
+          HDR_VideoWidget* createdWidget = createHDRWidget(parentWidget);
+          if (createdWidget) {
             // CRITICAL FIX: Emit signal to trigger immediate frame update for fallback case too
-            emit hdrRenderingStateChanged(true, m_hdrWidget);
+            emit hdrRenderingStateChanged(true, createdWidget);
           }
         }
       }
@@ -275,14 +322,17 @@ void HDRRenderingManager::onHDRDetectionComplete(const HDRDetection::HDRCapabili
     qDebug() << "HDRRenderingManager: === HDR IS NOT SUPPORTED ===";
     qDebug() << "HDRRenderingManager: Error:" << capabilities.errorMessage;
     
-    // Store capabilities for reference (even if unsupported)
-    m_hdrCapabilities = capabilities;
+    {
+      QMutexLocker locker(&m_stateMutex);
+      // Store capabilities for reference (even if unsupported)
+      m_hdrCapabilities = capabilities;
+      
+      // Reset HDR rendering state
+      m_useHDRRendering = false;
+      m_isHDRWidgetReady = false;  // CRITICAL FIX: Reset readiness flag when HDR not supported
+    }
     
-    // Reset HDR rendering state
-    m_useHDRRendering = false;
-    m_isHDRWidgetReady = false;  // CRITICAL FIX: Reset readiness flag when HDR not supported
-    
-    // Clean up any existing HDR widget
+    // Clean up any existing HDR widget (cleanupHDRResources() has its own locking)
     cleanupHDRResources();
     
     // Notify that HDR detection failed with appropriate error message
@@ -301,11 +351,14 @@ void HDRRenderingManager::onHDRDetectionFailed(const QString& error)
 {
   qDebug() << "HDRRenderingManager: HDR detection failed:" << error;
   
-  // Reset HDR state
-  m_useHDRRendering = false;
-  m_isHDRWidgetReady = false;  // CRITICAL FIX: Reset readiness flag on detection failure
+  {
+    QMutexLocker locker(&m_stateMutex);
+    // Reset HDR state
+    m_useHDRRendering = false;
+    m_isHDRWidgetReady = false;  // CRITICAL FIX: Reset readiness flag on detection failure
+  }
   
-  // Clean up HDR widget if exists
+  // Clean up HDR widget if exists (cleanupHDRResources() has its own locking)
   cleanupHDRResources();
   
   // Notify about the failure
@@ -317,6 +370,8 @@ void HDRRenderingManager::onHDRDetectionFailed(const QString& error)
 
 void HDRRenderingManager::cleanupHDRResources()
 {
+  QMutexLocker locker(&m_stateMutex);
+  
   // CRITICAL FIX: Reset readiness flag during cleanup
   m_isHDRWidgetReady = false;
   
@@ -329,4 +384,42 @@ void HDRRenderingManager::cleanupHDRResources()
     delete m_hdrDetectionWorker;
     m_hdrDetectionWorker = nullptr;
   }
+}
+
+// CRITICAL FIX: Thread-safe public interface methods
+bool HDRRenderingManager::isHDRRenderingActive() const
+{
+  QMutexLocker locker(&m_stateMutex);
+  return m_useHDRRendering;
+}
+
+HDR_VideoWidget* HDRRenderingManager::getHDRWidget() const
+{
+  QMutexLocker locker(&m_stateMutex);
+  return m_hdrWidget;
+}
+
+HDRDetection::HDRCapabilities HDRRenderingManager::getHDRCapabilities() const
+{
+  QMutexLocker locker(&m_stateMutex);
+  return m_hdrCapabilities;  // Deep copy to avoid reference issues
+}
+
+// CRITICAL FIX: Thread-safe internal helper methods
+bool HDRRenderingManager::isHDRRenderingActive_locked() const
+{
+  // Assumes caller already holds m_stateMutex
+  return m_useHDRRendering;
+}
+
+void HDRRenderingManager::setHDRWidgetReady_locked(bool ready)
+{
+  // Assumes caller already holds m_stateMutex
+  m_isHDRWidgetReady = ready;
+}
+
+bool HDRRenderingManager::isHDRWidgetReady_locked() const
+{
+  // Assumes caller already holds m_stateMutex  
+  return m_isHDRWidgetReady;
 }

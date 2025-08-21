@@ -89,8 +89,7 @@ signals:
     // Emitted when rendering mode changes
     void renderModeChanged(RenderMode mode);
     
-    // CRITICAL FIX: Zoom request signal to replace manual event forwarding
-    void zoomRequested(int delta, QPoint position);
+    // NOTE: Zoom/pan events now handled via event->ignore() mechanism
     
     // Emitted when frame is updated successfully
     void frameUpdated();
@@ -140,6 +139,9 @@ private:
     QString getRenderModeString() const;
     QString getTextureFormatString() const;
     bool logOpenGLError(const QString& operation);
+    
+    // Projection matrix management for proper aspect ratio
+    void updateProjectionMatrix();
     
     // Error handling
     void handleInitializationError(const QString& error);

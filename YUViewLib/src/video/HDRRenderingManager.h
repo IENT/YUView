@@ -4,6 +4,7 @@
 #include <QString>
 #include <QWidget>
 #include <QImage>
+#include <QMutex>
 
 #include "HDR_VideoWidget.h"
 #include "HDRDetectionWorker.h"
@@ -29,20 +30,20 @@ public:
   explicit HDRRenderingManager(QObject* parent = nullptr);
   ~HDRRenderingManager();
 
-  // HDR state management
-  bool isHDRRenderingActive() const { return m_useHDRRendering; }
+  // HDR state management (thread-safe)
+  bool isHDRRenderingActive() const;
   void setHDRRenderingEnabled(bool enabled);
   
-  // HDR widget management
-  HDR_VideoWidget* getHDRWidget() const { return m_hdrWidget; }
+  // HDR widget management (thread-safe)
+  HDR_VideoWidget* getHDRWidget() const;
   HDR_VideoWidget* createHDRWidget(QWidget* parent = nullptr);
   void hideHDRWidget();
   void showHDRWidget();
   
-  // HDR detection
+  // HDR detection (thread-safe)
   void startHDRDetection();
   bool isHDRDetectionInProgress() const;
-  const HDRDetection::HDRCapabilities& getHDRCapabilities() const { return m_hdrCapabilities; }
+  HDRDetection::HDRCapabilities getHDRCapabilities() const;
   
   // Frame rendering
   void updateHDRFrame(const QImage& frame);
@@ -63,7 +64,13 @@ private slots:
   void onHDRDetectionFailed(const QString& error);
 
 private:
-  // HDR rendering members
+  // Thread-safe helper methods
+  bool isHDRRenderingActive_locked() const;  // Internal method requiring lock held
+  void setHDRWidgetReady_locked(bool ready);  // Internal method requiring lock held
+  bool isHDRWidgetReady_locked() const;       // Internal method requiring lock held
+
+  // HDR rendering members (protected by mutex)
+  mutable QMutex m_stateMutex;
   HDR_VideoWidget* m_hdrWidget;
   HDRDetectionWorker* m_hdrDetectionWorker;
   bool m_useHDRRendering;

@@ -288,12 +288,30 @@ void HDR_VideoWidget::updateFrame(const QImage& newFrame)
              << "initialized:" << m_initialized;
     
     // Store frame data first (thread-safe)
+    QSize previousFrameSize = m_frameSize;
     m_currentFrame = newFrame;
     m_frameSize = newFrame.size();
     m_frameUpdated = true;
     
     qDebug() << "HDR_VideoWidget::updateFrame: Frame stored, size:" << m_frameSize 
              << "updated flag:" << m_frameUpdated;
+    
+    // CRITICAL FIX: Update projection matrix when frame size changes (thread-safe)
+    if (m_frameSize != previousFrameSize && !m_frameSize.isEmpty()) {
+        qDebug() << "HDR_VideoWidget::updateFrame: Frame size changed from" << previousFrameSize 
+                 << "to" << m_frameSize << ", updating projection matrix";
+        
+        // Ensure projection matrix update happens in GUI thread
+        if (QThread::currentThread() == QApplication::instance()->thread()) {
+            // We're in GUI thread, safe to call directly
+            updateProjectionMatrix();
+        } else {
+            // We're in a different thread, queue the update
+            QMetaObject::invokeMethod(this, [this]() {
+                updateProjectionMatrix();
+            }, Qt::QueuedConnection);
+        }
+    }
     
     // CRITICAL FIX: Simplified frame handling - just store and trigger update
     if (!m_initialized) {
@@ -470,8 +488,17 @@ void HDR_VideoWidget::initializeGL()
             uploadTextureData(m_currentFrame);
         }
         
-        // Signal that widget is ready
-        emit widgetInitialized();
+        // Signal that widget is ready (ensure it's emitted in GUI thread)
+        if (QThread::currentThread() == QApplication::instance()->thread()) {
+            emit widgetInitialized();
+        } else {
+            // This should never happen since initializeGL() is called in GUI thread,
+            // but add safety check just in case
+            QMetaObject::invokeMethod(this, [this]() {
+                emit widgetInitialized();
+            }, Qt::QueuedConnection);
+            qWarning() << "HDR_VideoWidget: widgetInitialized signal queued from non-GUI thread";
+        }
     } else {
         qWarning() << "HDR_VideoWidget: Partial initialization - Shaders:" << shadersOk 
                    << "Geometry:" << geometryOk << "Texture:" << textureOk;
@@ -533,9 +560,6 @@ void HDR_VideoWidget::resizeGL(int width, int height)
     // Always set viewport regardless of initialization state
     glViewport(0, 0, width, height);
     
-    // Update projection matrix for proper aspect ratio
-    m_projectionMatrix.setToIdentity();
-    
     qDebug() << "HDR Widget resized to:" << width << "x" << height;
     
     // CRITICAL FIX: If not initialized and we now have proper size, try initialization
@@ -549,11 +573,8 @@ void HDR_VideoWidget::resizeGL(int width, int height)
         });
     }
     
-    if (m_initialized && m_shaderProgram) {
-        m_shaderProgram->bind();
-        m_shaderProgram->setUniformValue(m_projectionMatrixLocation, m_projectionMatrix);
-        m_shaderProgram->release();
-    }
+    // CRITICAL FIX: Update projection matrix for proper aspect ratio after resize
+    updateProjectionMatrix();
     
     // CRITICAL FIX: Force update to ensure proper rendering after resize
     update();
@@ -1072,6 +1093,91 @@ void HDR_VideoWidget::updateShaderUniforms()
     m_shaderProgram->setUniformValue(m_projectionMatrixLocation, m_projectionMatrix);
 }
 
+void HDR_VideoWidget::updateProjectionMatrix()
+{
+    // CRITICAL FIX: Thread-safe projection matrix calculation for letterboxing/pillarboxing
+    
+    // Get current widget dimensions
+    int widgetWidth = width();
+    int widgetHeight = height();
+    
+    // Get current frame dimensions (thread-safe copy)
+    QSize frameSize = m_frameSize;  // Atomic copy
+    int frameWidth = frameSize.width();
+    int frameHeight = frameSize.height();
+    
+    // Validate dimensions
+    if (widgetWidth <= 0 || widgetHeight <= 0 || frameWidth <= 0 || frameHeight <= 0) {
+        qDebug() << "HDR_VideoWidget::updateProjectionMatrix: Invalid dimensions - Widget:" 
+                 << widgetWidth << "x" << widgetHeight << "Frame:" << frameWidth << "x" << frameHeight;
+        // Use identity matrix for invalid dimensions
+        m_projectionMatrix.setToIdentity();
+        return;
+    }
+    
+    // Calculate aspect ratios
+    float widgetAspect = static_cast<float>(widgetWidth) / static_cast<float>(widgetHeight);
+    float frameAspect = static_cast<float>(frameWidth) / static_cast<float>(frameHeight);
+    
+    qDebug() << "HDR_VideoWidget::updateProjectionMatrix: Widget aspect:" << widgetAspect 
+             << "Frame aspect:" << frameAspect;
+    
+    // Reset matrix
+    m_projectionMatrix.setToIdentity();
+    
+    // Calculate scaling and offset for proper aspect ratio preservation
+    float left, right, top, bottom;
+    
+    if (frameAspect > widgetAspect) {
+        // Frame is wider than widget - pillarboxing (black bars on top/bottom)
+        // Scale based on width, add vertical padding
+        float scale = widgetAspect / frameAspect;
+        left = -1.0f;
+        right = 1.0f;
+        top = scale;
+        bottom = -scale;
+        qDebug() << "HDR_VideoWidget: Using pillarboxing, scale:" << scale;
+    } else {
+        // Frame is taller than widget - letterboxing (black bars on left/right)  
+        // Scale based on height, add horizontal padding
+        float scale = frameAspect / widgetAspect;
+        left = -scale;
+        right = scale;
+        top = 1.0f;
+        bottom = -1.0f;
+        qDebug() << "HDR_VideoWidget: Using letterboxing, scale:" << scale;
+    }
+    
+    // Set orthographic projection with calculated bounds
+    m_projectionMatrix.ortho(left, right, bottom, top, -1.0f, 1.0f);
+    
+    // CRITICAL FIX: Thread-safe OpenGL operations
+    // Update shader uniform if OpenGL is initialized and we're in GUI thread
+    if (m_initialized && m_shaderProgram && context() && context()->isValid()) {
+        if (QThread::currentThread() == QApplication::instance()->thread()) {
+            // We're in GUI thread, safe to make OpenGL calls directly
+            makeCurrent();
+            m_shaderProgram->bind();
+            m_shaderProgram->setUniformValue(m_projectionMatrixLocation, m_projectionMatrix);
+            m_shaderProgram->release();
+            doneCurrent();
+            qDebug() << "HDR_VideoWidget::updateProjectionMatrix: Projection matrix updated and sent to shader (direct)";
+        } else {
+            // We're in a different thread, queue the OpenGL update
+            QMetaObject::invokeMethod(this, [this]() {
+                if (m_initialized && m_shaderProgram && context() && context()->isValid()) {
+                    makeCurrent();
+                    m_shaderProgram->bind();
+                    m_shaderProgram->setUniformValue(m_projectionMatrixLocation, m_projectionMatrix);
+                    m_shaderProgram->release();
+                    doneCurrent();
+                    qDebug() << "HDR_VideoWidget::updateProjectionMatrix: Projection matrix updated and sent to shader (queued)";
+                }
+            }, Qt::QueuedConnection);
+        }
+    }
+}
+
 void HDR_VideoWidget::setHDRCapabilities(const HDRDetection::HDRCapabilities& capabilities)
 {
     m_hdrCapable = capabilities.isHDRSupported;
@@ -1232,61 +1338,41 @@ void HDR_VideoWidget::handleRenderingError(const QString& error)
 
 void HDR_VideoWidget::wheelEvent(QWheelEvent* event)
 {
-    // CRITICAL FIX: Use signal-slot mechanism instead of manual event forwarding
+    // CRITICAL FIX: Use event ignoring mechanism for reliable parent forwarding
     if (event->modifiers() & Qt::ControlModifier) {
-        // Handle HDR exposure adjustment
+        // Handle HDR exposure adjustment - ACCEPT this event
         float delta = event->angleDelta().y() / 120.0f;
         setHDRExposure(m_hdrExposure + delta * 0.1f);
         event->accept();
         qDebug() << "HDR_VideoWidget: Handled wheel event for exposure adjustment";
     } else {
-        // Emit zoom request signal instead of manual event forwarding
-        int delta = event->angleDelta().y();
-        QPoint position = event->position().toPoint();
-        
-        qDebug() << "HDR_VideoWidget: Emitting zoom request signal, delta:" << delta;
-        emit zoomRequested(delta, position);
-        event->accept();
+        // For all other wheel events, IGNORE to let Qt forward to parent automatically
+        event->ignore();
+        qDebug() << "HDR_VideoWidget: Ignored wheel event, forwarding to parent";
     }
 }
 
 void HDR_VideoWidget::mousePressEvent(QMouseEvent* event)
 {
-    // CRITICAL FIX: Only handle mouse events for HDR-specific operations
-    // For normal interaction (zoom, pan), forward to parent widget
+    // CRITICAL FIX: Use event ignoring mechanism for reliable parent forwarding
     if (event->button() == Qt::LeftButton && (event->modifiers() & Qt::ShiftModifier)) {
-        // Shift+Click for HDR gamma adjustment
+        // Shift+Click for HDR gamma adjustment - ACCEPT this event
         m_dragging = true;
         m_lastMousePos = event->pos();
         event->accept();
         qDebug() << "HDR_VideoWidget: Handled mouse press for HDR adjustment (Shift+Click)";
     } else {
-        // Forward all other mouse events to parent widget (SplitViewWidget)
-        if (parentWidget()) {
-            // CRITICAL FIX: Translate coordinates to parent widget's coordinate system
-            QPointF parentPos = parentWidget()->mapFromGlobal(mapToGlobal(event->pos()));
-            QMouseEvent parentEvent(
-                event->type(),
-                parentPos,
-                event->globalPosition(),
-                event->button(),
-                event->buttons(),
-                event->modifiers()
-            );
-            
-            // Forward to parent's mouse event handler
-            QApplication::sendEvent(parentWidget(), &parentEvent);
-            event->accept();
-        } else {
-            QOpenGLWidget::mousePressEvent(event);
-        }
+        // For all other mouse events, IGNORE to let Qt forward to parent automatically
+        event->ignore();
+        qDebug() << "HDR_VideoWidget: Ignored mouse press event, forwarding to parent";
     }
 }
 
 void HDR_VideoWidget::mouseMoveEvent(QMouseEvent* event)
 {
-    // CRITICAL FIX: Only handle drag events for HDR gamma adjustment with Shift modifier
+    // CRITICAL FIX: Use event ignoring mechanism for reliable parent forwarding
     if (m_dragging && (event->buttons() & Qt::LeftButton) && (event->modifiers() & Qt::ShiftModifier)) {
+        // HDR gamma adjustment drag - ACCEPT this event
         QPoint delta = event->pos() - m_lastMousePos;
         
         // Adjust gamma with vertical mouse movement
@@ -1300,54 +1386,34 @@ void HDR_VideoWidget::mouseMoveEvent(QMouseEvent* event)
         // Reset dragging state if conditions no longer met
         if (m_dragging && !(event->modifiers() & Qt::ShiftModifier)) {
             m_dragging = false;
+            qDebug() << "HDR_VideoWidget: Reset dragging state due to modifier change";
         }
         
-        // Forward to parent widget for normal interaction (pan, etc.)
-        if (parentWidget()) {
-            // CRITICAL FIX: Translate coordinates for proper parent widget interaction
-            QPointF parentPos = parentWidget()->mapFromGlobal(mapToGlobal(event->pos()));
-            QMouseEvent parentEvent(
-                event->type(),
-                parentPos,
-                event->globalPosition(),
-                event->button(),
-                event->buttons(),
-                event->modifiers()
-            );
-            
-            QApplication::sendEvent(parentWidget(), &parentEvent);
-            event->accept();
-        } else {
-            QOpenGLWidget::mouseMoveEvent(event);
-        }
+        // For all other mouse move events, IGNORE to let Qt forward to parent automatically
+        event->ignore();
+        qDebug() << "HDR_VideoWidget: Ignored mouse move event, forwarding to parent";
     }
 }
 
 void HDR_VideoWidget::mouseReleaseEvent(QMouseEvent* event)
 {
-    // CRITICAL FIX: Reset dragging state and forward events to parent
-    if (event->button() == Qt::LeftButton) {
+    // CRITICAL FIX: Use event ignoring mechanism for reliable parent forwarding
+    bool wasHandlingHDR = false;
+    
+    if (event->button() == Qt::LeftButton && m_dragging) {
+        // We were handling HDR adjustment, now stop
         m_dragging = false;
+        wasHandlingHDR = true;
         qDebug() << "HDR_VideoWidget: Reset dragging state on mouse release";
     }
     
-    // Always forward release events to parent widget
-    if (parentWidget()) {
-        // CRITICAL FIX: Translate coordinates for proper parent widget interaction
-        QPointF parentPos = parentWidget()->mapFromGlobal(mapToGlobal(event->pos()));
-        QMouseEvent parentEvent(
-            event->type(),
-            parentPos,
-            event->globalPosition(),
-            event->button(),
-            event->buttons(),
-            event->modifiers()
-        );
-        
-        QApplication::sendEvent(parentWidget(), &parentEvent);
+    if (wasHandlingHDR) {
+        // We were handling this interaction, ACCEPT the release event
         event->accept();
     } else {
-        QOpenGLWidget::mouseReleaseEvent(event);
+        // For all other release events, IGNORE to let Qt forward to parent automatically
+        event->ignore();
+        qDebug() << "HDR_VideoWidget: Ignored mouse release event, forwarding to parent";
     }
 }
 
