@@ -157,11 +157,11 @@ void updateHandler::startCheckForNewVersion(bool userRequest, bool force)
   }
   else if (VERSION_CHECK)
   {
-    // We can check the Github API for the commit hash. After that we can say if there is a new version available on Github.
+    // We can check the Github API for the release. After that we can say if there is a new version available on Github.
     updaterStatus = updaterChecking;
     userCheckRequest = userRequest;
-    DEBUG_UPDATE("updateHandler::startCheckForNewVersion get https://api.github.com/repos/IENT/YUView/commits");
-    networkManager.get(QNetworkRequest(QUrl("https://api.github.com/repos/IENT/YUView/commits")));
+    DEBUG_UPDATE("updateHandler::startCheckForNewVersion get https://api.github.com/repos/IENT/YUView/releases");
+    networkManager.get(QNetworkRequest(QUrl("https://api.github.com/repos/IENT/YUView/releases")));
   }
   else
   {
@@ -278,16 +278,16 @@ void updateHandler::replyFinished(QNetworkReply *reply)
     else
     {
       QJsonObject jsonObject = jsonArray[0].toObject();
-      if (!jsonObject.contains("sha"))
+      if (!jsonObject.contains("tag_name"))
       {
         error = true;
-        errorString = "The returned JSON object does not contain sha information on the latest commit hash.";
+        errorString = "The returned JSON object does not contain version information on the latest release.";
       }
       else
       {
-        QString serverHash = jsonObject["sha"].toString();
-        QString buildHash = QString::fromUtf8(YUVIEW_HASH);
-        if (serverHash != buildHash)
+        QString serverVersion = jsonObject["tag_name"].toString();
+        QString buildVersion = QString::fromUtf8(YUVIEW_VERSION);
+        if (serverVersion != buildVersion)
         {
           QMessageBox msgBox;
           msgBox.setTextFormat(Qt::RichText);
