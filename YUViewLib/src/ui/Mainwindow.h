@@ -50,7 +50,10 @@ class MainWindow : public QMainWindow
   Q_OBJECT
 
 public:
-  explicit MainWindow(bool useAlternativeSources, QWidget *parent = 0);
+  explicit MainWindow(bool useAlternativeSources, bool hdrModeEnabled = false, 
+                      bool hardwareFallbackOccurred = false, 
+                      const QString& fallbackMessage = QString(), 
+                      QWidget *parent = 0);
 
   void closeEvent(QCloseEvent *event) override;
 
@@ -84,6 +87,9 @@ private slots:
   
   // Multi-monitor HDR support
   void onDisplayHDRSupportChanged(bool hdrSupported, const QString& displayName);
+  
+  // HDR fallback notification (PRD Requirement 5.5)
+  void showHDRFallbackNotification(const QString& message);
 
   void onMenuResetView(bool checked)
   {

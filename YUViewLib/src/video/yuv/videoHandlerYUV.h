@@ -289,6 +289,8 @@ private slots:
 
   // HDR rendering state change handler
   void onHDRRenderingStateChanged(bool enabled, HDR_VideoWidget* widget);
+  // Show restart notice when HDR setting changes (PRD Requirements 5.1 & 5.3)
+  void showHDRRestartNotice(bool hdrEnabled);
   
   // HDR detection failed handler - resets checkbox and shows error message
   void onHDRDetectionFailed(const QString& error);

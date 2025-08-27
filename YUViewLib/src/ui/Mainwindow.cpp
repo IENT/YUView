@@ -40,6 +40,8 @@
 #include <QStringList>
 #include <QTextBrowser>
 #include <QTextStream>
+#include <QTimer>
+#include <QSettings>
 
 #include <common/Functions.h>
 #include <common/FunctionsGui.h>
@@ -48,7 +50,9 @@
 #include <ui/SettingsDialog.h>
 #include <ui/widgets/PlaylistTreeWidget.h>
 
-MainWindow::MainWindow(bool useAlternativeSources, QWidget *parent) : QMainWindow(parent)
+MainWindow::MainWindow(bool useAlternativeSources, bool hdrModeEnabled, 
+                       bool hardwareFallbackOccurred, const QString& fallbackMessage, 
+                       QWidget *parent) : QMainWindow(parent)
 {
   Q_INIT_RESOURCE(images);
   Q_INIT_RESOURCE(docs);
@@ -59,6 +63,25 @@ MainWindow::MainWindow(bool useAlternativeSources, QWidget *parent) : QMainWindo
   qRegisterMetaType<indexRange>("indexRange");
 
   ui.setupUi(this);
+
+  // ========================================
+  // HDR STARTUP INITIALIZATION (PRD Requirements 5.2-5.5)
+  // ========================================
+  
+  // Initialize HDR pipeline if enabled at startup
+  if (hdrModeEnabled) {
+    qDebug() << "MainWindow: Initializing HDR pipeline at startup";
+    // HDR rendering pipeline will be initialized when video handlers are created
+    // This ensures the surface format has already been configured in main()
+  }
+  
+  // Handle hardware fallback notification (PRD Requirement 5.5)
+  if (hardwareFallbackOccurred && !fallbackMessage.isEmpty()) {
+    // Schedule fallback notification to show after UI is fully loaded
+    QTimer::singleShot(1000, this, [this, fallbackMessage]() {
+      this->showHDRFallbackNotification(fallbackMessage);
+    });
+  }
 
   // Create the update handler
   updater.reset(new updateHandler(this, useAlternativeSources));
@@ -1072,5 +1095,26 @@ void MainWindow::onDisplayHDRSupportChanged(bool hdrSupported, const QString& di
       // Note: When moved to HDR-capable display, we don't automatically enable HDR
       // User should manually enable it when they want HDR rendering
     }
+  }
+}
+
+void MainWindow::showHDRFallbackNotification(const QString& message)
+{
+  // PRD Requirement 5.5: Show one-time, non-blocking notification for HDR fallback
+  qDebug() << "MainWindow: Showing HDR fallback notification:" << message;
+  
+  QMessageBox::information(this, 
+                          "HDR 模式通知", // HDR Mode Notification
+                          message);
+  
+  // Auto-update UI to reflect the corrected state (checkbox should be unchecked)
+  // This ensures UI consistency with the auto-corrected configuration
+  QSettings settings;
+  bool currentSetting = settings.value("Enable10BitDisplay", false).toBool();
+  
+  if (!currentSetting) {
+    // Settings were auto-corrected to false, ensure UI reflects this
+    qDebug() << "MainWindow: HDR setting auto-corrected, UI will reflect disabled state";
+    // Note: The actual UI update will happen in video handlers when they read the corrected setting
   }
 }

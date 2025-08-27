@@ -3183,55 +3183,22 @@ void videoHandlerYUV::slotYUVControlChanged()
 
 void videoHandlerYUV::slot10BitDisplayChanged()
 {
-  static bool isProcessing = false;
-  
-  // CRITICAL FIX: Prevent multiple simultaneous activation attempts
-  if (isProcessing) {
-    // Reset checkbox state and return
-    ui.checkBoxEnable10BitDisplay->setChecked(m_hdrRenderingManager->isHDRRenderingActive());
-    return;
-  }
-  
-  isProcessing = true;
+  // PRD Requirements 5.1 & 5.3: Save settings immediately and show restart notice
+  // NO runtime HDR switching - startup-based initialization only
   
   bool enable10Bit = ui.checkBoxEnable10BitDisplay->isChecked();
   
-  // Note: Prerequisites (10-bit format + HDR display support) have been verified
-  // in updateHDRAvailability(), so checkbox is only enabled when conditions are met
-  
-  // Save the 10-bit display setting to QSettings
+  // Step 1: Save user intent to configuration immediately (PRD Requirement 5.1 & 5.3)
   QSettings settings;
   settings.setValue("Enable10BitDisplay", enable10Bit);
   qDebug() << "videoHandlerYUV: Saved Enable10BitDisplay setting to:" << enable10Bit;
+  qDebug() << "videoHandlerYUV: Restart required for HDR mode change to take effect";
   
-  // Delegate to HDRRenderingManager with error handling
-  try {
-    m_hdrRenderingManager->setHDRRenderingEnabled(enable10Bit);
-    
-    // CRITICAL FIX: Add verification step with timeout
-    if (enable10Bit) {
-      QTimer::singleShot(2000, this, [this]() {
-        // Verify HDR activation was successful
-        if (!m_hdrRenderingManager->isHDRRenderingActive()) {
-          qWarning() << "HDR activation failed - timeout waiting for widget initialization";
-          // Reset checkbox to reflect actual state
-          ui.checkBoxEnable10BitDisplay->setChecked(false);
-          
-          QWidget* parentWidget = QApplication::activeWindow();
-          QMessageBox::warning(parentWidget,
-                              "HDR Activation Failed",
-                              "HDR display activation timed out. Please try again.\n\n"
-                              "If the problem persists, try restarting the application.");
-        }
-      });
-    }
-    
-  } catch (...) {
-    qCritical() << "Exception during HDR enable request";
-    ui.checkBoxEnable10BitDisplay->setChecked(!enable10Bit);
-  }
+  // Step 2: Show restart notice (PRD Requirement 5.1 & 5.3)
+  showHDRRestartNotice(enable10Bit);
   
-  isProcessing = false;
+  // Note: No runtime HDR pipeline changes - this eliminates threading and lifecycle issues
+  // The new setting will be read at next startup and HDR will be initialized properly
 }
 
 void videoHandlerYUV::updateHDRAvailability()
@@ -4872,6 +4839,33 @@ bool videoHandlerYUV::isDistortionActive() const
 int videoHandlerYUV::getCurrentDistortionLevel() const
 {
   return m_distortionController->getCurrentDistortionLevel();
+}
+
+void videoHandlerYUV::showHDRRestartNotice(bool hdrEnabled)
+{
+  // PRD Requirements 5.1 & 5.3: Show "(重启后生效)" label/notice
+  qDebug() << "videoHandlerYUV: Showing restart notice for HDR mode change to:" << hdrEnabled;
+  
+  // Find the checkbox to show the restart notice near it
+  // This could be implemented as:
+  // 1. A temporary label next to the checkbox
+  // 2. A status bar message
+  // 3. A tooltip update
+  // 4. A simple message box
+  
+  // For now, implement as a simple informational message
+  QString message = hdrEnabled ? 
+    "HDR 模式已启用，重启后生效。" :  // HDR mode enabled, takes effect after restart
+    "HDR 模式已禁用，重启后生效。";   // HDR mode disabled, takes effect after restart
+    
+  QWidget* parentWidget = QApplication::activeWindow();
+  QMessageBox::information(parentWidget, 
+                          "HDR 设置更改",  // HDR Setting Changed
+                          message + "\n\n" +
+                          "请重启 YUView 以应用新的 HDR 设置。");  // Please restart YUView to apply new HDR setting
+  
+  // Alternative implementation: Could update checkbox text or add a temporary label
+  // ui.checkBoxEnable10BitDisplay->setText("Enable native 10-bit display (重启后生效)");
 }
 
 } // namespace video::yuv

@@ -33,6 +33,8 @@
 #include <QCoreApplication>
 #include <QSurfaceFormat>
 #include <QDebug>
+#include <QSettings>
+#include <QMessageBox>
 
 #include <common/Typedef.h>
 #include <ui/YUViewApplication.h>
@@ -52,7 +54,11 @@ int main(int argc, char *argv[])
   QCoreApplication::setAttribute(Qt::AA_SynthesizeMouseForUnhandledTouchEvents,false);
   QCoreApplication::setAttribute(Qt::AA_SynthesizeTouchForUnhandledMouseEvents,false);
 
-  // Set default OpenGL format for fallback (will be overridden by HDR if available)
+  // ========================================
+  // STARTUP-BASED HDR DECISION LOGIC (PRD Requirement 5.1-5.5)
+  // ========================================
+
+  // Set default OpenGL format for SDR (will be overridden if HDR is requested and supported)
   QSurfaceFormat defaultFormat;
   defaultFormat.setProfile(QSurfaceFormat::CoreProfile);
   defaultFormat.setVersion(3, 3);
@@ -66,53 +72,80 @@ int main(int argc, char *argv[])
 
   qRegisterMetaType<recacheIndicator>("recacheIndicator");
   
-  // Create the main YUView application with basic OpenGL setup
-  YUViewApplication app(argc, argv);
+  // Step 1: Read HDR preference from configuration (PRD Requirement 5.2)
+  QSettings settings;
+  bool userWantsHDR = settings.value("Enable10BitDisplay", false).toBool();
   
-  // ========================================
-  // HDR DETECTION - AFTER GUI INITIALIZATION
-  // ========================================
+  bool hdrModeEnabled = false;
+  bool hardwareFallbackOccurred = false;
+  QString fallbackMessage;
   
-  // Now that we have a proper GUI application, we can detect HDR capabilities
-  qDebug() << "YUView: Detecting HDR capabilities...";
+  qDebug() << "YUView: User HDR preference from settings:" << userWantsHDR;
   
-  auto hdrDetection = HDRDetection::instance();
-  auto hdrCapabilities = hdrDetection->detectHDRCapabilities();
-  
-  if (hdrCapabilities.isHDRSupported) {
-    qDebug() << "HDR display detected:" << hdrCapabilities.displayName;
-    qDebug() << "HDR mode:" << HDRDetection::getHDRModeDescription(hdrCapabilities.supportedMode);
-    qDebug() << "Max luminance:" << hdrCapabilities.maxLuminance << "nits";
-    qDebug() << "Bits per channel:" << hdrCapabilities.bitsPerChannel;
+  if (userWantsHDR) {
+    // Step 2: User wants HDR - perform hardware capability detection
+    qDebug() << "YUView: User wants HDR - detecting hardware capabilities...";
     
-    // Configure HDR surface format based on detected capabilities
-    QSurfaceFormat hdrFormat = defaultFormat;
+    auto hdrDetection = HDRDetection::instance();
+    auto hdrCapabilities = hdrDetection->detectHDRCapabilities();
     
-    if (hdrCapabilities.supportedMode == HDRDetection::BT2020_PQ_10bit) {
-      // Configure for BT.2020 PQ (10-bit per channel)
-      hdrFormat.setRedBufferSize(10);
-      hdrFormat.setGreenBufferSize(10);
-      hdrFormat.setBlueBufferSize(10);
-      hdrFormat.setAlphaBufferSize(2);
-      qDebug() << "Configured 10-bit buffer sizes for BT.2020 PQ HDR rendering";
+    if (hdrCapabilities.isHDRSupported) {
+      // Step 3a: Hardware supports HDR - initialize HDR pipeline (PRD Requirement 5.2)
+      qDebug() << "HDR display detected:" << hdrCapabilities.displayName;
+      qDebug() << "HDR mode:" << HDRDetection::getHDRModeDescription(hdrCapabilities.supportedMode);
+      qDebug() << "Max luminance:" << hdrCapabilities.maxLuminance << "nits";
+      qDebug() << "Bits per channel:" << hdrCapabilities.bitsPerChannel;
       
-    } else if (hdrCapabilities.supportedMode == HDRDetection::BT709_G10_16bit) {
-      // Configure for scRGB/Rec.709 Linear (16-bit per channel) 
-      hdrFormat.setRedBufferSize(16);
-      hdrFormat.setGreenBufferSize(16);
-      hdrFormat.setBlueBufferSize(16);
-      hdrFormat.setAlphaBufferSize(16);
-      qDebug() << "Configured 16-bit buffer sizes for scRGB HDR rendering";
+      // Configure HDR surface format based on detected capabilities
+      QSurfaceFormat hdrFormat = defaultFormat;
+      
+      if (hdrCapabilities.supportedMode == HDRDetection::BT2020_PQ_10bit) {
+        // Configure for BT.2020 PQ (10-bit per channel)
+        hdrFormat.setRedBufferSize(10);
+        hdrFormat.setGreenBufferSize(10);
+        hdrFormat.setBlueBufferSize(10);
+        hdrFormat.setAlphaBufferSize(2);
+        qDebug() << "Configured 10-bit buffer sizes for BT.2020 PQ HDR rendering";
+        
+      } else if (hdrCapabilities.supportedMode == HDRDetection::BT709_G10_16bit) {
+        // Configure for scRGB/Rec.709 Linear (16-bit per channel) 
+        hdrFormat.setRedBufferSize(16);
+        hdrFormat.setGreenBufferSize(16);
+        hdrFormat.setBlueBufferSize(16);
+        hdrFormat.setAlphaBufferSize(16);
+        qDebug() << "Configured 16-bit buffer sizes for scRGB HDR rendering";
+      }
+      
+      // Apply the HDR surface format as the new default
+      QSurfaceFormat::setDefaultFormat(hdrFormat);
+      qDebug() << "Updated default surface format for HDR rendering";
+      
+      hdrModeEnabled = true;
+      
+    } else {
+      // Step 3b: Hardware doesn't support HDR - intelligent fallback (PRD Requirement 5.5)
+      qDebug() << "HDR not supported:" << hdrCapabilities.errorMessage;
+      qDebug() << "Performing intelligent fallback to SDR mode";
+      
+      hardwareFallbackOccurred = true;
+      fallbackMessage = QString("HDR 模式启用失败：当前显示器或系统配置不支持。已自动以标准模式启动。");
+      
+      // Auto-correct configuration for next startup (PRD Requirement 5.5)
+      settings.setValue("Enable10BitDisplay", false);
+      qDebug() << "Auto-corrected Enable10BitDisplay setting to false for next startup";
+      
+      // Keep using default SDR format
+      hdrModeEnabled = false;
     }
     
-    // Apply the HDR surface format as the new default
-    QSurfaceFormat::setDefaultFormat(hdrFormat);
-    qDebug() << "Updated default surface format for HDR rendering";
-    
   } else {
-    qDebug() << "HDR not supported:" << hdrCapabilities.errorMessage;
-    qDebug() << "Using standard 8-bit SDR rendering";
+    // Step 2b: User doesn't want HDR - use standard SDR pipeline (PRD Requirement 5.4)
+    qDebug() << "YUView: User preference is SDR mode - using standard rendering";
+    hdrModeEnabled = false;
   }
+  
+  // Create the main YUView application with HDR decision made
+  YUViewApplication app(argc, argv, hdrModeEnabled, hardwareFallbackOccurred, fallbackMessage);
 
   return app.returnCode;
 }

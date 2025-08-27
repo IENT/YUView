@@ -47,7 +47,9 @@
 #define DEBUG_APP(msg) ((void)0)
 #endif
 
-YUViewApplication::YUViewApplication(int argc, char *argv[]) : QApplication(argc, argv)
+YUViewApplication::YUViewApplication(int argc, char *argv[], bool hdrModeEnabled, 
+                                   bool hardwareFallbackOccurred, 
+                                   const QString& fallbackMessage) : QApplication(argc, argv)
 {
   QString versionString = QString::fromUtf8(YUVIEW_VERSION);
   setApplicationName("YUView");
@@ -102,7 +104,7 @@ YUViewApplication::YUViewApplication(int argc, char *argv[]) : QApplication(argc
     DEBUG_APP("YUViewApplication update from alternate URL");
   }
 
-  MainWindow w(alternativeUpdateSource);
+  MainWindow w(alternativeUpdateSource, hdrModeEnabled, hardwareFallbackOccurred, fallbackMessage);
   installEventFilter(&w);
 
   // If another application is opened, we will just add the given file to the playlist.

@@ -898,7 +898,7 @@ bool PlaylistTreeWidget::loadPlaylistFromByteArray(QByteArray data, QString file
   QString      errorMessage;
   int          errorLine;
   int          errorColumn;
-  bool         success = doc.setContent(data, false, &errorMessage, &errorLine, &errorColumn);
+  bool         success = doc.setContent(data, QDomDocument::ParseOption::UseNamespaceProcessing, &errorMessage, &errorLine, &errorColumn);
   if (!success)
   {
     QMessageBox::critical(this,
