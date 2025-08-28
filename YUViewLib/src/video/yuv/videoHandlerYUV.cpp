@@ -48,6 +48,7 @@
 #include <QMetaObject>
 #include <QPainter>
 #include <QPushButton>
+#include <QStatusBar>
 #include <QThread>
 #include <QDebug>
 #include <QSettings>
@@ -2957,9 +2958,25 @@ QLayout *videoHandlerYUV::createVideoHandlerControls(bool isSizeAndFormatFixed)
   ui.chromaInvertCheckBox->setChecked(
       this->conversionSettings.mathParameters[Component::Chroma].invert);
   
-  // Load 10-bit display setting from QSettings (always default to false for user control)
+  // Restore 10-bit display setting from QSettings (PRD Requirements 5.2-5.5)
   QSettings settings;
-  ui.checkBoxEnable10BitDisplay->setChecked(false); // Always start disabled for user verification
+  bool enable10BitFromSettings = settings.value("Enable10BitDisplay", false).toBool();
+  
+  // Set checkbox state based on saved configuration
+  // This ensures UI consistency with startup HDR decision made in main()
+  {
+    QSignalBlocker blocker(ui.checkBoxEnable10BitDisplay); // Prevent triggering slot during initialization
+    ui.checkBoxEnable10BitDisplay->setChecked(enable10BitFromSettings);
+  }
+  
+  if (enable10BitFromSettings) {
+    qDebug() << "videoHandlerYUV: Restored HDR checkbox to enabled state from settings";
+  } else {
+    qDebug() << "videoHandlerYUV: HDR checkbox remains disabled (either user preference or auto-corrected)";
+  }
+  
+  // Clear any restart notice from previous session (PRD Requirements 5.1 & 5.3)
+  clearHDRRestartNotice();
 
   // Connect all the change signals from the controls to "connectWidgetSignals()"
   connect(ui.yuvFormatComboBox,
@@ -3191,6 +3208,7 @@ void videoHandlerYUV::slot10BitDisplayChanged()
   // Step 1: Save user intent to configuration immediately (PRD Requirement 5.1 & 5.3)
   QSettings settings;
   settings.setValue("Enable10BitDisplay", enable10Bit);
+  settings.sync(); // Ensure immediate write to disk
   qDebug() << "videoHandlerYUV: Saved Enable10BitDisplay setting to:" << enable10Bit;
   qDebug() << "videoHandlerYUV: Restart required for HDR mode change to take effect";
   
@@ -4846,26 +4864,35 @@ void videoHandlerYUV::showHDRRestartNotice(bool hdrEnabled)
   // PRD Requirements 5.1 & 5.3: Show "(重启后生效)" label/notice
   qDebug() << "videoHandlerYUV: Showing restart notice for HDR mode change to:" << hdrEnabled;
   
-  // Find the checkbox to show the restart notice near it
-  // This could be implemented as:
-  // 1. A temporary label next to the checkbox
-  // 2. A status bar message
-  // 3. A tooltip update
-  // 4. A simple message box
+  // Update checkbox text to show restart notice (PRD Requirements 5.1 & 5.3)
+  QString baseText = "Enable native 10-bit display";
+  QString noticeText = baseText + " (重启后生效)";
+  ui.checkBoxEnable10BitDisplay->setText(noticeText);
   
-  // For now, implement as a simple informational message
-  QString message = hdrEnabled ? 
-    "HDR 模式已启用，重启后生效。" :  // HDR mode enabled, takes effect after restart
-    "HDR 模式已禁用，重启后生效。";   // HDR mode disabled, takes effect after restart
-    
-  QWidget* parentWidget = QApplication::activeWindow();
-  QMessageBox::information(parentWidget, 
-                          "HDR 设置更改",  // HDR Setting Changed
-                          message + "\n\n" +
-                          "请重启 YUView 以应用新的 HDR 设置。");  // Please restart YUView to apply new HDR setting
+  // Also show a non-blocking status message
+  QWidget* parentWidget = ui.checkBoxEnable10BitDisplay->parentWidget();
+  while (parentWidget && !parentWidget->inherits("QMainWindow")) {
+    parentWidget = parentWidget->parentWidget();
+  }
   
-  // Alternative implementation: Could update checkbox text or add a temporary label
-  // ui.checkBoxEnable10BitDisplay->setText("Enable native 10-bit display (重启后生效)");
+  if (parentWidget) {
+    QMainWindow* mainWindow = qobject_cast<QMainWindow*>(parentWidget);
+    if (mainWindow && mainWindow->statusBar()) {
+      QString statusMessage = hdrEnabled ? 
+        "HDR 模式已启用 - 请重启 YUView 以应用更改" : 
+        "HDR 模式已禁用 - 请重启 YUView 以应用更改";
+      mainWindow->statusBar()->showMessage(statusMessage, 5000); // Show for 5 seconds
+    }
+  }
+}
+
+void videoHandlerYUV::clearHDRRestartNotice()
+{
+  // Clear restart notice by restoring original checkbox text
+  // This should be called after application restart to remove "(重启后生效)" text
+  QString baseText = "Enable native 10-bit display";
+  ui.checkBoxEnable10BitDisplay->setText(baseText);
+  qDebug() << "videoHandlerYUV: Cleared HDR restart notice, restored normal checkbox text";
 }
 
 } // namespace video::yuv

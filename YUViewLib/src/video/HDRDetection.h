@@ -65,22 +65,14 @@ signals:
 private:
     explicit HDRDetection(QObject* parent = nullptr);
     
-    // Platform-specific detection methods
+    // Simplified HDR detection: Windows DXGI only (PRD requirement)
 #ifdef Q_OS_WIN
     HDRCapabilities detectHDRCapabilities_Windows(QScreen* screen);
     bool checkDXGIHDRSupport(const QString& displayName, HDRCapabilities& caps);
     bool checkWinRTAdvancedColor(HDRCapabilities& caps);
 #endif
-
-#ifdef Q_OS_MACOS
-    HDRCapabilities detectHDRCapabilities_macOS(QScreen* screen);
-#endif
-
-#ifdef Q_OS_LINUX
-    HDRCapabilities detectHDRCapabilities_Linux(QScreen* screen);
-#endif
-
-    // Cross-platform Qt-based detection fallback
+    
+    // Qt-based HDR detection (fallback)
     HDRCapabilities detectHDRCapabilities_Qt(QScreen* screen);
     
 private:
