@@ -4,33 +4,9 @@
 
 ### **1. 概要 (Executive Summary)**
 
-本文档旨在解决 YUView 原生 10-bit HDR 渲染功能的严重稳定性问题。当前在运行时动态切换渲染管线的模式已被证实存在**底层竞态条件**，导致功能激活失败、行为不可预测甚至程序崩溃。为根除这些问题，我们将采用一种**要求重启的静态渲染管线初始化模型**。
+本文档旨在解决 YUView 原生 10-bit HDR 渲染功能的严重稳定性问题。我们希望采用一种**要求重启的静态渲染管线初始化模型**。
 
-此重构的核心目标是**将功能的可靠性和稳定性提升至首位**，为用户提供一个确定、可信赖的 HDR 工作流。我们将保留现有的硬件能力检测逻辑，并引入智能启动机制，以确保软件在任何硬件环境（包括在不同设备间迁移后）都能优雅地处理用户的 HDR 意图，从而在提升稳定性的同时，优化整体用户体验和产品信任度。
-
-### **2. 用户画像 (User Personas)**
-
-*   **视频工程师/质量分析师:**
-    *   **需求:** 需要一个绝对可靠的工具来分析 10-bit 视频源的真实数据。功能的稳定性远比界面的即时响应更重要。
-    *   **痛点:** 当前不稳定的 HDR 功能使其无法信任 YUView 作为专业的分析工具，担心渲染结果不准确或程序崩溃导致工作中断。
-
-### **3. 问题陈述与当前症状**
-
-*   **症状 1: 功能激活失败:** 用户勾选 HDR 选项后，视频区域变黑或无任何变化，后台日志显示 `CRITICAL: HDR widget failed to initialize properly`，功能最终自动禁用。
-*   **症状 2: 行为不一致:** 功能的成功与否依赖于不可预测的系统时序和线程竟态条件，导致用户可能会遇到“第一次点击有效，第三次点击就失效”的困惑，无法形成稳定的使用预期。
-*   **症状 3: 退出时崩溃:** 在 HDR 会话后关闭 YUView 时，由于复杂的 OpenGL 资源在错误的时机被销毁，可能导致程序崩溃。
-
-### **4. 目标与非目标 (Goals and Non-Goals)**
-
-*   **核心目标:**
-    *   **100% 稳定性:** 彻底消除与 HDR 功能相关的崩溃和初始化失败问题。
-    *   **行为可预测性:** 用户每次操作的结果都必须是确定的、符合逻辑的。
-    *   **智能适应:** 软件必须能够在启动时智能地适应当前硬件环境，即使用户的配置是从另一台设备迁移而来的。
-    *   **清晰沟通:** 明确地告知用户何时需要重启，以及为何功能无法激活。
-
-*   **非目标 (本次迭代不做):**
-    *   修复运行时动态切换 HDR 的底层竞态条件问题。我们选择用更优的架构替换它。
-    *   对 HDR 渲染的画面质量或性能进行任何改动。
+请阅读现在已有的代码，应该能看到现在的代码`HDR_VideoWidget`和`HDRRenderingManager`已经使用OpenGL实现了一套完整的HDR渲染逻辑。但是这套逻辑似乎十分复杂，也不能满足我们的需求。
 
 ### **5. 用户故事与详细需求**
 
@@ -110,6 +86,20 @@ graph TD
 | **AC-5** | **可移植性测试 (关键)** | 将一个在 HDR 电脑上配置为“启用 HDR”的 YUView 文件夹，完整拷贝到一台不支持 HDR 的电脑上。 | 运行应用后，**必须**触发 **AC-4** 的所有预期结果。 |
 | **AC-6** | **稳定性测试** | 在所有可能组合下（HDR/SDR/支持/不支持），反复重启、更改设置、关闭应用。 | 程序在任何情况下都不能崩溃、冻结或出现渲染错误。 |
 
-### **9. 未来考虑 (技术债务)**
+### **9.功能现状**
+1. 在支持 HDR 的系统上，勾选`Enable native 10bit display`并重启；
+- 实际结果：仍然在走SDR渲染管线；
+```
+videoHandlerYUV: Saved Enable10BitDisplay setting to: true
+videoHandlerYUV: Restart required for HDR mode change to take effect
+videoHandlerYUV: Showing restart notice for HDR mode change to: true
+10:31:52: The command "D:\SiruiWu_code\YUView\build\Desktop_Qt_6_9_1_MinGW_64_bit-Release\YUViewApp\YUView.exe" finished successfully.
 
-本次重构为了稳定性和可靠性，牺牲了即时切换的便捷性。在产品待办列表中记录一项技术债务：*“探索实现无缝、可靠的运行时 HDR/SDR 动态切换”*，作为未来技术攻关和体验优化的长期目标。
+10:32:11: Starting D:\SiruiWu_code\YUView\build\Desktop_Qt_6_9_1_MinGW_64_bit-Release\YUViewApp\YUView.exe...
+YUView: User HDR preference from settings: false
+YUView: User preference is SDR mode - using standard rendering
+
+```
+涉及文件：`YUView\YUViewApp\src\yuviewapp.cpp`
+进入软件观察，`Enable native 10bit display`复选框仍然未被勾选中。
+另外，请你简化HDR检测逻辑，保留`DXGI (DirectX Graphics Infrastructure)`的检测就足够了
