@@ -174,4 +174,6 @@ private:
   SeparateWindow                     separateViewWindow;
   bool showNormalMaximized;     // When going to full screen: Was this windows maximized?
   bool panelsVisible[5]{false}; // Which panels are visible when going to full-screen mode?
+  
+  void validateHDRSupport();     // Validate HDR support after GUI initialization
 };

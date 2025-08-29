@@ -50,6 +50,7 @@
 #include <ui/SettingsDialog.h>
 #include <ui/widgets/PlaylistTreeWidget.h>
 #include <video/HDRGlobalState.h>
+#include <video/HDRDetection.h>
 
 MainWindow::MainWindow(bool useAlternativeSources, bool hdrModeEnabled, 
                        bool hardwareFallbackOccurred, const QString& fallbackMessage, 
@@ -79,11 +80,11 @@ MainWindow::MainWindow(bool useAlternativeSources, bool hdrModeEnabled,
     // This ensures the surface format has already been configured in main()
   }
   
-  // Handle hardware fallback notification (PRD Requirement 5.5)
-  if (hardwareFallbackOccurred && !fallbackMessage.isEmpty()) {
-    // Schedule fallback notification to show after UI is fully loaded
-    QTimer::singleShot(1000, this, [this, fallbackMessage]() {
-      this->showHDRFallbackNotification(fallbackMessage);
+  // Handle HDR validation after GUI initialization
+  if (hdrModeEnabled) {
+    // Schedule HDR validation after the GUI is fully initialized
+    QTimer::singleShot(100, this, [this]() {
+      validateHDRSupport();
     });
   }
 
@@ -1120,5 +1121,63 @@ void MainWindow::showHDRFallbackNotification(const QString& message)
     // Settings were auto-corrected to false, ensure UI reflects this
     qDebug() << "MainWindow: HDR setting auto-corrected, UI will reflect disabled state";
     // Note: The actual UI update will happen in video handlers when they read the corrected setting
+  }
+}
+
+void MainWindow::validateHDRSupport()
+{
+  // Validate HDR support now that the GUI is fully initialized
+  qDebug() << "MainWindow: Validating HDR support after GUI initialization...";
+  
+  auto hdrDetection = HDRDetection::instance();
+  auto hdrCapabilities = hdrDetection->detectHDRCapabilities(this);
+  
+  if (!hdrCapabilities.isHDRSupported) {
+    // HDR is not supported - need to fall back to SDR
+    qDebug() << "MainWindow: HDR validation failed:" << hdrCapabilities.errorMessage;
+    
+    // Reset to SDR surface format
+    QSurfaceFormat sdrFormat;
+    sdrFormat.setProfile(QSurfaceFormat::CoreProfile);
+    sdrFormat.setVersion(3, 3);
+    sdrFormat.setSwapBehavior(QSurfaceFormat::DoubleBuffer);
+    sdrFormat.setSwapInterval(1);
+    sdrFormat.setRedBufferSize(8);
+    sdrFormat.setGreenBufferSize(8);
+    sdrFormat.setBlueBufferSize(8);
+    sdrFormat.setAlphaBufferSize(8);
+    QSurfaceFormat::setDefaultFormat(sdrFormat);
+    
+    // Auto-correct the setting
+    QSettings settings;
+    settings.setValue("Enable10BitDisplay", false);
+    settings.sync();
+    qDebug() << "MainWindow: Auto-corrected Enable10BitDisplay setting to false";
+    
+    // Update global HDR state
+    HDRGlobalState::instance()->setHDRRequestedByUser(false);
+    
+    // Show fallback notification
+    QString fallbackMessage = QString("HDR 模式启用失败：当前显示器或系统配置不支持。已自动以标准模式启动。");
+    showHDRFallbackNotification(fallbackMessage);
+    
+  } else {
+    // HDR is supported - continue with HDR mode
+    qDebug() << "MainWindow: HDR validation successful!";
+    qDebug() << "HDR display:" << hdrCapabilities.displayName;
+    qDebug() << "HDR mode:" << HDRDetection::getHDRModeDescription(hdrCapabilities.supportedMode);
+    qDebug() << "Max luminance:" << hdrCapabilities.maxLuminance << "nits";
+    
+    // Update surface format if needed based on actual capabilities
+    if (hdrCapabilities.supportedMode == HDRDetection::BT709_G10_16bit) {
+      // Switch to 16-bit format if that's what the display supports
+      QSurfaceFormat hdrFormat = QSurfaceFormat::defaultFormat();
+      hdrFormat.setRedBufferSize(16);
+      hdrFormat.setGreenBufferSize(16);
+      hdrFormat.setBlueBufferSize(16);
+      hdrFormat.setAlphaBufferSize(16);
+      QSurfaceFormat::setDefaultFormat(hdrFormat);
+      qDebug() << "MainWindow: Updated to 16-bit surface format for scRGB HDR";
+    }
   }
 }

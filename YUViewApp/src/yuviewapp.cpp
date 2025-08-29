@@ -91,63 +91,24 @@ int main(int argc, char *argv[])
   
   qDebug() << "YUView: User HDR preference from settings:" << userWantsHDR;
   
+  // If user wants HDR, we need to set a tentative HDR format that will be verified later
+  // This avoids the "No screen available" error on startup
   if (userWantsHDR) {
-    // Step 2: User wants HDR - perform hardware capability detection
-    qDebug() << "YUView: User wants HDR - detecting hardware capabilities...";
+    // Step 2: User wants HDR - set tentative HDR format
+    qDebug() << "YUView: User wants HDR - setting tentative HDR surface format...";
     
-    auto hdrDetection = HDRDetection::instance();
-    auto hdrCapabilities = hdrDetection->detectHDRCapabilities();
+    // Configure tentative HDR surface format (10-bit as default)
+    // This will be validated when the application GUI initializes
+    QSurfaceFormat hdrFormat = defaultFormat;
+    hdrFormat.setRedBufferSize(10);
+    hdrFormat.setGreenBufferSize(10);
+    hdrFormat.setBlueBufferSize(10);
+    hdrFormat.setAlphaBufferSize(2);
+    QSurfaceFormat::setDefaultFormat(hdrFormat);
+    qDebug() << "Set tentative 10-bit surface format for HDR rendering";
     
-    if (hdrCapabilities.isHDRSupported) {
-      // Step 3a: Hardware supports HDR - initialize HDR pipeline (PRD Requirement 5.2)
-      qDebug() << "HDR display detected:" << hdrCapabilities.displayName;
-      qDebug() << "HDR mode:" << HDRDetection::getHDRModeDescription(hdrCapabilities.supportedMode);
-      qDebug() << "Max luminance:" << hdrCapabilities.maxLuminance << "nits";
-      qDebug() << "Bits per channel:" << hdrCapabilities.bitsPerChannel;
-      
-      // Configure HDR surface format based on detected capabilities
-      QSurfaceFormat hdrFormat = defaultFormat;
-      
-      if (hdrCapabilities.supportedMode == HDRDetection::BT2020_PQ_10bit) {
-        // Configure for BT.2020 PQ (10-bit per channel)
-        hdrFormat.setRedBufferSize(10);
-        hdrFormat.setGreenBufferSize(10);
-        hdrFormat.setBlueBufferSize(10);
-        hdrFormat.setAlphaBufferSize(2);
-        qDebug() << "Configured 10-bit buffer sizes for BT.2020 PQ HDR rendering";
-        
-      } else if (hdrCapabilities.supportedMode == HDRDetection::BT709_G10_16bit) {
-        // Configure for scRGB/Rec.709 Linear (16-bit per channel) 
-        hdrFormat.setRedBufferSize(16);
-        hdrFormat.setGreenBufferSize(16);
-        hdrFormat.setBlueBufferSize(16);
-        hdrFormat.setAlphaBufferSize(16);
-        qDebug() << "Configured 16-bit buffer sizes for scRGB HDR rendering";
-      }
-      
-      // Apply the HDR surface format as the new default
-      QSurfaceFormat::setDefaultFormat(hdrFormat);
-      qDebug() << "Updated default surface format for HDR rendering";
-      
-      hdrModeEnabled = true;
-      
-    } else {
-      // Step 3b: Hardware doesn't support HDR - intelligent fallback (PRD Requirement 5.5)
-      qDebug() << "HDR not supported:" << hdrCapabilities.errorMessage;
-      qDebug() << "Performing intelligent fallback to SDR mode";
-      
-      hardwareFallbackOccurred = true;
-      fallbackMessage = QString("HDR 模式启用失败：当前显示器或系统配置不支持。已自动以标准模式启动。");
-      
-      // Auto-correct configuration for next startup (PRD Requirement 5.5)
-      QSettings correctionSettings;
-      correctionSettings.setValue("Enable10BitDisplay", false);
-      correctionSettings.sync();
-      qDebug() << "Auto-corrected Enable10BitDisplay setting to false for next startup";
-      
-      // Keep using default SDR format
-      hdrModeEnabled = false;
-    }
+    hdrModeEnabled = true;
+    hardwareFallbackOccurred = false;
     
   } else {
     // Step 2b: User doesn't want HDR - use standard SDR pipeline (PRD Requirement 5.4)
