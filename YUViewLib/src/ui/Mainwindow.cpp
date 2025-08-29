@@ -49,6 +49,7 @@
 #include <ui/Mainwindow_performanceTestDialog.h>
 #include <ui/SettingsDialog.h>
 #include <ui/widgets/PlaylistTreeWidget.h>
+#include <video/HDRGlobalState.h>
 
 MainWindow::MainWindow(bool useAlternativeSources, bool hdrModeEnabled, 
                        bool hardwareFallbackOccurred, const QString& fallbackMessage, 
@@ -71,6 +72,9 @@ MainWindow::MainWindow(bool useAlternativeSources, bool hdrModeEnabled,
   // Initialize HDR pipeline if enabled at startup
   if (hdrModeEnabled) {
     qDebug() << "MainWindow: Initializing HDR pipeline at startup";
+    // Set global HDR state for all components to use
+    HDRGlobalState::instance()->setHDRModeEnabled(true);
+    HDRGlobalState::instance()->setHDRRequestedByUser(true);
     // HDR rendering pipeline will be initialized when video handlers are created
     // This ensures the surface format has already been configured in main()
   }

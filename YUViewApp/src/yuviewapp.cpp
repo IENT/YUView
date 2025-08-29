@@ -72,8 +72,17 @@ int main(int argc, char *argv[])
 
   qRegisterMetaType<recacheIndicator>("recacheIndicator");
   
+  // Set application identity before using QSettings
+  QCoreApplication::setApplicationName("YUView");
+  QCoreApplication::setOrganizationName("Institut für Nachrichtentechnik, RWTH Aachen University");
+  QCoreApplication::setOrganizationDomain("ient.rwth-aachen.de");
+  
   // Step 1: Read HDR preference from configuration (PRD Requirement 5.2)
   QSettings settings;
+  qDebug() << "YUView: Reading settings from organization:" << settings.organizationName();
+  qDebug() << "YUView: Reading settings from application:" << settings.applicationName();
+  qDebug() << "YUView: Settings file path:" << settings.fileName();
+  
   bool userWantsHDR = settings.value("Enable10BitDisplay", false).toBool();
   
   bool hdrModeEnabled = false;
@@ -131,7 +140,9 @@ int main(int argc, char *argv[])
       fallbackMessage = QString("HDR 模式启用失败：当前显示器或系统配置不支持。已自动以标准模式启动。");
       
       // Auto-correct configuration for next startup (PRD Requirement 5.5)
-      settings.setValue("Enable10BitDisplay", false);
+      QSettings correctionSettings;
+      correctionSettings.setValue("Enable10BitDisplay", false);
+      correctionSettings.sync();
       qDebug() << "Auto-corrected Enable10BitDisplay setting to false for next startup";
       
       // Keep using default SDR format

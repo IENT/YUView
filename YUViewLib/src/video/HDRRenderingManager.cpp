@@ -1,4 +1,5 @@
 #include "HDRRenderingManager.h"
+#include "HDRGlobalState.h"
 #include "qmainwindow.h"
 #include <QApplication>
 #include <QDebug>
@@ -15,6 +16,12 @@ HDRRenderingManager::HDRRenderingManager(QObject* parent)
 {
   // Initialize HDR capabilities to default (not supported)
   m_hdrCapabilities.isHDRSupported = false;
+  
+  // Check global HDR state on initialization
+  if (HDRGlobalState::instance()->isHDRModeEnabled()) {
+    qDebug() << "HDRRenderingManager: Global HDR mode is enabled, preparing for HDR rendering";
+    // Note: HDR will be fully activated when startHDRDetection is called
+  }
 }
 
 HDRRenderingManager::~HDRRenderingManager()

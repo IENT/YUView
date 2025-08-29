@@ -54,6 +54,7 @@
 #include <QSettings>
 
 #include <video/HDRDetection.h>
+#include <video/HDRGlobalState.h>
 #include <QSpinBox>
 #include <QTreeWidget>
 
@@ -2798,6 +2799,14 @@ videoHandlerYUV::videoHandlerYUV() : videoHandler()
   
   // Initialize legacy members for backward compatibility
   isShowingOriFile = false;
+  
+  // Check if HDR mode is globally enabled and start HDR detection
+  if (HDRGlobalState::instance()->isHDRModeEnabled()) {
+    qDebug() << "videoHandlerYUV: Global HDR mode enabled, starting HDR detection";
+    QTimer::singleShot(100, this, [this]() {
+      m_hdrRenderingManager->startHDRDetection();
+    });
+  }
 }
 
 videoHandlerYUV::~videoHandlerYUV()
@@ -3207,6 +3216,10 @@ void videoHandlerYUV::slot10BitDisplayChanged()
   
   // Step 1: Save user intent to configuration immediately (PRD Requirement 5.1 & 5.3)
   QSettings settings;
+  qDebug() << "videoHandlerYUV: Saving settings to organization:" << settings.organizationName();
+  qDebug() << "videoHandlerYUV: Saving settings to application:" << settings.applicationName();
+  qDebug() << "videoHandlerYUV: Settings file path:" << settings.fileName();
+  
   settings.setValue("Enable10BitDisplay", enable10Bit);
   settings.sync(); // Ensure immediate write to disk
   qDebug() << "videoHandlerYUV: Saved Enable10BitDisplay setting to:" << enable10Bit;
