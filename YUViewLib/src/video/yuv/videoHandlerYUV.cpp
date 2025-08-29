@@ -2985,7 +2985,7 @@ QLayout *videoHandlerYUV::createVideoHandlerControls(bool isSizeAndFormatFixed)
   }
   
   // Clear any restart notice from previous session (PRD Requirements 5.1 & 5.3)
-  clearHDRRestartNotice();
+  this->clearHDRRestartNotice();
 
   // Connect all the change signals from the controls to "connectWidgetSignals()"
   connect(ui.yuvFormatComboBox,
