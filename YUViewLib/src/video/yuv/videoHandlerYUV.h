@@ -291,8 +291,6 @@ private slots:
   void onHDRRenderingStateChanged(bool enabled, HDR_VideoWidget* widget);
   // Show restart notice when HDR setting changes (PRD Requirements 5.1 & 5.3)
   void showHDRRestartNotice(bool hdrEnabled);
-  // Clear restart notice after restart (PRD Requirements 5.1 & 5.3)
-  void clearHDRRestartNotice();
   
   // HDR detection failed handler - resets checkbox and shows error message
   void onHDRDetectionFailed(const QString& error);
@@ -313,6 +311,9 @@ private slots:
   bool isMouseHoveringOverOriElement() const;
   void toggleOriComparison();
   void showOriNotification(const QString &message) const;
+  
+  // Clear restart notice after restart (PRD Requirements 5.1 & 5.3)
+  void clearHDRRestartNotice();
 
 private:
 };
