@@ -151,6 +151,9 @@ public:
   // yuvFormatFixed: For example a YUV file does not have a fixed format (the user can change this),
   // other sources might provide a fixed format which the user cannot change (HEVC file, ...)
   virtual QLayout *createVideoHandlerControls(bool isSizeAndFormatFixed = false) override;
+  
+  // Clear restart notice after restart (PRD Requirements 5.1 & 5.3)
+  void clearHDRRestartNotice();
 
   // Get the name of the currently selected YUV pixel format
   virtual QString getRawPixelFormatYUVName() const
@@ -311,9 +314,6 @@ private slots:
   bool isMouseHoveringOverOriElement() const;
   void toggleOriComparison();
   void showOriNotification(const QString &message) const;
-  
-  // Clear restart notice after restart (PRD Requirements 5.1 & 5.3)
-  void clearHDRRestartNotice();
 
 private:
 };
