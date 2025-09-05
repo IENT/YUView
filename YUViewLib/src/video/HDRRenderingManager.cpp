@@ -195,7 +195,8 @@ void HDRRenderingManager::updateHDRFrame(const QImage& frame)
   
   // Double-check widget's internal readiness state as additional safety (outside lock)
   if (!widget->isReadyForRendering()) {
-    qDebug() << "HDRRenderingManager: Widget internal state not ready. Skipping frame.";
+    // Do not spam logs; keep one concise line
+    qDebug() << "HDRRenderingManager: Widget not ready; deferring frame to avoid black screen";
     return;
   }
 
@@ -305,8 +306,11 @@ void HDRRenderingManager::onHDRDetectionComplete(const HDRDetection::HDRCapabili
           // CRITICAL FIX: Synchronous UI integration to prevent race condition
           // Integrate widget immediately to ensure it has proper parent before frames arrive
           splitView->setHDROverlayWidget(createdWidget);
-          splitView->showHDROverlay(true); // showHDROverlay will handle widget display
-          qDebug() << "HDRRenderingManager: HDR widget integrated with split view synchronously.";
+          // Defer showing the overlay until the widget signals it's initialized
+          QObject::connect(createdWidget, &HDR_VideoWidget::widgetInitialized, splitView, [splitView]() {
+            splitView->showHDROverlay(true);
+          });
+          qDebug() << "HDRRenderingManager: HDR widget integrated with split view; waiting for initialization before showing.";
           
           // NOTE: hdrRenderingStateChanged will be emitted by the widgetInitialized slot
           // when widget completes OpenGL initialization and is truly ready for frames.

@@ -237,20 +237,31 @@ MainWindow::MainWindow(bool useAlternativeSources, bool hdrModeEnabled,
   // Give the playlist a pointer to the state handler so it can save the states ti playlist
   ui.playlistTreeWidget->setViewStateHandler(&stateHandler);
 
+  // Seamless session restore without crash dialog if we initiated a controlled restart
+  bool controlledRestart = settings.value("ControlledRestart", false).toBool();
   if (ui.playlistTreeWidget->isAutosaveAvailable())
   {
-    QMessageBox::StandardButton resBtn =
-        QMessageBox::question(this,
-                              "Restore Playlist",
-                              tr("It looks like YUView crashed the last time you used it. We are "
-                                 "sorry about that. However, we have an autosave of the playlist "
-                                 "you were working with. Do you want to restore this playlist?\n"),
-                              QMessageBox::Yes | QMessageBox::No,
-                              QMessageBox::No);
-    if (resBtn == QMessageBox::Yes)
+    if (controlledRestart)
+    {
+      // Auto-restore silently and clear the flag
       ui.playlistTreeWidget->loadAutosavedPlaylist();
+      settings.remove("ControlledRestart");
+    }
     else
-      ui.playlistTreeWidget->dropAutosavedPlaylist();
+    {
+      QMessageBox::StandardButton resBtn =
+          QMessageBox::question(this,
+                                "Restore Playlist",
+                                tr("It looks like YUView crashed the last time you used it. We are "
+                                   "sorry about that. However, we have an autosave of the playlist "
+                                   "you were working with. Do you want to restore this playlist?\n"),
+                                QMessageBox::Yes | QMessageBox::No,
+                                QMessageBox::No);
+      if (resBtn == QMessageBox::Yes)
+        ui.playlistTreeWidget->loadAutosavedPlaylist();
+      else
+        ui.playlistTreeWidget->dropAutosavedPlaylist();
+    }
   }
   // Start the timer now (and not in the constructor of rht playlistTreeWidget) so that the autosave
   // is not accidetly overwritten.
@@ -1108,8 +1119,8 @@ void MainWindow::showHDRFallbackNotification(const QString& message)
   // PRD Requirement 5.5: Show one-time, non-blocking notification for HDR fallback
   qDebug() << "MainWindow: Showing HDR fallback notification:" << message;
   
-  QMessageBox::information(this, 
-                          "HDR 模式通知", // HDR Mode Notification
+  QMessageBox::information(this,
+                          "HDR Mode Notification",
                           message);
   
   // Auto-update UI to reflect the corrected state (checkbox should be unchecked)
@@ -1158,7 +1169,7 @@ void MainWindow::validateHDRSupport()
     HDRGlobalState::instance()->setHDRRequestedByUser(false);
     
     // Show fallback notification
-    QString fallbackMessage = QString("HDR 模式启用失败：当前显示器或系统配置不支持。已自动以标准模式启动。");
+    QString fallbackMessage = QString("Failed to enable HDR mode: current display or system configuration is not supported. Started in standard mode.");
     showHDRFallbackNotification(fallbackMessage);
     
   } else {

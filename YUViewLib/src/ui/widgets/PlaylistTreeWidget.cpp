@@ -164,8 +164,13 @@ PlaylistTreeWidget::~PlaylistTreeWidget()
   // This is a conventional quit. Remove the automatically saved playlist.
   autosaveTimer.stop();
   QSettings settings;
-  if (settings.contains("Autosaveplaylist"))
-    settings.remove("Autosaveplaylist");
+  // Do not remove autosave if we are performing a controlled restart
+  const bool controlledRestart = settings.value("ControlledRestart", false).toBool();
+  if (!controlledRestart)
+  {
+    if (settings.contains("Autosaveplaylist"))
+      settings.remove("Autosaveplaylist");
+  }
 }
 
 playlistItem *PlaylistTreeWidget::getDropTarget(const QPoint &pos) const
@@ -1088,6 +1093,21 @@ void PlaylistTreeWidget::autoSavePlaylist()
     QByteArray compressedPlaylist = qCompress(playlistAsString.toLatin1());
     settings.setValue("Autosaveplaylist", compressedPlaylist);
   }
+}
+
+void PlaylistTreeWidget::saveAutosaveNow()
+{
+  QSettings settings;
+  if (topLevelItemCount() == 0)
+  {
+    if (settings.contains("Autosaveplaylist"))
+      settings.remove("Autosaveplaylist");
+    return;
+  }
+
+  QString    playlistAsString   = getPlaylistString(QDir::current());
+  QByteArray compressedPlaylist = qCompress(playlistAsString.toLatin1());
+  settings.setValue("Autosaveplaylist", compressedPlaylist);
 }
 
 void PlaylistTreeWidget::startAutosaveTimer()

@@ -2373,17 +2373,22 @@ void splitViewWidget::updateHDROverlayGeometry()
         m_hdrOverlayWidget->show();
     }
 
-    // Calculate scaled size
-    QSizeF scaledSize(frameSize.width * zoomFactor, frameSize.height * zoomFactor);
+    // Calculate scaled size (round to avoid 1px gaps due to float truncation)
+    QSizeF scaledSizeF(frameSize.width * zoomFactor, frameSize.height * zoomFactor);
+    QSize scaledSize(qRound(scaledSizeF.width()), qRound(scaledSizeF.height()));
 
     // Calculate center point (this is the drawing reference origin)
     QPointF center = getMoveOffsetCoordinateSystemOrigin();
-    
-    // Calculate top-left position
-    // Formula: center point - (scaled size / 2) + move offset
-    QPointF topLeft = center - QPointF(scaledSize.width() / 2.0, scaledSize.height() / 2.0) + moveOffset;
 
-    // Create new geometry rectangle and apply to HDR overlay
-    QRect newGeometry(topLeft.toPoint(), scaledSize.toSize());
-    m_hdrOverlayWidget->setGeometry(newGeometry);
+    // Calculate top-left position, round to integer pixels for exact alignment
+    QPointF topLeftF = center - QPointF(scaledSizeF.width() / 2.0, scaledSizeF.height() / 2.0) + moveOffset;
+    QPoint topLeft(qRound(topLeftF.x()), qRound(topLeftF.y()));
+
+    // Constrain to widget bounds to avoid partially offscreen geometry causing black regions
+    QRect boundedRect(QPoint(0, 0), size());
+    QRect newGeometry(topLeft, scaledSize);
+    newGeometry = newGeometry.intersected(boundedRect);
+
+    if (newGeometry.isValid())
+      m_hdrOverlayWidget->setGeometry(newGeometry);
 }

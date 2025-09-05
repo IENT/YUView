@@ -53,6 +53,8 @@
 #include <QDebug>
 #include <QSettings>
 #include <QProcess>
+#include <ui/widgets/PlaylistTreeWidget.h>
+#include <ui/Mainwindow.h>
 
 #include <video/HDRDetection.h>
 #include <video/HDRGlobalState.h>
@@ -2841,38 +2843,42 @@ void videoHandlerYUV::drawFrame(QPainter *painter,
   bool enable10BitDisplay = settings.value("Enable10BitDisplay", false).toBool();
   
   // Check HDR rendering conditions
-  
-  // Check if we should use HDR rendering
-  if (m_hdrRenderingManager && 
-      m_hdrRenderingManager->isHDRRenderingActive() && 
-      enable10BitDisplay && 
-      srcPixelFormat.getBitsPerSample() == 10) {
-    
-    // Using HDR rendering path
-    
-    // Load the frame if needed
-    if (frameIdx != currentImageIndex) {
-      loadFrame(frameIdx);
+  // Use HDR path ONLY when the HDR widget is fully ready; otherwise fall back to SDR to avoid black frames
+  if (m_hdrRenderingManager &&
+      m_hdrRenderingManager->isHDRRenderingActive() &&
+      enable10BitDisplay &&
+      srcPixelFormat.getBitsPerSample() == 10)
+  {
+    HDR_VideoWidget* hdrWidget = m_hdrRenderingManager->getHDRWidget();
+    const bool hdrReady = (hdrWidget && hdrWidget->isReadyForRendering());
+
+    if (hdrReady)
+    {
+      // Using HDR rendering path
+      // Load the frame if needed
+      if (frameIdx != currentImageIndex)
+        loadFrame(frameIdx);
+
+      // Get current frame as QImage
+      QImage frameImage = getCurrentFrameAsImage();
+
+      if (!frameImage.isNull())
+      {
+        // Update HDR frame - the manager will handle OpenGL threading
+        m_hdrRenderingManager->updateHDRFrame(frameImage);
+      }
+      else
+      {
+        qWarning() << "videoHandlerYUV: ERROR - Failed to get current frame for HDR rendering";
+      }
+
+      // Prevent SDR QPainter path from drawing over HDR content
+      if (painter)
+        painter->fillRect(painter->viewport(), Qt::black);
+
+      return; // Avoid dual rendering paths when HDR is active and ready
     }
-    
-    // Get current frame as QImage
-    QImage frameImage = getCurrentFrameAsImage();
-    
-    if (!frameImage.isNull()) {
-      // Update HDR frame - the manager will handle initialization state
-      m_hdrRenderingManager->updateHDRFrame(frameImage);
-    } else {
-      qWarning() << "videoHandlerYUV: ERROR - Failed to get current frame for HDR rendering";
-    }
-    
-    // Clear the painter's background to black since HDR widget handles the actual rendering
-    if (painter) {
-      painter->fillRect(painter->viewport(), Qt::black);
-    }
-    
-    // CRITICAL FIX: Return early to prevent rendering path conflict
-    // This ensures HDR and SDR rendering don't interfere with each other
-    return;
+    // If HDR is not ready yet, intentionally fall through to SDR path (prevents transient black screen)
   }
   
   // Using standard QPainter rendering
@@ -3280,9 +3286,9 @@ void videoHandlerYUV::updateHDRAvailability()
     if (!supports10BitFormat && !supportsHDRDisplay) {
       tooltipText += QString("DISABLED: Current YUV format is %1-bit (requires 10-bit+) AND display does not support HDR.\n\n"
                             "Requirements:\n"
-                            "• 10-bit or higher YUV source\n"
-                            "• HDR-capable display\n"
-                            "• HDR enabled in Windows display settings")
+                            "- 10-bit or higher YUV source\n"
+                            "- HDR-capable display\n"
+                            "- HDR enabled in Windows display settings")
                     .arg(srcPixelFormat.getBitsPerSample());
     } else if (!supports10BitFormat) {
       tooltipText += QString("DISABLED: Current YUV format is %1-bit. 10-bit display requires 10-bit or higher YUV sources.")
@@ -3291,9 +3297,9 @@ void videoHandlerYUV::updateHDRAvailability()
       tooltipText += QString("DISABLED: Display does not support HDR.\n\n"
                             "Reason: %1\n\n"
                             "Requirements:\n"
-                            "• HDR-capable display\n"
-                            "• HDR enabled in Windows display settings\n"
-                            "• Display supporting HDR10 or Dolby Vision")
+                            "- HDR-capable display\n"
+                            "- HDR enabled in Windows display settings\n"
+                            "- Display supporting HDR10 or Dolby Vision")
                     .arg(capabilities.errorMessage.isEmpty() ? "HDR not supported" : capabilities.errorMessage);
     }
     
@@ -4882,12 +4888,12 @@ int videoHandlerYUV::getCurrentDistortionLevel() const
 
 void videoHandlerYUV::showHDRRestartNotice(bool hdrEnabled)
 {
-  // PRD Requirements 5.1 & 5.3: Show "(重启后生效)" label/notice
+  // PRD Requirements 5.1 & 5.3: Show "(requires restart)" label/notice
   qDebug() << "videoHandlerYUV: Showing restart notice for HDR mode change to:" << hdrEnabled;
   
   // Update checkbox text to show restart notice (PRD Requirements 5.1 & 5.3)
   QString baseText = "Enable native 10-bit display";
-  QString noticeText = baseText + " (重启后生效)";
+  QString noticeText = baseText + " (requires restart)";
   ui.checkBoxEnable10BitDisplay->setText(noticeText);
   
   // Show the Restart button to let user apply immediately
@@ -4903,9 +4909,9 @@ void videoHandlerYUV::showHDRRestartNotice(bool hdrEnabled)
   if (parentWidget) {
     QMainWindow* mainWindow = qobject_cast<QMainWindow*>(parentWidget);
     if (mainWindow && mainWindow->statusBar()) {
-      QString statusMessage = hdrEnabled ? 
-        "HDR 模式已启用 - 请重启 YUView 以应用更改" : 
-        "HDR 模式已禁用 - 请重启 YUView 以应用更改";
+      QString statusMessage = hdrEnabled ?
+        "HDR mode enabled - Please restart YUView to apply changes" :
+        "HDR mode disabled - Please restart YUView to apply changes";
       mainWindow->statusBar()->showMessage(statusMessage, 5000); // Show for 5 seconds
     }
   }
@@ -4928,6 +4934,31 @@ void videoHandlerYUV::slotRestartNow()
 {
   // Ensure settings are flushed before restart
   QSettings settings;
+  
+  // Mark that this is a controlled restart so we suppress the crash-restore dialog
+  settings.setValue("ControlledRestart", true);
+  
+  // Proactively autosave current playlist context for seamless restore
+  // Use the same key as autosave mechanism uses
+  {
+    // Try to serialize current playlist via MainWindow's playlist widget
+    QWidget* parentWidget = QApplication::activeWindow();
+    while (parentWidget && !parentWidget->inherits("QMainWindow"))
+      parentWidget = parentWidget->parentWidget();
+    if (parentWidget)
+    {
+      MainWindow* mw = qobject_cast<MainWindow*>(parentWidget);
+      if (mw)
+      {
+        auto playlist = mw->findChild<PlaylistTreeWidget*>();
+        if (playlist)
+        {
+          // Use widget's immediate autosave utility for consistent format
+          playlist->saveAutosaveNow();
+        }
+      }
+    }
+  }
   settings.sync();
 
   // Restart the application in a platform-agnostic way

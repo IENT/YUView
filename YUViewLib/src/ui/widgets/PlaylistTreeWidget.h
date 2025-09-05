@@ -93,6 +93,8 @@ public:
   void loadAutosavedPlaylist();
   void dropAutosavedPlaylist();
   void startAutosaveTimer();
+  // Explicitly persist current playlist to QSettings autosave key immediately
+  void saveAutosaveNow();
 
 public slots:
   void savePlaylistToFile();
