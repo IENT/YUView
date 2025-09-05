@@ -207,20 +207,37 @@
         </widget>
        </item>
        <item row="4" column="1">
-        <widget class="QCheckBox" name="checkBoxEnable10BitDisplay">
-         <property name="enabled">
-          <bool>true</bool>
-         </property>
-         <property name="toolTip">
-          <string>Enable native 10-bit display support for 10-bit YUV sources. This preserves 10-bit precision during YUV to RGB conversion.</string>
-         </property>
-         <property name="text">
-          <string>Enable native 10-bit display</string>
-         </property>
-         <property name="checked">
-          <bool>false</bool>
-         </property>
-        </widget>
+        <layout class="QVBoxLayout" name="hdrDisplayLayout">
+         <item>
+          <widget class="QCheckBox" name="checkBoxEnable10BitDisplay">
+           <property name="enabled">
+            <bool>true</bool>
+           </property>
+           <property name="toolTip">
+            <string>Enable native 10-bit display support for 10-bit YUV sources. This preserves 10-bit precision during YUV to RGB conversion.</string>
+           </property>
+           <property name="text">
+            <string>Enable native 10-bit display</string>
+           </property>
+           <property name="checked">
+            <bool>false</bool>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QPushButton" name="buttonRestartNow">
+           <property name="text">
+            <string>Restart now</string>
+           </property>
+           <property name="toolTip">
+            <string>Restart YUView now to apply HDR display changes</string>
+           </property>
+           <property name="visible">
+            <bool>false</bool>
+           </property>
+          </widget>
+         </item>
+        </layout>
        </item>
        <item row="5" column="0">
         <widget class="QLabel" name="labelDistortionAnalysis">

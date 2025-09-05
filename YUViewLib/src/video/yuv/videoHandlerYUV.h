@@ -306,6 +306,9 @@ private slots:
   void on_revertButton_L1_clicked();
   void on_revertButton_L2_clicked();
   
+  // Restart the application immediately to apply HDR setting
+  void slotRestartNow();
+  
   // Original file helper functions (still needed for distortion analysis)
   QString getCurrentFilePath() const;
   bool isCurrentFileOri(const QString &filePath) const;

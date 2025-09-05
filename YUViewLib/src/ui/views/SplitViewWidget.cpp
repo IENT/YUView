@@ -182,35 +182,30 @@ void splitViewWidget::paintEvent(QPaintEvent *)
 
   // CRITICAL FIX: Check HDR overlay state properly with paint device validation
   if (m_hdrOverlayWidget && m_hdrOverlayWidget->isVisible()) {
-    // HDR OpenGL widget is handling all rendering
-    
-    // Check if the HDR widget is ready
+    // HDR OpenGL widget is handling the base video rendering.
+    // We still proceed with the rest of paintEvent so that logic like item->drawItem()
+    // runs to push frames to the HDR widget, but we avoid an early return.
+
     HDR_VideoWidget* hdrWidget = qobject_cast<HDR_VideoWidget*>(m_hdrOverlayWidget.data());
-    if (hdrWidget && hdrWidget->isReadyForRendering()) {
-      // HDR widget is ready and rendering, skip ALL QPainter operations
-      return;
-    } else {
+    if (!(hdrWidget && hdrWidget->isReadyForRendering())) {
       // HDR widget exists but not ready yet - show loading indicator safely
-      // CRITICAL FIX: Validate paint device thoroughly before QPainter creation
       if (isVisible() && width() > 0 && height() > 0 && !paintingActive()) {
         try {
           QPainter painter(this);
           if (painter.isActive() && painter.device()) {
             painter.fillRect(rect(), Qt::black);
-            
-            // Show loading indicator with better formatting
             painter.setPen(Qt::white);
             QFont font = painter.font();
             font.setPointSize(12);
             painter.setFont(font);
             painter.drawText(rect(), Qt::AlignCenter, "Initializing HDR display...");
-            painter.end();  // Explicitly end painter
+            painter.end();
           }
         } catch (...) {
           // Ignore any painting errors during HDR initialization
         }
       }
-      return;
+      // Do not return; allow drawItem() below to push frames once ready.
     }
   }
 

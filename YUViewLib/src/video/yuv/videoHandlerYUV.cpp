@@ -52,6 +52,7 @@
 #include <QThread>
 #include <QDebug>
 #include <QSettings>
+#include <QProcess>
 
 #include <video/HDRDetection.h>
 #include <video/HDRGlobalState.h>
@@ -3033,6 +3034,13 @@ QLayout *videoHandlerYUV::createVideoHandlerControls(bool isSizeAndFormatFixed)
           this,
           &videoHandlerYUV::slot10BitDisplayChanged);
   
+  // Initialize and connect "Restart now" button (hidden by default)
+  if (ui.buttonRestartNow)
+  {
+    ui.buttonRestartNow->setVisible(false);
+    connect(ui.buttonRestartNow, &QPushButton::clicked, this, &videoHandlerYUV::slotRestartNow);
+  }
+  
   // Connect distortion analysis buttons
   connect(ui.pushButtonFirstLevel,
           &QPushButton::clicked,
@@ -4882,6 +4890,10 @@ void videoHandlerYUV::showHDRRestartNotice(bool hdrEnabled)
   QString noticeText = baseText + " (重启后生效)";
   ui.checkBoxEnable10BitDisplay->setText(noticeText);
   
+  // Show the Restart button to let user apply immediately
+  if (ui.buttonRestartNow)
+    ui.buttonRestartNow->setVisible(true);
+  
   // Also show a non-blocking status message
   QWidget* parentWidget = ui.checkBoxEnable10BitDisplay->parentWidget();
   while (parentWidget && !parentWidget->inherits("QMainWindow")) {
@@ -4905,7 +4917,33 @@ void videoHandlerYUV::clearHDRRestartNotice()
   // This should be called after application restart to remove "(重启后生效)" text
   QString baseText = "Enable native 10-bit display";
   ui.checkBoxEnable10BitDisplay->setText(baseText);
+  
+  // Hide the Restart button on fresh startup (no pending change)
+  if (ui.buttonRestartNow)
+    ui.buttonRestartNow->setVisible(false);
   qDebug() << "videoHandlerYUV: Cleared HDR restart notice, restored normal checkbox text";
+}
+
+void videoHandlerYUV::slotRestartNow()
+{
+  // Ensure settings are flushed before restart
+  QSettings settings;
+  settings.sync();
+
+  // Restart the application in a platform-agnostic way
+  const QString program = QCoreApplication::applicationFilePath();
+  QStringList args = QCoreApplication::arguments();
+  if (!args.isEmpty())
+    args.removeFirst(); // Remove program name
+
+  bool started = QProcess::startDetached(program, args, QDir::currentPath());
+  if (!started)
+  {
+    QMessageBox::warning(nullptr, "Restart failed", "YUView could not be restarted automatically. Please restart it manually.");
+    return;
+  }
+
+  QApplication::quit();
 }
 
 } // namespace video::yuv

@@ -11,6 +11,8 @@
 #include <QDateTime>    // For FPS timing
 #include <cmath>
 #include <vector>  // For 10-bit framebuffer grabbing
+#include <QPainter>
+#include "ui/views/SplitViewWidget.h"
 
 // Vertex data for full-screen quad (position + texture coordinates)
 // CRITICAL FIX: Use standard texture coordinates, flip image during upload instead
@@ -548,6 +550,25 @@ void HDR_VideoWidget::paintEvent(QPaintEvent* event)
         QOpenGLWidget::paintEvent(event);
         
         doneCurrent();
+
+        // Draw lightweight UI overlays (e.g., zoom indicator) on top of the HDR content
+        // Fetch zoom from parent split view
+        splitViewWidget* parentView = qobject_cast<splitViewWidget*>(parentWidget());
+        if (parentView) {
+            QPointF offset; double zoom = 1.0; double splitPoint = 0.5; int mode = 0;
+            parentView->getViewState(offset, zoom, splitPoint, mode);
+            if (zoom != 1.0) {
+                QPainter painter(this);
+                painter.setRenderHint(QPainter::TextAntialiasing);
+                QFont font("helvetica", 24);
+                painter.setFont(font);
+                painter.setPen(QColor(Qt::black));
+                QString zoomString = QString("x") + QString::number(zoom, 'g', (zoom < 0.5) ? 4 : 2);
+                QFontMetrics fm(font);
+                QPoint pos(10, fm.height());
+                painter.drawText(pos, zoomString);
+            }
+        }
         
     } catch (...) {
         qCritical() << "Exception in HDR_VideoWidget::paintEvent - OpenGL context issue";
