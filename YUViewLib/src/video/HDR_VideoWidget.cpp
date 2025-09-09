@@ -1123,7 +1123,7 @@ void HDR_VideoWidget::updateShaderUniforms()
 
 void HDR_VideoWidget::updateProjectionMatrix()
 {
-    // CRITICAL FIX: Thread-safe projection matrix calculation for letterboxing/pillarboxing
+    // CRITICAL FIX: Thread-safe projection matrix calculation
     
     // Get current widget dimensions
     int widgetWidth = width();
@@ -1152,36 +1152,40 @@ void HDR_VideoWidget::updateProjectionMatrix()
         parentView->getViewState(viewOffset, zoomFactor, splitPoint, mode);
     }
     
-    // Calculate the actual video dimensions after zoom
-    float videoWidth = frameWidth * zoomFactor;
-    float videoHeight = frameHeight * zoomFactor;
-    
-    // Calculate the position offset in normalized coordinates
-    float offsetX = viewOffset.x() / (widgetWidth / 2.0f);
-    float offsetY = -viewOffset.y() / (widgetHeight / 2.0f); // Negative because Y is flipped in OpenGL
-    
     qDebug() << "HDR_VideoWidget::updateProjectionMatrix: Frame:" << frameWidth << "x" << frameHeight
+             << "Widget:" << widgetWidth << "x" << widgetHeight
              << "Zoom:" << zoomFactor << "Offset:" << viewOffset;
     
     // Reset matrix
     m_projectionMatrix.setToIdentity();
     
-    // Calculate the projection bounds to maintain aspect ratio
-    // The video should be rendered at its actual pixel size (with zoom applied)
-    float halfVideoWidth = videoWidth / widgetWidth;
-    float halfVideoHeight = videoHeight / widgetHeight;
+    // CRITICAL FIX: Match SDR rendering behavior exactly
+    // In SDR mode, the video is drawn with its actual pixel dimensions multiplied by zoom
+    // Our quad is -1 to 1, so we need to scale it to match the video size
     
-    // Set projection bounds with offset
-    float left = -halfVideoWidth + offsetX;
-    float right = halfVideoWidth + offsetX;
-    float top = halfVideoHeight + offsetY;
-    float bottom = -halfVideoHeight + offsetY;
+    // Calculate the video size in pixels after zoom
+    float scaledVideoWidth = frameWidth * zoomFactor;
+    float scaledVideoHeight = frameHeight * zoomFactor;
     
-    // Set orthographic projection
-    m_projectionMatrix.ortho(left, right, bottom, top, -1.0f, 1.0f);
+    // Convert to normalized device coordinates
+    // The quad spans from -1 to 1, which is 2 units wide/tall
+    // We need to scale it so that 2 units = scaledVideoWidth/Height in pixels
+    float scaleX = scaledVideoWidth / widgetWidth;
+    float scaleY = scaledVideoHeight / widgetHeight;
     
-    qDebug() << "HDR_VideoWidget: Projection bounds - L:" << left << "R:" << right 
-             << "T:" << top << "B:" << bottom;
+    // Calculate offset in NDC
+    // viewOffset is in pixels, convert to NDC (-1 to 1 range)
+    float offsetX = (viewOffset.x() * 2.0f) / widgetWidth;
+    float offsetY = -(viewOffset.y() * 2.0f) / widgetHeight; // Negative because Y is flipped
+    
+    // Create the projection matrix
+    // We need to scale our -1 to 1 quad to the correct size and position
+    m_projectionMatrix.setToIdentity();
+    m_projectionMatrix.translate(offsetX, offsetY, 0.0f);
+    m_projectionMatrix.scale(scaleX, scaleY, 1.0f);
+    
+    qDebug() << "HDR_VideoWidget: Scale:" << scaleX << "x" << scaleY 
+             << "Offset:" << offsetX << "," << offsetY;
     
     // CRITICAL FIX: Thread-safe OpenGL operations
     // Update shader uniform if OpenGL is initialized and we're in GUI thread
