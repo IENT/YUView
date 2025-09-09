@@ -563,15 +563,12 @@ void HDR_VideoWidget::paintEvent(QPaintEvent* event)
         // Call base class to trigger paintGL() - this is safe now with proper attributes set
         QOpenGLWidget::paintEvent(event);
 
-        // Draw lightweight UI overlays (e.g., zoom indicator) on top of the HDR content
+        // CRITICAL FIX: Always draw zoom indicator at fixed position
         // Fetch zoom from parent split view
         splitViewWidget* parentView = qobject_cast<splitViewWidget*>(parentWidget());
         if (parentView) {
             QPointF offset; double zoom = 1.0; double splitPoint = 0.5; int mode = 0;
             parentView->getViewState(offset, zoom, splitPoint, mode);
-            
-            // CRITICAL FIX: Always show zoom indicator, even at 1.0x
-            // This matches the behavior of SDR mode in SplitViewWidget
             
             // Ensure OpenGL operations are finished before starting QPainter
             makeCurrent();
@@ -587,20 +584,12 @@ void HDR_VideoWidget::paintEvent(QPaintEvent* event)
             
             QString zoomString = QString("x") + QString::number(zoom, 'g', (zoom < 0.5) ? 4 : 2);
             QFontMetrics fm(font);
-            QPoint pos(10, fm.height() + 5);
             
-            // Draw black outline for better contrast (same as SDR mode)
-            painter.setPen(QPen(Qt::black, 3));
-            for (int dx = -1; dx <= 1; ++dx) {
-                for (int dy = -1; dy <= 1; ++dy) {
-                    if (dx != 0 || dy != 0) {
-                        painter.drawText(pos + QPoint(dx, dy), zoomString);
-                    }
-                }
-            }
+            // CRITICAL: Fixed position at top-left corner (10, font height)
+            QPoint pos(10, fm.height());
             
-            // Draw white text on top
-            painter.setPen(Qt::white);
+            // Draw with BLACK text as requested by user
+            painter.setPen(QColor(Qt::black));
             painter.drawText(pos, zoomString);
         }
         
