@@ -543,13 +543,8 @@ void HDR_VideoWidget::paintEvent(QPaintEvent* event)
     // IMPORTANT: We must still call the base class paintEvent to trigger OpenGL rendering
     // But only if we're properly initialized and have a valid context
     try {
-        // Ensure we have the correct context active
-        makeCurrent();
-        
         // Call base class to trigger paintGL() - this is safe now with proper attributes set
         QOpenGLWidget::paintEvent(event);
-        
-        doneCurrent();
 
         // Draw lightweight UI overlays (e.g., zoom indicator) on top of the HDR content
         // Fetch zoom from parent split view
@@ -558,14 +553,35 @@ void HDR_VideoWidget::paintEvent(QPaintEvent* event)
             QPointF offset; double zoom = 1.0; double splitPoint = 0.5; int mode = 0;
             parentView->getViewState(offset, zoom, splitPoint, mode);
             if (zoom != 1.0) {
+                // CRITICAL FIX: Use QPainter after OpenGL rendering is complete
+                // Ensure OpenGL operations are finished before starting QPainter
+                makeCurrent();
+                glFinish(); // Ensure all OpenGL commands are completed
+                doneCurrent();
+                
                 QPainter painter(this);
                 painter.setRenderHint(QPainter::TextAntialiasing);
+                
+                // Draw with white text and black outline for better visibility
                 QFont font("helvetica", 24);
                 painter.setFont(font);
-                painter.setPen(QColor(Qt::black));
+                
                 QString zoomString = QString("x") + QString::number(zoom, 'g', (zoom < 0.5) ? 4 : 2);
                 QFontMetrics fm(font);
-                QPoint pos(10, fm.height());
+                QPoint pos(10, fm.height() + 5);
+                
+                // Draw black outline for better contrast
+                painter.setPen(QPen(Qt::black, 3));
+                for (int dx = -1; dx <= 1; ++dx) {
+                    for (int dy = -1; dy <= 1; ++dy) {
+                        if (dx != 0 || dy != 0) {
+                            painter.drawText(pos + QPoint(dx, dy), zoomString);
+                        }
+                    }
+                }
+                
+                // Draw white text on top
+                painter.setPen(Qt::white);
                 painter.drawText(pos, zoomString);
             }
         }
@@ -1120,12 +1136,21 @@ void HDR_VideoWidget::updateProjectionMatrix()
         return;
     }
     
+    // Get zoom factor from parent split view widget
+    double zoomFactor = 1.0;
+    splitViewWidget* parentView = qobject_cast<splitViewWidget*>(parentWidget());
+    if (parentView) {
+        QPointF offset; double zoom = 1.0; double splitPoint = 0.5; int mode = 0;
+        parentView->getViewState(offset, zoom, splitPoint, mode);
+        zoomFactor = zoom;
+    }
+    
     // Calculate aspect ratios
     float widgetAspect = static_cast<float>(widgetWidth) / static_cast<float>(widgetHeight);
     float frameAspect = static_cast<float>(frameWidth) / static_cast<float>(frameHeight);
     
     qDebug() << "HDR_VideoWidget::updateProjectionMatrix: Widget aspect:" << widgetAspect 
-             << "Frame aspect:" << frameAspect;
+             << "Frame aspect:" << frameAspect << "Zoom factor:" << zoomFactor;
     
     // Reset matrix
     m_projectionMatrix.setToIdentity();
@@ -1133,23 +1158,26 @@ void HDR_VideoWidget::updateProjectionMatrix()
     // Calculate scaling and offset for proper aspect ratio preservation
     float left, right, top, bottom;
     
+    // Apply zoom factor to the projection bounds
+    float zoomScale = 1.0f / static_cast<float>(zoomFactor);
+    
     if (frameAspect > widgetAspect) {
         // Frame is wider than widget - pillarboxing (black bars on top/bottom)
         // Scale based on width, add vertical padding
         float scale = widgetAspect / frameAspect;
-        left = -1.0f;
-        right = 1.0f;
-        top = scale;
-        bottom = -scale;
+        left = -zoomScale;
+        right = zoomScale;
+        top = scale * zoomScale;
+        bottom = -scale * zoomScale;
         qDebug() << "HDR_VideoWidget: Using pillarboxing, scale:" << scale;
     } else {
         // Frame is taller than widget - letterboxing (black bars on left/right)  
         // Scale based on height, add horizontal padding
         float scale = frameAspect / widgetAspect;
-        left = -scale;
-        right = scale;
-        top = 1.0f;
-        bottom = -1.0f;
+        left = -scale * zoomScale;
+        right = scale * zoomScale;
+        top = zoomScale;
+        bottom = -zoomScale;
         qDebug() << "HDR_VideoWidget: Using letterboxing, scale:" << scale;
     }
     
@@ -1508,5 +1536,15 @@ bool HDR_VideoWidget::isHDRFormat(const QSurfaceFormat& format)
     Q_UNUSED(format);
     return false;  // HDR not supported in Qt < 6.0
     #endif
+}
+
+void HDR_VideoWidget::onParentZoomChanged()
+{
+    // Update projection matrix to reflect new zoom level
+    if (m_initialized && !m_frameSize.isEmpty()) {
+        qDebug() << "HDR_VideoWidget::onParentZoomChanged: Updating projection matrix for new zoom level";
+        updateProjectionMatrix();
+        update(); // Trigger repaint
+    }
 }
 

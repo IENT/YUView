@@ -1339,6 +1339,11 @@ void splitViewWidget::setZoomFactor(double zoom)
     }
   }
   updateHDROverlayGeometry();
+  
+  // Notify HDR widget of zoom change if it exists
+  if (m_hdrOverlayWidget) {
+    m_hdrOverlayWidget->onParentZoomChanged();
+  }
 }
 
 void splitViewWidget::updateMouseTracking()
