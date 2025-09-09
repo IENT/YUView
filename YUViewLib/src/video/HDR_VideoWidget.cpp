@@ -654,20 +654,26 @@ const mat3 from709to2020 = mat3(
     0.0433, 0.0114, 0.8956   // Blue channel coefficients
 );
 
-// Apply ST.2084 PQ transfer function with proper physical tone mapping
-vec3 applyPQ(vec3 linear) {
-    // First, tone map from source peak luminance to display peak luminance
-    vec3 toneMappedLinear = linear * (displayMaxLuminance / sourceMaxLuminance);
-    
-    // Normalize to [0,1] range for PQ curve using display peak luminance
-    vec3 normalizedLinear = toneMappedLinear / displayMaxLuminance;
-    
-    // Apply PQ curve
-    vec3 Lp = pow(max(normalizedLinear, vec3(0.0)), vec3(m1));
-    vec3 numerator = c1 + c2 * Lp;
-    vec3 denominator = 1.0 + c3 * Lp;
-    
-    return pow(max(numerator / max(denominator, vec3(0.0001)), vec3(0.0)), vec3(m2));
+// Decode Rec.709 OETF to linear light (scene-referred)
+vec3 rec709ToLinear(vec3 v) {
+    vec3 lo = v / 4.5;
+    vec3 hi = pow((v + 0.099) / 1.099, vec3(1.0 / 0.45));
+    bvec3 useHi = greaterThanEqual(v, vec3(0.081));
+    return vec3(useHi.x ? hi.x : lo.x,
+                useHi.y ? hi.y : lo.y,
+                useHi.z ? hi.z : lo.z);
+}
+
+// Encode linear absolute luminance to ST.2084 PQ code values
+// Input: linear scene-referred RGB in [0,1] where 1.0 corresponds to sourceMaxLuminance nits
+// Steps: map to absolute nits, normalize to [0,1] with 10000 nits, then apply PQ OETF
+vec3 applyPQ(vec3 linearScene) {
+    vec3 absNits = max(linearScene, vec3(0.0)) * sourceMaxLuminance;
+    vec3 normalized = clamp(absNits / 10000.0, 0.0, 1.0);
+    vec3 Lp = pow(normalized, vec3(m1));
+    vec3 numerator = vec3(c1) + vec3(c2) * Lp;
+    vec3 denominator = vec3(1.0) + vec3(c3) * Lp;
+    return pow(numerator / max(denominator, vec3(1e-6)), vec3(m2));
 }
 
 // Apply exposure adjustment for linear/scRGB mode
@@ -685,36 +691,14 @@ void main()
     vec4 color = texture(videoTexture, TexCoord);
     
     if (renderMode == 1) {
-        // BT2020_PQ mode: Convert to Rec.2020 and apply PQ curve
-        
-        // CRITICAL FIX: Improved grayscale detection and color processing
-        // Calculate luminance using ITU-R BT.709 coefficients for better detection
-        float luma = dot(color.rgb, vec3(0.2126, 0.7152, 0.0722));
-        
-        // Check if content is grayscale by comparing each channel to the calculated luma
-        float redDiff = abs(color.r - luma);
-        float greenDiff = abs(color.g - luma);  
-        float blueDiff = abs(color.b - luma);
-        float maxDiff = max(max(redDiff, greenDiff), blueDiff);
-        
-        vec3 processedColor;
-        if (maxDiff < 0.02) {
-            // Grayscale content: preserve neutrality, use luma directly
-            // This prevents any color matrix artifacts for grayscale images
-            processedColor = vec3(luma);
-            // Apply tone mapping and PQ curve
-            processedColor = processedColor * (displayMaxLuminance / sourceMaxLuminance);
-            processedColor = applyPQ(processedColor / displayMaxLuminance);
-        } else {
-            // Color content: apply color space conversion carefully
-            // Apply tone mapping first, then color space conversion
-            vec3 toneMapped = color.rgb * (displayMaxLuminance / sourceMaxLuminance);
-            processedColor = from709to2020 * toneMapped;
-            processedColor = applyPQ(processedColor / displayMaxLuminance);
-        }
-        
-        processedColor = applyGamma(processedColor);
-        FragColor = vec4(processedColor, color.a);
+        // BT.2020 + PQ: Assume incoming texture is Rec.709 OETF-encoded SDR
+        // 1) Linearize Rec.709, 2) Convert primaries to Rec.2020 in linear, 3) Map to absolute nits
+        // 4) Normalize to 10000 nits and apply ST.2084 OETF. No extra gamma on PQ path.
+        vec3 rgb709 = clamp(color.rgb, 0.0, 1.0);
+        vec3 rgb709_linear = rec709ToLinear(rgb709);
+        vec3 rgb2020_linear = from709to2020 * rgb709_linear;
+        vec3 pqEncoded = applyPQ(rgb2020_linear);
+        FragColor = vec4(pqEncoded, color.a);
         
     } else if (renderMode == 2) {
         // BT709_Linear mode: Apply exposure and gamma

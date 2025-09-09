@@ -2384,11 +2384,11 @@ void splitViewWidget::updateHDROverlayGeometry()
     QPointF topLeftF = center - QPointF(scaledSizeF.width() / 2.0, scaledSizeF.height() / 2.0) + moveOffset;
     QPoint topLeft(qRound(topLeftF.x()), qRound(topLeftF.y()));
 
-    // Constrain to widget bounds to avoid partially offscreen geometry causing black regions
-    QRect boundedRect(QPoint(0, 0), size());
+    // Set overlay geometry directly from computed video rectangle to preserve aspect and zoom
+    // Do not clamp to parent bounds; let standard Qt clipping handle overflow like SDR path
     QRect newGeometry(topLeft, scaledSize);
-    newGeometry = newGeometry.intersected(boundedRect);
-
-    if (newGeometry.isValid())
-      m_hdrOverlayWidget->setGeometry(newGeometry);
+    if (newGeometry.width() <= 0 || newGeometry.height() <= 0) {
+      return;
+    }
+    m_hdrOverlayWidget->setGeometry(newGeometry);
 }
