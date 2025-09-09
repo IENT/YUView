@@ -1272,6 +1272,11 @@ void splitViewWidget::setMoveOffset(QPointF offset)
     }
   }
   updateHDROverlayGeometry();
+  
+  // Notify HDR widget of offset change if it exists
+  if (m_hdrOverlayWidget) {
+    m_hdrOverlayWidget->onParentZoomChanged(); // This will update the projection matrix
+  }
 }
 
 QPoint splitViewWidget::getMoveOffsetCoordinateSystemOrigin(const QPointF zoomPoint) const
@@ -2351,7 +2356,8 @@ void splitViewWidget::updateHDROverlayGeometry()
         return;
     }
 
-    // CRITICAL FIX: HDR widget should always cover the entire split view widget
+    // CRITICAL FIX: Always make HDR widget cover the entire split view widget
     // This ensures no gray areas appear around the edges
+    // The actual video rendering area will be handled by the projection matrix in HDR widget
     m_hdrOverlayWidget->setGeometry(rect());
 }

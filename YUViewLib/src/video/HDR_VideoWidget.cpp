@@ -1143,53 +1143,45 @@ void HDR_VideoWidget::updateProjectionMatrix()
         return;
     }
     
-    // Get zoom factor from parent split view widget
+    // Get zoom factor and offset from parent split view widget
     double zoomFactor = 1.0;
+    QPointF viewOffset;
     splitViewWidget* parentView = qobject_cast<splitViewWidget*>(parentWidget());
     if (parentView) {
-        QPointF offset; double zoom = 1.0; double splitPoint = 0.5; int mode = 0;
-        parentView->getViewState(offset, zoom, splitPoint, mode);
-        zoomFactor = zoom;
+        double splitPoint = 0.5; int mode = 0;
+        parentView->getViewState(viewOffset, zoomFactor, splitPoint, mode);
     }
     
-    // Calculate aspect ratios
-    float widgetAspect = static_cast<float>(widgetWidth) / static_cast<float>(widgetHeight);
-    float frameAspect = static_cast<float>(frameWidth) / static_cast<float>(frameHeight);
+    // Calculate the actual video dimensions after zoom
+    float videoWidth = frameWidth * zoomFactor;
+    float videoHeight = frameHeight * zoomFactor;
     
-    qDebug() << "HDR_VideoWidget::updateProjectionMatrix: Widget aspect:" << widgetAspect 
-             << "Frame aspect:" << frameAspect << "Zoom factor:" << zoomFactor;
+    // Calculate the position offset in normalized coordinates
+    float offsetX = viewOffset.x() / (widgetWidth / 2.0f);
+    float offsetY = -viewOffset.y() / (widgetHeight / 2.0f); // Negative because Y is flipped in OpenGL
+    
+    qDebug() << "HDR_VideoWidget::updateProjectionMatrix: Frame:" << frameWidth << "x" << frameHeight
+             << "Zoom:" << zoomFactor << "Offset:" << viewOffset;
     
     // Reset matrix
     m_projectionMatrix.setToIdentity();
     
-    // Calculate scaling and offset for proper aspect ratio preservation
-    float left, right, top, bottom;
+    // Calculate the projection bounds to maintain aspect ratio
+    // The video should be rendered at its actual pixel size (with zoom applied)
+    float halfVideoWidth = videoWidth / widgetWidth;
+    float halfVideoHeight = videoHeight / widgetHeight;
     
-    // Apply zoom factor to the projection bounds
-    float zoomScale = 1.0f / static_cast<float>(zoomFactor);
+    // Set projection bounds with offset
+    float left = -halfVideoWidth + offsetX;
+    float right = halfVideoWidth + offsetX;
+    float top = halfVideoHeight + offsetY;
+    float bottom = -halfVideoHeight + offsetY;
     
-    if (frameAspect > widgetAspect) {
-        // Frame is wider than widget - pillarboxing (black bars on top/bottom)
-        // Scale based on width, add vertical padding
-        float scale = widgetAspect / frameAspect;
-        left = -zoomScale;
-        right = zoomScale;
-        top = scale * zoomScale;
-        bottom = -scale * zoomScale;
-        qDebug() << "HDR_VideoWidget: Using pillarboxing, scale:" << scale;
-    } else {
-        // Frame is taller than widget - letterboxing (black bars on left/right)  
-        // Scale based on height, add horizontal padding
-        float scale = frameAspect / widgetAspect;
-        left = -scale * zoomScale;
-        right = scale * zoomScale;
-        top = zoomScale;
-        bottom = -zoomScale;
-        qDebug() << "HDR_VideoWidget: Using letterboxing, scale:" << scale;
-    }
-    
-    // Set orthographic projection with calculated bounds
+    // Set orthographic projection
     m_projectionMatrix.ortho(left, right, bottom, top, -1.0f, 1.0f);
+    
+    qDebug() << "HDR_VideoWidget: Projection bounds - L:" << left << "R:" << right 
+             << "T:" << top << "B:" << bottom;
     
     // CRITICAL FIX: Thread-safe OpenGL operations
     // Update shader uniform if OpenGL is initialized and we're in GUI thread
