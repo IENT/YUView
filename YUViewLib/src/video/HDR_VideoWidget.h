@@ -75,6 +75,9 @@ public slots:
     // Update projection matrix when zoom changes
     void onParentZoomChanged();
     
+    // Update background color when parent's palette changes
+    void updateBackgroundColor();
+    
     // HDR control slots
     void setHDRExposureSlot(double exposure) { setHDRExposure(static_cast<float>(exposure)); }
     void setHDRGammaSlot(double gamma) { setHDRGamma(static_cast<float>(gamma)); }

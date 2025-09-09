@@ -91,6 +91,10 @@ HDR_VideoWidget::HDR_VideoWidget(QWidget* parent)
     setAttribute(Qt::WA_OpaquePaintEvent, false);
     setAttribute(Qt::WA_NoSystemBackground, false);
     
+    // Ensure widget inherits parent's palette for consistent background
+    setAttribute(Qt::WA_TranslucentBackground, false);
+    setStyleSheet(""); // Clear any stylesheet to inherit parent's style
+    
     // Initialize transformation matrices
     m_textureMatrix.setToIdentity();
     m_projectionMatrix.setToIdentity();
@@ -474,7 +478,10 @@ void HDR_VideoWidget::initializeGL()
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     glDisable(GL_DEPTH_TEST);
     glDisable(GL_CULL_FACE);
-    glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+    
+    // Set clear color to match parent widget's background
+    QColor bgColor = palette().color(QPalette::Window);
+    glClearColor(bgColor.redF(), bgColor.greenF(), bgColor.blueF(), 1.0f);
     
     // Try to initialize components - continue even if some fail
     bool shadersOk = initializeShaders();
@@ -513,7 +520,17 @@ void HDR_VideoWidget::initializeGL()
 
 void HDR_VideoWidget::paintGL()
 {
-    // CRITICAL FIX: Simplified paintGL - no delayed initialization
+    // CRITICAL FIX: Update clear color on each paint to match parent's background
+    // This ensures consistency even if the parent's theme changes
+    QColor bgColor;
+    if (parentWidget()) {
+        bgColor = parentWidget()->palette().color(QPalette::Window);
+    } else {
+        bgColor = palette().color(QPalette::Window);
+    }
+    glClearColor(bgColor.redF(), bgColor.greenF(), bgColor.blueF(), 1.0f);
+    
+    // Clear with the updated background color
     glClear(GL_COLOR_BUFFER_BIT);
     
     // If not initialized, just clear and return - initialization happens in initializeGL()
@@ -552,38 +569,39 @@ void HDR_VideoWidget::paintEvent(QPaintEvent* event)
         if (parentView) {
             QPointF offset; double zoom = 1.0; double splitPoint = 0.5; int mode = 0;
             parentView->getViewState(offset, zoom, splitPoint, mode);
-            if (zoom != 1.0) {
-                // CRITICAL FIX: Use QPainter after OpenGL rendering is complete
-                // Ensure OpenGL operations are finished before starting QPainter
-                makeCurrent();
-                glFinish(); // Ensure all OpenGL commands are completed
-                doneCurrent();
-                
-                QPainter painter(this);
-                painter.setRenderHint(QPainter::TextAntialiasing);
-                
-                // Draw with white text and black outline for better visibility
-                QFont font("helvetica", 24);
-                painter.setFont(font);
-                
-                QString zoomString = QString("x") + QString::number(zoom, 'g', (zoom < 0.5) ? 4 : 2);
-                QFontMetrics fm(font);
-                QPoint pos(10, fm.height() + 5);
-                
-                // Draw black outline for better contrast
-                painter.setPen(QPen(Qt::black, 3));
-                for (int dx = -1; dx <= 1; ++dx) {
-                    for (int dy = -1; dy <= 1; ++dy) {
-                        if (dx != 0 || dy != 0) {
-                            painter.drawText(pos + QPoint(dx, dy), zoomString);
-                        }
+            
+            // CRITICAL FIX: Always show zoom indicator, even at 1.0x
+            // This matches the behavior of SDR mode in SplitViewWidget
+            
+            // Ensure OpenGL operations are finished before starting QPainter
+            makeCurrent();
+            glFinish(); // Ensure all OpenGL commands are completed
+            doneCurrent();
+            
+            QPainter painter(this);
+            painter.setRenderHint(QPainter::TextAntialiasing);
+            
+            // Use the same font and style as the main split view widget
+            QFont font("helvetica", 24);
+            painter.setFont(font);
+            
+            QString zoomString = QString("x") + QString::number(zoom, 'g', (zoom < 0.5) ? 4 : 2);
+            QFontMetrics fm(font);
+            QPoint pos(10, fm.height() + 5);
+            
+            // Draw black outline for better contrast (same as SDR mode)
+            painter.setPen(QPen(Qt::black, 3));
+            for (int dx = -1; dx <= 1; ++dx) {
+                for (int dy = -1; dy <= 1; ++dy) {
+                    if (dx != 0 || dy != 0) {
+                        painter.drawText(pos + QPoint(dx, dy), zoomString);
                     }
                 }
-                
-                // Draw white text on top
-                painter.setPen(Qt::white);
-                painter.drawText(pos, zoomString);
             }
+            
+            // Draw white text on top
+            painter.setPen(Qt::white);
+            painter.drawText(pos, zoomString);
         }
         
     } catch (...) {
@@ -1545,6 +1563,29 @@ void HDR_VideoWidget::onParentZoomChanged()
         qDebug() << "HDR_VideoWidget::onParentZoomChanged: Updating projection matrix for new zoom level";
         updateProjectionMatrix();
         update(); // Trigger repaint
+    }
+}
+
+void HDR_VideoWidget::updateBackgroundColor()
+{
+    // Update OpenGL clear color to match parent widget's background
+    if (m_initialized && context() && context()->isValid()) {
+        makeCurrent();
+        
+        // Get background color from parent or use widget's palette
+        QColor bgColor;
+        if (parentWidget()) {
+            bgColor = parentWidget()->palette().color(QPalette::Window);
+        } else {
+            bgColor = palette().color(QPalette::Window);
+        }
+        
+        glClearColor(bgColor.redF(), bgColor.greenF(), bgColor.blueF(), 1.0f);
+        
+        doneCurrent();
+        
+        // Trigger repaint to apply new background color
+        update();
     }
 }
 

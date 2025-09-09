@@ -553,7 +553,7 @@ void splitViewWidget::paintEvent(QPaintEvent *)
       painter.setClipping(false);
   }
 
-  if (zoom != 1.0)
+  // Always draw the zoom factor (as requested by user)
   {
     // Draw the zoom factor
     QString zoomString = QString("x") + QString::number(zoom, 'g', (zoom < 0.5) ? 4 : 2);
