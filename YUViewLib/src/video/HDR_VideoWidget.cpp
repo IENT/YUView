@@ -91,6 +91,10 @@ HDR_VideoWidget::HDR_VideoWidget(QWidget* parent)
     setAttribute(Qt::WA_OpaquePaintEvent, false);
     setAttribute(Qt::WA_NoSystemBackground, false);
     
+    // Ensure widget inherits parent's palette for consistent background
+    setAttribute(Qt::WA_TranslucentBackground, false);
+    setStyleSheet(""); // Clear any stylesheet to inherit parent's style
+    
     // Initialize transformation matrices
     m_textureMatrix.setToIdentity();
     m_projectionMatrix.setToIdentity();
@@ -474,7 +478,10 @@ void HDR_VideoWidget::initializeGL()
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     glDisable(GL_DEPTH_TEST);
     glDisable(GL_CULL_FACE);
-    glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+    
+    // Set clear color to match parent widget's background
+    QColor bgColor = palette().color(QPalette::Window);
+    glClearColor(bgColor.redF(), bgColor.greenF(), bgColor.blueF(), 1.0f);
     
     // Try to initialize components - continue even if some fail
     bool shadersOk = initializeShaders();
@@ -513,7 +520,17 @@ void HDR_VideoWidget::initializeGL()
 
 void HDR_VideoWidget::paintGL()
 {
-    // CRITICAL FIX: Simplified paintGL - no delayed initialization
+    // CRITICAL FIX: Update clear color on each paint to match parent's background
+    // This ensures consistency even if the parent's theme changes
+    QColor bgColor;
+    if (parentWidget()) {
+        bgColor = parentWidget()->palette().color(QPalette::Window);
+    } else {
+        bgColor = palette().color(QPalette::Window);
+    }
+    glClearColor(bgColor.redF(), bgColor.greenF(), bgColor.blueF(), 1.0f);
+    
+    // Clear with the updated background color
     glClear(GL_COLOR_BUFFER_BIT);
     
     // If not initialized, just clear and return - initialization happens in initializeGL()
@@ -543,31 +560,37 @@ void HDR_VideoWidget::paintEvent(QPaintEvent* event)
     // IMPORTANT: We must still call the base class paintEvent to trigger OpenGL rendering
     // But only if we're properly initialized and have a valid context
     try {
-        // Ensure we have the correct context active
-        makeCurrent();
-        
         // Call base class to trigger paintGL() - this is safe now with proper attributes set
         QOpenGLWidget::paintEvent(event);
-        
-        doneCurrent();
 
-        // Draw lightweight UI overlays (e.g., zoom indicator) on top of the HDR content
+        // CRITICAL FIX: Always draw zoom indicator at fixed position
         // Fetch zoom from parent split view
         splitViewWidget* parentView = qobject_cast<splitViewWidget*>(parentWidget());
         if (parentView) {
             QPointF offset; double zoom = 1.0; double splitPoint = 0.5; int mode = 0;
             parentView->getViewState(offset, zoom, splitPoint, mode);
-            if (zoom != 1.0) {
-                QPainter painter(this);
-                painter.setRenderHint(QPainter::TextAntialiasing);
-                QFont font("helvetica", 24);
-                painter.setFont(font);
-                painter.setPen(QColor(Qt::black));
-                QString zoomString = QString("x") + QString::number(zoom, 'g', (zoom < 0.5) ? 4 : 2);
-                QFontMetrics fm(font);
-                QPoint pos(10, fm.height());
-                painter.drawText(pos, zoomString);
-            }
+            
+            // Ensure OpenGL operations are finished before starting QPainter
+            makeCurrent();
+            glFinish(); // Ensure all OpenGL commands are completed
+            doneCurrent();
+            
+            QPainter painter(this);
+            painter.setRenderHint(QPainter::TextAntialiasing);
+            
+            // Use the same font and style as the main split view widget
+            QFont font("helvetica", 24);
+            painter.setFont(font);
+            
+            QString zoomString = QString("x") + QString::number(zoom, 'g', (zoom < 0.5) ? 4 : 2);
+            QFontMetrics fm(font);
+            
+            // CRITICAL: Fixed position at top-left corner (10, font height)
+            QPoint pos(10, fm.height());
+            
+            // Draw with BLACK text as requested by user
+            painter.setPen(QColor(Qt::black));
+            painter.drawText(pos, zoomString);
         }
         
     } catch (...) {
@@ -1100,7 +1123,7 @@ void HDR_VideoWidget::updateShaderUniforms()
 
 void HDR_VideoWidget::updateProjectionMatrix()
 {
-    // CRITICAL FIX: Thread-safe projection matrix calculation for letterboxing/pillarboxing
+    // CRITICAL FIX: Thread-safe projection matrix calculation
     
     // Get current widget dimensions
     int widgetWidth = width();
@@ -1120,41 +1143,49 @@ void HDR_VideoWidget::updateProjectionMatrix()
         return;
     }
     
-    // Calculate aspect ratios
-    float widgetAspect = static_cast<float>(widgetWidth) / static_cast<float>(widgetHeight);
-    float frameAspect = static_cast<float>(frameWidth) / static_cast<float>(frameHeight);
+    // Get zoom factor and offset from parent split view widget
+    double zoomFactor = 1.0;
+    QPointF viewOffset;
+    splitViewWidget* parentView = qobject_cast<splitViewWidget*>(parentWidget());
+    if (parentView) {
+        double splitPoint = 0.5; int mode = 0;
+        parentView->getViewState(viewOffset, zoomFactor, splitPoint, mode);
+    }
     
-    qDebug() << "HDR_VideoWidget::updateProjectionMatrix: Widget aspect:" << widgetAspect 
-             << "Frame aspect:" << frameAspect;
+    qDebug() << "HDR_VideoWidget::updateProjectionMatrix: Frame:" << frameWidth << "x" << frameHeight
+             << "Widget:" << widgetWidth << "x" << widgetHeight
+             << "Zoom:" << zoomFactor << "Offset:" << viewOffset;
     
     // Reset matrix
     m_projectionMatrix.setToIdentity();
     
-    // Calculate scaling and offset for proper aspect ratio preservation
-    float left, right, top, bottom;
+    // CRITICAL FIX: Match SDR rendering behavior exactly
+    // In SDR mode, the video is drawn with its actual pixel dimensions multiplied by zoom
+    // Our quad is -1 to 1, so we need to scale it to match the video size
     
-    if (frameAspect > widgetAspect) {
-        // Frame is wider than widget - pillarboxing (black bars on top/bottom)
-        // Scale based on width, add vertical padding
-        float scale = widgetAspect / frameAspect;
-        left = -1.0f;
-        right = 1.0f;
-        top = scale;
-        bottom = -scale;
-        qDebug() << "HDR_VideoWidget: Using pillarboxing, scale:" << scale;
-    } else {
-        // Frame is taller than widget - letterboxing (black bars on left/right)  
-        // Scale based on height, add horizontal padding
-        float scale = frameAspect / widgetAspect;
-        left = -scale;
-        right = scale;
-        top = 1.0f;
-        bottom = -1.0f;
-        qDebug() << "HDR_VideoWidget: Using letterboxing, scale:" << scale;
-    }
+    // Calculate the video size in pixels after zoom
+    float scaledVideoWidth = frameWidth * zoomFactor;
+    float scaledVideoHeight = frameHeight * zoomFactor;
     
-    // Set orthographic projection with calculated bounds
-    m_projectionMatrix.ortho(left, right, bottom, top, -1.0f, 1.0f);
+    // Convert to normalized device coordinates
+    // The quad spans from -1 to 1, which is 2 units wide/tall
+    // We need to scale it so that 2 units = scaledVideoWidth/Height in pixels
+    float scaleX = scaledVideoWidth / widgetWidth;
+    float scaleY = scaledVideoHeight / widgetHeight;
+    
+    // Calculate offset in NDC
+    // viewOffset is in pixels, convert to NDC (-1 to 1 range)
+    float offsetX = (viewOffset.x() * 2.0f) / widgetWidth;
+    float offsetY = -(viewOffset.y() * 2.0f) / widgetHeight; // Negative because Y is flipped
+    
+    // Create the projection matrix
+    // We need to scale our -1 to 1 quad to the correct size and position
+    m_projectionMatrix.setToIdentity();
+    m_projectionMatrix.translate(offsetX, offsetY, 0.0f);
+    m_projectionMatrix.scale(scaleX, scaleY, 1.0f);
+    
+    qDebug() << "HDR_VideoWidget: Scale:" << scaleX << "x" << scaleY 
+             << "Offset:" << offsetX << "," << offsetY;
     
     // CRITICAL FIX: Thread-safe OpenGL operations
     // Update shader uniform if OpenGL is initialized and we're in GUI thread
@@ -1508,5 +1539,38 @@ bool HDR_VideoWidget::isHDRFormat(const QSurfaceFormat& format)
     Q_UNUSED(format);
     return false;  // HDR not supported in Qt < 6.0
     #endif
+}
+
+void HDR_VideoWidget::onParentZoomChanged()
+{
+    // Update projection matrix to reflect new zoom level
+    if (m_initialized && !m_frameSize.isEmpty()) {
+        qDebug() << "HDR_VideoWidget::onParentZoomChanged: Updating projection matrix for new zoom level";
+        updateProjectionMatrix();
+        update(); // Trigger repaint
+    }
+}
+
+void HDR_VideoWidget::updateBackgroundColor()
+{
+    // Update OpenGL clear color to match parent widget's background
+    if (m_initialized && context() && context()->isValid()) {
+        makeCurrent();
+        
+        // Get background color from parent or use widget's palette
+        QColor bgColor;
+        if (parentWidget()) {
+            bgColor = parentWidget()->palette().color(QPalette::Window);
+        } else {
+            bgColor = palette().color(QPalette::Window);
+        }
+        
+        glClearColor(bgColor.redF(), bgColor.greenF(), bgColor.blueF(), 1.0f);
+        
+        doneCurrent();
+        
+        // Trigger repaint to apply new background color
+        update();
+    }
 }
 

@@ -553,7 +553,7 @@ void splitViewWidget::paintEvent(QPaintEvent *)
       painter.setClipping(false);
   }
 
-  if (zoom != 1.0)
+  // Always draw the zoom factor (as requested by user)
   {
     // Draw the zoom factor
     QString zoomString = QString("x") + QString::number(zoom, 'g', (zoom < 0.5) ? 4 : 2);
@@ -1272,6 +1272,11 @@ void splitViewWidget::setMoveOffset(QPointF offset)
     }
   }
   updateHDROverlayGeometry();
+  
+  // Notify HDR widget of offset change if it exists
+  if (m_hdrOverlayWidget) {
+    m_hdrOverlayWidget->onParentZoomChanged(); // This will update the projection matrix
+  }
 }
 
 QPoint splitViewWidget::getMoveOffsetCoordinateSystemOrigin(const QPointF zoomPoint) const
@@ -1339,6 +1344,11 @@ void splitViewWidget::setZoomFactor(double zoom)
     }
   }
   updateHDROverlayGeometry();
+  
+  // Notify HDR widget of zoom change if it exists
+  if (m_hdrOverlayWidget) {
+    m_hdrOverlayWidget->onParentZoomChanged();
+  }
 }
 
 void splitViewWidget::updateMouseTracking()
@@ -2346,49 +2356,8 @@ void splitViewWidget::updateHDROverlayGeometry()
         return;
     }
 
-    // Get the currently displayed video item
-    auto items = playlist->getSelectedItems();
-    playlistItem* mainItem = items[0];
-    if (!mainItem) {
-        m_hdrOverlayWidget->hide(); // Hide overlay if no main item
-        return;
-    }
-
-    // Use getFrameHandler() to get the handler, with null pointer check
-    video::FrameHandler* handler = mainItem->getFrameHandler();
-    if (!handler) {
-        m_hdrOverlayWidget->hide(); // Hide overlay if handler is invalid
-        return;
-    }
-
-    // Get the video's original size
-    Size frameSize = handler->getFrameSize();
-    if (!frameSize.isValid()) {
-        m_hdrOverlayWidget->hide(); // Hide overlay if frame size is invalid
-        return;
-    }
-    
-    // If previously hidden, now show it
-    if (!m_hdrOverlayWidget->isVisible()) {
-        m_hdrOverlayWidget->show();
-    }
-
-    // Calculate scaled size (round to avoid 1px gaps due to float truncation)
-    QSizeF scaledSizeF(frameSize.width * zoomFactor, frameSize.height * zoomFactor);
-    QSize scaledSize(qRound(scaledSizeF.width()), qRound(scaledSizeF.height()));
-
-    // Calculate center point (this is the drawing reference origin)
-    QPointF center = getMoveOffsetCoordinateSystemOrigin();
-
-    // Calculate top-left position, round to integer pixels for exact alignment
-    QPointF topLeftF = center - QPointF(scaledSizeF.width() / 2.0, scaledSizeF.height() / 2.0) + moveOffset;
-    QPoint topLeft(qRound(topLeftF.x()), qRound(topLeftF.y()));
-
-    // Set overlay geometry directly from computed video rectangle to preserve aspect and zoom
-    // Do not clamp to parent bounds; let standard Qt clipping handle overflow like SDR path
-    QRect newGeometry(topLeft, scaledSize);
-    if (newGeometry.width() <= 0 || newGeometry.height() <= 0) {
-      return;
-    }
-    m_hdrOverlayWidget->setGeometry(newGeometry);
+    // CRITICAL FIX: Always make HDR widget cover the entire split view widget
+    // This ensures no gray areas appear around the edges
+    // The actual video rendering area will be handled by the projection matrix in HDR widget
+    m_hdrOverlayWidget->setGeometry(rect());
 }
