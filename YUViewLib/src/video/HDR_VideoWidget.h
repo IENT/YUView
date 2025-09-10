@@ -54,6 +54,10 @@ public:
     void setSourceMaxLuminance(float maxLuminance);
     float getSourceMaxLuminance() const { return m_sourceMaxLuminance; }
     
+    // Color space conversion control
+    void setApplyColorSpaceConversion(bool apply);
+    bool getApplyColorSpaceConversion() const { return m_applyColorSpaceConversion; }
+    
     // Status queries
     bool isHDRCapable() const { return m_hdrCapable; }
     bool isInitialized() const { return m_initialized; }
@@ -169,6 +173,7 @@ private:
     float m_hdrGamma;            // Gamma correction (0.1 to 5.0)
     float m_displayMaxLuminance; // Display peak luminance in nits (from HDRDetection)
     float m_sourceMaxLuminance;  // Source content peak luminance in nits (from video metadata)
+    bool m_applyColorSpaceConversion; // Whether to convert from Rec.709 to Rec.2020
     
     // OpenGL objects
     QOpenGLShaderProgram* m_shaderProgram;
@@ -186,6 +191,7 @@ private:
     int m_sourceMaxLuminanceLocation;
     int m_textureMatrixLocation;
     int m_projectionMatrixLocation;
+    int m_applyColorSpaceConversionLocation;
     
     // Transformation matrices
     QMatrix4x4 m_textureMatrix;
