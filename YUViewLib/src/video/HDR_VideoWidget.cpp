@@ -39,7 +39,6 @@ HDR_VideoWidget::HDR_VideoWidget(QWidget* parent)
     , m_hdrGamma(1.0f)
     , m_displayMaxLuminance(1000.0f)  // Default HDR display capability
     , m_sourceMaxLuminance(100.0f)    // Default SDR content assumption
-    , m_applyColorSpaceConversion(false) // Default: don't convert color space
     , m_shaderProgram(nullptr)
     , m_videoTexture(nullptr)
     , m_vertexBuffer(nullptr)
@@ -53,7 +52,6 @@ HDR_VideoWidget::HDR_VideoWidget(QWidget* parent)
     , m_sourceMaxLuminanceLocation(-1)
     , m_textureMatrixLocation(-1)
     , m_projectionMatrixLocation(-1)
-    , m_applyColorSpaceConversionLocation(-1)
     , m_frameUpdated(false)
     , m_fpsTimer(nullptr)
     , m_frameCount(0)
@@ -282,26 +280,6 @@ void HDR_VideoWidget::setSourceMaxLuminance(float maxLuminance)
         }
         
         // Source max luminance updated
-    }
-}
-
-void HDR_VideoWidget::setApplyColorSpaceConversion(bool apply)
-{
-    if (m_applyColorSpaceConversion != apply) {
-        m_applyColorSpaceConversion = apply;
-        
-        if (m_initialized) {
-            QMetaObject::invokeMethod(this, [this]() {
-                if (context() && context()->isValid()) {
-                    makeCurrent();
-                    updateShaderUniforms();
-                    doneCurrent();
-                    update();
-                }
-            }, Qt::QueuedConnection);
-        }
-        
-        qDebug() << "HDR_VideoWidget: Color space conversion" << (apply ? "enabled" : "disabled");
     }
 }
 
@@ -682,7 +660,6 @@ uniform float hdrExposure;         // HDR exposure adjustment
 uniform float hdrGamma;            // Gamma correction
 uniform float displayMaxLuminance; // Display peak luminance in nits (from HDRDetection)
 uniform float sourceMaxLuminance;  // Source content peak luminance in nits
-uniform bool applyColorSpaceConversion; // Whether to convert Rec.709 to Rec.2020
 
 // ST.2084 PQ constants for HDR10
 const float m1 = 2610.0 / 4096.0 / 4.0;
@@ -691,14 +668,6 @@ const float c1 = 3424.0 / 4096.0;
 const float c2 = 2413.0 / 4096.0 * 32.0;
 const float c3 = 2392.0 / 4096.0 * 32.0;
 
-// CRITICAL FIX: Corrected Rec.709 to Rec.2020 color space conversion matrix  
-// Using ITU-R BT.2020 standard transformation matrix (row-major order)
-// This matrix converts from Rec.709 RGB to Rec.2020 RGB  
-const mat3 from709to2020 = mat3(
-    0.6274, 0.0691, 0.0164,  // Red channel coefficients
-    0.3293, 0.9195, 0.0880,  // Green channel coefficients  
-    0.0433, 0.0114, 0.8956   // Blue channel coefficients
-);
 
 // Decode Rec.709 OETF to linear light (scene-referred)
 vec3 rec709ToLinear(vec3 v) {
@@ -737,18 +706,11 @@ void main()
     vec4 color = texture(videoTexture, TexCoord);
     
     if (renderMode == 1) {
-        // BT.2020 + PQ: Apply PQ encoding with optional color space conversion
+        // BT.2020 + PQ: Apply PQ encoding without color space conversion
         // 1) Linearize assuming Rec.709/sRGB gamma
-        // 2) Optionally convert color primaries to Rec.2020
-        // 3) Map to absolute nits and apply ST.2084 OETF
+        // 2) Map to absolute nits and apply ST.2084 OETF
         vec3 rgb = clamp(color.rgb, 0.0, 1.0);
         vec3 rgb_linear = rec709ToLinear(rgb);
-        
-        // Apply color space conversion only if requested
-        if (applyColorSpaceConversion) {
-            rgb_linear = from709to2020 * rgb_linear;
-        }
-        
         vec3 pqEncoded = applyPQ(rgb_linear);
         FragColor = vec4(pqEncoded, color.a);
         
@@ -793,7 +755,6 @@ void main()
     m_sourceMaxLuminanceLocation = m_shaderProgram->uniformLocation("sourceMaxLuminance");
     m_textureMatrixLocation = m_shaderProgram->uniformLocation("textureMatrix");
     m_projectionMatrixLocation = m_shaderProgram->uniformLocation("projectionMatrix");
-    m_applyColorSpaceConversionLocation = m_shaderProgram->uniformLocation("applyColorSpaceConversion");
     
     qDebug() << "HDR shaders compiled and linked successfully";
     return true;
@@ -1149,7 +1110,6 @@ void HDR_VideoWidget::updateShaderUniforms()
     m_shaderProgram->setUniformValue(m_sourceMaxLuminanceLocation, m_sourceMaxLuminance);
     m_shaderProgram->setUniformValue(m_textureMatrixLocation, m_textureMatrix);
     m_shaderProgram->setUniformValue(m_projectionMatrixLocation, m_projectionMatrix);
-    m_shaderProgram->setUniformValue(m_applyColorSpaceConversionLocation, m_applyColorSpaceConversion);
 }
 
 void HDR_VideoWidget::updateProjectionMatrix()
