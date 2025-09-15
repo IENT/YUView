@@ -30,6 +30,7 @@
  *   along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "video/PixelFormat.h"
 #include <common/Testing.h>
 
 #include <video/rgb/PixelFormatRGB.h>
@@ -58,7 +59,7 @@ std::vector<PixelFormatRGB> getAllValidFormats()
           }
 
   allFormats.push_back(PixelFormatRGB(PredefinedPixelFormat::RGB565));
-  allFormats.push_back(PixelFormatRGB(PredefinedPixelFormat::RGB565BE));
+  allFormats.push_back(PixelFormatRGB(PredefinedPixelFormat::RGB565, Endianness::Big));
 
   return allFormats;
 }
@@ -192,10 +193,10 @@ TEST(PixelFormatRGBTest, testBrightnessCalculation)
   auto scaleRgbToPixelFormatBitDepth = [](const PixelFormatRGB &pixelFormat, rgba_t value) -> rgba_t
   {
     if (pixelFormat.getPredefinedPixelFormat())
-      return {value.R >> 3, value.G << 2, value.B << 3, 255};
+      return {value.r >> 3, value.g << 2, value.b << 3, 255};
 
     const auto shift = pixelFormat.getBitsPerComponent() - 8;
-    return {value.R >> shift, value.G >> shift, value.B >> shift, 255};
+    return {value.r >> shift, value.g >> shift, value.b >> shift, 255};
   };
 
   for (const auto &format : getAllValidFormats())

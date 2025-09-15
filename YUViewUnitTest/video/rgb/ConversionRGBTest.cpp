@@ -109,25 +109,25 @@ void checkOutputValues(const UChaVector            &data,
   {
     auto expectedValue = TEST_VALUES_12BIT.at(i);
 
-    expectedValue.R =
-      scaleShiftClipInvertValue(expectedValue.R, bitDepth, scaling[0], inversion[0]);
-    expectedValue.G =
-      scaleShiftClipInvertValue(expectedValue.G, bitDepth, scaling[1], inversion[1]);
-    expectedValue.B =
-      scaleShiftClipInvertValue(expectedValue.B, bitDepth, scaling[2], inversion[2]);
-    expectedValue.A =
-      scaleShiftClipInvertValue(expectedValue.A, bitDepth, scaling[3], inversion[3]);
+    expectedValue.r =
+      scaleShiftClipInvertValue(expectedValue.r, bitDepth, scaling[0], inversion[0]);
+    expectedValue.g =
+      scaleShiftClipInvertValue(expectedValue.g, bitDepth, scaling[1], inversion[1]);
+    expectedValue.b =
+      scaleShiftClipInvertValue(expectedValue.b, bitDepth, scaling[2], inversion[2]);
+    expectedValue.a =
+      scaleShiftClipInvertValue(expectedValue.a, bitDepth, scaling[3], inversion[3]);
 
     if (limitedRange)
     {
-      expectedValue.R = LimitedRangeToFullRange.at(expectedValue.R);
-      expectedValue.G = LimitedRangeToFullRange.at(expectedValue.G);
-      expectedValue.B = LimitedRangeToFullRange.at(expectedValue.B);
+      expectedValue.r = LimitedRangeToFullRange.at(expectedValue.r);
+      expectedValue.g = LimitedRangeToFullRange.at(expectedValue.g);
+      expectedValue.b = LimitedRangeToFullRange.at(expectedValue.b);
       // No limited range for alpha
     }
 
     if (!alphaShouldBeSet)
-      expectedValue.A = 255;
+      expectedValue.a = 255;
 
     const auto actualValue = getARGBValueFromDataLittleEndian(data, i);
 

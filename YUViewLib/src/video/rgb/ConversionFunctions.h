@@ -32,39 +32,66 @@
 
 #pragma once
 
-#include <video/rgb/PixelFormatRGB.h>
-
 #include <QByteArray>
-#include <QImage>
+
+#include "PixelFormatRGB.h"
 
 namespace video::rgb
 {
 
-struct InputFrameParameters
+template <typename T> struct DataPointers
 {
-  QByteArray &rawDataItem;
-  Size        frameSize{};
-};
+  T *r;
+  T *g;
+  T *b;
 
-struct MSE
-{
-  int64_t r{};
-  int64_t g{};
-  int64_t b{};
-
-  MSE &operator+=(const MSE &other)
+  DataPointers operator+=(const int offset)
   {
-    this->r += other.r;
-    this->g += other.g;
-    this->b += other.b;
+    this->r += offset;
+    this->g += offset;
+    this->b += offset;
     return *this;
   }
 };
 
-std::pair<QImage, MSE> calculateDifferenceAndMSE(const InputFrameParameters &frame1,
-                                                 const InputFrameParameters &frame2,
-                                                 const PixelFormatRGB       &pixelFormat,
-                                                 const int                   amplificationFactor,
-                                                 const bool                  markDifference);
+template <typename T>
+DataPointers<T> calculatePointersToStartOfComponents(QByteArray           &rawFrameData,
+                                                     const Size           &frameSize,
+                                                     const PixelFormatRGB &pixelFormat)
+{
+  const auto posR = pixelFormat.getChannelPosition(Channel::Red);
+  const auto posG = pixelFormat.getChannelPosition(Channel::Green);
+  const auto posB = pixelFormat.getChannelPosition(Channel::Blue);
+
+  const auto castDataPointer = reinterpret_cast<T *>(rawFrameData.data());
+
+  if (pixelFormat.getDataLayout() == DataLayout::Planar)
+  {
+    const auto offsetToNextPlane = frameSize.width * frameSize.height;
+
+    return {.r = castDataPointer + (posR * offsetToNextPlane),
+            .g = castDataPointer + (posG * offsetToNextPlane),
+            .b = castDataPointer + (posB * offsetToNextPlane)};
+  }
+
+  return {.r = castDataPointer + posR, .g = castDataPointer + posG, .b = castDataPointer + posB};
+}
+
+inline rgba_t extractRGB565Value(const unsigned char *data, const Endianness endianess)
+{
+  int byte1 = *data;
+  int byte2 = *(data + 1);
+
+  if (endianess == Endianness::Big)
+    std::swap(byte1, byte2);
+
+  const auto value = byte1 + (byte2 << 8);
+
+  int r = ((value & 0b00000000'00011111) << 3);
+  int g = ((value & 0b00000111'11100000) >> 3);
+  int b = ((value & 0b11111000'00000000) >> 8);
+
+  return {r, g, b, 255};
+}
 
 } // namespace video::rgb

@@ -30,6 +30,7 @@
  *   along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "video/rgb/PixelFormatRGB.h"
 #include <common/Testing.h>
 
 #include <filesource/FormatGuessingParameters.h>
@@ -221,7 +222,7 @@ INSTANTIATE_TEST_SUITE_P(
     TestParameters({FileInfoForGuess({"something_512x768_rgb565le.rgb", "", BytesRGB565File}),
                     PixelFormatRGB(PredefinedPixelFormat::RGB565)}),
     TestParameters({FileInfoForGuess({"something_512x768_rgb565be.rgb", "", BytesRGB565File}),
-                    PixelFormatRGB(PredefinedPixelFormat::RGB565BE)})
+                    PixelFormatRGB(PredefinedPixelFormat::RGB565, Endianness::Big)})
 
       ),
   getTestName);

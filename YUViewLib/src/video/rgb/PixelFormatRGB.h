@@ -56,45 +56,50 @@ constexpr EnumMapper<Channel, 4> ChannelMapper = {std::make_pair(Channel::Red, "
 
 struct rgba_t
 {
-  unsigned R{0}, G{0}, B{0}, A{0};
+  int r{0}, g{0}, b{0}, a{0};
 
-  unsigned &operator[](const Channel channel)
+  int &operator[](const Channel channel)
   {
     if (channel == Channel::Red)
-      return this->R;
+      return this->r;
     if (channel == Channel::Green)
-      return this->G;
+      return this->g;
     if (channel == Channel::Blue)
-      return this->B;
+      return this->b;
     if (channel == Channel::Alpha)
-      return this->A;
+      return this->a;
 
     throw std::out_of_range("Unsupported channel for value access");
   }
 
-  unsigned at(const Channel channel) const
+  int at(const Channel channel) const
   {
     if (channel == Channel::Red)
-      return this->R;
+      return this->r;
     if (channel == Channel::Green)
-      return this->G;
+      return this->g;
     if (channel == Channel::Blue)
-      return this->B;
+      return this->b;
     if (channel == Channel::Alpha)
-      return this->A;
+      return this->a;
 
     throw std::out_of_range("Unsupported channel for value access");
   }
 
   bool operator==(const rgba_t &other) const
   {
-    return this->R == other.R && this->G == other.G && this->B == other.B && this->A == other.A;
+    return this->r == other.r && this->g == other.g && this->b == other.b && this->a == other.a;
   };
 
   bool operator!=(const rgba_t &other) const
   {
-    return this->R != other.R || this->G != other.G || this->B != other.B || this->A != other.A;
+    return this->r != other.r || this->g != other.g || this->b != other.b || this->a != other.a;
   };
+
+  rgba_t operator-(const rgba_t &other) const
+  {
+    return {this->r - other.r, this->g - other.g, this->b - other.b, this->a - other.a};
+  }
 };
 
 template <typename T> inline T convertBitness(T value, unsigned src_bitness, unsigned dst_bitness)
@@ -107,21 +112,19 @@ template <typename T> inline T convertBitness(T value, unsigned src_bitness, uns
 
 inline rgba_t convertBitness(rgba_t value, unsigned src_bitness, unsigned dst_bitness)
 {
-  return rgba_t({convertBitness(value.R, src_bitness, dst_bitness),
-                 convertBitness(value.G, src_bitness, dst_bitness),
-                 convertBitness(value.B, src_bitness, dst_bitness),
-                 convertBitness(value.A, src_bitness, dst_bitness)});
+  return rgba_t({convertBitness(value.r, src_bitness, dst_bitness),
+                 convertBitness(value.g, src_bitness, dst_bitness),
+                 convertBitness(value.b, src_bitness, dst_bitness),
+                 convertBitness(value.a, src_bitness, dst_bitness)});
 }
 
 enum class PredefinedPixelFormat
 {
-  RGB565,   // 16 bits packed as R:5, G:6, B:5
-  RGB565BE, // 16 bits packed as R:5, G:6, B:5 Big Endian
+  RGB565, // 16 bits packed as R:5, G:6, B:5
 };
 
 constexpr EnumMapper<PredefinedPixelFormat, 2> PredefinedPixelFormatMapper = {
-  std::make_pair(PredefinedPixelFormat::RGB565, "RGB565"),
-  std::make_pair(PredefinedPixelFormat::RGB565BE, "RGB565BE")};
+  std::make_pair(PredefinedPixelFormat::RGB565, "RGB565")};
 
 enum class ChannelOrder
 {
@@ -163,7 +166,8 @@ public:
                  const ChannelOrder channelOrder,
                  const AlphaMode    alphaMode  = AlphaMode::None,
                  const Endianness   endianness = Endianness::Little);
-  PixelFormatRGB(const PredefinedPixelFormat predefinedPixelFormat);
+  PixelFormatRGB(const PredefinedPixelFormat predefinedPixelFormat,
+                 const Endianness            endianness = Endianness::Little);
 
   [[nodiscard]] bool        isValid() const;
   [[nodiscard]] bool        hasAlpha() const;

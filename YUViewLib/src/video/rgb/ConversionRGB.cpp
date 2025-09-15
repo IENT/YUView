@@ -34,6 +34,8 @@
 
 #include <video/LimitedRangeToFullRange.h>
 
+#include "ConversionFunctions.h"
+
 namespace video::rgb
 {
 
@@ -67,24 +69,6 @@ int getOffsetToFirstByteOfComponent(const Channel         channel,
   return offset;
 }
 
-using RGBTuple = std::tuple<int, int, int>;
-RGBTuple extractRGB565Value(const unsigned char *data, const Endianness endianess)
-{
-  int byte1 = *data;
-  int byte2 = *(data + 1);
-
-  if (endianess == Endianness::Big)
-    std::swap(byte1, byte2);
-
-  const auto value = byte1 + (byte2 << 8);
-
-  int r = ((value & 0b00000000'00011111) << 3);
-  int g = ((value & 0b00000111'11100000) >> 3);
-  int b = ((value & 0b11111000'00000000) >> 8);
-
-  return {r, g, b};
-}
-
 void convertRGB565ToARGB(const QByteArray     &sourceBuffer,
                          const PixelFormatRGB &srcPixelFormat,
                          unsigned char        *targetBuffer,
@@ -93,25 +77,12 @@ void convertRGB565ToARGB(const QByteArray     &sourceBuffer,
                          const int             componentScale[4],
                          const bool            limitedRange)
 {
-  auto rawData = reinterpret_cast<const unsigned char *>(sourceBuffer.data());
+  auto       rawData   = reinterpret_cast<const unsigned char *>(sourceBuffer.data());
+  const auto endianess = srcPixelFormat.getEndianess();
 
-  const auto endianness =
-    (srcPixelFormat.getPredefinedPixelFormat() == PredefinedPixelFormat::RGB565BE
-       ? Endianness::Big
-       : Endianness::Little);
   for (unsigned i = 0; i < frameSize.width * frameSize.height; i++)
   {
-    int byte1 = *rawData;
-    int byte2 = *(rawData + 1);
-
-    if (endianness == Endianness::Big)
-      std::swap(byte1, byte2);
-
-    const auto value = byte1 + (byte2 << 8);
-
-    int r = ((value & 0b00000000'00011111) << 3);
-    int g = ((value & 0b00000111'11100000) >> 3);
-    int b = ((value & 0b11111000'00000000) >> 8);
+    auto [r, g, b, a] = extractRGB565Value(rawData, endianess);
 
     r = functions::clip(r * componentScale[0], 0, 255);
     g = functions::clip(g * componentScale[1], 0, 255);
@@ -134,7 +105,7 @@ void convertRGB565ToARGB(const QByteArray     &sourceBuffer,
     targetBuffer[0] = r;
     targetBuffer[1] = g;
     targetBuffer[2] = b;
-    targetBuffer[3] = 255;
+    targetBuffer[3] = a;
 
     rawData += 2;
     targetBuffer += 4;
@@ -243,16 +214,12 @@ void convertPredefinedPixelFormatRGBPlaneToARGB(const QByteArray     &sourceBuff
 {
   auto rawData = reinterpret_cast<const unsigned char *>(sourceBuffer.data());
 
-  const auto endianness =
-    (srcPixelFormat.getPredefinedPixelFormat() == PredefinedPixelFormat::RGB565BE
-       ? Endianness::Big
-       : Endianness::Little);
   for (unsigned i = 0; i < frameSize.width * frameSize.height; i++)
   {
     int byte1 = *rawData;
     int byte2 = *(rawData + 1);
 
-    if (endianness == Endianness::Big)
+    if (srcPixelFormat.getEndianess() == Endianness::Big)
       std::swap(byte1, byte2);
 
     const auto value = byte1 + (byte2 << 8);
@@ -340,11 +307,7 @@ rgba_t getPixelValueForPredefiendFormat(const QByteArray     &sourceBuffer,
   int byte1 = *rawData;
   int byte2 = *(rawData + 1);
 
-  const auto endianness =
-    (srcPixelFormat.getPredefinedPixelFormat() == PredefinedPixelFormat::RGB565BE
-       ? Endianness::Big
-       : Endianness::Little);
-  if (endianness == Endianness::Big)
+  if (srcPixelFormat.getEndianess() == Endianness::Big)
     std::swap(byte1, byte2);
 
   const auto value = byte1 + (byte2 << 8);
@@ -353,7 +316,7 @@ rgba_t getPixelValueForPredefiendFormat(const QByteArray     &sourceBuffer,
   int g = ((value & 0b00000111'11100000) >> 5);
   int b = ((value & 0b11111000'00000000) >> 11);
 
-  return {static_cast<unsigned>(r), static_cast<unsigned>(g), static_cast<unsigned>(b), 255};
+  return {r, g, b, 255};
 }
 
 template <int bitDepth>

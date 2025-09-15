@@ -34,6 +34,10 @@
 
 #include <common/FunctionsGui.h>
 
+#include "ConversionFunctions.h"
+#include "video/PixelFormat.h"
+#include "video/rgb/PixelFormatRGB.h"
+
 // Restrict is basically a promise to the compiler that for the scope of the pointer, the target of
 // the pointer will only be accessed through that pointer (and pointers copied from it).
 #if __STDC__ != 1
@@ -56,46 +60,45 @@ namespace video::rgb
 namespace
 {
 
-template <typename T> struct DataPointers
+using RenderValue = std::tuple<unsigned char, unsigned char, unsigned char>;
+RenderValue convertDeltaToRenderValue(const rgba_t &delta,
+                                      const bool    markDifference,
+                                      const int     amplificationFactor)
 {
-  T *r;
-  T *g;
-  T *b;
-};
-
-template <typename T>
-DataPointers<T> calculatePointersToStartOfComponents(const InputFrameParameters frameParameters,
-                                                     const PixelFormatRGB      &pixelFormat)
-{
-  const auto posR = pixelFormat.getChannelPosition(Channel::Red);
-  const auto posG = pixelFormat.getChannelPosition(Channel::Green);
-  const auto posB = pixelFormat.getChannelPosition(Channel::Blue);
-
-  const auto castDataPointer = reinterpret_cast<T *>(frameParameters.rawDataItem->data());
-
-  if (pixelFormat.getDataLayout() == DataLayout::Planar)
+  if (markDifference)
   {
-    const auto offsetToNextPlane =
-      frameParameters.frameSize.width * frameParameters.frameSize.height;
-
-    return DataPointers<T>({.r = castDataPointer + (posR * offsetToNextPlane),
-                            .g = castDataPointer + (posG * offsetToNextPlane),
-                            .b = castDataPointer + (posB * offsetToNextPlane)});
+    const auto r = (delta.r == 0) ? 0 : 255;
+    const auto g = (delta.g == 0) ? 0 : 255;
+    const auto b = (delta.b == 0) ? 0 : 255;
+    return {r, g, b};
   }
+  else
+  {
+    const auto r = functions::clip(128 + delta.r * amplificationFactor, 0, 255);
+    const auto g = functions::clip(128 + delta.g * amplificationFactor, 0, 255);
+    const auto b = functions::clip(128 + delta.b * amplificationFactor, 0, 255);
+    return {r, g, b};
+  }
+}
 
-  return DataPointers<T>(
-    {.r = castDataPointer + posR, .g = castDataPointer + posG, .b = castDataPointer + posB});
+MSE calculateMse(const rgba_t &delta)
+{
+  MSE mse;
+  mse.r = delta.r * delta.r;
+  mse.g = delta.g * delta.g;
+  mse.b = delta.b * delta.b;
+  return mse;
 }
 
 std::pair<QImage, MSE>
 calculateDifferencePredefinedPixelFormat(const InputFrameParameters &frame1,
                                          const InputFrameParameters &frame2,
                                          const PredefinedPixelFormat predefinedPixelFormat,
+                                         const Endianness            endianess,
                                          const int                   amplificationFactor,
                                          const bool                  markDifference)
 {
-  if (predefinedPixelFormat != PredefinedPixelFormat::RGB565 &&
-      predefinedPixelFormat != PredefinedPixelFormat::RGB565BE)
+  if (predefinedPixelFormat != PredefinedPixelFormat::RGB565)
     return {};
 
   const auto frameSize = Size(std::min(frame1.frameSize.width, frame2.frameSize.width),
@@ -103,10 +106,30 @@ calculateDifferencePredefinedPixelFormat(const InputFrameParameters &frame1,
 
   auto outputImage =
     QImage(QSize(frameSize.width, frameSize.height), functionsGui::platformImageFormat(false));
+  auto restrict dst = outputImage.bits();
 
   MSE mse;
 
-  // Todo: Add code here!
+  auto rawData1 = reinterpret_cast<const unsigned char *>(frame1.rawDataItem.data());
+  auto rawData2 = reinterpret_cast<const unsigned char *>(frame2.rawDataItem.data());
+
+  for (unsigned i = 0; i < frameSize.width * frameSize.height; ++i)
+  {
+    const auto rgb1 = extractRGB565Value(rawData1, endianess);
+    const auto rgb2 = extractRGB565Value(rawData2, endianess);
+
+    const auto delta = rgb1 - rgb2;
+
+    mse += calculateMse(delta);
+
+    std::tie(dst[2], dst[1], dst[0]) =
+      convertDeltaToRenderValue(delta, markDifference, amplificationFactor);
+    dst[3] = 255;
+
+    rawData1 += 2;
+    rawData2 += 2;
+    dst += 4;
+  }
 
   return {outputImage, mse};
 }
@@ -121,8 +144,10 @@ std::pair<QImage, MSE> calculateDifferenceAndMSE(const InputFrameParameters &fra
   static_assert(std::is_same_v<T, uint8_t> || std::is_same_v<T, uint16_t> ||
                 std::is_same_v<T, uint32_t>);
 
-  const auto components1 = calculatePointersToStartOfComponents<T>(frame1, pixelFormat);
-  const auto components2 = calculatePointersToStartOfComponents<T>(frame2, pixelFormat);
+  auto dataPointers1 =
+    calculatePointersToStartOfComponents<T>(frame1.rawDataItem, frame1.frameSize, pixelFormat);
+  auto dataPointers2 =
+    calculatePointersToStartOfComponents<T>(frame2.rawDataItem, frame2.frameSize, pixelFormat);
 
   const auto frameSize   = Size(std::min(frame1.frameSize.width, frame2.frameSize.width),
                               std::min(frame1.frameSize.height, frame2.frameSize.height));
@@ -130,50 +155,31 @@ std::pair<QImage, MSE> calculateDifferenceAndMSE(const InputFrameParameters &fra
                             functionsGui::platformImageFormat(pixelFormat.hasAlpha()));
   MSE        mse;
 
-  unsigned char *restrict dst = outputImage.bits();
+  auto restrict dst = outputImage.bits();
   const auto offsetToNextValue =
     (pixelFormat.getDataLayout() == DataLayout::Planar ? 1 : pixelFormat.getNrChannels());
 
-  for (int y = 0; y < frameSize.height; ++y)
+  for (unsigned i = 0; i < frameSize.width * frameSize.height; ++i)
   {
-    for (int x = 0; x < frameSize.width; ++x)
-    {
-      const auto offsetCoordinate = frameSize.width * y + x;
+    const rgba_t rgb1 = {.r = static_cast<int>(*dataPointers1.r),
+                         .g = static_cast<int>(*dataPointers1.g),
+                         .b = static_cast<int>(*dataPointers1.b)};
 
-      const auto r1 = static_cast<int>(*(components1.r + offsetToNextValue * offsetCoordinate));
-      const auto g1 = static_cast<int>(*(components1.g + offsetToNextValue * offsetCoordinate));
-      const auto b1 = static_cast<int>(*(components1.b + offsetToNextValue * offsetCoordinate));
+    const rgba_t rgb2 = {.r = static_cast<int>(*dataPointers2.r),
+                         .g = static_cast<int>(*dataPointers2.g),
+                         .b = static_cast<int>(*dataPointers2.b)};
 
-      const auto r2 = static_cast<int>(*(components2.r + offsetToNextValue * offsetCoordinate));
-      const auto g2 = static_cast<int>(*(components2.g + offsetToNextValue * offsetCoordinate));
-      const auto b2 = static_cast<int>(*(components2.b + offsetToNextValue * offsetCoordinate));
+    const auto delta = rgb1 - rgb2;
 
-      const auto deltaR = r1 - r2;
-      const auto deltaG = g1 - g2;
-      const auto deltaB = b1 - b2;
+    mse += calculateMse(delta);
 
-      mse.r += deltaR * deltaR;
-      mse.g += deltaG * deltaG;
-      mse.b += deltaB * deltaB;
+    std::tie(dst[2], dst[1], dst[0]) =
+      convertDeltaToRenderValue(delta, markDifference, amplificationFactor);
+    dst[3] = 255;
 
-      if (markDifference)
-      {
-        // Just mark if there is a difference
-        dst[0] = (deltaB == 0) ? 0 : 255;
-        dst[1] = (deltaG == 0) ? 0 : 255;
-        dst[2] = (deltaR == 0) ? 0 : 255;
-      }
-      else
-      {
-        // We want to see the difference
-        dst[0] = functions::clip(128 + deltaB * amplificationFactor, 0, 255);
-        dst[1] = functions::clip(128 + deltaG * amplificationFactor, 0, 255);
-        dst[2] = functions::clip(128 + deltaR * amplificationFactor, 0, 255);
-      }
-
-      dst[3] = 255;
-      dst += 4;
-    }
+    dataPointers1 += offsetToNextValue;
+    dataPointers2 += offsetToNextValue;
+    dst += 4;
   }
 
   return {outputImage, mse};
@@ -189,10 +195,12 @@ std::pair<QImage, MSE> calculateDifferenceAndMSE(const InputFrameParameters &fra
 {
 
   if (pixelFormat.getPredefinedPixelFormat())
-    return calculateDifferencePredefinedPixelFormat(
-      frame1, frame2, *pixelFormat.getPredefinedPixelFormat(), amplificationFactor, markDifference);
-
-  const auto bitDepth = pixelFormat.getBitsPerComponent();
+    return calculateDifferencePredefinedPixelFormat(frame1,
+                                                    frame2,
+                                                    *pixelFormat.getPredefinedPixelFormat(),
+                                                    pixelFormat.getEndianess(),
+                                                    amplificationFactor,
+                                                    markDifference);
 
   if (pixelFormat.getBitsPerComponent() == 8)
     return calculateDifferenceAndMSE<uint8_t>(

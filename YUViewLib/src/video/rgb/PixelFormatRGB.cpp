@@ -92,9 +92,11 @@ PixelFormatRGB::PixelFormatRGB(const std::string &name)
     this->endianness = Endianness::Big;
 }
 
-PixelFormatRGB::PixelFormatRGB(const PredefinedPixelFormat predefinedPixelFormat)
+PixelFormatRGB::PixelFormatRGB(const PredefinedPixelFormat predefinedPixelFormat,
+                               const Endianness            endianness)
 {
   this->predefinedPixelFormat = predefinedPixelFormat;
+  this->endianness            = endianness;
 }
 
 bool PixelFormatRGB::isValid() const
@@ -119,7 +121,13 @@ std::string PixelFormatRGB::getName() const
     return UNKNOWN_FORMAT_NAME;
 
   if (this->predefinedPixelFormat)
-    return std::string(PredefinedPixelFormatMapper.getName(*this->predefinedPixelFormat));
+  {
+    auto name = std::string(PredefinedPixelFormatMapper.getName(*this->predefinedPixelFormat));
+    if (this->predefinedPixelFormat == PredefinedPixelFormat::RGB565 &&
+        this->endianness == Endianness::Big)
+      name += "BE";
+    return name;
+  }
 
   std::string name;
   if (this->alphaMode == AlphaMode::First)
@@ -169,8 +177,7 @@ std::optional<PredefinedPixelFormat> PixelFormatRGB::getPredefinedPixelFormat() 
 
 int PixelFormatRGB::getNrChannels() const
 {
-  if (this->predefinedPixelFormat == PredefinedPixelFormat::RGB565 ||
-      this->predefinedPixelFormat == PredefinedPixelFormat::RGB565BE)
+  if (this->predefinedPixelFormat == PredefinedPixelFormat::RGB565)
     return 3;
 
   return this->alphaMode != AlphaMode::None ? 4 : 3;
@@ -184,8 +191,7 @@ int PixelFormatRGB::getBytesPerFrame(const Size frameSize) const
   const auto numberSamples = std::size_t(frameSize.height) * std::size_t(frameSize.width);
 
   int numberBytesPerFrame;
-  if (this->predefinedPixelFormat == PredefinedPixelFormat::RGB565 ||
-      this->predefinedPixelFormat == PredefinedPixelFormat::RGB565BE)
+  if (this->predefinedPixelFormat == PredefinedPixelFormat::RGB565)
   {
     numberBytesPerFrame = numberSamples * 2;
   }
@@ -302,20 +308,20 @@ TextRendering PixelFormatRGB::getPixelValueTextRendering(rgba_t value) const
   // Shift the values to 8 bit
   if (this->predefinedPixelFormat)
   {
-    value.R = (value.R << 3);
-    value.G = (value.G << 2);
-    value.B = (value.B << 3);
+    value.r = (value.r << 3);
+    value.g = (value.g << 2);
+    value.b = (value.b << 3);
   }
   else if (this->bitsPerComponent > 8)
   {
     const auto shift = (this->bitsPerComponent - 8);
-    value.R          = (value.R >> shift);
-    value.G          = (value.G >> shift);
-    value.B          = (value.B >> shift);
+    value.r          = (value.r >> shift);
+    value.g          = (value.g >> shift);
+    value.b          = (value.b >> shift);
   }
 
   // Approximation of Y = 0.375 R + 0.5 G + 0.125 B to be closer to the percieved brightness.
-  const auto luminance = (3 * value.R + 4 * value.G + value.B) >> 3;
+  const auto luminance = (3 * value.r + 4 * value.g + value.b) >> 3;
   return luminance < 128 ? TextRendering::White : TextRendering::Black;
 }
 

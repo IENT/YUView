@@ -121,8 +121,7 @@ std::vector<rgb::PixelFormatRGB> videoHandlerRGB::formatPresetList = {
   PixelFormatRGB(8, DataLayout::Packed, ChannelOrder::BRG),
   PixelFormatRGB(10, DataLayout::Packed, ChannelOrder::BRG),
   PixelFormatRGB(10, DataLayout::Planar, ChannelOrder::RGB),
-  PixelFormatRGB(PredefinedPixelFormat::RGB565),
-  PixelFormatRGB(PredefinedPixelFormat::RGB565BE)};
+  PixelFormatRGB(PredefinedPixelFormat::RGB565)};
 
 videoHandlerRGB::videoHandlerRGB() : videoHandler()
 {
@@ -170,23 +169,22 @@ QStringPairList videoHandlerRGB::getPixelValues(const QPoint &pixelPos,
         pixelPos.y() >= int(height))
       return {};
 
-    rgba_t valueThis  = getPixelValue(pixelPos);
-    rgba_t valueOther = rgbItem2->getPixelValue(pixelPos);
+    const auto diff = getPixelValue(pixelPos) - rgbItem2->getPixelValue(pixelPos);
 
-    const int     R       = int(valueThis.R) - int(valueOther.R);
-    const int     G       = int(valueThis.G) - int(valueOther.G);
-    const int     B       = int(valueThis.B) - int(valueOther.B);
-    const QString RString = ((R < 0) ? "-" : "") + QString::number(std::abs(R), formatBase);
-    const QString GString = ((G < 0) ? "-" : "") + QString::number(std::abs(G), formatBase);
-    const QString BString = ((B < 0) ? "-" : "") + QString::number(std::abs(B), formatBase);
+    const QString RString =
+      ((diff.r < 0) ? "-" : "") + QString::number(std::abs(diff.r), formatBase);
+    const QString GString =
+      ((diff.g < 0) ? "-" : "") + QString::number(std::abs(diff.g), formatBase);
+    const QString BString =
+      ((diff.b < 0) ? "-" : "") + QString::number(std::abs(diff.b), formatBase);
 
     values.append(QStringPair("R", RString));
     values.append(QStringPair("G", GString));
     values.append(QStringPair("B", BString));
     if (srcPixelFormat.hasAlpha())
     {
-      const int     A       = int(valueThis.A) - int(valueOther.A);
-      const QString AString = ((A < 0) ? "-" : "") + QString::number(std::abs(A), formatBase);
+      const QString AString =
+        ((diff.a < 0) ? "-" : "") + QString::number(std::abs(diff.a), formatBase);
       values.append(QStringPair("A", AString));
     }
   }
@@ -203,11 +201,11 @@ QStringPairList videoHandlerRGB::getPixelValues(const QPoint &pixelPos,
 
     rgba_t value = getPixelValue(pixelPos);
 
-    values.append(QStringPair("R", QString::number(value.R, formatBase)));
-    values.append(QStringPair("G", QString::number(value.G, formatBase)));
-    values.append(QStringPair("B", QString::number(value.B, formatBase)));
+    values.append(QStringPair("R", QString::number(value.r, formatBase)));
+    values.append(QStringPair("G", QString::number(value.g, formatBase)));
+    values.append(QStringPair("B", QString::number(value.b, formatBase)));
     if (srcPixelFormat.hasAlpha())
-      values.append(QStringPair("A", QString::number(value.A, formatBase)));
+      values.append(QStringPair("A", QString::number(value.a, formatBase)));
   }
 
   return values;
@@ -309,7 +307,14 @@ QLayout *videoHandlerRGB::createVideoHandlerControls(bool isSizeFixed)
                         ui.BInvertCheckBox,
                         ui.AInvertCheckBox,
                         ui.limitedRangeCheckBox})
+  {
+#if QT_VERSION >= QT_VERSION_CHECK(6, 7, 0)
+    connect(
+      checkBox, &QCheckBox::checkStateChanged, this, &videoHandlerRGB::slotDisplayOptionsChanged);
+#else
     connect(checkBox, &QCheckBox::stateChanged, this, &videoHandlerRGB::slotDisplayOptionsChanged);
+#endif
+  }
 
   this->updateControlsForNewPixelFormat();
 
@@ -795,27 +800,27 @@ void videoHandlerRGB::drawPixelValues(QPainter     *painter,
       const int formatBase = settings.value("ShowPixelValuesHex").toBool() ? 16 : 10;
       if (rgbItem2 != nullptr)
       {
-        rgba_t valueThis  = getPixelValue(QPoint(x, y));
-        rgba_t valueOther = rgbItem2->getPixelValue(QPoint(x, y));
+        const auto diff = getPixelValue(QPoint(x, y)) - rgbItem2->getPixelValue(QPoint(x, y));
 
-        const int     r       = int(valueThis.R) - int(valueOther.R);
-        const int     g       = int(valueThis.G) - int(valueOther.G);
-        const int     b       = int(valueThis.B) - int(valueOther.B);
-        const int     a       = int(valueThis.A) - int(valueOther.A);
-        const QString rString = ((r < 0) ? "-" : "") + QString::number(std::abs(r), formatBase);
-        const QString gString = ((g < 0) ? "-" : "") + QString::number(std::abs(g), formatBase);
-        const QString bString = ((b < 0) ? "-" : "") + QString::number(std::abs(b), formatBase);
+        const QString rString =
+          ((diff.r < 0) ? "-" : "") + QString::number(std::abs(diff.r), formatBase);
+        const QString gString =
+          ((diff.g < 0) ? "-" : "") + QString::number(std::abs(diff.g), formatBase);
+        const QString bString =
+          ((diff.b < 0) ? "-" : "") + QString::number(std::abs(diff.b), formatBase);
 
         if (markDifference)
-          painter->setPen((r == 0 && g == 0 && b == 0 && (!srcPixelFormat.hasAlpha() || a == 0))
+          painter->setPen((diff.r == 0 && diff.g == 0 && diff.b == 0 &&
+                           (!srcPixelFormat.hasAlpha() || diff.a == 0))
                             ? Qt::white
                             : Qt::black);
         else
-          painter->setPen((r < 0 && g < 0 && b < 0) ? Qt::white : Qt::black);
+          painter->setPen((diff.r < 0 && diff.g < 0 && diff.b < 0) ? Qt::white : Qt::black);
 
         if (srcPixelFormat.hasAlpha())
         {
-          const QString aString = ((a < 0) ? "-" : "") + QString::number(std::abs(a), formatBase);
+          const QString aString =
+            ((diff.a < 0) ? "-" : "") + QString::number(std::abs(diff.a), formatBase);
           valText = QString("R%1\nG%2\nB%3\nA%4").arg(rString, gString, bString, aString);
         }
         else
@@ -826,15 +831,15 @@ void videoHandlerRGB::drawPixelValues(QPainter     *painter,
         const auto value = getPixelValue(QPoint(x, y));
         if (srcPixelFormat.hasAlpha())
           valText = QString("R%1\nG%2\nB%3\nA%4")
-                      .arg(value.R, 0, formatBase)
-                      .arg(value.G, 0, formatBase)
-                      .arg(value.B, 0, formatBase)
-                      .arg(value.A, 0, formatBase);
+                      .arg(value.r, 0, formatBase)
+                      .arg(value.g, 0, formatBase)
+                      .arg(value.b, 0, formatBase)
+                      .arg(value.a, 0, formatBase);
         else
           valText = QString("R%1\nG%2\nB%3")
-                      .arg(value.R, 0, formatBase)
-                      .arg(value.G, 0, formatBase)
-                      .arg(value.B, 0, formatBase);
+                      .arg(value.r, 0, formatBase)
+                      .arg(value.g, 0, formatBase)
+                      .arg(value.b, 0, formatBase);
 
         painter->setPen(
           (this->srcPixelFormat.getPixelValueTextRendering(value) == TextRendering::White)
@@ -864,9 +869,18 @@ QImage videoHandlerRGB::calculateDifference(FrameHandler    *item2,
   if (srcPixelFormat.getBitsPerComponent() != rgbItem2->srcPixelFormat.getBitsPerComponent() ||
       srcPixelFormat.getPredefinedPixelFormat() !=
         rgbItem2->srcPixelFormat.getPredefinedPixelFormat())
-    // The two items have different bit depths. Compare RGB 888 values instead.
+    // The two items have different bit depths or different predefined pixel formats. Compare RGB
+    // 888 values instead.
     return videoHandler::calculateDifference(
       item2, frameIdxItem0, frameIdxItem1, differenceInfoList, amplificationFactor, markDifference);
+
+  const auto [img, mse] =
+    calculateDifferenceAndMSE({this->currentFrameRawData, this->frameSize},
+                              {rgbItem2->currentFrameRawData, rgbItem2->frameSize},
+                              srcPixelFormat,
+                              amplificationFactor,
+                              markDifference);
+  return img;
 
   const int width  = std::min(frameSize.width, rgbItem2->frameSize.width);
   const int height = std::min(frameSize.height, rgbItem2->frameSize.height);

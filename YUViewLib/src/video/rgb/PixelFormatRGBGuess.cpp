@@ -31,6 +31,7 @@
  */
 
 #include "PixelFormatRGBGuess.h"
+#include "video/PixelFormat.h"
 
 #include <common/Functions.h>
 
@@ -126,7 +127,8 @@ std::optional<PixelFormatRGB> checkForPixelFormatIndicatorInName(
   matcher += "rgb565|";
   stringToMatchingFormat["rgb565le"] = PixelFormatRGB(PredefinedPixelFormat::RGB565);
   matcher += "rgb565le|";
-  stringToMatchingFormat["rgb565be"] = PixelFormatRGB(PredefinedPixelFormat::RGB565BE);
+  stringToMatchingFormat["rgb565be"] =
+    PixelFormatRGB(PredefinedPixelFormat::RGB565, Endianness::Big);
   matcher += "rgb565be";
 
   matcher += ")(?:_|\\.|-)";
@@ -199,7 +201,7 @@ std::optional<PixelFormatRGB> checkSpecificFileExtensions(
   }
   if (fileExtension == ".rgb565be")
   {
-    const auto format = PixelFormatRGB(PredefinedPixelFormat::RGB565BE);
+    const auto format = PixelFormatRGB(PredefinedPixelFormat::RGB565, Endianness::Big);
     if (doesPixelFormatMatchFileSize(format, frameSize, fileSize))
       return format;
   }

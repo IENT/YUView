@@ -61,7 +61,7 @@ void testGetPixelValueFromBuffer(const QByteArray     &sourceBuffer,
       const auto testValue     = TEST_VALUES_12BIT[testValueIndex++];
       auto       expectedValue = convertBitness(testValue, 12, bitDepth);
       if (!srcPixelFormat.hasAlpha())
-        expectedValue.A = 0;
+        expectedValue.a = 0;
 
       if (actualValue != expectedValue)
         throw std::runtime_error("Error checking pixel [" + std::to_string(x) + "," +
