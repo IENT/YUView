@@ -62,11 +62,20 @@ PixelFormatRGB::PixelFormatRGB(const std::string &name)
     return;
 
   for (const auto predefinedFormat : PredefinedPixelFormatMapper)
+  {
     if (name == predefinedFormat.second)
     {
       this->predefinedPixelFormat = predefinedFormat.first;
       return;
     }
+    const auto predefinedFormatWithBE = predefinedFormat.second + "BE";
+    if (name == predefinedFormatWithBE)
+    {
+      this->predefinedPixelFormat = predefinedFormat.first;
+      this->endianness            = Endianness::Big;
+      return;
+    }
+  }
 
   auto channelOrderString = name.substr(0, 3);
   if (name[0] == 'a' || name[0] == 'A')
@@ -325,17 +334,23 @@ TextRendering PixelFormatRGB::getPixelValueTextRendering(rgba_t value) const
   return luminance < 128 ? TextRendering::White : TextRendering::Black;
 }
 
-bool PixelFormatRGB::operator==(const PixelFormatRGB &a) const
+bool PixelFormatRGB::operator==(const PixelFormatRGB &other) const
 {
-  if (!this->isValid() || !a.isValid())
+  if (!this->isValid() || !other.isValid())
     return false;
 
   if (this->predefinedPixelFormat)
-    return this->predefinedPixelFormat == a.predefinedPixelFormat;
+  {
+    if (this->predefinedPixelFormat != other.predefinedPixelFormat)
+      return false;
+    if (this->predefinedPixelFormat == PredefinedPixelFormat::RGB565)
+      return this->endianness == other.endianness;
+    return true;
+  }
 
-  return this->bitsPerComponent == a.bitsPerComponent && this->dataLayout == a.dataLayout &&
-         this->channelOrder == a.channelOrder && this->alphaMode == a.alphaMode &&
-         this->endianness == a.endianness;
+  return this->bitsPerComponent == other.bitsPerComponent && this->dataLayout == other.dataLayout &&
+         this->channelOrder == other.channelOrder && this->alphaMode == other.alphaMode &&
+         this->endianness == other.endianness;
 }
 
 bool PixelFormatRGB::operator!=(const PixelFormatRGB &a) const
