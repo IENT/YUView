@@ -73,7 +73,9 @@ TEST_P(GuessRGBFormatFromFilenameFrameSizeAndFileSize, TestGuess)
 
   EXPECT_EQ(guessedFormat.isValid(), parameters.expectedPixelFormat.isValid());
   if (guessedFormat.isValid())
+  {
     EXPECT_EQ(guessedFormat, parameters.expectedPixelFormat);
+  }
 }
 
 constexpr auto BytesNoAlpha    = 1920u * 1080 * 12u * 3u; // 12 frames RGB

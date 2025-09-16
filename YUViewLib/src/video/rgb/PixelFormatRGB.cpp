@@ -61,14 +61,14 @@ PixelFormatRGB::PixelFormatRGB(const std::string &name)
   if (name == UNKNOWN_FORMAT_NAME)
     return;
 
-  for (const auto predefinedFormat : PredefinedPixelFormatMapper)
+  for (const auto &predefinedFormat : PredefinedPixelFormatMapper)
   {
     if (name == predefinedFormat.second)
     {
       this->predefinedPixelFormat = predefinedFormat.first;
       return;
     }
-    const auto predefinedFormatWithBE = predefinedFormat.second + "BE";
+    const auto predefinedFormatWithBE = std::string(predefinedFormat.second) + "BE";
     if (name == predefinedFormatWithBE)
     {
       this->predefinedPixelFormat = predefinedFormat.first;
