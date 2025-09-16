@@ -6,11 +6,11 @@
 #include <QOpenGLContext>
 #include <QApplication>
 #include <QElapsedTimer>
-#include <QColorSpace>  // For Qt 6 HDR color space support
-#include <QThread>      // For thread safety checks
-#include <QDateTime>    // For FPS timing
+#include <QColorSpace>  
+#include <QThread>
+#include <QDateTime>    
 #include <cmath>
-#include <vector>  // For 10-bit framebuffer grabbing
+#include <vector>  
 #include <QPainter>
 #include "ui/views/SplitViewWidget.h"
 
