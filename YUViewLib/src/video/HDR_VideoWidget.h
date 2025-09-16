@@ -20,8 +20,7 @@ class HDR_VideoWidget : public QOpenGLWidget, protected QOpenGLFunctions_3_3_Cor
 public:
     enum RenderMode {
         Mode_SDR_8bit = 0,           // Standard 8-bit SDR rendering
-        Mode_BT2020_PQ_10bit = 1,    // 10-bit HDR10/BT.2020 PQ rendering  
-        Mode_BT709_Linear_16bit = 2  // 16-bit scRGB/Rec.709 Linear rendering
+        Mode_BT2020_PQ_10bit = 1     // HDR10/BT.2020 PQ rendering
     };
     
     enum TextureFormat {

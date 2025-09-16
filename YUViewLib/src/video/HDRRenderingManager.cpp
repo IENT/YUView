@@ -107,11 +107,11 @@ HDR_VideoWidget* HDRRenderingManager::createHDRWidget(QWidget* parent)
   // Set HDR capabilities
   m_hdrWidget->setHDRCapabilities(capabilities);
   
-  // Set appropriate render mode based on capabilities
-  if (capabilities.supportedMode == HDRDetection::BT709_G10_16bit) {
-    m_hdrWidget->setRenderMode(HDR_VideoWidget::Mode_BT709_Linear_16bit);
-  } else {
+  // Always use PQ 10-bit mode when HDR is supported; otherwise SDR
+  if (capabilities.isHDRSupported && capabilities.supportedMode == HDRDetection::BT2020_PQ_10bit) {
     m_hdrWidget->setRenderMode(HDR_VideoWidget::Mode_BT2020_PQ_10bit);
+  } else {
+    m_hdrWidget->setRenderMode(HDR_VideoWidget::Mode_SDR_8bit);
   }
   
   return m_hdrWidget;

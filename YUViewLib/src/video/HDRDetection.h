@@ -16,8 +16,7 @@ class HDRDetection : public QObject
 public:
     enum HDRMode {
         SDR_Only = 0,
-        BT2020_PQ_10bit = 1,      // 10-bit HDR10 mode (R:10, G:10, B:10, A:2)
-        BT709_G10_16bit = 2       // 16-bit scRGB/Linear mode (R:16, G:16, B:16, A:16)
+        BT2020_PQ_10bit = 1       // 10-bit HDR10 mode (R:10, G:10, B:10, A:2)
     };
 
     struct HDRCapabilities {

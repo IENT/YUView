@@ -468,8 +468,8 @@ void HDR_VideoWidget::initializeGL()
     // CRITICAL: If HDR was requested but not obtained, adjust accordingly
     if (!isActuallyHDR) {
         if (m_renderMode == Mode_BT2020_PQ_10bit) {
-            qWarning() << "HDR_VideoWidget: PQ mode requested but HDR surface not active. Falling back to linear HDR mode.";
-            m_renderMode = Mode_BT709_Linear_16bit;
+            qWarning() << "HDR_VideoWidget: PQ mode requested but HDR surface not active. Falling back to SDR.";
+            m_renderMode = Mode_SDR_8bit;
         }
     } else if (isActuallyHDR) {
         // True HDR surface format confirmed
@@ -658,7 +658,7 @@ out vec4 FragColor;
 in vec2 TexCoord;
 
 uniform sampler2D videoTexture;
-uniform int renderMode;            // 0=SDR, 1=BT2020_PQ, 2=BT709_Linear
+uniform int renderMode;            // 0=SDR, 1=BT2020_PQ
 uniform float hdrExposure;         // HDR exposure adjustment
 uniform float hdrGamma;            // Gamma correction
 uniform float displayMaxLuminance; // Display peak luminance in nits (from HDRDetection)
@@ -725,15 +725,6 @@ void main()
         vec3 rgbLinearExposed = applyExposure(rgbLinear);
         vec3 pqEncoded = applyPQ(rgbLinearExposed);
         FragColor = vec4(clamp(pqEncoded, 0.0, 1.0), color.a);
-        
-    } else if (renderMode == 2) {
-        // Linear HDR fallback: rec709 linearization + scale to display peak, no extra gamma
-        vec3 rgbNonLinear = clamp(color.rgb, 0.0, 1.0);
-        vec3 rgbLinear = rec709ToLinear(rgbNonLinear);
-        float safeSrcMax = max(sourceMaxLuminance, 1e-6);
-        float scaleToDisplay = displayMaxLuminance / safeSrcMax;
-        vec3 linearBoost = applyExposure(rgbLinear) * scaleToDisplay;
-        FragColor = vec4(linearBoost, color.a);
         
     } else {
         // SDR mode: Direct output with optional gamma correction
@@ -1291,8 +1282,6 @@ QString HDR_VideoWidget::getRenderModeString() const
     switch (m_renderMode) {
     case Mode_BT2020_PQ_10bit:
         return "BT2020_PQ_10bit";
-    case Mode_BT709_Linear_16bit:
-        return "BT709_Linear_16bit";
     case Mode_SDR_8bit:
     default:
         return "SDR_8bit";
