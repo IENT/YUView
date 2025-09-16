@@ -466,8 +466,11 @@ void HDR_VideoWidget::initializeGL()
     qDebug() << "  Is HDR format:" << isActuallyHDR;
     
     // CRITICAL: If HDR was requested but not obtained, adjust accordingly
-    if (m_renderMode != Mode_SDR_8bit && !isActuallyHDR) {
-        // Don't fail - we can still do HDR processing in shaders even with 8-bit framebuffer
+    if (!isActuallyHDR) {
+        if (m_renderMode == Mode_BT2020_PQ_10bit) {
+            qWarning() << "HDR_VideoWidget: PQ mode requested but HDR surface not active. Falling back to linear HDR mode.";
+            m_renderMode = Mode_BT709_Linear_16bit;
+        }
     } else if (isActuallyHDR) {
         // True HDR surface format confirmed
         // Note: Widget attributes should be set in constructor, not here during GL initialization
@@ -679,12 +682,6 @@ vec3 rec709ToLinear(vec3 v) {
                 useHi.z ? hi.z : lo.z);
 }
 
-// Optional color space conversion matrix: Rec.709 (linear) to Rec.2020 (linear)
-const mat3 from709to2020 = mat3(
-    0.6274040, 0.3292820, 0.0433136,
-    0.0690970, 0.9195400, 0.0113612,
-    0.0163916, 0.0880132, 0.8955950
-);
 
 // Encode linear absolute luminance to ST.2084 PQ code values
 // Here we intentionally map linearScene 1.0 to the display's peak luminance so that
@@ -719,23 +716,24 @@ void main()
     vec4 color = texture(videoTexture, TexCoord);
     
     if (renderMode == 1) {
-        // HDR10 (BT.2020 + PQ) path
-        // 1) Assume input is R'G'B' in Rec.709 gamut -> linearize
-        // 2) Convert linear Rec.709 -> linear Rec.2020
-        // 3) Optional exposure in linear domain
-        // 4) Map 1.0 -> displayMaxLuminance and encode ST.2084 PQ
+        // HDR10 (PQ) path
+        // 1) Assume input is R'G'B' (Rec.709 transfer) -> linearize
+        // 2) Optional exposure in linear domain
+        // 3) Map 1.0 -> displayMaxLuminance and encode ST.2084 PQ
         vec3 rgbNonLinear = clamp(color.rgb, 0.0, 1.0);
-        vec3 rgbLinear709 = rec709ToLinear(rgbNonLinear);
-        vec3 rgbLinear2020 = from709to2020 * rgbLinear709;
-        vec3 rgbLinearExposed = applyExposure(rgbLinear2020);
+        vec3 rgbLinear = rec709ToLinear(rgbNonLinear);
+        vec3 rgbLinearExposed = applyExposure(rgbLinear);
         vec3 pqEncoded = applyPQ(rgbLinearExposed);
         FragColor = vec4(clamp(pqEncoded, 0.0, 1.0), color.a);
         
     } else if (renderMode == 2) {
-        // BT709_Linear mode: Apply exposure and gamma
-        vec3 exposedColor = applyExposure(color.rgb);
-        exposedColor = applyGamma(exposedColor);
-        FragColor = vec4(exposedColor, color.a);
+        // Linear HDR fallback: rec709 linearization + scale to display peak, no extra gamma
+        vec3 rgbNonLinear = clamp(color.rgb, 0.0, 1.0);
+        vec3 rgbLinear = rec709ToLinear(rgbNonLinear);
+        float safeSrcMax = max(sourceMaxLuminance, 1e-6);
+        float scaleToDisplay = displayMaxLuminance / safeSrcMax;
+        vec3 linearBoost = applyExposure(rgbLinear) * scaleToDisplay;
+        FragColor = vec4(linearBoost, color.a);
         
     } else {
         // SDR mode: Direct output with optional gamma correction
@@ -1019,6 +1017,8 @@ bool HDR_VideoWidget::uploadTextureData(const QImage& image)
   m_videoTexture->bind();
 
   // CRITICAL FIX: Use raw OpenGL for precise control over pixel format
+  // Ensure byte alignment for 16-bit RGBA uploads to avoid channel skew (green tint)
+  glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
   glTexImage2D(GL_TEXTURE_2D,
                0,                          // Mipmap level
                internalFormat,             // Internal format (8-bit or 16-bit)
@@ -1036,6 +1036,9 @@ bool HDR_VideoWidget::uploadTextureData(const QImage& image)
     doneCurrent();
     return false;
   }
+
+  // Restore default unpack alignment
+  glPixelStorei(GL_UNPACK_ALIGNMENT, 4);
 
   m_videoTexture->release();
 
