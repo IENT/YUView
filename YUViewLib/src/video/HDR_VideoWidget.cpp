@@ -679,11 +679,24 @@ vec3 rec709ToLinear(vec3 v) {
                 useHi.z ? hi.z : lo.z);
 }
 
+// Optional color space conversion matrix: Rec.709 (linear) to Rec.2020 (linear)
+const mat3 from709to2020 = mat3(
+    0.6274040, 0.3292820, 0.0433136,
+    0.0690970, 0.9195400, 0.0113612,
+    0.0163916, 0.0880132, 0.8955950
+);
+
 // Encode linear absolute luminance to ST.2084 PQ code values
-// Input: linear scene-referred RGB in [0,1] where 1.0 corresponds to sourceMaxLuminance nits
-// Steps: map to absolute nits, normalize to [0,1] with 10000 nits, then apply PQ OETF
+// Here we intentionally map linearScene 1.0 to the display's peak luminance so that
+// whites reach the panel capability (e.g. 1000 nits) instead of SDR 100 nits.
+// For SDR-origin content, this effectively scales by displayMaxLuminance/sourceMaxLuminance.
 vec3 applyPQ(vec3 linearScene) {
-    vec3 absNits = max(linearScene, vec3(0.0)) * sourceMaxLuminance;
+    // Map to absolute nits, scaling up to display peak luminance
+    float safeSrcMax = max(sourceMaxLuminance, 1e-6);
+    float scaleToDisplay = displayMaxLuminance / safeSrcMax;
+    vec3 absNits = max(linearScene, vec3(0.0)) * (sourceMaxLuminance * scaleToDisplay);
+
+    // Normalize to [0,1] by 10000 nits (ST.2084 reference)
     vec3 normalized = clamp(absNits / 10000.0, 0.0, 1.0);
     vec3 Lp = pow(normalized, vec3(m1));
     vec3 numerator = vec3(c1) + vec3(c2) * Lp;
@@ -706,13 +719,17 @@ void main()
     vec4 color = texture(videoTexture, TexCoord);
     
     if (renderMode == 1) {
-        // BT.2020 + PQ: Apply PQ encoding without color space conversion
-        // 1) Linearize assuming Rec.709/sRGB gamma
-        // 2) Map to absolute nits and apply ST.2084 OETF
-        vec3 rgb = clamp(color.rgb, 0.0, 1.0);
-        vec3 rgb_linear = rec709ToLinear(rgb);
-        vec3 pqEncoded = applyPQ(rgb_linear);
-        FragColor = vec4(pqEncoded, color.a);
+        // HDR10 (BT.2020 + PQ) path
+        // 1) Assume input is R'G'B' in Rec.709 gamut -> linearize
+        // 2) Convert linear Rec.709 -> linear Rec.2020
+        // 3) Optional exposure in linear domain
+        // 4) Map 1.0 -> displayMaxLuminance and encode ST.2084 PQ
+        vec3 rgbNonLinear = clamp(color.rgb, 0.0, 1.0);
+        vec3 rgbLinear709 = rec709ToLinear(rgbNonLinear);
+        vec3 rgbLinear2020 = from709to2020 * rgbLinear709;
+        vec3 rgbLinearExposed = applyExposure(rgbLinear2020);
+        vec3 pqEncoded = applyPQ(rgbLinearExposed);
+        FragColor = vec4(clamp(pqEncoded, 0.0, 1.0), color.a);
         
     } else if (renderMode == 2) {
         // BT709_Linear mode: Apply exposure and gamma
