@@ -1221,8 +1221,6 @@ void HDR_VideoWidget::setHDRCapabilities(const HDRDetection::HDRCapabilities& ca
         // Set appropriate texture format based on detected capabilities
         if (capabilities.supportedMode == HDRDetection::BT2020_PQ_10bit) {
             setTextureFormat(Format_RGB10_A2);
-        } else if (capabilities.supportedMode == HDRDetection::BT709_G10_16bit) {
-            setTextureFormat(Format_RGBA16F);
         }
         
         // CRITICAL: Upgrade surface format to HDR if not already done
@@ -1271,8 +1269,6 @@ QString HDR_VideoWidget::getRenderModeString() const
     switch (m_renderMode) {
     case Mode_BT2020_PQ_10bit:
         return "BT2020_PQ_10bit";
-    case Mode_BT709_Linear_16bit:
-        return "BT709_Linear_16bit";
     case Mode_SDR_8bit:
     default:
         return "SDR_8bit";
@@ -1476,16 +1472,6 @@ void HDR_VideoWidget::upgradeToHDRFormat(HDRDetection::HDRMode hdrMode)
         
         hdrFormat.setColorSpace(QColorSpace::Bt2100Pq);
         qDebug() << "Upgrading to BT2020 PQ 10-bit format";
-        
-    } else if (hdrMode == HDRDetection::BT709_G10_16bit) {
-        // Configure for scRGB/Linear RGB
-        hdrFormat.setRedBufferSize(16);
-        hdrFormat.setGreenBufferSize(16);
-        hdrFormat.setBlueBufferSize(16);
-        hdrFormat.setAlphaBufferSize(16);
-        
-        hdrFormat.setColorSpace(QColorSpace::SRgbLinear);
-        qDebug() << "Upgrading to BT709 Linear 16-bit format";
         
     } else {
         qWarning() << "Unknown HDR mode for surface format upgrade:" << hdrMode;
