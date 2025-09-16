@@ -106,7 +106,7 @@ calculateDifferencePredefinedPixelFormat(const InputFrameParameters &frame1,
 
   auto outputImage =
     QImage(QSize(frameSize.width, frameSize.height), functionsGui::platformImageFormat(false));
-  auto restrict dst = outputImage.bits();
+  unsigned char *restrict dst = outputImage.bits();
 
   MSE mse;
 
@@ -155,7 +155,7 @@ std::pair<QImage, MSE> calculateDifferenceAndMSE(const InputFrameParameters &fra
                             functionsGui::platformImageFormat(pixelFormat.hasAlpha()));
   MSE        mse;
 
-  auto restrict dst = outputImage.bits();
+  unsigned char *restrict dst = outputImage.bits();
   const auto offsetToNextValue =
     (pixelFormat.getDataLayout() == DataLayout::Planar ? 1 : pixelFormat.getNrChannels());
 
