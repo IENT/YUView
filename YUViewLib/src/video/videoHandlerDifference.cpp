@@ -37,6 +37,7 @@
 
 #include <common/Formatting.h>
 #include <common/Functions.h>
+#include <common/TypedefQtDeprecated.h>
 #include <video/yuv/videoHandlerYUV.h>
 
 using namespace std::string_view_literals;
@@ -203,7 +204,7 @@ QLayout *videoHandlerDifference::createDifferenceHandlerControls()
 
   // Connect all the change signals from the controls to "connectWidgetSignals()"
   connect(ui.markDifferenceCheckBox,
-          &QCheckBox::stateChanged,
+          QCheckBoxStateChanged,
           this,
           &videoHandlerDifference::slotDifferenceControlChanged);
   connect(ui.codingOrderComboBox,

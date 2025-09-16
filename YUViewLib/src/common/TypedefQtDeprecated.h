@@ -30,63 +30,13 @@
  *   along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#pragma once
+ #pragma once
 
-#include <QThread>
+#include <QCheckBox>
 
-#include "LoadingWorker.h"
-
-namespace video
-{
-
-#define LOADINGTHREAD_DEBUG_LOADING 0
-#if LOADINGTHREAD_DEBUG_LOADING && !NDEBUG
-#define DEBUG_THREAD qDebug
+#if QT_VERSION >= QT_VERSION_CHECK(6, 7, 0)
+constexpr auto QCheckBoxStateChanged = &QCheckBox::checkStateChanged;
 #else
-#define DEBUG_THREAD(fmt, ...) ((void)0)
+constexpr auto QCheckBoxStateChanged = &QCheckBox::stateChanged;
 #endif
 
-class LoadingThread : public QThread
-{
-  Q_OBJECT
-public:
-  LoadingThread(QObject *parent) : QThread(parent)
-  {
-    // Create a new worker and move it to this thread
-    this->threadWorker.reset(new LoadingWorker(nullptr));
-    this->threadWorker->moveToThread(this);
-  }
-  ~LoadingThread() {}
-
-  void quitWhenDone()
-  {
-    this->quitting = true;
-    if (this->threadWorker->isWorking())
-    {
-      // We must wait until the worker is done.
-      DEBUG_THREAD("loadingThread::quitWhenDone waiting for worker to finish...");
-      connect(worker(),
-              &LoadingWorker::loadingFinished,
-              this,
-              [this]
-              {
-                DEBUG_THREAD("loadingThread::quitWhenDone worker done -> quit");
-                quit();
-              });
-    }
-    else
-    {
-      DEBUG_THREAD("loadingThread::quitWhenDone quit now");
-      quit();
-    }
-  }
-
-  LoadingWorker *worker() { return this->threadWorker.get(); }
-  bool           isQuitting() { return this->quitting; }
-
-private:
-  std::unique_ptr<LoadingWorker> threadWorker{};
-  bool quitting{}; // Are er quitting the job? If yes, do not push new jobs to it.
-};
-
-} // namespace video

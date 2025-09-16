@@ -2,7 +2,7 @@ QT += core gui widgets opengl xml concurrent network
 
 TEMPLATE = lib
 CONFIG += staticlib
-CONFIG +=20
+CONFIG += c++20
 CONFIG -= debug_and_release
 CONFIG += object_parallel_to_source
 

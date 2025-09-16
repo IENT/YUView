@@ -37,6 +37,7 @@
 #include <common/Functions.h>
 #include <common/FunctionsGui.h>
 #include <common/InfoItemAndData.h>
+#include <common/TypedefQtDeprecated.h>
 #include <video/rgb/ConversionDifferenceRGB.h>
 #include <video/rgb/ConversionRGB.h>
 #include <video/rgb/PixelFormatRGBGuess.h>
@@ -308,12 +309,7 @@ QLayout *videoHandlerRGB::createVideoHandlerControls(bool isSizeFixed)
                         ui.AInvertCheckBox,
                         ui.limitedRangeCheckBox})
   {
-#if QT_VERSION >= QT_VERSION_CHECK(6, 7, 0)
-    connect(
-      checkBox, &QCheckBox::checkStateChanged, this, &videoHandlerRGB::slotDisplayOptionsChanged);
-#else
-    connect(checkBox, &QCheckBox::stateChanged, this, &videoHandlerRGB::slotDisplayOptionsChanged);
-#endif
+    connect(checkBox, QCheckBoxStateChanged, this, &videoHandlerRGB::slotDisplayOptionsChanged);
   }
 
   this->updateControlsForNewPixelFormat();

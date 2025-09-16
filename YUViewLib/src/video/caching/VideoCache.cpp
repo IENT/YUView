@@ -124,8 +124,8 @@ VideoCache::VideoCache(PlaylistTreeWidget *playlistTreeWidget,
           &PlaybackController::signalPlaybackStarting,
           this,
           &VideoCache::updateCacheQueue);
-  connect(&statusUpdateTimer, &QTimer::timeout, this, [=] { emit updateCacheStatus(); });
-  connect(&testProgrssUpdateTimer, &QTimer::timeout, this, [=] { updateTestProgress(); });
+  connect(&statusUpdateTimer, &QTimer::timeout, this, [this] { emit updateCacheStatus(); });
+  connect(&testProgrssUpdateTimer, &QTimer::timeout, this, [this] { updateTestProgress(); });
 }
 
 VideoCache::~VideoCache()
