@@ -1179,6 +1179,16 @@ void MainWindow::validateHDRSupport()
     qDebug() << "HDR mode:" << HDRDetection::getHDRModeDescription(hdrCapabilities.supportedMode);
     qDebug() << "Max luminance:" << hdrCapabilities.maxLuminance << "nits";
     
-    // No scRGB linear mode support; PQ handled in widget/shader
+    // Update surface format if needed based on actual capabilities
+    if (hdrCapabilities.supportedMode == HDRDetection::BT709_G10_16bit) {
+      // Switch to 16-bit format if that's what the display supports
+      QSurfaceFormat hdrFormat = QSurfaceFormat::defaultFormat();
+      hdrFormat.setRedBufferSize(16);
+      hdrFormat.setGreenBufferSize(16);
+      hdrFormat.setBlueBufferSize(16);
+      hdrFormat.setAlphaBufferSize(16);
+      QSurfaceFormat::setDefaultFormat(hdrFormat);
+      qDebug() << "MainWindow: Updated to 16-bit surface format for scRGB HDR";
+    }
   }
 }

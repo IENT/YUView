@@ -148,6 +148,15 @@ QSurfaceFormat HDRDetection::getHDRSurfaceFormat(HDRMode mode)
         // This will be handled in the shader pipeline
         break;
         
+    case BT709_G10_16bit:
+        // 16-bit per channel for scRGB/Linear mode
+        format.setRedBufferSize(16);
+        format.setGreenBufferSize(16);
+        format.setBlueBufferSize(16);
+        format.setAlphaBufferSize(16);
+        // Note: scRGB color space handling in shader
+        break;
+        
     case SDR_Only:
     default:
         // Standard 8-bit SDR
@@ -176,6 +185,8 @@ QString HDRDetection::getHDRModeDescription(HDRMode mode)
     switch (mode) {
     case BT2020_PQ_10bit:
         return "HDR10/BT.2020 PQ (10-bit)";
+    case BT709_G10_16bit:
+        return "scRGB/Rec.709 Linear (16-bit)";
     case SDR_Only:
     default:
         return "Standard Dynamic Range (8-bit)";
@@ -257,7 +268,21 @@ bool HDRDetection::checkDXGIHDRSupport(const QString& displayName, HDRCapabiliti
                             return true;
                         }
                         
-                        // Skip scRGB fallback; we only support PQ path now
+                        // Check for 16-bit scRGB support
+                        if (desc1.BitsPerColor >= 16) {
+                            caps.isHDRSupported = true;
+                            caps.supportedMode = BT709_G10_16bit;
+                            caps.maxLuminance = desc1.MaxLuminance;
+                            caps.minLuminance = desc1.MinLuminance;
+                            caps.bitsPerChannel = desc1.BitsPerColor;
+                            caps.displayName = QString::fromWCharArray(desc1.DeviceName);
+                            
+                            pOutput6->Release();
+                            pOutput->Release();
+                            pAdapter->Release();
+                            pFactory->Release();
+                            return true;
+                        }
                     }
                     pOutput6->Release();
                 }
