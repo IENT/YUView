@@ -728,6 +728,46 @@ void main()
 }
 )";
 
+  // 诊断性着色器 1: 恒等映射 (Identity Mapping)
+  const char* fragmentShaderSource2 = R"(
+    #version 330 core
+    out vec4 FragColor;
+    in vec2 TexCoord;
+
+    uniform sampler2D videoTexture;
+
+    void main()
+    {
+        // 1. 从纹理中采样颜色
+        vec4 textureColor = texture(videoTexture, TexCoord);
+
+        // 2. 不进行任何处理，直接输出
+        // 这个着色器会完全绕过PQ编码、曝光、Gamma等所有计算。
+        // 它将纹理中的原始像素值直接显示在屏幕上。
+        FragColor = textureColor;
+    }
+    )";
+
+  // 诊断性着色器 2: 10位精度测试渐变 (10-bit Precision Test Ramp)
+  const char* fragmentShaderSource3 = R"(
+    #version 330 core
+    out vec4 FragColor;
+    in vec2 TexCoord; // TexCoord.x 的范围是从 0.0 (最左) 到 1.0 (最右)
+
+    void main()
+    {
+        // 1. 获取水平方向的归一化坐标 (0.0 to 1.0)
+        float horizontalValue = TexCoord.x;
+
+        // 2. 将这个值直接作为灰度颜色输出
+        // 这会生成一个从黑到白的平滑水平渐变。
+        // 如果您的显示链路是真正的10位，这个渐变应该是完全平滑的。
+        // 如果您看到了256个阶梯，那么链路就是8位的。
+        // 这个着色器可以有效地测试您的窗口表面格式和显示器的最终输出位深。
+        FragColor = vec4(horizontalValue, horizontalValue, horizontalValue, 1.0);
+    }
+    )";
+
     // Compile vertex shader
     if (!m_shaderProgram->addShaderFromSourceCode(QOpenGLShader::Vertex, vertexShaderSource)) {
         qCritical() << "Failed to compile vertex shader:" << m_shaderProgram->log();
