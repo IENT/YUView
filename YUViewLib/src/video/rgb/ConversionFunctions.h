@@ -59,6 +59,13 @@ DataPointers<T> calculatePointersToStartOfComponents(QByteArray           &rawFr
                                                      const Size           &frameSize,
                                                      const PixelFormatRGB &pixelFormat)
 {
+  if (!pixelFormat.isValid())
+    throw std::invalid_argument("Pixel format must be valid");
+  if (!frameSize)
+    throw std::invalid_argument("Frame size must be valid");
+  if (rawFrameData.size() < pixelFormat.getBytesPerFrame(frameSize))
+    throw std::invalid_argument("Raw frame data too small");
+
   const auto posR = pixelFormat.getChannelPosition(Channel::Red);
   const auto posG = pixelFormat.getChannelPosition(Channel::Green);
   const auto posB = pixelFormat.getChannelPosition(Channel::Blue);
