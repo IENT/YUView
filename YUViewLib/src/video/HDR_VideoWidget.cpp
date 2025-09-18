@@ -38,7 +38,7 @@ HDR_VideoWidget::HDR_VideoWidget(QWidget* parent)
     , m_hdrExposure(0.0f)
     , m_hdrGamma(1.0f)
     , m_displayMaxLuminance(1000.0f)  // Default HDR display capability
-    , m_sourceMaxLuminance(100.0f)    // Default SDR content assumption
+    , m_sourceMaxLuminance(1000.0f)   // Default HDR10 content assumption (nits)
     , m_shaderProgram(nullptr)
     , m_videoTexture(nullptr)
     , m_vertexBuffer(nullptr)
@@ -263,7 +263,7 @@ void HDR_VideoWidget::setDisplayMaxLuminance(float maxLuminance)
 void HDR_VideoWidget::setSourceMaxLuminance(float maxLuminance)
 {
     // Clamp to reasonable range for source content luminance
-    maxLuminance = qBound(100.0f, maxLuminance, 10000.0f);
+    maxLuminance = qBound(1.0f, maxLuminance, 10000.0f);
     
     if (qAbs(m_sourceMaxLuminance - maxLuminance) > 0.1f) {
         m_sourceMaxLuminance = maxLuminance;
@@ -706,11 +706,10 @@ void main()
     vec4 color = texture(videoTexture, TexCoord);
     
     if (renderMode == 1) {
-        // BT.2020 + PQ: Apply PQ encoding without color space conversion
-        // 1) Linearize assuming Rec.709/sRGB gamma
-        // 2) Map to absolute nits and apply ST.2084 OETF
-        vec3 rgb = clamp(color.rgb, 0.0, 1.0);
-        vec3 rgb_linear = rec709ToLinear(rgb);
+        // BT.2020 + PQ: Treat sampled color as linear scene values already
+        // Map to absolute nits with exposure, then apply ST.2084 OETF
+        vec3 rgb_linear = clamp(color.rgb, 0.0, 1.0);
+        rgb_linear = applyExposure(rgb_linear);
         vec3 pqEncoded = applyPQ(rgb_linear);
         FragColor = vec4(pqEncoded, color.a);
         
@@ -863,85 +862,59 @@ bool HDR_VideoWidget::initializeTexture()
     return true;
 }
 
-// Helper function to convert image to 10-bit packed format
-QImage HDR_VideoWidget::convertTo10BitFormat(const QImage& source)
+// Helper: pack QImage (8/16-bit) into RGB10_A2 buffer suitable for GL_UNSIGNED_INT_2_10_10_10_REV
+static std::vector<uint32_t> packImageToRGB10A2(const QImage& img)
 {
-  int width = source.width();
-  int height = source.height();
+  const int width = img.width();
+  const int height = img.height();
+  std::vector<uint32_t> packed(static_cast<size_t>(width) * static_cast<size_t>(height));
 
-  // Create buffer for 10-bit packed data (using unsigned int for RGB10_A2)
-  std::vector<uint32_t> packedData(width * height);
-
-  // Convert each pixel to 10-bit packed format
-  for (int y = 0; y < height; ++y) {
-    for (int x = 0; x < width; ++x) {
-      QRgb pixel = source.pixel(x, y);
-
-      // Extract 8-bit components
-      int r8 = qRed(pixel);
-      int g8 = qGreen(pixel);
-      int b8 = qBlue(pixel);
-      int a8 = qAlpha(pixel);
-
-      // Convert to 10-bit (scale up from 8-bit to 10-bit)
-      // CRITICAL: Proper scaling to utilize full 10-bit range
-      uint32_t r10 = (r8 << 2) | (r8 >> 6);  // Scale 8-bit to 10-bit
-      uint32_t g10 = (g8 << 2) | (g8 >> 6);
-      uint32_t b10 = (b8 << 2) | (b8 >> 6);
-      uint32_t a2 = a8 >> 6;  // Scale alpha to 2-bit
-
-      // Pack into RGB10_A2 format (reverse order for GL_UNSIGNED_INT_2_10_10_10_REV)
-      uint32_t packed = (a2 << 30) | (b10 << 20) | (g10 << 10) | r10;
-      packedData[y * width + x] = packed;
+  if (img.format() == QImage::Format_RGBA64 || img.format() == QImage::Format_RGBA64_Premultiplied) {
+    const uint16_t* src = reinterpret_cast<const uint16_t*>(img.constBits());
+    const int stride = img.bytesPerLine() / static_cast<int>(sizeof(uint16_t));
+    for (int y = 0; y < height; ++y) {
+      const uint16_t* row = src + y * stride;
+      for (int x = 0; x < width; ++x) {
+        const int idx = x * 4;
+        uint16_t r16 = row[idx + 0];
+        uint16_t g16 = row[idx + 1];
+        uint16_t b16 = row[idx + 2];
+        uint16_t a16 = row[idx + 3];
+        uint32_t r10 = (static_cast<uint32_t>(r16) + 32u) >> 6;  // round and downscale 16->10
+        uint32_t g10 = (static_cast<uint32_t>(g16) + 32u) >> 6;
+        uint32_t b10 = (static_cast<uint32_t>(b16) + 32u) >> 6;
+        uint32_t a2  = (static_cast<uint32_t>(a16) + 8192u) >> 14; // 16->2
+        a2 = (a2 > 3u) ? 3u : a2;
+        packed[static_cast<size_t>(y) * static_cast<size_t>(width) + static_cast<size_t>(x)] =
+          (a2 << 30) | (b10 << 20) | (g10 << 10) | r10;
+      }
+    }
+  } else {
+    // Fallback: treat as 8-bit RGBA
+    const uchar* src = img.constBits();
+    const int stride = img.bytesPerLine();
+    for (int y = 0; y < height; ++y) {
+      const uchar* row = src + y * stride;
+      for (int x = 0; x < width; ++x) {
+        const int idx = x * 4;
+        uint32_t r8 = row[idx + 0];
+        uint32_t g8 = row[idx + 1];
+        uint32_t b8 = row[idx + 2];
+        uint32_t a8 = row[idx + 3];
+        uint32_t r10 = (r8 << 2) | (r8 >> 6);
+        uint32_t g10 = (g8 << 2) | (g8 >> 6);
+        uint32_t b10 = (b8 << 2) | (b8 >> 6);
+        uint32_t a2  = a8 >> 6;
+        packed[static_cast<size_t>(y) * static_cast<size_t>(width) + static_cast<size_t>(x)] =
+          (a2 << 30) | (b10 << 20) | (g10 << 10) | r10;
+      }
     }
   }
 
-  // CRITICAL FIX: Create QImage with proper format for 10-bit packed data
-  // We need to create a custom QImage that preserves the packed data
-  
-  // Allocate persistent memory for the packed data
-  uchar* persistentData = new uchar[width * height * sizeof(uint32_t)];
-  std::memcpy(persistentData, packedData.data(), width * height * sizeof(uint32_t));
-  
-  // Create QImage with RGB30 format which can handle packed 10-bit data better
-  // Use Format_RGB30 which is specifically designed for packed 10-bit RGB data
-  QImage result(persistentData, width, height, width * sizeof(uint32_t),
-                QImage::Format_RGB30,
-                [](void* data) { delete[] (uchar*)data; },  // Custom cleanup function
-                persistentData);
-
-  return result;
+  return packed;
 }
 
-// Helper function to convert image to floating point format
-QImage HDR_VideoWidget::convertToFloatFormat(const QImage& source)
-{
-  int width = source.width();
-  int height = source.height();
-
-  // Create buffer for float data (4 floats per pixel)
-  std::vector<float> floatData(width * height * 4);
-
-  // Convert each pixel to float format
-  for (int y = 0; y < height; ++y) {
-    for (int x = 0; x < width; ++x) {
-      QRgb pixel = source.pixel(x, y);
-      int idx = (y * width + x) * 4;
-
-      // Normalize to [0,1] range with proper gamma correction
-      floatData[idx + 0] = qRed(pixel) / 255.0f;
-      floatData[idx + 1] = qGreen(pixel) / 255.0f;
-      floatData[idx + 2] = qBlue(pixel) / 255.0f;
-      floatData[idx + 3] = qAlpha(pixel) / 255.0f;
-    }
-  }
-
-  // Create QImage from float data
-  QImage result((uchar*)floatData.data(), width, height, width * 4 * sizeof(float),
-                QImage::Format_RGBA8888);  // Use RGBA8888 as container format
-
-  return result.copy();  // Make a deep copy
-}
+// NOTE: Removed float QImage conversion path; floats should be uploaded from raw buffers, not QImage
 
 bool HDR_VideoWidget::uploadTextureData(const QImage& image)
 {
@@ -962,95 +935,100 @@ bool HDR_VideoWidget::uploadTextureData(const QImage& image)
     m_videoTexture->destroy();
   }
 
-  // CRITICAL FIX: Ensure high-precision texture format for HDR content
-  // Always use GL_RGBA16F internal format to prevent precision loss
-  GLenum internalFormat = GL_RGBA16F;  // High precision internal format as required
+  // Choose precise internal format and upload types based on selected texture format and input
+  GLenum internalFormat = GL_RGBA16F;  // default high-precision
   GLenum pixelFormat = GL_RGBA;
-  GLenum pixelType = GL_UNSIGNED_BYTE;  // Default, will be updated based on input format
+  GLenum pixelType = GL_UNSIGNED_BYTE;  // may change below
 
   switch (m_textureFormat) {
-  case Format_RGB10_A2:
-    // Use 16-bit float internal format for 10-bit content
-    internalFormat = GL_RGBA16F;  // Ensure high precision as required
-    pixelFormat = GL_RGBA;
-    pixelType = GL_UNSIGNED_SHORT;  // Higher precision upload for 10-bit content
-    qDebug() << "HDR_VideoWidget: Using RGBA16F internal format with 16-bit upload for RGB10_A2";
-    break;
-
-  case Format_RGBA16F:
-    // Use 16-bit floating point for scRGB/Linear HDR
-    internalFormat = GL_RGBA16F;  // Ensure GL_RGBA16F as required by prompt
-    pixelFormat = GL_RGBA;
-    pixelType = GL_HALF_FLOAT;   // Match half-precision float data type
-    qDebug() << "HDR_VideoWidget: Using RGBA16F texture format with half-float upload for 16-bit HDR";
-    break;
-
-  case Format_RGBA8:
-  default:
-    // Standard 8-bit RGBA with 16-bit internal for upscaling quality
-    internalFormat = GL_RGBA16F;  // High precision internal even for 8-bit input
-    pixelFormat = GL_RGBA;
-    pixelType = GL_UNSIGNED_BYTE;  // Match 8-bit input data type
-    qDebug() << "HDR_VideoWidget: Using RGBA16F internal with byte upload for SDR";
-    break;
+    case Format_RGB10_A2:
+      internalFormat = GL_RGB10_A2;
+      pixelFormat = GL_RGBA;
+      pixelType = GL_UNSIGNED_INT_2_10_10_10_REV;
+      qDebug() << "HDR_VideoWidget: Using native RGB10_A2 packed upload";
+      break;
+    case Format_RGBA16F:
+      internalFormat = GL_RGBA16F;
+      pixelFormat = GL_RGBA;
+      // We'll upload normalized 16-bit components to avoid 8-bit truncation
+      pixelType = GL_UNSIGNED_SHORT;
+      qDebug() << "HDR_VideoWidget: Using RGBA16F with 16-bit normalized upload";
+      break;
+    case Format_RGBA8:
+    default:
+      internalFormat = GL_RGBA16F;  // still use high-precision internal to reduce shader banding
+      pixelFormat = GL_RGBA;
+      pixelType = GL_UNSIGNED_BYTE;
+      qDebug() << "HDR_VideoWidget: Using RGBA16F internal with 8-bit upload (SDR)";
+      break;
   }
 
-  // Convert image to appropriate format if needed
+  // Prepare source pixels
+  QImage flippedImage = image.flipped(Qt::Vertical);
   QImage textureImage;
+  std::vector<uint32_t> rgb10a2Buffer; // used only for RGB10_A2 path
 
-  // CRITICAL FIX: Flip image vertically to match OpenGL coordinate system
-  QImage flippedImage = image.flipped(Qt::Vertical);  // Flip vertically only
-  
-  // CRITICAL FIX: Check for native 16-bit input formats first
-  if (flippedImage.format() == QImage::Format_RGBA64 || 
-      flippedImage.format() == QImage::Format_RGBA64_Premultiplied) {
-    
-    // Use 16-bit texture formats for maximum precision
-    internalFormat = GL_RGBA16F;   // Ensure GL_RGBA16F as required
-    pixelFormat = GL_RGBA;
-    pixelType = GL_UNSIGNED_SHORT; // Match 16-bit input data type precisely
-    textureImage = flippedImage;   // Use flipped 16-bit image directly
-    
-  } else if (m_textureFormat == Format_RGB10_A2) {
-    // For 8-bit input with RGB10_A2 texture format
-    textureImage = flippedImage.convertToFormat(QImage::Format_RGBA8888);
-    
-  } else if (m_textureFormat == Format_RGBA16F) {
-    // Convert to floating point format
-    textureImage = convertToFloatFormat(flippedImage);
+  if (m_textureFormat == Format_RGB10_A2) {
+    // Pack to native 10-bit
+    if (flippedImage.format() != QImage::Format_RGBA64 &&
+        flippedImage.format() != QImage::Format_RGBA64_Premultiplied &&
+        flippedImage.format() != QImage::Format_RGBA8888) {
+      flippedImage = flippedImage.convertToFormat(QImage::Format_RGBA8888);
+    }
+    rgb10a2Buffer = packImageToRGB10A2(flippedImage);
+  } else if (pixelType == GL_UNSIGNED_SHORT) {
+    // Ensure we have 16-bit components available for upload
+    if (flippedImage.format() != QImage::Format_RGBA64 &&
+        flippedImage.format() != QImage::Format_RGBA64_Premultiplied) {
+      flippedImage = flippedImage.convertToFormat(QImage::Format_RGBA64_Premultiplied);
+    }
+    textureImage = flippedImage;
   } else {
-    // Ensure RGBA8888 format for standard upload
-    textureImage = flippedImage.convertToFormat(QImage::Format_RGBA8888);
+    // 8-bit upload
+    if (flippedImage.format() != QImage::Format_RGBA8888)
+      textureImage = flippedImage.convertToFormat(QImage::Format_RGBA8888);
+    else
+      textureImage = flippedImage;
   }
 
   if (!m_videoTexture->isCreated()) {
-    // Create texture with proper parameters
-    m_videoTexture->setFormat(QOpenGLTexture::RGBA32F);  // Use high precision internal format
-    m_videoTexture->setSize(textureImage.width(), textureImage.height());
-    m_videoTexture->setMinificationFilter(QOpenGLTexture::Linear);
-    m_videoTexture->setMagnificationFilter(QOpenGLTexture::Linear);
-    m_videoTexture->setWrapMode(QOpenGLTexture::ClampToEdge);
-
+    // Create texture object; we'll allocate storage via glTexImage2D
     if (!m_videoTexture->create()) {
       qCritical() << "Failed to create video texture";
       doneCurrent();
       return false;
     }
+    m_videoTexture->bind();
+    m_videoTexture->setMinificationFilter(QOpenGLTexture::Linear);
+    m_videoTexture->setMagnificationFilter(QOpenGLTexture::Linear);
+    m_videoTexture->setWrapMode(QOpenGLTexture::ClampToEdge);
+    m_videoTexture->release();
   }
 
   // Upload texture data with proper format
   m_videoTexture->bind();
 
-  // CRITICAL FIX: Use raw OpenGL for precise control over pixel format
-  glTexImage2D(GL_TEXTURE_2D,
-               0,                          // Mipmap level
-               internalFormat,             // Internal format (8-bit or 16-bit)
-               textureImage.width(),
-               textureImage.height(),
-               0,                          // Border
-               pixelFormat,                // Pixel format
-               pixelType,                  // Pixel type
-               textureImage.constBits());  // Pixel data
+  if (m_textureFormat == Format_RGB10_A2) {
+    glTexImage2D(GL_TEXTURE_2D,
+                 0,
+                 internalFormat,
+                 flippedImage.width(),
+                 flippedImage.height(),
+                 0,
+                 pixelFormat,
+                 pixelType,
+                 rgb10a2Buffer.data());
+  } else {
+    glTexImage2D(GL_TEXTURE_2D,
+                 0,
+                 internalFormat,
+                 textureImage.width(),
+                 textureImage.height(),
+                 0,
+                 pixelFormat,
+                 pixelType,
+                 textureImage.constBits());
+  }
 
   GLenum error = glGetError();
   if (error != GL_NO_ERROR) {
