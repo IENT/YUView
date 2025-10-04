@@ -109,7 +109,7 @@ public:
   }
   // Set the current raw format and update the control. Only emit a signalHandlerChanged signal
   // if emitSignal is true.
-  virtual void setRGBPixelFormat(const rgb::PixelFormatRGB &format, bool emitSignal = false)
+  virtual void setRGBPixelFormat(const PixelFormatRGB &format, bool emitSignal = false)
   {
     setSrcPixelFormat(format);
     if (emitSignal)
@@ -117,7 +117,7 @@ public:
   }
   virtual void setRGBPixelFormatByName(const QString &name, bool emitSignal = false)
   {
-    this->setRGBPixelFormat(rgb::PixelFormatRGB(name.toStdString()), emitSignal);
+    this->setRGBPixelFormat(PixelFormatRGB(name.toStdString()), emitSignal);
   }
 
   void
@@ -167,7 +167,7 @@ protected:
   bool limitedRange{};
 
   // Get the RGB values for the given pixel.
-  virtual rgb::rgba_t getPixelValue(const QPoint &pixelPos) const;
+  virtual rgba_t getPixelValue(const QPoint &pixelPos) const;
 
   // Load the given frame and return it for caching. The current buffers (currentFrameRawRGBData and
   // currentFrame) will not be modified.
@@ -183,7 +183,7 @@ private:
   void convertRGBToImage(const QByteArray &sourceBuffer, QImage &outputImage);
 
   // Set the new pixel format thread save (lock the mutex)
-  void setSrcPixelFormat(const rgb::PixelFormatRGB &newFormat);
+  void setSrcPixelFormat(const PixelFormatRGB &newFormat);
 
   // Convert one frame from the current pixel format to RGB888
   void       convertSourceToRGBA32Bit(const QByteArray &sourceBuffer,
