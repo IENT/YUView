@@ -31,6 +31,8 @@
  */
 
 #include "videoHandlerRGB.h"
+#include "common/Typedef.h"
+#include "video/rgb/PixelFormatRGB.h"
 
 #include <common/EnumMapper.h>
 #include <common/Formatting.h>
@@ -68,24 +70,22 @@ constexpr EnumMapper<ComponentDisplayMode, 6> ComponentShowMapperToDisplayText =
   std::make_pair(ComponentDisplayMode::B, "Blue Only"),
   std::make_pair(ComponentDisplayMode::A, "Alpha Only")};
 
-void addConversionInformationToInfoList(QList<InfoItem> &differenceInfoList,
-                                        const int        width,
-                                        const int        height,
-                                        const unsigned   bitDepth,
-                                        const int64_t    mseAdd[3])
+QList<InfoItem>
+createConversionInfoItems(const PixelFormatRGB &pixelFormat, const Size &frameSize, const MSE &mse)
 {
-  differenceInfoList.append(InfoItem("Difference Type", "RGB " + std::to_string(bitDepth) + "bit"));
+  QList<InfoItem> infoList;
 
-  const auto nrPixels = static_cast<double>(width * height);
-  differenceInfoList.append(
-    InfoItem("MSE R", std::to_string(static_cast<double>(mseAdd[0]) / nrPixels)));
-  differenceInfoList.append(
-    InfoItem("MSE G", std::to_string(static_cast<double>(mseAdd[1]) / nrPixels)));
-  differenceInfoList.append(
-    InfoItem("MSE B", std::to_string(static_cast<double>(mseAdd[2]) / nrPixels)));
+  infoList.append(InfoItem("Difference domain", pixelFormat.getName()));
 
-  differenceInfoList.append(InfoItem(
-    "MSE All", std::to_string(static_cast<double>(mseAdd[0] + mseAdd[1] + mseAdd[2]) / nrPixels)));
+  const auto nrPixels = static_cast<double>(frameSize.width * frameSize.height);
+  infoList.append(InfoItem("MSE R", std::to_string(static_cast<double>(mse.r) / nrPixels)));
+  infoList.append(InfoItem("MSE G", std::to_string(static_cast<double>(mse.g) / nrPixels)));
+  infoList.append(InfoItem("MSE B", std::to_string(static_cast<double>(mse.b) / nrPixels)));
+
+  infoList.append(
+    InfoItem("MSE All", std::to_string(static_cast<double>(mse.r + mse.g + mse.b) / nrPixels)));
+
+  return infoList;
 }
 
 } // namespace
@@ -876,7 +876,12 @@ QImage videoHandlerRGB::calculateDifference(FrameHandler    *item2,
                               srcPixelFormat,
                               amplificationFactor,
                               markDifference);
+
+  differenceInfoList.append(createConversionInfoItems(this->srcPixelFormat, this->frameSize, mse));
+
   return img;
+
+  // Todo: I think we are missing the loadRawData function calls ...
 
   const int width  = std::min(frameSize.width, rgbItem2->frameSize.width);
   const int height = std::min(frameSize.height, rgbItem2->frameSize.height);
@@ -1082,7 +1087,7 @@ QImage videoHandlerRGB::calculateDifference(FrameHandler    *item2,
         false, Q_FUNC_INFO, "No RGB format with less than 8 or more than 16 bits supported yet.");
   }
 
-  addConversionInformationToInfoList(differenceInfoList, width, height, bitDepth, mseAdd);
+  // addConversionInformationToInfoList(differenceInfoList, width, height, bitDepth, mseAdd);
 
   return outputImage;
 }

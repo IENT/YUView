@@ -35,12 +35,30 @@
 #include <video/rgb/ConversionFunctions.h>
 
 #include "CreateTestData.h"
+#include "video/PixelFormat.h"
+#include "video/rgb/PixelFormatRGB.h"
 
 namespace video::rgb::test
 {
 
-TEST(ConversionFunctionsTest,
-     TestCalculatePointersToStartOfComponents_InvalidPixelFormat_ShouldThrow)
+namespace
+{
+
+struct Offsets
+{
+  int r{};
+  int g{};
+  int b{};
+};
+
+using TestParameters = std::tuple<int, DataLayout, ChannelOrder>;
+
+class ConversionFunctionsTest : public TestWithParam<TestParameters>
+{
+};
+
+TEST_F(ConversionFunctionsTest,
+       TestCalculatePointersToStartOfComponents_InvalidPixelFormat_ShouldThrow)
 {
   const auto pixelFormat = PixelFormatRGB(8, DataLayout::Packed, ChannelOrder::RGB);
   auto       data        = createRawRGBData(pixelFormat);
@@ -48,7 +66,8 @@ TEST(ConversionFunctionsTest,
                std::invalid_argument);
 }
 
-TEST(ConversionFunctionsTest, TestCalculatePointersToStartOfComponents_InvalidFrameSize_ShouldThrow)
+TEST_F(ConversionFunctionsTest,
+       TestCalculatePointersToStartOfComponents_InvalidFrameSize_ShouldThrow)
 {
   const auto pixelFormat = PixelFormatRGB(8, DataLayout::Packed, ChannelOrder::RGB);
   auto       data        = createRawRGBData(pixelFormat);
@@ -56,7 +75,7 @@ TEST(ConversionFunctionsTest, TestCalculatePointersToStartOfComponents_InvalidFr
                std::invalid_argument);
 }
 
-TEST(ConversionFunctionsTest, TestCalculatePointersToStartOfComponents_NotEnoughData_ShouldThrow)
+TEST_F(ConversionFunctionsTest, TestCalculatePointersToStartOfComponents_NotEnoughData_ShouldThrow)
 {
   QByteArray data;
   EXPECT_THROW(calculatePointersToStartOfComponents<uint8_t>(
@@ -64,20 +83,71 @@ TEST(ConversionFunctionsTest, TestCalculatePointersToStartOfComponents_NotEnough
                std::invalid_argument);
 }
 
-TEST(ConversionFunctionsTest, TestCalculatePointersToStartOfComponents_OffsetForPacked8Bit)
+std::string getTestName(const testing::TestParamInfo<TestParameters> &testParametersInfo)
 {
-  const auto pixelFormat = PixelFormatRGB(8, DataLayout::Packed, ChannelOrder::RGB);
-  auto       data        = createRawRGBData(pixelFormat);
+  const auto [bitsPerPixel, dataLayout, channelOrder] = testParametersInfo.param;
+  const auto pixelFormat = PixelFormatRGB(bitsPerPixel, dataLayout, channelOrder);
 
-  const auto offsets =
-    calculatePointersToStartOfComponents<uint8_t>(data, TEST_FRAME_SIZE, pixelFormat);
-
-  const auto rawDataPointer = reinterpret_cast<uint8_t *>(data.data());
-  EXPECT_EQ(offsets.r, rawDataPointer + 0);
-  EXPECT_EQ(offsets.g, rawDataPointer + 1);
-  EXPECT_EQ(offsets.b, rawDataPointer + 2);
+  return "TestCalculatePointersToStartOfComponents_PixelFormat" +
+         yuviewTest::replaceNonSupportedCharacters(pixelFormat.getName()) +
+         "_shouldReturnCorrectOffsets";
 }
 
-// More tests
+TEST_P(ConversionFunctionsTest, TestCalculatePointersToStartOfComponents)
+{
+  const auto [bitsPerPixel, dataLayout, channelOrder] = GetParam();
+  const auto pixelFormat = PixelFormatRGB(bitsPerPixel, dataLayout, channelOrder);
+
+  auto data = createRawRGBData(pixelFormat);
+
+  std::map<ChannelOrder, Offsets> expectedOffsetsMap = {{ChannelOrder::RGB, {0, 1, 2}},
+                                                        {ChannelOrder::RBG, {0, 2, 1}},
+                                                        {ChannelOrder::GRB, {1, 0, 2}},
+                                                        {ChannelOrder::GBR, {2, 0, 1}},
+                                                        {ChannelOrder::BRG, {1, 2, 0}},
+                                                        {ChannelOrder::BGR, {2, 1, 0}}};
+  auto                            expectedOffsets    = expectedOffsetsMap[channelOrder];
+  if (dataLayout == DataLayout::Planar)
+  {
+    expectedOffsets = Offsets({expectedOffsets.r * TEST_FRAME_NR_VALUES,
+                               expectedOffsets.g * TEST_FRAME_NR_VALUES,
+                               expectedOffsets.b * TEST_FRAME_NR_VALUES});
+  }
+
+  if (bitsPerPixel == 8)
+  {
+    const auto offsets =
+      calculatePointersToStartOfComponents<uint8_t>(data, TEST_FRAME_SIZE, pixelFormat);
+
+    const auto rawDataPointer = reinterpret_cast<uint8_t *>(data.data());
+    EXPECT_EQ(offsets.r, rawDataPointer + expectedOffsets.r);
+    EXPECT_EQ(offsets.g, rawDataPointer + expectedOffsets.g);
+    EXPECT_EQ(offsets.b, rawDataPointer + expectedOffsets.b);
+  }
+  else
+  {
+    const auto offsets =
+      calculatePointersToStartOfComponents<uint16_t>(data, TEST_FRAME_SIZE, pixelFormat);
+
+    const auto rawDataPointer = reinterpret_cast<uint16_t *>(data.data());
+    EXPECT_EQ(offsets.r, rawDataPointer + expectedOffsets.r);
+    EXPECT_EQ(offsets.g, rawDataPointer + expectedOffsets.g);
+    EXPECT_EQ(offsets.b, rawDataPointer + expectedOffsets.b);
+  }
+}
+
+INSTANTIATE_TEST_SUITE_P(VideoRGBTest,
+                         ConversionFunctionsTest,
+                         Combine(Values(8, 9, 10, 12, 16),
+                                 Values(DataLayout::Packed, DataLayout::Planar),
+                                 Values(ChannelOrder::RGB,
+                                        ChannelOrder::RBG,
+                                        ChannelOrder::GRB,
+                                        ChannelOrder::GBR,
+                                        ChannelOrder::BRG,
+                                        ChannelOrder::BGR)),
+                         getTestName);
+
+} // namespace
 
 } // namespace video::rgb::test

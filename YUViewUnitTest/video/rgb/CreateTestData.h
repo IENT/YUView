@@ -56,7 +56,7 @@ constexpr std::array<rgba_t, 16> TEST_VALUES_12BIT = {{{0, 0, 0, 0},
                                                        {1023, 1023, 1023, 0},
                                                        {1023, 1023, 1023, 1023}}};
 constexpr Size                   TEST_FRAME_SIZE   = {4, 4};
-constexpr auto TEST_FRAME_NR_VALUES                = TEST_FRAME_SIZE.width * TEST_FRAME_SIZE.height;
+constexpr int TEST_FRAME_NR_VALUES                 = TEST_FRAME_SIZE.width * TEST_FRAME_SIZE.height;
 
 QByteArray createRawRGBData(const PixelFormatRGB &format);
 
