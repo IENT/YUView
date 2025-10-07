@@ -32,6 +32,8 @@
 
 #pragma once
 
+#include <optional>
+#include <string>
 #include <video/rgb/PixelFormatRGB.h>
 #include <video/videoHandler.h>
 
@@ -80,7 +82,7 @@ public:
   // Get the number of bytes for one RGB frame with the current format
   virtual int64_t getBytesPerFrame() const override
   {
-    return srcPixelFormat.getBytesPerFrame(frameSize);
+    return this->srcPixelFormat.getBytesPerFrame(this->frameSize);
   }
 
   // Try to guess and set the format (frameSize/srcPixelFormat) from the raw RGB data.
@@ -88,12 +90,8 @@ public:
   virtual void setFormatFromCorrelation(const QByteArray &rawRGBData,
                                         int64_t           fileSize = -1) override;
 
-  virtual QString getFormatAsString() const override
-  {
-    return FrameHandler::getFormatAsString() + ";RGB;" +
-           QString::fromStdString(this->srcPixelFormat.getName());
-  }
-  virtual bool setFormatFromString(QString format) override;
+  virtual std::optional<std::string> getFormatAsString() const override;
+  virtual bool                       setFormatFromString(const std::string_view format) override;
 
   // Create the RGB controls and return a pointer to the layout.
   // rgbFormatFixed: For example a RGB file does not have a fixed format (the user can change this),

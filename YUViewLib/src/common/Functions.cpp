@@ -198,6 +198,21 @@ std::string toLower(const std::string_view str)
   return lowercaseStr;
 }
 
+std::vector<std::string_view> splitString(const std::string_view str, const char delimiter)
+{
+  std::vector<std::string_view> result;
+  size_t                        start = 0;
+  size_t                        end   = str.find(delimiter);
+  while (end != std::string_view::npos)
+  {
+    result.emplace_back(str.substr(start, end - start));
+    start = end + 1;
+    end   = str.find(delimiter, start);
+  }
+  result.emplace_back(str.substr(start));
+  return result;
+}
+
 ByteVector readData(std::istream &istream, const size_t nrBytes)
 {
   ByteVector data;
@@ -225,11 +240,11 @@ std::optional<unsigned> toUnsigned(const std::string_view text)
 std::optional<int> toInt(const std::string_view text)
 {
   int        value{};
-  const auto result = std::from_chars(text.data(), text.data() + text.size(), value);
+  const auto result = std::from_chars(text.data(), text.end(), value);
 
   if (result.ec != std::errc())
     return {};
-  const auto allCharactersParsed = (result.ptr == &(*text.end()));
+  const auto allCharactersParsed = (result.ptr == text.end());
   if (!allCharactersParsed)
     return {};
 

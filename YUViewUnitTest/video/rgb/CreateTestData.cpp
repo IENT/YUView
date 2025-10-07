@@ -38,16 +38,17 @@ namespace video::rgb::test
 namespace
 {
 
-void scaleValueToBitDepthAndPushIntoArra(QByteArray      &data,
-                                         const unsigned   value,
-                                         const int        bitDepth,
-                                         const Endianness endianness)
+void scaleValueToBitDepthAndPushIntoArray(QByteArray      &data,
+                                          const unsigned   value,
+                                          const int        valueBitDepth,
+                                          const int        outputBitDepth,
+                                          const Endianness endianness)
 {
-  const auto scaledValue = convertBitness(value, 12, bitDepth);
+  const auto scaledValue = convertBitness(value, valueBitDepth, outputBitDepth);
 
-  if (bitDepth == 8)
+  if (outputBitDepth == 8)
     data.push_back(scaledValue);
-  else if (bitDepth <= 16)
+  else if (outputBitDepth <= 16)
   {
     const auto upperByte = ((scaledValue & 0xff00) >> 8);
     const auto lowerByte = (scaledValue & 0xff);
@@ -83,21 +84,25 @@ void scaleValueToBitDepthAndPushIntoArra(QByteArray      &data,
 
 } // namespace
 
-auto createRawRGBData(const PixelFormatRGB &format) -> QByteArray
+QByteArray createRawRGBData(const PixelFormatRGB      &format,
+                            const std::vector<rgba_t> &values,
+                            const int                  valuesBitDepth)
 {
   QByteArray data;
+
   const auto bitDepth   = format.getBitsPerComponent();
   const auto endianness = format.getEndianess();
 
   if (format.getDataLayout() == DataLayout::Packed)
   {
-    for (auto value : TEST_VALUES_12BIT)
+    for (auto value : values)
     {
       for (int channelPosition = 0; channelPosition < static_cast<int>(format.getNrChannels());
            channelPosition++)
       {
         const auto channel = format.getChannelAtPosition(channelPosition);
-        scaleValueToBitDepthAndPushIntoArra(data, value[channel], bitDepth, endianness);
+        scaleValueToBitDepthAndPushIntoArray(
+          data, value[channel], valuesBitDepth, bitDepth, endianness);
       }
     }
   }
@@ -107,8 +112,9 @@ auto createRawRGBData(const PixelFormatRGB &format) -> QByteArray
          channelPosition++)
     {
       const auto channel = format.getChannelAtPosition(channelPosition);
-      for (auto value : TEST_VALUES_12BIT)
-        scaleValueToBitDepthAndPushIntoArra(data, value[channel], bitDepth, endianness);
+      for (auto value : values)
+        scaleValueToBitDepthAndPushIntoArray(
+          data, value[channel], valuesBitDepth, bitDepth, endianness);
     }
   }
 

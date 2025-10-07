@@ -122,10 +122,10 @@ playlistItemRawFile::playlistItemRawFile(const QString &rawFilePath,
     if (!this->parseY4MFile())
       return;
   }
-  else if (!pixelFormatFromMemory.isEmpty())
+  else if (!pixelFormatFromMemory)
   {
     // Use the format that we got from the memory. Don't do any auto detection.
-    this->video->setFormatFromString(pixelFormatFromMemory);
+    this->video->setFormatFromString(*pixelFormatFromMemory);
   }
   else if (!frameSize.isValid() && sourcePixelFormat.isEmpty())
   {
@@ -563,9 +563,9 @@ void playlistItemRawFile::slotVideoPropertiesChanged()
 {
   DEBUG_RAWFILE("playlistItemRawFile::slotVideoPropertiesChanged");
 
-  auto currentPixelFormat = video->getFormatAsString();
-  if (currentPixelFormat != this->pixelFormatAfterLoading)
-    itemMemoryHandler::itemMemoryAddFormat(this->properties().name, currentPixelFormat);
+  const auto currentPixelFormat = video->getFormatAsString();
+  if (currentPixelFormat && currentPixelFormat != this->pixelFormatAfterLoading)
+    itemMemoryHandler::itemMemoryAddFormat(this->properties().name, *currentPixelFormat);
 }
 
 ValuePairListSets playlistItemRawFile::getPixelValues(const QPoint &pixelPos, int frameIdx)

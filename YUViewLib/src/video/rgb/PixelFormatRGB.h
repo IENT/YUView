@@ -34,6 +34,7 @@
 
 #include <common/EnumMapper.h>
 #include <common/Typedef.h>
+#include <string_view>
 #include <video/PixelFormat.h>
 
 #include <string>
@@ -160,7 +161,7 @@ class PixelFormatRGB
 public:
   // The default constructed Pixel format will be invalid
   PixelFormatRGB() = default;
-  PixelFormatRGB(const std::string &name);
+  PixelFormatRGB(const std::string_view name);
   PixelFormatRGB(const int          bitsPerComponent,
                  const DataLayout   dataLayout,
                  const ChannelOrder channelOrder,

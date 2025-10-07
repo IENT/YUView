@@ -56,7 +56,7 @@ PixelFormatRGB::PixelFormatRGB(const int          bitsPerComponent,
 {
 }
 
-PixelFormatRGB::PixelFormatRGB(const std::string &name)
+PixelFormatRGB::PixelFormatRGB(const std::string_view name)
 {
   if (name == UNKNOWN_FORMAT_NAME)
     return;
@@ -94,7 +94,8 @@ PixelFormatRGB::PixelFormatRGB(const std::string &name)
 
   auto bitIdx = name.find("bit");
   if (bitIdx != std::string::npos)
-    this->bitsPerComponent = std::stoi(name.substr(bitIdx - 2, 2), nullptr);
+    if (auto value = functions::toInt(name.substr(bitIdx - 2, 2)))
+      this->bitsPerComponent = *value;
   if (name.find("planar") != std::string::npos)
     this->dataLayout = DataLayout::Planar;
   if (this->bitsPerComponent > 8 && name.find("BE") != std::string::npos)

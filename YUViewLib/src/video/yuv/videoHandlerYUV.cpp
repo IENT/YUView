@@ -37,6 +37,7 @@
 #include <cstdio>
 #include <iomanip>
 #include <sstream>
+#include <string_view>
 #include <type_traits>
 #include <vector>
 
@@ -3150,18 +3151,19 @@ void videoHandlerYUV::setFormatFromCorrelation(const QByteArray &rawYUVData, int
   }
 }
 
-bool videoHandlerYUV::setFormatFromString(QString format)
+bool videoHandlerYUV::setFormatFromString(const std::string_view format)
 {
   DEBUG_YUV("videoHandlerYUV::setFormatFromString " << format << "\n");
 
-  auto split = format.split(";");
-  if (split.length() != 4 || split[2] != "YUV")
+  auto split = functions::splitString(format, ';');
+  if (split.size() != 4 || split[2] != "YUV")
     return false;
 
-  if (!FrameHandler::setFormatFromString(split[0] + ";" + split[1]))
+  const auto frameFormat = std::string(split.at(0) + ";" + split.at(1));
+  if (!FrameHandler::setFormatFromString(frameFormat))
     return false;
 
-  auto fmt = PixelFormatYUV(split[3].toStdString());
+  auto fmt = PixelFormatYUV(split.at(3));
   if (!fmt.isValid())
     return false;
 

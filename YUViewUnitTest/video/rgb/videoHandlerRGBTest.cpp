@@ -30,6 +30,7 @@
  *   along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "video/rgb/PixelFormatRGB.h"
 #include "gtest/gtest.h"
 #include <common/Testing.h>
 #include <video/rgb/videoHandlerRGB.h>
@@ -37,11 +38,27 @@
 namespace video::rgb::test
 {
 
+namespace
+{
+
 TEST(videoHandlerRGBTest, testDefaultConstructor)
 {
   videoHandlerRGB handler;
 
   EXPECT_FALSE(handler.isFormatValid());
+  EXPECT_EQ(handler.getCachingFrameSize(), 0u);
+  EXPECT_TRUE(handler.getPixelValues(QPoint(0, 0), 0, nullptr).isEmpty());
+  EXPECT_EQ(handler.getBytesPerFrame(), 0);
+  EXPECT_EQ(handler.getFormatAsString().value(), "Invalid")
+    << "Format should be Invalid but was: " << handler.getFormatAsString().value();
+  EXPECT_EQ(handler.getRawRGBPixelFormatName(), "Invalid");
 }
+
+// This function is esentially just a dispatch function. Good question how to test this well.
+// TEST(videoHandlerRGBTest, testCalculateDifference)
+// {
+// }
+
+} // namespace
 
 } // namespace video::rgb::test

@@ -67,4 +67,23 @@ TEST(FunctionsTest, toInt)
   EXPECT_FALSE(functions::toInt("NotANumber"));
 }
 
+TEST(FunctionsTest, stringToLower)
+{
+  EXPECT_EQ(functions::toLower(""), "");
+  EXPECT_EQ(functions::toLower("Hello"), "hello");
+  EXPECT_EQ(functions::toLower("WORLD"), "world");
+  EXPECT_EQ(functions::toLower("C++"), "c++");
+  EXPECT_EQ(functions::toLower("AaBbCcDd"), "aabbccdd");
+}
+
+TEST(FunctionsTest, splitString)
+{
+  EXPECT_THAT(functions::splitString("Hello,World,Test", ','),
+              ElementsAre("Hello", "World", "Test"));
+  EXPECT_THAT(functions::splitString("a,b,c", ','), ElementsAre("a", "b", "c"));
+  EXPECT_THAT(functions::splitString("", ','), ElementsAre());
+  EXPECT_THAT(functions::splitString("Test1;Test2;Test3", ';'),
+              ElementsAre("Test1", "Test2", "Test3"));
+}
+
 } // namespace

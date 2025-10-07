@@ -120,7 +120,7 @@ std::string formatSubsamplingWithColons(const Subsampling &subsampling)
   return s.str();
 }
 
-PixelFormatYUV::PixelFormatYUV(const std::string &name)
+PixelFormatYUV::PixelFormatYUV(const std::string_view name)
 {
   if (auto predefinedFormat = PredefinedPixelFormatMapper.getValue(name))
   {
@@ -133,7 +133,8 @@ PixelFormatYUV::PixelFormatYUV(const std::string &name)
     "]?(packed-B|packed)?[ ]?(Cx[0-9]+)?[ ]?(Cy[0-9]+)?");
 
   std::smatch sm;
-  if (!std::regex_match(name, sm, strExpr))
+  const auto  nameAsString = std::string(name);
+  if (!std::regex_match(nameAsString, sm, strExpr))
     return;
 
   try

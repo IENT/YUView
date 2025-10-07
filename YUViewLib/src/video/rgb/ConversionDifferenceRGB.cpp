@@ -33,6 +33,7 @@
 #include "ConversionDifferenceRGB.h"
 
 #include <common/FunctionsGui.h>
+#include <cstdint>
 
 #include "ConversionFunctions.h"
 #include "video/PixelFormat.h"
@@ -81,15 +82,6 @@ RenderValue convertDeltaToRenderValue(const rgba_t &delta,
   }
 }
 
-MSE calculateMse(const rgba_t &delta)
-{
-  MSE mse;
-  mse.r = delta.r * delta.r;
-  mse.g = delta.g * delta.g;
-  mse.b = delta.b * delta.b;
-  return mse;
-}
-
 std::pair<QImage, MSE>
 calculateDifferencePredefinedPixelFormat(const InputFrameParameters &frame1,
                                          const InputFrameParameters &frame2,
@@ -108,7 +100,7 @@ calculateDifferencePredefinedPixelFormat(const InputFrameParameters &frame1,
     QImage(QSize(frameSize.width, frameSize.height), functionsGui::platformImageFormat(false));
   unsigned char *restrict dst = outputImage.bits();
 
-  MSE mse;
+  SSE sse;
 
   auto rawData1 = reinterpret_cast<const unsigned char *>(frame1.rawDataItem.data());
   auto rawData2 = reinterpret_cast<const unsigned char *>(frame2.rawDataItem.data());
@@ -120,7 +112,7 @@ calculateDifferencePredefinedPixelFormat(const InputFrameParameters &frame1,
 
     const auto delta = rgb1 - rgb2;
 
-    mse += calculateMse(delta);
+    sse.addSample(delta);
 
     std::tie(dst[2], dst[1], dst[0]) =
       convertDeltaToRenderValue(delta, markDifference, amplificationFactor);
@@ -131,7 +123,7 @@ calculateDifferencePredefinedPixelFormat(const InputFrameParameters &frame1,
     dst += 4;
   }
 
-  return {outputImage, mse};
+  return {outputImage, sse.getMSE()};
 }
 
 template <typename T>
@@ -153,7 +145,7 @@ std::pair<QImage, MSE> calculateDifferenceAndMSE(const InputFrameParameters &fra
                               std::min(frame1.frameSize.height, frame2.frameSize.height));
   auto       outputImage = QImage(QSize(frameSize.width, frameSize.height),
                             functionsGui::platformImageFormat(pixelFormat.hasAlpha()));
-  MSE        mse;
+  SSE        sse;
 
   unsigned char *restrict dst = outputImage.bits();
   const auto offsetToNextValue =
@@ -171,7 +163,7 @@ std::pair<QImage, MSE> calculateDifferenceAndMSE(const InputFrameParameters &fra
 
     const auto delta = rgb1 - rgb2;
 
-    mse += calculateMse(delta);
+    sse.addSample(delta);
 
     std::tie(dst[2], dst[1], dst[0]) =
       convertDeltaToRenderValue(delta, markDifference, amplificationFactor);
@@ -182,7 +174,7 @@ std::pair<QImage, MSE> calculateDifferenceAndMSE(const InputFrameParameters &fra
     dst += 4;
   }
 
-  return {outputImage, mse};
+  return {outputImage, sse.getMSE()};
 }
 
 } // namespace
@@ -193,7 +185,6 @@ std::pair<QImage, MSE> calculateDifferenceAndMSE(const InputFrameParameters &fra
                                                  const int                   amplificationFactor,
                                                  const bool                  markDifference)
 {
-
   if (pixelFormat.getPredefinedPixelFormat())
     return calculateDifferencePredefinedPixelFormat(frame1,
                                                     frame2,

@@ -86,7 +86,7 @@ TEST(GetPixelValueTest, TestGetPixelValueFromBuffer)
           {
             const PixelFormatRGB pixelFormat(
               bitDepth, dataLayout, channelOrder, alphaMode, endianness);
-            const auto data = createRawRGBData(pixelFormat);
+            const auto data = createRawRGBData(pixelFormat, TEST_VALUES_12BIT, 12);
 
             EXPECT_NO_THROW(testGetPixelValueFromBuffer(data, pixelFormat))
               << "Failed for pixel format " << pixelFormat.getName();

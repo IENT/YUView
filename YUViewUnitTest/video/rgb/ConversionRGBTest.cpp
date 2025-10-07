@@ -252,9 +252,9 @@ void runTestForAllParameters(TestingFunction testingFunction)
         {
           for (const auto &channelOrder : video::rgb::ChannelOrderMapper.getValues())
           {
-            const video::rgb::PixelFormatRGB format(
+            const video::rgb::PixelFormatRGB pixelFormat(
               bitDepth, dataLayout, channelOrder, alphaMode, endianness);
-            const auto data = createRawRGBData(format);
+            const auto data = createRawRGBData(pixelFormat, TEST_VALUES_12BIT, 12);
 
             for (const auto outputHasAlpha : {false, true})
             {
@@ -265,7 +265,7 @@ void runTestForAllParameters(TestingFunction testingFunction)
                   for (const auto limitedRange : {false, true})
                   {
                     EXPECT_NO_THROW(testingFunction(
-                      data, format, inversion, componentScale, limitedRange, outputHasAlpha))
+                      data, pixelFormat, inversion, componentScale, limitedRange, outputHasAlpha))
                       << "parametersAsString";
                   }
                 }

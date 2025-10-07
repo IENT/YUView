@@ -216,18 +216,28 @@ void videoHandlerRGB::setFormatFromCorrelation(const QByteArray &, int64_t)
 { /* TODO */
 }
 
-bool videoHandlerRGB::setFormatFromString(QString format)
+std::optional<std::string> videoHandlerRGB::getFormatAsString() const
+{
+  if (!isFormatValid())
+    return {};
+  const auto frameFormat = FrameHandler::getFormatAsString();
+  if (frameFormat)
+    return {};
+  return *frameFormat + ";RGB;" + this->srcPixelFormat.getName();
+}
+
+bool videoHandlerRGB::setFormatFromString(const std::string_view format)
 {
   DEBUG_RGB("videoHandlerRGB::setFormatFromString " << format << "\n");
 
-  auto split = format.split(";");
-  if (split.length() != 4 || split[2] != "RGB")
+  const auto split = functions::splitString(format, ';');
+  if (split.size() != 4 || split.at(2) != "RGB")
     return false;
 
-  if (!FrameHandler::setFormatFromString(split[0] + ";" + split[1]))
+  if (!FrameHandler::setFormatFromString(std::string(split.at(0) + ";" + split.at(1))))
     return false;
 
-  auto fmt = PixelFormatRGB(split[3].toStdString());
+  auto fmt = PixelFormatRGB(split.at(3));
   if (!fmt.isValid())
     return false;
 
@@ -869,6 +879,9 @@ QImage videoHandlerRGB::calculateDifference(FrameHandler    *item2,
     // 888 values instead.
     return videoHandler::calculateDifference(
       item2, frameIdxItem0, frameIdxItem1, differenceInfoList, amplificationFactor, markDifference);
+
+  if (!loadRawRGBData(frameIdxItem0) || !rgbItem2->loadRawRGBData(frameIdxItem1))
+    return QImage();
 
   const auto [img, mse] =
     calculateDifferenceAndMSE({this->currentFrameRawData, this->frameSize},

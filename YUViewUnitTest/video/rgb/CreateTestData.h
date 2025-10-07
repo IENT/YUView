@@ -34,30 +34,35 @@
 
 #include <QByteArray>
 #include <array>
+#include <vector>
 #include <video/rgb/PixelFormatRGB.h>
 
 namespace video::rgb::test
 {
 
-constexpr std::array<rgba_t, 16> TEST_VALUES_12BIT = {{{0, 0, 0, 0},
-                                                       {156, 0, 0, 0},
-                                                       {560, 0, 0, 98},
-                                                       {1023, 0, 0, 700},
-                                                       {0, 156, 0, 852},
-                                                       {0, 760, 0, 0},
-                                                       {0, 1023, 0, 230},
-                                                       {0, 0, 156, 0},
-                                                       {0, 0, 576, 0},
-                                                       {0, 0, 1023, 0},
-                                                       {213, 214, 265, 1023},
-                                                       {1023, 78, 234, 1023},
-                                                       {1023, 1023, 3, 0},
-                                                       {16, 1023, 22, 0},
-                                                       {1023, 1023, 1023, 0},
-                                                       {1023, 1023, 1023, 1023}}};
-constexpr Size                   TEST_FRAME_SIZE   = {4, 4};
-constexpr int TEST_FRAME_NR_VALUES                 = TEST_FRAME_SIZE.width * TEST_FRAME_SIZE.height;
+const std::vector<rgba_t> TEST_VALUES_12BIT{rgba_t({0, 0, 0, 0}),
+                                            rgba_t({156, 0, 0, 0}),
+                                            rgba_t({560, 0, 0, 98}),
+                                            rgba_t({1023, 0, 0, 700}),
+                                            rgba_t({0, 156, 0, 852}),
+                                            rgba_t({0, 760, 0, 0}),
+                                            rgba_t({0, 1023, 0, 230}),
+                                            rgba_t({0, 0, 156, 0}),
+                                            rgba_t({0, 0, 576, 0}),
+                                            rgba_t({0, 0, 1023, 0}),
+                                            rgba_t({213, 214, 265, 1023}),
+                                            rgba_t({1023, 78, 234, 1023}),
+                                            rgba_t({1023, 1023, 3, 0}),
+                                            rgba_t({16, 1023, 22, 0}),
+                                            rgba_t({1023, 1023, 1023, 0}),
+                                            rgba_t({1023, 1023, 1023, 1023})};
+constexpr Size            TEST_FRAME_SIZE      = {4, 4};
+constexpr int             TEST_FRAME_NR_VALUES = TEST_FRAME_SIZE.width * TEST_FRAME_SIZE.height;
 
-QByteArray createRawRGBData(const PixelFormatRGB &format);
+// This function reorders the rgb values into the QByteArray in the right order. The bit depth of
+// the input values must be correct. No clipping or scaling is applied.
+QByteArray createRawRGBData(const PixelFormatRGB      &format,
+                            const std::vector<rgba_t> &value,
+                            const int                  valuesBitDepth);
 
 } // namespace video::rgb::test

@@ -61,7 +61,7 @@ TEST_F(ConversionFunctionsTest,
        TestCalculatePointersToStartOfComponents_InvalidPixelFormat_ShouldThrow)
 {
   const auto pixelFormat = PixelFormatRGB(8, DataLayout::Packed, ChannelOrder::RGB);
-  auto       data        = createRawRGBData(pixelFormat);
+  auto       data        = createRawRGBData(pixelFormat, TEST_VALUES_12BIT, 12);
   EXPECT_THROW(calculatePointersToStartOfComponents<uint8_t>(data, {128, 128}, {}),
                std::invalid_argument);
 }
@@ -70,7 +70,7 @@ TEST_F(ConversionFunctionsTest,
        TestCalculatePointersToStartOfComponents_InvalidFrameSize_ShouldThrow)
 {
   const auto pixelFormat = PixelFormatRGB(8, DataLayout::Packed, ChannelOrder::RGB);
-  auto       data        = createRawRGBData(pixelFormat);
+  auto       data        = createRawRGBData(pixelFormat, TEST_VALUES_12BIT, 12);
   EXPECT_THROW(calculatePointersToStartOfComponents<uint8_t>(data, {128, 0}, pixelFormat),
                std::invalid_argument);
 }
@@ -98,7 +98,7 @@ TEST_P(ConversionFunctionsTest, TestCalculatePointersToStartOfComponents)
   const auto [bitsPerPixel, dataLayout, channelOrder] = GetParam();
   const auto pixelFormat = PixelFormatRGB(bitsPerPixel, dataLayout, channelOrder);
 
-  auto data = createRawRGBData(pixelFormat);
+  auto data = createRawRGBData(pixelFormat, TEST_VALUES_12BIT, 12);
 
   std::map<ChannelOrder, Offsets> expectedOffsetsMap = {{ChannelOrder::RGB, {0, 1, 2}},
                                                         {ChannelOrder::RBG, {0, 2, 1}},
@@ -140,12 +140,7 @@ INSTANTIATE_TEST_SUITE_P(VideoRGBTest,
                          ConversionFunctionsTest,
                          Combine(Values(8, 9, 10, 12, 16),
                                  Values(DataLayout::Packed, DataLayout::Planar),
-                                 Values(ChannelOrder::RGB,
-                                        ChannelOrder::RBG,
-                                        ChannelOrder::GRB,
-                                        ChannelOrder::GBR,
-                                        ChannelOrder::BRG,
-                                        ChannelOrder::BGR)),
+                                 ValuesIn(ChannelOrderMapper.getValues())),
                          getTestName);
 
 } // namespace

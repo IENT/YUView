@@ -41,9 +41,9 @@ namespace video::rgb
 
 template <typename T> struct DataPointers
 {
-  T *r;
-  T *g;
-  T *b;
+  const T *r;
+  const T *g;
+  const T *b;
 
   DataPointers operator+=(const int offset)
   {
@@ -55,7 +55,7 @@ template <typename T> struct DataPointers
 };
 
 template <typename T>
-DataPointers<T> calculatePointersToStartOfComponents(QByteArray           &rawFrameData,
+DataPointers<T> calculatePointersToStartOfComponents(const QByteArray     &rawFrameData,
                                                      const Size           &frameSize,
                                                      const PixelFormatRGB &pixelFormat)
 {
@@ -70,7 +70,7 @@ DataPointers<T> calculatePointersToStartOfComponents(QByteArray           &rawFr
   const auto posG = pixelFormat.getChannelPosition(Channel::Green);
   const auto posB = pixelFormat.getChannelPosition(Channel::Blue);
 
-  const auto castDataPointer = reinterpret_cast<T *>(rawFrameData.data());
+  const auto castDataPointer = reinterpret_cast<T const *>(rawFrameData.data());
 
   if (pixelFormat.getDataLayout() == DataLayout::Planar)
   {

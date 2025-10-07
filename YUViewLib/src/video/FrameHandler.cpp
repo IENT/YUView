@@ -220,7 +220,7 @@ void FrameHandler::slotVideoControlChanged()
   // Update the controls and get the new selected size
   auto newSize = getNewSizeFromControls();
   DEBUG_FRAME(
-      "FrameHandler::slotVideoControlChanged new size %dx%d", newSize.width, newSize.height);
+    "FrameHandler::slotVideoControlChanged new size %dx%d", newSize.width, newSize.height);
 
   if (newSize != frameSize && newSize.isValid())
   {
@@ -360,9 +360,9 @@ void FrameHandler::drawPixelValues(QPainter *painter,
         pixVal    = getPixelVal(x, y);
         drawWhite = (qRed(pixVal) < 128 && qGreen(pixVal) < 128 && qBlue(pixVal) < 128);
         valText   = QString("R%1\nG%2\nB%3")
-                      .arg(qRed(pixVal), 0, formatBase)
-                      .arg(qGreen(pixVal), 0, formatBase)
-                      .arg(qBlue(pixVal), 0, formatBase);
+                    .arg(qRed(pixVal), 0, formatBase)
+                    .arg(qGreen(pixVal), 0, formatBase)
+                    .arg(qBlue(pixVal), 0, formatBase);
       }
 
       painter->setPen(drawWhite ? Qt::white : Qt::black);
@@ -447,6 +447,29 @@ bool FrameHandler::isPixelDark(const QPoint &pixelPos)
   return (qRed(pixVal) < 128 && qGreen(pixVal) < 128 && qBlue(pixVal) < 128);
 }
 
+std::optional<std::string> FrameHandler::getFormatAsString() const
+{
+  if (!this->frameSize.isValid())
+    return {};
+  return std::to_string(this->frameSize.width) + ";" + std::to_string(this->frameSize.height);
+}
+
+bool FrameHandler::setFormatFromString(const std::string_view format)
+{
+  auto split = functions::splitString(format, ';');
+  if (split.size() != 2)
+    return false;
+
+  const auto width  = functions::toUnsigned(split.at(0));
+  const auto height = functions::toUnsigned(split.at(1));
+
+  if (!width || *width < 0 || !height || *height < 0)
+    return false;
+
+  this->setFrameSize(Size(*width, *height));
+  return true;
+}
+
 QStringPairList
 FrameHandler::getPixelValues(const QPoint &pixelPos, int, FrameHandler *item2, const int)
 {
@@ -490,25 +513,6 @@ FrameHandler::getPixelValues(const QPoint &pixelPos, int, FrameHandler *item2, c
   }
 
   return values;
-}
-
-bool FrameHandler::setFormatFromString(QString format)
-{
-  auto split = format.split(";");
-  if (split.length() != 2)
-    return false;
-
-  bool ok;
-  auto newWidth = unsigned(split[0].toInt(&ok));
-  if (!ok)
-    return false;
-
-  auto newHeight = unsigned(split[1].toInt(&ok));
-  if (!ok)
-    return false;
-
-  this->setFrameSize(Size(newWidth, newHeight));
-  return true;
 }
 
 } // namespace video

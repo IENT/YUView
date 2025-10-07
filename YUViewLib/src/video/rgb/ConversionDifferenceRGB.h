@@ -42,23 +42,48 @@ namespace video::rgb
 
 struct InputFrameParameters
 {
-  QByteArray &rawDataItem;
-  Size        frameSize{};
+  const QByteArray &rawDataItem;
+  const Size        frameSize{};
 };
 
 struct MSE
 {
+  double r{};
+  double g{};
+  double b{};
+
+  bool operator==(const MSE &other) const
+  {
+    return std::tie(r, g, b) == std::tie(other.r, other.g, other.b);
+  }
+};
+
+// Sum of Squared Errors
+class SSE
+{
+public:
+  void addSample(const rgba_t &delta)
+  {
+    this->r += delta.r * delta.r;
+    this->g += delta.g * delta.g;
+    this->b += delta.b * delta.b;
+    ++this->nrSamples;
+  }
+
+  MSE getMSE() const
+  {
+    MSE mse;
+    mse.r = static_cast<double>(r) / this->nrSamples;
+    mse.g = static_cast<double>(g) / this->nrSamples;
+    mse.b = static_cast<double>(b) / this->nrSamples;
+    return mse;
+  }
+
+private:
   int64_t r{};
   int64_t g{};
   int64_t b{};
-
-  MSE &operator+=(const MSE &other)
-  {
-    this->r += other.r;
-    this->g += other.g;
-    this->b += other.b;
-    return *this;
-  }
+  int64_t nrSamples{};
 };
 
 std::pair<QImage, MSE> calculateDifferenceAndMSE(const InputFrameParameters &frame1,
