@@ -3159,7 +3159,7 @@ bool videoHandlerYUV::setFormatFromString(const std::string_view format)
   if (split.size() != 4 || split[2] != "YUV")
     return false;
 
-  const auto frameFormat = std::string(split.at(0) + ";" + split.at(1));
+  const auto frameFormat = std::string(split.at(0)) + ";" + std::string(split.at(1));
   if (!FrameHandler::setFormatFromString(frameFormat))
     return false;
 

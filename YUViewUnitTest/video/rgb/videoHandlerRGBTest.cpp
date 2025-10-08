@@ -30,7 +30,6 @@
  *   along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "video/rgb/PixelFormatRGB.h"
 #include "gtest/gtest.h"
 #include <common/Testing.h>
 #include <video/rgb/videoHandlerRGB.h>

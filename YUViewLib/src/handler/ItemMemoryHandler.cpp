@@ -56,7 +56,7 @@ struct ItemData
     return QString("File: %1 Last Changed: %2 Format: %3")
       .arg(filePath)
       .arg(itemChangedLast.toString("yy-M-d H-m-s"))
-      .arg(format);
+      .arg(QString::fromStdString(format));
   }
 };
 

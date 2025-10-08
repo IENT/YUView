@@ -234,7 +234,7 @@ bool videoHandlerRGB::setFormatFromString(const std::string_view format)
   if (split.size() != 4 || split.at(2) != "RGB")
     return false;
 
-  if (!FrameHandler::setFormatFromString(std::string(split.at(0) + ";" + split.at(1))))
+  if (!FrameHandler::setFormatFromString(std::string(split.at(0)) + ";" + std::string(split.at(1))))
     return false;
 
   auto fmt = PixelFormatRGB(split.at(3));
