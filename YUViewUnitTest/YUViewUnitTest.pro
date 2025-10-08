@@ -17,7 +17,6 @@ INCLUDEPATH += $$top_srcdir/submodules/googletest/googletest/include \
                $$top_srcdir/YUViewUnitTest/common \
                $$top_builddir/YUViewLib
 LIBS += -L$$top_builddir/submodules/googletest-qmake/gtest -lgtest
-LIBS += -L$$top_builddir/submodules/googletest-qmake/gtest_main -lgtest_main
 LIBS += -L$$top_builddir/YUViewLib -lYUViewLib
 
 #win32-msvc* {

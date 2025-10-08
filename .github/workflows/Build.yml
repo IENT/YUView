@@ -30,6 +30,8 @@ jobs:
         make -j$(nproc)
     - name: Run Unittests
       run: $GITHUB_WORKSPACE/build/YUViewUnitTest/YUViewUnitTest
+      env:
+        QT_QPA_PLATFORM: 'offscreen'
   build-mac-native:
     runs-on: ${{ matrix.os }}
     strategy:
@@ -51,6 +53,8 @@ jobs:
         make -j $(sysctl -n hw.logicalcpu)
     - name: Run Unittests
       run: $GITHUB_WORKSPACE/build/YUViewUnitTest/YUViewUnitTest
+      env:
+        QT_QPA_PLATFORM: 'offscreen'
   build-linux-mac:
     runs-on: ${{ matrix.os }}
     strategy:
@@ -105,6 +109,8 @@ jobs:
         make -j 4
     - name: Run Unittests
       run: $GITHUB_WORKSPACE/build/YUViewUnitTest/YUViewUnitTest
+      env:
+        QT_QPA_PLATFORM: 'offscreen'
     - name: Build App (Mac)
       if: runner.os	== 'macOS'
       run: |
@@ -184,6 +190,8 @@ jobs:
         jom
     - name: Run Unittests
       run: ${{ github.workspace }}\build\YUViewUnitTest\YUViewUnitTest
+      env:
+        QT_QPA_PLATFORM: 'offscreen'
     - name: WindeployQT
       run: |
         mkdir deploy
