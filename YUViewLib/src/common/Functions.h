@@ -36,6 +36,7 @@
 
 #include <istream>
 #include <optional>
+#include <string_view>
 #include <vector>
 
 namespace functions
@@ -81,6 +82,7 @@ template <size_t N> QStringList toQStringList(const std::array<std::string_view,
 std::string                   toLower(const std::string_view str);
 std::optional<int>            toInt(const std::string_view str);
 std::vector<std::string_view> splitString(const std::string_view str, const char delimiter);
+std::string_view              stripWhitespace(std::string_view str);
 
 ByteVector readData(std::istream &istream, const size_t nrBytes);
 

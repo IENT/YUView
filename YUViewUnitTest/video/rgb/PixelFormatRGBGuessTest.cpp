@@ -58,7 +58,7 @@ std::string getTestName(const testing::TestParamInfo<TestParameters> &testParame
   return filesource::frameFormatGuess::test::formatFileInfoForGuessForTestName(
            testParameters.fileInfoForGuess) +
          "_" +
-         yuviewTest::replaceNonSupportedCharacters(testParameters.expectedPixelFormat.getName());
+         yuviewTest::replaceNonSupportedCharacters(*testParameters.expectedPixelFormat.getName());
 }
 
 TEST_P(GuessRGBFormatFromFilenameFrameSizeAndFileSize, TestGuess)

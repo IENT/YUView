@@ -65,7 +65,7 @@ void testGetPixelValueFromBuffer(const QByteArray     &sourceBuffer,
 
       if (actualValue != expectedValue)
         throw std::runtime_error("Error checking pixel [" + std::to_string(x) + "," +
-                                 std::to_string(y) + " format " + srcPixelFormat.getName());
+                                 std::to_string(y) + " format " + *srcPixelFormat.getName());
     }
   }
 }
@@ -89,7 +89,7 @@ TEST(GetPixelValueTest, TestGetPixelValueFromBuffer)
             const auto data = createRawRGBData(pixelFormat, TEST_VALUES_12BIT, 12);
 
             EXPECT_NO_THROW(testGetPixelValueFromBuffer(data, pixelFormat))
-              << "Failed for pixel format " << pixelFormat.getName();
+              << "Failed for pixel format " << *pixelFormat.getName();
           }
         }
       }

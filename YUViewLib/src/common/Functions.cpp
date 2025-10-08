@@ -209,8 +209,19 @@ std::vector<std::string_view> splitString(const std::string_view str, const char
     start = end + 1;
     end   = str.find(delimiter, start);
   }
-  result.emplace_back(str.substr(start));
+  if (start != str.size())
+    result.emplace_back(str.substr(start));
   return result;
+}
+
+std::string_view stripWhitespace(std::string_view str)
+{
+  str.remove_prefix(std::min(str.find_first_not_of(" "), str.size()));
+
+  const auto lastNonWhitespace = str.find_last_not_of(" ");
+  if (lastNonWhitespace != std::string_view::npos)
+    str.remove_suffix(str.size() - lastNonWhitespace - 1);
+  return str;
 }
 
 ByteVector readData(std::istream &istream, const size_t nrBytes)

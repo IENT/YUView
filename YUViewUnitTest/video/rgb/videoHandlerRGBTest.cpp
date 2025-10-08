@@ -49,9 +49,11 @@ TEST(videoHandlerRGBTest, testDefaultConstructor)
   EXPECT_EQ(handler.getCachingFrameSize(), 0u);
   EXPECT_TRUE(handler.getPixelValues(QPoint(0, 0), 0, nullptr).isEmpty());
   EXPECT_EQ(handler.getBytesPerFrame(), 0);
-  EXPECT_EQ(handler.getFormatAsString().value(), "Invalid")
+  EXPECT_FALSE(handler.getFormatAsString())
     << "Format should be Invalid but was: " << handler.getFormatAsString().value();
-  EXPECT_EQ(handler.getRawRGBPixelFormatName(), "Invalid");
+
+  EXPECT_TRUE(handler.getRawRGBPixelFormatName());
+  EXPECT_EQ(handler.getRawRGBPixelFormatName(), "RGB 8bit");
 }
 
 // This function is esentially just a dispatch function. Good question how to test this well.

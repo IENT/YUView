@@ -89,7 +89,7 @@ std::string getTestName(const testing::TestParamInfo<TestParameters> &testParame
   const auto pixelFormat = PixelFormatRGB(bitsPerPixel, dataLayout, channelOrder);
 
   return "TestCalculatePointersToStartOfComponents_PixelFormat" +
-         yuviewTest::replaceNonSupportedCharacters(pixelFormat.getName()) +
+         yuviewTest::replaceNonSupportedCharacters(*pixelFormat.getName()) +
          "_shouldReturnCorrectOffsets";
 }
 

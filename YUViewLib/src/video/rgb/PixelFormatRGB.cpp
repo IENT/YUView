@@ -31,6 +31,7 @@
  */
 
 #include "PixelFormatRGB.h"
+#include "common/Functions.h"
 
 // Activate this if you want to know when which buffer is loaded/converted to image and so on.
 #define RGBPIXELFORMAT_DEBUG 0
@@ -44,8 +45,6 @@
 namespace video::rgb
 {
 
-constexpr auto UNKNOWN_FORMAT_NAME = "Unknown Pixel Format";
-
 PixelFormatRGB::PixelFormatRGB(const int          bitsPerComponent,
                                const DataLayout   dataLayout,
                                const ChannelOrder channelOrder,
@@ -58,9 +57,6 @@ PixelFormatRGB::PixelFormatRGB(const int          bitsPerComponent,
 
 PixelFormatRGB::PixelFormatRGB(const std::string_view name)
 {
-  if (name == UNKNOWN_FORMAT_NAME)
-    return;
-
   for (const auto &predefinedFormat : PredefinedPixelFormatMapper)
   {
     if (name == predefinedFormat.second)
@@ -94,7 +90,7 @@ PixelFormatRGB::PixelFormatRGB(const std::string_view name)
 
   auto bitIdx = name.find("bit");
   if (bitIdx != std::string::npos)
-    if (auto value = functions::toInt(name.substr(bitIdx - 2, 2)))
+    if (auto value = functions::toInt(functions::stripWhitespace(name.substr(bitIdx - 2, 2))))
       this->bitsPerComponent = *value;
   if (name.find("planar") != std::string::npos)
     this->dataLayout = DataLayout::Planar;
@@ -125,10 +121,10 @@ bool PixelFormatRGB::hasAlpha() const
   return this->alphaMode != AlphaMode::None;
 }
 
-std::string PixelFormatRGB::getName() const
+std::optional<std::string> PixelFormatRGB::getName() const
 {
   if (!this->isValid())
-    return UNKNOWN_FORMAT_NAME;
+    return {};
 
   if (this->predefinedPixelFormat)
   {
@@ -361,23 +357,24 @@ bool PixelFormatRGB::operator!=(const PixelFormatRGB &a) const
 
 bool PixelFormatRGB::operator==(const std::string &a) const
 {
-  if (!this->isValid() || a == UNKNOWN_FORMAT_NAME)
+  if (!this->isValid())
     return false;
 
-  return this->getName() == a;
+  return *this->getName() == a;
 }
 
 bool PixelFormatRGB::operator!=(const std::string &a) const
 {
-  if (!this->isValid() || a == UNKNOWN_FORMAT_NAME)
+  if (!this->isValid())
     return true;
 
-  return this->getName() != a;
+  return *this->getName() != a;
 }
 
-void PrintTo(const PixelFormatRGB &pixelFormatRGB, std::ostream *os)
+void PrintTo(const PixelFormatRGB &pixelFormat, std::ostream *os)
 {
-  *os << pixelFormatRGB.getName();
+  if (pixelFormat.isValid())
+    *os << *pixelFormat.getName();
 }
 
 } // namespace video::rgb

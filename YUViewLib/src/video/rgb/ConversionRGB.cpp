@@ -84,6 +84,11 @@ void convertRGB565ToARGB(const QByteArray     &sourceBuffer,
   {
     auto [r, g, b, a] = extractRGB565Value(rawData, endianess);
 
+    // Scale from 565 to 8 bit
+    r = r << 3;
+    g = g << 2;
+    b = b << 3;
+
     r = functions::clip(r * componentScale[0], 0, 255);
     g = functions::clip(g * componentScale[1], 0, 255);
     b = functions::clip(b * componentScale[2], 0, 255);

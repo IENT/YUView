@@ -101,9 +101,9 @@ public:
   void updateControlsForNewPixelFormat();
 
   // Get the name of the currently selected RGB pixel format
-  virtual QString getRawRGBPixelFormatName() const
+  virtual std::optional<std::string> getRawRGBPixelFormatName() const
   {
-    return QString::fromStdString(srcPixelFormat.getName());
+    return this->srcPixelFormat.getName();
   }
   // Set the current raw format and update the control. Only emit a signalHandlerChanged signal
   // if emitSignal is true.

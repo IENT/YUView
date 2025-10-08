@@ -31,6 +31,9 @@
  */
 
 #include "CreateTestData.h"
+#include "video/PixelFormat.h"
+#include "video/rgb/PixelFormatRGB.h"
+#include <stdexcept>
 
 namespace video::rgb::test
 {
@@ -82,6 +85,28 @@ void scaleValueToBitDepthAndPushIntoArray(QByteArray      &data,
   }
 }
 
+void scaleValueToRGB565AndPushIntoArray(QByteArray      &data,
+                                        const rgba_t    &value,
+                                        const Endianness endianess)
+{
+  int dataBytes = (value.r & 0b00000000'00011111) + ((value.g << 5) & 0b00000111'11100000) +
+                  ((value.b << 11) & 0b11111000'00000000);
+
+  const int byte1 = (dataBytes >> 8);
+  const int byte2 = (dataBytes & 0b1111'1111);
+
+  if (endianess == Endianness::Big)
+  {
+    data.push_back(byte1);
+    data.push_back(byte2);
+  }
+  else
+  {
+    data.push_back(byte2);
+    data.push_back(byte1);
+  }
+}
+
 } // namespace
 
 QByteArray createRawRGBData(const PixelFormatRGB      &format,
@@ -90,31 +115,43 @@ QByteArray createRawRGBData(const PixelFormatRGB      &format,
 {
   QByteArray data;
 
-  const auto bitDepth   = format.getBitsPerComponent();
-  const auto endianness = format.getEndianess();
+  const auto bitDepth  = format.getBitsPerComponent();
+  const auto endianess = format.getEndianess();
 
-  if (format.getDataLayout() == DataLayout::Packed)
+  if (format.getPredefinedPixelFormat() == PredefinedPixelFormat::RGB565)
   {
-    for (auto value : values)
+    for (const auto value : values)
+      scaleValueToRGB565AndPushIntoArray(data, value, endianess);
+  }
+  else if (format.getPredefinedPixelFormat())
+  {
+    throw std::logic_error("Support for pixel format not implemented");
+  }
+  else
+  {
+    if (format.getDataLayout() == DataLayout::Packed)
+    {
+      for (const auto value : values)
+      {
+        for (int channelPosition = 0; channelPosition < static_cast<int>(format.getNrChannels());
+             channelPosition++)
+        {
+          const auto channel = format.getChannelAtPosition(channelPosition);
+          scaleValueToBitDepthAndPushIntoArray(
+            data, value.at(channel), valuesBitDepth, bitDepth, endianess);
+        }
+      }
+    }
+    else
     {
       for (int channelPosition = 0; channelPosition < static_cast<int>(format.getNrChannels());
            channelPosition++)
       {
         const auto channel = format.getChannelAtPosition(channelPosition);
-        scaleValueToBitDepthAndPushIntoArray(
-          data, value[channel], valuesBitDepth, bitDepth, endianness);
+        for (const auto value : values)
+          scaleValueToBitDepthAndPushIntoArray(
+            data, value.at(channel), valuesBitDepth, bitDepth, endianess);
       }
-    }
-  }
-  else
-  {
-    for (int channelPosition = 0; channelPosition < static_cast<int>(format.getNrChannels());
-         channelPosition++)
-    {
-      const auto channel = format.getChannelAtPosition(channelPosition);
-      for (auto value : values)
-        scaleValueToBitDepthAndPushIntoArray(
-          data, value[channel], valuesBitDepth, bitDepth, endianness);
     }
   }
 

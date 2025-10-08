@@ -94,9 +94,9 @@ inline rgba_t extractRGB565Value(const unsigned char *data, const Endianness end
 
   const auto value = byte1 + (byte2 << 8);
 
-  int r = ((value & 0b00000000'00011111) << 3);
-  int g = ((value & 0b00000111'11100000) >> 3);
-  int b = ((value & 0b11111000'00000000) >> 8);
+  const int r = (value & 0b00000000'00011111);
+  const int g = ((value & 0b00000111'11100000) >> 5);
+  const int b = ((value & 0b11111000'00000000) >> 11);
 
   return {r, g, b, 255};
 }

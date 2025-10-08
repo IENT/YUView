@@ -75,7 +75,8 @@ createConversionInfoItems(const PixelFormatRGB &pixelFormat, const Size &frameSi
 {
   QList<InfoItem> infoList;
 
-  infoList.append(InfoItem("Difference domain", pixelFormat.getName()));
+  if (const auto name = pixelFormat.getName())
+    infoList.append(InfoItem("Difference domain", *name));
 
   const auto nrPixels = static_cast<double>(frameSize.width * frameSize.height);
   infoList.append(InfoItem("MSE R", std::to_string(static_cast<double>(mse.r) / nrPixels)));
@@ -218,12 +219,11 @@ void videoHandlerRGB::setFormatFromCorrelation(const QByteArray &, int64_t)
 
 std::optional<std::string> videoHandlerRGB::getFormatAsString() const
 {
-  if (!isFormatValid())
+  const auto frameFormatName = FrameHandler::getFormatAsString();
+  const auto pixelFormatName = this->srcPixelFormat.getName();
+  if (!frameFormatName || !pixelFormatName)
     return {};
-  const auto frameFormat = FrameHandler::getFormatAsString();
-  if (frameFormat)
-    return {};
-  return *frameFormat + ";RGB;" + this->srcPixelFormat.getName();
+  return *frameFormatName + ";RGB;" + *pixelFormatName;
 }
 
 bool videoHandlerRGB::setFormatFromString(const std::string_view format)
@@ -268,14 +268,15 @@ QLayout *videoHandlerRGB::createVideoHandlerControls(bool isSizeFixed)
   ui.setupUi();
 
   for (const auto &format : videoHandlerRGB::formatPresetList)
-    ui.rgbFormatComboBox->addItem(QString::fromStdString(format.getName()));
+    if (const auto name = format.getName())
+      ui.rgbFormatComboBox->addItem(QString::fromStdString(*name));
 
   const auto currentFormatInPresetList =
     vectorContains(videoHandlerRGB::formatPresetList, this->srcPixelFormat);
   if (!currentFormatInPresetList && this->srcPixelFormat.isValid())
   {
     videoHandlerRGB::formatPresetList.push_back(this->srcPixelFormat);
-    ui.rgbFormatComboBox->addItem(QString::fromStdString(this->srcPixelFormat.getName()));
+    ui.rgbFormatComboBox->addItem(QString::fromStdString(*this->srcPixelFormat.getName()));
   }
   ui.rgbFormatComboBox->addItem("Custom...");
   ui.rgbFormatComboBox->setEnabled(!isSizeFixed);
@@ -431,7 +432,7 @@ void videoHandlerRGB::slotRGBFormatControlChanged(int selectionIndex)
       const QSignalBlocker blocker(this->ui.rgbFormatComboBox);
       const auto           insertPositionBeforeCustom = (this->ui.rgbFormatComboBox->count() - 1);
       ui.rgbFormatComboBox->insertItem(insertPositionBeforeCustom,
-                                       QString::fromStdString(this->srcPixelFormat.getName()));
+                                       QString::fromStdString(*this->srcPixelFormat.getName()));
     }
 
     if (const auto presetIndex =
@@ -496,7 +497,8 @@ void videoHandlerRGB::loadFrame(int frameIndex, bool loadToDoubleBuffer)
 void videoHandlerRGB::savePlaylist(YUViewDomElement &element) const
 {
   FrameHandler::savePlaylist(element);
-  element.appendProperiteChild("pixelFormat", this->getRawRGBPixelFormatName());
+  if (const auto name = this->getRawRGBPixelFormatName())
+    element.appendProperiteChild("pixelFormat", QString::fromStdString(*name));
 
   element.appendProperiteChild("componentShow",
                                ComponentShowMapper.getName(this->componentDisplayMode));

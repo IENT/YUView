@@ -93,12 +93,12 @@ TEST(PixelFormatRGBTest, testFormatFromToString)
 {
   for (auto fmt : getAllValidFormats())
   {
-    const auto name = fmt.getName();
+    const auto name = fmt.getName().value();
     EXPECT_TRUE(fmt.isValid()) << "Format " << name << " is invalid.";
     EXPECT_FALSE(name.empty()) << "Format " << name << " getName is empty.";
 
     const auto fmtNew = PixelFormatRGB(name);
-    EXPECT_EQ(fmt, fmtNew) << "New format " << fmtNew.getName() << " unequal to initial format "
+    EXPECT_EQ(fmt, fmtNew) << "New format " << *fmtNew.getName() << " unequal to initial format "
                            << name;
 
     EXPECT_EQ(fmt.getChannelPosition(Channel::Red), fmtNew.getChannelPosition(Channel::Red))
@@ -128,7 +128,7 @@ TEST(PixelFormatRGBTest, testFormatFromToString)
 TEST(PixelFormatRGBTest, testInvalidFormats)
 {
   for (const auto &format : getInvalidFormats())
-    EXPECT_FALSE(format.isValid()) << "Format " << format.getName() << " should be invalid.";
+    EXPECT_FALSE(format.isValid()) << "Format " << *format.getName() << " should be invalid.";
 }
 
 TEST(PixelFormatRGBTest, testComparisonOperatorsForValidFormat)

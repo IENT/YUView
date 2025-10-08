@@ -34,6 +34,7 @@
 
 #include <common/EnumMapper.h>
 #include <common/Typedef.h>
+#include <optional>
 #include <string_view>
 #include <video/PixelFormat.h>
 
@@ -105,6 +106,8 @@ struct rgba_t
 
 template <typename T> inline T convertBitness(T value, unsigned src_bitness, unsigned dst_bitness)
 {
+  if (src_bitness == dst_bitness)
+    return value;
   if (src_bitness > dst_bitness)
     return value >> (src_bitness - dst_bitness);
   else
@@ -124,7 +127,7 @@ enum class PredefinedPixelFormat
   RGB565, // 16 bits packed as R:5, G:6, B:5
 };
 
-constexpr EnumMapper<PredefinedPixelFormat, 2> PredefinedPixelFormatMapper = {
+constexpr EnumMapper<PredefinedPixelFormat, 1> PredefinedPixelFormatMapper = {
   std::make_pair(PredefinedPixelFormat::RGB565, "RGB565")};
 
 enum class ChannelOrder
@@ -170,9 +173,9 @@ public:
   PixelFormatRGB(const PredefinedPixelFormat predefinedPixelFormat,
                  const Endianness            endianness = Endianness::Little);
 
-  [[nodiscard]] bool        isValid() const;
-  [[nodiscard]] bool        hasAlpha() const;
-  [[nodiscard]] std::string getName() const;
+  [[nodiscard]] bool                       isValid() const;
+  [[nodiscard]] bool                       hasAlpha() const;
+  [[nodiscard]] std::optional<std::string> getName() const;
 
   [[nodiscard]] int                                  getBitsPerComponent() const;
   [[nodiscard]] DataLayout                           getDataLayout() const;

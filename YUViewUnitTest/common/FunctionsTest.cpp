@@ -34,56 +34,75 @@
 
 #include <common/Functions.h>
 
-namespace
+namespace functions::test
 {
 
 TEST(FunctionsTest, toUnsigned)
 {
-  EXPECT_EQ(functions::toUnsigned("0"), 0);
-  EXPECT_EQ(functions::toUnsigned("256"), 256);
-  EXPECT_EQ(functions::toUnsigned("4294967295"), 4294967295);
+  EXPECT_EQ(toUnsigned("0"), 0);
+  EXPECT_EQ(toUnsigned("256"), 256);
+  EXPECT_EQ(toUnsigned("4294967295"), 4294967295);
 
-  EXPECT_FALSE(functions::toUnsigned("4294967296"));
-  EXPECT_FALSE(functions::toUnsigned("-1"));
-  EXPECT_FALSE(functions::toUnsigned("-256"));
-  EXPECT_FALSE(functions::toUnsigned("24A"));
-  EXPECT_FALSE(functions::toUnsigned("A24"));
-  EXPECT_FALSE(functions::toUnsigned("NotANumber"));
+  EXPECT_FALSE(toUnsigned("4294967296"));
+  EXPECT_FALSE(toUnsigned("-1"));
+  EXPECT_FALSE(toUnsigned("-256"));
+  EXPECT_FALSE(toUnsigned("24A"));
+  EXPECT_FALSE(toUnsigned("A24"));
+  EXPECT_FALSE(toUnsigned("NotANumber"));
 }
 
 TEST(FunctionsTest, toInt)
 {
-  EXPECT_EQ(functions::toInt("0"), 0);
-  EXPECT_EQ(functions::toInt("256"), 256);
-  EXPECT_EQ(functions::toInt("2147483647"), 2147483647);
-  EXPECT_EQ(functions::toInt("-1"), -1);
-  EXPECT_EQ(functions::toInt("-256"), -256);
-  EXPECT_EQ(functions::toInt("-2147483648"), -2147483648);
+  EXPECT_EQ(toInt("0"), 0);
+  EXPECT_EQ(toInt("256"), 256);
+  EXPECT_EQ(toInt("2147483647"), 2147483647);
+  EXPECT_EQ(toInt("-1"), -1);
+  EXPECT_EQ(toInt("-256"), -256);
+  EXPECT_EQ(toInt("-2147483648"), -2147483648);
 
-  EXPECT_FALSE(functions::toInt("2147483648"));
-  EXPECT_FALSE(functions::toInt("-2147483649"));
-  EXPECT_FALSE(functions::toInt("24A"));
-  EXPECT_FALSE(functions::toInt("A24"));
-  EXPECT_FALSE(functions::toInt("NotANumber"));
+  EXPECT_FALSE(toInt("2147483648"));
+  EXPECT_FALSE(toInt("-2147483649"));
+  EXPECT_FALSE(toInt("24A"));
+  EXPECT_FALSE(toInt("A24"));
+  EXPECT_FALSE(toInt(" 24"));
+  EXPECT_FALSE(toInt("NotANumber"));
 }
 
 TEST(FunctionsTest, stringToLower)
 {
-  EXPECT_EQ(functions::toLower(""), "");
-  EXPECT_EQ(functions::toLower("Hello"), "hello");
-  EXPECT_EQ(functions::toLower("WORLD"), "world");
-  EXPECT_EQ(functions::toLower("C++"), "c++");
-  EXPECT_EQ(functions::toLower("AaBbCcDd"), "aabbccdd");
+  EXPECT_EQ(toLower(""), "");
+  EXPECT_EQ(toLower("Hello"), "hello");
+  EXPECT_EQ(toLower("WORLD"), "world");
+  EXPECT_EQ(toLower("C++"), "c++");
+  EXPECT_EQ(toLower("AaBbCcDd"), "aabbccdd");
 }
 
 TEST(FunctionsTest, splitString)
 {
-  EXPECT_THAT(functions::splitString("Hello,World,Test", ','),
-              ElementsAre("Hello", "World", "Test"));
-  EXPECT_THAT(functions::splitString("a,b,c", ','), ElementsAre("a", "b", "c"));
-  EXPECT_THAT(functions::splitString("", ','), ElementsAre());
-  EXPECT_THAT(functions::splitString("Test1;Test2;Test3", ';'),
-              ElementsAre("Test1", "Test2", "Test3"));
+  EXPECT_THAT(splitString("Hello,World,Test", ','), ElementsAre("Hello", "World", "Test"));
+  EXPECT_THAT(splitString("a,b,c", ','), ElementsAre("a", "b", "c"));
+  EXPECT_THAT(splitString("Test1;Test2;Test3", ';'), ElementsAre("Test1", "Test2", "Test3"));
+
+  EXPECT_THAT(splitString("", ','), ElementsAre());
+  EXPECT_THAT(splitString(",,", ','), ElementsAre("", ""));
+  EXPECT_THAT(splitString("Hello,", ','), ElementsAre("Hello"));
+  EXPECT_THAT(splitString("Hello;World;", ';'), ElementsAre("Hello", "World"));
 }
 
-} // namespace
+TEST(FunctionsTest, stripWhitespace)
+{
+  EXPECT_EQ(stripWhitespace(" ABC"), "ABC");
+  EXPECT_EQ(stripWhitespace("ABC "), "ABC");
+  EXPECT_EQ(stripWhitespace(" ABC "), "ABC");
+  EXPECT_EQ(stripWhitespace("  ABC  "), "ABC");
+  EXPECT_EQ(stripWhitespace("ABC D E "), "ABC D E");
+  EXPECT_EQ(stripWhitespace(" ABC D E"), "ABC D E");
+  EXPECT_EQ(stripWhitespace(" ABC D E "), "ABC D E");
+  EXPECT_EQ(stripWhitespace("   ABC D E   "), "ABC D E");
+  EXPECT_EQ(stripWhitespace("     ABC      "), "ABC");
+  EXPECT_EQ(stripWhitespace(" "), "");
+  EXPECT_EQ(stripWhitespace(""), "");
+  EXPECT_EQ(stripWhitespace("           "), "");
+}
+
+} // namespace functions::test

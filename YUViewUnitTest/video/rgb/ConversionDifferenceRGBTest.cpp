@@ -30,15 +30,16 @@
  *   along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "video/PixelFormat.h"
+#include "common/Typedef.h"
+
 #include "video/rgb/CreateTestData.h"
-#include "video/rgb/PixelFormatRGB.h"
-#include "gtest/gtest.h"
 #include <common/FunctionsGui.h>
+#include <video/rgb/ConversionDifferenceRGB.h>
+
 #include <common/Testing.h>
 
 #include <random>
-#include <video/rgb/ConversionDifferenceRGB.h>
+#include <stdexcept>
 
 namespace video::rgb::test
 {
@@ -51,23 +52,24 @@ constexpr auto NR_PIXELS_IN_FRAME = TEST_FRAME_SIZE.width * TEST_FRAME_SIZE.heig
 
 struct TestParameters
 {
-  using ParameterTuple = std::tuple<int, DataLayout, ChannelOrder, int, bool>;
+  using ParameterTuple = std::tuple<PixelFormatRGB, int, bool>;
 
   TestParameters(const ParameterTuple &params)
-      : bitDepth(std::get<0>(params)), dataLayout(std::get<1>(params)),
-        channelOrder(std::get<2>(params)), amplificationFactor(std::get<3>(params)),
-        markDifference(std::get<4>(params))
+      : pixelFormat(std::get<0>(params)), amplificationFactor(std::get<1>(params)),
+        markDifference(std::get<2>(params))
   {
   }
 
-  int          bitDepth{};
-  DataLayout   dataLayout{};
-  ChannelOrder channelOrder{};
-  int          amplificationFactor{};
-  bool         markDifference{};
+  PixelFormatRGB pixelFormat{};
+  int            amplificationFactor{};
+  bool           markDifference{};
 };
 
 class ConversionDifferenceRGBTest : public TestWithParam<TestParameters>
+{
+};
+
+class ConversionDifferenceRGBTestPredefinedPixelFormat : public TestWithParam<PredefinedPixelFormat>
 {
 };
 
@@ -104,6 +106,60 @@ FrameAandB createTestFrameData(const int bitDepth)
     testValuesB.push_back(rgba_t(distribution(randomNumberGenerator),
                                  distribution(randomNumberGenerator),
                                  distribution(randomNumberGenerator)));
+  }
+
+  return {testValuesA, testValuesB};
+}
+
+FrameAandB createTestFrameDataRGB565()
+{
+  std::vector<rgba_t> testValuesA;
+  std::vector<rgba_t> testValuesB;
+
+  const auto maxValueRB = (1 << 5) - 1;
+  const auto maxValueG  = (1 << 6) - 1;
+  const auto midValueRB = (1 << (5 - 1));
+  const auto midValueG  = (1 << (6 - 1));
+
+  // Add some special values that we definitely want to test
+  testValuesA.push_back(rgba_t(0, 0, 0));
+  testValuesB.push_back(rgba_t(maxValueRB, maxValueG, maxValueRB));
+  testValuesA.push_back(rgba_t(maxValueRB, maxValueG, maxValueRB));
+  testValuesB.push_back(rgba_t(0, 0, 0));
+  testValuesA.push_back(rgba_t(maxValueRB, maxValueG, maxValueRB));
+  testValuesB.push_back(rgba_t(maxValueRB, maxValueG, maxValueRB));
+  testValuesA.push_back(rgba_t(0, 0, 0));
+  testValuesB.push_back(rgba_t(0, 0, 0));
+
+  testValuesA.push_back(rgba_t(midValueRB, midValueG, midValueRB));
+  testValuesB.push_back(rgba_t(0, 0, 0));
+  testValuesA.push_back(rgba_t(0, 0, 0));
+  testValuesB.push_back(rgba_t(midValueRB, midValueG, midValueRB));
+  testValuesA.push_back(rgba_t(0, 0, 0));
+  testValuesB.push_back(rgba_t(midValueRB - 1, midValueG - 1, midValueRB - 1));
+  testValuesA.push_back(rgba_t(0, 0, 0));
+  testValuesB.push_back(rgba_t(midValueRB + 1, midValueG + 1, midValueRB + 1));
+
+  testValuesA.push_back(rgba_t(midValueRB, midValueG, midValueRB));
+  testValuesB.push_back(rgba_t(maxValueRB, maxValueG, maxValueRB));
+  testValuesA.push_back(rgba_t(maxValueRB, maxValueG, maxValueRB));
+  testValuesB.push_back(rgba_t(midValueRB, midValueG, midValueRB));
+
+  // The rest of the values will be random
+  std::random_device                                       randomDevice;
+  std::mt19937                                             randomNumberGenerator(randomDevice());
+  std::uniform_int_distribution<std::mt19937::result_type> distributionRB(0, maxValueRB);
+  std::uniform_int_distribution<std::mt19937::result_type> distributionG(0, maxValueG);
+
+  constexpr auto NR_REMAINING_PIXELS = NR_PIXELS_IN_FRAME - 10;
+  for (unsigned int i = 0; i < NR_REMAINING_PIXELS; ++i)
+  {
+    testValuesA.push_back(rgba_t(distributionRB(randomNumberGenerator),
+                                 distributionG(randomNumberGenerator),
+                                 distributionRB(randomNumberGenerator)));
+    testValuesB.push_back(rgba_t(distributionRB(randomNumberGenerator),
+                                 distributionG(randomNumberGenerator),
+                                 distributionRB(randomNumberGenerator)));
   }
 
   return {testValuesA, testValuesB};
@@ -154,12 +210,24 @@ GenerationResult generateRawDataFramesExpectedResultAndMse(const PixelFormatRGB 
 
   const auto bitDepth = pixelFormat.getBitsPerComponent();
 
-  const auto testFrames = createTestFrameData(bitDepth);
+  FrameAandB testFrames;
+  if (pixelFormat.getPredefinedPixelFormat() == PredefinedPixelFormat::RGB565)
+    testFrames = createTestFrameDataRGB565();
+  else if (pixelFormat.getPredefinedPixelFormat())
+    throw std::logic_error("Support for predefined pixel format not implemented.");
+  else
+    testFrames = createTestFrameData(bitDepth);
 
   std::get<0>(result) = createRawRGBData(pixelFormat, testFrames.first, bitDepth);
   std::get<1>(result) = createRawRGBData(pixelFormat, testFrames.second, bitDepth);
   std::tie(std::get<2>(result), std::get<3>(result)) =
     generateExpectedImageAndMse(testFrames, amplificationFactor, markDifference);
+
+  const auto pix1  = std::get<2>(result).pixel(0, 1);
+  const auto valA1 = std::get<0>(result).at(8);
+  const auto valA2 = std::get<0>(result).at(9);
+  const auto valB1 = std::get<1>(result).at(9);
+  const auto valB2 = std::get<1>(result).at(9);
 
   return result;
 }
@@ -168,15 +236,13 @@ TEST_P(ConversionDifferenceRGBTest, testCalculationOfDifferenceAndMSE)
 {
   const auto &param = GetParam();
 
-  const auto pixelFormat = PixelFormatRGB(param.bitDepth, param.dataLayout, param.channelOrder);
-
   const auto [dataFrameA, dataFrameB, expectedImage, expectedMse] =
     generateRawDataFramesExpectedResultAndMse(
-      pixelFormat, param.amplificationFactor, param.markDifference);
+      param.pixelFormat, param.amplificationFactor, param.markDifference);
 
   auto [outputImage, mse] = calculateDifferenceAndMSE({dataFrameA, TEST_FRAME_SIZE},
                                                       {dataFrameB, TEST_FRAME_SIZE},
-                                                      pixelFormat,
+                                                      param.pixelFormat,
                                                       param.amplificationFactor,
                                                       param.markDifference);
 
@@ -195,21 +261,15 @@ TEST_P(ConversionDifferenceRGBTest, testCalculationOfDifferenceAndMSE)
 
 std::string getName(const testing::TestParamInfo<ConversionDifferenceRGBTest::ParamType> &info)
 {
-  return std::string("RGB") + std::to_string(info.param.bitDepth) + "Bit_" +
-         std::string(DataLayoutMapper.getName(info.param.dataLayout)) + "_" +
-         std::string(ChannelOrderMapper.getName(info.param.channelOrder)) + "_Amplification" +
-         std::to_string(info.param.amplificationFactor) +
+  return yuviewTest::replaceNonSupportedCharacters(*info.param.pixelFormat.getName()) +
+         "_Amplification" + std::to_string(info.param.amplificationFactor) +
          (info.param.markDifference ? "_MarkDiff" : "");
 }
 
 INSTANTIATE_TEST_SUITE_P(VideoRGBTest,
                          ConversionDifferenceRGBTest,
-                         ConvertGenerator<TestParameters::ParameterTuple>(
-                           Combine(Values(8, 9, 10, 12, 16, 32),
-                                   Values(DataLayout::Packed, DataLayout::Planar),
-                                   ValuesIn(ChannelOrderMapper.getValues()),
-                                   Values(1, 2, 5),
-                                   Bool())),
+                         ConvertGenerator<TestParameters::ParameterTuple>(Combine(
+                           ValuesIn(createTestSetOfPixelFormatRGB()), Values(1, 2, 5), Bool())),
                          getName);
 
 } // namespace

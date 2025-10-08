@@ -40,6 +40,27 @@
 namespace video::rgb::test
 {
 
+constexpr auto createTestSetOfPixelFormatRGB()
+{
+  constexpr std::array bitDepths{8, 9, 10, 12, 16, 32};
+
+  const auto nrFormats = bitDepths.size() * DataLayoutMapper.size() * ChannelOrderMapper.size() +
+                         PredefinedPixelFormatMapper.size();
+
+  std::array<PixelFormatRGB, nrFormats> pixelFormats;
+
+  size_t i = 0;
+  for (const auto bitDepth : bitDepths)
+    for (const auto dataLayout : DataLayoutMapper.getValues())
+      for (const auto channelOrder : ChannelOrderMapper.getValues())
+        pixelFormats[i++] = PixelFormatRGB(bitDepth, dataLayout, channelOrder);
+
+  for (const auto pixelFormat : PredefinedPixelFormatMapper.getValues())
+    pixelFormats[i++] = pixelFormat;
+
+  return pixelFormats;
+}
+
 const std::vector<rgba_t> TEST_VALUES_12BIT{rgba_t({0, 0, 0, 0}),
                                             rgba_t({156, 0, 0, 0}),
                                             rgba_t({560, 0, 0, 98}),
@@ -59,8 +80,9 @@ const std::vector<rgba_t> TEST_VALUES_12BIT{rgba_t({0, 0, 0, 0}),
 constexpr Size            TEST_FRAME_SIZE      = {4, 4};
 constexpr int             TEST_FRAME_NR_VALUES = TEST_FRAME_SIZE.width * TEST_FRAME_SIZE.height;
 
-// This function reorders the rgb values into the QByteArray in the right order. The bit depth of
-// the input values must be correct. No clipping or scaling is applied.
+// This function reorders the rgb values into the QByteArray in the right order. If the values are
+// in a different bit depth then the pixel format, the values will be scaled.
+// The only exception is RGB565 where the values will not be scaled.
 QByteArray createRawRGBData(const PixelFormatRGB      &format,
                             const std::vector<rgba_t> &value,
                             const int                  valuesBitDepth);
