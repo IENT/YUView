@@ -463,7 +463,7 @@ bool FrameHandler::setFormatFromString(const std::string_view format)
   const auto width  = functions::toUnsigned(split.at(0));
   const auto height = functions::toUnsigned(split.at(1));
 
-  if (!width || *width < 0 || !height || *height < 0)
+  if (!width || !height)
     return false;
 
   this->setFrameSize(Size(*width, *height));
