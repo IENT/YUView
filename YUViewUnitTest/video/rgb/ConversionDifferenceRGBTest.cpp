@@ -223,12 +223,6 @@ GenerationResult generateRawDataFramesExpectedResultAndMse(const PixelFormatRGB 
   std::tie(std::get<2>(result), std::get<3>(result)) =
     generateExpectedImageAndMse(testFrames, amplificationFactor, markDifference);
 
-  const auto pix1  = std::get<2>(result).pixel(0, 1);
-  const auto valA1 = std::get<0>(result).at(8);
-  const auto valA2 = std::get<0>(result).at(9);
-  const auto valB1 = std::get<1>(result).at(9);
-  const auto valB2 = std::get<1>(result).at(9);
-
   return result;
 }
 
