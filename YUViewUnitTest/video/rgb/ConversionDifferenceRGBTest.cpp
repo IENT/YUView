@@ -100,12 +100,12 @@ FrameAandB createTestFrameData(const int bitDepth)
   constexpr auto NR_REMAINING_PIXELS = NR_PIXELS_IN_FRAME - 4;
   for (unsigned int i = 0; i < NR_REMAINING_PIXELS; ++i)
   {
-    testValuesA.push_back(rgba_t(distribution(randomNumberGenerator),
-                                 distribution(randomNumberGenerator),
-                                 distribution(randomNumberGenerator)));
-    testValuesB.push_back(rgba_t(distribution(randomNumberGenerator),
-                                 distribution(randomNumberGenerator),
-                                 distribution(randomNumberGenerator)));
+    testValuesA.push_back(rgba_t({static_cast<int>(distribution(randomNumberGenerator)),
+                                  static_cast<int>(distribution(randomNumberGenerator)),
+                                  static_cast<int>(distribution(randomNumberGenerator))}));
+    testValuesB.push_back(rgba_t({static_cast<int>(distribution(randomNumberGenerator)),
+                                  static_cast<int>(distribution(randomNumberGenerator)),
+                                  static_cast<int>(distribution(randomNumberGenerator))}));
   }
 
   return {testValuesA, testValuesB};
@@ -122,28 +122,28 @@ FrameAandB createTestFrameDataRGB565()
   const auto midValueG  = (1 << (6 - 1));
 
   // Add some special values that we definitely want to test
-  testValuesA.push_back(rgba_t(0, 0, 0));
-  testValuesB.push_back(rgba_t(maxValueRB, maxValueG, maxValueRB));
-  testValuesA.push_back(rgba_t(maxValueRB, maxValueG, maxValueRB));
-  testValuesB.push_back(rgba_t(0, 0, 0));
-  testValuesA.push_back(rgba_t(maxValueRB, maxValueG, maxValueRB));
-  testValuesB.push_back(rgba_t(maxValueRB, maxValueG, maxValueRB));
-  testValuesA.push_back(rgba_t(0, 0, 0));
-  testValuesB.push_back(rgba_t(0, 0, 0));
+  testValuesA.push_back(rgba_t({0, 0, 0}));
+  testValuesB.push_back(rgba_t({maxValueRB, maxValueG, maxValueRB}));
+  testValuesA.push_back(rgba_t({maxValueRB, maxValueG, maxValueRB}));
+  testValuesB.push_back(rgba_t({0, 0, 0}));
+  testValuesA.push_back(rgba_t({maxValueRB, maxValueG, maxValueRB}));
+  testValuesB.push_back(rgba_t({maxValueRB, maxValueG, maxValueRB}));
+  testValuesA.push_back(rgba_t({0, 0, 0}));
+  testValuesB.push_back(rgba_t({0, 0, 0}));
 
-  testValuesA.push_back(rgba_t(midValueRB, midValueG, midValueRB));
-  testValuesB.push_back(rgba_t(0, 0, 0));
-  testValuesA.push_back(rgba_t(0, 0, 0));
-  testValuesB.push_back(rgba_t(midValueRB, midValueG, midValueRB));
-  testValuesA.push_back(rgba_t(0, 0, 0));
-  testValuesB.push_back(rgba_t(midValueRB - 1, midValueG - 1, midValueRB - 1));
-  testValuesA.push_back(rgba_t(0, 0, 0));
-  testValuesB.push_back(rgba_t(midValueRB + 1, midValueG + 1, midValueRB + 1));
+  testValuesA.push_back(rgba_t({midValueRB, midValueG, midValueRB}));
+  testValuesB.push_back(rgba_t({0, 0, 0}));
+  testValuesA.push_back(rgba_t({0, 0, 0}));
+  testValuesB.push_back(rgba_t({midValueRB, midValueG, midValueRB}));
+  testValuesA.push_back(rgba_t({0, 0, 0}));
+  testValuesB.push_back(rgba_t({midValueRB - 1, midValueG - 1, midValueRB - 1}));
+  testValuesA.push_back(rgba_t({0, 0, 0}));
+  testValuesB.push_back(rgba_t({midValueRB + 1, midValueG + 1, midValueRB + 1}));
 
-  testValuesA.push_back(rgba_t(midValueRB, midValueG, midValueRB));
-  testValuesB.push_back(rgba_t(maxValueRB, maxValueG, maxValueRB));
-  testValuesA.push_back(rgba_t(maxValueRB, maxValueG, maxValueRB));
-  testValuesB.push_back(rgba_t(midValueRB, midValueG, midValueRB));
+  testValuesA.push_back(rgba_t({midValueRB, midValueG, midValueRB}));
+  testValuesB.push_back(rgba_t({maxValueRB, maxValueG, maxValueRB}));
+  testValuesA.push_back(rgba_t({maxValueRB, maxValueG, maxValueRB}));
+  testValuesB.push_back(rgba_t({midValueRB, midValueG, midValueRB}));
 
   // The rest of the values will be random
   std::random_device                                       randomDevice;
@@ -154,12 +154,12 @@ FrameAandB createTestFrameDataRGB565()
   constexpr auto NR_REMAINING_PIXELS = NR_PIXELS_IN_FRAME - 10;
   for (unsigned int i = 0; i < NR_REMAINING_PIXELS; ++i)
   {
-    testValuesA.push_back(rgba_t(distributionRB(randomNumberGenerator),
-                                 distributionG(randomNumberGenerator),
-                                 distributionRB(randomNumberGenerator)));
-    testValuesB.push_back(rgba_t(distributionRB(randomNumberGenerator),
-                                 distributionG(randomNumberGenerator),
-                                 distributionRB(randomNumberGenerator)));
+    testValuesA.push_back(rgba_t({static_cast<int>(distributionRB(randomNumberGenerator)),
+                                  static_cast<int>(distributionG(randomNumberGenerator)),
+                                  static_cast<int>(distributionRB(randomNumberGenerator))}));
+    testValuesB.push_back(rgba_t({static_cast<int>(distributionRB(randomNumberGenerator)),
+                                  static_cast<int>(distributionG(randomNumberGenerator)),
+                                  static_cast<int>(distributionRB(randomNumberGenerator))}));
   }
 
   return {testValuesA, testValuesB};
