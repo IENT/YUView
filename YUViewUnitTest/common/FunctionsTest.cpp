@@ -43,6 +43,8 @@ TEST(FunctionsTest, toUnsigned)
   EXPECT_EQ(toUnsigned("256"), 256);
   EXPECT_EQ(toUnsigned("4294967295"), 4294967295);
 
+  EXPECT_FALSE(toUnsigned(""));
+  EXPECT_FALSE(toUnsigned(" "));
   EXPECT_FALSE(toUnsigned("4294967296"));
   EXPECT_FALSE(toUnsigned("-1"));
   EXPECT_FALSE(toUnsigned("-256"));
@@ -60,6 +62,8 @@ TEST(FunctionsTest, toInt)
   EXPECT_EQ(toInt("-256"), -256);
   EXPECT_EQ(toInt("-2147483648"), -2147483648);
 
+  EXPECT_FALSE(toInt(""));
+  EXPECT_FALSE(toInt(" "));
   EXPECT_FALSE(toInt("2147483648"));
   EXPECT_FALSE(toInt("-2147483649"));
   EXPECT_FALSE(toInt("24A"));

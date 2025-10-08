@@ -83,14 +83,14 @@ FrameAandB createTestFrameData(const int bitDepth)
   const auto midValue = (1 << (bitDepth - 1));
 
   // Add some special values that we definitely want to test
-  testValuesA.push_back(rgba_t(0, maxValue, maxValue));
-  testValuesB.push_back(rgba_t(maxValue, 0, maxValue));
-  testValuesA.push_back(rgba_t(0, midValue, 0));
-  testValuesB.push_back(rgba_t(0, 0, midValue));
-  testValuesA.push_back(rgba_t(0, 0, 0));
-  testValuesB.push_back(rgba_t(midValue, midValue - 1, midValue + 1));
-  testValuesA.push_back(rgba_t(midValue, 44, 129));
-  testValuesB.push_back(rgba_t(maxValue, maxValue, maxValue));
+  testValuesA.push_back(rgba_t({0, maxValue, maxValue}));
+  testValuesB.push_back(rgba_t({maxValue, 0, maxValue}));
+  testValuesA.push_back(rgba_t({0, midValue, 0}));
+  testValuesB.push_back(rgba_t({0, 0, midValue}));
+  testValuesA.push_back(rgba_t({0, 0, 0}));
+  testValuesB.push_back(rgba_t({midValue, midValue - 1, midValue + 1}));
+  testValuesA.push_back(rgba_t({midValue, 44, 129}));
+  testValuesB.push_back(rgba_t({maxValue, maxValue, maxValue}));
 
   // The rest of the values will be random
   std::random_device                                       randomDevice;
