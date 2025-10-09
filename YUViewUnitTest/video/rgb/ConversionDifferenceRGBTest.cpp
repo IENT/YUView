@@ -50,29 +50,6 @@ namespace
 constexpr Size TEST_FRAME_SIZE    = {4, 4};
 constexpr auto NR_PIXELS_IN_FRAME = TEST_FRAME_SIZE.width * TEST_FRAME_SIZE.height;
 
-struct TestParameters
-{
-  using ParameterTuple = std::tuple<PixelFormatRGB, int, bool>;
-
-  TestParameters(const ParameterTuple &params)
-      : pixelFormat(std::get<0>(params)), amplificationFactor(std::get<1>(params)),
-        markDifference(std::get<2>(params))
-  {
-  }
-
-  PixelFormatRGB pixelFormat{};
-  int            amplificationFactor{};
-  bool           markDifference{};
-};
-
-class ConversionDifferenceRGBTest : public TestWithParam<TestParameters>
-{
-};
-
-class ConversionDifferenceRGBTestPredefinedPixelFormat : public TestWithParam<PredefinedPixelFormat>
-{
-};
-
 using FrameAandB = std::pair<std::vector<rgba_t>, std::vector<rgba_t>>;
 FrameAandB createTestFrameData(const int bitDepth)
 {
@@ -236,44 +213,49 @@ GenerationResult generateRawDataFramesExpectedResultAndMse(const PixelFormatRGB 
   return result;
 }
 
+class ConversionDifferenceRGBTest : public TestWithParam<PixelFormatRGB>
+{
+};
+
 TEST_P(ConversionDifferenceRGBTest, testCalculationOfDifferenceAndMSE)
 {
-  const auto &param = GetParam();
+  const auto &pixelFormat = GetParam();
 
-  const auto [dataFrameA, dataFrameB, expectedImage, expectedMse] =
-    generateRawDataFramesExpectedResultAndMse(
-      param.pixelFormat, param.amplificationFactor, param.markDifference);
-
-  auto [outputImage, mse] = calculateDifferenceAndMSE({dataFrameA, TEST_FRAME_SIZE},
-                                                      {dataFrameB, TEST_FRAME_SIZE},
-                                                      param.pixelFormat,
-                                                      param.amplificationFactor,
-                                                      param.markDifference);
-
-  for (unsigned int y = 0; y < TEST_FRAME_SIZE.height; ++y)
-    for (unsigned int x = 0; x < TEST_FRAME_SIZE.width; ++x)
+  for (const auto amplificationFactor : {1, 2, 5})
+    for (const auto markDifference : {true, false})
     {
-      const auto expectedPixel = expectedImage.pixel(x, y);
-      const auto actualPixel   = outputImage.pixel(x, y);
-      EXPECT_EQ(qRed(actualPixel), qRed(expectedPixel)) << " at position " << x << "," << y;
-      EXPECT_EQ(qGreen(actualPixel), qGreen(expectedPixel)) << " at position " << x << "," << y;
-      EXPECT_EQ(qBlue(actualPixel), qBlue(expectedPixel)) << " at position " << x << "," << y;
-    }
 
-  EXPECT_EQ(mse, expectedMse);
+      const auto [dataFrameA, dataFrameB, expectedImage, expectedMse] =
+        generateRawDataFramesExpectedResultAndMse(pixelFormat, amplificationFactor, markDifference);
+
+      auto [outputImage, mse] = calculateDifferenceAndMSE({dataFrameA, TEST_FRAME_SIZE},
+                                                          {dataFrameB, TEST_FRAME_SIZE},
+                                                          pixelFormat,
+                                                          amplificationFactor,
+                                                          markDifference);
+
+      for (unsigned int y = 0; y < TEST_FRAME_SIZE.height; ++y)
+        for (unsigned int x = 0; x < TEST_FRAME_SIZE.width; ++x)
+        {
+          const auto expectedPixel = expectedImage.pixel(x, y);
+          const auto actualPixel   = outputImage.pixel(x, y);
+          EXPECT_EQ(qRed(actualPixel), qRed(expectedPixel)) << " at position " << x << "," << y;
+          EXPECT_EQ(qGreen(actualPixel), qGreen(expectedPixel)) << " at position " << x << "," << y;
+          EXPECT_EQ(qBlue(actualPixel), qBlue(expectedPixel)) << " at position " << x << "," << y;
+        }
+
+      EXPECT_EQ(mse, expectedMse);
+    }
 }
 
 std::string getName(const testing::TestParamInfo<ConversionDifferenceRGBTest::ParamType> &info)
 {
-  return yuviewTest::replaceNonSupportedCharacters(*info.param.pixelFormat.getName()) +
-         "_Amplification" + std::to_string(info.param.amplificationFactor) +
-         (info.param.markDifference ? "_MarkDiff" : "");
+  return yuviewTest::replaceNonSupportedCharacters(*info.param.getName());
 }
 
 INSTANTIATE_TEST_SUITE_P(VideoRGBTest,
                          ConversionDifferenceRGBTest,
-                         ConvertGenerator<TestParameters::ParameterTuple>(Combine(
-                           ValuesIn(createTestSetOfPixelFormatRGB()), Values(1, 2, 5), Bool())),
+                         ValuesIn(createTestSetOfPixelFormatRGB()),
                          getName);
 
 } // namespace
