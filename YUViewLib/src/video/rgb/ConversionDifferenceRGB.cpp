@@ -37,6 +37,7 @@
 
 #include "ConversionFunctions.h"
 #include "video/PixelFormat.h"
+#include "video/rgb/ConversionRGB.h"
 #include "video/rgb/PixelFormatRGB.h"
 
 // Restrict is basically a promise to the compiler that for the scope of the pointer, the target of
@@ -127,6 +128,26 @@ calculateDifferencePredefinedPixelFormat(const InputFrameParameters &frame1,
 }
 
 template <typename T>
+rgba_t getRGBAndConvertEndianess(const DataPointers<T> dataPointers, const Endianness endianess)
+{
+  constexpr auto bitDepth =
+    (std::is_same_v<T, uint8_t> ? 8 : (std::is_same_v<T, uint16_t> ? 16 : 32));
+
+  auto r = *dataPointers.r;
+  auto g = *dataPointers.g;
+  auto b = *dataPointers.b;
+
+  if (endianess == Endianness::Big)
+  {
+    r = swapBytesEndianess<bitDepth>(r);
+    g = swapBytesEndianess<bitDepth>(g);
+    b = swapBytesEndianess<bitDepth>(b);
+  }
+
+  return rgba_t({.r = static_cast<int>(r), .g = static_cast<int>(g), .b = static_cast<int>(b)});
+}
+
+template <typename T>
 std::pair<QImage, MSE> calculateDifferenceAndMSE(const InputFrameParameters &frame1,
                                                  const InputFrameParameters &frame2,
                                                  const PixelFormatRGB       &pixelFormat,
@@ -153,13 +174,8 @@ std::pair<QImage, MSE> calculateDifferenceAndMSE(const InputFrameParameters &fra
 
   for (unsigned i = 0; i < frameSize.width * frameSize.height; ++i)
   {
-    const rgba_t rgb1 = {.r = static_cast<int>(*dataPointers1.r),
-                         .g = static_cast<int>(*dataPointers1.g),
-                         .b = static_cast<int>(*dataPointers1.b)};
-
-    const rgba_t rgb2 = {.r = static_cast<int>(*dataPointers2.r),
-                         .g = static_cast<int>(*dataPointers2.g),
-                         .b = static_cast<int>(*dataPointers2.b)};
+    const auto rgb1 = getRGBAndConvertEndianess(dataPointers1, pixelFormat.getEndianess());
+    const auto rgb2 = getRGBAndConvertEndianess(dataPointers2, pixelFormat.getEndianess());
 
     const auto delta = rgb1 - rgb2;
 

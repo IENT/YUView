@@ -508,12 +508,12 @@ void videoHandlerRGB::savePlaylist(YUViewDomElement &element) const
   element.appendProperiteChild("scale.B", QString::number(this->componentScale[2]));
   element.appendProperiteChild("scale.A", QString::number(this->componentScale[3]));
 
-  element.appendProperiteChild("invert.R", to_string(this->componentInvert[0]));
-  element.appendProperiteChild("invert.G", to_string(this->componentInvert[1]));
-  element.appendProperiteChild("invert.B", to_string(this->componentInvert[2]));
-  element.appendProperiteChild("invert.A", to_string(this->componentInvert[3]));
+  element.appendProperiteChild("invert.R", std::to_string(this->componentInvert[0]));
+  element.appendProperiteChild("invert.G", std::to_string(this->componentInvert[1]));
+  element.appendProperiteChild("invert.B", std::to_string(this->componentInvert[2]));
+  element.appendProperiteChild("invert.A", std::to_string(this->componentInvert[3]));
 
-  element.appendProperiteChild("limitedRange", to_string(this->limitedRange));
+  element.appendProperiteChild("limitedRange", std::to_string(this->limitedRange));
 }
 
 void videoHandlerRGB::loadPlaylist(const YUViewDomElement &element)

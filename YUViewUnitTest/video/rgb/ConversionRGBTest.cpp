@@ -30,12 +30,17 @@
  *   along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "gtest/gtest.h"
+#include <array>
 #include <common/Testing.h>
 
+#include <string>
+#include <tuple>
 #include <video/LimitedRangeToFullRange.h>
 #include <video/rgb/ConversionRGB.h>
 
 #include "CreateTestData.h"
+#include "video/rgb/PixelFormatRGB.h"
 
 using OutputHasAlpha        = bool;
 using PremultiplyAlpha      = bool;
@@ -44,6 +49,9 @@ using InversionPerComponent = std::array<bool, 4>;
 using UChaVector            = std::vector<unsigned char>;
 
 namespace video::rgb::test
+{
+
+namespace
 {
 
 constexpr auto ScalingPerComponentToTest = {ScalingPerComponent({1, 1, 1, 1}),
@@ -60,23 +68,6 @@ constexpr auto InversionPerComponentToTest = {InversionPerComponent({false, fals
                                               InversionPerComponent({false, false, false, true}),
                                               InversionPerComponent({true, true, true, true})};
 
-std::string getTestName(const video::rgb::PixelFormatRGB &pixelFormat,
-                        const bool                        outputHasAlpha,
-                        const ScalingPerComponent        &scalingPerComponent,
-                        const InversionPerComponent      &inversionPerComponent,
-                        const bool                        limitedRange)
-{
-  return yuviewTest::formatTestName("PixelFormat",
-                                    pixelFormat.getName(),
-                                    "OutputHasAlpha",
-                                    outputHasAlpha,
-                                    "ScalingPerComponent",
-                                    scalingPerComponent,
-                                    "InversionPerComponen",
-                                    inversionPerComponent,
-                                    (limitedRange ? "_limitedRange" : "_fullRange"));
-}
-
 int scaleShiftClipInvertValue(const int  value,
                               const int  bitDepth,
                               const int  scale,
@@ -89,6 +80,20 @@ int scaleShiftClipInvertValue(const int  value,
   return invert ? (255 - valueClipped) : valueClipped;
 };
 
+int scaleShiftClipInvertValueRGB565(const int  value,
+                                    Channel    channel,
+                                    const int  scale,
+                                    const bool invert)
+{
+  const auto bitDepthIntermediate = (channel == Channel::Green ? 6 : 5);
+  const auto valueOriginalDepth =
+    static_cast<int64_t>(convertBitness(value, 12, bitDepthIntermediate));
+  const auto valueScaled    = valueOriginalDepth * scale;
+  const auto value8BitDepth = (valueScaled << (8 - bitDepthIntermediate));
+  const auto valueClipped   = functions::clip(value8BitDepth, 0, 255);
+  return invert ? (255 - valueClipped) : valueClipped;
+}
+
 rgba_t getARGBValueFromDataLittleEndian(const UChaVector &data, const size_t i)
 {
   const auto pixelOffset = i * 4;
@@ -99,7 +104,7 @@ rgba_t getARGBValueFromDataLittleEndian(const UChaVector &data, const size_t i)
 }
 
 void checkOutputValues(const UChaVector            &data,
-                       const int                    bitDepth,
+                       const PixelFormatRGB        &pixelFormat,
                        const ScalingPerComponent   &scaling,
                        const bool                   limitedRange,
                        const InversionPerComponent &inversion,
@@ -109,14 +114,30 @@ void checkOutputValues(const UChaVector            &data,
   {
     auto expectedValue = TEST_VALUES_12BIT.at(i);
 
-    expectedValue.r =
-      scaleShiftClipInvertValue(expectedValue.r, bitDepth, scaling[0], inversion[0]);
-    expectedValue.g =
-      scaleShiftClipInvertValue(expectedValue.g, bitDepth, scaling[1], inversion[1]);
-    expectedValue.b =
-      scaleShiftClipInvertValue(expectedValue.b, bitDepth, scaling[2], inversion[2]);
-    expectedValue.a =
-      scaleShiftClipInvertValue(expectedValue.a, bitDepth, scaling[3], inversion[3]);
+    if (pixelFormat.getPredefinedPixelFormat() == PredefinedPixelFormat::RGB565)
+    {
+      expectedValue.r =
+        scaleShiftClipInvertValueRGB565(expectedValue.r, Channel::Red, scaling[0], inversion[0]);
+      expectedValue.g =
+        scaleShiftClipInvertValueRGB565(expectedValue.g, Channel::Green, scaling[1], inversion[1]);
+      expectedValue.b =
+        scaleShiftClipInvertValueRGB565(expectedValue.b, Channel::Blue, scaling[2], inversion[2]);
+      expectedValue.a = 255;
+    }
+    else if (pixelFormat.getPredefinedPixelFormat())
+      throw std::runtime_error("Unsupported predefined pixel format");
+    else
+    {
+      const auto bitDepth = pixelFormat.getBitsPerComponent();
+      expectedValue.r =
+        scaleShiftClipInvertValue(expectedValue.r, bitDepth, scaling[0], inversion[0]);
+      expectedValue.g =
+        scaleShiftClipInvertValue(expectedValue.g, bitDepth, scaling[1], inversion[1]);
+      expectedValue.b =
+        scaleShiftClipInvertValue(expectedValue.b, bitDepth, scaling[2], inversion[2]);
+      expectedValue.a =
+        scaleShiftClipInvertValue(expectedValue.a, bitDepth, scaling[3], inversion[3]);
+    }
 
     if (limitedRange)
     {
@@ -132,7 +153,8 @@ void checkOutputValues(const UChaVector            &data,
     const auto actualValue = getARGBValueFromDataLittleEndian(data, i);
 
     if (expectedValue != actualValue)
-      throw std::runtime_error("Value " + std::to_string(i));
+      throw std::runtime_error("For value " + std::to_string(i) + " Expected " +
+                               to_string(expectedValue) + " Actual " + to_string(actualValue));
   }
 }
 
@@ -148,10 +170,19 @@ void checkOutputValuesForPlane(const UChaVector            &data,
     auto expectedPlaneValue = TEST_VALUES_12BIT[i].at(channel);
 
     const auto channelIndex = ChannelMapper.indexOf(channel);
-    const auto bitDepth     = pixelFormat.getBitsPerComponent();
-
-    expectedPlaneValue = scaleShiftClipInvertValue(
-      expectedPlaneValue, bitDepth, scaling[channelIndex], inversion[channelIndex]);
+    if (pixelFormat.getPredefinedPixelFormat() == PredefinedPixelFormat::RGB565)
+    {
+      expectedPlaneValue = scaleShiftClipInvertValueRGB565(
+        expectedPlaneValue, channel, scaling[channelIndex], inversion[channelIndex]);
+    }
+    else if (pixelFormat.getPredefinedPixelFormat())
+      throw std::runtime_error("Unsupported predefined pixel format");
+    else
+    {
+      const auto bitDepth = pixelFormat.getBitsPerComponent();
+      expectedPlaneValue  = scaleShiftClipInvertValue(
+        expectedPlaneValue, bitDepth, scaling[channelIndex], inversion[channelIndex]);
+    }
 
     if (limitedRange)
       expectedPlaneValue = LimitedRangeToFullRange.at(expectedPlaneValue);
@@ -162,7 +193,8 @@ void checkOutputValuesForPlane(const UChaVector            &data,
     const auto actualValue = getARGBValueFromDataLittleEndian(data, i);
 
     if (expectedValue != actualValue)
-      throw std::runtime_error("Value " + std::to_string(i));
+      throw std::runtime_error("For value " + std::to_string(i) + " Expected " +
+                               to_string(expectedValue) + " Actual " + to_string(actualValue));
   }
 }
 
@@ -187,12 +219,8 @@ void testConversionToRGBA(const QByteArray            &sourceBuffer,
                         PremultiplyAlpha(false));
 
   const auto alphaShouldBeSet = (outputHasAlpha && srcPixelFormat.hasAlpha());
-  checkOutputValues(outputBuffer,
-                    srcPixelFormat.getBitsPerComponent(),
-                    componentScale,
-                    limitedRange,
-                    inversion,
-                    alphaShouldBeSet);
+  checkOutputValues(
+    outputBuffer, srcPixelFormat, componentScale, limitedRange, inversion, alphaShouldBeSet);
 }
 
 void testConversionToRGBASinglePlane(const QByteArray            &sourceBuffer,
@@ -233,59 +261,51 @@ using TestingFunction = std::function<void(const QByteArray &,
                                            const bool,
                                            const bool)>;
 
-using TestingFunction = std::function<void(const QByteArray &,
-                                           const video::rgb::PixelFormatRGB &,
-                                           const InversionPerComponent &,
-                                           const ScalingPerComponent &,
-                                           const bool,
-                                           const bool)>;
-
-void runTestForAllParameters(TestingFunction testingFunction)
+void runTestForAllParameters(const PixelFormatRGB &pixelFormat, TestingFunction testingFunction)
 {
-  for (const auto endianness : {Endianness::Little, Endianness::Big})
-  {
-    for (const auto bitDepth : {8, 10, 12, 16, 32})
-    {
-      for (const auto &alphaMode : AlphaModeMapper.getValues())
-      {
-        for (const auto &dataLayout : video::DataLayoutMapper.getValues())
-        {
-          for (const auto &channelOrder : video::rgb::ChannelOrderMapper.getValues())
-          {
-            const video::rgb::PixelFormatRGB pixelFormat(
-              bitDepth, dataLayout, channelOrder, alphaMode, endianness);
-            const auto data = createRawRGBData(pixelFormat, TEST_VALUES_12BIT, 12);
+  QByteArray data;
+  if (pixelFormat.getPredefinedPixelFormat())
+    data = createRawRGBData(
+      *pixelFormat.getPredefinedPixelFormat(), pixelFormat.getEndianess(), TEST_VALUES_12BIT, 12);
+  else
+    data = createRawRGBData(pixelFormat, TEST_VALUES_12BIT, 12);
 
-            for (const auto outputHasAlpha : {false, true})
-            {
-              for (const auto &componentScale : ScalingPerComponentToTest)
-              {
-                for (const auto &inversion : InversionPerComponentToTest)
-                {
-                  for (const auto limitedRange : {false, true})
-                  {
-                    EXPECT_NO_THROW(testingFunction(
-                      data, pixelFormat, inversion, componentScale, limitedRange, outputHasAlpha))
-                      << "parametersAsString";
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-    }
-  }
+  for (const auto &inversionPerComponent : InversionPerComponentToTest)
+    for (const auto &scalingPerComponent : ScalingPerComponentToTest)
+      for (const auto &limitedRange : {false, true})
+        for (const auto &outputHasAlpha : {false, true})
+          testingFunction(data,
+                          pixelFormat,
+                          inversionPerComponent,
+                          scalingPerComponent,
+                          limitedRange,
+                          outputHasAlpha);
 }
 
-TEST(ConversionRGBTest, TestConversionToRGBA)
+class ConversionRGBTest : public TestWithParam<PixelFormatRGB>
 {
-  runTestForAllParameters(testConversionToRGBA);
+};
+
+TEST_P(ConversionRGBTest, TestConversionToRGBA)
+{
+  runTestForAllParameters(GetParam(), testConversionToRGBA);
 }
 
-TEST(ConversionRGBTest, TestConversionOfSinglePlaneToRGBA)
+TEST_P(ConversionRGBTest, TestConversionOfSinglePlaneToRGBA)
 {
-  runTestForAllParameters(testConversionToRGBASinglePlane);
+  runTestForAllParameters(GetParam(), testConversionToRGBASinglePlane);
 }
+
+std::string getName(const testing::TestParamInfo<ConversionRGBTest::ParamType> &info)
+{
+  return yuviewTest::replaceNonSupportedCharacters(*info.param.getName());
+}
+
+INSTANTIATE_TEST_SUITE_P(VideoRGBTest,
+                         ConversionRGBTest,
+                         ValuesIn(createTestSetOfPixelFormatRGB()),
+                         getName);
+
+} // namespace
 
 } // namespace video::rgb::test

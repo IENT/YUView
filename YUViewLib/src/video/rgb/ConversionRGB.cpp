@@ -48,17 +48,6 @@ using UintValueType =
                               uint8_t *,
                               std::conditional_t<bitDepth == 16, uint16_t *, uint32_t *>>;
 
-template <int bitDepth, typename T> T swapBytesEndianess(const T &val)
-{
-  if (bitDepth <= 8)
-    return val;
-  if (bitDepth <= 16)
-    return ((val & 0xff) << 8) | ((val & 0xff00) >> 8);
-  if (bitDepth <= 32)
-    return ((val & 0xff) << 24) | ((val & 0xff00) << 8) | ((val & 0xff0000) >> 8) |
-           ((val & 0xff000000) >> 24);
-};
-
 int getOffsetToFirstByteOfComponent(const Channel         channel,
                                     const PixelFormatRGB &pixelFormat,
                                     const Size            frameSize)
@@ -107,9 +96,9 @@ void convertRGB565ToARGB(const QByteArray     &sourceBuffer,
       b = LimitedRangeToFullRange.at(b);
     }
 
-    targetBuffer[0] = r;
+    targetBuffer[0] = b;
     targetBuffer[1] = g;
-    targetBuffer[2] = b;
+    targetBuffer[2] = r;
     targetBuffer[3] = a;
 
     rawData += 2;

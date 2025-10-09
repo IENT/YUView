@@ -83,14 +83,14 @@ FrameAandB createTestFrameData(const int bitDepth)
   const auto midValue = (1 << (bitDepth - 1));
 
   // Add some special values that we definitely want to test
-  testValuesA.push_back(rgba_t({0, maxValue, maxValue}));
-  testValuesB.push_back(rgba_t({maxValue, 0, maxValue}));
-  testValuesA.push_back(rgba_t({0, midValue, 0}));
-  testValuesB.push_back(rgba_t({0, 0, midValue}));
-  testValuesA.push_back(rgba_t({0, 0, 0}));
-  testValuesB.push_back(rgba_t({midValue, midValue - 1, midValue + 1}));
-  testValuesA.push_back(rgba_t({midValue, 44, 129}));
-  testValuesB.push_back(rgba_t({maxValue, maxValue, maxValue}));
+  testValuesA.push_back(rgba_t({0, maxValue, maxValue, 0}));
+  testValuesB.push_back(rgba_t({maxValue, 0, maxValue, maxValue}));
+  testValuesA.push_back(rgba_t({0, midValue, 0, midValue}));
+  testValuesB.push_back(rgba_t({0, 0, midValue, 0}));
+  testValuesA.push_back(rgba_t({0, 0, 0, 0}));
+  testValuesB.push_back(rgba_t({midValue, midValue - 1, midValue + 1, midValue}));
+  testValuesA.push_back(rgba_t({midValue, 44, 129, 220}));
+  testValuesB.push_back(rgba_t({maxValue, maxValue, maxValue, maxValue}));
 
   // The rest of the values will be random
   std::random_device                                       randomDevice;
@@ -102,8 +102,10 @@ FrameAandB createTestFrameData(const int bitDepth)
   {
     testValuesA.push_back(rgba_t({static_cast<int>(distribution(randomNumberGenerator)),
                                   static_cast<int>(distribution(randomNumberGenerator)),
+                                  static_cast<int>(distribution(randomNumberGenerator)),
                                   static_cast<int>(distribution(randomNumberGenerator))}));
     testValuesB.push_back(rgba_t({static_cast<int>(distribution(randomNumberGenerator)),
+                                  static_cast<int>(distribution(randomNumberGenerator)),
                                   static_cast<int>(distribution(randomNumberGenerator)),
                                   static_cast<int>(distribution(randomNumberGenerator))}));
   }
@@ -212,14 +214,22 @@ GenerationResult generateRawDataFramesExpectedResultAndMse(const PixelFormatRGB 
 
   FrameAandB testFrames;
   if (pixelFormat.getPredefinedPixelFormat() == PredefinedPixelFormat::RGB565)
+  {
     testFrames = createTestFrameDataRGB565();
+    std::get<0>(result) =
+      createRawRGBData(PredefinedPixelFormat::RGB565, pixelFormat.getEndianess(), testFrames.first);
+    std::get<1>(result) = createRawRGBData(
+      PredefinedPixelFormat::RGB565, pixelFormat.getEndianess(), testFrames.second);
+  }
   else if (pixelFormat.getPredefinedPixelFormat())
     throw std::logic_error("Support for predefined pixel format not implemented.");
   else
-    testFrames = createTestFrameData(bitDepth);
+  {
+    testFrames          = createTestFrameData(bitDepth);
+    std::get<0>(result) = createRawRGBData(pixelFormat, testFrames.first, bitDepth);
+    std::get<1>(result) = createRawRGBData(pixelFormat, testFrames.second, bitDepth);
+  }
 
-  std::get<0>(result) = createRawRGBData(pixelFormat, testFrames.first, bitDepth);
-  std::get<1>(result) = createRawRGBData(pixelFormat, testFrames.second, bitDepth);
   std::tie(std::get<2>(result), std::get<3>(result)) =
     generateExpectedImageAndMse(testFrames, amplificationFactor, markDifference);
 

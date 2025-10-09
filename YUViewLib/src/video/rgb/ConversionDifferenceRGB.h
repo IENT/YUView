@@ -51,10 +51,11 @@ struct MSE
   double r{};
   double g{};
   double b{};
+  double a{};
 
   bool operator==(const MSE &other) const
   {
-    return std::tie(r, g, b) == std::tie(other.r, other.g, other.b);
+    return std::tie(r, g, b, a) == std::tie(other.r, other.g, other.b, a);
   }
 };
 
@@ -67,15 +68,17 @@ public:
     this->r += delta.r * delta.r;
     this->g += delta.g * delta.g;
     this->b += delta.b * delta.b;
+    this->a += delta.a * delta.a;
     ++this->nrSamples;
   }
 
   MSE getMSE() const
   {
     MSE mse;
-    mse.r = static_cast<double>(r) / this->nrSamples;
-    mse.g = static_cast<double>(g) / this->nrSamples;
-    mse.b = static_cast<double>(b) / this->nrSamples;
+    mse.r = static_cast<double>(this->r) / this->nrSamples;
+    mse.g = static_cast<double>(this->g) / this->nrSamples;
+    mse.b = static_cast<double>(this->b) / this->nrSamples;
+    mse.a = static_cast<double>(this->a) / this->nrSamples;
     return mse;
   }
 
@@ -83,6 +86,7 @@ private:
   int64_t r{};
   int64_t g{};
   int64_t b{};
+  int64_t a{};
   int64_t nrSamples{};
 };
 

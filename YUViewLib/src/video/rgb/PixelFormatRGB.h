@@ -122,6 +122,12 @@ inline rgba_t convertBitness(rgba_t value, unsigned src_bitness, unsigned dst_bi
                  convertBitness(value.a, src_bitness, dst_bitness)});
 }
 
+inline std::string to_string(const rgba_t &color)
+{
+  return "[R" + std::to_string(color.r) + ",G" + std::to_string(color.g) + ",B" +
+         std::to_string(color.b) + ",A" + std::to_string(color.a) + "]";
+}
+
 enum class PredefinedPixelFormat
 {
   RGB565, // 16 bits packed as R:5, G:6, B:5

@@ -32,8 +32,10 @@
 
 #pragma once
 
+#include "video/PixelFormat.h"
 #include <QByteArray>
 #include <array>
+#include <optional>
 #include <vector>
 #include <video/rgb/PixelFormatRGB.h>
 
@@ -42,21 +44,41 @@ namespace video::rgb::test
 
 constexpr auto createTestSetOfPixelFormatRGB()
 {
-  constexpr std::array bitDepths{8, 9, 10, 12, 16, 32};
+  constexpr std::array bitDepthsGreater8{9, 10, 12, 16, 32};
 
-  const auto nrFormats = bitDepths.size() * DataLayoutMapper.size() * ChannelOrderMapper.size() +
-                         PredefinedPixelFormatMapper.size();
+  const auto nrFormats8Bit =
+    DataLayoutMapper.size() * ChannelOrderMapper.size() * AlphaModeMapper.size();
+  const auto nrFormatsGreater8Bit = bitDepthsGreater8.size() * DataLayoutMapper.size() *
+                                    ChannelOrderMapper.size() * AlphaModeMapper.size() *
+                                    EndianessMapper.size();
+  const auto nrFormatsPredefined = PredefinedPixelFormatMapper.size() * 2;
+
+  const auto nrFormats = nrFormats8Bit + nrFormatsGreater8Bit + nrFormatsPredefined;
 
   std::array<PixelFormatRGB, nrFormats> pixelFormats;
 
   size_t i = 0;
-  for (const auto bitDepth : bitDepths)
+  for (const auto dataLayout : DataLayoutMapper.getValues())
+    for (const auto channelOrder : ChannelOrderMapper.getValues())
+      for (const auto alphaMode : AlphaModeMapper.getValues())
+        pixelFormats[i++] =
+          PixelFormatRGB(8, dataLayout, channelOrder, alphaMode, Endianness::Little);
+
+  for (const auto bitDepth : bitDepthsGreater8)
     for (const auto dataLayout : DataLayoutMapper.getValues())
       for (const auto channelOrder : ChannelOrderMapper.getValues())
-        pixelFormats[i++] = PixelFormatRGB(bitDepth, dataLayout, channelOrder);
+        for (const auto alphaMode : AlphaModeMapper.getValues())
+          for (const auto endianess : EndianessMapper.getValues())
+            pixelFormats[i++] =
+              PixelFormatRGB(bitDepth, dataLayout, channelOrder, alphaMode, endianess);
 
-  for (const auto pixelFormat : PredefinedPixelFormatMapper.getValues())
-    pixelFormats[i++] = pixelFormat;
+  for (const auto predefinedPixelFormat : PredefinedPixelFormatMapper.getValues())
+  {
+    pixelFormats[i++] = PixelFormatRGB(predefinedPixelFormat);
+    pixelFormats[i++] = PixelFormatRGB(predefinedPixelFormat, Endianness::Big);
+  }
+
+  assert(i == nrFormats);
 
   return pixelFormats;
 }
@@ -81,10 +103,17 @@ constexpr Size            TEST_FRAME_SIZE      = {4, 4};
 constexpr int             TEST_FRAME_NR_VALUES = TEST_FRAME_SIZE.width * TEST_FRAME_SIZE.height;
 
 // This function reorders the rgb values into the QByteArray in the right order. If the values are
-// in a different bit depth then the pixel format, the values will be scaled.
-// The only exception is RGB565 where the values will not be scaled.
+// in a different bit depth then the pixel format, the values will be scaled. Only supports the
+// non-predefined pixel formats.
 QByteArray createRawRGBData(const PixelFormatRGB      &format,
-                            const std::vector<rgba_t> &value,
+                            const std::vector<rgba_t> &values,
                             const int                  valuesBitDepth);
+
+// Same conversion function for predefined pixel formats. If valuesBitDepth is given, a bit depth
+// conversion will be performed. If not, the values are assumed to be in the right bit depth.
+QByteArray createRawRGBData(const PredefinedPixelFormat predefinedPixelFormat,
+                            const Endianness            endianess,
+                            const std::vector<rgba_t>  &values,
+                            std::optional<int>          valuesBitDepth = std::nullopt);
 
 } // namespace video::rgb::test

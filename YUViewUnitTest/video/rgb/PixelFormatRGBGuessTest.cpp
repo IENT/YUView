@@ -39,8 +39,10 @@
 namespace video::rgb::test
 {
 
+namespace
+{
+
 using filesource::frameFormatGuess::FileInfoForGuess;
-using filesource::frameFormatGuess::GuessedFrameFormat;
 
 struct TestParameters
 {
@@ -230,5 +232,7 @@ INSTANTIATE_TEST_SUITE_P(
 
       ),
   getTestName);
+
+} // namespace
 
 } // namespace video::rgb::test
