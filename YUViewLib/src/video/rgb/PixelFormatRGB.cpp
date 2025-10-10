@@ -171,7 +171,7 @@ AlphaMode PixelFormatRGB::getAlphaMode() const
   return this->alphaMode;
 }
 
-Endianness PixelFormatRGB::getEndianess() const
+Endianness PixelFormatRGB::getEndianness() const
 {
   return this->endianness;
 }

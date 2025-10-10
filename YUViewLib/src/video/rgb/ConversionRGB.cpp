@@ -66,12 +66,12 @@ void convertRGB565ToARGB(const QByteArray     &sourceBuffer,
                          const int             componentScale[4],
                          const bool            limitedRange)
 {
-  auto       rawData   = reinterpret_cast<const unsigned char *>(sourceBuffer.data());
-  const auto endianess = srcPixelFormat.getEndianess();
+  auto       rawData    = reinterpret_cast<const unsigned char *>(sourceBuffer.data());
+  const auto endianness = srcPixelFormat.getEndianness();
 
   for (unsigned i = 0; i < frameSize.width * frameSize.height; i++)
   {
-    auto [r, g, b, a] = extractRGB565Value(rawData, endianess);
+    auto [r, g, b, a] = extractRGB565Value(rawData, endianness);
 
     // Scale from 565 to 8 bit
     r = r << 3;
@@ -142,7 +142,7 @@ void convertRGBToARGB(const QByteArray     &sourceBuffer,
     srcA = ((InValueType)sourceBuffer.data()) + offsetA;
   }
 
-  const auto isBigEndian = bitDepth > 8 && srcPixelFormat.getEndianess() == Endianness::Big;
+  const auto isBigEndian = bitDepth > 8 && srcPixelFormat.getEndianness() == Endianness::Big;
   for (unsigned i = 0; i < frameSize.width * frameSize.height; i++)
   {
     auto convertValue =
@@ -150,7 +150,7 @@ void convertRGBToARGB(const QByteArray     &sourceBuffer,
     {
       auto value = static_cast<int64_t>(sourceData[0]);
       if (isBigEndian)
-        value = swapBytesEndianess<bitDepth>(value);
+        value = swapBytesEndianness<bitDepth>(value);
       value = ((value * scale) >> rightShift);
       value = functions::clip(value, 0, 255);
       if (invert)
@@ -213,7 +213,7 @@ void convertPredefinedPixelFormatRGBPlaneToARGB(const QByteArray     &sourceBuff
     int byte1 = *rawData;
     int byte2 = *(rawData + 1);
 
-    if (srcPixelFormat.getEndianess() == Endianness::Big)
+    if (srcPixelFormat.getEndianness() == Endianness::Big)
       std::swap(byte1, byte2);
 
     const auto value = byte1 + (byte2 << 8);
@@ -270,8 +270,8 @@ void convertRGBPlaneToARGB(const QByteArray     &sourceBuffer,
   for (size_t i = 0; i < frameSize.width * frameSize.height; i++)
   {
     auto val = static_cast<int64_t>(src[0]);
-    if (bitDepth > 8 && srcPixelFormat.getEndianess() == Endianness::Big)
-      val = swapBytesEndianess<bitDepth>(val);
+    if (bitDepth > 8 && srcPixelFormat.getEndianness() == Endianness::Big)
+      val = swapBytesEndianness<bitDepth>(val);
     val = (val * scale) >> shiftTo8Bit;
     val = functions::clip(val, 0, 255);
     if (invert)
@@ -301,7 +301,7 @@ rgba_t getPixelValueForPredefiendFormat(const QByteArray     &sourceBuffer,
   int byte1 = *rawData;
   int byte2 = *(rawData + 1);
 
-  if (srcPixelFormat.getEndianess() == Endianness::Big)
+  if (srcPixelFormat.getEndianness() == Endianness::Big)
     std::swap(byte1, byte2);
 
   const auto value = byte1 + (byte2 << 8);
@@ -338,8 +338,8 @@ rgba_t getPixelValue(const QByteArray     &sourceBuffer,
 
     auto src = srcPixel + offset;
     auto val = (unsigned)src[0];
-    if (bitDepth > 8 && srcPixelFormat.getEndianess() == Endianness::Big)
-      val = swapBytesEndianess<bitDepth>(val);
+    if (bitDepth > 8 && srcPixelFormat.getEndianness() == Endianness::Big)
+      val = swapBytesEndianness<bitDepth>(val);
     value[channel] = val;
   }
 

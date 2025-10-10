@@ -266,7 +266,7 @@ void runTestForAllParameters(const PixelFormatRGB &pixelFormat, TestingFunction 
   QByteArray data;
   if (pixelFormat.getPredefinedPixelFormat())
     data = createRawRGBData(
-      *pixelFormat.getPredefinedPixelFormat(), pixelFormat.getEndianess(), TEST_VALUES_12BIT, 12);
+      *pixelFormat.getPredefinedPixelFormat(), pixelFormat.getEndianness(), TEST_VALUES_12BIT, 12);
   else
     data = createRawRGBData(pixelFormat, TEST_VALUES_12BIT, 12);
 

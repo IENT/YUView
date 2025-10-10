@@ -84,12 +84,12 @@ DataPointers<T> calculatePointersToStartOfComponents(const QByteArray     &rawFr
   return {.r = castDataPointer + posR, .g = castDataPointer + posG, .b = castDataPointer + posB};
 }
 
-inline rgba_t extractRGB565Value(const unsigned char *data, const Endianness endianess)
+inline rgba_t extractRGB565Value(const unsigned char *data, const Endianness endianness)
 {
   int byte1 = *data;
   int byte2 = *(data + 1);
 
-  if (endianess == Endianness::Big)
+  if (endianness == Endianness::Big)
     std::swap(byte1, byte2);
 
   const auto value = byte1 + (byte2 << 8);

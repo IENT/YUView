@@ -104,7 +104,8 @@ struct rgba_t
   }
 };
 
-template <typename T> inline T convertBitness(T value, unsigned src_bitness, unsigned dst_bitness)
+template <typename T>
+inline T convertBitness(const T &value, const unsigned src_bitness, const unsigned dst_bitness)
 {
   if (src_bitness == dst_bitness)
     return value;
@@ -114,7 +115,7 @@ template <typename T> inline T convertBitness(T value, unsigned src_bitness, uns
     return value << (dst_bitness - src_bitness);
 }
 
-inline rgba_t convertBitness(rgba_t value, unsigned src_bitness, unsigned dst_bitness)
+inline rgba_t convertBitness(const rgba_t &value, unsigned src_bitness, unsigned dst_bitness)
 {
   return rgba_t({convertBitness(value.r, src_bitness, dst_bitness),
                  convertBitness(value.g, src_bitness, dst_bitness),
@@ -187,7 +188,7 @@ public:
   [[nodiscard]] DataLayout                           getDataLayout() const;
   [[nodiscard]] ChannelOrder                         getChannelOrder() const;
   [[nodiscard]] AlphaMode                            getAlphaMode() const;
-  [[nodiscard]] Endianness                           getEndianess() const;
+  [[nodiscard]] Endianness                           getEndianness() const;
   [[nodiscard]] std::optional<PredefinedPixelFormat> getPredefinedPixelFormat() const;
 
   [[nodiscard]] int           getNrChannels() const;
@@ -204,9 +205,9 @@ public:
 private:
   // If this is set, the format is defined according to a specific standard and does not
   // conform to the definition below (using
-  // dataLayout/bitsPerSample/ChannelOder/alphaMode/Endianess). If this is set, none of the values
-  // below matter.
-  std::optional<PredefinedPixelFormat> predefinedPixelFormat;
+  // dataLayout/bitsPerSample/ChannelOder/alphaMode/Endianness). If this is set, only the endianness
+  // value matters.
+  std::optional<PredefinedPixelFormat> predefinedPixelFormat{};
 
   int          bitsPerComponent{0};
   DataLayout   dataLayout{DataLayout::Packed};

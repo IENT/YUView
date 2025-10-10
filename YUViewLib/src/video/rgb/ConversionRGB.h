@@ -39,7 +39,7 @@
 namespace video::rgb
 {
 
-template <int bitDepth, typename T> T swapBytesEndianess(const T &val)
+template <int bitDepth, typename T> T swapBytesEndianness(const T &val)
 {
   if (bitDepth <= 8)
     return val;

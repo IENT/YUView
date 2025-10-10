@@ -192,11 +192,11 @@ GenerationResult generateRawDataFramesExpectedResultAndMse(const PixelFormatRGB 
   FrameAandB testFrames;
   if (pixelFormat.getPredefinedPixelFormat() == PredefinedPixelFormat::RGB565)
   {
-    testFrames = createTestFrameDataRGB565();
-    std::get<0>(result) =
-      createRawRGBData(PredefinedPixelFormat::RGB565, pixelFormat.getEndianess(), testFrames.first);
+    testFrames          = createTestFrameDataRGB565();
+    std::get<0>(result) = createRawRGBData(
+      PredefinedPixelFormat::RGB565, pixelFormat.getEndianness(), testFrames.first);
     std::get<1>(result) = createRawRGBData(
-      PredefinedPixelFormat::RGB565, pixelFormat.getEndianess(), testFrames.second);
+      PredefinedPixelFormat::RGB565, pixelFormat.getEndianness(), testFrames.second);
   }
   else if (pixelFormat.getPredefinedPixelFormat())
     throw std::logic_error("Support for predefined pixel format not implemented.");

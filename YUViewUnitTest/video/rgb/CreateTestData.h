@@ -42,6 +42,9 @@
 namespace video::rgb::test
 {
 
+// Create a list of RGB pixel formats for testing. This is not a complete list of all possible pixel
+// formats. Only a subset of bit depths is used as the list would be too long otherwise. It includes
+// all valid formats for 8, 9, 10, 12, 16, and 32 bits as well as all predefined pixel formats.
 constexpr auto createTestSetOfPixelFormatRGB()
 {
   constexpr std::array bitDepthsGreater8{9, 10, 12, 16, 32};
@@ -50,7 +53,7 @@ constexpr auto createTestSetOfPixelFormatRGB()
     DataLayoutMapper.size() * ChannelOrderMapper.size() * AlphaModeMapper.size();
   const auto nrFormatsGreater8Bit = bitDepthsGreater8.size() * DataLayoutMapper.size() *
                                     ChannelOrderMapper.size() * AlphaModeMapper.size() *
-                                    EndianessMapper.size();
+                                    EndiannessMapper.size();
   const auto nrFormatsPredefined = PredefinedPixelFormatMapper.size() * 2;
 
   const auto nrFormats = nrFormats8Bit + nrFormatsGreater8Bit + nrFormatsPredefined;
@@ -68,9 +71,9 @@ constexpr auto createTestSetOfPixelFormatRGB()
     for (const auto dataLayout : DataLayoutMapper.getValues())
       for (const auto channelOrder : ChannelOrderMapper.getValues())
         for (const auto alphaMode : AlphaModeMapper.getValues())
-          for (const auto endianess : EndianessMapper.getValues())
+          for (const auto endianness : EndiannessMapper.getValues())
             pixelFormats[i++] =
-              PixelFormatRGB(bitDepth, dataLayout, channelOrder, alphaMode, endianess);
+              PixelFormatRGB(bitDepth, dataLayout, channelOrder, alphaMode, endianness);
 
   for (const auto predefinedPixelFormat : PredefinedPixelFormatMapper.getValues())
   {
@@ -112,7 +115,7 @@ QByteArray createRawRGBData(const PixelFormatRGB      &format,
 // Same conversion function for predefined pixel formats. If valuesBitDepth is given, a bit depth
 // conversion will be performed. If not, the values are assumed to be in the right bit depth.
 QByteArray createRawRGBData(const PredefinedPixelFormat predefinedPixelFormat,
-                            const Endianness            endianess,
+                            const Endianness            endianness,
                             const std::vector<rgba_t>  &values,
                             std::optional<int>          valuesBitDepth = std::nullopt);
 

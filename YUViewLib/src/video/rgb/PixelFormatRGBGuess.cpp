@@ -152,7 +152,7 @@ std::optional<PixelFormatRGB> checkForPixelFormatIndicatorInName(
                           dataLayout,
                           format.getChannelOrder(),
                           format.getAlphaMode(),
-                          format.getEndianess());
+                          format.getEndianness());
   }
 
   return {};
@@ -175,7 +175,7 @@ std::optional<PixelFormatRGB> checkForPixelFormatIndicatorInFileExtension(
                               dataLayout,
                               format.getChannelOrder(),
                               format.getAlphaMode(),
-                              format.getEndianess());
+                              format.getEndianness());
       }
     }
   }

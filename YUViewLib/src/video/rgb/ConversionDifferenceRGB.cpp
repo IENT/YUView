@@ -87,7 +87,7 @@ std::pair<QImage, MSE>
 calculateDifferencePredefinedPixelFormat(const InputFrameParameters &frame1,
                                          const InputFrameParameters &frame2,
                                          const PredefinedPixelFormat predefinedPixelFormat,
-                                         const Endianness            endianess,
+                                         const Endianness            endianness,
                                          const int                   amplificationFactor,
                                          const bool                  markDifference)
 {
@@ -108,8 +108,8 @@ calculateDifferencePredefinedPixelFormat(const InputFrameParameters &frame1,
 
   for (unsigned i = 0; i < frameSize.width * frameSize.height; ++i)
   {
-    const auto rgb1 = extractRGB565Value(rawData1, endianess);
-    const auto rgb2 = extractRGB565Value(rawData2, endianess);
+    const auto rgb1 = extractRGB565Value(rawData1, endianness);
+    const auto rgb2 = extractRGB565Value(rawData2, endianness);
 
     const auto delta = rgb1 - rgb2;
 
@@ -128,7 +128,7 @@ calculateDifferencePredefinedPixelFormat(const InputFrameParameters &frame1,
 }
 
 template <typename T>
-rgba_t getRGBAndConvertEndianess(const DataPointers<T> dataPointers, const Endianness endianess)
+rgba_t getRGBAndConvertEndianness(const DataPointers<T> dataPointers, const Endianness endianness)
 {
   constexpr auto bitDepth =
     (std::is_same_v<T, uint8_t> ? 8 : (std::is_same_v<T, uint16_t> ? 16 : 32));
@@ -137,11 +137,11 @@ rgba_t getRGBAndConvertEndianess(const DataPointers<T> dataPointers, const Endia
   auto g = *dataPointers.g;
   auto b = *dataPointers.b;
 
-  if (endianess == Endianness::Big)
+  if (endianness == Endianness::Big)
   {
-    r = swapBytesEndianess<bitDepth>(r);
-    g = swapBytesEndianess<bitDepth>(g);
-    b = swapBytesEndianess<bitDepth>(b);
+    r = swapBytesEndianness<bitDepth>(r);
+    g = swapBytesEndianness<bitDepth>(g);
+    b = swapBytesEndianness<bitDepth>(b);
   }
 
   return rgba_t({.r = static_cast<int>(r), .g = static_cast<int>(g), .b = static_cast<int>(b)});
@@ -174,8 +174,8 @@ std::pair<QImage, MSE> calculateDifferenceAndMSE(const InputFrameParameters &fra
 
   for (unsigned i = 0; i < frameSize.width * frameSize.height; ++i)
   {
-    const auto rgb1 = getRGBAndConvertEndianess(dataPointers1, pixelFormat.getEndianess());
-    const auto rgb2 = getRGBAndConvertEndianess(dataPointers2, pixelFormat.getEndianess());
+    const auto rgb1 = getRGBAndConvertEndianness(dataPointers1, pixelFormat.getEndianness());
+    const auto rgb2 = getRGBAndConvertEndianness(dataPointers2, pixelFormat.getEndianness());
 
     const auto delta = rgb1 - rgb2;
 
@@ -205,7 +205,7 @@ std::pair<QImage, MSE> calculateDifferenceAndMSE(const InputFrameParameters &fra
     return calculateDifferencePredefinedPixelFormat(frame1,
                                                     frame2,
                                                     *pixelFormat.getPredefinedPixelFormat(),
-                                                    pixelFormat.getEndianess(),
+                                                    pixelFormat.getEndianness(),
                                                     amplificationFactor,
                                                     markDifference);
 

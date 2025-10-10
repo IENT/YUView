@@ -49,7 +49,7 @@ std::vector<PixelFormatRGB> getAllValidFormats()
     for (auto dataLayout : DataLayoutMapper.getValues())
       for (auto channelOrder : ChannelOrderMapper.getValues())
         for (auto alphaMode : AlphaModeMapper.getValues())
-          for (auto endianness : EndianessMapper.getValues())
+          for (auto endianness : EndiannessMapper.getValues())
           {
             if (endianness == Endianness::Big && bitsPerPixel == 8)
               continue;

@@ -65,7 +65,8 @@ videoHandlerRGBCustomFormatDialog::videoHandlerRGBCustomFormatDialog(
   const auto bitDepth = rgbFormat.getBitsPerComponent();
   this->ui.bitDepthSpinBox->setValue(bitDepth);
   this->ui.comboBoxEndianness->setEnabled(bitDepth > 8);
-  this->ui.comboBoxEndianness->setCurrentIndex(rgbFormat.getEndianess() == Endianness::Big ? 0 : 1);
+  this->ui.comboBoxEndianness->setCurrentIndex(rgbFormat.getEndianness() == Endianness::Big ? 0
+                                                                                            : 1);
 
   this->ui.planarCheckBox->setChecked(rgbFormat.getDataLayout() == DataLayout::Planar);
 }

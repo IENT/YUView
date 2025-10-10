@@ -84,8 +84,6 @@ void testGetPixelValueFromBuffer(const QByteArray     &sourceBuffer,
   }
 }
 
-} // namespace
-
 class GetPixelValueTest : public TestWithParam<PixelFormatRGB>
 {
 };
@@ -97,7 +95,7 @@ TEST_P(GetPixelValueTest, TestGetPixelValueFromBuffer)
   QByteArray data;
   if (pixelFormat.getPredefinedPixelFormat())
     data = createRawRGBData(
-      *pixelFormat.getPredefinedPixelFormat(), pixelFormat.getEndianess(), TEST_VALUES_12BIT, 12);
+      *pixelFormat.getPredefinedPixelFormat(), pixelFormat.getEndianness(), TEST_VALUES_12BIT, 12);
   else
     data = createRawRGBData(pixelFormat, TEST_VALUES_12BIT, 12);
 
@@ -114,5 +112,7 @@ INSTANTIATE_TEST_SUITE_P(VideoRGBTest,
                          GetPixelValueTest,
                          ValuesIn(createTestSetOfPixelFormatRGB()),
                          getName);
+
+} // namespace
 
 } // namespace video::rgb::test
