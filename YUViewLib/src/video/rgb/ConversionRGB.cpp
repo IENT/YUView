@@ -210,21 +210,15 @@ void convertPredefinedPixelFormatRGBPlaneToARGB(const QByteArray     &sourceBuff
 
   for (unsigned i = 0; i < frameSize.width * frameSize.height; i++)
   {
-    int byte1 = *rawData;
-    int byte2 = *(rawData + 1);
-
-    if (srcPixelFormat.getEndianness() == Endianness::Big)
-      std::swap(byte1, byte2);
-
-    const auto value = byte1 + (byte2 << 8);
+    const auto value = extractRGB565Value(rawData, srcPixelFormat.getEndianness());
 
     int greyscaleValue = 0;
     if (displayChannel == Channel::Red)
-      greyscaleValue = ((value & 0b00000000'00011111) << 3);
+      greyscaleValue = (value.r << 3);
     else if (displayChannel == Channel::Green)
-      greyscaleValue = ((value & 0b00000111'11100000) >> 3);
+      greyscaleValue = (value.g << 2);
     else if (displayChannel == Channel::Blue)
-      greyscaleValue = ((value & 0b11111000'00000000) >> 8);
+      greyscaleValue = (value.b << 3);
 
     greyscaleValue = functions::clip(greyscaleValue * scale, 0, 255);
     if (invert)
@@ -298,19 +292,7 @@ rgba_t getPixelValueForPredefiendFormat(const QByteArray     &sourceBuffer,
   const auto rawData =
     reinterpret_cast<const unsigned char *>(sourceBuffer.data() + offsetPixelPos * 2);
 
-  int byte1 = *rawData;
-  int byte2 = *(rawData + 1);
-
-  if (srcPixelFormat.getEndianness() == Endianness::Big)
-    std::swap(byte1, byte2);
-
-  const auto value = byte1 + (byte2 << 8);
-
-  int r = ((value & 0b00000000'00011111));
-  int g = ((value & 0b00000111'11100000) >> 5);
-  int b = ((value & 0b11111000'00000000) >> 11);
-
-  return {r, g, b, 255};
+  return extractRGB565Value(rawData, srcPixelFormat.getEndianness());
 }
 
 template <int bitDepth>

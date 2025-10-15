@@ -92,8 +92,8 @@ void convertToRGB565AndPushIntoArray(QByteArray      &data,
   if (value.r > 31 || value.g > 63 || value.b > 31)
     throw std::invalid_argument("Values for RGB565 must be in range R:0-31, G:0-63, B:0-31");
 
-  int dataBytes = (value.r & 0b00000000'00011111) + ((value.g << 5) & 0b00000111'11100000) +
-                  ((value.b << 11) & 0b11111000'00000000);
+  int dataBytes = ((value.r << 11) & 0b11111000'00000000) + ((value.g << 5) & 0b00000111'11100000) +
+                  (value.b & 0b00000000'00011111);
 
   const int byte1 = (dataBytes >> 8);
   const int byte2 = (dataBytes & 0b1111'1111);
