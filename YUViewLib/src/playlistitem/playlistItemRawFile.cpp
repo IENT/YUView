@@ -122,7 +122,7 @@ playlistItemRawFile::playlistItemRawFile(const QString &rawFilePath,
     if (!this->parseY4MFile())
       return;
   }
-  else if (!pixelFormatFromMemory)
+  else if (pixelFormatFromMemory)
   {
     // Use the format that we got from the memory. Don't do any auto detection.
     this->video->setFormatFromString(*pixelFormatFromMemory);
