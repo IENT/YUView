@@ -194,6 +194,10 @@ void PlaylistTreeWidget::dragMoveEvent(QDragMoveEvent *event)
   if (dropTarget)
   {
     auto draggedItems = selectedItems();
+    if (draggedItems.size() <= 0){
+      event->ignore();
+      return;
+    }
     auto draggedItem  = dynamic_cast<playlistItem *>(draggedItems[0]);
 
     // handle video items as target
