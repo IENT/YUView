@@ -32,6 +32,7 @@
 
 #include "videoHandlerRGB.h"
 #include "common/Typedef.h"
+#include "video/PixelFormat.h"
 #include "video/rgb/PixelFormatRGB.h"
 
 #include <common/EnumMapper.h>
@@ -123,7 +124,8 @@ std::vector<rgb::PixelFormatRGB> videoHandlerRGB::formatPresetList = {
   PixelFormatRGB(8, DataLayout::Packed, ChannelOrder::BRG),
   PixelFormatRGB(10, DataLayout::Packed, ChannelOrder::BRG),
   PixelFormatRGB(10, DataLayout::Planar, ChannelOrder::RGB),
-  PixelFormatRGB(PredefinedPixelFormat::RGB565)};
+  PixelFormatRGB(PredefinedPixelFormat::RGB565),
+  PixelFormatRGB(PredefinedPixelFormat::RGB565, Endianness::Big)};
 
 videoHandlerRGB::videoHandlerRGB() : videoHandler()
 {
