@@ -187,26 +187,30 @@ playlistItem *PlaylistTreeWidget::getDropTarget(const QPoint &pos) const
 void PlaylistTreeWidget::dragMoveEvent(QDragMoveEvent *event)
 {
 #if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
-  auto dropTarget = this->getDropTarget(event->position().toPoint());
+  const auto dropTarget = this->getDropTarget(event->position().toPoint());
 #else
-  auto dropTarget = getDropTarget(event->pos());
+  const auto dropTarget = getDropTarget(event->pos());
 #endif
-  if (dropTarget)
-  {
-    auto draggedItems = selectedItems();
-    if (draggedItems.size() <= 0){
-      event->ignore();
-      return;
-    }
-    auto draggedItem  = dynamic_cast<playlistItem *>(draggedItems[0]);
 
-    // handle video items as target
-    if (!dropTarget->acceptDrops(draggedItem))
-    {
-      // no valid drop
-      event->ignore();
-      return;
-    }
+  if (!dropTarget)
+  {
+    event->ignore();
+    return;
+  }
+
+  const auto draggedItems = this->selectedItems();
+  if (draggedItems.empty())
+  {
+    event->ignore();
+    return;
+  }
+
+  const auto draggedItem = dynamic_cast<playlistItem *>(draggedItems[0]);
+
+  if (!dropTarget->acceptDrops(draggedItem))
+  {
+    event->ignore();
+    return;
   }
 
   QTreeWidget::dragMoveEvent(event);
@@ -279,7 +283,7 @@ void PlaylistTreeWidget::updateAllContainterItems()
 {
   for (int i = 0; i < topLevelItemCount(); i++)
   {
-    QTreeWidgetItem *      item          = topLevelItem(i);
+    QTreeWidgetItem       *item          = topLevelItem(i);
     playlistItemContainer *containerItem = dynamic_cast<playlistItemContainer *>(item);
     if (containerItem != nullptr)
       containerItem->updateChildItems();
@@ -806,7 +810,7 @@ QString PlaylistTreeWidget::getPlaylistString(QDir dirName)
   // Create the XML document structure
   QDomDocument document;
   document.appendChild(document.createProcessingInstruction(
-      QStringLiteral("xml"), QStringLiteral("version=\"1.0\" encoding=\"UTF-8\"")));
+    QStringLiteral("xml"), QStringLiteral("version=\"1.0\" encoding=\"UTF-8\"")));
   QDomElement plist = document.createElement(QStringLiteral("playlistItems"));
   plist.setAttribute(QStringLiteral("version"), QStringLiteral("2.0"));
   document.appendChild(plist);
@@ -815,7 +819,7 @@ QString PlaylistTreeWidget::getPlaylistString(QDir dirName)
   for (int i = 0; i < topLevelItemCount(); ++i)
   {
     QTreeWidgetItem *item   = topLevelItem(i);
-    playlistItem *   plItem = dynamic_cast<playlistItem *>(item);
+    playlistItem    *plItem = dynamic_cast<playlistItem *>(item);
 
     plItem->savePlaylist(plist, dirName);
   }
@@ -908,7 +912,7 @@ bool PlaylistTreeWidget::loadPlaylistFromByteArray(QByteArray data, QString file
     QMessageBox::critical(this,
                           "Error loading playlist.",
                           errorMessage +
-                              QString(" in line/column %1/%2").arg(errorLine).arg(errorColumn));
+                            QString(" in line/column %1/%2").arg(errorLine).arg(errorColumn));
     return false;
   }
 
@@ -920,16 +924,16 @@ bool PlaylistTreeWidget::loadPlaylistFromByteArray(QByteArray data, QString file
   {
     // This is a playlist file in the old format. This is not supported anymore.
     QMessageBox::critical(
-        this,
-        "Error loading playlist.",
-        "The given playlist file seems to be in the old XML format. The playlist format was "
-        "changed a while back and the old format is no longer supported.");
+      this,
+      "Error loading playlist.",
+      "The given playlist file seems to be in the old XML format. The playlist format was "
+      "changed a while back and the old format is no longer supported.");
     return false;
   }
   if (root.tagName() != "playlistItems" || root.attribute("version") != "2.0")
   {
     QMessageBox::critical(
-        this, "Error loading playlist.", "The playlist file format could not be recognized.");
+      this, "Error loading playlist.", "The playlist file format could not be recognized.");
     return false;
   }
 
@@ -982,19 +986,19 @@ void PlaylistTreeWidget::checkAndUpdateItems()
   if (!changedItems.empty())
   {
     auto ret =
-        QMessageBox::question(parentWidget(),
-                              "Item changed",
-                              "The source of one or more currently loaded items has changed. "
-                              "Do you want to reload the item(s)?");
+      QMessageBox::question(parentWidget(),
+                            "Item changed",
+                            "The source of one or more currently loaded items has changed. "
+                            "Do you want to reload the item(s)?");
     if (ret != QMessageBox::Yes)
     {
       ret = QMessageBox::question(
-          parentWidget(),
-          "Item changed",
-          "It is really recommended to reload the changed items. YUView does not always buffer all "
-          "data from the items. We can not guarantee that the data you are shown is correct "
-          "anymore. For the shown values, there is no indication if they are old or new. Parsing "
-          "of statistics files may fail. So again:  Do you want to reload the item(s)?");
+        parentWidget(),
+        "Item changed",
+        "It is really recommended to reload the changed items. YUView does not always buffer all "
+        "data from the items. We can not guarantee that the data you are shown is correct "
+        "anymore. For the shown values, there is no indication if they are old or new. Parsing "
+        "of statistics files may fail. So again:  Do you want to reload the item(s)?");
       if (ret != QMessageBox::Yes)
         return; // Really no
     }
@@ -1126,7 +1130,7 @@ QList<playlistItem *> PlaylistTreeWidget::getAllPlaylistItems(const bool topLeve
   for (int i = 0; i < topLevelItemCount(); i++)
   {
     QTreeWidgetItem *item   = topLevelItem(i);
-    playlistItem *   plItem = dynamic_cast<playlistItem *>(item);
+    playlistItem    *plItem = dynamic_cast<playlistItem *>(item);
     if (plItem != nullptr)
     {
       returnList.append(plItem);
