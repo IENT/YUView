@@ -4,15 +4,16 @@ from parseTables import parseDocumentTables
 import pickle
 
 def main():
-    filename = "JVET-T2001-v2.docx"
-    print("Opening file " + filename)
-    document = Document(filename)
+    #filename = "JVET-T2001-v2.docx"
+    file = "/Users/cfeldman/Downloads/JVET-AN1019-v1/JVET-AN1019-v1_text.docx"
+    print("Opening file " + file)
+    document = Document(file)
 
-    variableDescriptions = parseDocForVariableDescriptions(document)
+    headingsToParse = ["Video usability information parameters", "SEI messages"]
 
-    print(f"Parsed {len(variableDescriptions)} variable descriptions: ")
+    variableDescriptions = parseDocForVariableDescriptions(document, headingsToParse)
 
-    # From where to where to parse. The last entry will not be included.
+    print(f"Parsed {len(variableDescriptions)} variable descriptions.")
     
     parsedTables = parseDocumentTables(document, variableDescriptions)
     print ("Read {} classes".format(len(parsedTables)))

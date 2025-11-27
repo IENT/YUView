@@ -1,5 +1,6 @@
 from codingType import Coding, CodingType, isCodingType
 import re
+from enum import Enum, unique, auto
 
 def isVariableName(text : str):
     if ("[" in text and "]" in text):
@@ -90,6 +91,13 @@ def getEntryType(text : str):
         return "while"
     if text.startswith("do"):
         return "do"
+    
+def tryFindVariableDescription(name, variableDescriptions):
+    for description in variableDescriptions:
+        if name in description.names:
+            return description
+    return None
+
 
 class ParsingItem:
     def __init__(self, parent):
@@ -117,8 +125,7 @@ class Variable(ParsingItem):
                     break
         else:
             self.name = name
-        if (self.name in variableDescriptions):
-            self.description = variableDescriptions[self.name]
+        self.description = tryFindVariableDescription(self.name, variableDescriptions)
         self.coding = CodingType(descriptor)
     def __str__(self):
         s = ""
@@ -254,13 +261,30 @@ class Container(ParsingItem):
                     return tableIndex
         except Exception as ex:
             print(f"Error parsing {self}: {ex}")
+            if hasattr(self, "name"):
+                print(f"In table {self.name}")
         return tableIndex
+    
+@unique
+class TableType(Enum):
+    NAL_UNIT = auto()     # A full NAL unit
+    SEI_MESSAGE = auto()  # An SEI message. This knows its payload size when reading.
+    ELEMENT = auto()      # An element (a function) that is part of an SEI or a NAL unit.
 
 class ContainerTable(Container):
     def __init__(self):
         super().__init__(None)
+        self.name = ""
+        self.type = None
+        self.arguments = None
     def parseContainer(self, table, variableDescriptions):
         self.parseHeader(table.cell(0, 0).text)
+        if len(self.arguments) == 0:
+            self.type = TableType.NAL_UNIT
+        elif len(self.arguments) == 1 and self.arguments[0] == "payloadSize":
+            self.type = TableType.SEI_MESSAGE
+        else:
+            self.type = TableType.ELEMENT
         t1 = table.cell(0, 1).text.strip()
         t2 = table.cell(0, 2).text.strip()
         if (t2 == t1):
@@ -271,11 +295,12 @@ class ContainerTable(Container):
         header = header.replace(u'\xa0', u' ')
         bracketOpen = header.find("(")
         bracketClose = header.find(")")
+        if bracketOpen == -1 or bracketClose == -1:
+            raise SyntaxError(f"Table header does not contain brackets: {header}")
         self.name = header[:bracketOpen]
         self.arguments = []
         for a in header[bracketOpen+1 : bracketClose].split(","):
             self.arguments.append(a.strip())
-        print(f"Table: {self.name}")
     
 class ContainerIf(Container):
     def __init__(self, parent):
@@ -286,9 +311,9 @@ class ContainerIf(Container):
     def fromText(self, text : str):
         if (not text.startswith("if") and not text.startswith("else if") and not text.startswith("} else") and not text.startswith("else")):
             raise SyntaxError("If container does not start with if or else if")
-        if (text.startswith("else if")):
+        elif (text.startswith("else if")):
             self.isElseIf = True
-        if (text.startswith("} else") or text.startswith("else")):
+        elif (text.startswith("} else") or text.startswith("else")):
             self.isElse = True
             return
         start = text.find("(")
@@ -389,20 +414,33 @@ class ContainerFor(Container):
 def parseDocumentTables(document, variableDescriptions):
     parsedTables = []
 
-    firstLastEntry = ["nal_unit_header", "slice_data"]
+    startEntries = ["vui_parameters", "filler_payload"]
+    endEntries = ["vui_parameters", "reserved_message"]
     skipEntries = ["sei_rbsp"]
     
-    firstEntryFound = False
+    parsingEnabled = False
     for table in document.tables:
-        entryName = table.cell(0, 0).text.split("(")[0]
-        if (not firstEntryFound and entryName == firstLastEntry[0]):
-            firstEntryFound = True
-        if (firstEntryFound and entryName == firstLastEntry[1]):
-            break
-        if (entryName in skipEntries):
+        if len(table.rows) == 0 or len(table.columns) != 2:
             continue
-        if firstEntryFound:
-            tableItem = ContainerTable()
-            tableItem.parseContainer(table, variableDescriptions)
-            parsedTables.append(tableItem)
+        firstCell = table.cell(0, 0)
+        if firstCell.text == "Value" and firstCell.paragraphs[0].style.name == "Table_head":
+            continue
+        entryName = firstCell.text.split("(")[0]
+        if not parsingEnabled and entryName in startEntries:
+            parsingEnabled = True
+        if entryName in skipEntries or  entryName.strip() == "" or entryName.startswith("Table"):
+            continue
+        if parsingEnabled:
+            try:
+                tableItem = ContainerTable()
+                tableItem.parseContainer(table, variableDescriptions)
+                if tableItem.name == "":
+                    print("Warning: Table with empty name encountered. Ignoring Table.")
+                else:
+                    print(f"Parsed Table: {tableItem.name}")
+                    parsedTables.append(tableItem)
+            except Exception as ex:
+                print(f"Error parsing table {firstCell.text}")
+        if (parsingEnabled and entryName in endEntries):
+            parsingEnabled = False
     return parsedTables
