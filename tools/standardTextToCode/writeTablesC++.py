@@ -141,9 +141,9 @@ def writeItemToFiles(item, files):
         typeString = "unsigned"
         arguments = ""
         if item.coding.codingType == Coding.UNSIGNED_VARIABLE:
-            nrBitsText = item.description.variableParsingLength
-            if nrBitsText == None:
-                nrBitsText = "variable"
+            nrBitsText = "variable"
+            if item.description != None and item.description.variableParsingLength != None:
+                nrBitsText = item.description.variableParsingLength
             typeString = "int"
             parseFunction = "readBits"
             arguments = f", {nrBitsText}"

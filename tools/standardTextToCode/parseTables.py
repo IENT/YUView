@@ -2,26 +2,34 @@ from codingType import Coding, CodingType, isCodingType
 import re
 from enum import Enum, unique, auto
 
-def isVariableName(text : str):
+
+def isVariableName(text: str):
     if ("[" in text and "]" in text):
         text = text.split("[")[0]  # Array indices are ok
     return re.fullmatch("[a-z][a-z0-9]*(_[a-z0-9]+)+", text)
-def isFunctionCall(text : str):
+
+
+def isFunctionCall(text: str):
     if (not "(" in text or not ")" in text):
         return False
     return isVariableName(text.split("(")[0].strip())
-def removeComments(text : str):
+
+
+def removeComments(text: str):
     commentStart = text.find("/*")
     while (commentStart != -1):
         commentEnd = text.find("*/")
         if (commentEnd == -1):
             return text
         if (commentEnd <= commentStart):
-            raise SyntaxError("Error removing comment. End before start. Line: " + text)
+            raise SyntaxError(
+                "Error removing comment. End before start. Line: " + text)
         text = text[0:commentStart] + text[commentEnd+2:]
         commentStart = text.find("/*")
     return text.strip()
-def cleanCondition(text : str):
+
+
+def cleanCondition(text: str):
     text = text.strip()
     text = text.replace("=\xa0=", "==")
     text = text.replace("|\xa0|", "||")
@@ -34,9 +42,12 @@ def cleanCondition(text : str):
     text = text.replace("\u2212", "-")
     text = text.replace('−', '-')
     if (text.find("\xa0") != -1):
-        raise SyntaxError("There still is a char to replace in the condition. This must be cleaned up first.")
+        raise SyntaxError(
+            "There still is a char to replace in the condition. This must be cleaned up first.")
     return text
-def cleanArgument(text : str):
+
+
+def cleanArgument(text: str):
     text = text.strip()
     text = text.replace("[\xa0", "[")
     text = text.replace("\xa0]", "]")
@@ -44,9 +55,12 @@ def cleanArgument(text : str):
     text = text.replace("\u2212", "-")
     text = text.replace('−', '-')
     if (text.find("\xa0") != -1):
-        raise SyntaxError("There still is a char to replace in the argument. This must be cleaned up first.")
+        raise SyntaxError(
+            "There still is a char to replace in the argument. This must be cleaned up first.")
     return text
-def cleanComment(text : str):
+
+
+def cleanComment(text: str):
     text = text.strip()
     text = text.replace("=\xa0=", "==")
     text = text.replace("[\xa0", "[")
@@ -59,25 +73,33 @@ def cleanComment(text : str):
     text = text.replace("\u2212", "-")
     text = text.replace('−', '-')
     if (text.find("\xa0") != -1):
-        raise SyntaxError("There still is a char to replace in the comment. This must be cleaned up first.")
+        raise SyntaxError(
+            "There still is a char to replace in the comment. This must be cleaned up first.")
     return text
-def cleanConditionPart(text : str):
+
+
+def cleanConditionPart(text: str):
     text = text.strip()
     text = text.replace("\xa0−\xa0", " - ")
     text = text.replace('−', '-')
     if (text.find("\xa0") != -1):
-        raise SyntaxError("There still is a char to replace in the condition. This must be cleaned up first.")
+        raise SyntaxError(
+            "There still is a char to replace in the condition. This must be cleaned up first.")
     return text
-def cleanIncrement(text : str):
+
+
+def cleanIncrement(text: str):
     text = text.strip()
     text = text.replace("-\xa0-", "--")
     text = text.replace("−\xa0−", "--")
     text = text.replace('−', '-')
     if (text.find("\xa0") != -1):
-        raise SyntaxError("There still is a char to replace in the increment. This must be cleaned up first.")
+        raise SyntaxError(
+            "There still is a char to replace in the increment. This must be cleaned up first.")
     return text
 
-def getEntryType(text : str):
+
+def getEntryType(text: str):
     text = removeComments(text)
     if isVariableName(text):
         return "Variable"
@@ -91,7 +113,8 @@ def getEntryType(text : str):
         return "while"
     if text.startswith("do"):
         return "do"
-    
+
+
 def tryFindVariableDescription(name, variableDescriptions):
     for description in variableDescriptions:
         if name in description.names:
@@ -102,7 +125,8 @@ def tryFindVariableDescription(name, variableDescriptions):
 class ParsingItem:
     def __init__(self, parent):
         self.parent = parent
-    
+
+
 class Variable(ParsingItem):
     def __init__(self, parent):
         super().__init__(parent)
@@ -110,14 +134,16 @@ class Variable(ParsingItem):
         self.arrayIndex = None
         self.coding = None
         self.description = None
-    def fromText(self, name : str, descriptor : str, variableDescriptions : dict):
+
+    def fromText(self, name: str, descriptor: str, variableDescriptions: dict):
         if ("[" in name and "]" in name):
             self.arrayIndex = []
             openBracket = name.find("[")
             self.name = name[0:openBracket]
             while (True):
                 closeBracket = name.find("]")
-                newIndex = cleanArgument(name[openBracket+1:closeBracket].strip())
+                newIndex = cleanArgument(
+                    name[openBracket+1:closeBracket].strip())
                 self.arrayIndex.append(newIndex)
                 name = name[closeBracket+1:]
                 openBracket = name.find("[")
@@ -125,8 +151,10 @@ class Variable(ParsingItem):
                     break
         else:
             self.name = name
-        self.description = tryFindVariableDescription(self.name, variableDescriptions)
+        self.description = tryFindVariableDescription(
+            self.name, variableDescriptions)
         self.coding = CodingType(descriptor)
+
     def __str__(self):
         s = ""
         for _ in range(self.parent.depth):
@@ -136,24 +164,29 @@ class Variable(ParsingItem):
             s += str(self.arrayIndex)
         return f"{s} --> {self.coding}"
 
+
 class CommentEntry(ParsingItem):
     def __init__(self, parent):
         super().__init__(parent)
         self.text = None
-    def fromText(self, text : str):
+
+    def fromText(self, text: str):
         self.text = cleanComment(text)
+
     def __str__(self):
         s = ""
         for _ in range(self.parent.depth):
             s += "  "
         return f"{s}//{self.text}"
 
+
 class FunctionCall(ParsingItem):
     def __init__(self, parent):
         super().__init__(parent)
         self.functionName = None
         self.arguments = None
-    def fromText(self, name : str):
+
+    def fromText(self, name: str):
         self.functionName = name.split("(")[0]
         self.arguments = []
         for argument in (name.split("(")[1].split(")")[0].split(",")):
@@ -161,115 +194,119 @@ class FunctionCall(ParsingItem):
             if (len(c) > 0):
                 self.arguments.append(cleanArgument(argument))
         debugStop = 234
+
     def __str__(self):
         spaces = ""
         for _ in range(self.parent.depth):
             spaces += "  "
         return f"{spaces}{self.functionName}({self.arguments})"
 
+
 class Container(ParsingItem):
     def __init__(self, parent):
         super().__init__(parent)
         self.children = []
-        self.depth = 0
-        self.depth = 0
-    def parseChildren(self, table, tableIndex, variableDescriptions):
-        # Get the initial depth
-        t0_full = table.cell(0, tableIndex).text
-        while (t0_full.lstrip("\t").startswith("/*")):
-            # Ignore comments
-            tableIndex += 2
-            t0_full = table.cell(0, tableIndex).text
-        self.depth = len(t0_full) - len(t0_full.lstrip("\t"))
+        self.depth = None
 
+    def parseChildren(self, table, rowIndex, currentDepth, variableDescriptions):
         try:
             while (True):
-                t0_full = table.cell(0, tableIndex).text
-                newDepth = len(t0_full) - len(t0_full.lstrip("\t"))
-                startsWithComment = t0_full.lstrip("\t").startswith("/*")
-                if (newDepth < self.depth and not startsWithComment):
-                    # End of container
-                    return tableIndex
-                if (newDepth > self.depth):
-                    raise SyntaxError(f"The depth of the line is higher then the container depth. Line: {t0_full}")
-                t0 = t0_full.strip()
-                t1 = table.cell(0, tableIndex+1).text.strip()
-                entryType = getEntryType(t0)
+                rawSymbol = table.cell(rowIndex, 0).text
 
-                lastEntry = False
-                try:
-                    t2 = table.cell(0, tableIndex+2).text.strip()
-                    if (t2 == t1):
-                        # Skip identical entries. This may be the aforementioned glitch.
-                        tableIndex += 1
-                except IndexError:
-                    # No more data
-                    lastEntry = True
-                tableIndex += 2
+                startsWithComment = rawSymbol.lstrip("\t").startswith("/*")
 
+                newDepth = len(rawSymbol) - len(rawSymbol.lstrip("\t"))
+                if currentDepth == None:
+                    currentDepth = newDepth
+                if newDepth < currentDepth and not startsWithComment:
+                    return rowIndex
+                elif newDepth > currentDepth:
+                    raise SyntaxError(
+                        f"The depth of the line is higher then the container depth. This should only happen when entering a container (e.g. if, else, while). Symbol: {symbol}")
+
+                symbol = table.cell(rowIndex, 0).text.strip()
+                coding = table.cell(rowIndex, 1).text.strip()
+
+                entryType = getEntryType(symbol)
+
+                # print(f"Parsing entry: {symbol}")
                 if (entryType == "Variable"):
                     v = Variable(self)
-                    v.fromText(t0, t1, variableDescriptions)
-                    #print(f"{v}")
+                    v.fromText(symbol, coding, variableDescriptions)
+                    # print(f"{v}")
                     self.children.append(v)
+                    rowIndex += 1
                 elif (entryType == "FunctionCall"):
                     f = FunctionCall(self)
-                    f.fromText(t0)
-                    #print(f"{f}")
+                    f.fromText(symbol)
+                    # print(f"{f}")
                     self.children.append(f)
+                    rowIndex += 1
                 elif (entryType == "for"):
                     f = ContainerFor(self)
-                    f.fromText(t0)
-                    #print(f"{f}")
+                    f.fromText(symbol)
+                    # print(f"{f}")
                     self.children.append(f)
-                    tableIndex = f.parseChildren(table, tableIndex, variableDescriptions)
+                    rowIndex = f.parseChildren(
+                        table, rowIndex + 1, currentDepth + 1, variableDescriptions)
                 elif (entryType == "if"):
                     i = ContainerIf(self)
-                    i.fromText(t0)
-                    #print(f"{i}")
+                    i.fromText(symbol)
+                    # print(f"{i}")
                     self.children.append(i)
-                    tableIndex = i.parseChildren(table, tableIndex, variableDescriptions)
+                    rowIndex = i.parseChildren(
+                        table, rowIndex + 1, currentDepth + 1, variableDescriptions)
                 elif (entryType == "while"):
                     w = ContainerWhile(self)
-                    w.fromText(t0)
-                    #print(f"{w}")
+                    w.fromText(symbol)
+                    # print(f"{w}")
                     self.children.append(w)
-                    tableIndex = w.parseChildren(table, tableIndex, variableDescriptions)
+                    rowIndex = w.parseChildren(
+                        table, rowIndex + 1, currentDepth + 1, variableDescriptions)
                 elif (entryType == "do"):
                     d = ContainerDo(self)
-                    d.fromText(t0)
-                    #print(d.getDoText())
-                    tableIndex = d.parseChildren(table, tableIndex, variableDescriptions)
-                    tableIndex = d.parseClosingWhile(table, tableIndex)
-                    #print(f"{d}")
+                    d.fromText(symbol)
+                    # print(d.getDoText())
+                    rowIndex = d.parseChildren(
+                        table, rowIndex + 1, currentDepth + 1, variableDescriptions)
+                    rowIndex = d.parseClosingWhile(table, rowIndex)
+                    # print(f"{d}")
                     self.children.append(d)
                 elif (entryType == "comment"):
                     c = CommentEntry(self)
-                    c.fromText(t0)
-                    #print(f"{c}")
+                    c.fromText(symbol)
+                    # print(f"{c}")
                     self.children.append(c)
+                    rowIndex += 1
                 elif (entryType != None):
-                    raise SyntaxError(f"Entry type is unknown. Line: {t0_full}")
+                    raise SyntaxError(
+                        f"Entry type is unknown. Line: {symbol}")
+                elif symbol == "}":
+                    rowIndex += 1
                 else:
-                    if (t0.strip() != "}"):
-                        c = CommentEntry(self)
-                        c.fromText(t0)
-                        #print(f"{c}")
-                        self.children.append(c)
+                    c = CommentEntry(self)
+                    c.fromText(symbol)
+                    # print(f"{c}")
+                    self.children.append(c)
+                    rowIndex += 1
 
-                if (lastEntry):
-                    return tableIndex
+                if (rowIndex + 1 >= len(table.rows)):
+                    return rowIndex
         except Exception as ex:
             print(f"Error parsing {self}: {ex}")
             if hasattr(self, "name"):
                 print(f"In table {self.name}")
-        return tableIndex
-    
+        return rowIndex
+
+
 @unique
 class TableType(Enum):
     NAL_UNIT = auto()     # A full NAL unit
-    SEI_MESSAGE = auto()  # An SEI message. This knows its payload size when reading.
-    ELEMENT = auto()      # An element (a function) that is part of an SEI or a NAL unit.
+    # An SEI message. This knows its payload size when reading.
+    SEI_MESSAGE = auto()
+    # An element (a function) that is part of an SEI or a NAL unit.
+    ELEMENT = auto()
+
 
 class ContainerTable(Container):
     def __init__(self):
@@ -277,6 +314,7 @@ class ContainerTable(Container):
         self.name = ""
         self.type = None
         self.arguments = None
+
     def parseContainer(self, table, variableDescriptions):
         self.parseHeader(table.cell(0, 0).text)
         if len(self.arguments) == 0:
@@ -286,29 +324,32 @@ class ContainerTable(Container):
         else:
             self.type = TableType.ELEMENT
         t1 = table.cell(0, 1).text.strip()
-        t2 = table.cell(0, 2).text.strip()
-        if (t2 == t1):
-            self.parseChildren(table, 3, variableDescriptions)
-        else:
-            self.parseChildren(table, 2, variableDescriptions)
+        if not "descriptor" in table.cell(0, 1).text.strip().lower():
+            print(
+                f"Warning: Table header column 2 does not contain 'descriptor' heading in table {self.name}")
+        self.parseChildren(table, 1, None, variableDescriptions)
+
     def parseHeader(self, header):
         header = header.replace(u'\xa0', u' ')
         bracketOpen = header.find("(")
         bracketClose = header.find(")")
         if bracketOpen == -1 or bracketClose == -1:
-            raise SyntaxError(f"Table header does not contain brackets: {header}")
+            raise SyntaxError(
+                f"Table header does not contain brackets: {header}")
         self.name = header[:bracketOpen]
         self.arguments = []
-        for a in header[bracketOpen+1 : bracketClose].split(","):
+        for a in header[bracketOpen+1: bracketClose].split(","):
             self.arguments.append(a.strip())
-    
+
+
 class ContainerIf(Container):
     def __init__(self, parent):
         super().__init__(parent)
         self.condition = None
         self.isElseIf = False
         self.isElse = False
-    def fromText(self, text : str):
+
+    def fromText(self, text: str):
         if (not text.startswith("if") and not text.startswith("else if") and not text.startswith("} else") and not text.startswith("else")):
             raise SyntaxError("If container does not start with if or else if")
         elif (text.startswith("else if")):
@@ -321,6 +362,7 @@ class ContainerIf(Container):
         if (start == -1 or end == -1):
             raise SyntaxError("If condition does not contain brackets")
         self.condition = cleanCondition(text[start+1:end])
+
     def __str__(self):
         spaces = ""
         for _ in range(self.parent.depth):
@@ -331,11 +373,13 @@ class ContainerIf(Container):
             return f"{spaces}else if({self.condition})"
         return f"{spaces}if({self.condition})"
 
+
 class ContainerWhile(Container):
     def __init__(self, parent):
         super().__init__(parent)
         self.condition = None
-    def fromText(self, text : str):
+
+    def fromText(self, text: str):
         if (not text.startswith("while")):
             raise SyntaxError("While container does not start with while")
         start = text.find("(")
@@ -343,50 +387,46 @@ class ContainerWhile(Container):
         if (start == -1 or end == -1):
             raise SyntaxError("While loop does not contain brackets")
         self.condition = cleanCondition(text[start+1:end])
+
     def __str__(self):
         spaces = ""
         for _ in range(self.parent.depth):
             spaces += "  "
         return f"{spaces}while({self.condition})"
 
+
 class ContainerDo(Container):
     def __init__(self, parent):
         super().__init__(parent)
         self.condition = None
-    def fromText(self, text : str):
+
+    def fromText(self, text: str):
         if (not text.startswith("do")):
             raise SyntaxError("Do container does not start with do")
-    def parseClosingWhile(self, table, tableIndex : int):
-        t0_full = table.cell(0, tableIndex).text
-        text = t0_full.strip()
-        if (not text.startswith("} while")):
+
+    def parseClosingWhile(self, table, rowIndex: int):
+        symbol = table.cell(rowIndex, 0).text.strip()
+        if (not symbol.startswith("} while")):
             raise SyntaxError("do does not end with while")
-        start = text.find("(")
-        end = text.rfind(")")
+        start = symbol.find("(")
+        end = symbol.rfind(")")
         if (start == -1 or end == -1):
             raise SyntaxError("Do ... while loop does not contain brackets")
-        self.condition = cleanCondition(text[start+1:end])
-        t1 = table.cell(0, tableIndex+1).text.strip()
-        try:
-            t2 = table.cell(0, tableIndex+2).text.strip()
-            if (t2 == t1):
-                # Skip identical entries. This may be the aforementioned glitch.
-                tableIndex += 1
-        except IndexError:
-            # No more data
-            pass
-        tableIndex += 2
-        return tableIndex
+        self.condition = cleanCondition(symbol[start+1:end])
+        return rowIndex + 1
+
     def getDoText(self):
         spaces = ""
         for _ in range(self.parent.depth):
             spaces += "  "
         return f"{spaces}do"
+
     def __str__(self):
         spaces = ""
         for _ in range(self.parent.depth):
             spaces += "  "
         return f"{spaces}while ({self.condition})"
+
 
 class ContainerFor(Container):
     def __init__(self, parent):
@@ -395,21 +435,26 @@ class ContainerFor(Container):
         self.initialValue = None
         self.breakCondition = None
         self.increment = None
-    def fromText(self, text : str):
+
+    def fromText(self, text: str):
         split = text.split(";")
         if (not split[0].startswith("for")):
-            raise SyntaxError("For container does not start with for")
-        
+            raise SyntaxError(f"For container does not start with for - {text}")
+        if (len(split) != 3):
+            raise SyntaxError(f"For container does not have exactly three parts - {text}")
+
         firstPart = split[0][split[0].find("(") + 1:]
         self.variableName = cleanConditionPart(firstPart.split("=")[0])
         self.initialValue = cleanConditionPart(firstPart.split("=")[1])
         self.breakCondition = cleanCondition(split[1])
         self.increment = cleanIncrement(split[2][0:split[2].find(")")])
+
     def __str__(self):
         spaces = ""
         for _ in range(self.parent.depth):
             spaces += "  "
         return f"{spaces}for({self.variableName} = {self.initialValue}; {self.breakCondition}; {self.increment})"
+
 
 def parseDocumentTables(document, variableDescriptions):
     parsedTables = []
@@ -417,7 +462,7 @@ def parseDocumentTables(document, variableDescriptions):
     startEntries = ["vui_parameters", "filler_payload"]
     endEntries = ["vui_parameters", "reserved_message"]
     skipEntries = ["sei_rbsp"]
-    
+
     parsingEnabled = False
     for table in document.tables:
         if len(table.rows) == 0 or len(table.columns) != 2:
@@ -428,7 +473,7 @@ def parseDocumentTables(document, variableDescriptions):
         entryName = firstCell.text.split("(")[0]
         if not parsingEnabled and entryName in startEntries:
             parsingEnabled = True
-        if entryName in skipEntries or  entryName.strip() == "" or entryName.startswith("Table"):
+        if entryName in skipEntries or entryName.strip() == "" or entryName.startswith("Table"):
             continue
         if parsingEnabled:
             try:
@@ -440,7 +485,7 @@ def parseDocumentTables(document, variableDescriptions):
                     print(f"Parsed Table: {tableItem.name}")
                     parsedTables.append(tableItem)
             except Exception as ex:
-                print(f"Error parsing table {firstCell.text}")
+                print(f"Error parsing table {firstCell.text} - {ex}")
         if (parsingEnabled and entryName in endEntries):
             parsingEnabled = False
     return parsedTables

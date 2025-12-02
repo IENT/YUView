@@ -5,7 +5,7 @@ import pickle
 
 def main():
     #filename = "JVET-T2001-v2.docx"
-    file = "/Users/cfeldman/Downloads/JVET-AN1019-v1/JVET-AN1019-v1_text.docx"
+    file = "/Users/cfeldman/Downloads/JVET-AN1019-v1/JVET-AN1019-v1_text_accepted.docx"
     print("Opening file " + file)
     document = Document(file)
 
@@ -16,7 +16,7 @@ def main():
     print(f"Parsed {len(variableDescriptions)} variable descriptions.")
     
     parsedTables = parseDocumentTables(document, variableDescriptions)
-    print ("Read {} classes".format(len(parsedTables)))
+    print ("Read {} tables".format(len(parsedTables)))
 
     # Dump everything to a file (debugging)
     pickle.dump( parsedTables, open( "tempPiclkle.p", "wb" ) )
