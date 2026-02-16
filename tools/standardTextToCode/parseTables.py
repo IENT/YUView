@@ -352,7 +352,7 @@ class ContainerIf(Container):
     def fromText(self, text: str):
         if (not text.startswith("if") and not text.startswith("else if") and not text.startswith("} else") and not text.startswith("else")):
             raise SyntaxError("If container does not start with if or else if")
-        elif (text.startswith("else if")):
+        elif (text.startswith("else if") or text.startswith("} else if")):
             self.isElseIf = True
         elif (text.startswith("} else") or text.startswith("else")):
             self.isElse = True

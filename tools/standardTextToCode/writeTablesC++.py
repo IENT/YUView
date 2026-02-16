@@ -56,6 +56,8 @@ class HeaderFile:
         for include in settings.includes:
             self.f.write(f"#include \"{include}\"\n")
         self.f.write("\n")
+        self.f.write("#include <vector>")
+        self.f.write("\n")
         self.f.write(f"""namespace {settings.namespace}""")
         self.f.write("\n{\n\n")
         self.namespace = settings.namespace
