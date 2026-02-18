@@ -34,7 +34,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [macos-13, macos-15]
+        os: [macos-15, macos-15-intel]
     steps:
     - uses: actions/checkout@v4
       with:
@@ -55,7 +55,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-22.04, macos-13, macos-15]
+        os: [ubuntu-22.04, macos-15]
     steps:
     - uses: actions/checkout@v4
       with:
