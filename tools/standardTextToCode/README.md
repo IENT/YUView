@@ -11,3 +11,7 @@ Read the `docx` document and parse all the tables (e.g `VPS`, `SPS`, ...). Put t
 ### writeTablesC++.py
 
 Take the pickled file and write CPP classes from it. This can be used as the starting point to create the actual parsing code. Or it can be used to add new parsing code which was added in a later version of a standard.
+
+### Prerequirements
+
+Install python-docx (https://github.com/python-openxml/python-docx).
