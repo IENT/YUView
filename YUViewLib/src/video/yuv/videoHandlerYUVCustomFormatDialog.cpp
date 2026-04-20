@@ -60,7 +60,6 @@ videoHandlerYUVCustomFormatDialog::videoHandlerYUVCustomFormatDialog(
   }
 
   // Bit depth
-
   for (auto bitDepth : BitDepthList)
     this->ui.comboBoxBitDepth->addItem(QString("%1").arg(bitDepth));
   {

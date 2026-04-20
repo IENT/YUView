@@ -66,7 +66,7 @@ std::vector<unsigned> getDetectionBitDepthList(const std::optional<unsigned> &de
 {
   if (detectedBitrate)
     return {*detectedBitrate};
-  return {10u, 12u, 14u, 16u, 8u};
+  return BitDepthList;
 }
 
 std::vector<Subsampling> getDetectionSubsamplingList(Subsampling subsamplingToForceAsFirst,

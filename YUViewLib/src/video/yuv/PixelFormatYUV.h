@@ -95,15 +95,15 @@ class MathParameters
 {
 public:
   MathParameters() = default;
-  MathParameters(int scale, int offset, bool invert) : scale(scale), offset(offset), invert(invert)
+  MathParameters(int scale, int64_t offset, bool invert) : scale(scale), offset(offset), invert(invert)
   {
   }
   // Do we need to apply any transform to the raw YUV data before conversion to RGB?
   bool mathRequired() const { return scale != 1 || invert; }
 
-  int  scale{1};
-  int  offset{128};
-  bool invert{};
+  int     scale{1};
+  int64_t offset{128};
+  bool    invert{};
 };
 
 enum class PredefinedPixelFormat
@@ -184,7 +184,7 @@ constexpr EnumMapper<PlaneOrder, 4> PlaneOrderMapper = {std::make_pair(PlaneOrde
                                                         std::make_pair(PlaneOrder::YUVA, "YUVA"),
                                                         std::make_pair(PlaneOrder::YVUA, "YVUA")};
 
-const auto BitDepthList = std::vector<unsigned>({8, 9, 10, 12, 14, 16});
+const auto BitDepthList = std::vector<unsigned>({8, 9, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30, 32});
 
 // This class defines a specific YUV format with all properties like pixels per sample, subsampling
 // of chroma components and so on.
@@ -263,5 +263,22 @@ private:
   PackingOrder packingOrder{PackingOrder::YUV};
   bool         bytePacking{};
 };
+
+inline uint64_t get_min_standard_bytes(uint64_t x) {
+  if (x == 0)
+    return 0;
+
+  if (x >= UINT64_MAX / 8) {
+    return UINT64_MAX;
+  }
+
+  x--;
+
+  for (int current_shift = 1; current_shift < 64; current_shift <<= 1) {
+    x |= x >> current_shift;
+  }
+
+  return (x + 8) >> 3;
+}
 
 } // namespace video::yuv

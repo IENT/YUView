@@ -175,7 +175,7 @@ PixelFormatYUV::PixelFormatYUV(const std::string_view name)
       auto   bitdepthStr = sm.str(3);
       size_t sz;
       int    bitDepth = std::stoi(bitdepthStr, &sz);
-      if (sz > 0 && bitDepth >= 8 && bitDepth <= 16)
+      if (sz > 0 && bitDepth >= 8 && bitDepth <= 32)
         newFormat.bitsPerSample = bitDepth;
     }
 
@@ -318,7 +318,7 @@ bool PixelFormatYUV::canConvertToRGB(Size imageSize, std::string *whyNot) const
   // Check the bit depth
   const int bps        = this->bitsPerSample;
   bool      canConvert = true;
-  if (bps < 8 || bps > 16)
+  if (bps < 8 || bps > 32)
   {
     if (whyNot)
     {
@@ -383,6 +383,7 @@ int64_t PixelFormatYUV::bytesPerFrame(const Size &frameSize) const
   }
 
   int64_t bytes = 0;
+  const auto bytesPerSample = get_min_standard_bytes(this->bitsPerSample); // Round to bytes
 
   if (this->planar || !this->bytePacking)
   {
@@ -390,21 +391,20 @@ int64_t PixelFormatYUV::bytesPerFrame(const Size &frameSize) const
     // This also works for packed formats without byte packing. For these formats the number of
     // bytes are identical to the not packed formats, the bytes are just sorted in another way.
 
-    const auto bytesPerSample = (this->bitsPerSample + 7) / 8;    // Round to bytes
-    bytes += frameSize.width * frameSize.height * bytesPerSample; // Luma plane
+    bytes += (int64_t)frameSize.width * frameSize.height * bytesPerSample; // Luma plane
     if (this->subsampling == Subsampling::YUV_444)
-      bytes += frameSize.width * frameSize.height * bytesPerSample * 2; // U/V planes
+      bytes += (int64_t)frameSize.width * frameSize.height * bytesPerSample * 2; // U/V planes
     else if (this->subsampling == Subsampling::YUV_422 || this->subsampling == Subsampling::YUV_440)
       bytes +=
-        (frameSize.width / 2) * frameSize.height * bytesPerSample * 2; // U/V planes, half the width
+        (int64_t)(frameSize.width / 2) * frameSize.height * bytesPerSample * 2; // U/V planes, half the width
     else if (this->subsampling == Subsampling::YUV_420)
-      bytes += (frameSize.width / 2) * (frameSize.height / 2) * bytesPerSample *
+      bytes += (int64_t)(frameSize.width / 2) * (frameSize.height / 2) * bytesPerSample *
                2; // U/V planes, half the width and height
     else if (this->subsampling == Subsampling::YUV_410)
-      bytes += (frameSize.width / 4) * (frameSize.height / 4) * bytesPerSample *
+      bytes += (int64_t)(frameSize.width / 4) * (frameSize.height / 4) * bytesPerSample *
                2; // U/V planes, half the width and height
     else if (this->subsampling == Subsampling::YUV_411)
-      bytes += (frameSize.width / 4) * frameSize.height * bytesPerSample *
+      bytes += (int64_t)(frameSize.width / 4) * frameSize.height * bytesPerSample *
                2; // U/V planes, quarter the width
     else if (this->subsampling == Subsampling::YUV_400)
       bytes += 0; // No chroma components
@@ -414,12 +414,12 @@ int64_t PixelFormatYUV::bytesPerFrame(const Size &frameSize) const
     if (this->planar &&
         (this->planeOrder == PlaneOrder::YUVA || this->planeOrder == PlaneOrder::YVUA))
       // There is an additional alpha plane. The alpha plane is not subsampled
-      bytes += frameSize.width * frameSize.height * bytesPerSample; // Alpha plane
+      bytes += (int64_t)frameSize.width * frameSize.height * bytesPerSample; // Alpha plane
     if (!this->planar && this->subsampling == Subsampling::YUV_444 &&
         (this->packingOrder == PackingOrder::AYUV || this->packingOrder == PackingOrder::YUVA ||
          this->packingOrder == PackingOrder::VUYA))
       // There is an additional alpha plane. The alpha plane is not subsampled
-      bytes += frameSize.width * frameSize.height * bytesPerSample; // Alpha plane
+      bytes += (int64_t)frameSize.width * frameSize.height * bytesPerSample; // Alpha plane
   }
   else
   {
@@ -427,17 +427,16 @@ int64_t PixelFormatYUV::bytesPerFrame(const Size &frameSize) const
     if (this->subsampling == Subsampling::YUV_422)
     {
       // All packing orders have 4 values per packed value (which has 2 Y samples)
-      const auto bitsPerPixel = this->bitsPerSample * 4;
-      return ((bitsPerPixel + 7) / 8) * (frameSize.width / 2) * frameSize.height;
+      return 4 * bytesPerSample * (frameSize.width / 2) * frameSize.height;
     }
     // This is a packed format. The added number of bytes might be lower because of the packing.
     if (this->subsampling == Subsampling::YUV_444)
     {
-      auto bitsPerPixel = this->bitsPerSample * 3;
+      auto channels = 3;
       if (this->packingOrder == PackingOrder::AYUV || this->packingOrder == PackingOrder::YUVA ||
           this->packingOrder == PackingOrder::VUYA)
-        bitsPerPixel += this->bitsPerSample;
-      return ((bitsPerPixel + 7) / 8) * frameSize.width * frameSize.height;
+        channels += 1;
+      return channels * bytesPerSample * frameSize.width * frameSize.height;
     }
     // else if (subsampling == Subsampling::YUV_422 || subsampling == Subsampling::YUV_440)
     //{
