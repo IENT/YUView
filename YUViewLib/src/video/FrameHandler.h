@@ -74,12 +74,12 @@ public:
 
   // Return the RGB values of the given pixel. If a second item is provided, return the difference
   // values to that item.
-  virtual QStringPairList getPixelValues(const QPoint &pixelPos,
-                                         int           frameIdx,
-                                         FrameHandler *item2     = nullptr,
-                                         const int     frameIdx1 = 0);
+  virtual QStringPairList getPixelValues(const QPoint             &pixelPos,
+                                         int                       frameIdx,
+                                         const FrameHandler *const item2     = nullptr,
+                                         const int                 frameIdx1 = 0) const;
   // Is the pixel under the cursor brighter or darker than the middle brightness level?
-  virtual bool isPixelDark(const QPoint &pixelPos);
+  virtual bool isPixelDark(const QPoint &pixelPos) const;
 
   // Is the current format of the FrameHandler valid? The default implementation will check if the
   // frameSize is valid but more specialized implementations may also check other things: For
@@ -139,8 +139,8 @@ protected:
   Size   frameSize;
 
   // Get the pixel value from currentImage. Make sure that currentImage is the correct image.
-  QRgb         getPixelVal(const QPoint &pos) { return getPixelVal(pos.x(), pos.y()); }
-  virtual QRgb getPixelVal(int x, int y) { return currentImage.pixel(x, y); }
+  QRgb         getPixelVal(const QPoint &pos) const { return getPixelVal(pos.x(), pos.y()); }
+  virtual QRgb getPixelVal(int x, int y) const { return currentImage.pixel(x, y); }
 
   // When slotVideoControlChanged is called, update the controls and return the new selected size
   Size getNewSizeFromControls();

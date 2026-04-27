@@ -2597,8 +2597,8 @@ void videoHandlerYUV::setSrcPixelFormat(PixelFormatYUV format, bool emitSignal)
   // Update the math parameter offset (the default offset depends on the bit depth and the range)
   int        shift     = format.getBitsPerSample() - 8;
   const bool fullRange = isFullRange(this->conversionSettings.colorConversion);
-  this->conversionSettings.mathParameters[Component::Luma].offset = (fullRange ? 128 : 125)
-                                                                    << shift;
+  this->conversionSettings.mathParameters[Component::Luma].offset   = (fullRange ? 128 : 125)
+                                                                      << shift;
   this->conversionSettings.mathParameters[Component::Chroma].offset = 128 << shift;
 
   if (ui.created())
@@ -2693,17 +2693,17 @@ void videoHandlerYUV::slotYUVControlChanged()
 /* Get the pixels values so we can show them in the info part of the zoom box.
  * If a second frame handler is provided, the difference values from that item will be returned.
  */
-QStringPairList videoHandlerYUV::getPixelValues(const QPoint &pixelPos,
-                                                int           frameIdx,
-                                                FrameHandler *item2,
-                                                const int     frameIdx1)
+QStringPairList videoHandlerYUV::getPixelValues(const QPoint             &pixelPos,
+                                                int                       frameIdx,
+                                                const FrameHandler *const item2,
+                                                const int                 frameIdx1) const
 {
   QStringPairList values;
 
   const int formatBase = settings.value("ShowPixelValuesHex").toBool() ? 16 : 10;
   if (item2 != nullptr)
   {
-    videoHandlerYUV *yuvItem2 = dynamic_cast<videoHandlerYUV *>(item2);
+    auto yuvItem2 = dynamic_cast<const videoHandlerYUV *const>(item2);
     if (yuvItem2 == nullptr)
       // The given item is not a YUV source. We cannot compare YUV values to non YUV values.
       // Call the base class comparison function to compare the items using the RGB values.

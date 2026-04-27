@@ -360,9 +360,9 @@ void FrameHandler::drawPixelValues(QPainter *painter,
         pixVal    = getPixelVal(x, y);
         drawWhite = (qRed(pixVal) < 128 && qGreen(pixVal) < 128 && qBlue(pixVal) < 128);
         valText   = QString("R%1\nG%2\nB%3")
-                    .arg(qRed(pixVal), 0, formatBase)
-                    .arg(qGreen(pixVal), 0, formatBase)
-                    .arg(qBlue(pixVal), 0, formatBase);
+                      .arg(qRed(pixVal), 0, formatBase)
+                      .arg(qGreen(pixVal), 0, formatBase)
+                      .arg(qBlue(pixVal), 0, formatBase);
       }
 
       painter->setPen(drawWhite ? Qt::white : Qt::black);
@@ -441,9 +441,9 @@ QImage FrameHandler::calculateDifference(FrameHandler *item2,
   return diffImg;
 }
 
-bool FrameHandler::isPixelDark(const QPoint &pixelPos)
+bool FrameHandler::isPixelDark(const QPoint &pixelPos) const
 {
-  auto pixVal = getPixelVal(pixelPos);
+  auto pixVal = this->getPixelVal(pixelPos);
   return (qRed(pixVal) < 128 && qGreen(pixVal) < 128 && qBlue(pixVal) < 128);
 }
 
@@ -470,8 +470,10 @@ bool FrameHandler::setFormatFromString(const std::string_view format)
   return true;
 }
 
-QStringPairList
-FrameHandler::getPixelValues(const QPoint &pixelPos, int, FrameHandler *item2, const int)
+QStringPairList FrameHandler::getPixelValues(const QPoint &pixelPos,
+                                             int,
+                                             const FrameHandler *const item2,
+                                             const int) const
 {
   auto width  = (item2) ? std::min(frameSize.width, item2->frameSize.width) : frameSize.width;
   auto height = (item2) ? std::min(frameSize.height, item2->frameSize.height) : frameSize.height;
@@ -492,7 +494,7 @@ FrameHandler::getPixelValues(const QPoint &pixelPos, int, FrameHandler *item2, c
   if (item2)
   {
     // There is a second item. Return the difference values.
-    auto pixel1 = getPixelVal(pixelPos);
+    auto pixel1 = this->getPixelVal(pixelPos);
     auto pixel2 = item2->getPixelVal(pixelPos);
 
     int r = int(qRed(pixel1)) - int(qRed(pixel2));

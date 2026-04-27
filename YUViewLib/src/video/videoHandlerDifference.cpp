@@ -174,8 +174,8 @@ void videoHandlerDifference::setInputVideos(FrameHandler *childVideo0, FrameHand
 
 QStringPairList videoHandlerDifference::getPixelValues(const QPoint &pixelPos,
                                                        int           frameIdx,
-                                                       FrameHandler *,
-                                                       const int frameIdx1)
+                                                       const FrameHandler *const,
+                                                       const int frameIdx1) const
 {
   if (!inputsValid())
     return QStringPairList();

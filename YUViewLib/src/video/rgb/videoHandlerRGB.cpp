@@ -147,17 +147,17 @@ unsigned videoHandlerRGB::getCachingFrameSize() const
   return this->frameSize.width * this->frameSize.height * bytes;
 }
 
-QStringPairList videoHandlerRGB::getPixelValues(const QPoint &pixelPos,
-                                                int           frameIdx,
-                                                FrameHandler *item2,
-                                                const int     frameIdx1)
+QStringPairList videoHandlerRGB::getPixelValues(const QPoint             &pixelPos,
+                                                int                       frameIdx,
+                                                const FrameHandler *const item2,
+                                                const int                 frameIdx1) const
 {
   QStringPairList values;
 
   const int formatBase = settings.value("ShowPixelValuesHex").toBool() ? 16 : 10;
   if (item2 != nullptr)
   {
-    auto rgbItem2 = dynamic_cast<videoHandlerRGB *>(item2);
+    auto rgbItem2 = dynamic_cast<const videoHandlerRGB *const>(item2);
     if (rgbItem2 == nullptr)
       // The second item is not a videoHandlerRGB. Get the values from the FrameHandler.
       return FrameHandler::getPixelValues(pixelPos, frameIdx, item2, frameIdx1);

@@ -74,10 +74,10 @@ public:
   unsigned getCachingFrameSize() const override;
 
   // Return the RGB values for the given pixel
-  virtual QStringPairList getPixelValues(const QPoint &pixelPos,
-                                         int           frameIdx,
-                                         FrameHandler *item2,
-                                         const int     frameIdx1 = 0) override;
+  virtual QStringPairList getPixelValues(const QPoint             &pixelPos,
+                                         int                       frameIdx,
+                                         const FrameHandler *const item2,
+                                         const int                 frameIdx1 = 0) const override;
 
   // Get the number of bytes for one RGB frame with the current format
   virtual int64_t getBytesPerFrame() const override

@@ -162,7 +162,7 @@ protected:
 
   // As the FrameHandler implementations, we get the pixel values from currentImage. For a video,
   // however, we have to first check if currentImage contains the correct frame.
-  virtual QRgb getPixelVal(int x, int y) override;
+  virtual QRgb getPixelVal(int x, int y) const override;
 
   // The video handler wants to cache a frame. After the operation the frameToCache should contain
   // the requested frame. No other internal state of the specific video format handler should be
