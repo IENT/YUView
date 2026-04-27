@@ -31,6 +31,7 @@
  */
 
 #include <QObject>
+#include <queue>
 
 namespace video
 {
