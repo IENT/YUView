@@ -38,7 +38,7 @@ jobs:
       matrix:
         os: [macos-15, macos-15-intel]
     steps:
-    - uses: actions/6
+    - uses: actions/checkout@v6
       with:
         submodules: true
     - run: git fetch --prune --unshallow
