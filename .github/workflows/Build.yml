@@ -13,7 +13,7 @@ jobs:
       matrix:
         os: [ubuntu-22.04, ubuntu-24.04, ubuntu-22.04-arm, ubuntu-24.04-arm]
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v6
       with:
         submodules: true
     - run: git fetch --prune --unshallow
@@ -38,7 +38,7 @@ jobs:
       matrix:
         os: [macos-15, macos-15-intel]
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/6
       with:
         submodules: true
     - run: git fetch --prune --unshallow
@@ -61,7 +61,7 @@ jobs:
       matrix:
         os: [ubuntu-22.04, macos-15]
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v6
       with:
         submodules: true
     - run: git fetch --prune --unshallow
@@ -146,7 +146,7 @@ jobs:
       matrix:
         autoUpdate: [true, false]
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v6
       with:
         submodules: true
     - uses: ilammy/msvc-dev-cmd@v1
