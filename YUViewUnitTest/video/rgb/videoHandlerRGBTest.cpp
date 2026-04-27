@@ -41,11 +41,18 @@ namespace video::rgb::test
 using namespace std::string_literals;
 
 // clang-format off
-const auto TEST_DATA_RGB_8BIT_4x4 = QByteArray::fromHex(
+const auto TEST_DATA_RGB_8BIT_4x4_ONE = QByteArray::fromHex(
   "000000" "ffffff" "ff0000" "00ff00"
   "0000ff" "800000" "008000" "000080"
   "100000" "001000" "000010" "500000"
   "005000" "000050" "f00000" "00f000"
+);
+
+const auto TEST_DATA_RGB_8BIT_4x4_TWO = QByteArray::fromHex(
+  "100000" "001000" "000010" "500000"
+  "005000" "000050" "f00000" "00f000"
+  "000000" "ffffff" "ff0000" "00ff00"
+  "0000ff" "800000" "008000" "000080"
 );
 // clang-format on
 
@@ -70,19 +77,32 @@ TEST(videoHandlerRGBTest, testCalculateDifference_sameInputSignal_shouldReturnEm
   handler1.setFrameSize({4, 4});
   handler1.setRGBPixelFormatByName("RGB 8bit");
   videoHandlerDataLoadingTest dataLoader(&handler1);
-  dataLoader.addExpectedLoadingRequests({0, TEST_DATA_RGB_8BIT_4x4});
+  dataLoader.addExpectedLoadingRequests({0, TEST_DATA_RGB_8BIT_4x4_ONE});
 
   videoHandlerRGB handler2;
   handler2.setFrameSize({4, 4});
   handler2.setRGBPixelFormatByName("RGB 8bit");
   videoHandlerDataLoadingTest dataLoader2(&handler2);
-  dataLoader2.addExpectedLoadingRequests({0, TEST_DATA_RGB_8BIT_4x4});
+  dataLoader2.addExpectedLoadingRequests({0, TEST_DATA_RGB_8BIT_4x4_ONE});
 
   QList<InfoItem> differenceInfoList;
   QImage          differenceImage =
     handler1.calculateDifference(&handler2, 0, 0, differenceInfoList, 1, false);
 
   EXPECT_FALSE(differenceImage.isNull());
+  EXPECT_EQ(differenceImage.size(), QSize(4, 4));
+  EXPECT_EQ(differenceImage.format(), QImage::Format_RGB32);
+
+  for (int y = 0; y < differenceImage.height(); y++)
+  {
+    for (int x = 0; x < differenceImage.width(); x++)
+    {
+      const auto pixelValue = differenceImage.pixel(x, y);
+      EXPECT_EQ(qRed(pixelValue), 128);
+      EXPECT_EQ(qGreen(pixelValue), 128);
+      EXPECT_EQ(qBlue(pixelValue), 128);
+    }
+  }
 
   EXPECT_THAT(differenceInfoList,
               testing::ElementsAre(InfoItem("Difference domain"s, "RGB 8bit"s),

@@ -592,10 +592,9 @@ bool videoHandlerRGB::loadRawRGBData(int frameIndex)
   {
     // The raw data was loaded in the background. Now we just have to move it to the current
     // buffer. No actual loading is needed.
-    requestDataMutex.lock();
+    QMutexLocker mutexLocker(&requestDataMutex);
     currentFrameRawData            = rawData;
     currentFrameRawData_frameIndex = frameIndex;
-    requestDataMutex.unlock();
     return true;
   }
 
@@ -603,14 +602,15 @@ bool videoHandlerRGB::loadRawRGBData(int frameIndex)
 
   // The function loadFrameForCaching also uses the signalRequestRawData to request raw data.
   // However, only one thread can use this at a time.
-  requestDataMutex.lock();
-  emit signalRequestRawData(frameIndex, false);
-  if (frameIndex == rawData_frameIndex)
   {
-    currentFrameRawData            = rawData;
-    currentFrameRawData_frameIndex = frameIndex;
+    QMutexLocker mutexLocker(&requestDataMutex);
+    emit         signalRequestRawData(frameIndex, false);
+    if (frameIndex == rawData_frameIndex)
+    {
+      currentFrameRawData            = rawData;
+      currentFrameRawData_frameIndex = frameIndex;
+    }
   }
-  requestDataMutex.unlock();
 
   DEBUG_RGB("videoHandlerRGB::loadRawRGBData %d %s",
             frameIndex,
