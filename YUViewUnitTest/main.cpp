@@ -30,63 +30,12 @@
  *   along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#pragma once
+#include <QGuiApplication>
+#include <gtest/gtest.h>
 
-#include <QThread>
-
-#include "LoadingWorker.h"
-
-namespace video
+int main(int argc, char **argv)
 {
-
-#define LOADINGTHREAD_DEBUG_LOADING 0
-#if LOADINGTHREAD_DEBUG_LOADING && !NDEBUG
-#define DEBUG_THREAD qDebug
-#else
-#define DEBUG_THREAD(fmt, ...) ((void)0)
-#endif
-
-class LoadingThread : public QThread
-{
-  Q_OBJECT
-public:
-  LoadingThread(QObject *parent) : QThread(parent)
-  {
-    // Create a new worker and move it to this thread
-    this->threadWorker.reset(new LoadingWorker(nullptr));
-    this->threadWorker->moveToThread(this);
-  }
-  ~LoadingThread() {}
-
-  void quitWhenDone()
-  {
-    this->quitting = true;
-    if (this->threadWorker->isWorking())
-    {
-      // We must wait until the worker is done.
-      DEBUG_THREAD("loadingThread::quitWhenDone waiting for worker to finish...");
-      connect(worker(),
-              &LoadingWorker::loadingFinished,
-              this,
-              [this]
-              {
-                DEBUG_THREAD("loadingThread::quitWhenDone worker done -> quit");
-                quit();
-              });
-    }
-    else
-    {
-      DEBUG_THREAD("loadingThread::quitWhenDone quit now");
-      quit();
-    }
-  }
-
-  LoadingWorker *worker() { return this->threadWorker.get(); }
-  bool           isQuitting() { return this->quitting; }
-
-private:
-  std::unique_ptr<LoadingWorker> threadWorker{};
-  bool quitting{}; // Are er quitting the job? If yes, do not push new jobs to it.
-};
-
-} // namespace video
+  testing::InitGoogleTest(&argc, argv);
+  QGuiApplication app(argc, argv);
+  return RUN_ALL_TESTS();
+}

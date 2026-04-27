@@ -220,7 +220,7 @@ void FrameHandler::slotVideoControlChanged()
   // Update the controls and get the new selected size
   auto newSize = getNewSizeFromControls();
   DEBUG_FRAME(
-      "FrameHandler::slotVideoControlChanged new size %dx%d", newSize.width, newSize.height);
+    "FrameHandler::slotVideoControlChanged new size %dx%d", newSize.width, newSize.height);
 
   if (newSize != frameSize && newSize.isValid())
   {
@@ -441,14 +441,39 @@ QImage FrameHandler::calculateDifference(FrameHandler *item2,
   return diffImg;
 }
 
-bool FrameHandler::isPixelDark(const QPoint &pixelPos)
+bool FrameHandler::isPixelDark(const QPoint &pixelPos) const
 {
-  auto pixVal = getPixelVal(pixelPos);
+  auto pixVal = this->getPixelVal(pixelPos);
   return (qRed(pixVal) < 128 && qGreen(pixVal) < 128 && qBlue(pixVal) < 128);
 }
 
-QStringPairList
-FrameHandler::getPixelValues(const QPoint &pixelPos, int, FrameHandler *item2, const int)
+std::optional<std::string> FrameHandler::getFormatAsString() const
+{
+  if (!this->frameSize.isValid())
+    return {};
+  return std::to_string(this->frameSize.width) + ";" + std::to_string(this->frameSize.height);
+}
+
+bool FrameHandler::setFormatFromString(const std::string_view format)
+{
+  auto split = functions::splitString(format, ';');
+  if (split.size() != 2)
+    return false;
+
+  const auto width  = functions::toUnsigned(split.at(0));
+  const auto height = functions::toUnsigned(split.at(1));
+
+  if (!width || !height)
+    return false;
+
+  this->setFrameSize(Size(*width, *height));
+  return true;
+}
+
+QStringPairList FrameHandler::getPixelValues(const QPoint &pixelPos,
+                                             int,
+                                             const FrameHandler *const item2,
+                                             const int) const
 {
   auto width  = (item2) ? std::min(frameSize.width, item2->frameSize.width) : frameSize.width;
   auto height = (item2) ? std::min(frameSize.height, item2->frameSize.height) : frameSize.height;
@@ -469,7 +494,7 @@ FrameHandler::getPixelValues(const QPoint &pixelPos, int, FrameHandler *item2, c
   if (item2)
   {
     // There is a second item. Return the difference values.
-    auto pixel1 = getPixelVal(pixelPos);
+    auto pixel1 = this->getPixelVal(pixelPos);
     auto pixel2 = item2->getPixelVal(pixelPos);
 
     int r = int(qRed(pixel1)) - int(qRed(pixel2));
@@ -490,25 +515,6 @@ FrameHandler::getPixelValues(const QPoint &pixelPos, int, FrameHandler *item2, c
   }
 
   return values;
-}
-
-bool FrameHandler::setFormatFromString(QString format)
-{
-  auto split = format.split(";");
-  if (split.length() != 2)
-    return false;
-
-  bool ok;
-  auto newWidth = unsigned(split[0].toInt(&ok));
-  if (!ok)
-    return false;
-
-  auto newHeight = unsigned(split[1].toInt(&ok));
-  if (!ok)
-    return false;
-
-  this->setFrameSize(Size(newWidth, newHeight));
-  return true;
 }
 
 } // namespace video

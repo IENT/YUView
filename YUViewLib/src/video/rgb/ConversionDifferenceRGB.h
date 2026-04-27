@@ -32,61 +32,68 @@
 
 #pragma once
 
-#include <QThread>
+#include <video/rgb/PixelFormatRGB.h>
 
-#include "LoadingWorker.h"
+#include <QByteArray>
+#include <QImage>
 
-namespace video
+namespace video::rgb
 {
 
-#define LOADINGTHREAD_DEBUG_LOADING 0
-#if LOADINGTHREAD_DEBUG_LOADING && !NDEBUG
-#define DEBUG_THREAD qDebug
-#else
-#define DEBUG_THREAD(fmt, ...) ((void)0)
-#endif
-
-class LoadingThread : public QThread
+struct InputFrameParameters
 {
-  Q_OBJECT
-public:
-  LoadingThread(QObject *parent) : QThread(parent)
-  {
-    // Create a new worker and move it to this thread
-    this->threadWorker.reset(new LoadingWorker(nullptr));
-    this->threadWorker->moveToThread(this);
-  }
-  ~LoadingThread() {}
-
-  void quitWhenDone()
-  {
-    this->quitting = true;
-    if (this->threadWorker->isWorking())
-    {
-      // We must wait until the worker is done.
-      DEBUG_THREAD("loadingThread::quitWhenDone waiting for worker to finish...");
-      connect(worker(),
-              &LoadingWorker::loadingFinished,
-              this,
-              [this]
-              {
-                DEBUG_THREAD("loadingThread::quitWhenDone worker done -> quit");
-                quit();
-              });
-    }
-    else
-    {
-      DEBUG_THREAD("loadingThread::quitWhenDone quit now");
-      quit();
-    }
-  }
-
-  LoadingWorker *worker() { return this->threadWorker.get(); }
-  bool           isQuitting() { return this->quitting; }
-
-private:
-  std::unique_ptr<LoadingWorker> threadWorker{};
-  bool quitting{}; // Are er quitting the job? If yes, do not push new jobs to it.
+  const QByteArray &rawDataItem;
+  const Size        frameSize{};
 };
 
-} // namespace video
+struct MSE
+{
+  double r{};
+  double g{};
+  double b{};
+  double a{};
+
+  bool operator==(const MSE &other) const
+  {
+    return std::tie(r, g, b, a) == std::tie(other.r, other.g, other.b, a);
+  }
+};
+
+// Sum of Squared Errors
+class SSE
+{
+public:
+  void addSample(const rgba_t &delta)
+  {
+    this->r += delta.r * delta.r;
+    this->g += delta.g * delta.g;
+    this->b += delta.b * delta.b;
+    this->a += delta.a * delta.a;
+    ++this->nrSamples;
+  }
+
+  MSE getMSE() const
+  {
+    MSE mse;
+    mse.r = static_cast<double>(this->r) / this->nrSamples;
+    mse.g = static_cast<double>(this->g) / this->nrSamples;
+    mse.b = static_cast<double>(this->b) / this->nrSamples;
+    mse.a = static_cast<double>(this->a) / this->nrSamples;
+    return mse;
+  }
+
+private:
+  int64_t r{};
+  int64_t g{};
+  int64_t b{};
+  int64_t a{};
+  int64_t nrSamples{};
+};
+
+std::pair<QImage, MSE> calculateDifferenceAndMSE(const InputFrameParameters &frame1,
+                                                 const InputFrameParameters &frame2,
+                                                 const PixelFormatRGB       &pixelFormat,
+                                                 const int                   amplificationFactor,
+                                                 const bool                  markDifference);
+
+} // namespace video::rgb

@@ -1,4 +1,4 @@
-QT += core xml 
+QT += core xml widgets
 
 TARGET = YUViewUnitTest
 TEMPLATE = app
@@ -6,7 +6,7 @@ TEMPLATE = app
 CONFIG += console
 CONFIG -= app_bundle
 CONFIG -= debug_and_release
-CONFIG += c++17
+CONFIG += c++20
 
 SOURCES += $$files(*.cpp, true)
 HEADERS += $$files(*.h, true)
@@ -14,9 +14,9 @@ HEADERS += $$files(*.h, true)
 INCLUDEPATH += $$top_srcdir/submodules/googletest/googletest/include \
                $$top_srcdir/submodules/googletest/googlemock/include \
                $$top_srcdir/YUViewLib/src \
-               $$top_srcdir/YUViewUnitTest/common
+               $$top_srcdir/YUViewUnitTest/common \
+               $$top_builddir/YUViewLib
 LIBS += -L$$top_builddir/submodules/googletest-qmake/gtest -lgtest
-LIBS += -L$$top_builddir/submodules/googletest-qmake/gtest_main -lgtest_main
 LIBS += -L$$top_builddir/YUViewLib -lYUViewLib
 
 #win32-msvc* {

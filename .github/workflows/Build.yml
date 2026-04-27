@@ -13,7 +13,7 @@ jobs:
       matrix:
         os: [ubuntu-22.04, ubuntu-24.04, ubuntu-22.04-arm, ubuntu-24.04-arm]
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v6
       with:
         submodules: true
     - run: git fetch --prune --unshallow
@@ -30,13 +30,15 @@ jobs:
         make -j$(nproc)
     - name: Run Unittests
       run: $GITHUB_WORKSPACE/build/YUViewUnitTest/YUViewUnitTest
+      env:
+        QT_QPA_PLATFORM: 'offscreen'
   build-mac-native:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
         os: [macos-15, macos-15-intel]
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v6
       with:
         submodules: true
     - run: git fetch --prune --unshallow
@@ -51,13 +53,15 @@ jobs:
         make -j $(sysctl -n hw.logicalcpu)
     - name: Run Unittests
       run: $GITHUB_WORKSPACE/build/YUViewUnitTest/YUViewUnitTest
+      env:
+        QT_QPA_PLATFORM: 'offscreen'
   build-linux-mac:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
         os: [ubuntu-22.04, macos-15]
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v6
       with:
         submodules: true
     - run: git fetch --prune --unshallow
@@ -105,6 +109,8 @@ jobs:
         make -j 4
     - name: Run Unittests
       run: $GITHUB_WORKSPACE/build/YUViewUnitTest/YUViewUnitTest
+      env:
+        QT_QPA_PLATFORM: 'offscreen'
     - name: Build App (Mac)
       if: runner.os	== 'macOS'
       run: |
@@ -125,7 +131,7 @@ jobs:
         mkdir $GITHUB_WORKSPACE/artifacts
         cp YUView.AppImage $GITHUB_WORKSPACE/artifacts/
     - name: Upload Artifact
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v7
       with:
         name: ${{steps.artifacts.outputs.outputZip}}
         path: artifacts
@@ -140,7 +146,7 @@ jobs:
       matrix:
         autoUpdate: [true, false]
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v6
       with:
         submodules: true
     - uses: ilammy/msvc-dev-cmd@v1
@@ -153,6 +159,8 @@ jobs:
         curl -L https://github.com/ChristianFeldmann/YUViewQt/releases/download/QtBase-6.9.0/qtBase-6-9-0-windows-2022.zip -o Qt.zip
         7z x  Qt.zip
         echo "${{ github.workspace }}\..\..\YUViewQt\YUViewQt\Qt\bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+    - name: Test qmake
+      run : qmake --version
     - name: Install libde265
       run: |
         curl -L https://github.com/ChristianFeldmann/libde265/releases/download/v1.1/libde265.dll -o libde265.dll
@@ -176,20 +184,20 @@ jobs:
         echo "Creating Build dir and entering it"
         mkdir build
         cd build
-        echo "Qmake Version:"
-        d:\a\YUViewQt\YUViewQt\Qt\bin\qmake --version
         echo "Executing qmake..."
-        d:\a\YUViewQt\YUViewQt\Qt\bin\qmake CONFIG+=UNITTESTS ..
+        qmake CONFIG+=UNITTESTS ..
         echo "Executing jom:"
         jom
     - name: Run Unittests
-      run: D:\a\YUView\YUView\build\YUViewUnitTest\YUViewUnitTest
+      run: ${{ github.workspace }}\build\YUViewUnitTest\YUViewUnitTest
+      env:
+        QT_QPA_PLATFORM: 'offscreen'
     - name: WindeployQT
       run: |
         mkdir deploy
         cd deploy
         cp ../build/YUViewApp/YUView.exe .
-        d:\a\YUViewQt\YUViewQt\Qt\bin\windeployqt.exe --release --no-compiler-runtime YUView.exe
+        windeployqt --release --no-compiler-runtime YUView.exe
         cp ../openSSL/*.dll .
         mkdir decoder
         cp ..\libde265.dll decoder
@@ -212,19 +220,19 @@ jobs:
         cp deployment/wix/bin/Release/YUViewSetup.msi ./
     - name: Upload Artifact (Autoupdate)
       if: matrix.autoUpdate == true
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v7
       with:
         name: YUView-windows-2022-autoupdate.zip
         path: artifacts
     - name: Upload Artifact (Autoupdate disabled)
       if: matrix.autoUpdate == false
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v7
       with:
         name: YUView-windows-2022.zip
         path: artifacts
     - name: Upload Windows installer Artifact
       if: matrix.autoUpdate == true
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v7
       with:
         name: YYUView-windows-2022.msi
         path: ./YUViewSetup.msi

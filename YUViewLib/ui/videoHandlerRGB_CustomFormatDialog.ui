@@ -57,7 +57,7 @@
       </widget>
      </item>
      <item row="2" column="0">
-      <widget class="QLabel" name="labelEndianess">
+      <widget class="QLabel" name="labelEndianness">
        <property name="text">
         <string>Endianness</string>
        </property>

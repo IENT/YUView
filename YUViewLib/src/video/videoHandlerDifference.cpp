@@ -37,6 +37,7 @@
 
 #include <common/Formatting.h>
 #include <common/Functions.h>
+#include <common/TypedefQtDeprecated.h>
 #include <video/yuv/videoHandlerYUV.h>
 
 using namespace std::string_view_literals;
@@ -102,7 +103,7 @@ void videoHandlerDifference::drawDifferenceFrame(QPainter *painter,
   {
     // Draw the pixel values onto the pixels
     inputVideo[0]->drawPixelValues(
-        painter, frameIdx, videoRect, zoomFactor, inputVideo[1], this->markDifference);
+      painter, frameIdx, videoRect, zoomFactor, inputVideo[1], this->markDifference);
   }
 }
 
@@ -116,18 +117,14 @@ void videoHandlerDifference::loadFrameDifference(int frameIndex, bool)
 
   // Check if the second item is a video and the first one is not. In that case,
   // make sure that the right frame is loaded for the video item.
-  videoHandler *video0 = dynamic_cast<videoHandler *>(inputVideo[0].data());
-  videoHandler *video1 = dynamic_cast<videoHandler *>(inputVideo[1].data());
+  const auto video0 = dynamic_cast<videoHandler *>(inputVideo[0].data());
+  const auto video1 = dynamic_cast<videoHandler *>(inputVideo[1].data());
   if (video0 == nullptr && video1 != nullptr && video1->getCurrentImageIndex() != frameIndex)
     video1->loadFrame(frameIndex);
 
   // Calculate the difference
-  QImage newFrame = inputVideo[0]->calculateDifference(inputVideo[1],
-                                                       frameIndex,
-                                                       frameIndex,
-                                                       differenceInfoList,
-                                                       amplificationFactor,
-                                                       markDifference);
+  auto newFrame = inputVideo[0]->calculateDifference(
+    inputVideo[1], frameIndex, frameIndex, differenceInfoList, amplificationFactor, markDifference);
 
   if (!newFrame.isNull())
   {
@@ -166,7 +163,7 @@ void videoHandlerDifference::setInputVideos(FrameHandler *childVideo0, FrameHand
       auto size0 = inputVideo[0]->getFrameSize();
       auto size1 = inputVideo[1]->getFrameSize();
       auto diffSize =
-          Size(std::min(size0.width, size1.width), std::min(size0.height, size1.height));
+        Size(std::min(size0.width, size1.width), std::min(size0.height, size1.height));
       setFrameSize(diffSize);
     }
 
@@ -177,8 +174,8 @@ void videoHandlerDifference::setInputVideos(FrameHandler *childVideo0, FrameHand
 
 QStringPairList videoHandlerDifference::getPixelValues(const QPoint &pixelPos,
                                                        int           frameIdx,
-                                                       FrameHandler *,
-                                                       const int frameIdx1)
+                                                       const FrameHandler *const,
+                                                       const int frameIdx1) const
 {
   if (!inputsValid())
     return QStringPairList();
@@ -187,8 +184,8 @@ QStringPairList videoHandlerDifference::getPixelValues(const QPoint &pixelPos,
 }
 
 void videoHandlerDifference::guessAndSetPixelFormat(
-    const filesource::frameFormatGuess::GuessedFrameFormat &,
-    const filesource::frameFormatGuess::FileInfoForGuess &)
+  const filesource::frameFormatGuess::GuessedFrameFormat &,
+  const filesource::frameFormatGuess::FileInfoForGuess &)
 {
   assert(false);
 }
@@ -207,7 +204,7 @@ QLayout *videoHandlerDifference::createDifferenceHandlerControls()
 
   // Connect all the change signals from the controls to "connectWidgetSignals()"
   connect(ui.markDifferenceCheckBox,
-          &QCheckBox::stateChanged,
+          QCheckBoxStateChanged,
           this,
           &videoHandlerDifference::slotDifferenceControlChanged);
   connect(ui.codingOrderComboBox,
@@ -297,7 +294,7 @@ void videoHandlerDifference::reportFirstDifferencePosition(QList<InfoItem> &info
             // We found a difference in this block
             infoList.append(InfoItem("First diff LCU", std::to_string(y * widthLCU + x)));
             infoList.append(
-                InfoItem("First diff X,Y", std::to_string(firstX) + "," + std::to_string(firstY)));
+              InfoItem("First diff X,Y", std::to_string(firstX) + "," + std::to_string(firstY)));
             infoList.append(InfoItem("First diff partIndex", std::to_string(partIndex)));
             return;
           }
@@ -309,7 +306,7 @@ void videoHandlerDifference::reportFirstDifferencePosition(QList<InfoItem> &info
             // We found a difference in this block
             infoList.append(InfoItem("First diff LCU", std::to_string(y * widthLCU + x)));
             infoList.append(
-                InfoItem("First diff X,Y", std::to_string(firstX) + "," + std::to_string(firstY)));
+              InfoItem("First diff X,Y", std::to_string(firstX) + "," + std::to_string(firstY)));
             infoList.append(InfoItem("First diff partIndex", std::to_string(partIndex)));
             return;
           }
@@ -475,25 +472,25 @@ bool videoHandlerDifference::hierarchicalPositionYUV(int                        
   const int componentSizeChroma_In = (w_in / subH) * (h_in / subV);
   const int nrBytesLumaPlane_In    = bps_in > 8 ? 2 * componentSizeLuma_In : componentSizeLuma_In;
   const int nrBytesChromaPlane_In =
-      bps_in > 8 ? 2 * componentSizeChroma_In : componentSizeChroma_In;
+    bps_in > 8 ? 2 * componentSizeChroma_In : componentSizeChroma_In;
   // Current item
 
   // Calculate Luma sample difference
   const int stride_in = bps_in > 8 ? w_in * 2 : w_in; // How many bytes to the next y line?
   const int strideC_in =
-      w_in / subH * (bps_in > 8 ? 2 : 1); // How many bytes to the next U/V y line
+    w_in / subH * (bps_in > 8 ? 2 : 1); // How many bytes to the next U/V y line
 
   if (blockSize == 4)
   {
     const unsigned char *srcY1 = (unsigned char *)diffYUV.data();
     const unsigned char *srcU1 = (diffYUVFormat.getPlaneOrder() == yuv::PlaneOrder::YUV ||
                                   diffYUVFormat.getPlaneOrder() == yuv::PlaneOrder::YUVA)
-                                     ? srcY1 + nrBytesLumaPlane_In
-                                     : srcY1 + nrBytesLumaPlane_In + nrBytesChromaPlane_In;
+                                   ? srcY1 + nrBytesLumaPlane_In
+                                   : srcY1 + nrBytesLumaPlane_In + nrBytesChromaPlane_In;
     const unsigned char *srcV1 = (diffYUVFormat.getPlaneOrder() == yuv::PlaneOrder::YUV ||
                                   diffYUVFormat.getPlaneOrder() == yuv::PlaneOrder::YUVA)
-                                     ? srcY1 + nrBytesLumaPlane_In + nrBytesChromaPlane_In
-                                     : srcY1 + nrBytesLumaPlane_In;
+                                   ? srcY1 + nrBytesLumaPlane_In + nrBytesChromaPlane_In
+                                   : srcY1 + nrBytesLumaPlane_In;
 
     // adjust source pointer according to block position
     srcY1 += y * stride_in;
@@ -556,7 +553,7 @@ bool videoHandlerDifference::hierarchicalPositionYUV(int                        
     if (hierarchicalPositionYUV(x, y + b2, b2, firstX, firstY, partIndex, diffYUV, diffYUVFormat))
       return true;
     if (hierarchicalPositionYUV(
-            x + b2, y + b2, b2, firstX, firstY, partIndex, diffYUV, diffYUVFormat))
+          x + b2, y + b2, b2, firstX, firstY, partIndex, diffYUV, diffYUVFormat))
       return true;
   }
   return false;

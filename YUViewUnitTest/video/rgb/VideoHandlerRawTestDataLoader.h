@@ -30,63 +30,38 @@
  *   along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#pragma once
-
-#include <QThread>
-
-#include "LoadingWorker.h"
+#include <QObject>
+#include <queue>
 
 namespace video
 {
+class videoHandler;
+}
 
-#define LOADINGTHREAD_DEBUG_LOADING 0
-#if LOADINGTHREAD_DEBUG_LOADING && !NDEBUG
-#define DEBUG_THREAD qDebug
-#else
-#define DEBUG_THREAD(fmt, ...) ((void)0)
-#endif
+namespace video::rgb::test
+{
 
-class LoadingThread : public QThread
+class videoHandlerDataLoadingTest : public QObject
 {
   Q_OBJECT
 public:
-  LoadingThread(QObject *parent) : QThread(parent)
-  {
-    // Create a new worker and move it to this thread
-    this->threadWorker.reset(new LoadingWorker(nullptr));
-    this->threadWorker->moveToThread(this);
-  }
-  ~LoadingThread() {}
+  videoHandlerDataLoadingTest(video::videoHandler *video);
 
-  void quitWhenDone()
+  struct LoadingRequest
   {
-    this->quitting = true;
-    if (this->threadWorker->isWorking())
-    {
-      // We must wait until the worker is done.
-      DEBUG_THREAD("loadingThread::quitWhenDone waiting for worker to finish...");
-      connect(worker(),
-              &LoadingWorker::loadingFinished,
-              this,
-              [this]
-              {
-                DEBUG_THREAD("loadingThread::quitWhenDone worker done -> quit");
-                quit();
-              });
-    }
-    else
-    {
-      DEBUG_THREAD("loadingThread::quitWhenDone quit now");
-      quit();
-    }
-  }
+    int        frameIdx{0};
+    QByteArray rawData;
+  };
 
-  LoadingWorker *worker() { return this->threadWorker.get(); }
-  bool           isQuitting() { return this->quitting; }
+  void addExpectedLoadingRequests(LoadingRequest expectedLoadingRequest);
+
+public slots:
+  void loadRawTestData(int frameIdx, bool forceDecodingNow);
 
 private:
-  std::unique_ptr<LoadingWorker> threadWorker{};
-  bool quitting{}; // Are er quitting the job? If yes, do not push new jobs to it.
+  video::videoHandler *video{};
+
+  std::queue<LoadingRequest> expectedLoadingRequests;
 };
 
-} // namespace video
+} // namespace video::rgb::test

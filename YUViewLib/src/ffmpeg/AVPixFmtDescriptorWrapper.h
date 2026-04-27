@@ -103,7 +103,7 @@ public:
   QString               aliases{};
   AVComponentDescriptor comp[4];
 
-  bool operator==(const AVPixFmtDescriptorWrapper &a);
+  bool operator==(const AVPixFmtDescriptorWrapper &a) const;
 };
 
 } // namespace FFmpeg
