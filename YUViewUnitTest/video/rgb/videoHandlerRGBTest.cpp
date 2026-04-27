@@ -30,15 +30,24 @@
  *   along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "gtest/gtest.h"
 #include <common/Testing.h>
 #include <video/rgb/videoHandlerRGB.h>
+
+#include "VideoHandlerRawTestDataLoader.h"
 
 namespace video::rgb::test
 {
 
-namespace
-{
+using namespace std::string_literals;
+
+// clang-format off
+const auto TEST_DATA_RGB_8BIT_4x4 = QByteArray::fromHex(
+  "000000" "ffffff" "ff0000" "00ff00"
+  "0000ff" "800000" "008000" "000080"
+  "100000" "001000" "000010" "500000"
+  "005000" "000050" "f00000" "00f000"
+);
+// clang-format on
 
 TEST(videoHandlerRGBTest, testDefaultConstructor)
 {
@@ -55,11 +64,32 @@ TEST(videoHandlerRGBTest, testDefaultConstructor)
   EXPECT_EQ(handler.getRawRGBPixelFormatName(), "RGB 8bit");
 }
 
-// This function is esentially just a dispatch function. Good question how to test this well.
-// TEST(videoHandlerRGBTest, testCalculateDifference)
-// {
-// }
+TEST(videoHandlerRGBTest, testCalculateDifference_sameInputSignal_shouldReturnEmtpyDifference)
+{
+  videoHandlerRGB handler1;
+  handler1.setFrameSize({4, 4});
+  handler1.setRGBPixelFormatByName("RGB 8bit");
+  videoHandlerDataLoadingTest dataLoader(&handler1);
+  dataLoader.addExpectedLoadingRequests({0, TEST_DATA_RGB_8BIT_4x4});
 
-} // namespace
+  videoHandlerRGB handler2;
+  handler2.setFrameSize({4, 4});
+  handler2.setRGBPixelFormatByName("RGB 8bit");
+  videoHandlerDataLoadingTest dataLoader2(&handler2);
+  dataLoader2.addExpectedLoadingRequests({0, TEST_DATA_RGB_8BIT_4x4});
+
+  QList<InfoItem> differenceInfoList;
+  QImage          differenceImage =
+    handler1.calculateDifference(&handler2, 0, 0, differenceInfoList, 1, false);
+
+  EXPECT_FALSE(differenceImage.isNull());
+
+  EXPECT_THAT(differenceInfoList,
+              testing::ElementsAre(InfoItem("Difference domain"s, "RGB 8bit"s),
+                                   InfoItem("MSE R"s, "0.000000"s),
+                                   InfoItem("MSE G"s, "0.000000"s),
+                                   InfoItem("MSE B"s, "0.000000"s),
+                                   InfoItem("MSE All"s, "0.000000"s)));
+}
 
 } // namespace video::rgb::test
