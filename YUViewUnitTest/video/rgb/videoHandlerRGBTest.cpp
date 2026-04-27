@@ -40,6 +40,9 @@ namespace video::rgb::test
 
 using namespace std::string_literals;
 
+namespace
+{
+
 // clang-format off
 const auto TEST_DATA_RGB_8BIT_4x4_ONE = QByteArray::fromHex(
   "000000" "ffffff" "ff0000" "00ff00"
@@ -54,7 +57,77 @@ const auto TEST_DATA_RGB_8BIT_4x4_TWO = QByteArray::fromHex(
   "000000" "ffffff" "ff0000" "00ff00"
   "0000ff" "800000" "008000" "000080"
 );
+
+const auto TEST_DIFFERENCE_ONE_MINUS_TWO = std::array<rgba_t, 16>{
+  rgba_t{112, 128, 128, 255}, rgba_t{255, 255, 255, 255}, rgba_t{255, 128, 112, 255}, rgba_t{ 48, 255, 128, 255},
+  rgba_t{128,  48, 255, 255}, rgba_t{255, 128,  48, 255}, rgba_t{  0, 255, 128, 255}, rgba_t{128,   0, 255, 255},
+  rgba_t{144, 128, 128, 255}, rgba_t{  0,   0,   0, 255}, rgba_t{  0, 128, 144, 255}, rgba_t{208,   0, 128, 255},
+  rgba_t{128, 208,   0, 255}, rgba_t{  0, 128, 208, 255}, rgba_t{255,   0, 128, 255}, rgba_t{128, 255,   0, 255}
+};
+
+// RGB565 (little-endian) test data. Each pixel is encoded as
+// (R << 11) | (G << 5) | B with 5/6/5 bits, written as two bytes low/high.
+// The 16 pixels are designed to exercise positive/negative deltas on each
+// channel as well as combined-channel deltas.
+const auto TEST_DATA_RGB565_4x4_ONE = QByteArray::fromHex(
+  "0000" "ffff" "00f8" "e007"
+  "1f00" "1084" "0000" "0000"
+  "0000" "8a52" "4529" "ffff"
+  "0000" "cf7b" "14a5" "8a52"
+);
+
+const auto TEST_DATA_RGB565_4x4_TWO = QByteArray::fromHex(
+  "0000" "ffff" "0000" "0000"
+  "0000" "0000" "00f8" "e007"
+  "1f00" "4529" "8a52" "0000"
+  "ffff" "cf7b" "8a52" "14a5"
+);
+
+const auto TEST_DIFFERENCE_RGB565_ONE_MINUS_TWO = std::array<rgba_t, 16>{
+  rgba_t{128, 128, 128, 255}, rgba_t{128, 128, 128, 255}, rgba_t{159, 128, 128, 255}, rgba_t{128, 191, 128, 255},
+  rgba_t{128, 128, 159, 255}, rgba_t{144, 160, 144, 255}, rgba_t{ 97, 128, 128, 255}, rgba_t{128,  65, 128, 255},
+  rgba_t{128, 128,  97, 255}, rgba_t{133, 138, 133, 255}, rgba_t{123, 118, 123, 255}, rgba_t{159, 191, 159, 255},
+  rgba_t{ 97,  65,  97, 255}, rgba_t{128, 128, 128, 255}, rgba_t{138, 148, 138, 255}, rgba_t{118, 108, 118, 255}
+};
 // clang-format on
+
+void expectDifferenceImageMatchesExpectedValues(const QImage                 &differenceImage,
+                                                const std::array<rgba_t, 16> &expectedValues)
+{
+  for (int y = 0; y < differenceImage.height(); y++)
+  {
+    for (int x = 0; x < differenceImage.width(); x++)
+    {
+      const auto pixelValue = differenceImage.pixel(x, y);
+      const auto pixelValueRGBA =
+        rgba_t{qRed(pixelValue), qGreen(pixelValue), qBlue(pixelValue), qAlpha(pixelValue)};
+
+      const auto expectedPixelValue = expectedValues[y * 4 + x];
+
+      EXPECT_EQ(expectedPixelValue, pixelValueRGBA)
+        << "Pixel at position (" << x << ", " << y << ") does not match expected value. Expected: ("
+        << expectedPixelValue.r << ", " << expectedPixelValue.g << ", " << expectedPixelValue.b
+        << ", " << expectedPixelValue.a << ") but was: (" << qRed(pixelValue) << ", "
+        << qGreen(pixelValue) << ", " << qBlue(pixelValue) << ", " << qAlpha(pixelValue) << ")";
+    }
+  }
+}
+
+void expectDifferenceImageToBeZero(const QImage &differenceImage)
+{
+  for (int y = 0; y < differenceImage.height(); y++)
+  {
+    for (int x = 0; x < differenceImage.width(); x++)
+    {
+      const auto pixelValue = differenceImage.pixel(x, y);
+      EXPECT_EQ(qRed(pixelValue), 128);
+      EXPECT_EQ(qGreen(pixelValue), 128);
+      EXPECT_EQ(qBlue(pixelValue), 128);
+    }
+  }
+}
+
+} // namespace
 
 TEST(videoHandlerRGBTest, testDefaultConstructor)
 {
@@ -71,7 +144,8 @@ TEST(videoHandlerRGBTest, testDefaultConstructor)
   EXPECT_EQ(handler.getRawRGBPixelFormatName(), "RGB 8bit");
 }
 
-TEST(videoHandlerRGBTest, testCalculateDifference_sameInputSignal_shouldReturnEmtpyDifference)
+TEST(videoHandlerRGBTest,
+     testCalculateDifference_8bitRGBPacked_sameInputSignal_shouldReturnEmtpyDifference)
 {
   videoHandlerRGB handler1;
   handler1.setFrameSize({4, 4});
@@ -93,16 +167,7 @@ TEST(videoHandlerRGBTest, testCalculateDifference_sameInputSignal_shouldReturnEm
   EXPECT_EQ(differenceImage.size(), QSize(4, 4));
   EXPECT_EQ(differenceImage.format(), QImage::Format_RGB32);
 
-  for (int y = 0; y < differenceImage.height(); y++)
-  {
-    for (int x = 0; x < differenceImage.width(); x++)
-    {
-      const auto pixelValue = differenceImage.pixel(x, y);
-      EXPECT_EQ(qRed(pixelValue), 128);
-      EXPECT_EQ(qGreen(pixelValue), 128);
-      EXPECT_EQ(qBlue(pixelValue), 128);
-    }
-  }
+  expectDifferenceImageToBeZero(differenceImage);
 
   EXPECT_THAT(differenceInfoList,
               testing::ElementsAre(InfoItem("Difference domain"s, "RGB 8bit"s),
@@ -110,6 +175,103 @@ TEST(videoHandlerRGBTest, testCalculateDifference_sameInputSignal_shouldReturnEm
                                    InfoItem("MSE G"s, "0.000000"s),
                                    InfoItem("MSE B"s, "0.000000"s),
                                    InfoItem("MSE All"s, "0.000000"s)));
+}
+
+TEST(videoHandlerRGBTest, testCalculateDifference_8bitRGBPacked_shouldReturnDifference)
+{
+  videoHandlerRGB handler1;
+  handler1.setFrameSize({4, 4});
+  handler1.setRGBPixelFormatByName("RGB 8bit");
+  videoHandlerDataLoadingTest dataLoader(&handler1);
+  dataLoader.addExpectedLoadingRequests({0, TEST_DATA_RGB_8BIT_4x4_ONE});
+
+  videoHandlerRGB handler2;
+  handler2.setFrameSize({4, 4});
+  handler2.setRGBPixelFormatByName("RGB 8bit");
+  videoHandlerDataLoadingTest dataLoader2(&handler2);
+  dataLoader2.addExpectedLoadingRequests({0, TEST_DATA_RGB_8BIT_4x4_TWO});
+
+  QList<InfoItem> differenceInfoList;
+  QImage          differenceImage =
+    handler1.calculateDifference(&handler2, 0, 0, differenceInfoList, 1, false);
+
+  EXPECT_FALSE(differenceImage.isNull());
+  EXPECT_EQ(differenceImage.size(), QSize(4, 4));
+  EXPECT_EQ(differenceImage.format(), QImage::Format_RGB32);
+
+  expectDifferenceImageMatchesExpectedValues(differenceImage, TEST_DIFFERENCE_ONE_MINUS_TWO);
+
+  EXPECT_THAT(differenceInfoList,
+              testing::ElementsAre(InfoItem("Difference domain"s, "RGB 8bit"s),
+                                   InfoItem("MSE R"s, "1646.015625"s),
+                                   InfoItem("MSE G"s, "1582.265625"s),
+                                   InfoItem("MSE B"s, "1196.015625"s),
+                                   InfoItem("MSE All"s, "4424.296875"s)));
+}
+
+TEST(videoHandlerRGBTest,
+     testCalculateDifference_RGB565Packed_sameInputSignal_shouldReturnEmtpyDifference)
+{
+  videoHandlerRGB handler1;
+  handler1.setFrameSize({4, 4});
+  handler1.setRGBPixelFormatByName("RGB565");
+  videoHandlerDataLoadingTest dataLoader(&handler1);
+  dataLoader.addExpectedLoadingRequests({0, TEST_DATA_RGB565_4x4_ONE});
+
+  videoHandlerRGB handler2;
+  handler2.setFrameSize({4, 4});
+  handler2.setRGBPixelFormatByName("RGB565");
+  videoHandlerDataLoadingTest dataLoader2(&handler2);
+  dataLoader2.addExpectedLoadingRequests({0, TEST_DATA_RGB565_4x4_ONE});
+
+  QList<InfoItem> differenceInfoList;
+  QImage          differenceImage =
+    handler1.calculateDifference(&handler2, 0, 0, differenceInfoList, 1, false);
+
+  EXPECT_FALSE(differenceImage.isNull());
+  EXPECT_EQ(differenceImage.size(), QSize(4, 4));
+  EXPECT_EQ(differenceImage.format(), QImage::Format_RGB32);
+
+  expectDifferenceImageToBeZero(differenceImage);
+
+  EXPECT_THAT(differenceInfoList,
+              testing::ElementsAre(InfoItem("Difference domain"s, "RGB565"s),
+                                   InfoItem("MSE R"s, "0.000000"s),
+                                   InfoItem("MSE G"s, "0.000000"s),
+                                   InfoItem("MSE B"s, "0.000000"s),
+                                   InfoItem("MSE All"s, "0.000000"s)));
+}
+
+TEST(videoHandlerRGBTest, testCalculateDifference_RGB565Packed_shouldReturnDifference)
+{
+  videoHandlerRGB handler1;
+  handler1.setFrameSize({4, 4});
+  handler1.setRGBPixelFormatByName("RGB565");
+  videoHandlerDataLoadingTest dataLoader(&handler1);
+  dataLoader.addExpectedLoadingRequests({0, TEST_DATA_RGB565_4x4_ONE});
+
+  videoHandlerRGB handler2;
+  handler2.setFrameSize({4, 4});
+  handler2.setRGBPixelFormatByName("RGB565");
+  videoHandlerDataLoadingTest dataLoader2(&handler2);
+  dataLoader2.addExpectedLoadingRequests({0, TEST_DATA_RGB565_4x4_TWO});
+
+  QList<InfoItem> differenceInfoList;
+  QImage          differenceImage =
+    handler1.calculateDifference(&handler2, 0, 0, differenceInfoList, 1, false);
+
+  EXPECT_FALSE(differenceImage.isNull());
+  EXPECT_EQ(differenceImage.size(), QSize(4, 4));
+  EXPECT_EQ(differenceImage.format(), QImage::Format_RGB32);
+
+  expectDifferenceImageMatchesExpectedValues(differenceImage, TEST_DIFFERENCE_RGB565_ONE_MINUS_TWO);
+
+  EXPECT_THAT(differenceInfoList,
+              testing::ElementsAre(InfoItem("Difference domain"s, "RGB565"s),
+                                   InfoItem("MSE R"s, "16.992188"s),
+                                   InfoItem("MSE G"s, "69.921875"s),
+                                   InfoItem("MSE B"s, "16.992188"s),
+                                   InfoItem("MSE All"s, "103.906250"s)));
 }
 
 } // namespace video::rgb::test
