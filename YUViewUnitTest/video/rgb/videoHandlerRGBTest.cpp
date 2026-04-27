@@ -43,6 +43,9 @@ using namespace std::string_literals;
 namespace
 {
 
+constexpr auto EXPECTED_RGB_FORMAT =
+  is_Q_OS_WIN ? QImage::Format_ARGB32_Premultiplied : QImage::Format_RGB32;
+
 // clang-format off
 const auto TEST_DATA_RGB_8BIT_4x4_ONE = QByteArray::fromHex(
   "000000" "ffffff" "ff0000" "00ff00"
@@ -165,7 +168,7 @@ TEST(videoHandlerRGBTest,
 
   EXPECT_FALSE(differenceImage.isNull());
   EXPECT_EQ(differenceImage.size(), QSize(4, 4));
-  EXPECT_EQ(differenceImage.format(), QImage::Format_RGB32);
+  EXPECT_EQ(differenceImage.format(), EXPECTED_RGB_FORMAT);
 
   expectDifferenceImageToBeZero(differenceImage);
 
@@ -197,7 +200,7 @@ TEST(videoHandlerRGBTest, testCalculateDifference_8bitRGBPacked_shouldReturnDiff
 
   EXPECT_FALSE(differenceImage.isNull());
   EXPECT_EQ(differenceImage.size(), QSize(4, 4));
-  EXPECT_EQ(differenceImage.format(), QImage::Format_RGB32);
+  EXPECT_EQ(differenceImage.format(), EXPECTED_RGB_FORMAT);
 
   expectDifferenceImageMatchesExpectedValues(differenceImage, TEST_DIFFERENCE_ONE_MINUS_TWO);
 
@@ -230,7 +233,7 @@ TEST(videoHandlerRGBTest,
 
   EXPECT_FALSE(differenceImage.isNull());
   EXPECT_EQ(differenceImage.size(), QSize(4, 4));
-  EXPECT_EQ(differenceImage.format(), QImage::Format_RGB32);
+  EXPECT_EQ(differenceImage.format(), EXPECTED_RGB_FORMAT);
 
   expectDifferenceImageToBeZero(differenceImage);
 
@@ -262,7 +265,7 @@ TEST(videoHandlerRGBTest, testCalculateDifference_RGB565Packed_shouldReturnDiffe
 
   EXPECT_FALSE(differenceImage.isNull());
   EXPECT_EQ(differenceImage.size(), QSize(4, 4));
-  EXPECT_EQ(differenceImage.format(), QImage::Format_RGB32);
+  EXPECT_EQ(differenceImage.format(), EXPECTED_RGB_FORMAT);
 
   expectDifferenceImageMatchesExpectedValues(differenceImage, TEST_DIFFERENCE_RGB565_ONE_MINUS_TWO);
 

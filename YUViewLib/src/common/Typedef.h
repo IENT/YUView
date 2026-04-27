@@ -62,21 +62,21 @@
 // Convenience macro definitions which can be used in if clauses:
 // if (is_Q_OS_MAC) ...
 #ifdef Q_OS_MAC
-const bool is_Q_OS_MAC = true;
+constexpr bool is_Q_OS_MAC = true;
 #else
-const bool is_Q_OS_MAC = false;
+constexpr bool is_Q_OS_MAC = false;
 #endif
 
 #ifdef Q_OS_WIN
-const bool is_Q_OS_WIN = true;
+constexpr bool is_Q_OS_WIN = true;
 #else
-const bool is_Q_OS_WIN = false;
+constexpr bool is_Q_OS_WIN = false;
 #endif
 
 #ifdef Q_OS_LINUX
-const bool is_Q_OS_LINUX = true;
+constexpr bool is_Q_OS_LINUX = true;
 #else
-const bool is_Q_OS_LINUX = false;
+constexpr bool is_Q_OS_LINUX = false;
 #endif
 
 // Set this to one to enable the code that handles single instances.
