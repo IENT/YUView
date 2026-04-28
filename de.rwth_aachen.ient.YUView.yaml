@@ -1,6 +1,6 @@
 app-id: de.rwth_aachen.ient.YUView
 runtime: org.kde.Platform
-runtime-version: '6.7'
+runtime-version: '6.9'
 sdk: org.kde.Sdk
 command: YUView
 finish-args:
@@ -35,8 +35,8 @@ modules:
       - --enable-encoder=png
     sources:
       - type: archive
-        url: https://www.ffmpeg.org/releases/ffmpeg-4.2.3.tar.xz
-        sha256: 9df6c90aed1337634c1fb026fb01c154c29c82a64ea71291ff2da9aacb9aad31
+        url: https://www.ffmpeg.org/releases/ffmpeg-7.1.2.tar.xz
+        sha256: 089bc60fb59d6aecc5d994ff530fd0dcb3ee39aa55867849a2bbc4e555f9c304
     cleanup:
       - /share/ffmpeg/examples
 
