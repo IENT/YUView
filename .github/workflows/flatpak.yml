@@ -8,7 +8,7 @@ on:
   # Since the workflow takes significantly longer (because of the ffmpeg build) we want to execute 
   # this as little as possible.
   push:
-    branches: [ develop, update/flatpackBuild ]
+    branches: [ develop ]
   release:
     branches: [ develop ]
     types:
