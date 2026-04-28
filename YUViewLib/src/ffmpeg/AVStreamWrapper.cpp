@@ -44,8 +44,8 @@ typedef struct AVStream_56
 {
   int               index;
   int               id;
-  AVCodecContext *  codec;
-  void *            priv_data;
+  AVCodecContext   *codec;
+  void             *priv_data;
   struct AVFrac     pts;
   AVRational        time_base;
   int64_t           start_time;
@@ -54,7 +54,7 @@ typedef struct AVStream_56
   int               disposition;
   enum AVDiscard    discard;
   AVRational        sample_aspect_ratio;
-  AVDictionary *    metadata;
+  AVDictionary     *metadata;
   AVRational        avg_frame_rate;
   AVPacket_56       attached_pic;
   AVPacketSideData *side_data;
@@ -64,18 +64,18 @@ typedef struct AVStream_56
 
 typedef struct AVProbeData_57
 {
-  const char *   filename;
+  const char    *filename;
   unsigned char *buf;
   int            buf_size;
-  const char *   mime_type;
+  const char    *mime_type;
 } AVProbeData_57;
 
 typedef struct AVStream_57
 {
   int               index;
   int               id;
-  AVCodecContext *  codec; // Deprecated. Might be removed in the next major version.
-  void *            priv_data;
+  AVCodecContext   *codec; // Deprecated. Might be removed in the next major version.
+  void             *priv_data;
   struct AVFrac     pts; // Deprecated. Might be removed in the next major version.
   AVRational        time_base;
   int64_t           start_time;
@@ -84,7 +84,7 @@ typedef struct AVStream_57
   int               disposition;
   enum AVDiscard    discard;
   AVRational        sample_aspect_ratio;
-  AVDictionary *    metadata;
+  AVDictionary     *metadata;
   AVRational        avg_frame_rate;
   AVPacket_57_58    attached_pic;
   AVPacketSideData *side_data;
@@ -109,7 +109,7 @@ typedef struct AVStream_57
     int     fps_first_dts_idx;
     int64_t fps_last_dts;
     int     fps_last_dts_idx;
-  } * info;
+  }                           *info;
   int                          pts_wrap_bits;
   int64_t                      first_dts;
   int64_t                      cur_dts;
@@ -119,7 +119,7 @@ typedef struct AVStream_57
   int                          codec_info_nb_frames;
   enum AVStreamParseType       need_parsing;
   struct AVCodecParserContext *parser;
-  struct AVPacketList *        last_in_packet_buffer;
+  struct AVPacketList         *last_in_packet_buffer;
   AVProbeData_57               probe_data;
 #define MAX_REORDER_DELAY 16
   int64_t       pts_buffer[MAX_REORDER_DELAY + 1];
@@ -149,10 +149,10 @@ typedef struct AVStream_57
   int           inject_global_side_data;
   // All fields above this line are not part of the public API.
   // All fields below are part of the public API and ABI again.
-  char *             recommended_encoder_configuration;
+  char              *recommended_encoder_configuration;
   AVRational         display_aspect_ratio;
-  struct FFFrac *    priv_pts;
-  AVStreamInternal * internal;
+  struct FFFrac     *priv_pts;
+  AVStreamInternal  *internal;
   AVCodecParameters *codecpar;
 } AVStream_57;
 
@@ -160,8 +160,8 @@ typedef struct AVStream_58
 {
   int                index;
   int                id;
-  AVCodecContext *   codec;
-  void *             priv_data;
+  AVCodecContext    *codec;
+  void              *priv_data;
   AVRational         time_base;
   int64_t            start_time;
   int64_t            duration;
@@ -169,14 +169,14 @@ typedef struct AVStream_58
   int                disposition;
   enum AVDiscard     discard;
   AVRational         sample_aspect_ratio;
-  AVDictionary *     metadata;
+  AVDictionary      *metadata;
   AVRational         avg_frame_rate;
   AVPacket_57_58     attached_pic;
-  AVPacketSideData * side_data;
+  AVPacketSideData  *side_data;
   int                nb_side_data;
   int                event_flags;
   AVRational         r_frame_rate;
-  char *             recommended_encoder_configuration;
+  char              *recommended_encoder_configuration;
   AVCodecParameters *codecpar;
 
   // All field following this line are not part of the public API and may change/be removed.
@@ -186,7 +186,7 @@ typedef struct AVStream_59
 {
   int                index;
   int                id;
-  void *             priv_data;
+  void              *priv_data;
   AVRational         time_base;
   int64_t            start_time;
   int64_t            duration;
@@ -194,10 +194,10 @@ typedef struct AVStream_59
   int                disposition;
   enum AVDiscard     discard;
   AVRational         sample_aspect_ratio;
-  AVDictionary *     metadata;
+  AVDictionary      *metadata;
   AVRational         avg_frame_rate;
-  AVPacket_59_60     attached_pic;
-  AVPacketSideData * side_data;
+  AVPacket_59_60_61  attached_pic;
+  AVPacketSideData  *side_data;
   int                nb_side_data;
   int                event_flags;
   AVRational         r_frame_rate;
@@ -205,13 +205,13 @@ typedef struct AVStream_59
   int                pts_wrap_bits;
 } AVStream_59;
 
-typedef struct AVStream_60
+typedef struct AVStream_60_61
 {
-  const AVClass *    av_class;
+  const AVClass     *av_class;
   int                index;
   int                id;
   AVCodecParameters *codecpar;
-  void *             priv_data;
+  void              *priv_data;
   AVRational         time_base;
   int64_t            start_time;
   int64_t            duration;
@@ -219,15 +219,15 @@ typedef struct AVStream_60
   int                disposition;
   enum AVDiscard     discard;
   AVRational         sample_aspect_ratio;
-  AVDictionary *     metadata;
+  AVDictionary      *metadata;
   AVRational         avg_frame_rate;
-  AVPacket_59_60     attached_pic;
-  AVPacketSideData * side_data;
+  AVPacket_59_60_61  attached_pic;
+  AVPacketSideData  *side_data;
   int                nb_side_data;
   int                event_flags;
   AVRational         r_frame_rate;
   int                pts_wrap_bits;
-} AVStream_60;
+} AVStream_60_61;
 
 } // namespace
 
@@ -415,9 +415,9 @@ void AVStreamWrapper::update()
     this->event_flags         = p->event_flags;
     this->codecpar            = AVCodecParametersWrapper(p->codecpar, libVer);
   }
-  else if (libVer.avformat.major == 60)
+  else if (libVer.avformat.major == 60 || libVer.avformat.major == 61)
   {
-    auto p                    = reinterpret_cast<AVStream_60 *>(this->stream);
+    auto p                    = reinterpret_cast<AVStream_60_61 *>(this->stream);
     this->index               = p->index;
     this->id                  = p->id;
     this->time_base           = p->time_base;
@@ -451,15 +451,15 @@ QStringPairList AVStreamWrapper::getInfoText(AVCodecIDWrapper &codecIdWrapper)
   info.append(QStringPair("Codec ID", QString::number((int)getCodecID())));
   info.append(QStringPair("Codec Name", codecIdWrapper.getCodecName()));
   info.append(
-      QStringPair("Time base", QString("%1/%2").arg(this->time_base.num).arg(this->time_base.den)));
+    QStringPair("Time base", QString("%1/%2").arg(this->time_base.num).arg(this->time_base.den)));
   info.append(QStringPair("Start Time",
                           QString("%1 (%2)")
-                              .arg(this->start_time)
-                              .arg(timestampToString(this->start_time, this->time_base))));
+                            .arg(this->start_time)
+                            .arg(timestampToString(this->start_time, this->time_base))));
   info.append(QStringPair("Duration",
                           QString("%1 (%2)")
-                              .arg(this->duration)
-                              .arg(timestampToString(this->duration, this->time_base))));
+                            .arg(this->duration)
+                            .arg(timestampToString(this->duration, this->time_base))));
   info.append(QStringPair("Number Frames", QString::number(this->nb_frames)));
 
   if (this->disposition != 0)
@@ -501,17 +501,17 @@ QStringPairList AVStreamWrapper::getInfoText(AVCodecIDWrapper &codecIdWrapper)
   }
 
   info.append(QStringPair(
-      "Sample Aspect Ratio",
-      QString("%1:%2").arg(this->sample_aspect_ratio.num).arg(this->sample_aspect_ratio.den)));
+    "Sample Aspect Ratio",
+    QString("%1:%2").arg(this->sample_aspect_ratio.num).arg(this->sample_aspect_ratio.den)));
 
   auto divFrameRate = 0.0;
   if (this->avg_frame_rate.den > 0)
     divFrameRate = double(this->avg_frame_rate.num) / double(this->avg_frame_rate.den);
   info.append(QStringPair("Average Frame Rate",
                           QString("%1/%2 (%3)")
-                              .arg(this->avg_frame_rate.num)
-                              .arg(this->avg_frame_rate.den)
-                              .arg(divFrameRate, 0, 'f', 2)));
+                            .arg(this->avg_frame_rate.num)
+                            .arg(this->avg_frame_rate.den)
+                            .arg(divFrameRate, 0, 'f', 2)));
 
   info += this->codecpar.getInfoText();
   return info;

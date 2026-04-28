@@ -42,6 +42,7 @@
 #include <QWidget>
 
 #include "ui/widgets/PlaylistTreeWidget.h"
+#include "LoadingThread.h"
 
 namespace video
 {
@@ -178,22 +179,18 @@ private:
   // The cache of these items will be cleared when caching has halted.
   QList<playlistItem *> itemsToClearCache;
 
-  // A simple QObject (to move to threads) that gets a pointer to a playlist item and loads a frame
-  // in that item.
-  class loadingThread;
-
   // A list of caching threads that process caching of frames in parallel in the background
-  QList<loadingThread *> cachingThreadList;
+  QList<LoadingThread *> cachingThreadList;
 
   // Two threads with a higher priority that performs interactive loading (if the user is the source
   // of the request)
-  loadingThread *interactiveThread[2];
+  LoadingThread *interactiveThread[2];
   playlistItem * interactiveItemQueued[2];
   int            interactiveItemQueued_Idx[2];
 
   // Get the next item and frame to cache from the queue and push it to the given worker.
   // Return false if there are no more jobs to be pushed.
-  bool pushNextJobToCachingThread(loadingThread *thread);
+  bool pushNextJobToCachingThread(LoadingThread *thread);
 
   bool updateCacheQueueAndRestartWorker;
 

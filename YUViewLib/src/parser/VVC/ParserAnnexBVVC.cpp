@@ -545,7 +545,7 @@ ParserAnnexBVVC::parseAndAddNALUnit(int                                         
   }
 
   DEBUG_VVC("ParserAnnexBVVC::parseAndAddNALUnit NAL " +
-            QString::fromStdString(specificDescription));
+            QString::fromStdString(specificDescription.str()));
 
   if (this->auDelimiterDetector.isStartOfNewAU(nalVVC,
                                                updatedParsingState.currentPictureHeaderStructure))

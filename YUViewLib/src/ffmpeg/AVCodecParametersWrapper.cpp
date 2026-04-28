@@ -67,6 +67,36 @@ typedef struct AVCodecParameters_57_58_59_60
   // Actually, there is more here, but the variables above are the only we need.
 } AVCodecParameters_57_58_59_60;
 
+typedef struct AVCodecParameters_61
+{
+  AVMediaType                   codec_type;
+  AVCodecID                     codec_id;
+  uint32_t                      codec_tag;
+  uint8_t *                     extradata;
+  int                           extradata_size;
+  AVPacketSideData *            coded_side_data;
+  int                           nb_coded_side_data;
+  int                           format;
+  int64_t                       bit_rate;
+  int                           bits_per_coded_sample;
+  int                           bits_per_raw_sample;
+  int                           profile;
+  int                           level;
+  int                           width;
+  int                           height;
+  AVRational                    sample_aspect_ratio;
+  AVRational                    framerate;
+  AVFieldOrder                  field_order;
+  AVColorRange                  color_range;
+  AVColorPrimaries              color_primaries;
+  AVColorTransferCharacteristic color_trc;
+  AVColorSpace                  color_space;
+  AVChromaLocation              chroma_location;
+  int                           video_delay;
+
+  // Actually, there is more here, but the variables above are the only we need.
+} AVCodecParameters_61;
+
 } // namespace
 
 AVCodecParametersWrapper::AVCodecParametersWrapper(AVCodecParameters *p, LibraryVersion v)
@@ -260,13 +290,44 @@ void AVCodecParametersWrapper::setClearValues()
     p->chroma_location = AVCHROMA_LOC_UNSPECIFIED;
     p->video_delay     = 0;
   }
+  else if (this->libVer.avformat.major == 61)
+  {
+    auto p                   = reinterpret_cast<AVCodecParameters_61 *>(this->param);
+    p->codec_type            = AVMEDIA_TYPE_UNKNOWN;
+    p->codec_id              = AV_CODEC_ID_NONE;
+    p->codec_tag             = 0;
+    p->extradata             = nullptr;
+    p->extradata_size        = 0;
+    p->format                = 0;
+    p->bit_rate              = 0;
+    p->bits_per_coded_sample = 0;
+    p->bits_per_raw_sample   = 0;
+    p->profile               = 0;
+    p->level                 = 0;
+    p->width                 = 0;
+    p->height                = 0;
+    {
+      AVRational ratio;
+      ratio.num              = 1;
+      ratio.den              = 1;
+      p->sample_aspect_ratio = ratio;
+    }
+    p->field_order     = AV_FIELD_UNKNOWN;
+    p->color_range     = AVCOL_RANGE_UNSPECIFIED;
+    p->color_primaries = AVCOL_PRI_UNSPECIFIED;
+    p->color_trc       = AVCOL_TRC_UNSPECIFIED;
+    p->color_space     = AVCOL_SPC_UNSPECIFIED;
+    p->chroma_location = AVCHROMA_LOC_UNSPECIFIED;
+    p->video_delay     = 0;
+  }
   this->update();
 }
 
 void AVCodecParametersWrapper::setAVMediaType(AVMediaType type)
 {
   if (this->libVer.avformat.major == 57 || this->libVer.avformat.major == 58 ||
-      this->libVer.avformat.major == 59 || this->libVer.avformat.major == 60)
+      this->libVer.avformat.major == 59 || this->libVer.avformat.major == 60 ||
+      this->libVer.avformat.major == 61)
   {
     auto p           = reinterpret_cast<AVCodecParameters_57_58_59_60 *>(this->param);
     p->codec_type    = type;
@@ -283,15 +344,29 @@ void AVCodecParametersWrapper::setAVCodecID(AVCodecID id)
     p->codec_id    = id;
     this->codec_id = id;
   }
+  else if (this->libVer.avformat.major == 61)
+  {
+    auto p         = reinterpret_cast<AVCodecParameters_61 *>(this->param);
+    p->codec_id    = id;
+    this->codec_id = id;
+  }
 }
 
 void AVCodecParametersWrapper::setExtradata(QByteArray data)
 {
   if (this->libVer.avformat.major == 57 || this->libVer.avformat.major == 58 ||
-      this->libVer.avformat.major == 59 || this->libVer.avformat.major == 60)
+      this->libVer.avformat.major == 59 || this->libVer.avformat.major == 60 ||
+      this->libVer.avformat.major == 61)
   {
     this->extradata   = data;
     auto p            = reinterpret_cast<AVCodecParameters_57_58_59_60 *>(this->param);
+    p->extradata      = reinterpret_cast<uint8_t *>(this->extradata.data());
+    p->extradata_size = this->extradata.length();
+  }
+  else if (this->libVer.avformat.major == 61)
+  {
+    this->extradata   = data;
+    auto p            = reinterpret_cast<AVCodecParameters_61 *>(this->param);
     p->extradata      = reinterpret_cast<uint8_t *>(this->extradata.data());
     p->extradata_size = this->extradata.length();
   }
@@ -308,6 +383,14 @@ void AVCodecParametersWrapper::setSize(Size size)
     this->width  = size.width;
     this->height = size.height;
   }
+  else if (this->libVer.avformat.major == 61)
+  {
+    auto p       = reinterpret_cast<AVCodecParameters_61 *>(this->param);
+    p->width     = size.width;
+    p->height    = size.height;
+    this->width  = size.width;
+    this->height = size.height;
+  }
 }
 
 void AVCodecParametersWrapper::setAVPixelFormat(AVPixelFormat format)
@@ -316,6 +399,12 @@ void AVCodecParametersWrapper::setAVPixelFormat(AVPixelFormat format)
       this->libVer.avformat.major == 59 || this->libVer.avformat.major == 60)
   {
     auto p       = reinterpret_cast<AVCodecParameters_57_58_59_60 *>(this->param);
+    p->format    = format;
+    this->format = format;
+  }
+  else if (this->libVer.avformat.major == 61)
+  {
+    auto p       = reinterpret_cast<AVCodecParameters_61 *>(this->param);
     p->format    = format;
     this->format = format;
   }
@@ -332,6 +421,14 @@ void AVCodecParametersWrapper::setProfileLevel(int profile, int level)
     this->profile = profile;
     this->level   = level;
   }
+  else if (this->libVer.avformat.major == 61)
+  {
+    auto p       = reinterpret_cast<AVCodecParameters_61 *>(this->param);
+    p->profile    = profile;
+    p->level      = level;
+    this->profile = profile;
+    this->level   = level;
+  }
 }
 
 void AVCodecParametersWrapper::setSampleAspectRatio(int num, int den)
@@ -340,6 +437,15 @@ void AVCodecParametersWrapper::setSampleAspectRatio(int num, int den)
       this->libVer.avformat.major == 59 || this->libVer.avformat.major == 60)
   {
     auto       p = reinterpret_cast<AVCodecParameters_57_58_59_60 *>(param);
+    AVRational ratio;
+    ratio.num                 = num;
+    ratio.den                 = den;
+    p->sample_aspect_ratio    = ratio;
+    this->sample_aspect_ratio = ratio;
+  }
+  else if (this->libVer.avformat.major == 61)
+  {
+    auto p       = reinterpret_cast<AVCodecParameters_61 *>(this->param);
     AVRational ratio;
     ratio.num                 = num;
     ratio.den                 = den;
@@ -362,6 +468,31 @@ void AVCodecParametersWrapper::update()
            this->libVer.avformat.major == 59 || this->libVer.avformat.major == 60)
   {
     auto p = reinterpret_cast<AVCodecParameters_57_58_59_60 *>(this->param);
+
+    this->codec_type            = p->codec_type;
+    this->codec_id              = p->codec_id;
+    this->codec_tag             = p->codec_tag;
+    this->extradata             = QByteArray((const char *)p->extradata, p->extradata_size);
+    this->format                = p->format;
+    this->bit_rate              = p->bit_rate;
+    this->bits_per_coded_sample = p->bits_per_coded_sample;
+    this->bits_per_raw_sample   = p->bits_per_raw_sample;
+    this->profile               = p->profile;
+    this->level                 = p->level;
+    this->width                 = p->width;
+    this->height                = p->height;
+    this->sample_aspect_ratio   = p->sample_aspect_ratio;
+    this->field_order           = p->field_order;
+    this->color_range           = p->color_range;
+    this->color_primaries       = p->color_primaries;
+    this->color_trc             = p->color_trc;
+    this->color_space           = p->color_space;
+    this->chroma_location       = p->chroma_location;
+    this->video_delay           = p->video_delay;
+  }
+  else if (this->libVer.avformat.major == 61)
+  {
+    auto p       = reinterpret_cast<AVCodecParameters_61 *>(this->param);
 
     this->codec_type            = p->codec_type;
     this->codec_id              = p->codec_id;

@@ -62,21 +62,21 @@
 // Convenience macro definitions which can be used in if clauses:
 // if (is_Q_OS_MAC) ...
 #ifdef Q_OS_MAC
-const bool is_Q_OS_MAC = true;
+constexpr bool is_Q_OS_MAC = true;
 #else
-const bool is_Q_OS_MAC = false;
+constexpr bool is_Q_OS_MAC = false;
 #endif
 
 #ifdef Q_OS_WIN
-const bool is_Q_OS_WIN = true;
+constexpr bool is_Q_OS_WIN = true;
 #else
-const bool is_Q_OS_WIN = false;
+constexpr bool is_Q_OS_WIN = false;
 #endif
 
 #ifdef Q_OS_LINUX
-const bool is_Q_OS_LINUX = true;
+constexpr bool is_Q_OS_LINUX = true;
 #else
-const bool is_Q_OS_LINUX = false;
+constexpr bool is_Q_OS_LINUX = false;
 #endif
 
 // Set this to one to enable the code that handles single instances.
@@ -256,50 +256,3 @@ enum recacheIndicator
                  // useless in the cache.
 };
 Q_DECLARE_METATYPE(recacheIndicator)
-
-#if QT_VERSION <= 0x050700
-// copied from newer version of qglobal.h
-template <typename... Args> struct QNonConstOverload
-{
-  template <typename R, typename T>
-  Q_DECL_CONSTEXPR auto operator()(R (T::*ptr)(Args...)) const Q_DECL_NOTHROW->decltype(ptr)
-  {
-    return ptr;
-  }
-  template <typename R, typename T>
-  static Q_DECL_CONSTEXPR auto of(R (T::*ptr)(Args...)) Q_DECL_NOTHROW -> decltype(ptr)
-  {
-    return ptr;
-  }
-};
-template <typename... Args> struct QConstOverload
-{
-  template <typename R, typename T>
-  Q_DECL_CONSTEXPR auto operator()(R (T::*ptr)(Args...) const) const Q_DECL_NOTHROW->decltype(ptr)
-  {
-    return ptr;
-  }
-  template <typename R, typename T>
-  static Q_DECL_CONSTEXPR auto of(R (T::*ptr)(Args...) const) Q_DECL_NOTHROW -> decltype(ptr)
-  {
-    return ptr;
-  }
-};
-template <typename... Args> struct QOverload : QConstOverload<Args...>, QNonConstOverload<Args...>
-{
-  using QConstOverload<Args...>::of;
-  using QConstOverload<Args...>::operator();
-  using QNonConstOverload<Args...>::of;
-  using QNonConstOverload<Args...>::operator();
-  template <typename R>
-  Q_DECL_CONSTEXPR auto operator()(R (*ptr)(Args...)) const Q_DECL_NOTHROW->decltype(ptr)
-  {
-    return ptr;
-  }
-  template <typename R>
-  static Q_DECL_CONSTEXPR auto of(R (*ptr)(Args...)) Q_DECL_NOTHROW -> decltype(ptr)
-  {
-    return ptr;
-  }
-};
-#endif

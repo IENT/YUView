@@ -35,7 +35,7 @@
 #include <QWidget>
 
 #include "PlaylistTreeWidget.h"
-#include <video/VideoCache.h>
+#include <video/caching/VideoCache.h>
 
 namespace VideoCacheStatusWidgetNamespace
 {

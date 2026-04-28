@@ -33,6 +33,7 @@
 #pragma once
 
 #include <common/EnumMapper.h>
+#include <optional>
 #include <video/videoHandler.h>
 #include <video/yuv/PixelFormatYUV.h>
 
@@ -57,10 +58,10 @@ enum class ComponentDisplayMode
 };
 
 const EnumMapper<ComponentDisplayMode, 4> ComponentDisplayModeMapper = {
-    std::make_pair(ComponentDisplayMode::DisplayAll, "Y'CbCr"),
-    std::make_pair(ComponentDisplayMode::DisplayY, "Luma (Y) Only"),
-    std::make_pair(ComponentDisplayMode::DisplayCb, "Cb only"),
-    std::make_pair(ComponentDisplayMode::DisplayCr, "Cr only")};
+  std::make_pair(ComponentDisplayMode::DisplayAll, "Y'CbCr"),
+  std::make_pair(ComponentDisplayMode::DisplayY, "Luma (Y) Only"),
+  std::make_pair(ComponentDisplayMode::DisplayCb, "Cb only"),
+  std::make_pair(ComponentDisplayMode::DisplayCr, "Cr only")};
 
 struct ConversionSettings
 {
@@ -102,10 +103,10 @@ public:
   // If a second item is provided, return the difference values to that item at the given position.
   // If th second item cannot be cast to a videoHandlerYUV, we call the FrameHandler::getPixelValues
   // function.
-  virtual QStringPairList getPixelValues(const QPoint &pixelPos,
-                                         int           frameIdx,
-                                         FrameHandler *item2     = nullptr,
-                                         const int     frameIdx1 = 0) override;
+  virtual QStringPairList getPixelValues(const QPoint             &pixelPos,
+                                         int                       frameIdx,
+                                         const FrameHandler *const item2     = nullptr,
+                                         const int                 frameIdx1 = 0) const override;
 
   // Overload from playlistItemVideo. Calculate the difference of this playlistItemYuvSource
   // to another playlistItemVideo. If item2 cannot be converted to a playlistItemYuvSource,
@@ -133,12 +134,12 @@ public:
   virtual void setFormatFromCorrelation(const QByteArray &rawYUVData,
                                         int64_t           fileSize = -1) override;
 
-  virtual QString getFormatAsString() const override
+  virtual std::optional<std::string> getFormatAsString() const override
   {
-    return FrameHandler::getFormatAsString() + ";YUV;" +
-           QString::fromStdString(this->srcPixelFormat.getName());
+    const auto frameFormat = FrameHandler::getFormatAsString();
+    return *frameFormat + ";YUV;" + this->srcPixelFormat.getName();
   }
-  virtual bool setFormatFromString(QString format) override;
+  virtual bool setFormatFromString(const std::string_view format) override;
 
   // Create the YUV controls and return a pointer to the layout.
   // yuvFormatFixed: For example a YUV file does not have a fixed format (the user can change this),
@@ -215,9 +216,9 @@ private:
   bool checkAndSetFormat(const PixelFormatYUV format, const Size frameSize, const int64_t fileSize);
 
   bool setFormatFromSizeAndNamePlanar(
-      QString name, const Size size, int bitDepth, Subsampling subsampling, int64_t fileSize);
+    QString name, const Size size, int bitDepth, Subsampling subsampling, int64_t fileSize);
   bool setFormatFromSizeAndNamePacked(
-      QString name, const Size size, int bitDepth, Subsampling subsampling, int64_t fileSize);
+    QString name, const Size size, int bitDepth, Subsampling subsampling, int64_t fileSize);
 
   bool markDifferencesYUVPlanarToRGB(const QByteArray     &sourceBuffer,
                                      unsigned char        *targetBuffer,

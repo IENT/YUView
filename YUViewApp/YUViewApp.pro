@@ -2,6 +2,7 @@ QT += core gui widgets opengl xml concurrent network
 
 TARGET = YUView
 TEMPLATE = app
+CONFIG += c++20
 CONFIG -= debug_and_release
 
 CONFIG += c++20

@@ -47,8 +47,7 @@ namespace
 void testGetPixelValueFromBuffer(const QByteArray     &sourceBuffer,
                                  const PixelFormatRGB &srcPixelFormat)
 {
-  const auto bitDepth = srcPixelFormat.getBitsPerSample();
-  const auto shift    = 12 - bitDepth;
+  const auto bitDepth = srcPixelFormat.getBitsPerComponent();
 
   int testValueIndex = 0;
   for (int y : {0, 1, 2, 3})
@@ -57,46 +56,63 @@ void testGetPixelValueFromBuffer(const QByteArray     &sourceBuffer,
     {
       const QPoint pixelPos(x, y);
       const auto   actualValue =
-          getPixelValueFromBuffer(sourceBuffer, srcPixelFormat, TEST_FRAME_SIZE, pixelPos);
+        getPixelValueFromBuffer(sourceBuffer, srcPixelFormat, TEST_FRAME_SIZE, pixelPos);
 
-      const auto testValue     = TEST_VALUES_12BIT[testValueIndex++];
-      auto       expectedValue = rgba_t(
-          {testValue.R >> shift, testValue.G >> shift, testValue.B >> shift, testValue.A >> shift});
-      if (!srcPixelFormat.hasAlpha())
-        expectedValue.A = 0;
+      const auto testValue = TEST_VALUES_12BIT[testValueIndex++];
+      rgba_t     expectedValue{};
+      if (srcPixelFormat.getPredefinedPixelFormat() == PredefinedPixelFormat::RGB565)
+      {
+        expectedValue.r = convertBitness(testValue.r, 12, 5);
+        expectedValue.g = convertBitness(testValue.g, 12, 6);
+        expectedValue.b = convertBitness(testValue.b, 12, 5);
+        expectedValue.a = 255;
+      }
+      else if (srcPixelFormat.getPredefinedPixelFormat())
+        throw std::runtime_error("Unsupported predefined pixel format");
+      else
+      {
+        expectedValue = convertBitness(testValue, 12, bitDepth);
+        if (!srcPixelFormat.hasAlpha())
+          expectedValue.a = 0;
+      }
 
       if (actualValue != expectedValue)
         throw std::runtime_error("Error checking pixel [" + std::to_string(x) + "," +
-                                 std::to_string(y) + " format " + srcPixelFormat.getName());
+                                 std::to_string(y) + "] expected " + to_string(expectedValue) +
+                                 " but got " + to_string(actualValue));
     }
   }
 }
+
+class GetPixelValueTest : public TestWithParam<PixelFormatRGB>
+{
+};
+
+TEST_P(GetPixelValueTest, TestGetPixelValueFromBuffer)
+{
+  const auto &pixelFormat = GetParam();
+
+  QByteArray data;
+  if (pixelFormat.getPredefinedPixelFormat())
+    data = createRawRGBData(
+      *pixelFormat.getPredefinedPixelFormat(), pixelFormat.getEndianness(), TEST_VALUES_12BIT, 12);
+  else
+    data = createRawRGBData(pixelFormat, TEST_VALUES_12BIT, 12);
+
+  EXPECT_NO_THROW(testGetPixelValueFromBuffer(data, pixelFormat))
+    << "Failed for pixel format " << *pixelFormat.getName();
+}
+
+std::string getName(const testing::TestParamInfo<GetPixelValueTest::ParamType> &info)
+{
+  return yuviewTest::replaceNonSupportedCharacters(*info.param.getName());
+}
+
+INSTANTIATE_TEST_SUITE_P(VideoRGBTest,
+                         GetPixelValueTest,
+                         ValuesIn(createTestSetOfPixelFormatRGB()),
+                         getName);
 
 } // namespace
-
-TEST(GetPixelValueTest, TestGetPixelValueFromBuffer)
-{
-  for (const auto endianness : EndianessMapper.getValues())
-  {
-    for (auto bitDepth : {8, 10, 12})
-    {
-      for (const auto &alphaMode : AlphaModeMapper.getValues())
-      {
-        for (const auto &dataLayout : DataLayoutMapper.getValues())
-        {
-          for (const auto &channelOrder : ChannelOrderMapper.getValues())
-          {
-            const PixelFormatRGB pixelFormat(
-                bitDepth, dataLayout, channelOrder, alphaMode, endianness);
-            const auto data = createRawRGBData(pixelFormat);
-
-            EXPECT_NO_THROW(testGetPixelValueFromBuffer(data, pixelFormat))
-                << "Failed for pixel format " << pixelFormat.getName();
-          }
-        }
-      }
-    }
-  }
-}
 
 } // namespace video::rgb::test

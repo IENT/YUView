@@ -64,7 +64,7 @@ public:
   // Create a new playlistItemRawFile from the playlist file entry. Return nullptr if parsing
   // failed.
   static playlistItemRawFile *newplaylistItemRawFile(const YUViewDomElement &root,
-                                                     const QString &         playlistFilePath);
+                                                     const QString          &playlistFilePath);
 
   virtual bool canBeUsedInProcessing() const override { return true; }
 
@@ -116,5 +116,5 @@ private:
   bool            isY4MFile{};
   QList<uint64_t> y4mFrameIndices;
 
-  QString pixelFormatAfterLoading{};
+  std::optional<std::string> pixelFormatAfterLoading{};
 };

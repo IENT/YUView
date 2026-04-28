@@ -39,9 +39,20 @@
 namespace video::rgb
 {
 
-void convertInputRGBToARGB(const QByteArray &    sourceBuffer,
+template <int bitDepth, typename T> T swapBytesEndianness(const T &val)
+{
+  if (bitDepth <= 8)
+    return val;
+  if (bitDepth <= 16)
+    return ((val & 0xff) << 8) | ((val & 0xff00) >> 8);
+  if (bitDepth <= 32)
+    return ((val & 0xff) << 24) | ((val & 0xff00) << 8) | ((val & 0xff0000) >> 8) |
+           ((val & 0xff000000) >> 24);
+};
+
+void convertInputRGBToARGB(const QByteArray     &sourceBuffer,
                            const PixelFormatRGB &srcPixelFormat,
-                           unsigned char *       targetBuffer,
+                           unsigned char        *targetBuffer,
                            const Size            frameSize,
                            const bool            componentInvert[4],
                            const int             componentScale[4],
@@ -49,18 +60,18 @@ void convertInputRGBToARGB(const QByteArray &    sourceBuffer,
                            const bool            convertAlpha,
                            const bool            premultiplyAlpha);
 
-void convertSinglePlaneOfRGBToGreyscaleARGB(const QByteArray &    sourceBuffer,
+void convertSinglePlaneOfRGBToGreyscaleARGB(const QByteArray     &sourceBuffer,
                                             const PixelFormatRGB &srcPixelFormat,
-                                            unsigned char *       targetBuffer,
+                                            unsigned char        *targetBuffer,
                                             const Size            frameSize,
                                             const Channel         displayChannel,
                                             const int             scale,
                                             const bool            invert,
                                             const bool            limitedRange);
 
-rgba_t getPixelValueFromBuffer(const QByteArray &    sourceBuffer,
+rgba_t getPixelValueFromBuffer(const QByteArray     &sourceBuffer,
                                const PixelFormatRGB &srcPixelFormat,
                                const Size            frameSize,
-                               const QPoint &        pixelPos);
+                               const QPoint         &pixelPos);
 
 } // namespace video::rgb

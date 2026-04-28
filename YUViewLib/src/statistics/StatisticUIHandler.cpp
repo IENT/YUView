@@ -41,6 +41,7 @@
 #include <QtMath>
 
 #include <common/FunctionsGui.h>
+#include <common/TypedefQtDeprecated.h>
 #include <statistics/StatisticsData.h>
 #include <statistics/StatisticsType.h>
 
@@ -75,7 +76,7 @@ QLayout *StatisticUIHandler::createStatisticsHandlerControls(bool recreateContro
   {
     // Absolutely always only do this once
     Q_ASSERT_X(
-        !ui.created(), Q_FUNC_INFO, "The primary statistics controls must only be created once.");
+      !ui.created(), Q_FUNC_INFO, "The primary statistics controls must only be created once.");
     ui.setupUi();
   }
 
@@ -97,10 +98,8 @@ QLayout *StatisticUIHandler::createStatisticsHandlerControls(bool recreateContro
     itemNameCheck->setChecked(statType.render);
     itemNameCheck->setToolTip(QString::fromStdString(statType.getDescription()));
     ui.gridLayout->addWidget(itemNameCheck, int(row + 2), 0);
-    connect(itemNameCheck,
-            &QCheckBox::stateChanged,
-            this,
-            &StatisticUIHandler::onStatisticsControlChanged);
+    connect(
+      itemNameCheck, QCheckBoxStateChanged, this, &StatisticUIHandler::onStatisticsControlChanged);
     itemNameCheckBoxes[0].push_back(itemNameCheck);
 
     // Append the opacity slider
@@ -109,17 +108,16 @@ QLayout *StatisticUIHandler::createStatisticsHandlerControls(bool recreateContro
     opacitySlider->setMaximum(100);
     opacitySlider->setValue(statType.alphaFactor);
     ui.gridLayout->addWidget(opacitySlider, int(row + 2), 1);
-    connect(opacitySlider,
-            &QSlider::valueChanged,
-            this,
-            &StatisticUIHandler::onStatisticsControlChanged);
+    connect(
+      opacitySlider, &QSlider::valueChanged, this, &StatisticUIHandler::onStatisticsControlChanged);
     itemOpacitySliders[0].push_back(opacitySlider);
 
     // Append the change style buttons
     QPushButton *pushButton = new QPushButton(
-        functionsGui::convertIcon(":img_edit.png"), QString(), ui.scrollAreaWidgetContents);
+      functionsGui::convertIcon(":img_edit.png"), QString(), ui.scrollAreaWidgetContents);
     ui.gridLayout->addWidget(pushButton, int(row + 2), 2);
-    connect(pushButton, &QPushButton::released, this, [=, this] { onStyleButtonClicked(row); });
+    connect(
+      pushButton, &QPushButton::released, this, [this, row] { this->onStyleButtonClicked(row); });
     itemStyleButtons[0].push_back(pushButton);
   }
 
@@ -148,7 +146,7 @@ QWidget *StatisticUIHandler::getSecondaryStatisticsHandlerControls(bool recreate
     if (!this->statisticsData)
     {
       DEBUG_STATUI(
-          "StatisticUIHandler::getSecondaryStatisticsHandlerControls statisticsData not set");
+        "StatisticUIHandler::getSecondaryStatisticsHandlerControls statisticsData not set");
       return {};
     }
 
@@ -164,7 +162,7 @@ QWidget *StatisticUIHandler::getSecondaryStatisticsHandlerControls(bool recreate
       itemNameCheck->setChecked(statType.render);
       ui2.gridLayout->addWidget(itemNameCheck, int(row + 2), 0);
       connect(itemNameCheck,
-              &QCheckBox::stateChanged,
+              QCheckBoxStateChanged,
               this,
               &StatisticUIHandler::onSecondaryStatisticsControlChanged);
       itemNameCheckBoxes[1].push_back(itemNameCheck);
@@ -183,9 +181,10 @@ QWidget *StatisticUIHandler::getSecondaryStatisticsHandlerControls(bool recreate
 
       // Append the change style buttons
       QPushButton *pushButton = new QPushButton(
-          functionsGui::convertIcon(":img_edit.png"), QString(), ui2.scrollAreaWidgetContents);
+        functionsGui::convertIcon(":img_edit.png"), QString(), ui2.scrollAreaWidgetContents);
       ui2.gridLayout->addWidget(pushButton, int(row + 2), 2);
-      connect(pushButton, &QPushButton::released, this, [=, this] { onStyleButtonClicked(row); });
+      connect(
+        pushButton, &QPushButton::released, this, [this, row] { this->onStyleButtonClicked(row); });
       itemStyleButtons[1].push_back(pushButton);
     }
 
@@ -195,7 +194,7 @@ QWidget *StatisticUIHandler::getSecondaryStatisticsHandlerControls(bool recreate
     if (true || ui2.created())
     {
       QSpacerItem *verticalSpacer =
-          new QSpacerItem(1, 1, QSizePolicy::Minimum, QSizePolicy::Expanding);
+        new QSpacerItem(1, 1, QSizePolicy::Minimum, QSizePolicy::Expanding);
       ui2.gridLayout->addItem(verticalSpacer, int(statTypes.size() + 2), 0, 1, 1);
       spacerItems[1] = verticalSpacer;
     }

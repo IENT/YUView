@@ -63,9 +63,9 @@ constexpr auto CMYK_EXTENSIONS      = {"cmyk"};
 bool isInExtensions(const QString &testValue, const std::initializer_list<const char *> &extensions)
 {
   const auto it =
-      std::find_if(extensions.begin(),
-                   extensions.end(),
-                   [testValue](const char *extension) { return QString(extension) == testValue; });
+    std::find_if(extensions.begin(),
+                 extensions.end(),
+                 [testValue](const char *extension) { return QString(extension) == testValue; });
   return it != extensions.end();
 }
 
@@ -122,10 +122,10 @@ playlistItemRawFile::playlistItemRawFile(const QString &rawFilePath,
     if (!this->parseY4MFile())
       return;
   }
-  else if (!pixelFormatFromMemory.isEmpty())
+  else if (pixelFormatFromMemory)
   {
     // Use the format that we got from the memory. Don't do any auto detection.
-    this->video->setFormatFromString(pixelFormatFromMemory);
+    this->video->setFormatFromString(*pixelFormatFromMemory);
   }
   else if (!frameSize.isValid() && sourcePixelFormat.isEmpty())
   {
@@ -206,7 +206,7 @@ InfoData playlistItemRawFile::getInfo() const
     info.items.append(infoItem);
 
   const auto nrFrames =
-      (this->properties().startEndRange.second - this->properties().startEndRange.first + 1);
+    (this->properties().startEndRange.second - this->properties().startEndRange.first + 1);
   info.items.append(InfoItem("Num Frames", std::to_string(nrFrames)));
   info.items.append(InfoItem("Bytes per Frame", std::to_string(this->video->getBytesPerFrame())));
 
@@ -221,7 +221,7 @@ InfoData playlistItemRawFile::getInfo() const
     {
       if ((*fileSize % bpf) != 0)
         info.items.append(InfoItem(
-            "Warning"sv, "The file size and the given video size and/or raw format do not match."));
+          "Warning"sv, "The file size and the given video size and/or raw format do not match."));
     }
     else
       info.items.append(InfoItem("Warning"sv, "Could not obtain file size from input."));
@@ -251,7 +251,7 @@ bool playlistItemRawFile::parseY4MFile()
   unsigned width  = 0;
   unsigned height = 0;
   auto     format =
-      video::yuv::PixelFormatYUV(video::yuv::Subsampling::YUV_420, 8, video::yuv::PlaneOrder::YUV);
+    video::yuv::PixelFormatYUV(video::yuv::Subsampling::YUV_420, 8, video::yuv::PlaneOrder::YUV);
 
   while (rawData.at(offset++) == ' ')
   {
@@ -389,7 +389,7 @@ bool playlistItemRawFile::parseY4MFile()
 
   if (width == 0 || height == 0)
     return setError(
-        "Error parsing the Y4M header: The size could not be obtained from the header.");
+      "Error parsing the Y4M header: The size could not be obtained from the header.");
 
   // Next, all frames should follow. Each frame starts with the sequence 'FRAME', followed by a set
   // of paramters for the frame. The 'FRAME' indicator is terminated by a 0x0A. The list of
@@ -452,7 +452,7 @@ bool playlistItemRawFile::parseY4MFile()
 void playlistItemRawFile::setFormatFromFileName()
 {
   const auto fileInfoForGuess = filesource::frameFormatGuess::getFileInfoForGuessFromPath(
-      this->dataSource.getAbsoluteFilePath());
+    this->dataSource.getAbsoluteFilePath());
 
   const auto frameFormat = filesource::frameFormatGuess::guessFrameFormat(fileInfoForGuess);
 
@@ -496,7 +496,7 @@ void playlistItemRawFile::savePlaylist(QDomElement &root, const QDir &playlistDi
   QUrl fileURL(QString::fromStdString(dataSource.getAbsoluteFilePath()));
   fileURL.setScheme("file");
   auto relativePath =
-      playlistDir.relativeFilePath(QString::fromStdString(dataSource.getAbsoluteFilePath()));
+    playlistDir.relativeFilePath(QString::fromStdString(dataSource.getAbsoluteFilePath()));
 
   auto d = YUViewDomElement(root.ownerDocument().createElement("playlistItemRawFile"));
 
@@ -523,7 +523,7 @@ playlistItemRawFile *playlistItemRawFile::newplaylistItemRawFile(const YUViewDom
 
   // check if file with absolute path exists, otherwise check relative path
   const auto filePath =
-      functions::getAbsPathFromAbsAndRel(playlistFilePath, absolutePath, relativePath);
+    functions::getAbsPathFromAbsAndRel(playlistFilePath, absolutePath, relativePath);
   if (filePath.isEmpty())
     return nullptr;
 
@@ -563,9 +563,9 @@ void playlistItemRawFile::slotVideoPropertiesChanged()
 {
   DEBUG_RAWFILE("playlistItemRawFile::slotVideoPropertiesChanged");
 
-  auto currentPixelFormat = video->getFormatAsString();
-  if (currentPixelFormat != this->pixelFormatAfterLoading)
-    itemMemoryHandler::itemMemoryAddFormat(this->properties().name, currentPixelFormat);
+  const auto currentPixelFormat = video->getFormatAsString();
+  if (currentPixelFormat && currentPixelFormat != this->pixelFormatAfterLoading)
+    itemMemoryHandler::itemMemoryAddFormat(this->properties().name, *currentPixelFormat);
 }
 
 ValuePairListSets playlistItemRawFile::getPixelValues(const QPoint &pixelPos, int frameIdx)

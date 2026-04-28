@@ -39,6 +39,7 @@
 
 using ::testing::Bool;
 using ::testing::Combine;
+using ::testing::ConvertGenerator;
 using ::testing::ElementsAre;
 using ::testing::TestWithParam;
 using ::testing::Values;
