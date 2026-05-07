@@ -74,22 +74,21 @@ TEST(FunctionsTest, toInt)
 
 TEST(FunctionsTest, scaleValueByPercent)
 {
-  EXPECT_EQ(functions::scaleValueByPercent(100, 0), 0);
-  EXPECT_EQ(functions::scaleValueByPercent(100, 1), 1);
-  EXPECT_EQ(functions::scaleValueByPercent(100, 50), 50);
-  EXPECT_EQ(functions::scaleValueByPercent(100, 99), 99);
-  EXPECT_EQ(functions::scaleValueByPercent(100, 100), 100);
-  EXPECT_EQ(functions::scaleValueByPercent(100, 200), 200);
+  EXPECT_EQ(scaleValueByPercent(100, 0), 0);
+  EXPECT_EQ(scaleValueByPercent(100, 1), 1);
+  EXPECT_EQ(scaleValueByPercent(100, 50), 50);
+  EXPECT_EQ(scaleValueByPercent(100, 99), 99);
+  EXPECT_EQ(scaleValueByPercent(100, 100), 100);
+  EXPECT_EQ(scaleValueByPercent(100, 200), 200);
 
-  EXPECT_EQ(functions::scaleValueByPercent(100, 49.4), 49);
-  EXPECT_EQ(functions::scaleValueByPercent(100, 49.5), 50);
-  EXPECT_EQ(functions::scaleValueByPercent(100, 49.9), 50);
-  EXPECT_EQ(functions::scaleValueByPercent(100, 50.0), 50);
-  EXPECT_EQ(functions::scaleValueByPercent(100, 50.1), 50);
-  EXPECT_EQ(functions::scaleValueByPercent(100, 50.5), 51);
+  EXPECT_EQ(scaleValueByPercent(100, 49.4), 49);
+  EXPECT_EQ(scaleValueByPercent(100, 49.5), 50);
+  EXPECT_EQ(scaleValueByPercent(100, 49.9), 50);
+  EXPECT_EQ(scaleValueByPercent(100, 50.0), 50);
+  EXPECT_EQ(scaleValueByPercent(100, 50.1), 50);
+  EXPECT_EQ(scaleValueByPercent(100, 50.5), 51);
 }
 
-} // namespace
 TEST(FunctionsTest, stringToLower)
 {
   EXPECT_EQ(toLower(""), "");

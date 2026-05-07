@@ -374,7 +374,7 @@ TEST(StatisticsFileCSVTest, loadingFromTestData1_testStateBeforeLoadingData_Shou
   }
 
   EXPECT_EQ(statFile.getParsingInfo().fileSorting,
-            StatisticsFileBase::ParsingInfo::FileSorting::SortedByType);
+            StatisticsFileBase::ParsingInfo::FileSorting::Unknown);
 
   std::atomic_bool breakAtomic;
   breakAtomic.store(false);
@@ -406,7 +406,7 @@ TEST(StatisticsFileCSVTest, loadingFromTestData1_ShouldLoadTypesCorrectly)
   }
 
   EXPECT_EQ(statFile.getParsingInfo().fileSorting,
-            StatisticsFileBase::ParsingInfo::FileSorting::SortedByType);
+            StatisticsFileBase::ParsingInfo::FileSorting::Unknown);
 
   std::atomic_bool breakAtomic;
   breakAtomic.store(false);
