@@ -119,13 +119,11 @@ BitratePlotModel::getPointInfo(unsigned streamIndex, unsigned plotIndex, unsigne
                    "<tr><td>PTS:</td><td align=\"right\">%2</td></tr>"
                    "<tr><td>DTS:</td><td align=\"right\">%3</td></tr>"
                    "<tr><td>Average:</td><td align=\"right\">%4</td></tr>"
-                   "<tr><td>Type:</td><td align=\"right\">%5</td></tr>"
                    "</table>")
         .arg(streamIndex)
         .arg(entry.pts)
         .arg(entry.dts)
-        .arg(this->calculateAverageValue(streamIndex, pointIndex))
-        .arg(entry.frameType);
+        .arg(this->calculateAverageValue(streamIndex, pointIndex));
   else
     return QString("<h4>Stream %1</h4>"
                    "<table width=\"100%\">"
@@ -133,12 +131,14 @@ BitratePlotModel::getPointInfo(unsigned streamIndex, unsigned plotIndex, unsigne
                    "<tr><td>DTS:</td><td align=\"right\">%3</td></tr>"
                    "<tr><td>Duration:</td><td align=\"right\">%4</td></tr>"
                    "<tr><td>Bitrate:</td><td align=\"right\">%5</td></tr>"
+                   "<tr><td>Type:</td><td align=\"right\">%6</td></tr>"
                    "</table>")
         .arg(streamIndex)
         .arg(entry.pts)
         .arg(entry.dts)
         .arg(entry.duration)
-        .arg(entry.bitrate);
+        .arg(entry.bitrate)
+        .arg(entry.frameType);
 }
 
 std::optional<unsigned> BitratePlotModel::getReasonabelRangeToShowOnXAxisPer100Pixels() const
