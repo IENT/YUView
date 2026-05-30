@@ -732,7 +732,7 @@ void splitViewWidget::paintZoomBox(int           view,
 
     // Create a QTextDocument. This object can tell us the size of the rendered text.
     QTextDocument textDocument;
-    textDocument.setDefaultStyleSheet("* { color: #FFFFFF }");
+    textDocument.setDefaultStyleSheet("* { color: #000000 }");
     textDocument.setHtml(pixelInfoString);
     textDocument.setTextWidth(textDocument.size().width());
 

@@ -808,8 +808,8 @@ void PlotViewWidget::drawInfoBox(QPainter &painter) const
 
   // Create a QTextDocument. This object can tell us the size of the rendered text.
   QTextDocument textDocument;
+  textDocument.setDefaultStyleSheet("* { color: #000000 }");
   textDocument.setHtml(infoString);
-  textDocument.setDefaultStyleSheet("* { color: #FFFFFF }");
   textDocument.setTextWidth(textDocument.size().width());
 
   // Translate to the position where the text box shall be
@@ -865,8 +865,8 @@ void PlotViewWidget::drawDebugBox(QPainter &painter) const
 
   // Create a QTextDocument. This object can tell us the size of the rendered text.
   QTextDocument textDocument;
+  textDocument.setDefaultStyleSheet("* { color: #000000 }");
   textDocument.setHtml(infoString);
-  textDocument.setDefaultStyleSheet("* { color: #FFFFFF }");
   textDocument.setTextWidth(textDocument.size().width());
 
   // Translate to the position where the text box shall be
