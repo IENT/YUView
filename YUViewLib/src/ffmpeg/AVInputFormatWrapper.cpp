@@ -38,7 +38,7 @@ namespace FFmpeg
 namespace
 {
 
-typedef struct AVInputFormat_56_57_58_59_60
+typedef struct AVInputFormat_56_57_58_59_60_61
 {
   const char *                    name;
   const char *                    long_name;
@@ -49,7 +49,7 @@ typedef struct AVInputFormat_56_57_58_59_60
   const char *                    mime_type;
 
   // There is more but it is not part of the public ABI
-} AVInputFormat_56_57_58_59_60;
+} AVInputFormat_56_57_58_59_60_61;
 
 } // namespace
 
@@ -99,9 +99,10 @@ void AVInputFormatWrapper::update()
       this->libVer.avformat.major == 57 || //
       this->libVer.avformat.major == 58 || //
       this->libVer.avformat.major == 59 || //
-      this->libVer.avformat.major == 60)
+      this->libVer.avformat.major == 60 ||
+      this->libVer.avformat.major == 61)
   {
-    auto p           = reinterpret_cast<AVInputFormat_56_57_58_59_60 *>(this->fmt);
+    auto p           = reinterpret_cast<AVInputFormat_56_57_58_59_60_61 *>(this->fmt);
     this->name       = QString(p->name);
     this->long_name  = QString(p->long_name);
     this->flags      = p->flags;
