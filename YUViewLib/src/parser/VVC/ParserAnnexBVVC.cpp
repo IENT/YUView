@@ -36,6 +36,8 @@
 #include <cmath>
 #include <sstream>
 
+#include <parser/common/Functions.h>
+
 #include "SEI/buffering_period.h"
 #include "SEI/sei_message.h"
 #include "access_unit_delimiter_rbsp.h"
@@ -85,8 +87,11 @@ createBitrateEntryForAU(ParsingState                                 &parsingSta
     entry.dts      = int(parsingState.currentAU.counter);
     entry.duration = 1;
   }
-  entry.bitrate  = unsigned(parsingState.currentAU.sizeBytes);
-  entry.keyframe = parsingState.currentAU.isKeyframe;
+  entry.bitrate   = unsigned(parsingState.currentAU.sizeBytes);
+  entry.keyframe  = parsingState.currentAU.isKeyframe;
+  auto sliceTypes = convertSliceCountsToString(parsingState.currentAU.sliceTypes);
+  if (!sliceTypes.empty())
+    entry.frameType = QString::fromStdString(sliceTypes);
   return entry;
 }
 
@@ -480,6 +485,8 @@ ParserAnnexBVVC::parseAndAddNALUnit(int                                         
       updatedParsingState.currentAU.isKeyframe =
           (nalType == NalType::IDR_W_RADL || nalType == NalType::IDR_N_LP ||
            nalType == NalType::CRA_NUT);
+      updatedParsingState.currentAU.sliceTypes[std::string(SliceTypeMapper.getName(
+          newSliceLayer->slice_header_instance.sh_slice_type))]++;
       if (updatedParsingState.currentAU.isKeyframe)
       {
         nalVVC->rawData = data;
@@ -562,6 +569,7 @@ ParserAnnexBVVC::parseAndAddNALUnit(int                                         
     updatedParsingState.currentAU.fileStartEndPos = nalStartEndPosFile;
     updatedParsingState.currentAU.sizeBytes       = 0;
     updatedParsingState.currentAU.counter++;
+    updatedParsingState.currentAU.sliceTypes.clear();
   }
   else if (nalStartEndPosFile)
   {

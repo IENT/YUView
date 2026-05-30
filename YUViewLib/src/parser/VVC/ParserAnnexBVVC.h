@@ -68,6 +68,7 @@ struct ParsingState
     unsigned                  layerID{0};
     bool                      isKeyframe{};
     std::optional<pairUint64> fileStartEndPos;
+    std::map<std::string, unsigned int> sliceTypes;
   };
   CurrentAU currentAU{};
 
