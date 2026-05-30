@@ -43,6 +43,7 @@
 #include "AVPixFmtDescriptorWrapper.h"
 #include "FFMpegLibrariesTypes.h"
 #include "FFmpegLibraryFunctions.h"
+#include <QMutex>
 #include <common/Typedef.h>
 
 namespace FFmpeg
@@ -143,6 +144,7 @@ private:
 
   // FFmpeg has a callback where it loggs stuff. This log goes here.
   static QStringList logListFFmpeg;
+  static QMutex      logListMutex;
   static void        avLogCallback(void *ptr, int level, const char *fmt, va_list vargs);
 };
 

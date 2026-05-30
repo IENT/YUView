@@ -307,6 +307,7 @@ void FFmpegVersionHandler::flush_buffers(AVCodecContextWrapper &decCtx)
 }
 
 QStringList FFmpegVersionHandler::logListFFmpeg;
+QMutex      FFmpegVersionHandler::logListMutex;
 
 FFmpegVersionHandler::FFmpegVersionHandler()
 {
@@ -323,7 +324,8 @@ void FFmpegVersionHandler::avLogCallback(void *, int level, const char *fmt, va_
 {
   QString msg;
   msg.vasprintf(fmt, vargs);
-  auto now = QDateTime::currentDateTime();
+  auto          now = QDateTime::currentDateTime();
+  QMutexLocker  locker(&FFmpegVersionHandler::logListMutex);
   FFmpegVersionHandler::logListFFmpeg.append(now.toString("hh:mm:ss.zzz") +
                                              QString(" - L%1 - ").arg(level) + msg);
 }
