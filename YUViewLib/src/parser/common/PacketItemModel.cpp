@@ -62,7 +62,8 @@ auto streamIndexColors = std::vector<Color>({Color("#90caf9"),   // blue (200)
                                              Color("#8e24aa"),   // purple (600)
                                              Color("#00897b"),   // teal (600)
                                              Color("#6d4c41"),   // brown (600)
-                                             Color("#7cb342")}); // light green (600)
+                                              Color("#7cb342")}); // light green (600)
+auto rawStreamColor = Color("#b0bec5");  // blue-grey (200) for raw bitstream (idx=-1)
 
 PacketItemModel::PacketItemModel(QObject *parent) : QAbstractItemModel(parent)
 {
@@ -103,6 +104,8 @@ QVariant PacketItemModel::data(const QModelIndex &index, int role) const
     if (idx >= 0)
       return QVariant(
           QBrush(functionsGui::toQColor(streamIndexColors.at(idx % streamIndexColors.size()))));
+    else if (idx == -1)
+      return QVariant(QBrush(functionsGui::toQColor(rawStreamColor)));
     return QVariant(QBrush());
   }
   else if (role == Qt::DisplayRole || role == Qt::ToolTipRole)
