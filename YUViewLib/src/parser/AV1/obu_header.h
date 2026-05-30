@@ -55,22 +55,22 @@ enum class ObuType
 };
 
 static CodingEnum<ObuType>
-    obuTypeCoding({{0, ObuType::RESERVED, "RESERVED"},
-                   {1, ObuType::OBU_SEQUENCE_HEADER, "OBU_SEQUENCE_HEADER"},
-                   {2, ObuType::OBU_TEMPORAL_DELIMITER, "OBU_TEMPORAL_DELIMITER"},
-                   {3, ObuType::OBU_FRAME_HEADER, "OBU_FRAME_HEADER"},
-                   {4, ObuType::OBU_TILE_GROUP, "OBU_TILE_GROUP"},
-                   {5, ObuType::OBU_METADATA, "OBU_METADATA"},
-                   {6, ObuType::OBU_FRAME, "OBU_FRAME"},
-                   {7, ObuType::OBU_REDUNDANT_FRAME_HEADER, "OBU_REDUNDANT_FRAME_HEADER"},
-                   {8, ObuType::OBU_TILE_LIST, "OBU_TILE_LIST"},
-                   {9, ObuType::RESERVED, "RESERVED"},
-                   {10, ObuType::RESERVED, "RESERVED"},
-                   {11, ObuType::RESERVED, "RESERVED"},
-                   {12, ObuType::RESERVED, "RESERVED"},
-                   {13, ObuType::RESERVED, "RESERVED"},
-                   {14, ObuType::RESERVED, "RESERVED"},
-                   {15, ObuType::OBU_PADDING, "OBU_PADDING"}},
+    obuTypeCoding({{0, ObuType::RESERVED, "RESERVED", "Reserved"},
+                   {1, ObuType::OBU_SEQUENCE_HEADER, "OBU_SEQUENCE_HEADER", "Sequence Header"},
+                   {2, ObuType::OBU_TEMPORAL_DELIMITER, "OBU_TEMPORAL_DELIMITER", "Temporal Delimiter"},
+                   {3, ObuType::OBU_FRAME_HEADER, "OBU_FRAME_HEADER", "Frame Header"},
+                   {4, ObuType::OBU_TILE_GROUP, "OBU_TILE_GROUP", "Tile Group"},
+                   {5, ObuType::OBU_METADATA, "OBU_METADATA", "Metadata"},
+                   {6, ObuType::OBU_FRAME, "OBU_FRAME", "Frame"},
+                   {7, ObuType::OBU_REDUNDANT_FRAME_HEADER, "OBU_REDUNDANT_FRAME_HEADER", "Redundant Frame Header"},
+                   {8, ObuType::OBU_TILE_LIST, "OBU_TILE_LIST", "Tile List"},
+                   {9, ObuType::RESERVED, "RESERVED", "Reserved"},
+                   {10, ObuType::RESERVED, "RESERVED", "Reserved"},
+                   {11, ObuType::RESERVED, "RESERVED", "Reserved"},
+                   {12, ObuType::RESERVED, "RESERVED", "Reserved"},
+                   {13, ObuType::RESERVED, "RESERVED", "Reserved"},
+                   {14, ObuType::RESERVED, "RESERVED", "Reserved"},
+                   {15, ObuType::OBU_PADDING, "OBU_PADDING", "Padding"}},
                   ObuType::RESERVED);
 
 class obu_header

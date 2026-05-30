@@ -42,11 +42,11 @@ namespace
 {
 
 CodingEnum<InterpolationFilter>
-    interpolationFilterCoding({{0, InterpolationFilter::EIGHTTAP, "EIGHTTAP"},
-                               {1, InterpolationFilter::EIGHTTAP_SMOOTH, "EIGHTTAP_SMOOTH"},
-                               {2, InterpolationFilter::EIGHTTAP_SHARP, "EIGHTTAP_SHARP"},
-                               {3, InterpolationFilter::BILINEAR, "BILINEAR"},
-                               {4, InterpolationFilter::SWITCHABLE, "SWITCHABLE"}},
+    interpolationFilterCoding({{0, InterpolationFilter::EIGHTTAP, "EIGHTTAP", "8-tap"},
+                               {1, InterpolationFilter::EIGHTTAP_SMOOTH, "EIGHTTAP_SMOOTH", "8-tap smooth"},
+                               {2, InterpolationFilter::EIGHTTAP_SHARP, "EIGHTTAP_SHARP", "8-tap sharp"},
+                               {3, InterpolationFilter::BILINEAR, "BILINEAR", "Bilinear"},
+                               {4, InterpolationFilter::SWITCHABLE, "SWITCHABLE", "Switchable"}},
                               InterpolationFilter::EIGHTTAP);
 
 }

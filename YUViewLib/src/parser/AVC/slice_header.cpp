@@ -59,16 +59,16 @@ namespace
 {
 
 parser::CodingEnum<SliceType>
-    sliceTypeCoding({{0, SliceType::SLICE_P, "P (P slice)"},
-                     {1, SliceType::SLICE_B, "B (B slice)"},
-                     {2, SliceType::SLICE_I, "I (I slice)"},
-                     {3, SliceType::SLICE_SP, "SP (SP slice)"},
-                     {4, SliceType::SLICE_SI, "SI (SI slice)"},
-                     {5, SliceType::SLICE_P, "P (P slice) all slices"},
-                     {6, SliceType::SLICE_B, "B (B slice) all slices"},
-                     {7, SliceType::SLICE_I, "I (I slice) all slices"},
-                     {8, SliceType::SLICE_SP, "SP (SP slice) all slices"},
-                     {9, SliceType::SLICE_SI, "SI (SI slice) all slices"}},
+    sliceTypeCoding({{0, SliceType::SLICE_P, "P (P slice)", "P"},
+                     {1, SliceType::SLICE_B, "B (B slice)", "B"},
+                     {2, SliceType::SLICE_I, "I (I slice)", "I"},
+                     {3, SliceType::SLICE_SP, "SP (SP slice)", "SP"},
+                     {4, SliceType::SLICE_SI, "SI (SI slice)", "SI"},
+                     {5, SliceType::SLICE_P, "P (P slice) all slices", "P"},
+                     {6, SliceType::SLICE_B, "B (B slice) all slices", "B"},
+                     {7, SliceType::SLICE_I, "I (I slice) all slices", "I"},
+                     {8, SliceType::SLICE_SP, "SP (SP slice) all slices", "SP"},
+                     {9, SliceType::SLICE_SI, "SI (SI slice) all slices", "SI"}},
                     SliceType::SLICE_P);
 
 }

@@ -44,16 +44,16 @@ namespace
 using namespace parser::mpeg2;
 
 parser::CodingEnum<ExtensionType> extensionTypeCoding(
-    {{0, ExtensionType::EXT_SEQUENCE, "sequence_extension()"},
-     {1, ExtensionType::EXT_SEQUENCE_DISPLAY, "sequence_display_extension()"},
-     {2, ExtensionType::EXT_QUANT_MATRIX, "quant_matrix_extension()"},
-     {3, ExtensionType::EXT_COPYRIGHT, "copyright_extension()"},
-     {4, ExtensionType::EXT_SEQUENCE_SCALABLE, "sequence_scalable_extension()"},
-     {5, ExtensionType::EXT_PICTURE_DISPLAY, "picture_display_extension()"},
-     {6, ExtensionType::EXT_PICTURE_CODING, "picture_coding_extension()"},
-     {7, ExtensionType::EXT_PICTURE_SPATICAL_SCALABLE, "picture_spatial_scalable_extension()"},
-     {8, ExtensionType::EXT_PICTURE_TEMPORAL_SCALABLE, "picture_temporal_scalable_extension()"},
-     {9, ExtensionType::EXT_RESERVED, "Reserved"}},
+    {{0, ExtensionType::EXT_SEQUENCE, "sequence_extension()", "Sequence"},
+     {1, ExtensionType::EXT_SEQUENCE_DISPLAY, "sequence_display_extension()", "Sequence Display"},
+     {2, ExtensionType::EXT_QUANT_MATRIX, "quant_matrix_extension()", "Quant Matrix"},
+     {3, ExtensionType::EXT_COPYRIGHT, "copyright_extension()", "Copyright"},
+     {4, ExtensionType::EXT_SEQUENCE_SCALABLE, "sequence_scalable_extension()", "Sequence Scalable"},
+     {5, ExtensionType::EXT_PICTURE_DISPLAY, "picture_display_extension()", "Picture Display"},
+     {6, ExtensionType::EXT_PICTURE_CODING, "picture_coding_extension()", "Picture Coding"},
+     {7, ExtensionType::EXT_PICTURE_SPATICAL_SCALABLE, "picture_spatial_scalable_extension()", "Picture Spatial Scalable"},
+     {8, ExtensionType::EXT_PICTURE_TEMPORAL_SCALABLE, "picture_temporal_scalable_extension()", "Picture Temporal Scalable"},
+     {9, ExtensionType::EXT_RESERVED, "Reserved", "Reserved"}},
     ExtensionType::EXT_RESERVED);
 
 } // namespace

@@ -56,17 +56,17 @@ enum class NalType
 };
 
 static parser::CodingEnum<NalType>
-    nalTypeCoding({{0, NalType::UNSPECIFIED, "UNSPECIFIED"},
-                   {0, NalType::PICTURE, "PICTURE"},
-                   {1, NalType::SLICE, "SLICE"},
-                   {2, NalType::USER_DATA, "USER_DATA"},
-                   {3, NalType::SEQUENCE_HEADER, "SEQUENCE_HEADER"},
-                   {4, NalType::SEQUENCE_ERROR, "SEQUENCE_ERROR"},
-                   {5, NalType::EXTENSION_START, "EXTENSION_START"},
-                   {6, NalType::SEQUENCE_END, "SEQUENCE_END"},
-                   {7, NalType::GROUP_START, "GROUP_START"},
-                   {8, NalType::SYSTEM_START_CODE, "SYSTEM_START_CODE"},
-                   {9, NalType::RESERVED, "RESERVED"}},
+    nalTypeCoding({{0, NalType::UNSPECIFIED, "UNSPECIFIED", "Unspecified"},
+                   {0, NalType::PICTURE, "PICTURE", "Picture"},
+                   {1, NalType::SLICE, "SLICE", "Slice"},
+                   {2, NalType::USER_DATA, "USER_DATA", "User Data"},
+                   {3, NalType::SEQUENCE_HEADER, "SEQUENCE_HEADER", "Sequence Header"},
+                   {4, NalType::SEQUENCE_ERROR, "SEQUENCE_ERROR", "Sequence Error"},
+                   {5, NalType::EXTENSION_START, "EXTENSION_START", "Extension Start"},
+                   {6, NalType::SEQUENCE_END, "SEQUENCE_END", "Sequence End"},
+                   {7, NalType::GROUP_START, "GROUP_START", "Group Start"},
+                   {8, NalType::SYSTEM_START_CODE, "SYSTEM_START_CODE", "System Start Code"},
+                   {9, NalType::RESERVED, "RESERVED", "Reserved"}},
                   NalType::UNSPECIFIED);
 
 /* The basic Mpeg2 NAL unit. Technically, there is no concept of NAL units in mpeg2 (h262) but there
