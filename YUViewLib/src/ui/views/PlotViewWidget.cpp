@@ -964,7 +964,10 @@ QPointF PlotViewWidget::convertPlotPosToPixelPos(const QPointF &       plotPos,
 
   Range<double> yRange = {0, 100};
   if (this->model)
-    yRange = this->model->getYRange();
+  {
+    auto visibleRange = getVisibleRange(Axis::Y);
+    yRange = visibleRange ? *visibleRange : this->model->getYRange();
+  }
   const auto rangeY = double(yRange.max - yRange.min);
 
   const auto pixelPosX = this->propertiesAxis[0].line.p1().x() +
@@ -1000,7 +1003,10 @@ QPointF PlotViewWidget::convertPixelPosToPlotPos(const QPointF &       pixelPos,
 
   Range<double> yRange = {0, 100};
   if (this->model)
-    yRange = this->model->getYRange();
+  {
+    auto visibleRange = getVisibleRange(Axis::Y);
+    yRange = visibleRange ? *visibleRange : this->model->getYRange();
+  }
   const auto rangeY = double(yRange.max - yRange.min);
 
   const auto valueX =
