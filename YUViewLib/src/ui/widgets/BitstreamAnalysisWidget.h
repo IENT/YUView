@@ -64,6 +64,7 @@ private slots:
   void colorCodeStreamsCheckBoxToggled(bool state) { this->parser->setStreamColorCoding(state); }
   void parseEntireBitstreamCheckBoxToggled(bool) { this->restartParsingOfCurrentItem(); }
   void bitratePlotOrderComboBoxIndexChanged(int index);
+  void bitratePlotStreamComboBoxIndexChanged(int index);
 
 protected:
   void hideEvent(QHideEvent *event) override;
@@ -88,4 +89,6 @@ private:
 
   // -1: Show all streams. Otherwise only show the given stream index.
   int showOnlyStream{-1};
+  // -1: Show all streams. Otherwise only show the given stream index.
+  int showOnlyBitrateStream{-1};
 };

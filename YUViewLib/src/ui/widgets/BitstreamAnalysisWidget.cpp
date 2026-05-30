@@ -64,10 +64,14 @@ BitstreamAnalysisWidget::BitstreamAnalysisWidget(QWidget *parent) : QWidget(pare
                 &QCheckBox::toggled,
                 this,
                 &BitstreamAnalysisWidget::parseEntireBitstreamCheckBoxToggled);
-  this->connect(this->ui.bitratePlotOrderComboBox,
-                QOverload<int>::of(&QComboBox::currentIndexChanged),
-                this,
-                &BitstreamAnalysisWidget::bitratePlotOrderComboBoxIndexChanged);
+this->connect(this->ui.bitratePlotOrderComboBox,
+                 QOverload<int>::of(&QComboBox::currentIndexChanged),
+                 this,
+                 &BitstreamAnalysisWidget::bitratePlotOrderComboBoxIndexChanged);
+  this->connect(this->ui.bitratePlotStreamComboBox,
+                 QOverload<int>::of(&QComboBox::currentIndexChanged),
+                 this,
+                 &BitstreamAnalysisWidget::bitratePlotStreamComboBoxIndexChanged);
 
   this->currentSelectedItemsChanged(nullptr, nullptr, false);
 }
@@ -119,8 +123,33 @@ void BitstreamAnalysisWidget::updateStreamInfo()
       for (unsigned i = 0; i < this->parser->getNrStreams(); i++)
       {
         const auto info = this->parser->getShortStreamDescription(i);
-        this->ui.showStreamComboBox->addItem(QString("Stream %1 - ").arg(i) +
+this->ui.showStreamComboBox->addItem(QString("Stream %1 - ").arg(i) +
                                              QString::fromStdString(info));
+       }
+     }
+   }
+
+  auto nrStreams = this->parser->getNrStreams();
+  auto nrBitrateSelections = nrStreams;
+  if (nrStreams > 1)
+    nrBitrateSelections += 1;
+  if (this->ui.bitratePlotStreamComboBox->count() != int(nrBitrateSelections))
+  {
+    this->ui.bitratePlotStreamComboBox->clear();
+    if (nrBitrateSelections == 1)
+    {
+      this->ui.bitratePlotStreamComboBox->addItem("Show stream 0");
+      this->ui.bitratePlotStreamComboBox->setEnabled(false);
+    }
+    else
+    {
+      this->ui.bitratePlotStreamComboBox->setEnabled(true);
+      this->ui.bitratePlotStreamComboBox->addItem("Show all streams");
+      for (unsigned i = 0; i < nrStreams; i++)
+      {
+        const auto info = this->parser->getShortStreamDescription(i);
+        this->ui.bitratePlotStreamComboBox->addItem(QString("Stream %1 - ").arg(i) +
+                                                     QString::fromStdString(info));
       }
     }
   }
@@ -148,6 +177,28 @@ void BitstreamAnalysisWidget::bitratePlotOrderComboBoxIndexChanged(int index)
 {
   if (this->parser)
     this->parser->setBitrateSortingIndex(index);
+}
+
+void BitstreamAnalysisWidget::bitratePlotStreamComboBoxIndexChanged(int index)
+{
+  const int selectedStream = index - 1;
+  if (this->showOnlyBitrateStream == selectedStream)
+    return;
+
+  this->showOnlyBitrateStream = selectedStream;
+
+  QList<unsigned int> showList;
+  if (selectedStream == -1)
+  {
+    for (unsigned i = 0; i < this->parser->getNrStreams(); i++)
+      showList.append(i);
+  }
+  else
+  {
+    showList.append(unsigned(selectedStream));
+  }
+
+  this->ui.plotViewWidget->setShowStreamList(showList);
 }
 
 void BitstreamAnalysisWidget::updateParsingStatusText(int progressValue)

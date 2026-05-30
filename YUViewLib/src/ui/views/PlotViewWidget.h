@@ -42,6 +42,7 @@ class PlotViewWidget : public MoveAndZoomableView
 public:
   PlotViewWidget(QWidget *parent = 0);
   void setModel(PlotModel *model);
+  void setShowStreamList(const QList<unsigned int> &list);
 
 private slots:
   void modelDataChanged();

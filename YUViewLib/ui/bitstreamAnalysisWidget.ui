@@ -118,21 +118,28 @@
       </attribute>
       <layout class="QVBoxLayout" name="verticalLayout_3" stretch="0,1">
        <item>
-        <layout class="QHBoxLayout" name="horizontalLayout_3">
-         <item>
-          <widget class="QComboBox" name="bitratePlotOrderComboBox">
-           <item>
-            <property name="text">
-             <string>Decoding Order</string>
+<layout class="QHBoxLayout" name="horizontalLayout_3">
+          <item>
+           <widget class="QComboBox" name="bitratePlotStreamComboBox">
+            <property name="toolTip">
+             <string>Select which streams to show in the bitrate plot.</string>
             </property>
-           </item>
-           <item>
-            <property name="text">
-             <string>Display Order</string>
-            </property>
-           </item>
-          </widget>
-         </item>
+           </widget>
+          </item>
+          <item>
+           <widget class="QComboBox" name="bitratePlotOrderComboBox">
+            <item>
+             <property name="text">
+              <string>Decoding Order</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string>Display Order</string>
+             </property>
+            </item>
+           </widget>
+          </item>
          <item>
           <spacer name="horizontalSpacer_2">
            <property name="orientation">

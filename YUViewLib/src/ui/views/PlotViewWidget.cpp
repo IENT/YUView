@@ -91,6 +91,12 @@ void PlotViewWidget::modelDataChanged()
   }
 }
 
+void PlotViewWidget::setShowStreamList(const QList<unsigned int> &list)
+{
+  this->showStreamList = list;
+  this->update();
+}
+
 void PlotViewWidget::modelNrStreamsChanged()
 {
   this->showStreamList.clear();
