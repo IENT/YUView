@@ -402,13 +402,11 @@ void MainWindow::createMenusAndActions()
   addActionToMenu(playbackMenu,
                   "Next Playlist Item",
                   ui.playlistTreeWidget,
-                  &PlaylistTreeWidget::onSelectNextItem,
-                  Qt::Key_Down);
+                  &PlaylistTreeWidget::onSelectNextItem);
   addActionToMenu(playbackMenu,
                   "Previous Playlist Item",
                   ui.playlistTreeWidget,
-                  &PlaylistTreeWidget::selectPreviousItem,
-                  Qt::Key_Up);
+                  &PlaylistTreeWidget::selectPreviousItem);
   addActionToMenu(playbackMenu,
                   "Next Frame",
                   ui.playbackController,
