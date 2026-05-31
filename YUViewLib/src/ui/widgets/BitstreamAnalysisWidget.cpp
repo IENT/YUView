@@ -294,7 +294,7 @@ void BitstreamAnalysisWidget::restartParsingOfCurrentItem()
   this->createAndConnectNewParser(this->currentCompressedVideo->getInputFormat());
 
   this->ui.dataTreeView->setModel(this->parser->getPacketItemModel());
-  this->ui.dataTreeView->setColumnWidth(0, 600);
+  this->ui.dataTreeView->setColumnWidth(0, 400);
   this->ui.dataTreeView->setColumnWidth(1, 100);
   this->ui.dataTreeView->setColumnWidth(2, 120);
   this->ui.plotViewWidget->setModel(this->parser->getBitratePlotModel());
