@@ -40,6 +40,7 @@
 #include "parser/common/Functions.h"
 
 #include <QSortFilterProxyModel>
+#include <QTimer>
 
 #define BITSTREAM_ANALYSIS_WIDGET_DEBUG_OUTPUT 0
 #if BITSTREAM_ANALYSIS_WIDGET_DEBUG_OUTPUT
@@ -80,6 +81,11 @@ this->connect(this->ui.bitratePlotOrderComboBox,
                 &QCheckBox::toggled,
                 this,
                 &BitstreamAnalysisWidget::onShowHexViewToggled);
+
+  this->ui.dataTreeView->installEventFilter(this);
+
+  this->ui.packetAnalysisSplitter->setStretchFactor(0, 3);  // TreeView
+  this->ui.packetAnalysisSplitter->setStretchFactor(1, 2);  // HexView
 
   this->currentSelectedItemsChanged(nullptr, nullptr, false);
 }
@@ -396,11 +402,58 @@ void BitstreamAnalysisWidget::onShowHexViewToggled(bool checked)
   this->ui.hexViewWidget->setVisible(checked);
 }
 
+bool BitstreamAnalysisWidget::eventFilter(QObject *watched, QEvent *event)
+{
+  if (watched == this->ui.dataTreeView && event->type() == QEvent::KeyPress)
+  {
+    auto *keyEvent = static_cast<QKeyEvent *>(event);
+    if (keyEvent->key() == Qt::Key_Return || keyEvent->key() == Qt::Key_Enter)
+    {
+      auto idx = this->ui.dataTreeView->currentIndex();
+      if (idx.isValid())
+        this->ui.dataTreeView->setExpanded(idx, !this->ui.dataTreeView->isExpanded(idx));
+      this->ui.dataTreeView->scrollTo(this->ui.dataTreeView->currentIndex(),
+                                       QAbstractItemView::PositionAtCenter);
+      return true;
+    }
+    if (keyEvent->key() == Qt::Key_Up || keyEvent->key() == Qt::Key_Down ||
+        keyEvent->key() == Qt::Key_Left || keyEvent->key() == Qt::Key_Right ||
+        keyEvent->key() == Qt::Key_PageUp || keyEvent->key() == Qt::Key_PageDown ||
+        keyEvent->key() == Qt::Key_Home || keyEvent->key() == Qt::Key_End)
+    {
+      event->accept();
+      auto result = QWidget::eventFilter(watched, event);
+      QTimer::singleShot(0, this, [this]() {
+        auto idx = this->ui.dataTreeView->currentIndex();
+        if (idx.isValid())
+          this->ui.dataTreeView->scrollTo(idx, QAbstractItemView::PositionAtCenter);
+      });
+      return result;
+    }
+  }
+  return QWidget::eventFilter(watched, event);
+}
+
 struct NalRootResult
 {
   TreeItem *nalRoot{};
   TreeItem *selectedItem{};
 };
+
+static TreeItem *findFirstDescendantWithRawData(TreeItem *item, int maxDepth)
+{
+  if (!item || maxDepth <= 0)
+    return {};
+  for (unsigned i = 0; i < item->getNrChildItems(); i++)
+  {
+    auto child = item->getChild(i);
+    if (child && child->getRawData().has_value())
+      return child.get();
+    if (auto *found = findFirstDescendantWithRawData(child.get(), maxDepth - 1))
+      return found;
+  }
+  return {};
+}
 
 static NalRootResult findNalRootItemByModelIndex(QModelIndex idx,
                                                  const QAbstractItemModel *model)
@@ -422,6 +475,14 @@ static NalRootResult findNalRootItemByModelIndex(QModelIndex idx,
     }
     idx = model->parent(idx);
   }
+
+  if (auto *child = findFirstDescendantWithRawData(firstItem, maxDepth))
+  {
+    result.nalRoot = child;
+    if (!result.selectedItem->getRawData().has_value())
+      result.selectedItem = child;
+  }
+
   return result;
 }
 
@@ -511,4 +572,5 @@ void BitstreamAnalysisWidget::onDataTreeViewSelectionChanged(const QModelIndex &
       }
     }
   }
+
 }

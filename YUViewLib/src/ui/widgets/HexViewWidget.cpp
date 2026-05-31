@@ -116,51 +116,55 @@ void HexViewWidget::rebuildDisplay()
 
   if (this->highlightOffset >= 0 && this->highlightLength > 0)
   {
-    int hiStart = this->highlightOffset;
-    int hiEnd   = qMin(hiStart + this->highlightLength, size);
+    int hiStart  = this->highlightOffset;
+    int hiEnd    = qMin(hiStart + this->highlightLength, size);
+    int lastByte = hiEnd - 1;
+
+    int startLine = hiStart / BYTES_PER_LINE;
+    int startCol  = hiStart % BYTES_PER_LINE;
+    int endLine   = lastByte / BYTES_PER_LINE;
+    int endCol    = lastByte % BYTES_PER_LINE;
+
+    auto hexCol = [](int col) {
+      int c = 10 + col * 3;
+      if (col >= 8)
+        c += 1;
+      return c;
+    };
+
+    // Format: "XXXXXXXX  HH HH ... HH  HH ... HH  |AAAA...|\n"
+    // offset(8) + "  "(2) + hexPart(49) + " |"(2) = 61
+    const int ASCII_START = 61;
 
     QList<QTextEdit::ExtraSelection> selections;
 
-    for (int i = hiStart; i < hiEnd; i++)
+    QTextBlock startBlock = this->view->document()->findBlockByNumber(startLine);
+    QTextBlock endBlock   = this->view->document()->findBlockByNumber(endLine);
+
+    if (startBlock.isValid() && endBlock.isValid())
     {
-      int lineIdx   = i / BYTES_PER_LINE;
-      int colInLine = i % BYTES_PER_LINE;
+      auto format          = QTextCharFormat();
+      format.setBackground(QColor(0, 120, 215));
+      format.setForeground(QColor(255, 255, 255));
 
-      int linePos  = lineIdx;
-      int colStart = colInLine;
+      int startHexPos = startBlock.position() + hexCol(startCol);
+      int endHexPos   = endBlock.position() + hexCol(endCol) + 2;
 
-      // Calculate position in plain text
-      QTextBlock block = this->view->document()->findBlockByNumber(linePos);
-      if (!block.isValid())
-        continue;
+      auto hexSel          = QTextEdit::ExtraSelection();
+      hexSel.format        = format;
+      hexSel.cursor        = QTextCursor(this->view->document());
+      hexSel.cursor.setPosition(startHexPos);
+      hexSel.cursor.setPosition(endHexPos, QTextCursor::KeepAnchor);
+      selections.append(hexSel);
 
-      // Hex column position
-      // Format: "XXXXXXXX  HH HH HH HH HH HH HH HH  HH HH HH HH HH HH HH HH  |AAAA...|\n"
-      // where X = offset (8), then 2 spaces, then 16*3 hex chars + 1 separator space
-      int hexCol = 10 + colStart * 3;
-      if (colStart >= 8)
-        hexCol += 1; // extra space between groups
-
-      QTextCursor cursor(block);
-      cursor.setPosition(block.position() + hexCol);
-
-      auto sel = QTextEdit::ExtraSelection();
-      sel.format.setBackground(QColor(0, 120, 215));
-      sel.format.setForeground(QColor(255, 255, 255));
-      sel.cursor = cursor;
-      sel.cursor.movePosition(QTextCursor::Right, QTextCursor::KeepAnchor, 2);
-      selections.append(sel);
-
-      // Also highlight ASCII (starts at pos 61: 10 prefix + 49 hex + 2 " |")
-      int asciiCol = 61 + colStart;
-
-      QTextCursor asciiCursor(block);
-      asciiCursor.setPosition(block.position() + asciiCol);
+      int startAsciiPos = startBlock.position() + ASCII_START + startCol;
+      int endAsciiPos   = endBlock.position() + ASCII_START + endCol + 1;
 
       auto asciiSel          = QTextEdit::ExtraSelection();
-      asciiSel.format        = sel.format;
-      asciiSel.cursor        = asciiCursor;
-      asciiSel.cursor.movePosition(QTextCursor::Right, QTextCursor::KeepAnchor, 1);
+      asciiSel.format        = format;
+      asciiSel.cursor        = QTextCursor(this->view->document());
+      asciiSel.cursor.setPosition(startAsciiPos);
+      asciiSel.cursor.setPosition(endAsciiPos, QTextCursor::KeepAnchor);
       selections.append(asciiSel);
     }
 
