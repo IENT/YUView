@@ -76,22 +76,32 @@
            </property>
           </widget>
          </item>
-         <item>
-          <widget class="QCheckBox" name="parseEntireFileCheckBox">
-           <property name="toolTip">
-            <string>By default, only a limite amount of data from the bitstream will be parsed to keep memory consumption low</string>
-           </property>
-           <property name="statusTip">
-            <string/>
-           </property>
-           <property name="whatsThis">
-            <string>By default, only a limite amount of data from the bitstream will be parsed to keep memory consumption low</string>
-           </property>
-           <property name="text">
-            <string>Parse Entire Bitstream</string>
-           </property>
-          </widget>
-         </item>
+          <item>
+           <widget class="QCheckBox" name="parseEntireFileCheckBox">
+            <property name="toolTip">
+             <string>By default, only a limite amount of data from the bitstream will be parsed to keep memory consumption low</string>
+            </property>
+            <property name="statusTip">
+             <string/>
+            </property>
+            <property name="whatsThis">
+             <string>By default, only a limite amount of data from the bitstream will be parsed to keep memory consumption low</string>
+            </property>
+            <property name="text">
+             <string>Parse Entire Bitstream</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QCheckBox" name="showHexViewCheckBox">
+            <property name="text">
+             <string>Show Hex View</string>
+            </property>
+            <property name="checked">
+             <bool>true</bool>
+            </property>
+           </widget>
+          </item>
          <item>
           <spacer name="horizontalSpacer">
            <property name="orientation">
@@ -107,11 +117,21 @@
          </item>
         </layout>
        </item>
-       <item>
-        <widget class="QTreeView" name="dataTreeView"/>
-       </item>
-      </layout>
-     </widget>
+         <item>
+          <widget class="QSplitter" name="packetAnalysisSplitter">
+           <property name="orientation">
+            <enum>Qt::Vertical</enum>
+           </property>
+           <widget class="QTreeView" name="dataTreeView"/>
+           <widget class="HexViewWidget" name="hexViewWidget">
+            <property name="minimumHeight">
+             <number>80</number>
+            </property>
+           </widget>
+          </widget>
+         </item>
+       </layout>
+      </widget>
      <widget class="QWidget" name="tabBitrateGraphicsView">
       <attribute name="title">
        <string>Bitrate Plot</string>
@@ -185,14 +205,20 @@
    </item>
   </layout>
  </widget>
- <customwidgets>
-  <customwidget>
-   <class>PlotViewWidget</class>
-   <extends>QWidget</extends>
-   <header>ui/views/PlotViewWidget.h</header>
-   <container>1</container>
-  </customwidget>
- </customwidgets>
+  <customwidgets>
+   <customwidget>
+    <class>PlotViewWidget</class>
+    <extends>QWidget</extends>
+    <header>ui/views/PlotViewWidget.h</header>
+    <container>1</container>
+   </customwidget>
+   <customwidget>
+    <class>HexViewWidget</class>
+    <extends>QWidget</extends>
+    <header>ui/widgets/HexViewWidget.h</header>
+    <container>1</container>
+   </customwidget>
+  </customwidgets>
  <resources/>
  <connections/>
 </ui>

@@ -32,7 +32,10 @@
 
 #pragma once
 
+#include <common/Typedef.h>
+
 #include <memory>
+#include <mutex>
 #include <optional>
 #include <sstream>
 #include <string>
@@ -60,6 +63,11 @@ public:
 
   void setError(bool isError = true) { this->error = isError; }
   bool isError() const { return this->error; }
+
+  void setBitOffset(size_t offset) { this->bitOffset = offset; }
+  [[nodiscard]] size_t getBitOffset() const { return this->bitOffset; }
+  void setRawData(const ByteVector &data) { this->rawData = data; }
+  [[nodiscard]] const std::optional<ByteVector> &getRawData() const { return this->rawData; }
 
   std::string getName(bool showStreamIndex) const
   {
@@ -94,7 +102,10 @@ public:
     newItem->parent = this->weak_from_this();
     newItem->setProperties(name, std::to_string(value), coding, code, meaning);
     newItem->error = isError;
-    this->childItems.push_back(newItem);
+    {
+      std::lock_guard lock(this->childItemsMutex);
+      this->childItems.push_back(newItem);
+    }
     return newItem;
   }
 
@@ -109,11 +120,18 @@ public:
     newItem->parent = this->weak_from_this();
     newItem->setProperties(name, value, coding, code, meaning);
     newItem->error = isError;
-    this->childItems.push_back(newItem);
+    {
+      std::lock_guard lock(this->childItemsMutex);
+      this->childItems.push_back(newItem);
+    }
     return newItem;
   }
 
-  size_t getNrChildItems() const { return this->childItems.size(); }
+  size_t getNrChildItems() const
+  {
+    std::lock_guard lock(this->childItemsMutex);
+    return this->childItems.size();
+  }
 
   std::string getData(unsigned idx) const
   {
@@ -136,6 +154,7 @@ public:
 
   const std::shared_ptr<TreeItem> getChild(unsigned idx) const
   {
+    std::lock_guard lock(this->childItemsMutex);
     if (idx < this->childItems.size())
       return this->childItems[idx];
     return {};
@@ -145,6 +164,7 @@ public:
 
   std::optional<size_t> getIndexOfChildItem(std::shared_ptr<TreeItem> child) const
   {
+    std::lock_guard lock(this->childItemsMutex);
     for (size_t i = 0; i < this->childItems.size(); i++)
       if (this->childItems[i] == child)
         return i;
@@ -155,6 +175,7 @@ public:
 
 private:
   std::vector<std::shared_ptr<TreeItem>> childItems;
+  mutable std::mutex                     childItemsMutex;
   std::weak_ptr<TreeItem>                parent{};
 
   std::string name;
@@ -164,6 +185,10 @@ private:
   std::string meaning;
 
   bool error{};
+  // The bit position within the parent NAL where this syntax element starts
+  size_t bitOffset{0};
+  // Raw NAL bytes (set only for NAL root TreeItems)
+  std::optional<ByteVector> rawData;
   // This is set for the first layer items in case of AVPackets
   int streamIndex{-1};
 };

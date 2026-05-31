@@ -40,6 +40,7 @@
 #include <QWidget>
 #include <QtConcurrent>
 
+#include "ui/widgets/HexViewWidget.h"
 #include "ui_bitstreamAnalysisWidget.h"
 class BitstreamAnalysisWidget : public QWidget
 {
@@ -66,6 +67,9 @@ private slots:
   void bitratePlotOrderComboBoxIndexChanged(int index);
   void bitratePlotStreamComboBoxIndexChanged(int index);
 
+  void onDataTreeViewSelectionChanged(const QModelIndex &current, const QModelIndex &previous);
+  void onShowHexViewToggled(bool checked);
+
 protected:
   void hideEvent(QHideEvent *event) override;
   void showEvent(QShowEvent *event) override;
@@ -86,6 +90,8 @@ private:
   void                            backgroundParsingFunction();
 
   QPointer<playlistItemCompressedVideo> currentCompressedVideo;
+
+  std::shared_ptr<TreeItem> currentHighlightNalRoot;
 
   // -1: Show all streams. Otherwise only show the given stream index.
   int showOnlyStream{-1};

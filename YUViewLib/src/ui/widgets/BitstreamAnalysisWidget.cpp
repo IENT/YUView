@@ -37,6 +37,9 @@
 #include "parser/HEVC/ParserAnnexBHEVC.h"
 #include "parser/Mpeg2/ParserAnnexBMpeg2.h"
 #include "parser/VVC/ParserAnnexBVVC.h"
+#include "parser/common/Functions.h"
+
+#include <QSortFilterProxyModel>
 
 #define BITSTREAM_ANALYSIS_WIDGET_DEBUG_OUTPUT 0
 #if BITSTREAM_ANALYSIS_WIDGET_DEBUG_OUTPUT
@@ -69,9 +72,14 @@ this->connect(this->ui.bitratePlotOrderComboBox,
                  this,
                  &BitstreamAnalysisWidget::bitratePlotOrderComboBoxIndexChanged);
   this->connect(this->ui.bitratePlotStreamComboBox,
-                 QOverload<int>::of(&QComboBox::currentIndexChanged),
-                 this,
-                 &BitstreamAnalysisWidget::bitratePlotStreamComboBoxIndexChanged);
+                  QOverload<int>::of(&QComboBox::currentIndexChanged),
+                  this,
+                  &BitstreamAnalysisWidget::bitratePlotStreamComboBoxIndexChanged);
+
+  this->connect(this->ui.showHexViewCheckBox,
+                &QCheckBox::toggled,
+                this,
+                &BitstreamAnalysisWidget::onShowHexViewToggled);
 
   this->currentSelectedItemsChanged(nullptr, nullptr, false);
 }
@@ -234,13 +242,31 @@ void BitstreamAnalysisWidget::stopAndDeleteParserBlocking()
                    this,
                    &BitstreamAnalysisWidget::backgroundParsingDone);
 
+  // Explicitly disconnect the selection model's currentChanged signal.
+  // setModel(nullptr) uses deleteLater() on the old selection model, so the old
+  // app-level connection may still fire if the selection model emits currentChanged
+  // during teardown — use-after-free on the TreeItem* stored as internalPointer.
+  if (this->ui.dataTreeView->selectionModel())
+  {
+    QObject::disconnect(this->ui.dataTreeView->selectionModel(),
+                        &QItemSelectionModel::currentChanged,
+                        this,
+                        &BitstreamAnalysisWidget::onDataTreeViewSelectionChanged);
+  }
+
   if (this->backgroundParserFuture.isRunning())
   {
     DEBUG_ANALYSIS("BitstreamAnalysisWidget::stopAndDeleteParser stopping parser");
     this->parser->setAbortParsing();
     this->backgroundParserFuture.waitForFinished();
   }
+
+  this->ui.dataTreeView->setModel(nullptr);
+  this->ui.plotViewWidget->setModel(nullptr);
+  this->ui.hrdPlotWidget->setModel(nullptr);
+
   this->parser.reset();
+  this->currentHighlightNalRoot.reset();
   DEBUG_ANALYSIS("BitstreamAnalysisWidget::stopAndDeleteParser parser stopped and deleted");
 }
 
@@ -300,6 +326,18 @@ void BitstreamAnalysisWidget::restartParsingOfCurrentItem()
   this->ui.plotViewWidget->setModel(this->parser->getBitratePlotModel());
   this->ui.hrdPlotWidget->setModel(this->parser->getHRDPlotModel());
 
+  this->currentHighlightNalRoot.reset();
+  this->ui.hexViewWidget->clear();
+  this->ui.hexViewWidget->setVisible(this->ui.showHexViewCheckBox->isChecked());
+
+  if (this->parser)
+  {
+    this->connect(this->ui.dataTreeView->selectionModel(),
+                  &QItemSelectionModel::currentChanged,
+                  this,
+                  &BitstreamAnalysisWidget::onDataTreeViewSelectionChanged);
+  }
+
   this->updateStreamInfo();
 
   this->updateParsingStatusText(0);
@@ -351,4 +389,126 @@ void BitstreamAnalysisWidget::showEvent(QShowEvent *event)
   DEBUG_ANALYSIS("BitstreamAnalysisWidget::showEvent");
   this->restartParsingOfCurrentItem();
   QWidget::showEvent(event);
+}
+
+void BitstreamAnalysisWidget::onShowHexViewToggled(bool checked)
+{
+  this->ui.hexViewWidget->setVisible(checked);
+}
+
+struct NalRootResult
+{
+  TreeItem *nalRoot{};
+  TreeItem *selectedItem{};
+};
+
+static NalRootResult findNalRootItemByModelIndex(QModelIndex idx,
+                                                 const QAbstractItemModel *model)
+{
+  NalRootResult result;
+  auto *firstItem = static_cast<TreeItem *>(idx.internalPointer());
+  if (!firstItem)
+    return result;
+  result.selectedItem = firstItem;
+
+  constexpr int maxDepth = 100;
+  for (int depth = 0; depth < maxDepth && idx.isValid(); depth++)
+  {
+    auto *item = static_cast<TreeItem *>(idx.internalPointer());
+    if (item && item->getRawData().has_value())
+    {
+      result.nalRoot = item;
+      return result;
+    }
+    idx = model->parent(idx);
+  }
+  return result;
+}
+
+static size_t computeBitLength(TreeItem *item, size_t totalBits)
+{
+  auto parent = item->getParentItem().lock();
+  if (!parent)
+    return totalBits;
+
+  auto self = item->shared_from_this();
+  auto idx = parent->getIndexOfChildItem(self);
+  if (!idx)
+    return totalBits;
+
+  auto nextSibling = parent->getChild(unsigned(*idx + 1));
+  if (nextSibling)
+    return nextSibling->getBitOffset() - item->getBitOffset();
+
+  auto code = item->getData(3);
+  if (!code.empty())
+    return code.size();
+
+  return totalBits - item->getBitOffset();
+}
+
+void BitstreamAnalysisWidget::onDataTreeViewSelectionChanged(const QModelIndex &current,
+                                                               const QModelIndex &)
+{
+  if (!current.isValid() || !this->parser)
+  {
+    this->currentHighlightNalRoot.reset();
+    this->ui.hexViewWidget->clear();
+    return;
+  }
+
+  auto *proxyModel = qobject_cast<QSortFilterProxyModel *>(this->ui.dataTreeView->model());
+  QModelIndex sourceIdx = proxyModel ? proxyModel->mapToSource(current) : current;
+  if (!sourceIdx.isValid())
+  {
+    this->currentHighlightNalRoot.reset();
+    this->ui.hexViewWidget->clear();
+    return;
+  }
+
+  auto *sourceModel = proxyModel ? proxyModel->sourceModel() : this->ui.dataTreeView->model();
+  auto result = findNalRootItemByModelIndex(sourceIdx, sourceModel);
+  if (!result.nalRoot)
+  {
+    this->currentHighlightNalRoot.reset();
+    this->ui.hexViewWidget->clear();
+    return;
+  }
+
+  std::shared_ptr<TreeItem> nalRoot;
+  try
+  {
+    nalRoot = result.nalRoot->shared_from_this();
+  }
+  catch (const std::bad_weak_ptr &)
+  {
+    this->currentHighlightNalRoot.reset();
+    this->ui.hexViewWidget->clear();
+    return;
+  }
+
+  if (nalRoot.get() != this->currentHighlightNalRoot.get())
+    this->currentHighlightNalRoot = nalRoot;
+
+  const auto &rawData = nalRoot->getRawData().value();
+  QByteArray byteData(reinterpret_cast<const char *>(rawData.data()), int(rawData.size()));
+  this->ui.hexViewWidget->setData(byteData);
+
+  if (result.selectedItem)
+  {
+    const auto coding = result.selectedItem->getData(2);
+    const auto code   = result.selectedItem->getData(3);
+    if (!code.empty() && coding != "Calc")
+    {
+      const size_t totalBits = rawData.size() * 8;
+      const size_t bitStart  = result.selectedItem->getBitOffset();
+      if (bitStart < totalBits)
+      {
+        const size_t bitLen    = computeBitLength(result.selectedItem, totalBits);
+        const int    byteOff   = int(bitStart / 8);
+        const int    byteLen   = std::max(1, int((bitLen + 7) / 8));
+        this->ui.hexViewWidget->setHighlight(byteOff, byteLen);
+      }
+    }
+  }
 }

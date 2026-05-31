@@ -55,7 +55,8 @@ void checkAndLog(std::shared_ptr<TreeItem> item,
                  const std::string &       symbolName,
                  const Options &           options,
                  int64_t                   value,
-                 const std::string &       code)
+                 const std::string &       code,
+                 size_t                    bitOffset)
 {
   CheckResult checkResult;
   for (auto &check : options.checkList)
@@ -74,8 +75,9 @@ void checkAndLog(std::shared_ptr<TreeItem> item,
     const bool isError = !checkResult;
     if (isError)
       meaning += " " + checkResult.errorMessage;
-    item->createChildItem(
+    auto child = item->createChildItem(
         symbolName, value, formatCoding(formatName, code.size()), code, meaning, isError);
+    child->setBitOffset(bitOffset);
   }
   if (!checkResult && checkResult.checkLevel == CheckLevel::Error)
     throw std::logic_error(checkResult.errorMessage);
@@ -85,7 +87,8 @@ void checkAndLog(std::shared_ptr<TreeItem> item,
                  const std::string &       byteName,
                  const Options &           options,
                  ByteVector                value,
-                 const std::string &       code)
+                 const std::string &       code,
+                 size_t                    bitOffset)
 {
   // There are no range checks for ByteVectors. Also the meaningMap does nothing.
   if (item && !options.loggingDisabled)
@@ -100,11 +103,13 @@ void checkAndLog(std::shared_ptr<TreeItem> item,
       valueStream << "0x" << std::setfill('0') << std::setw(2) << std::hex << unsigned(c) << " ("
                   << c << ")";
       auto byteCode = code.substr(i * 8, 8);
-      item->createChildItem(byteName + (value.size() > 1 ? "[" + std::to_string(i) + "]" : ""),
-                            valueStream.str(),
-                            formatCoding("u(8)", code.size()),
-                            byteCode,
-                            options.meaningString);
+      auto child = item->createChildItem(
+          byteName + (value.size() > 1 ? "[" + std::to_string(i) + "]" : ""),
+          valueStream.str(),
+          formatCoding("u(8)", code.size()),
+          byteCode,
+          options.meaningString);
+      child->setBitOffset(bitOffset + i * 8);
     }
   }
 }
@@ -153,6 +158,7 @@ SubByteReaderLogging::SubByteReaderLogging(const ByteVector &        inArr,
 {
   if (item)
   {
+    item->setRawData(inArr);
     if (new_sub_item_name.empty())
       this->currentTreeLevel = item;
     else
@@ -191,8 +197,9 @@ uint64_t SubByteReaderLogging::readBits(const std::string &symbolName,
 {
   try
   {
+    auto startBit = this->nrBitsRead();
     auto [value, code] = SubByteReader::readBits(numBits);
-    checkAndLog(this->currentTreeLevel, "u(v)", symbolName, options, value, code);
+    checkAndLog(this->currentTreeLevel, "u(v)", symbolName, options, value, code, startBit);
     return value;
   }
   catch (const std::exception &ex)
@@ -205,8 +212,9 @@ bool SubByteReaderLogging::readFlag(const std::string &symbolName, const Options
 {
   try
   {
+    auto startBit = this->nrBitsRead();
     auto [value, code] = SubByteReader::readBits(1);
-    checkAndLog(this->currentTreeLevel, "u(1)", symbolName, options, value, code);
+    checkAndLog(this->currentTreeLevel, "u(1)", symbolName, options, value, code, startBit);
     return (value != 0);
   }
   catch (const std::exception &ex)
@@ -219,8 +227,9 @@ uint64_t SubByteReaderLogging::readUEV(const std::string &symbolName, const Opti
 {
   try
   {
+    auto startBit = this->nrBitsRead();
     auto [value, code] = SubByteReader::readUE_V();
-    checkAndLog(this->currentTreeLevel, "ue(v)", symbolName, options, value, code);
+    checkAndLog(this->currentTreeLevel, "ue(v)", symbolName, options, value, code, startBit);
     return value;
   }
   catch (const std::exception &ex)
@@ -233,8 +242,9 @@ int64_t SubByteReaderLogging::readSEV(const std::string &symbolName, const Optio
 {
   try
   {
+    auto startBit = this->nrBitsRead();
     auto [value, code] = SubByteReader::readSE_V();
-    checkAndLog(this->currentTreeLevel, "se(v)", symbolName, options, value, code);
+    checkAndLog(this->currentTreeLevel, "se(v)", symbolName, options, value, code, startBit);
     return value;
   }
   catch (const std::exception &ex)
@@ -247,8 +257,9 @@ uint64_t SubByteReaderLogging::readLEB128(const std::string &symbolName, const O
 {
   try
   {
+    auto startBit = this->nrBitsRead();
     auto [value, code] = SubByteReader::readLEB128();
-    checkAndLog(this->currentTreeLevel, "leb128(v)", symbolName, options, value, code);
+    checkAndLog(this->currentTreeLevel, "leb128(v)", symbolName, options, value, code, startBit);
     return value;
   }
   catch (const std::exception &ex)
@@ -262,8 +273,9 @@ SubByteReaderLogging::readNS(const std::string &symbolName, uint64_t maxVal, con
 {
   try
   {
+    auto startBit = this->nrBitsRead();
     auto [value, code] = SubByteReader::readNS(maxVal);
-    checkAndLog(this->currentTreeLevel, "ns(n)", symbolName, options, value, code);
+    checkAndLog(this->currentTreeLevel, "ns(n)", symbolName, options, value, code, startBit);
     return value;
   }
   catch (const std::exception &ex)
@@ -277,8 +289,9 @@ SubByteReaderLogging::readSU(const std::string &symbolName, unsigned nrBits, con
 {
   try
   {
+    auto startBit = this->nrBitsRead();
     auto [value, code] = SubByteReader::readSU(nrBits);
-    checkAndLog(this->currentTreeLevel, "su(n)", symbolName, options, value, code);
+    checkAndLog(this->currentTreeLevel, "su(n)", symbolName, options, value, code, startBit);
     return value;
   }
   catch (const std::exception &ex)
@@ -296,8 +309,9 @@ ByteVector SubByteReaderLogging::readBytes(const std::string &symbolName,
     if (!this->byte_aligned())
       throw std::logic_error("Trying to read bytes while not byte aligned.");
 
+    auto startBit = this->nrBitsRead();
     auto [value, code] = SubByteReader::readBytes(nrBytes);
-    checkAndLog(this->currentTreeLevel, symbolName, options, value, code);
+    checkAndLog(this->currentTreeLevel, symbolName, options, value, code, startBit);
     return value;
   }
   catch (const std::exception &ex)
@@ -310,7 +324,7 @@ void SubByteReaderLogging::logCalculatedValue(const std::string &symbolName,
                                               int64_t            value,
                                               const Options &    options)
 {
-  checkAndLog(this->currentTreeLevel, "Calc", symbolName, options, value, "");
+  checkAndLog(this->currentTreeLevel, "Calc", symbolName, options, value, "", this->nrBitsRead());
 }
 
 void SubByteReaderLogging::logArbitrary(const std::string &symbolName,
@@ -320,7 +334,10 @@ void SubByteReaderLogging::logArbitrary(const std::string &symbolName,
                                         const std::string &meaning)
 {
   if (this->currentTreeLevel)
-    this->currentTreeLevel->createChildItem(symbolName, value, coding, code, meaning);
+  {
+    auto child = this->currentTreeLevel->createChildItem(symbolName, value, coding, code, meaning);
+    child->setBitOffset(this->nrBitsRead());
+  }
 }
 
 void SubByteReaderLogging::stashAndReplaceCurrentTreeItem(std::shared_ptr<TreeItem> newItem)
