@@ -76,32 +76,32 @@
            </property>
           </widget>
          </item>
-          <item>
-           <widget class="QCheckBox" name="parseEntireFileCheckBox">
-            <property name="toolTip">
-             <string>By default, only a limite amount of data from the bitstream will be parsed to keep memory consumption low</string>
-            </property>
-            <property name="statusTip">
-             <string/>
-            </property>
-            <property name="whatsThis">
-             <string>By default, only a limite amount of data from the bitstream will be parsed to keep memory consumption low</string>
-            </property>
-            <property name="text">
-             <string>Parse Entire Bitstream</string>
-            </property>
-           </widget>
-          </item>
-          <item>
-           <widget class="QCheckBox" name="showHexViewCheckBox">
-            <property name="text">
-             <string>Show Hex View</string>
-            </property>
-            <property name="checked">
-             <bool>true</bool>
-            </property>
-           </widget>
-          </item>
+         <item>
+          <widget class="QCheckBox" name="parseEntireFileCheckBox">
+           <property name="toolTip">
+            <string>By default, only a limite amount of data from the bitstream will be parsed to keep memory consumption low</string>
+           </property>
+           <property name="statusTip">
+            <string/>
+           </property>
+           <property name="whatsThis">
+            <string>By default, only a limite amount of data from the bitstream will be parsed to keep memory consumption low</string>
+           </property>
+           <property name="text">
+            <string>Parse Entire Bitstream</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QCheckBox" name="showHexViewCheckBox">
+           <property name="text">
+            <string>Show Hex View</string>
+           </property>
+           <property name="checked">
+            <bool>true</bool>
+           </property>
+          </widget>
+         </item>
          <item>
           <spacer name="horizontalSpacer">
            <property name="orientation">

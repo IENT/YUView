@@ -37,8 +37,6 @@
 #include "parser/HEVC/ParserAnnexBHEVC.h"
 #include "parser/Mpeg2/ParserAnnexBMpeg2.h"
 #include "parser/VVC/ParserAnnexBVVC.h"
-#include "parser/common/Functions.h"
-
 #include <QSortFilterProxyModel>
 #include <QTimer>
 
@@ -488,22 +486,28 @@ static NalRootResult findNalRootItemByModelIndex(QModelIndex idx,
 
 static size_t computeBitLength(TreeItem *item, size_t totalBits)
 {
-  auto parent = item->getParentItem().lock();
-  if (!parent)
-    return totalBits;
-
-  auto self = item->shared_from_this();
-  auto idx = parent->getIndexOfChildItem(self);
-  if (!idx)
-    return totalBits;
-
-  auto nextSibling = parent->getChild(unsigned(*idx + 1));
-  if (nextSibling)
-    return nextSibling->getBitOffset() - item->getBitOffset();
-
   auto code = item->getData(3);
-  if (!code.empty())
-    return code.size();
+  const size_t codeLen = code.empty() ? 0 : code.size();
+
+  auto parent = item->getParentItem().lock();
+  if (parent)
+  {
+    auto self = item->shared_from_this();
+    auto idx  = parent->getIndexOfChildItem(self);
+    if (idx)
+    {
+      auto nextSibling = parent->getChild(unsigned(*idx + 1));
+      if (nextSibling)
+      {
+        size_t bitLen = nextSibling->getBitOffset() - item->getBitOffset();
+        if (bitLen > 0 && (codeLen == 0 || bitLen <= codeLen))
+          return bitLen;
+      }
+    }
+  }
+
+  if (codeLen > 0)
+    return codeLen;
 
   return totalBits - item->getBitOffset();
 }
@@ -567,7 +571,7 @@ void BitstreamAnalysisWidget::onDataTreeViewSelectionChanged(const QModelIndex &
       {
         const size_t bitLen    = computeBitLength(result.selectedItem, totalBits);
         const int    byteOff   = int(bitStart / 8);
-        const int    byteLen   = std::max(1, int((bitLen + 7) / 8));
+        const int    byteLen   = int((bitStart + bitLen + 7) / 8) - byteOff;
         this->ui.hexViewWidget->setHighlight(byteOff, byteLen);
       }
     }

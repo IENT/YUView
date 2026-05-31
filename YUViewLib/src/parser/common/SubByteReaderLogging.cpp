@@ -136,20 +136,6 @@ QByteArray SubByteReaderLogging::convertToQByteArray(ByteVector data)
   return ret;
 }
 
-SubByteReaderLogging::SubByteReaderLogging(SubByteReader &           reader,
-                                           std::shared_ptr<TreeItem> item,
-                                           std::string               new_sub_item_name)
-    : SubByteReader(reader)
-{
-  if (item)
-  {
-    if (new_sub_item_name.empty())
-      this->currentTreeLevel = item;
-    else
-      this->currentTreeLevel = item->createChildItem(new_sub_item_name);
-  }
-}
-
 SubByteReaderLogging::SubByteReaderLogging(const ByteVector &        inArr,
                                            std::shared_ptr<TreeItem> item,
                                            std::string               new_sub_item_name,

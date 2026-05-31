@@ -55,9 +55,6 @@ class SubByteReaderLogging : public SubByteReader
 {
 public:
   SubByteReaderLogging() = default;
-  SubByteReaderLogging(SubByteReader &           reader,
-                       std::shared_ptr<TreeItem> item,
-                       std::string               new_sub_item_name = "");
   SubByteReaderLogging(const ByteVector &        inArr,
                        std::shared_ptr<TreeItem> item,
                        std::string               new_sub_item_name = "",

@@ -138,33 +138,33 @@ void HexViewWidget::rebuildDisplay()
 
     QList<QTextEdit::ExtraSelection> selections;
 
-    QTextBlock startBlock = this->view->document()->findBlockByNumber(startLine);
-    QTextBlock endBlock   = this->view->document()->findBlockByNumber(endLine);
+    auto format          = QTextCharFormat();
+    format.setBackground(QColor(0, 120, 215));
+    format.setForeground(QColor(255, 255, 255));
 
-    if (startBlock.isValid() && endBlock.isValid())
+    for (int line = startLine; line <= endLine; line++)
     {
-      auto format          = QTextCharFormat();
-      format.setBackground(QColor(0, 120, 215));
-      format.setForeground(QColor(255, 255, 255));
+      QTextBlock block = this->view->document()->findBlockByNumber(line);
+      if (!block.isValid())
+        continue;
 
-      int startHexPos = startBlock.position() + hexCol(startCol);
-      int endHexPos   = endBlock.position() + hexCol(endCol) + 2;
+      int colStart = (line == startLine) ? startCol : 0;
+      int colEnd   = (line == endLine)   ? endCol   : (BYTES_PER_LINE - 1);
 
       auto hexSel          = QTextEdit::ExtraSelection();
       hexSel.format        = format;
       hexSel.cursor        = QTextCursor(this->view->document());
-      hexSel.cursor.setPosition(startHexPos);
-      hexSel.cursor.setPosition(endHexPos, QTextCursor::KeepAnchor);
+      hexSel.cursor.setPosition(block.position() + hexCol(colStart));
+      hexSel.cursor.setPosition(block.position() + hexCol(colEnd) + 2,
+                                QTextCursor::KeepAnchor);
       selections.append(hexSel);
-
-      int startAsciiPos = startBlock.position() + ASCII_START + startCol;
-      int endAsciiPos   = endBlock.position() + ASCII_START + endCol + 1;
 
       auto asciiSel          = QTextEdit::ExtraSelection();
       asciiSel.format        = format;
       asciiSel.cursor        = QTextCursor(this->view->document());
-      asciiSel.cursor.setPosition(startAsciiPos);
-      asciiSel.cursor.setPosition(endAsciiPos, QTextCursor::KeepAnchor);
+      asciiSel.cursor.setPosition(block.position() + ASCII_START + colStart);
+      asciiSel.cursor.setPosition(block.position() + ASCII_START + colEnd + 1,
+                                  QTextCursor::KeepAnchor);
       selections.append(asciiSel);
     }
 
