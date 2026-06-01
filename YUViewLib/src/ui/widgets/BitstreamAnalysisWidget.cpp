@@ -318,6 +318,7 @@ void BitstreamAnalysisWidget::restartParsingOfCurrentItem()
     this->ui.dataTreeView->setModel(nullptr);
     this->ui.plotViewWidget->setModel(nullptr);
     this->ui.hrdPlotWidget->setModel(nullptr);
+    this->ui.hexViewWidget->clear();
     return;
   }
 
