@@ -324,10 +324,27 @@ void FFmpegVersionHandler::avLogCallback(void *, int level, const char *fmt, va_
 {
   QString msg;
   msg.vasprintf(fmt, vargs);
-  auto          now = QDateTime::currentDateTime();
-  QMutexLocker  locker(&FFmpegVersionHandler::logListMutex);
-  FFmpegVersionHandler::logListFFmpeg.append(now.toString("hh:mm:ss.zzz") +
-                                             QString(" - L%1 - ").arg(level) + msg);
+
+  // Keep existing in-memory list for the "Show FFmpeg Log" UI dialog.
+  {
+    auto         now = QDateTime::currentDateTime();
+    QMutexLocker locker(&FFmpegVersionHandler::logListMutex);
+    FFmpegVersionHandler::logListFFmpeg.append(now.toString("hh:mm:ss.zzz") +
+                                               QString(" - L%1 - ").arg(level) + msg);
+  }
+
+  // Also route through Qt's logging so the Logger / LogPanel can see it.
+  // AV_LOG_WARNING = 24, AV_LOG_ERROR = 16. Skip pure whitespace / newlines.
+  const QString trimmed = msg.trimmed();
+  if (trimmed.isEmpty())
+    return;
+
+  const QString tagged = QString("[FFmpeg L%1] %2").arg(level).arg(trimmed);
+  // level <= AV_LOG_WARNING(24) → qWarning, otherwise qDebug
+  if (level <= 24)
+    qWarning().noquote() << tagged;
+  else
+    qDebug().noquote() << tagged;
 }
 
 void FFmpegVersionHandler::loadFFmpegLibraries()
@@ -386,7 +403,10 @@ void FFmpegVersionHandler::loadFFmpegLibraries()
   }
 
   if (this->librariesLoaded)
+  {
     this->lib.avutil.av_log_set_callback(&FFmpegVersionHandler::avLogCallback);
+    this->lib.avutil.av_log_set_level(32); // AV_LOG_INFO
+  }
 }
 
 bool FFmpegVersionHandler::loadingSuccessfull() const

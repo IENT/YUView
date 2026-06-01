@@ -40,4 +40,9 @@ class YUViewApplication : public QApplication
 public:
   YUViewApplication(int argc, char *argv[]);
   int returnCode{0};
+
+  // Override notify() to catch C++ exceptions thrown inside Qt event handlers.
+  // Without this, an exception escaping an event handler causes std::terminate
+  // which bypasses our crash handler.
+  bool notify(QObject *receiver, QEvent *event) override;
 };

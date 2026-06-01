@@ -43,6 +43,8 @@
 
 #include <common/Functions.h>
 #include <common/FunctionsGui.h>
+#include <crash/CrashHandler.h>
+#include <logging/Logger.h>
 #include <playlistitem/playlistItems.h>
 #include <ui/Mainwindow_performanceTestDialog.h>
 #include <ui/SettingsDialog.h>
@@ -217,6 +219,27 @@ MainWindow::MainWindow(bool useAlternativeSources, QWidget *parent) : QMainWindo
       ui.playlistTreeWidget->loadAutosavedPlaylist();
     else
       ui.playlistTreeWidget->dropAutosavedPlaylist();
+  }
+
+  // If a crash log from the previous session exists, notify the user.
+  if (CrashHandler::hasPendingCrashReport())
+  {
+    const QString reportPath = CrashHandler::lastCrashReportPath();
+    QMessageBox   msgBox(this);
+    msgBox.setWindowTitle(tr("Crash Report Available"));
+    msgBox.setText(tr("YUView generated a crash report during the last session."));
+    msgBox.setInformativeText(
+        tr("A crash log was saved to:\n%1\n\nWould you like to open the log folder?")
+            .arg(reportPath));
+    msgBox.setStandardButtons(QMessageBox::Yes | QMessageBox::Ignore);
+    msgBox.setDefaultButton(QMessageBox::Ignore);
+    msgBox.setIcon(QMessageBox::Warning);
+
+    if (msgBox.exec() == QMessageBox::Yes)
+      QDesktopServices::openUrl(QUrl::fromLocalFile(CrashHandler::crashLogDirectory()));
+
+    // Archive the report so we don't show it again on the next launch.
+    CrashHandler::archiveCrashReport();
   }
   // Start the timer now (and not in the constructor of rht playlistTreeWidget) so that the autosave
   // is not accidetly overwritten.
@@ -470,6 +493,44 @@ void MainWindow::createMenusAndActions()
   addLambdaActionToMenu(downloadsMenu, "Performance Tests", [this]() { this->performanceTest(); });
   addActionToMenu(helpMenu, "Reset Window Layout", this, &MainWindow::resetWindowLayout);
   addActionToMenu(helpMenu, "Clear Settings", this, &MainWindow::closeAndClearSettings);
+
+  helpMenu->addSeparator();
+  addLambdaActionToMenu(helpMenu,
+                        "Show Log Panel",
+                        [this]()
+                        {
+                          if (!logPanel)
+                            logPanel = new LogPanel(this);
+                          logPanel->show();
+                          logPanel->raise();
+                          logPanel->activateWindow();
+                        });
+  addLambdaActionToMenu(helpMenu,
+                        "Open Log Folder",
+                        []()
+                        {
+                          QDesktopServices::openUrl(
+                              QUrl::fromLocalFile(Logger::instance().logDirectory()));
+                        });
+  // "Show Last Crash Report" – only enabled when a pending report exists.
+  {
+    auto *crashAction = new QAction(tr("Show Last Crash Report"), helpMenu);
+    crashAction->setEnabled(CrashHandler::hasPendingCrashReport());
+    QObject::connect(crashAction,
+                     &QAction::triggered,
+                     [crashAction]()
+                     {
+                       const QString path = CrashHandler::lastCrashReportPath();
+                       if (!path.isEmpty())
+                       {
+                         QDesktopServices::openUrl(
+                             QUrl::fromLocalFile(CrashHandler::crashLogDirectory()));
+                         CrashHandler::archiveCrashReport();
+                         crashAction->setEnabled(false);
+                       }
+                     });
+    helpMenu->addAction(crashAction);
+  }
 
   this->updateRecentFileActions();
 }

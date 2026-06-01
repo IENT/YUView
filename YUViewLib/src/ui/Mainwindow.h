@@ -37,6 +37,7 @@
 #include <QSettings>
 
 #include <handler/UpdateHandler.h>
+#include <logging/LogPanel.h>
 #include <ui/SeparateWindow.h>
 #include <video/caching/VideoCache.h>
 
@@ -165,4 +166,6 @@ private:
   SeparateWindow                     separateViewWindow;
   bool showNormalMaximized;     // When going to full screen: Was this windows maximized?
   bool panelsVisible[5]{false}; // Which panels are visible when going to full-screen mode?
+
+  QPointer<LogPanel> logPanel;
 };

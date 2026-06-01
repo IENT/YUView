@@ -33,11 +33,14 @@
 #include "YUViewApplication.h"
 
 #include <common/Typedef.h>
+#include <crash/CrashHandler.h>
 #include <handler/SingleInstanceHandler.h>
+#include <logging/Logger.h>
 #include <ui/Mainwindow.h>
 
 #include <QApplication>
 #include <QSettings>
+#include <QStandardPaths>
 
 #define APPLICATION_DEBUG 0
 #if APPLICATION_DEBUG && !NDEBUG
@@ -52,8 +55,17 @@ YUViewApplication::YUViewApplication(int argc, char *argv[]) : QApplication(argc
   QString versionString = QString::fromUtf8(YUVIEW_VERSION);
   setApplicationName("YUView");
   setApplicationVersion(versionString);
+
+  // -------------------------------------------------------------------------
+  // Logging + crash handler setup.
+  // Must be done after setApplicationName / setOrganizationName so that
+  // QStandardPaths resolves to the correct directory.
+  // -------------------------------------------------------------------------
   setOrganizationName("Institut für Nachrichtentechnik, RWTH Aachen University");
   setOrganizationDomain("ient.rwth-aachen.de");
+
+  Logger::instance().init();
+  CrashHandler::instance().init(Logger::instance().logDirectory());
 #ifdef Q_OS_LINUX
 #if QT_VERSION >= QT_VERSION_CHECK(5, 7, 0)
   QGuiApplication::setDesktopFileName("YUView");
@@ -129,4 +141,26 @@ YUViewApplication::YUViewApplication(int argc, char *argv[]) : QApplication(argc
 
   w.show();
   returnCode = exec();
+}
+
+bool YUViewApplication::notify(QObject *receiver, QEvent *event)
+{
+  // Wrap every Qt event dispatch in a try/catch so that an unhandled C++
+  // exception thrown inside an event handler is caught here rather than
+  // propagating out to std::terminate (which would skip our crash handler
+  // on some platforms / compilers).
+  try
+  {
+    return QApplication::notify(receiver, event);
+  }
+  catch (const std::exception &e)
+  {
+    qCritical("Unhandled exception in event handler: %s", e.what());
+    throw; // Re-throw so std::set_terminate (in CrashHandler) can log it.
+  }
+  catch (...)
+  {
+    qCritical("Unhandled unknown exception in event handler");
+    throw;
+  }
 }

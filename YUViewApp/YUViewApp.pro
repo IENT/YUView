@@ -78,6 +78,8 @@ win32 {
     RC_FILE += images/WindowsAppIcon.rc
     SVNN = $$system("git describe --tags")
     DEFINES += NOMINMAX
+    # dbghelp: required for MiniDumpWriteDump and StackWalk64 in CrashHandlerWindows
+    LIBS += -ldbghelp
 }
 
 LASTHASH = $$system("git rev-parse HEAD")
