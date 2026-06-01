@@ -559,7 +559,8 @@ void PlaybackController::goToNextFrame(const int nextFrameIndex)
     if (actualFramesPerSec > 0)
       this->ui.fpsLabel->setText(QString::number(actualFramesPerSec, 'f', 1));
     if (this->playbackWasStalled)
-      this->ui.fpsLabel->setStyleSheet("QLabel { background-color: yellow }");
+      this->ui.fpsLabel->setStyleSheet(QString("QLabel { background-color: %1 }")
+        .arg(palette().color(QPalette::Highlight).lighter(150).name()));
     else
       this->ui.fpsLabel->setStyleSheet("");
     this->playbackWasStalled = false;

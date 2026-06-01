@@ -34,6 +34,8 @@
 
 #include <common/Functions.h>
 
+#include <QApplication>
+#include <QPalette>
 #include <QSettings>
 
 QColor functionsGui::toQColor(const Color &color)
@@ -65,7 +67,7 @@ QIcon functionsGui::convertIcon(QString iconPath)
   // Get the active and inactive colors
   QStringList colors = functions::getThemeColors(themeName);
   QRgb        activeColor, inActiveColor;
-  if (colors.size() == 4)
+  if (colors.size() >= 4)
   {
     QColor active(colors[1]);
     QColor inactive(colors[2]);
@@ -74,29 +76,35 @@ QIcon functionsGui::convertIcon(QString iconPath)
   }
   else
   {
-    activeColor   = qRgb(0, 0, 0);
-    inActiveColor = qRgb(128, 128, 128);
+    // Default theme: detect system palette colors
+    QPalette pal = QApplication::palette();
+    QColor active   = pal.color(QPalette::ButtonText);
+    QColor inactive = pal.color(QPalette::PlaceholderText);
+    if (!inactive.isValid())
+      inactive = active.lighter(150);
+    activeColor   = active.rgb();
+    inActiveColor = inactive.rgb();
   }
 
-  // Color the icon in the active/inactive colors
+  // Color the icon in the active/inactive colors, preserving alpha channel
   QImage input(iconPath);
 
   QImage active(input.size(), input.format());
   QImage inActive(input.size(), input.format());
+  active.fill(Qt::transparent);
+  inActive.fill(Qt::transparent);
+  
   for (int y = 0; y < input.height(); y++)
   {
     for (int x = 0; x < input.width(); x++)
     {
       QRgb in = input.pixel(x, y);
-      if (qAlpha(in) != 0)
+      int alpha = qAlpha(in);
+      if (alpha > 0)
       {
-        active.setPixel(x, y, activeColor);
-        inActive.setPixel(x, y, inActiveColor);
-      }
-      else
-      {
-        active.setPixel(x, y, in);
-        inActive.setPixel(x, y, in);
+        // Preserve alpha channel for smooth anti-aliasing
+        active.setPixel(x, y, qRgba(qRed(activeColor), qGreen(activeColor), qBlue(activeColor), alpha));
+        inActive.setPixel(x, y, qRgba(qRed(inActiveColor), qGreen(inActiveColor), qBlue(inActiveColor), alpha));
       }
     }
   }

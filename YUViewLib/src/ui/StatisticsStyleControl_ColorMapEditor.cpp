@@ -143,7 +143,7 @@ void StatisticsStyleControl_ColorMapEditor::on_pushButtonAdd_clicked()
   newItem->setData(Qt::EditRole, newValue);
   table->setItem(rowCount - 1, 0, newItem);
   newItem = new QTableWidgetItem();
-  newItem->setBackground(QBrush(Qt::black));
+  newItem->setBackground(QBrush(table->palette().color(QPalette::Base)));
   table->setItem(rowCount - 1, 1, newItem);
 
   // Add the "other" item at the last position again with the same color as it was before.

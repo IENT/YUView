@@ -811,12 +811,13 @@ void MainWindow::updateSettings()
 
       // Now replace the placeholder color values with the real values
       QStringList colors = functions::getThemeColors(themeName);
-      if (colors.count() == 4)
+      if (colors.count() == 5)
       {
         styleSheet.replace("#backgroundColor", colors[0]);
         styleSheet.replace("#activeColor", colors[1]);
         styleSheet.replace("#inactiveColor", colors[2]);
         styleSheet.replace("#highlightColor", colors[3]);
+        styleSheet.replace("#borderColor", colors[4]);
       }
       else
         styleSheet.clear();

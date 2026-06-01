@@ -4,6 +4,7 @@ The colors we use here:
  background: #backgroundColor
  text and borders: #activeColor (active) #inactiveColor (inavtive)
  active indication color: #highlightColor (used for hovering, active indication)
+ border color: #borderColor (used for widget borders)
 */
 QToolTip
 {
@@ -19,13 +20,27 @@ QWidget
     /* The default values for all widgets */
     color: #activeColor;
     background-color: #backgroundColor;
-    /*selection-background-color:#DBA800;*/
-    /*selection-color: #BC9000; */
+    selection-background-color: #highlightColor;
+    selection-color: white;
 }
 
 QWidget:disabled
 {
     color: #inactiveColor;
+}
+
+QTreeView::item:selected,
+QTreeWidget::item:selected
+{
+    background-color: #highlightColor;
+    color: white;
+}
+
+QTreeView::item:selected:!active,
+QTreeWidget::item:selected:!active
+{
+    background-color: #inactiveColor;
+    color: white;
 }
 
 QCheckBox,
@@ -76,7 +91,7 @@ QRadioButton::indicator:checked:disabled
 QPushButton
 {
     border-width: 1px;
-    border-color: #C6C6C6;
+    border-color: #borderColor;
     border-style: solid;
     padding: 2px;
     padding-left: 8px;
@@ -90,7 +105,7 @@ QTreeWidget,
 QTextEdit
 {
     border-width: 1px;
-    border-color: #C6C6C6;
+    border-color: #borderColor;
     border-style: solid;
     padding: 2px;
 }
@@ -148,7 +163,7 @@ QSpinBox
 QProgressBar
 {
     border-width: 1px;
-    border-color: #C6C6C6;
+    border-color: #borderColor;
     border-style: solid;
 }
 QProgressBar::chunk 
@@ -160,7 +175,7 @@ QProgressBar::chunk
 QDockWidget 
 {
     background: #highlightColor;
-    color: black;
+    color: #activeColor;
     border: 1px solid orange;
 }
 
@@ -210,12 +225,12 @@ QMenuBar::item:selected
 QMenuBar::item:pressed
 {
     background-color: #highlightColor;
-    color: black;
+    color: #activeColor;
 }
 /* The menu if opened */
 QMenu
 {
-    border: 1px solid #C6C6C6;
+    border: 1px solid #borderColor;
     color: #activeColor;
 }
 QMenu::item:selected
@@ -233,13 +248,13 @@ QHeaderView::section
 QFrame[frameShape="4"],
 QFrame[frameShape="5"]
 {
-    border: 1px solid #C6C6C6;
+    border: 1px solid #borderColor;
     background-color: #backgroundColor;
 }
 
 /* The slider */ 
 QSlider::handle:horizontal {
-    border: 1px solid #C6C6C6;
+    border: 1px solid #borderColor;
     background-color: #backgroundColor;
     width: 0.5em;
     margin: -0.4em 0; /* handle is placed by default on the contents rect of the groove. Expand outside the groove */
@@ -254,7 +269,7 @@ QSlider::handle:horizontal:hover
 }
 QSlider::groove:horizontal 
 {
-    background-color: #C6C6C6;
+    background-color: #borderColor;
     height: 0.4em; /* the groove expands to the size of the slider by default. by giving it a height, it has a fixed size */
 }
 QSlider::groove:horizontal:disabled

@@ -55,8 +55,7 @@ const int tickLength         = 3;
 const int tickToTextSpace    = 2;
 const int fadeBoxThickness   = 10;
 
-const QColor gridLineMajor(180, 180, 180);
-const QColor gridLineMinor(230, 230, 230);
+// Grid line colors are determined dynamically based on theme
 
 PlotViewWidget::PlotViewWidget(QWidget *parent) : MoveAndZoomableView(parent)
 {
@@ -165,7 +164,7 @@ void PlotViewWidget::zoomToFitInternal()
   this->update();
 }
 
-void drawTextInCenterOfArea(QPainter &painter, QRect area, QString text)
+void drawTextInCenterOfArea(QPainter &painter, QRect area, QString text, const QColor &textColor, const QColor &bgColor)
 {
   // Set the QRect where to show the text
   QFont        displayFont = painter.font();
@@ -178,8 +177,8 @@ void drawTextInCenterOfArea(QPainter &painter, QRect area, QString text)
 
   // Draw a rectangle around the text in white with a black border
   QRect boxRect = textRect + QMargins(5, 5, 5, 5);
-  painter.setPen(QPen(Qt::black, 1));
-  painter.fillRect(boxRect, Qt::white);
+  painter.setPen(QPen(textColor, 1));
+  painter.fillRect(boxRect, bgColor);
   painter.drawRect(boxRect);
 
   painter.drawText(textRect, Qt::AlignCenter, text);
@@ -227,7 +226,7 @@ void PlotViewWidget::paintEvent(QPaintEvent *)
 
   if (this->model == nullptr)
   {
-    drawTextInCenterOfArea(painter, this->rect(), "Please select an item");
+    drawTextInCenterOfArea(painter, this->rect(), "Please select an item", getTextColor(), getBackgroundColor());
   }
 }
 
@@ -307,7 +306,7 @@ void PlotViewWidget::setZoomFactor(double zoom)
 
 void PlotViewWidget::drawWhiteBoarders(QPainter &painter, const QRectF &widgetRect) const
 {
-  painter.setBrush(Qt::white);
+  painter.setBrush(getBackgroundColor());
   painter.setPen(Qt::NoPen);
   painter.drawRect(QRectF(QPointF(0, 0), QPointF(this->plotRect.left(), widgetRect.bottom())));
   painter.drawRect(QRectF(QPointF(0, 0), QPointF(widgetRect.right(), this->plotRect.top())));
@@ -385,7 +384,7 @@ PlotViewWidget::getAxisTicksToShow(const Axis axis, Range<double> visibleRange) 
 
 void PlotViewWidget::drawAxis(QPainter &painter) const
 {
-  painter.setPen(QPen(Qt::black, 1));
+  painter.setPen(QPen(getTextColor(), 1));
   painter.drawLine(this->plotRect.bottomLeft(), this->plotRect.topLeft());
   painter.drawLine(this->plotRect.bottomLeft(), this->plotRect.bottomRight());
 }
@@ -400,7 +399,7 @@ void PlotViewWidget::drawAxisTicks(QPainter &                              paint
   const auto tickLine =
       (properties.axis == Axis::X) ? QPointF(0, tickLength) : QPointF(-tickLength, 0);
 
-  painter.setPen(QPen(Qt::black, 1));
+  painter.setPen(QPen(getTextColor(), 1));
   for (auto tick : ticks)
   {
     QPointF p = properties.line.p1();
@@ -420,7 +419,7 @@ void PlotViewWidget::drawAxisTickLabels(QPainter &                              
   if (ticks.isEmpty() || this->model == nullptr)
     return;
 
-  painter.setPen(QPen(Qt::black, 1));
+  painter.setPen(QPen(getTextColor(), 1));
   QFont         displayFont = painter.font();
   QFontMetricsF metrics(displayFont);
 
@@ -520,7 +519,7 @@ void PlotViewWidget::drawGridLines(QPainter &                            painter
       drawEnd.setY(tick.pixelPosInWidget);
     }
 
-    painter.setPen(tick.minorTick ? gridLineMinor : gridLineMajor);
+    painter.setPen(tick.minorTick ? getGridColor(false) : getGridColor(true));
     painter.drawLine(drawStart, drawEnd);
   }
 }
@@ -537,8 +536,9 @@ void PlotViewWidget::drawFadeBoxes(QPainter &painter, const QRectF &widgetRect) 
 
   painter.setPen(Qt::NoPen);
 
-  auto setGradientBrush = [&gradient, &painter](bool inverse) {
-    gradient.setColorAt(inverse ? 1 : 0, Qt::white);
+  const auto bgColor = getBackgroundColor();
+  auto setGradientBrush = [&gradient, &painter, &bgColor](bool inverse) {
+    gradient.setColorAt(inverse ? 1 : 0, bgColor);
     gradient.setColorAt(inverse ? 0 : 1, Qt::transparent);
     painter.setBrush(gradient);
   };
@@ -560,7 +560,7 @@ void PlotViewWidget::drawFadeBoxes(QPainter &painter, const QRectF &widgetRect) 
 
 void PlotViewWidget::drawWhiteBoxesInLabelArea(QPainter &painter, const QRectF &widgetRect) const
 {
-  painter.setBrush(Qt::white);
+  painter.setBrush(getBackgroundColor());
   painter.setPen(Qt::NoPen);
 
   painter.drawRect(QRectF(this->plotRect.bottomRight(), widgetRect.bottomRight()));
@@ -606,11 +606,11 @@ void PlotViewWidget::drawLimits(QPainter &painter) const
         textRect.setSize(textSize);
         textRect.moveTop(dummyPointForY.y());
         textRect.moveRight(this->plotRect.right() - fadeBoxThickness);
-        painter.setPen(Qt::black);
+        painter.setPen(getTextColor());
         painter.drawText(textRect, Qt::AlignCenter, limit.name);
       }
 
-      QPen limitPen(Qt::black);
+      QPen limitPen(getTextColor());
       limitPen.setWidth(2);
       painter.setPen(limitPen);
       painter.drawLine(line);
@@ -814,7 +814,8 @@ void PlotViewWidget::drawInfoBox(QPainter &painter) const
 
   // Create a QTextDocument. This object can tell us the size of the rendered text.
   QTextDocument textDocument;
-  textDocument.setDefaultStyleSheet("* { color: #000000 }");
+  const auto textColor = getTextColor();
+  textDocument.setDefaultStyleSheet(QString("* { color: %1 }").arg(textColor.name()));
   textDocument.setHtml(infoString);
   textDocument.setTextWidth(textDocument.size().width());
 
@@ -841,8 +842,9 @@ void PlotViewWidget::drawInfoBox(QPainter &painter) const
   // Draw a black rectangle and then the text on top of that
   QRect  rect(QPoint(0, 0), textDocument.size().toSize() + QSize(2 * padding, 2 * padding));
   QBrush originalBrush;
-  painter.setBrush(QColor(255, 255, 255, 150));
-  painter.setPen(Qt::black);
+  const auto bgColor = getBackgroundColor();
+  painter.setBrush(QColor(bgColor.red(), bgColor.green(), bgColor.blue(), 150));
+  painter.setPen(getTextColor());
   painter.drawRect(rect);
   painter.translate(padding, padding);
   textDocument.drawContents(&painter);
@@ -871,7 +873,8 @@ void PlotViewWidget::drawDebugBox(QPainter &painter) const
 
   // Create a QTextDocument. This object can tell us the size of the rendered text.
   QTextDocument textDocument;
-  textDocument.setDefaultStyleSheet("* { color: #000000 }");
+  const auto textColor = getTextColor();
+  textDocument.setDefaultStyleSheet(QString("* { color: %1 }").arg(textColor.name()));
   textDocument.setHtml(infoString);
   textDocument.setTextWidth(textDocument.size().width());
 
@@ -882,8 +885,9 @@ void PlotViewWidget::drawDebugBox(QPainter &painter) const
   // Draw a black rectangle and then the text on top of that
   QRect  rect(QPoint(0, 0), textDocument.size().toSize() + QSize(2 * padding, 2 * padding));
   QBrush originalBrush;
-  painter.setBrush(QColor(255, 255, 255, 150));
-  painter.setPen(Qt::black);
+  const auto bgColor = getBackgroundColor();
+  painter.setBrush(QColor(bgColor.red(), bgColor.green(), bgColor.blue(), 150));
+  painter.setPen(getTextColor());
   painter.drawRect(rect);
   painter.translate(padding, padding);
   textDocument.drawContents(&painter);
@@ -1095,7 +1099,7 @@ QRectF PlotViewWidget::getMaxLabelDrawSize(QPainter &              painter,
   if (!this->model)
     return {};
 
-  painter.setPen(QPen(Qt::black, 1));
+  painter.setPen(QPen(getTextColor(), 1));
   painter.setBrush(Qt::NoBrush);
   QFont         displayFont = painter.font();
   QFontMetricsF metrics(displayFont);
@@ -1123,4 +1127,32 @@ void PlotViewWidget::initViewFromModel()
     this->zoomToPixelsPerValueX = 100.0 / double(*range);
     this->update();
   }
+}
+
+QColor PlotViewWidget::getTextColor() const
+{
+  const auto bg = palette().color(QPalette::Window);
+  return bg.lightness() < 128 ? Qt::white : Qt::black;
+}
+
+QColor PlotViewWidget::getBackgroundColor() const
+{
+  return palette().color(QPalette::Window);
+}
+
+QColor PlotViewWidget::getGridColor(bool major) const
+{
+  const auto bg = getBackgroundColor();
+  if (bg.lightness() < 128) {
+    // Dark theme
+    return major ? QColor(80, 80, 80) : QColor(60, 60, 60);
+  } else {
+    // Light theme
+    return major ? QColor(180, 180, 180) : QColor(220, 220, 220);
+  }
+}
+
+QColor PlotViewWidget::getHighlightColor() const
+{
+  return palette().color(QPalette::Highlight);
 }

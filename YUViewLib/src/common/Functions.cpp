@@ -97,12 +97,14 @@ QStringList getThemeNameList()
   ret.append("Default");
   ret.append("Simple Dark/Blue");
   ret.append("Simple Dark/Orange");
+  ret.append("Simple Light/Blue");
   return ret;
 }
 
 QString getThemeFileName(QString themeName)
 {
-  if (themeName == "Simple Dark/Blue" || themeName == "Simple Dark/Orange")
+  if (themeName == "Simple Dark/Blue" || themeName == "Simple Dark/Orange"
+      || themeName == "Simple Light/Blue")
     return ":YUViewSimple.qss";
   return "";
 }
@@ -113,12 +115,20 @@ QStringList getThemeColors(QString themeName)
     return QStringList() << "#262626"
                          << "#E0E0E0"
                          << "#808080"
-                         << "#3daee9";
+                         << "#3daee9"
+                         << "#C6C6C6";
   if (themeName == "Simple Dark/Orange")
     return QStringList() << "#262626"
                          << "#E0E0E0"
                          << "#808080"
-                         << "#FFC300 ";
+                         << "#FFC300"
+                         << "#C6C6C6";
+  if (themeName == "Simple Light/Blue")
+    return QStringList() << "#F5F5F5"
+                         << "#202020"
+                         << "#A0A0A0"
+                         << "#0078D7"
+                         << "#C0C0C0";
   return QStringList();
 }
 

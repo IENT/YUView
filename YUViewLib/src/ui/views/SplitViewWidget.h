@@ -333,6 +333,10 @@ protected:
 
   QPointer<splitViewWidget> getOtherWidget() const;
   void                      getStateFromMaster() override;
+
+  // Helper methods for theme-aware colors
+  QColor getTextColor() const;
+  QColor getBackgroundColor() const;
 };
 
 #endif // SPLITVIEWWIDGET_H

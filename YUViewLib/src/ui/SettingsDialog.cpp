@@ -41,6 +41,7 @@
 #include <decoder/decoderVVDec.h>
 #include <ffmpeg/FFmpegVersionHandler.h>
 
+#include <QApplication>
 #include <QColorDialog>
 #include <QFileDialog>
 #include <QMessageBox>
@@ -172,9 +173,9 @@ void SettingsDialog::initializeDefaults()
   if (!settings.contains("View/BackgroundColor"))
     settings.setValue("View/BackgroundColor", QColor(128, 128, 128));
   if (!settings.contains("View/GridColor"))
-    settings.setValue("View/GridColor", QColor(0, 0, 0));
+    settings.setValue("View/GridColor", QApplication::palette().color(QPalette::WindowText));
   if (!settings.contains("Plot/BackgroundColor"))
-    settings.setValue("Plot/BackgroundColor", QColor(255, 255, 255));
+    settings.setValue("Plot/BackgroundColor", QApplication::palette().color(QPalette::Base));
 }
 
 unsigned int SettingsDialog::getCacheSizeInMB() const

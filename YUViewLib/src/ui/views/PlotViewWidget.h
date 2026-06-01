@@ -127,4 +127,10 @@ private:
   bool viewInitializedForModel {false};
 
   bool fixYAxis {true};
+
+  // Helper methods for theme-aware colors
+  QColor getTextColor() const;
+  QColor getBackgroundColor() const;
+  QColor getGridColor(bool major) const;
+  QColor getHighlightColor() const;
 };

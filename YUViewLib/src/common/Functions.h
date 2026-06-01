@@ -56,7 +56,7 @@ QStringList getThemeNameList();
 QString getThemeFileName(QString themeName);
 // For the given theme, return the primary colors to replace.
 // In the qss file, we can use tags, which will be replaced by these colors. The tags are:
-// #backgroundColor, #activeColor, #inactiveColor, #highlightColor
+// #backgroundColor, #activeColor, #inactiveColor, #highlightColor, #borderColor
 // The values to replace them by are returned in this order.
 QStringList getThemeColors(QString themeName);
 

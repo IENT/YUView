@@ -180,8 +180,8 @@ void splitViewWidget::paintEvent(QPaintEvent *)
 
     // Draw a rectangle around the text in white with a black border
     QRect boxRect = textRect + QMargins(5, 5, 5, 5);
-    painter.setPen(QPen(Qt::black, 1));
-    painter.fillRect(boxRect, Qt::white);
+    painter.setPen(QPen(getTextColor(), 1));
+    painter.fillRect(boxRect, getBackgroundColor());
     painter.drawRect(boxRect);
 
     painter.drawText(textRect, Qt::AlignCenter, text);
@@ -467,14 +467,14 @@ void splitViewWidget::paintEvent(QPaintEvent *)
       triangle.lineTo(xSplit + 10, drawArea_botR.y());
       triangle.closeSubpath();
 
-      painter.fillPath(triangle, Qt::white);
+      painter.fillPath(triangle, getTextColor());
     }
     else
     {
       // Draw the splitting line at position xSplit. All pixels left of the line
       // belong to the left view, and all pixels on the right belong to the right one.
       QLine line(xSplit, 0, xSplit, drawArea_botR.y());
-      painter.setPen(Qt::white);
+      painter.setPen(getTextColor());
       painter.drawLine(line);
     }
   }
@@ -500,7 +500,7 @@ void splitViewWidget::paintEvent(QPaintEvent *)
     // Draw the zoom factor
     QString zoomString = QString("x") + QString::number(zoom, 'g', (zoom < 0.5) ? 4 : 2);
     painter.setRenderHint(QPainter::TextAntialiasing);
-    painter.setPen(QColor(Qt::black));
+    painter.setPen(getTextColor());
     painter.setFont(zoomFactorFont);
     painter.drawText(zoomFactorFontPos, zoomString);
   }
@@ -662,7 +662,7 @@ void splitViewWidget::paintZoomBox(int           view,
       zoomViewRect.moveBottomRight(drawArea_botR - QPoint(margin, margin));
 
     // Fill the viewRect with the background color
-    painter.setPen(Qt::black);
+    painter.setPen(getTextColor());
     painter.fillRect(zoomViewRect, painter.background());
 
     // Restrict drawing to the zoom view rectangle. Save the old clipping region (if any) so we can
@@ -732,7 +732,8 @@ void splitViewWidget::paintZoomBox(int           view,
 
     // Create a QTextDocument. This object can tell us the size of the rendered text.
     QTextDocument textDocument;
-    textDocument.setDefaultStyleSheet("* { color: #000000 }");
+    const auto textColor = getTextColor();
+    textDocument.setDefaultStyleSheet(QString("* { color: %1 }").arg(textColor.name()));
     textDocument.setHtml(pixelInfoString);
     textDocument.setTextWidth(textDocument.size().width());
 
@@ -749,8 +750,9 @@ void splitViewWidget::paintZoomBox(int           view,
     // Draw a black rectangle and then the text on top of that
     QRect  rect(QPoint(0, 0), textDocument.size().toSize() + QSize(2 * padding, 2 * padding));
     QBrush originalBrush;
-    painter.setBrush(QColor(0, 0, 0, 70));
-    painter.setPen(Qt::black);
+    const auto bgColor = getBackgroundColor();
+    painter.setBrush(QColor(bgColor.red(), bgColor.green(), bgColor.blue(), 200));
+    painter.setPen(getTextColor());
     painter.drawRect(rect);
     painter.translate(padding, padding);
     textDocument.drawContents(&painter);
@@ -831,9 +833,9 @@ void splitViewWidget::paintPixelRulersX(QPainter     &painter,
   {
     // Where is the x position of the pixel in the item on screen?
     int xPosOnScreen = x * zoom - videoRect.width() / 2 + worldTransform.x();
-    painter.setPen(QPen(Qt::white));
+    painter.setPen(QPen(getBackgroundColor()));
     painter.drawLine(xPosOnScreen, 0, xPosOnScreen, 5);
-    painter.setPen(QPen(Qt::black));
+    painter.setPen(QPen(getTextColor()));
     painter.drawLine(xPosOnScreen + 1, 0, xPosOnScreen + 1, 5);
 
     // Draw the values (every fifth value, all values for zoom >= 128)
@@ -848,9 +850,9 @@ void splitViewWidget::paintPixelRulersX(QPainter     &painter,
       QRect        textRect(rectPosTopLeft, rectSize);
 
       // Draw a white rect ...
-      painter.fillRect(textRect, Qt::white);
+      painter.fillRect(textRect, getBackgroundColor());
       // ... and the text
-      painter.setPen(QPen(Qt::black));
+      painter.setPen(QPen(getTextColor()));
       painter.drawText(textRect, Qt::AlignCenter, numberText);
     }
   }
@@ -885,9 +887,9 @@ void splitViewWidget::paintPixelRulersY(QPainter     &painter,
   for (int y = yMin; y < yMax + 1; y++)
   {
     int yPosOnScreen = y * zoom - videoRect.height() / 2 + worldTransform.y();
-    painter.setPen(QPen(Qt::white));
+    painter.setPen(QPen(getBackgroundColor()));
     painter.drawLine(xPos, yPosOnScreen, xPos + 5, yPosOnScreen);
-    painter.setPen(QPen(Qt::black));
+    painter.setPen(QPen(getTextColor()));
     painter.drawLine(xPos, yPosOnScreen + 1, xPos + 5, yPosOnScreen + 1);
 
     // Draw the values (every fifth value, all values for zoom >= 128)
@@ -902,9 +904,9 @@ void splitViewWidget::paintPixelRulersY(QPainter     &painter,
       QRect        textRect(rectPosTopLeft, rectSize);
 
       // Draw a white rect ...
-      painter.fillRect(textRect, Qt::white);
+      painter.fillRect(textRect, getBackgroundColor());
       // ... and the text
-      painter.setPen(QPen(Qt::black));
+      painter.setPen(QPen(getTextColor()));
       painter.drawText(textRect, Qt::AlignCenter, numberText);
     }
   }
@@ -927,8 +929,8 @@ void splitViewWidget::drawLoadingMessage(QPainter *painter, const QPoint &pos)
 
   // Draw a rectangle around the text in white with a black border
   QRect boxRect = textRect + QMargins(5, 5, 5, 5);
-  painter->setPen(QPen(Qt::black, 1));
-  painter->fillRect(boxRect, Qt::white);
+  painter->setPen(QPen(getTextColor(), 1));
+  painter->fillRect(boxRect, getBackgroundColor());
   painter->drawRect(boxRect);
 
   // Draw the text
@@ -1939,8 +1941,8 @@ void splitViewWidget::drawItemPathAndName(QPainter *painter, int posX, int width
 
   // Draw a rectangle around the text in white with a black border
   QRect boxRect = textRect + QMargins(5, 5, 5, 5);
-  painter->setPen(QPen(Qt::black, 1));
-  painter->fillRect(boxRect, Qt::white);
+  painter->setPen(QPen(getTextColor(), 1));
+  painter->fillRect(boxRect, getBackgroundColor());
   painter->drawRect(boxRect);
 
   // Draw the text
@@ -2074,4 +2076,14 @@ void splitViewWidget::getStateFromMaster()
   update();
 
   MoveAndZoomableView::getStateFromMaster();
+}
+
+QColor splitViewWidget::getTextColor() const
+{
+  return palette().color(QPalette::WindowText);
+}
+
+QColor splitViewWidget::getBackgroundColor() const
+{
+  return palette().color(QPalette::Window);
 }

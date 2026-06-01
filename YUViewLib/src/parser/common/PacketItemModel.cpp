@@ -36,7 +36,9 @@
 #include <common/FunctionsGui.h>
 #include <common/Typedef.h>
 
+#include <QApplication>
 #include <QBrush>
+#include <QPalette>
 
 #if PARSERCOMMON_DEBUG_FILTER_OUTPUT && !NDEBUG
 #include <QDebug>
@@ -64,6 +66,34 @@ auto streamIndexColors = std::vector<Color>({Color("#90caf9"),   // blue (200)
                                              Color("#6d4c41"),   // brown (600)
                                               Color("#7cb342")}); // light green (600)
 auto rawStreamColor = Color("#b0bec5");  // blue-grey (200) for raw bitstream (idx=-1)
+
+// Softer variants for dark themes (Material Design 200 series)
+auto streamIndexColorsDark = std::vector<Color>({Color("#90caf9"),   // blue (200)
+                                                  Color("#a5d6a7"),   // green (200)
+                                                  Color("#ffe082"),   // amber (200)
+                                                  Color("#ef9a9a"),   // red (200)
+                                                  Color("#fff59d"),   // yellow (200)
+                                                  Color("#ce93d8"),   // purple (200)
+                                                  Color("#80cbc4"),   // teal (200)
+                                                  Color("#bcaaa4"),   // brown (200)
+                                                  Color("#c5e1a5"),   // light green (200)
+                                                  Color("#9fa8da"),   // indigo (200)
+                                                  Color("#b39ddb"),   // deep purple (200)
+                                                  Color("#ffab91"),   // deep orange (200)
+                                                  Color("#ffe0b2"),   // orange (200)
+                                                  Color("#f48fb1"),   // pink (200)
+                                                  Color("#81d4fa"),   // light blue (200)
+                                                  Color("#b0bec5"),   // blue grey (200)
+                                                  Color("#80deea")}); // cyan (200)
+auto rawStreamColorDark = Color("#b0bec5");  // blue-grey (200) for raw bitstream (idx=-1)
+
+static bool isDarkTheme()
+{
+  if (!qApp)
+    return false;
+  const auto windowColor = qApp->palette().color(QPalette::Window);
+  return windowColor.lightness() < 128;
+}
 
 PacketItemModel::PacketItemModel(QObject *parent) : QAbstractItemModel(parent)
 {
@@ -94,6 +124,8 @@ QVariant PacketItemModel::data(const QModelIndex &index, int role) const
   {
     if (item->isError())
       return QVariant(QBrush(QColor(255, 0, 0)));
+    if (isDarkTheme())
+      return QVariant(QBrush(QColor(40, 40, 40)));
     return QVariant(QBrush());
   }
   if (role == Qt::BackgroundRole)
@@ -102,10 +134,15 @@ QVariant PacketItemModel::data(const QModelIndex &index, int role) const
       return QVariant(QBrush());
     const int idx = item->getStreamIndex();
     if (idx >= 0)
-      return QVariant(
-          QBrush(functionsGui::toQColor(streamIndexColors.at(idx % streamIndexColors.size()))));
+    {
+      const auto &colors = isDarkTheme() ? streamIndexColorsDark : streamIndexColors;
+      return QVariant(QBrush(functionsGui::toQColor(colors.at(idx % colors.size()))));
+    }
     else if (idx == -1)
-      return QVariant(QBrush(functionsGui::toQColor(rawStreamColor)));
+    {
+      const auto &rawColor = isDarkTheme() ? rawStreamColorDark : rawStreamColor;
+      return QVariant(QBrush(functionsGui::toQColor(rawColor)));
+    }
     return QVariant(QBrush());
   }
   else if (role == Qt::DisplayRole || role == Qt::ToolTipRole)

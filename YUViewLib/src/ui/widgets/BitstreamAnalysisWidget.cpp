@@ -38,7 +38,29 @@
 #include "parser/Mpeg2/ParserAnnexBMpeg2.h"
 #include "parser/VVC/ParserAnnexBVVC.h"
 #include <QSortFilterProxyModel>
+#include <QStyledItemDelegate>
 #include <QTimer>
+
+class PacketItemDelegate : public QStyledItemDelegate
+{
+public:
+  using QStyledItemDelegate::QStyledItemDelegate;
+
+  void initStyleOption(QStyleOptionViewItem *option, const QModelIndex &index) const override
+  {
+    QStyledItemDelegate::initStyleOption(option, index);
+    const auto bgData = index.data(Qt::BackgroundRole);
+    if (bgData.canConvert<QBrush>() && (option->state & QStyle::State_Selected))
+    {
+      const auto streamColor = bgData.value<QBrush>().color();
+      const auto highlight   = option->palette.color(QPalette::Highlight);
+      option->backgroundBrush = QBrush(QColor(
+          (streamColor.red() + highlight.red()) / 2,
+          (streamColor.green() + highlight.green()) / 2,
+          (streamColor.blue() + highlight.blue()) / 2));
+    }
+  }
+};
 
 #define BITSTREAM_ANALYSIS_WIDGET_DEBUG_OUTPUT 0
 #if BITSTREAM_ANALYSIS_WIDGET_DEBUG_OUTPUT
@@ -325,6 +347,7 @@ void BitstreamAnalysisWidget::restartParsingOfCurrentItem()
   this->createAndConnectNewParser(this->currentCompressedVideo->getInputFormat());
 
   this->ui.dataTreeView->setModel(this->parser->getPacketItemModel());
+  this->ui.dataTreeView->setItemDelegate(new PacketItemDelegate(this->ui.dataTreeView));
   this->ui.dataTreeView->setColumnWidth(0, 400);
   this->ui.dataTreeView->setColumnWidth(1, 100);
   this->ui.dataTreeView->setColumnWidth(2, 120);

@@ -19,7 +19,7 @@ HexViewWidget::HexViewWidget(QWidget *parent)
   this->view->setLineWrapMode(QPlainTextEdit::NoWrap);
   this->view->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOn);
   this->view->setHorizontalScrollBarPolicy(Qt::ScrollBarAsNeeded);
-  this->view->setStyleSheet("QPlainTextEdit { background: #1e1e1e; color: #d4d4d4; }");
+  // Let the global stylesheet handle colors (follows theme)
 
   layout->addWidget(this->view);
 }
@@ -139,8 +139,8 @@ void HexViewWidget::rebuildDisplay()
     QList<QTextEdit::ExtraSelection> selections;
 
     auto format          = QTextCharFormat();
-    format.setBackground(QColor(0, 120, 215));
-    format.setForeground(QColor(255, 255, 255));
+    format.setBackground(palette().color(QPalette::Highlight));
+    format.setForeground(palette().color(QPalette::HighlightedText));
 
     for (int line = startLine; line <= endLine; line++)
     {

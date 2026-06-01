@@ -102,7 +102,7 @@ public:
           // This is the end of a block. Draw it
           int xStart = (int)((float)lastPos / range.second * s.width());
           int xEnd   = (int)((float)pos / range.second * s.width());
-          painter.fillRect(xStart, 0, xEnd - xStart, s.height(), QColor(33, 150, 243));
+          painter.fillRect(xStart, 0, xEnd - xStart, s.height(), this->palette().color(QPalette::Highlight));
 
           // A new rectangle starts here
           lastPos = pos;
@@ -111,7 +111,7 @@ public:
       // Draw the last rectangle that goes to the end of the list
       int xStart = (int)((float)lastPos / range.second * s.width());
       int xEnd   = (int)((float)frameList.last() / range.second * s.width());
-      painter.fillRect(xStart, 0, xEnd - xStart, s.height(), QColor(33, 150, 243));
+      painter.fillRect(xStart, 0, xEnd - xStart, s.height(), this->palette().color(QPalette::Highlight));
     }
 
     // Draw the percentage as text
