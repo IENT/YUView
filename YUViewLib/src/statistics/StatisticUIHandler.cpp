@@ -41,7 +41,6 @@
 #include <QtMath>
 
 #include <common/FunctionsGui.h>
-#include <common/TypedefQtDeprecated.h>
 #include <statistics/StatisticsData.h>
 #include <statistics/StatisticsType.h>
 
@@ -97,8 +96,10 @@ QLayout *StatisticUIHandler::createStatisticsHandlerControls(bool recreateContro
     itemNameCheck->setChecked(statType.render);
     itemNameCheck->setToolTip(statType.description);
     ui.gridLayout->addWidget(itemNameCheck, int(row + 2), 0);
-    connect(
-      itemNameCheck, QCheckBoxStateChanged, this, &StatisticUIHandler::onStatisticsControlChanged);
+    connect(itemNameCheck,
+            &QCheckBox::stateChanged,
+            this,
+            &StatisticUIHandler::onStatisticsControlChanged);
     itemNameCheckBoxes[0].push_back(itemNameCheck);
 
     // Append the opacity slider
@@ -160,7 +161,7 @@ QWidget *StatisticUIHandler::getSecondaryStatisticsHandlerControls(bool recreate
       itemNameCheck->setChecked(statType.render);
       ui2.gridLayout->addWidget(itemNameCheck, int(row + 2), 0);
       connect(itemNameCheck,
-              QCheckBoxStateChanged,
+              &QCheckBox::stateChanged,
               this,
               &StatisticUIHandler::onSecondaryStatisticsControlChanged);
       itemNameCheckBoxes[1].push_back(itemNameCheck);
