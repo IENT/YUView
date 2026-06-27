@@ -76,9 +76,12 @@ RenderValue convertDeltaToRenderValue(const rgba_t &delta,
   }
   else
   {
-    const auto r = functions::clip(128 + delta.r * amplificationFactor, 0, 255);
-    const auto g = functions::clip(128 + delta.g * amplificationFactor, 0, 255);
-    const auto b = functions::clip(128 + delta.b * amplificationFactor, 0, 255);
+    const auto r = static_cast<unsigned char>(
+      functions::clip(128 + static_cast<int64_t>(delta.r) * amplificationFactor, 0LL, 255LL));
+    const auto g = static_cast<unsigned char>(
+      functions::clip(128 + static_cast<int64_t>(delta.g) * amplificationFactor, 0LL, 255LL));
+    const auto b = static_cast<unsigned char>(
+      functions::clip(128 + static_cast<int64_t>(delta.b) * amplificationFactor, 0LL, 255LL));
     return {r, g, b};
   }
 }
