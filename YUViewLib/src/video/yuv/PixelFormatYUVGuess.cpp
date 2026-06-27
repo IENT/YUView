@@ -243,6 +243,8 @@ checkSpecificFileExtensions(const GuessedFrameFormat &guessedFrameFormat,
   {
     const auto rawBayerFormat =
         PixelFormatYUV(Subsampling::YUV_400, guessedFrameFormat.bitDepth.value_or(8));
+    if (!guessedFrameFormat.frameSize)
+      return rawBayerFormat;
     if (doesPixelFormatMatchFileSize(
             rawBayerFormat, *guessedFrameFormat.frameSize, fileInfo.fileSize))
       return rawBayerFormat;
