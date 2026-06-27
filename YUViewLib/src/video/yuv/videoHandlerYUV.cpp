@@ -36,6 +36,7 @@
 #include <cmath>
 #include <cstdio>
 #include <iomanip>
+#include <new>
 #include <sstream>
 #include <string_view>
 #include <type_traits>
@@ -2820,6 +2821,9 @@ void videoHandlerYUV::drawPixelValues(QPainter     *painter,
                                       const bool    markDifference,
                                       const int     frameIdxItem1)
 {
+  if (!isFormatValid())
+    return;
+
   // Get the other YUV item (if any)
   auto yuvItem2 = (item2 == nullptr) ? nullptr : dynamic_cast<videoHandlerYUV *>(item2);
   if (item2 != nullptr && yuvItem2 == nullptr)
@@ -3173,8 +3177,6 @@ bool videoHandlerYUV::setFormatFromString(const std::string_view format)
 
 void videoHandlerYUV::loadFrame(int frameIndex, bool loadToDoubleBuffer)
 {
-  DEBUG_YUV("videoHandlerYUV::loadFrame " << frameIndex);
-
   if (!isFormatValid())
     // We cannot load a frame if the format is not known
     return;
@@ -3189,22 +3191,38 @@ void videoHandlerYUV::loadFrame(int frameIndex, bool loadToDoubleBuffer)
   if (loadToDoubleBuffer)
   {
     QImage newImage;
-    convertYUVToImage(this->currentFrameRawData,
-                      newImage,
-                      this->srcPixelFormat,
-                      this->frameSize,
-                      this->conversionSettings);
+    try
+    {
+      convertYUVToImage(this->currentFrameRawData,
+                        newImage,
+                        this->srcPixelFormat,
+                        this->frameSize,
+                        this->conversionSettings);
+    }
+    catch (const std::bad_alloc &)
+    {
+      qWarning() << "Out of memory in loadFrame convertYUVToImage (double buffer).";
+      return;
+    }
     doubleBufferImage           = newImage;
     doubleBufferImageFrameIndex = frameIndex;
   }
   else if (currentImageIndex != frameIndex)
   {
     QImage newImage;
-    convertYUVToImage(this->currentFrameRawData,
-                      newImage,
-                      this->srcPixelFormat,
-                      this->frameSize,
-                      this->conversionSettings);
+    try
+    {
+      convertYUVToImage(this->currentFrameRawData,
+                        newImage,
+                        this->srcPixelFormat,
+                        this->frameSize,
+                        this->conversionSettings);
+    }
+    catch (const std::bad_alloc &)
+    {
+      qWarning() << "Out of memory in loadFrame convertYUVToImage.";
+      return;
+    }
     QMutexLocker setLock(&currentImageSetMutex);
     currentImage      = newImage;
     currentImageIndex = frameIndex;
@@ -3213,7 +3231,8 @@ void videoHandlerYUV::loadFrame(int frameIndex, bool loadToDoubleBuffer)
 
 void videoHandlerYUV::loadFrameForCaching(int frameIndex, QImage &frameToCache)
 {
-  DEBUG_YUV("videoHandlerYUV::loadFrameForCaching " << frameIndex);
+  if (!isFormatValid())
+    return;
 
   // Get the YUV format and the size here, so that the caching process does not crash if this
   // changes.
@@ -3234,8 +3253,16 @@ void videoHandlerYUV::loadFrameForCaching(int frameIndex, QImage &frameToCache)
   }
 
   // Convert YUV to image. This can then be cached.
-  convertYUVToImage(
-    tmpBufferRawYUVDataCaching, frameToCache, yuvFormat, curFrameSize, conversionSettings);
+  try
+  {
+    convertYUVToImage(
+        tmpBufferRawYUVDataCaching, frameToCache, yuvFormat, curFrameSize, conversionSettings);
+  }
+  catch (const std::bad_alloc &)
+  {
+    qWarning() << "Out of memory in loadFrameForCaching convertYUVToImage.";
+    frameToCache = QImage();
+  }
 }
 
 // Load the raw YUV data for the given frame index into currentFrameRawData.
@@ -3270,6 +3297,9 @@ bool videoHandlerYUV::loadRawYUVData(int frameIndex)
 
 yuv_t videoHandlerYUV::getPixelValue(const QPoint &pixelPos) const
 {
+  if (!isFormatValid())
+    return {0, 0, 0};
+
   const PixelFormatYUV format = srcPixelFormat;
   const int            w      = frameSize.width;
   const int            h      = frameSize.height;
@@ -3535,6 +3565,9 @@ QImage videoHandlerYUV::calculateDifference(FrameHandler    *item2,
                                             const int        amplificationFactor,
                                             const bool       markDifference)
 {
+  if (!isFormatValid())
+    return QImage();
+
   this->diffReady = false;
 
   videoHandlerYUV *yuvItem2 = dynamic_cast<videoHandlerYUV *>(item2);

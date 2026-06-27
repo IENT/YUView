@@ -32,6 +32,8 @@
 
 #include "playlistItemRawFile.h"
 
+#include <new>
+
 #include <QPainter>
 #include <QUrl>
 #include <QVBoxLayout>
@@ -134,10 +136,17 @@ playlistItemRawFile::playlistItemRawFile(const QString &rawFilePath,
 
     if (!this->video->isFormatValid())
     {
-      // Load 24883200 bytes from the input and try to get the format from the correlation.
-      QByteArray rawData;
-      this->dataSource.readBytes(rawData, 0, 24883200);
-      this->video->setFormatFromCorrelation(rawData, this->dataSource.getFileSize().value_or(-1));
+      try
+      {
+        QByteArray rawData;
+        this->dataSource.readBytes(rawData, 0, 24883200);
+        this->video->setFormatFromCorrelation(rawData,
+                                              this->dataSource.getFileSize().value_or(-1));
+      }
+      catch (const std::bad_alloc &)
+      {
+        qWarning() << "Out of memory while guessing format from correlation.";
+      }
     }
   }
   else
@@ -225,6 +234,13 @@ InfoData playlistItemRawFile::getInfo() const
     }
     else
       info.items.append(InfoItem("Warning"sv, "Could not obtain file size from input."));
+  }
+  else if (this->dataSource.isOk() && !this->video->isFormatValid())
+  {
+    info.items.append(InfoItem(
+      "Warning"sv,
+      "Could not determine the video format. Please set the width, height and pixel format "
+      "manually in the properties panel."));
   }
 
   return info;
@@ -542,6 +558,8 @@ void playlistItemRawFile::loadRawData(int frameIdx)
     return;
 
   auto nrBytes = this->video->getBytesPerFrame();
+  if (nrBytes <= 0)
+    return;
 
   // Load the raw data for the given frameIdx from file and set it in the video
   int64_t fileStartPos;
@@ -550,10 +568,21 @@ void playlistItemRawFile::loadRawData(int frameIdx)
   else
     fileStartPos = frameIdx * nrBytes;
 
+  if (fileStartPos < 0)
+    return;
+
   DEBUG_RAWFILE("playlistItemRawFile::loadRawData Start loading frame " << frameIdx << " bytes "
                                                                         << int(nrBytes));
-  if (this->dataSource.readBytes(this->video->rawData, fileStartPos, nrBytes) < nrBytes)
-    return; // Error
+  try
+  {
+    if (this->dataSource.readBytes(this->video->rawData, fileStartPos, nrBytes) < nrBytes)
+      return; // Error
+  }
+  catch (const std::bad_alloc &)
+  {
+    qWarning() << "Out of memory while loading RAW frame data.";
+    return;
+  }
   this->video->rawData_frameIndex = frameIdx;
 
   DEBUG_RAWFILE("playlistItemRawFile::loadRawData Frame " << frameIdx << " loaded");

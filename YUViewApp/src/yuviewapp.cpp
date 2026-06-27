@@ -31,6 +31,9 @@
 */
 
 #include <QCoreApplication>
+#include <QMessageBox>
+
+#include <iostream>
 
 #include <common/Typedef.h>
 #include <ui/YUViewApplication.h>
@@ -46,7 +49,22 @@ int main(int argc, char *argv[])
 
   qRegisterMetaType<recacheIndicator>("recacheIndicator");
   
-  YUViewApplication app(argc, argv);
-
-  return app.returnCode;
+  try
+  {
+    YUViewApplication app(argc, argv);
+    return app.returnCode;
+  }
+  catch (const std::bad_alloc &)
+  {
+    try
+    {
+      if (QCoreApplication::instance())
+        QMessageBox::critical(nullptr, "YUView", "Out of memory.");
+    }
+    catch (...)
+    {
+      std::cerr << "YUView: Out of memory." << std::endl;
+    }
+    return 1;
+  }
 }

@@ -83,6 +83,9 @@ int64_t FileSource::readBytes(QByteArray &targetBuffer, int64_t startPos, int64_
   if (!this->isOk())
     return 0;
 
+  if (nrBytes <= 0)
+    return 0;
+
   if (targetBuffer.size() < nrBytes)
     targetBuffer.resize(nrBytes);
 

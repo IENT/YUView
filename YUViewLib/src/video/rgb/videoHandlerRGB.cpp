@@ -35,6 +35,8 @@
 #include "video/PixelFormat.h"
 #include "video/rgb/PixelFormatRGB.h"
 
+#include <new>
+
 #include <common/EnumMapper.h>
 #include <common/Formatting.h>
 #include <common/Functions.h>
@@ -482,14 +484,30 @@ void videoHandlerRGB::loadFrame(int frameIndex, bool loadToDoubleBuffer)
   if (loadToDoubleBuffer)
   {
     QImage newImage;
-    convertRGBToImage(currentFrameRawData, newImage);
+    try
+    {
+      convertRGBToImage(currentFrameRawData, newImage);
+    }
+    catch (const std::bad_alloc &)
+    {
+      qWarning() << "Out of memory in loadFrame convertRGBToImage (double buffer).";
+      return;
+    }
     doubleBufferImage           = newImage;
     doubleBufferImageFrameIndex = frameIndex;
   }
   else if (currentImageIndex != frameIndex)
   {
     QImage newImage;
-    convertRGBToImage(currentFrameRawData, newImage);
+    try
+    {
+      convertRGBToImage(currentFrameRawData, newImage);
+    }
+    catch (const std::bad_alloc &)
+    {
+      qWarning() << "Out of memory in loadFrame convertRGBToImage.";
+      return;
+    }
     QMutexLocker writeLock(&currentImageSetMutex);
     currentImage      = newImage;
     currentImageIndex = frameIndex;
@@ -551,6 +569,9 @@ void videoHandlerRGB::loadPlaylist(const YUViewDomElement &element)
 
 void videoHandlerRGB::loadFrameForCaching(int frameIndex, QImage &frameToCache)
 {
+  if (!isFormatValid())
+    return;
+
   DEBUG_RGB("videoHandlerRGB::loadFrameForCaching %d", frameIndex);
 
   // Lock the mutex for the rgbFormat. The main thread has to wait until caching is done
@@ -571,7 +592,15 @@ void videoHandlerRGB::loadFrameForCaching(int frameIndex, QImage &frameToCache)
   }
 
   // Convert RGB to image. This can then be cached.
-  convertRGBToImage(tmpBufferRawRGBDataCaching, frameToCache);
+  try
+  {
+    convertRGBToImage(tmpBufferRawRGBDataCaching, frameToCache);
+  }
+  catch (const std::bad_alloc &)
+  {
+    qWarning() << "Out of memory in loadFrameForCaching convertRGBToImage.";
+    frameToCache = QImage();
+  }
 
   rgbFormatMutex.unlock();
 }
@@ -730,6 +759,8 @@ void videoHandlerRGB::convertSourceToRGBA32Bit(const QByteArray &sourceBuffer,
 
 rgba_t videoHandlerRGB::getPixelValue(const QPoint &pixelPos) const
 {
+  if (!isFormatValid())
+    return {};
   return getPixelValueFromBuffer(
     this->currentFrameRawData, this->srcPixelFormat, this->frameSize, pixelPos);
 }
@@ -753,6 +784,9 @@ void videoHandlerRGB::drawPixelValues(QPainter     *painter,
                                       const bool    markDifference,
                                       const int     frameIdxItem1)
 {
+  if (!isFormatValid())
+    return;
+
   // First determine which pixels from this item are actually visible, because we only have to draw
   // the pixel values of the pixels that are actually visible
   auto viewport       = painter->viewport();
@@ -869,6 +903,9 @@ QImage videoHandlerRGB::calculateDifference(FrameHandler    *item2,
                                             const int        amplificationFactor,
                                             const bool       markDifference)
 {
+  if (!isFormatValid())
+    return QImage();
+
   videoHandlerRGB *rgbItem2 = dynamic_cast<videoHandlerRGB *>(item2);
   if (rgbItem2 == nullptr)
     // The given item is not a RGB source. We cannot compare raw RGB values to non raw RGB values.
