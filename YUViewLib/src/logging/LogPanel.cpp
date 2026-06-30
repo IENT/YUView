@@ -123,6 +123,14 @@ LogPanel::LogPanel(QWidget *parent) : QDialog(parent)
   // ---- Register UI callback with Logger ----
   // The callback is invoked from arbitrary threads, so we post back to the
   // UI thread via Qt::QueuedConnection.
+  //
+  // Lifetime safety: `this` is passed as the context/receiver argument to
+  // invokeMethod (first positional argument in the Qt6 functor overload).
+  // Qt6 stores this internally and, when the LogPanel is destroyed,
+  // QObject::~QObject() calls QCoreApplication::removePostedEvents(this),
+  // which discards all pending MetaCall events for this object before the
+  // memory is freed.  The destructor also calls clearUiCallback() under the
+  // Logger mutex, preventing new callbacks from being queued after that point.
   Logger::instance().setUiCallback(
       [this](LogCategory /*cat*/, const QString &line)
       {

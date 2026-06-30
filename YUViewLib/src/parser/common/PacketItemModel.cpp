@@ -120,11 +120,15 @@ QVariant PacketItemModel::data(const QModelIndex &index, int role) const
     return {};
 
   auto item = static_cast<TreeItem *>(index.internalPointer());
+
+  // Evaluate once per data() call to avoid repeated palette queries.
+  const bool darkTheme = isDarkTheme();
+
   if (role == Qt::ForegroundRole)
   {
     if (item->isError())
       return QVariant(QBrush(QColor(255, 0, 0)));
-    if (isDarkTheme())
+    if (darkTheme)
       return QVariant(QBrush(QColor(40, 40, 40)));
     return QVariant(QBrush());
   }
@@ -135,12 +139,12 @@ QVariant PacketItemModel::data(const QModelIndex &index, int role) const
     const int idx = item->getStreamIndex();
     if (idx >= 0)
     {
-      const auto &colors = isDarkTheme() ? streamIndexColorsDark : streamIndexColors;
+      const auto &colors = darkTheme ? streamIndexColorsDark : streamIndexColors;
       return QVariant(QBrush(functionsGui::toQColor(colors.at(idx % colors.size()))));
     }
     else if (idx == -1)
     {
-      const auto &rawColor = isDarkTheme() ? rawStreamColorDark : rawStreamColor;
+      const auto &rawColor = darkTheme ? rawStreamColorDark : rawStreamColor;
       return QVariant(QBrush(functionsGui::toQColor(rawColor)));
     }
     return QVariant(QBrush());

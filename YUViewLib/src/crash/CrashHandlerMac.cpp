@@ -37,13 +37,11 @@
 
 #  include <execinfo.h>
 #  include <fcntl.h>
+#  include <limits.h>
 #  include <signal.h>
 #  include <string.h>
 #  include <time.h>
 #  include <unistd.h>
-
-#  include <QByteArray>
-#  include <QString>
 
 // ---------------------------------------------------------------------------
 // Internal helpers  (all async-signal-safe unless noted)
@@ -51,6 +49,10 @@
 
 namespace
 {
+
+// Pre-converted (at init time) UTF-8 copy of the log directory path.
+// Using a plain char[] avoids any heap allocation inside the signal handler.
+static char g_logDirBuf[PATH_MAX]{};
 
 // Previous signal handlers so we can chain to the OS default.
 static struct sigaction g_oldSIGSEGV{};
@@ -162,11 +164,10 @@ static void yuviewSignalHandler(int sig, siginfo_t * /*info*/, void * /*ctx*/)
     return;
   g_handlerActive = 1;
 
-  const QString &logDir     = CrashHandler::crashLogDirectory();
-  const QByteArray logDirBytes = logDir.toUtf8();
-
+  // g_logDirBuf was pre-populated in installPlatformHandlers() so that no
+  // heap allocation (QString copy / toUtf8()) is needed here.
   char path[512]{};
-  buildCrashLogPath(path, sizeof(path), logDirBytes.constData());
+  buildCrashLogPath(path, sizeof(path), g_logDirBuf);
 
   int fd = ::open(path, O_WRONLY | O_CREAT | O_TRUNC, 0644);
   if (fd >= 0)
@@ -226,6 +227,14 @@ static void yuviewSignalHandler(int sig, siginfo_t * /*info*/, void * /*ctx*/)
 
 void CrashHandler::installPlatformHandlers()
 {
+  // Pre-convert the log directory path to a plain C string so that the signal
+  // handler can use it without calling any heap-allocating Qt functions.
+  {
+    const QByteArray dirBytes = crashLogDirectory().toUtf8();
+    strncpy(g_logDirBuf, dirBytes.constData(), sizeof(g_logDirBuf) - 1);
+    g_logDirBuf[sizeof(g_logDirBuf) - 1] = '\0';
+  }
+
   struct sigaction sa{};
   sa.sa_sigaction = yuviewSignalHandler;
   sa.sa_flags     = SA_SIGINFO | SA_RESETHAND;

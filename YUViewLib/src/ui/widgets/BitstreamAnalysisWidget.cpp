@@ -88,14 +88,14 @@ BitstreamAnalysisWidget::BitstreamAnalysisWidget(QWidget *parent) : QWidget(pare
                 &QCheckBox::toggled,
                 this,
                 &BitstreamAnalysisWidget::parseEntireBitstreamCheckBoxToggled);
-this->connect(this->ui.bitratePlotOrderComboBox,
-                 QOverload<int>::of(&QComboBox::currentIndexChanged),
-                 this,
-                 &BitstreamAnalysisWidget::bitratePlotOrderComboBoxIndexChanged);
+  this->connect(this->ui.bitratePlotOrderComboBox,
+                QOverload<int>::of(&QComboBox::currentIndexChanged),
+                this,
+                &BitstreamAnalysisWidget::bitratePlotOrderComboBoxIndexChanged);
   this->connect(this->ui.bitratePlotStreamComboBox,
-                  QOverload<int>::of(&QComboBox::currentIndexChanged),
-                  this,
-                  &BitstreamAnalysisWidget::bitratePlotStreamComboBoxIndexChanged);
+                QOverload<int>::of(&QComboBox::currentIndexChanged),
+                this,
+                &BitstreamAnalysisWidget::bitratePlotStreamComboBoxIndexChanged);
 
   this->connect(this->ui.showHexViewCheckBox,
                 &QCheckBox::toggled,
