@@ -444,6 +444,39 @@ typedef struct AVCodecContext_61
   enum AVChromaLocation              chroma_sample_location;
 } AVCodecContext_61;
 
+// avcodec 62 (FFmpeg 8.x): ticks_per_frame (int, 4 bytes) was removed.
+typedef struct AVCodecContext_62
+{
+  const AVClass                     *av_class;
+  int                                log_level_offset;
+  enum AVMediaType                   codec_type;
+  const struct AVCodec              *codec;
+  enum AVCodecID                     codec_id;
+  unsigned int                       codec_tag;
+  void                              *priv_data;
+  struct AVCodecInternal            *internal;
+  void                              *opaque;
+  int64_t                            bit_rate;
+  int                                flags;
+  int                                flags2;
+  uint8_t                           *extradata;
+  int                                extradata_size;
+  AVRational                         time_base;
+  AVRational                         pkt_timebase;
+  AVRational                         framerate;
+  int                                delay;
+  int                                width, height;
+  int                                coded_width, coded_height;
+  AVRational                         sample_aspect_ratio;
+  enum AVPixelFormat                 pix_fmt;
+  enum AVPixelFormat                 sw_pix_fmt;
+  enum AVColorPrimaries              color_primaries;
+  enum AVColorTransferCharacteristic color_trc;
+  enum AVColorSpace                  colorspace;
+  enum AVColorRange                  color_range;
+  enum AVChromaLocation              chroma_sample_location;
+} AVCodecContext_62;
+
 } // namespace
 
 AVCodecContextWrapper::AVCodecContextWrapper()
@@ -851,6 +884,91 @@ void AVCodecContextWrapper::update()
   else if (libVer.avcodec.major == 61)
   {
     auto p                        = reinterpret_cast<AVCodecContext_61 *>(this->codec);
+    this->codec_type              = p->codec_type;
+    this->codec_name              = QString("Not supported in AVCodec >= 58");
+    this->codec_id                = p->codec_id;
+    this->codec_tag               = p->codec_tag;
+    this->stream_codec_tag        = -1;
+    this->bit_rate                = p->bit_rate;
+    this->bit_rate_tolerance      = -1;
+    this->global_quality          = -1;
+    this->compression_level       = -1;
+    this->flags                   = p->flags;
+    this->flags2                  = p->flags2;
+    this->extradata               = QByteArray((const char *)p->extradata, p->extradata_size);
+    this->time_base               = p->time_base;
+    this->ticks_per_frame         = -1;
+    this->delay                   = p->delay;
+    this->width                   = p->width;
+    this->height                  = p->height;
+    this->coded_width             = p->coded_width;
+    this->coded_height            = p->coded_height;
+    this->gop_size                = -1;
+    this->pix_fmt                 = p->pix_fmt;
+    this->me_method               = -1;
+    this->max_b_frames            = -1;
+    this->b_quant_factor          = -1;
+    this->rc_strategy             = -1;
+    this->b_frame_strategy        = -1;
+    this->b_quant_offset          = -1;
+    this->has_b_frames            = -1;
+    this->mpeg_quant              = -1;
+    this->i_quant_factor          = -1;
+    this->i_quant_offset          = -1;
+    this->lumi_masking            = -1;
+    this->temporal_cplx_masking   = -1;
+    this->spatial_cplx_masking    = -1;
+    this->p_masking               = -1;
+    this->dark_masking            = -1;
+    this->slice_count             = -1;
+    this->prediction_method       = -1;
+    this->sample_aspect_ratio     = p->sample_aspect_ratio;
+    this->me_cmp                  = -1;
+    this->me_sub_cmp              = -1;
+    this->mb_cmp                  = -1;
+    this->ildct_cmp               = -1;
+    this->dia_size                = -1;
+    this->last_predictor_count    = -1;
+    this->pre_me                  = -1;
+    this->me_pre_cmp              = -1;
+    this->pre_dia_size            = -1;
+    this->me_subpel_quality       = -1;
+    this->dtg_active_format       = -1;
+    this->me_range                = -1;
+    this->intra_quant_bias        = -1;
+    this->inter_quant_bias        = -1;
+    this->slice_flags             = -1;
+    this->xvmc_acceleration       = -1;
+    this->mb_decision             = -1;
+    this->scenechange_threshold   = -1;
+    this->noise_reduction         = -1;
+    this->me_threshold            = -1;
+    this->mb_threshold            = -1;
+    this->intra_dc_precision      = -1;
+    this->skip_top                = -1;
+    this->skip_bottom             = -1;
+    this->border_masking          = -1;
+    this->mb_lmin                 = -1;
+    this->mb_lmax                 = -1;
+    this->me_penalty_compensation = -1;
+    this->bidir_refine            = -1;
+    this->brd_scale               = -1;
+    this->keyint_min              = -1;
+    this->refs                    = -1;
+    this->chromaoffset            = -1;
+    this->scenechange_factor      = -1;
+    this->mv0_threshold           = -1;
+    this->b_sensitivity           = -1;
+    this->color_primaries         = p->color_primaries;
+    this->color_trc               = p->color_trc;
+    this->colorspace              = p->colorspace;
+    this->color_range             = p->color_range;
+    this->chroma_sample_location  = p->chroma_sample_location;
+  }
+  else if (libVer.avcodec.major == 62)
+  {
+    // avcodec 62 (FFmpeg 8.x): ticks_per_frame removed; all other fields identical to 61.
+    auto p                        = reinterpret_cast<AVCodecContext_62 *>(this->codec);
     this->codec_type              = p->codec_type;
     this->codec_name              = QString("Not supported in AVCodec >= 58");
     this->codec_id                = p->codec_id;

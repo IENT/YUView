@@ -229,6 +229,29 @@ typedef struct AVStream_60_61
   int                pts_wrap_bits;
 } AVStream_60_61;
 
+// avformat 62 (FFmpeg 8.x): side_data and nb_side_data were removed from AVStream.
+typedef struct AVStream_62
+{
+  const AVClass     *av_class;
+  int                index;
+  int                id;
+  AVCodecParameters *codecpar;
+  void              *priv_data;
+  AVRational         time_base;
+  int64_t            start_time;
+  int64_t            duration;
+  int64_t            nb_frames;
+  int                disposition;
+  enum AVDiscard     discard;
+  AVRational         sample_aspect_ratio;
+  AVDictionary      *metadata;
+  AVRational         avg_frame_rate;
+  AVPacket_59_60_61  attached_pic;
+  int                event_flags;
+  AVRational         r_frame_rate;
+  int                pts_wrap_bits;
+} AVStream_62;
+
 } // namespace
 
 AVStreamWrapper::AVStreamWrapper(AVStream *src_str, LibraryVersion v)
@@ -429,6 +452,24 @@ void AVStreamWrapper::update()
     this->sample_aspect_ratio = p->sample_aspect_ratio;
     this->avg_frame_rate      = p->avg_frame_rate;
     this->nb_side_data        = p->nb_side_data;
+    this->event_flags         = p->event_flags;
+    this->codecpar            = AVCodecParametersWrapper(p->codecpar, libVer);
+  }
+  else if (libVer.avformat.major == 62)
+  {
+    // avformat 62 (FFmpeg 8.x): side_data / nb_side_data removed from AVStream.
+    auto p                    = reinterpret_cast<AVStream_62 *>(this->stream);
+    this->index               = p->index;
+    this->id                  = p->id;
+    this->time_base           = p->time_base;
+    this->start_time          = p->start_time;
+    this->duration            = p->duration;
+    this->nb_frames           = p->nb_frames;
+    this->disposition         = p->disposition;
+    this->discard             = p->discard;
+    this->sample_aspect_ratio = p->sample_aspect_ratio;
+    this->avg_frame_rate      = p->avg_frame_rate;
+    this->nb_side_data        = 0;
     this->event_flags         = p->event_flags;
     this->codecpar            = AVCodecParametersWrapper(p->codecpar, libVer);
   }

@@ -400,7 +400,7 @@ void AVFormatContextWrapper::update()
 
     this->iformat = AVInputFormatWrapper(p->iformat, this->libVer);
   }
-  else if (this->libVer.avformat.major == 61)
+  else if (this->libVer.avformat.major == 61 || this->libVer.avformat.major == 62)
   {
     auto p           = reinterpret_cast<AVFormatContext_61 *>(this->ctx);
     this->ctx_flags  = p->ctx_flags;

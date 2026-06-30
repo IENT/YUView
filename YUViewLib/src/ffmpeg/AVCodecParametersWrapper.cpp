@@ -290,7 +290,7 @@ void AVCodecParametersWrapper::setClearValues()
     p->chroma_location = AVCHROMA_LOC_UNSPECIFIED;
     p->video_delay     = 0;
   }
-  else if (this->libVer.avformat.major == 61)
+  else if (this->libVer.avformat.major == 61 || this->libVer.avformat.major == 62)
   {
     auto p                   = reinterpret_cast<AVCodecParameters_61 *>(this->param);
     p->codec_type            = AVMEDIA_TYPE_UNKNOWN;
@@ -327,7 +327,7 @@ void AVCodecParametersWrapper::setAVMediaType(AVMediaType type)
 {
   if (this->libVer.avformat.major == 57 || this->libVer.avformat.major == 58 ||
       this->libVer.avformat.major == 59 || this->libVer.avformat.major == 60 ||
-      this->libVer.avformat.major == 61)
+      this->libVer.avformat.major == 61 || this->libVer.avformat.major == 62)
   {
     auto p           = reinterpret_cast<AVCodecParameters_57_58_59_60 *>(this->param);
     p->codec_type    = type;
@@ -344,7 +344,7 @@ void AVCodecParametersWrapper::setAVCodecID(AVCodecID id)
     p->codec_id    = id;
     this->codec_id = id;
   }
-  else if (this->libVer.avformat.major == 61)
+  else if (this->libVer.avformat.major == 61 || this->libVer.avformat.major == 62)
   {
     auto p         = reinterpret_cast<AVCodecParameters_61 *>(this->param);
     p->codec_id    = id;
@@ -356,14 +356,14 @@ void AVCodecParametersWrapper::setExtradata(QByteArray data)
 {
   if (this->libVer.avformat.major == 57 || this->libVer.avformat.major == 58 ||
       this->libVer.avformat.major == 59 || this->libVer.avformat.major == 60 ||
-      this->libVer.avformat.major == 61)
+      this->libVer.avformat.major == 61 || this->libVer.avformat.major == 62)
   {
     this->extradata   = data;
     auto p            = reinterpret_cast<AVCodecParameters_57_58_59_60 *>(this->param);
     p->extradata      = reinterpret_cast<uint8_t *>(this->extradata.data());
     p->extradata_size = this->extradata.length();
   }
-  else if (this->libVer.avformat.major == 61)
+  else if (this->libVer.avformat.major == 61 || this->libVer.avformat.major == 62)
   {
     this->extradata   = data;
     auto p            = reinterpret_cast<AVCodecParameters_61 *>(this->param);
@@ -383,7 +383,7 @@ void AVCodecParametersWrapper::setSize(Size size)
     this->width  = size.width;
     this->height = size.height;
   }
-  else if (this->libVer.avformat.major == 61)
+  else if (this->libVer.avformat.major == 61 || this->libVer.avformat.major == 62)
   {
     auto p       = reinterpret_cast<AVCodecParameters_61 *>(this->param);
     p->width     = size.width;
@@ -402,7 +402,7 @@ void AVCodecParametersWrapper::setAVPixelFormat(AVPixelFormat format)
     p->format    = format;
     this->format = format;
   }
-  else if (this->libVer.avformat.major == 61)
+  else if (this->libVer.avformat.major == 61 || this->libVer.avformat.major == 62)
   {
     auto p       = reinterpret_cast<AVCodecParameters_61 *>(this->param);
     p->format    = format;
@@ -421,7 +421,7 @@ void AVCodecParametersWrapper::setProfileLevel(int profile, int level)
     this->profile = profile;
     this->level   = level;
   }
-  else if (this->libVer.avformat.major == 61)
+  else if (this->libVer.avformat.major == 61 || this->libVer.avformat.major == 62)
   {
     auto p       = reinterpret_cast<AVCodecParameters_61 *>(this->param);
     p->profile    = profile;
@@ -443,7 +443,7 @@ void AVCodecParametersWrapper::setSampleAspectRatio(int num, int den)
     p->sample_aspect_ratio    = ratio;
     this->sample_aspect_ratio = ratio;
   }
-  else if (this->libVer.avformat.major == 61)
+  else if (this->libVer.avformat.major == 61 || this->libVer.avformat.major == 62)
   {
     auto p       = reinterpret_cast<AVCodecParameters_61 *>(this->param);
     AVRational ratio;
@@ -490,7 +490,7 @@ void AVCodecParametersWrapper::update()
     this->chroma_location       = p->chroma_location;
     this->video_delay           = p->video_delay;
   }
-  else if (this->libVer.avformat.major == 61)
+  else if (this->libVer.avformat.major == 61 || this->libVer.avformat.major == 62)
   {
     auto p       = reinterpret_cast<AVCodecParameters_61 *>(this->param);
 

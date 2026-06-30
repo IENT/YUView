@@ -102,6 +102,7 @@ LibraryVersion addMinorAndMicroVersion(FFmpegLibraryFunctions &lib, LibraryVersi
 // the following libraries in this order: Util, codec, format, swresample
 // The versions are sorted from newest to oldest, so that we try to open the newest ones first.
 auto SupportedLibraryVersionCombinations = {
+    LibraryVersion(60, 62, 62, 6),
     LibraryVersion(59, 61, 61, 5),
     LibraryVersion(58, 60, 60, 4),
     LibraryVersion(57, 59, 59, 4),
@@ -663,7 +664,9 @@ void FFmpegVersionHandler::freeFrame(AVFrameWrapper &frame)
 AVPacketWrapper FFmpegVersionHandler::allocatePacket()
 {
   auto rawPacket = this->lib.avcodec.av_packet_alloc();
-  this->lib.avcodec.av_init_packet(rawPacket);
+  // av_init_packet is optional: it was deprecated in FFmpeg 5.x and removed in FFmpeg 9.x.
+  if (this->lib.avcodec.av_init_packet)
+    this->lib.avcodec.av_init_packet(rawPacket);
   return AVPacketWrapper(this->libVersion, rawPacket);
 }
 

@@ -96,8 +96,9 @@ bool bindLibraryFunctions(QLibrary &                                lib,
     return false;
   if (!resolveFunction(lib, functions.avcodec_free_context, "avcodec_free_context", log))
     return false;
-  if (!resolveFunction(lib, functions.av_init_packet, "av_init_packet", log))
-    return false;
+  // av_init_packet is deprecated since FFmpeg 5.x and removed in FFmpeg 9.x (avcodec >= 63).
+  // Treat it as optional so that FFmpeg 8.x libraries still load correctly.
+  resolveFunction(lib, functions.av_init_packet, "av_init_packet", log);
   if (!resolveFunction(lib, functions.av_packet_alloc, "av_packet_alloc", log))
     return false;
   if (!resolveFunction(lib, functions.av_packet_free, "av_packet_free", log))
