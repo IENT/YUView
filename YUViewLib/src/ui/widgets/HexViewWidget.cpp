@@ -29,21 +29,21 @@ void HexViewWidget::setData(const QByteArray &data)
   this->currentData     = data;
   this->highlightOffset = -1;
   this->highlightLength = -1;
-  this->rebuildDisplay();
+  this->rebuildText();
 }
 
 void HexViewWidget::setHighlight(int byteOffset, int byteLength)
 {
   this->highlightOffset = byteOffset;
   this->highlightLength = byteLength;
-  this->rebuildDisplay();
+  this->applyHighlight();
 }
 
 void HexViewWidget::clearHighlight()
 {
   this->highlightOffset = -1;
   this->highlightLength = -1;
-  this->rebuildDisplay();
+  this->applyHighlight();
 }
 
 void HexViewWidget::clear()
@@ -57,10 +57,8 @@ void HexViewWidget::clear()
   this->view->clear();
 }
 
-void HexViewWidget::rebuildDisplay()
+void HexViewWidget::rebuildText()
 {
-  if (!this->view)
-    return;
   this->view->setExtraSelections(QList<QTextEdit::ExtraSelection>());
   this->view->clear();
   if (this->currentData.isEmpty())
@@ -70,7 +68,8 @@ void HexViewWidget::rebuildDisplay()
   int          size = this->currentData.size();
 
   QString text;
-  text.reserve(size * 4 + size / BYTES_PER_LINE * 10);
+  // Each line is 79 chars: offset(8) + "  "(2) + hexPart(49) + " |"(2) + ascii(16) + "|\n"(2)
+  text.reserve((size / BYTES_PER_LINE + 1) * 80);
 
   int lineStart = 0;
   while (lineStart < size)
@@ -78,8 +77,8 @@ void HexViewWidget::rebuildDisplay()
     int lineEnd = qMin(lineStart + BYTES_PER_LINE, size);
     int lineLen = lineEnd - lineStart;
 
-    // Offset
-    text += QString("%1  ").arg(lineStart, 8, 16, QLatin1Char('0'));
+    // Offset — uppercase to match byte values
+    text += QString("%1  ").arg(lineStart, 8, 16, QLatin1Char('0')).toUpper();
 
     // Hex bytes
     QString hexPart;
@@ -113,61 +112,77 @@ void HexViewWidget::rebuildDisplay()
   }
 
   this->view->setPlainText(text);
+  this->applyHighlight();
+}
 
-  if (this->highlightOffset >= 0 && this->highlightLength > 0)
+void HexViewWidget::applyHighlight()
+{
+  this->view->setExtraSelections(QList<QTextEdit::ExtraSelection>());
+
+  int size = this->currentData.size();
+  if (this->highlightOffset < 0 || this->highlightLength <= 0 || size == 0)
+    return;
+
+  int hiStart  = this->highlightOffset;
+  int hiEnd    = qMin(hiStart + this->highlightLength, size);
+  int lastByte = hiEnd - 1;
+
+  int startLine = hiStart / BYTES_PER_LINE;
+  int startCol  = hiStart % BYTES_PER_LINE;
+  int endLine   = lastByte / BYTES_PER_LINE;
+  int endCol    = lastByte % BYTES_PER_LINE;
+
+  auto hexCol = [](int col) {
+    int c = 10 + col * 3;
+    if (col >= 8)
+      c += 1;
+    return c;
+  };
+
+  // Format: "XXXXXXXX  HH HH ... HH  HH ... HH  |AAAA...|\n"
+  // offset(8) + "  "(2) + hexPart(49) + " |"(2) = 61
+  const int ASCII_START = 61;
+
+  QList<QTextEdit::ExtraSelection> selections;
+
+  auto format = QTextCharFormat();
+  format.setBackground(palette().color(QPalette::Highlight));
+  format.setForeground(palette().color(QPalette::HighlightedText));
+
+  for (int line = startLine; line <= endLine; line++)
   {
-    int hiStart  = this->highlightOffset;
-    int hiEnd    = qMin(hiStart + this->highlightLength, size);
-    int lastByte = hiEnd - 1;
+    QTextBlock block = this->view->document()->findBlockByNumber(line);
+    if (!block.isValid())
+      continue;
 
-    int startLine = hiStart / BYTES_PER_LINE;
-    int startCol  = hiStart % BYTES_PER_LINE;
-    int endLine   = lastByte / BYTES_PER_LINE;
-    int endCol    = lastByte % BYTES_PER_LINE;
+    int colStart = (line == startLine) ? startCol : 0;
+    int colEnd   = (line == endLine)   ? endCol   : (BYTES_PER_LINE - 1);
 
-    auto hexCol = [](int col) {
-      int c = 10 + col * 3;
-      if (col >= 8)
-        c += 1;
-      return c;
-    };
+    auto hexSel   = QTextEdit::ExtraSelection();
+    hexSel.format = format;
+    hexSel.cursor = QTextCursor(this->view->document());
+    hexSel.cursor.setPosition(block.position() + hexCol(colStart));
+    hexSel.cursor.setPosition(block.position() + hexCol(colEnd) + 2,
+                              QTextCursor::KeepAnchor);
+    selections.append(hexSel);
 
-    // Format: "XXXXXXXX  HH HH ... HH  HH ... HH  |AAAA...|\n"
-    // offset(8) + "  "(2) + hexPart(49) + " |"(2) = 61
-    const int ASCII_START = 61;
-
-    QList<QTextEdit::ExtraSelection> selections;
-
-    auto format          = QTextCharFormat();
-    format.setBackground(palette().color(QPalette::Highlight));
-    format.setForeground(palette().color(QPalette::HighlightedText));
-
-    for (int line = startLine; line <= endLine; line++)
-    {
-      QTextBlock block = this->view->document()->findBlockByNumber(line);
-      if (!block.isValid())
-        continue;
-
-      int colStart = (line == startLine) ? startCol : 0;
-      int colEnd   = (line == endLine)   ? endCol   : (BYTES_PER_LINE - 1);
-
-      auto hexSel          = QTextEdit::ExtraSelection();
-      hexSel.format        = format;
-      hexSel.cursor        = QTextCursor(this->view->document());
-      hexSel.cursor.setPosition(block.position() + hexCol(colStart));
-      hexSel.cursor.setPosition(block.position() + hexCol(colEnd) + 2,
+    auto asciiSel   = QTextEdit::ExtraSelection();
+    asciiSel.format = format;
+    asciiSel.cursor = QTextCursor(this->view->document());
+    asciiSel.cursor.setPosition(block.position() + ASCII_START + colStart);
+    asciiSel.cursor.setPosition(block.position() + ASCII_START + colEnd + 1,
                                 QTextCursor::KeepAnchor);
-      selections.append(hexSel);
+    selections.append(asciiSel);
+  }
 
-      auto asciiSel          = QTextEdit::ExtraSelection();
-      asciiSel.format        = format;
-      asciiSel.cursor        = QTextCursor(this->view->document());
-      asciiSel.cursor.setPosition(block.position() + ASCII_START + colStart);
-      asciiSel.cursor.setPosition(block.position() + ASCII_START + colEnd + 1,
-                                  QTextCursor::KeepAnchor);
-      selections.append(asciiSel);
-    }
+  this->view->setExtraSelections(selections);
 
-    this->view->setExtraSelections(selections);
+  // Scroll the first highlighted byte into view
+  if (!selections.isEmpty())
+  {
+    QTextCursor scrollCursor = selections.first().cursor;
+    scrollCursor.setPosition(scrollCursor.anchor());
+    this->view->setTextCursor(scrollCursor);
+    this->view->ensureCursorVisible();
   }
 }

@@ -17,7 +17,10 @@ public:
   void clear();
 
 private:
-  void rebuildDisplay();
+  // Rebuild the full text content (call only when currentData changes).
+  void rebuildText();
+  // Re-apply ExtraSelections for the current highlight (cheap, no text rebuild).
+  void applyHighlight();
 
   QPlainTextEdit *view;
   QByteArray      currentData;
