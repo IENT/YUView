@@ -128,8 +128,16 @@ QVariant PacketItemModel::data(const QModelIndex &index, int role) const
   {
     if (item->isError())
       return QVariant(QBrush(QColor(255, 0, 0)));
-    if (darkTheme)
-      return QVariant(QBrush(QColor(40, 40, 40)));
+    // Use dark text only when the row has a stream background color (Material 200
+    // pastels are light regardless of theme, so dark text always gives good contrast).
+    // For plain rows without a stream background let QPalette::Text decide —
+    // it will be light on dark themes and dark on light themes automatically.
+    if (useColorCoding)
+    {
+      const int idx = item->getStreamIndex();
+      if (idx >= 0 || idx == -1)
+        return QVariant(QBrush(QColor(40, 40, 40)));
+    }
     return QVariant(QBrush());
   }
   if (role == Qt::BackgroundRole)

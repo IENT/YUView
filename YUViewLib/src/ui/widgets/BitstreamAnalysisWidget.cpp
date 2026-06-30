@@ -49,20 +49,35 @@ public:
   void initStyleOption(QStyleOptionViewItem *option, const QModelIndex &index) const override
   {
     QStyledItemDelegate::initStyleOption(option, index);
+
     const auto bgData = index.data(Qt::BackgroundRole);
-    if (bgData.canConvert<QBrush>() && (option->state & QStyle::State_Selected))
+    if (!bgData.canConvert<QBrush>())
+      return;
+    const auto streamColor = bgData.value<QBrush>().color();
+    if (!streamColor.isValid())
+      return; // no stream color — let Qt handle plain rows naturally
+
+    const auto highlight = option->palette.color(QPalette::Highlight);
+
+    if (option->state & QStyle::State_Selected)
     {
-      const auto   streamColor  = bgData.value<QBrush>().color();
-      const auto   highlight    = option->palette.color(QPalette::Highlight);
-      const QColor blendedColor((streamColor.red() + highlight.red()) / 2,
-                                (streamColor.green() + highlight.green()) / 2,
-                                (streamColor.blue() + highlight.blue()) / 2);
-      // Set the blended color via the palette rather than backgroundBrush.
-      // All Qt styles use QPalette::Highlight for the selection background and
-      // automatically pair it with QPalette::HighlightedText (white/light) for
-      // the text, ensuring the selected row remains readable.
-      option->palette.setColor(QPalette::Highlight, blendedColor);
-      option->backgroundBrush = QBrush(); // clear so the palette Highlight takes effect
+      // Blend 50/50 via QPalette::Highlight so the style automatically pairs it
+      // with QPalette::HighlightedText (white/light) for text — readable contrast.
+      const QColor blended((streamColor.red()   + highlight.red())   / 2,
+                           (streamColor.green() + highlight.green()) / 2,
+                           (streamColor.blue()  + highlight.blue())  / 2);
+      option->palette.setColor(QPalette::Highlight, blended);
+      option->backgroundBrush = QBrush(); // let palette Highlight take effect
+    }
+    else if (option->state & QStyle::State_MouseOver)
+    {
+      // Clear State_MouseOver so the platform style (Windows UxTheme / Fusion)
+      // does not draw its own native hover overlay, which appears dark or black
+      // on dark themes and overrides backgroundBrush on Windows native style.
+      // Rendering the row as a plain (non-interactive) item lets backgroundBrush
+      // take effect on all styles, giving a subtle but clean hover hint.
+      option->state &= ~QStyle::State_MouseOver;
+      option->backgroundBrush = QBrush(streamColor.lighter(115));
     }
   }
 };
