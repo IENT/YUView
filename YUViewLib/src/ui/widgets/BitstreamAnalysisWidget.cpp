@@ -52,12 +52,17 @@ public:
     const auto bgData = index.data(Qt::BackgroundRole);
     if (bgData.canConvert<QBrush>() && (option->state & QStyle::State_Selected))
     {
-      const auto streamColor = bgData.value<QBrush>().color();
-      const auto highlight   = option->palette.color(QPalette::Highlight);
-      option->backgroundBrush = QBrush(QColor(
-          (streamColor.red() + highlight.red()) / 2,
-          (streamColor.green() + highlight.green()) / 2,
-          (streamColor.blue() + highlight.blue()) / 2));
+      const auto   streamColor  = bgData.value<QBrush>().color();
+      const auto   highlight    = option->palette.color(QPalette::Highlight);
+      const QColor blendedColor((streamColor.red() + highlight.red()) / 2,
+                                (streamColor.green() + highlight.green()) / 2,
+                                (streamColor.blue() + highlight.blue()) / 2);
+      // Set the blended color via the palette rather than backgroundBrush.
+      // All Qt styles use QPalette::Highlight for the selection background and
+      // automatically pair it with QPalette::HighlightedText (white/light) for
+      // the text, ensuring the selected row remains readable.
+      option->palette.setColor(QPalette::Highlight, blendedColor);
+      option->backgroundBrush = QBrush(); // clear so the palette Highlight takes effect
     }
   }
 };
