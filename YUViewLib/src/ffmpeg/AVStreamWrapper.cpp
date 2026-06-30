@@ -521,7 +521,7 @@ QStringPairList AVStreamWrapper::getInfoText(AVCodecIDWrapper &codecIdWrapper)
     if (this->disposition & 0x0040)
       dispText += QString("Forced ");
     if (this->disposition & 0x0080)
-      dispText += QString("Hearing_Imparied ");
+      dispText += QString("Hearing_Impaired ");
     if (this->disposition & 0x0100)
       dispText += QString("Visual_Impaired ");
     if (this->disposition & 0x0200)
@@ -541,18 +541,23 @@ QStringPairList AVStreamWrapper::getInfoText(AVCodecIDWrapper &codecIdWrapper)
     info.append(QStringPair("Disposition", dispText));
   }
 
-  info.append(QStringPair(
-    "Sample Aspect Ratio",
-    QString("%1:%2").arg(this->sample_aspect_ratio.num).arg(this->sample_aspect_ratio.den)));
+  const auto mediaType = getCodecType();
 
-  auto divFrameRate = 0.0;
-  if (this->avg_frame_rate.den > 0)
-    divFrameRate = double(this->avg_frame_rate.num) / double(this->avg_frame_rate.den);
-  info.append(QStringPair("Average Frame Rate",
-                          QString("%1/%2 (%3)")
-                            .arg(this->avg_frame_rate.num)
-                            .arg(this->avg_frame_rate.den)
-                            .arg(divFrameRate, 0, 'f', 2)));
+  if (mediaType == AVMEDIA_TYPE_VIDEO)
+  {
+    info.append(QStringPair(
+      "Sample Aspect Ratio",
+      QString("%1:%2").arg(this->sample_aspect_ratio.num).arg(this->sample_aspect_ratio.den)));
+
+    auto divFrameRate = 0.0;
+    if (this->avg_frame_rate.den > 0)
+      divFrameRate = double(this->avg_frame_rate.num) / double(this->avg_frame_rate.den);
+    info.append(QStringPair("Average Frame Rate",
+                            QString("%1/%2 (%3)")
+                              .arg(this->avg_frame_rate.num)
+                              .arg(this->avg_frame_rate.den)
+                              .arg(divFrameRate, 0, 'f', 2)));
+  }
 
   info += this->codecpar.getInfoText();
   return info;

@@ -82,8 +82,17 @@ vector<QTreeWidgetItem *> ParserAVFormat::getStreamInfo()
 
   for (int i = 1; i < this->streamInfoAllStreams.count(); i++)
   {
-    QTreeWidgetItem *streamInfo =
-        new QTreeWidgetItem(QStringList() << QString("Stream %1").arg(i - 1));
+    // Extract the codec type name (e.g. "Video", "Audio", "Subtitle") from the stored info list
+    // so the top-level node can be labelled "Video Stream 0" instead of the generic "Stream 0".
+    QString typeName;
+    for (const auto &p : this->streamInfoAllStreams[i])
+      if (p.first == "Codec Type") { typeName = p.second; break; }
+
+    const QString label = typeName.isEmpty()
+        ? QString("Stream %1").arg(i - 1)
+        : QString("%1 Stream %2").arg(typeName).arg(i - 1);
+
+    QTreeWidgetItem *streamInfo = new QTreeWidgetItem(QStringList() << label);
     for (QStringPair p : this->streamInfoAllStreams[i])
       new QTreeWidgetItem(streamInfo, QStringList() << p.first << p.second);
     info.push_back(streamInfo);
