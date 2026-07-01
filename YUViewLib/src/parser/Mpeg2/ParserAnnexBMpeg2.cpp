@@ -65,6 +65,29 @@ ParserAnnexBMpeg2::parseAndAddNALUnit(int                                       
 {
   ParserAnnexB::ParseResult parseResult;
 
+  if (nalID == -1 && data.empty())
+  {
+    // The file ended. Emit the bitrate entry for the last AU (which is never
+    // emitted on the start-of-next-AU path because there is no next AU).
+    if (this->lastFramePOC >= 0 && this->sizeCurrentAU > 0)
+    {
+      DEBUG_MPEG2("ParserAnnexBMpeg2::parseAndAddNALUnit End of file. Adding bitrate "
+                  << this->sizeCurrentAU);
+
+      BitratePlotModel::BitrateEntry entry;
+      entry.pts      = this->lastFramePOC;
+      entry.dts      = this->counterAU;
+      entry.duration = 1;
+      entry.bitrate  = this->sizeCurrentAU;
+      entry.keyframe = this->currentAUAllSlicesIntra;
+      entry.frameType =
+          QString::fromStdString(convertSliceCountsToString(this->currentAUSliceCounts));
+      parseResult.bitrateEntry = entry;
+    }
+    parseResult.success = true;
+    return parseResult;
+  }
+
   // Skip the NAL unit header
   unsigned readOffset = 0;
   if (data.at(0) == (char)0 && data.at(1) == (char)0 && data.at(2) == (char)1)

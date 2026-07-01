@@ -211,6 +211,24 @@ ParserAnnexBAVC::parseAndAddNALUnit(int                                         
         DEBUG_AVC("ParserAnnexBAVC::parseAndAddNALUnit Adding start/end NA/NA - POC "
                   << *this->curFrameData->poc
                   << (this->curFrameData->isRandomAccess ? " - ra" : ""));
+
+      // Emit the bitrate entry for the last AU (which is never emitted on the
+      // start-of-next-AU path because there is no next AU).
+      if (this->sizeCurrentAU > 0)
+      {
+        DEBUG_AVC("ParserAnnexBAVC::parseAndAddNALUnit End of file. Adding bitrate "
+                  << this->sizeCurrentAU);
+
+        BitratePlotModel::BitrateEntry entry;
+        entry.pts      = this->lastFramePOC;
+        entry.dts      = this->counterAU;
+        entry.duration = 1;
+        entry.bitrate  = this->sizeCurrentAU;
+        entry.keyframe = this->currentAUAllSlicesIntra;
+        entry.frameType =
+            QString::fromStdString(convertSliceCountsToString(this->currentAUSliceTypes));
+        parseResult.bitrateEntry = entry;
+      }
     }
     // The file ended
     this->hrd.endOfFile(this->getHRDPlotModel());

@@ -313,6 +313,21 @@ ParserAnnexBHEVC::parseAndAddNALUnit(int                                        
         DEBUG_HEVC("ParserAnnexBHEVC::parseAndAddNALUnit Adding start/end NA/NA - POC "
                    << curFramePOC << " layer " << curFrameLayerID
                    << (curFrameIsRandomAccess ? " - ra" : ""));
+
+      // Emit the bitrate entry for the last AU (which is never emitted on the
+      // start-of-next-AU path because there is no next AU).
+      if (this->sizeCurrentAU > 0)
+      {
+        BitratePlotModel::BitrateEntry entry;
+        entry.pts      = this->lastFramePOC;
+        entry.dts      = int(this->counterAU);
+        entry.duration = 1;
+        entry.bitrate   = this->sizeCurrentAU;
+        entry.keyframe  = this->currentAUAllSlicesIntra;
+        entry.frameType = QString::fromStdString(
+            convertSliceCountsToString(this->currentAUSliceTypes));
+        parseResult.bitrateEntry = entry;
+      }
     }
     // The file ended
     return parseResult;

@@ -258,6 +258,8 @@ bool ParserAnnexB::parseAnnexBFile(std::unique_ptr<FileSourceAnnexBFile> &file, 
     if (!parseResult.success)
       DEBUG_ANNEXB(
           "ParserAnnexB::parseAndAddNALUnit Error finalizing parsing. This should not happen.");
+    else if (parseResult.bitrateEntry)
+      this->bitratePlotModel->addBitratePoint(0, *parseResult.bitrateEntry);
   }
   catch (...)
   {
