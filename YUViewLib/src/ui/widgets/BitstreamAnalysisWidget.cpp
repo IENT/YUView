@@ -32,11 +32,14 @@
 
 #include "BitstreamAnalysisWidget.h"
 
+#include "TreeViewBranchStyle.h"
 #include "parser/AVC/ParserAnnexBAVC.h"
 #include "parser/AVFormat/ParserAVFormat.h"
 #include "parser/HEVC/ParserAnnexBHEVC.h"
 #include "parser/Mpeg2/ParserAnnexBMpeg2.h"
 #include "parser/VVC/ParserAnnexBVVC.h"
+#include <QAbstractItemView>
+#include <QComboBox>
 #include <QSortFilterProxyModel>
 #include <QStyledItemDelegate>
 #include <QTimer>
@@ -95,6 +98,25 @@ BitstreamAnalysisWidget::BitstreamAnalysisWidget(QWidget *parent) : QWidget(pare
   this->ui.setupUi(this);
   this->ui.streamInfoTreeWidget->setColumnWidth(0, 300);
   this->updateParsingStatusText(-1);
+
+  // Use a proxy style that redraws the expand/collapse arrow with the palette
+  // text color, so it stays visible on dark themes (the native arrow is nearly
+  // black and invisible on dark backgrounds).
+  this->ui.dataTreeView->setStyle(
+      new TreeViewBranchStyle(this->ui.dataTreeView->style(), this->ui.dataTreeView));
+  this->ui.streamInfoTreeWidget->setStyle(new TreeViewBranchStyle(
+      this->ui.streamInfoTreeWidget->style(), this->ui.streamInfoTreeWidget));
+
+  // The stream combo boxes are populated dynamically after a file is loaded
+  // (in updateStreamInfo). With the default AdjustToContentsOnFirstShow policy
+  // the box width never adapts to the (possibly long) stream descriptions, and
+  // the popup view elides entries in the middle (e.g. "Stream 0 - ... H.264").
+  // Adjust to contents so the box fits the longest entry, and disable eliding
+  // so the popup list never truncates the text.
+  this->ui.showStreamComboBox->setSizeAdjustPolicy(QComboBox::AdjustToContents);
+  this->ui.showStreamComboBox->view()->setTextElideMode(Qt::ElideNone);
+  this->ui.bitratePlotStreamComboBox->setSizeAdjustPolicy(QComboBox::AdjustToContents);
+  this->ui.bitratePlotStreamComboBox->view()->setTextElideMode(Qt::ElideNone);
 
   this->connect(this->ui.showStreamComboBox,
                 QOverload<int>::of(&QComboBox::currentIndexChanged),

@@ -32,6 +32,8 @@
 
 #include "PlaylistTreeWidget.h"
 
+#include "TreeViewBranchStyle.h"
+
 #include <QDebug>
 
 #include <QBuffer>
@@ -135,6 +137,11 @@ private:
 
 PlaylistTreeWidget::PlaylistTreeWidget(QWidget *parent) : QTreeWidget(parent)
 {
+  // Use a proxy style that redraws the expand/collapse arrow with the palette
+  // text color, so it stays visible on dark themes (the native arrow is nearly
+  // black and invisible on dark backgrounds).
+  setStyle(new TreeViewBranchStyle(this->style(), this));
+
   setDragEnabled(true);
   setDropIndicatorShown(true);
   setDragDropMode(QAbstractItemView::InternalMove);
