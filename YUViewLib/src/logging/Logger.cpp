@@ -40,6 +40,11 @@
 #include <QStandardPaths>
 #include <QTextStream>
 
+#if !defined(Q_OS_WIN)
+#include <unistd.h>
+#endif
+#include <cstring>
+
 // ---------------------------------------------------------------------------
 // Singleton
 // ---------------------------------------------------------------------------

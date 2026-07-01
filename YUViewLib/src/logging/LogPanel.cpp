@@ -93,8 +93,8 @@ LogPanel::LogPanel(QWidget *parent) : QDialog(parent)
     cb->setToolTip(tr(info.tooltip));
     checkboxes[idx] = cb;
 
-    connect(cb, &QCheckBox::checkStateChanged, this,
-            [this, cat = info.cat](Qt::CheckState state)
+    connect(cb, &QCheckBox::stateChanged, this,
+            [this, cat = info.cat](int state)
             { onCategoryCheckChanged(cat, state == Qt::Checked); });
 
     fileLayout->addWidget(cb);
