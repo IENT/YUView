@@ -186,6 +186,13 @@ playlistItem *PlaylistTreeWidget::getDropTarget(const QPoint &pos) const
 
 void PlaylistTreeWidget::dragMoveEvent(QDragMoveEvent *event)
 {
+  // External file drops (from OS) don't need a specific drop target
+  if (event->mimeData()->hasUrls())
+  {
+    event->acceptProposedAction();
+    return;
+  }
+
 #if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
   const auto dropTarget = this->getDropTarget(event->position().toPoint());
 #else
