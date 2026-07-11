@@ -245,7 +245,7 @@ ByteVector FileSourceFFmpegFile::getLhvCData()
     End
   };
 
-  std::ifstream inputFile(this->fileName.toStdString(), std::ios::binary);
+  std::ifstream inputFile(std::filesystem::path(this->fileName.toStdWString()), std::ios::binary);
   for (const auto searchPosition : {SearchPosition::Beginning, SearchPosition::End})
   {
     constexpr auto NR_SEARCH_BYTES = 5120;

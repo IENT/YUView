@@ -64,7 +64,7 @@ bool FileSource::openFile(const std::filesystem::path &filePath)
   if (this->isFileOpened && this->srcFile.isOpen())
     this->srcFile.close();
 
-  this->srcFile.setFileName(QString::fromStdString(filePath.string()));
+  this->srcFile.setFileName(QString::fromStdWString(filePath.wstring()));
   this->isFileOpened = this->srcFile.open(QIODevice::ReadOnly);
   if (!this->isFileOpened)
     return false;
@@ -103,7 +103,7 @@ std::vector<InfoItem> FileSource::getFileInfoList() const
 
   // For now we still use the QFileInfo. There is no easy cross platform formatting
   // for the std::filesystem::file_time_type. This is added in C++ 20.
-  QFileInfo fileInfo(QString::fromStdString(this->fullFilePath.string()));
+  QFileInfo fileInfo(QString::fromStdWString(this->fullFilePath.wstring()));
 
   std::vector<InfoItem> infoList;
 

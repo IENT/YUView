@@ -167,7 +167,7 @@ bool FrameHandler::loadCurrentImageFromFile(const QString &filePath)
   auto extension = QFileInfo(filePath).suffix().toLower();
   if (extension == "tga" || extension == "icb" || extension == "vda" || extension == "vst")
   {
-    auto image = dec::Targa::loadTgaFromFile(filePath.toStdString());
+    auto image = dec::Targa::loadTgaFromFile(functionsGui::toFileSystemPath(filePath));
     if (!image)
       return false;
 

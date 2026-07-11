@@ -38,6 +38,9 @@
 #include <QColor>
 #include <QIcon>
 #include <QImage>
+#include <QString>
+
+#include <filesystem>
 
 /*
   This functions class is called "GUI" because you must link to the gui module of QT
@@ -108,5 +111,16 @@ void setupUi(void *ui, void (*setupUi)(void *ui, QWidget *widget));
 
 // Return the icon/pixmap from the given file path (inverted if necessary)
 QIcon   convertIcon(QString iconPath);
+
+// Convert a QString to a std::filesystem::path using the wide-string interface.
+// This is necessary because QString::toStdString() returns UTF-8 bytes, which on
+// Windows are misinterpreted as the system ANSI codepage (e.g. GBK) by
+// std::filesystem::path(const std::string&) and std::ifstream(const std::string&).
+// Using toStdWString() (UTF-16 on Windows, UTF-32 on Linux/macOS) is decoded
+// correctly on all platforms.
+inline std::filesystem::path toFileSystemPath(const QString &str)
+{
+  return std::filesystem::path(str.toStdWString());
+}
 
 } // namespace functionsGui

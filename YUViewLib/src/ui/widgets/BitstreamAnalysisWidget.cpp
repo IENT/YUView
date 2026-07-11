@@ -33,6 +33,7 @@
 #include "BitstreamAnalysisWidget.h"
 
 #include "TreeViewBranchStyle.h"
+#include <common/FunctionsGui.h>
 #include "parser/AVC/ParserAnnexBAVC.h"
 #include "parser/AVFormat/ParserAVFormat.h"
 #include "parser/HEVC/ParserAnnexBHEVC.h"
@@ -341,7 +342,8 @@ void BitstreamAnalysisWidget::stopAndDeleteParserBlocking()
 void BitstreamAnalysisWidget::backgroundParsingFunction()
 {
   if (this->parser)
-    this->parser->runParsingOfFile(this->currentCompressedVideo->properties().name.toStdString());
+    this->parser->runParsingOfFile(
+        functionsGui::toFileSystemPath(this->currentCompressedVideo->properties().name));
 }
 
 void BitstreamAnalysisWidget::currentSelectedItemsChanged(playlistItem *item1, playlistItem *, bool)

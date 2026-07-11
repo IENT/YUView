@@ -604,7 +604,7 @@ void postProcessImage(dec::Targa::Image &image, const Header &header)
 
 } // namespace
 
-std::optional<dec::Targa::Image> dec::Targa::loadTgaFromFile(std::string filename)
+std::optional<dec::Targa::Image> dec::Targa::loadTgaFromFile(const std::filesystem::path &filename)
 {
   std::ifstream tgaFile(filename, std::ios::binary);
 

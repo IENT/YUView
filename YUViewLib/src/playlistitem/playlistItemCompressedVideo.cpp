@@ -145,7 +145,7 @@ playlistItemCompressedVideo::playlistItemCompressedVideo(const QString &compress
   {
     // Open file
     DEBUG_COMPRESSED("playlistItemCompressedVideo::playlistItemCompressedVideo Open annexB file");
-    const auto filePath          = std::filesystem::path(compressedFilePath.toStdString());
+    const auto filePath          = functionsGui::toFileSystemPath(compressedFilePath);
     this->inputFileAnnexBLoading = std::make_unique<FileSourceAnnexBFile>(filePath);
     if (this->cachingEnabled)
       this->inputFileAnnexBCaching = std::make_unique<FileSourceAnnexBFile>(filePath);

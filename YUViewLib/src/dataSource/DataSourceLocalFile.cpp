@@ -60,7 +60,7 @@ getLastWriteTime(const std::filesystem::path &filePath) noexcept
 DataSourceLocalFile::DataSourceLocalFile(const std::filesystem::path &filePath)
 {
   this->filePath = filePath;
-  this->file.open(this->filePath.string(), std::ios_base::in | std::ios_base::binary);
+  this->file.open(this->filePath, std::ios_base::in | std::ios_base::binary);
   if (this->isOk())
     this->lastWriteTime = getLastWriteTime(this->filePath);
 }
@@ -114,7 +114,7 @@ void DataSourceLocalFile::clearFileCache()
       CreateFile(file, GENERIC_READ, 0, NULL, OPEN_EXISTING, FILE_FLAG_NO_BUFFERING, NULL);
   CloseHandle(hFile);
 
-  this->file.open(this->filePath.string(), std::ios_base::in | std::ios_base::binary);
+  this->file.open(this->filePath, std::ios_base::in | std::ios_base::binary);
 #endif
 }
 
@@ -132,7 +132,7 @@ bool DataSourceLocalFile::wasSourceModified() const
 void DataSourceLocalFile::reloadAndResetDataSource()
 {
   this->file.close();
-  this->file.open(this->filePath.string(), std::ios_base::in | std::ios_base::binary);
+  this->file.open(this->filePath, std::ios_base::in | std::ios_base::binary);
   if (this->isOk())
     this->lastWriteTime = getLastWriteTime(this->filePath);
 }
