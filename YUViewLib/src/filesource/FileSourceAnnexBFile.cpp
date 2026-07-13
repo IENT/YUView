@@ -31,14 +31,11 @@
  */
 
 #include "FileSourceAnnexBFile.h"
+#include <logging/Macros.h>
 
-#define ANNEXBFILE_DEBUG_OUTPUT 0
-#if ANNEXBFILE_DEBUG_OUTPUT && !NDEBUG
-#include <QDebug>
-#define DEBUG_ANNEXBFILE(f) qDebug() << f
-#else
-#define DEBUG_ANNEXBFILE(f) ((void)0)
-#endif
+// Debug output routes through the logFileSource category, toggleable
+// at runtime via QT_LOGGING_RULES.
+#define DEBUG_ANNEXBFILE(msg) LOG_DEBUG(logFileSource) << msg
 
 const auto BUFFERSIZE = 500000;
 const auto STARTCODE  = QByteArrayLiteral("\x00\x00\x01");
@@ -57,7 +54,7 @@ FileSourceAnnexBFile::FileSourceAnnexBFile(const std::filesystem::path &filePath
 // Open the file and fill the read buffer.
 bool FileSourceAnnexBFile::openFile(const std::filesystem::path &fileName)
 {
-  DEBUG_ANNEXBFILE("FileSourceAnnexBFile::openFile fileName " << fileName);
+  DEBUG_ANNEXBFILE("FileSourceAnnexBFile::openFile fileName " << QString::fromStdString(fileName.string()));
 
   // Open the input file (again)
   FileSource::openFile(fileName);

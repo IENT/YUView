@@ -32,6 +32,8 @@
 
 #include "StatisticsFileCSV.h"
 
+#include <logging/Macros.h>
+
 #include <QTextStream>
 #include <iostream>
 
@@ -218,13 +220,13 @@ void StatisticsFileCSV::readFrameAndTypePositionsFromFile(std::atomic_bool &brea
   }
   catch (const char *str)
   {
-    std::cerr << "Error while parsing meta data: " << str << "\n";
+    qWarning() << "Error while parsing meta data:" << str;
     this->errorMessage = QString("Error while parsing meta data: ") + QString(str);
     this->error        = true;
   }
   catch (const std::exception &ex)
   {
-    std::cerr << "Error while parsing:" << ex.what() << "\n";
+    qWarning() << "Error while parsing:" << ex.what();
     this->errorMessage = QString("Error while parsing: ") + QString(ex.what());
     this->error        = true;
   }
@@ -331,13 +333,13 @@ void StatisticsFileCSV::loadStatisticData(StatisticsData &statisticsData, int po
   }
   catch (const char *str)
   {
-    std::cerr << "Error while parsing: " << str << '\n';
+    qWarning() << "Error while parsing:" << str;
     this->errorMessage = QString("Error while parsing meta data: ") + QString(str);
     this->error        = true;
   }
   catch (...)
   {
-    std::cerr << "Error while parsing.";
+    qWarning() << "Error while parsing.";
     this->errorMessage = QString("Error while parsing meta data.");
     this->error        = true;
   }
@@ -494,13 +496,13 @@ void StatisticsFileCSV::readHeaderFromFile(StatisticsData &statisticsData)
   }
   catch (const char *str)
   {
-    std::cerr << "Error while parsing meta data: " << str << '\n';
+    qWarning() << "Error while parsing meta data:" << str;
     this->errorMessage = QString("Error while parsing meta data: ") + QString(str);
     this->error        = true;
   }
   catch (...)
   {
-    std::cerr << "Error while parsing meta data.";
+    qWarning() << "Error while parsing meta data.";
     this->errorMessage = QString("Error while parsing meta data.");
     this->error        = true;
   }

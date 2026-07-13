@@ -31,6 +31,7 @@
  */
 
 #include "ParserAVFormat.h"
+#include <logging/Macros.h>
 
 #include <QElapsedTimer>
 #include <cmath>
@@ -46,13 +47,9 @@
 #include "parser/common/SubByteReaderLogging.h"
 #include <parser/common/Functions.h>
 
-#define PARSERAVCFORMAT_DEBUG_OUTPUT 0
-#if PARSERAVCFORMAT_DEBUG_OUTPUT && !NDEBUG
-#include <QDebug>
-#define DEBUG_AVFORMAT qDebug
-#else
-#define DEBUG_AVFORMAT(fmt, ...) ((void)0)
-#endif
+// Debug output routes through the logParser category, toggleable
+// at runtime via QT_LOGGING_RULES.
+#define DEBUG_AVFORMAT(...) qCDebug(logParser, __VA_ARGS__)
 
 using namespace std::string_literals;
 using namespace FFmpeg;
@@ -491,7 +488,7 @@ bool ParserAVFormat::parseAVPacket(unsigned         packetID,
         auto [nrBytesRead, name] = subtitle::dvb::parseDVBSubtitleSegment(data, itemTree);
         (void)name;
         DEBUG_AVFORMAT(
-            "ParserAVFormat::parseAVPacket parsed DVB segment %d - %d bytes", obuID, nrBytesRead);
+            "ParserAVFormat::parseAVPacket parsed DVB segment %d - %d bytes", segmentID, nrBytesRead);
 
         constexpr auto minDVBSegmentSize = 6u;
         auto           remaining         = std::distance(posInData, avpacketData.end());
@@ -544,8 +541,8 @@ bool ParserAVFormat::parseAVPacket(unsigned         packetID,
     {
       (void)e;
       DEBUG_AVFORMAT(
-          "ParserAVFormat::parseAVPacket Exception occured while parsing generic packet data: "
-          << e.what());
+          "ParserAVFormat::parseAVPacket Exception occured while parsing generic packet data: %s",
+          e.what());
     }
   }
 

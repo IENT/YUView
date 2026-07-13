@@ -36,6 +36,7 @@
 #include <iostream>
 
 #include <common/Typedef.h>
+#include <logging/Macros.h>
 #include <ui/YUViewApplication.h>
 
 int main(int argc, char *argv[])
@@ -63,7 +64,7 @@ int main(int argc, char *argv[])
     }
     catch (...)
     {
-      std::cerr << "YUView: Out of memory." << std::endl;
+      qWarning() << "YUView: Out of memory.";
     }
     return 1;
   }

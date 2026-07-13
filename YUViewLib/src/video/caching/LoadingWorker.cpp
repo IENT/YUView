@@ -31,16 +31,14 @@
  */
 
 #include "LoadingWorker.h"
+#include <logging/Macros.h>
 
 namespace video
 {
 
-#define LOADINGWORKER_DEBUG_LOADING 0
-#if LOADINGWORKER_DEBUG_LOADING && !NDEBUG
-#define DEBUG_WORKER qDebug
-#else
-#define DEBUG_WORKER(fmt, ...) ((void)0)
-#endif
+// Debug output routes through the logCache category, toggleable
+// at runtime via QT_LOGGING_RULES.
+#define DEBUG_WORKER(...) qCDebug(logCache, __VA_ARGS__)
 
 LoadingWorker::LoadingWorker(QObject *parent) : QObject(parent)
 {

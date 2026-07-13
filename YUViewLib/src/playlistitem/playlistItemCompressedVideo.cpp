@@ -31,6 +31,7 @@
  */
 
 #include "playlistItemCompressedVideo.h"
+#include <logging/Macros.h>
 
 #include <QInputDialog>
 #include <QPlainTextEdit>
@@ -61,13 +62,9 @@
 using namespace functions;
 using namespace decoder;
 
-#define COMPRESSED_VIDEO_DEBUG_OUTPUT 0
-#if COMPRESSED_VIDEO_DEBUG_OUTPUT
-#include <QDebug>
-#define DEBUG_COMPRESSED(f) qDebug() << f
-#else
-#define DEBUG_COMPRESSED(f) ((void)0)
-#endif
+// Debug output routes through the logDecoder category, toggleable
+// at runtime via QT_LOGGING_RULES.
+#define DEBUG_COMPRESSED(msg) LOG_DEBUG(logDecoder) << msg
 
 using namespace std::string_view_literals;
 

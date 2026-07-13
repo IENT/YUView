@@ -31,17 +31,13 @@
  */
 
 #include "StatisticsData.h"
+#include <logging/Macros.h>
 
 #include <common/Functions.h>
 
-// Activate this if you want to know when what is loaded.
-#define STATISTICS_DEBUG_LOADING 0
-#if STATISTICS_DEBUG_LOADING && !NDEBUG
-#include <QDebug>
-#define DEBUG_STATDATA(fmt) qDebug() << fmt
-#else
-#define DEBUG_STATDATA(fmt) ((void)0)
-#endif
+// Debug output routes through the logStats category, toggleable
+// at runtime via QT_LOGGING_RULES.
+#define DEBUG_STATDATA(msg) LOG_DEBUG(logStats) << msg
 
 namespace stats
 {
@@ -186,8 +182,16 @@ std::vector<int> StatisticsData::getTypesThatNeedLoading(int frameIndex) const
       typesToLoad.push_back(statsType.typeID);
   }
 
-  DEBUG_STATDATA("StatisticsData::getTypesThatNeedLoading "
-                 << QString::fromStdString(to_string(typesToLoad)));
+  {
+    QString typesStr;
+    for (size_t i = 0; i < typesToLoad.size(); ++i)
+    {
+      if (i > 0)
+        typesStr += ", ";
+      typesStr += QString::number(typesToLoad[i]);
+    }
+    DEBUG_STATDATA("StatisticsData::getTypesThatNeedLoading [" << typesStr << "]");
+  }
   return typesToLoad;
 }
 

@@ -31,16 +31,13 @@
  */
 
 #include "decoderFFmpeg.h"
+#include <logging/Macros.h>
 
 #include <common/Functions.h>
 
-#define DECODERFFMPEG_DEBUG_OUTPUT 0
-#if DECODERFFMPEG_DEBUG_OUTPUT && !NDEBUG
-#include <QDebug>
-#define DEBUG_FFMPEG(f) qDebug() << f
-#else
-#define DEBUG_FFMPEG(f) ((void)0)
-#endif
+// Debug output routes through the logDecoder category, toggleable
+// at runtime via QT_LOGGING_RULES.
+#define DEBUG_FFMPEG(msg) LOG_DEBUG(logDecoder) << msg
 
 namespace decoder
 {
@@ -348,7 +345,6 @@ bool decoderFFmpeg::pushAVPacket(FFmpeg::AVPacketWrapper &pkt)
 
   if (retPush < 0 && retPush != AVERROR(EAGAIN))
   {
-#if DECODERFFMPEG_DEBUG_OUTPUT
     {
       QString meaning =
         QString("decoderFFmpeg::pushAVPacket: Error sending packet - err %1").arg(retPush);
@@ -364,9 +360,8 @@ bool decoderFFmpeg::pushAVPacket(FFmpeg::AVPacketWrapper &pkt)
         meaning += QString(" %1").arg(b, 2, 16);
       }
       meaning += ")";
-      qDebug() << meaning;
+      DEBUG_FFMPEG(meaning);
     }
-#endif
     this->setError(QStringLiteral("Error sending packet (avcodec_send_packet)"));
     return false;
   }

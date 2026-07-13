@@ -35,6 +35,8 @@
 
 #include "decoderTarga.h"
 
+#include <logging/Macros.h>
+
 #include <fstream>
 #include <iostream>
 
@@ -620,7 +622,7 @@ std::optional<dec::Targa::Image> dec::Targa::loadTgaFromFile(const std::filesyst
   }
   catch (const std::exception &e)
   {
-    std::cerr << e.what() << '\n';
+    qWarning() << e.what();
   }
 
   return {};

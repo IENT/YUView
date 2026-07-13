@@ -31,6 +31,7 @@
  */
 
 #include "playlistItemText.h"
+#include <logging/Macros.h>
 
 #include <QColorDialog>
 #include <QFontDialog>
@@ -39,13 +40,9 @@
 
 #include <common/FunctionsGui.h>
 
-// Activate this if you want to know when which buffer is loaded/converted to image and so on.
-#define PLAYLISTITEMTEXT_DEBUG 0
-#if PLAYLISTITEMTEXT_DEBUG && !NDEBUG
-#define DEBUG_TEXT qDebug
-#else
-#define DEBUG_TEXT(fmt, ...) ((void)0)
-#endif
+// Debug output routes through the logApp category, toggleable
+// at runtime via QT_LOGGING_RULES.
+#define DEBUG_TEXT(...) qCDebug(logApp, __VA_ARGS__)
 
 playlistItemText::playlistItemText(const QString &initialText)
     : playlistItem(QString("Text: \"%1\"").arg(initialText), Type::Static)

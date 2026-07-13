@@ -31,16 +31,12 @@
  */
 
 #include "PixelFormatRGB.h"
+#include <logging/Macros.h>
 #include "common/Functions.h"
 
-// Activate this if you want to know when which buffer is loaded/converted to image and so on.
-#define RGBPIXELFORMAT_DEBUG 0
-#if RGBPIXELFORMAT_DEBUG && !NDEBUG
-#include <QDebug>
-#define DEBUG_RGB_FORMAT qDebug
-#else
-#define DEBUG_RGB_FORMAT(fmt, ...) ((void)0)
-#endif
+// Debug output routes through the logVideo category, toggleable
+// at runtime via QT_LOGGING_RULES.
+#define DEBUG_RGB_FORMAT(...) qCDebug(logVideo, __VA_ARGS__)
 
 namespace video::rgb
 {
@@ -210,7 +206,7 @@ int PixelFormatRGB::getBytesPerFrame(const Size frameSize) const
   DEBUG_RGB_FORMAT(
     "PixelFormatRGB::bytesPerFrame numberSamples %d numberSamples %d numberBytesPerFrame %d",
     int(numberSamples),
-    this->nrChannels(),
+    this->getNrChannels(),
     numberBytesPerFrame);
 
   return numberBytesPerFrame;

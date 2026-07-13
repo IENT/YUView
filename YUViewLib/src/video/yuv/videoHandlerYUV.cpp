@@ -31,6 +31,7 @@
  */
 
 #include "videoHandlerYUV.h"
+#include <logging/Macros.h>
 
 #include <algorithm>
 #include <cmath>
@@ -59,14 +60,9 @@ using namespace std::string_view_literals;
 namespace video::yuv
 {
 
-// Activate this if you want to know when which buffer is loaded/converted to image and so on.
-#define VIDEOHANDLERYUV_DEBUG_LOADING 0
-#if VIDEOHANDLERYUV_DEBUG_LOADING && !NDEBUG
-#include <QDebug>
-#define DEBUG_YUV(message) qDebug() << message;
-#else
-#define DEBUG_YUV(message) ((void)0)
-#endif
+// Debug output routes through the logVideo category, toggleable
+// at runtime via QT_LOGGING_RULES.
+#define DEBUG_YUV(msg) LOG_DEBUG(logVideo) << msg
 
 // Restrict is basically a promise to the compiler that for the scope of the pointer, the target of
 // the pointer will only be accessed through that pointer (and pointers copied from it).

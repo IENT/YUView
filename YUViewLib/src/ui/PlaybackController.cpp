@@ -31,6 +31,7 @@
  */
 
 #include "PlaybackController.h"
+#include <logging/Macros.h>
 
 #include <QSettings>
 
@@ -41,13 +42,9 @@
 
 using namespace std::chrono_literals;
 
-// Activate this if you want to know when which buffer is loaded/converted to image and so on.
-#define PLAYBACKCONTROLLER_DEBUG 0
-#if PLAYBACKCONTROLLER_DEBUG && !NDEBUG
-#define DEBUG_PLAYBACK qDebug
-#else
-#define DEBUG_PLAYBACK(fmt, ...) ((void)0)
-#endif
+// Debug output routes through the logUI category, toggleable
+// at runtime via QT_LOGGING_RULES.
+#define DEBUG_PLAYBACK(...) qCDebug(logUI, __VA_ARGS__)
 
 namespace
 {
@@ -337,8 +334,8 @@ void PlaybackController::currentSelectedItemsChanged(playlistItem *item1,
                    "currentFrameIdx %d lastValidFrameIdx %d slider %d-%d",
                    this->currentFrameIdx,
                    this->lastValidFrameIdx,
-                   this->frameSlider->minimum(),
-                   this->frameSlider->maximum());
+                   this->ui.frameSlider->minimum(),
+                   this->ui.frameSlider->maximum());
 
     // Also update the view to display the new frame
     this->splitViewPrimary->update(true);
@@ -363,8 +360,8 @@ void PlaybackController::currentSelectedItemsChanged(playlistItem *item1,
                    "currentFrameIdx %d lastValidFrameIdx %d slider %d-%d",
                    this->currentFrameIdx,
                    this->lastValidFrameIdx,
-                   this->frameSlider->minimum(),
-                   this->frameSlider->maximum());
+                   this->ui.frameSlider->minimum(),
+                   this->ui.frameSlider->maximum());
   }
   else
   {
@@ -411,8 +408,8 @@ void PlaybackController::currentSelectedItemsChanged(playlistItem *item1,
                    "%d lastValidFrameIdx %d slider %d-%d",
                    this->currentFrameIdx,
                    this->lastValidFrameIdx,
-                   this->frameSlider->minimum(),
-                   this->frameSlider->maximum());
+                   this->ui.frameSlider->minimum(),
+                   this->ui.frameSlider->maximum());
   }
 }
 
@@ -485,8 +482,8 @@ void PlaybackController::updateFrameRange()
   this->ui.frameSpinBox->setMaximum(range.second);
 
   DEBUG_PLAYBACK("PlaybackController::updateFrameRange - new range %d-%d",
-                 this->frameSlider->minimum(),
-                 this->frameSlider->maximum());
+                 this->ui.frameSlider->minimum(),
+                 this->ui.frameSlider->maximum());
 }
 
 void PlaybackController::goToNextItem()
@@ -509,7 +506,7 @@ void PlaybackController::goToNextItem()
   else
   {
     DEBUG_PLAYBACK("PlaybackController::goToNextItem next item first frame %d",
-                   this->frameSlider->minimum());
+                   this->ui.frameSlider->minimum());
     this->setCurrentFrameAndUpdate(this->ui.frameSlider->minimum());
 
     if (this->waitForCachingOfItem)

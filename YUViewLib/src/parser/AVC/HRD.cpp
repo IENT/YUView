@@ -31,6 +31,7 @@
  */
 
 #include "HRD.h"
+#include <logging/Macros.h>
 
 #include "SEI/buffering_period.h"
 #include "SEI/pic_timing.h"
@@ -38,13 +39,9 @@
 
 #include <cmath>
 
-#define PARSER_AVC_HRD_DEBUG_OUTPUT 0
-#if PARSER_AVC_HRD_DEBUG_OUTPUT && !NDEBUG
-#include <QDebug>
-#define DEBUG_AVC_HRD(msg) qDebug() << msg
-#else
-#define DEBUG_AVC_HRD(fmt) ((void)0)
-#endif
+// Debug output routes through the logParser category, toggleable
+// at runtime via QT_LOGGING_RULES.
+#define DEBUG_AVC_HRD(msg) LOG_DEBUG(logParser) << msg
 
 namespace parser::avc
 

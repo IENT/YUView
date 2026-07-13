@@ -31,6 +31,7 @@
  */
 
 #include "videoHandlerDifference.h"
+#include <logging/Macros.h>
 
 #include <QPainter>
 #include <algorithm>
@@ -45,13 +46,9 @@ using namespace std::string_view_literals;
 namespace video
 {
 
-// Activate this if you want to know when which buffer is loaded/converted to image and so on.
-#define VIDEOHANDLERDIFFERENCE_DEBUG_LOADING 0
-#if VIDEOHANDLERDIFFERENCE_DEBUG_LOADING && !NDEBUG
-#define DEBUG_VIDEO qDebug
-#else
-#define DEBUG_VIDEO(fmt, ...) ((void)0)
-#endif
+// Debug output routes through the logVideo category, toggleable
+// at runtime via QT_LOGGING_RULES.
+#define DEBUG_VIDEO(...) qCDebug(logVideo, __VA_ARGS__)
 
 videoHandlerDifference::videoHandlerDifference() : videoHandler()
 {

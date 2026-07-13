@@ -31,6 +31,7 @@
  */
 
 #include "YUViewApplication.h"
+#include <logging/Macros.h>
 
 #include <common/Typedef.h>
 #include <crash/CrashHandler.h>
@@ -42,13 +43,9 @@
 #include <QSettings>
 #include <QStandardPaths>
 
-#define APPLICATION_DEBUG 0
-#if APPLICATION_DEBUG && !NDEBUG
-#include <QDebug>
-#define DEBUG_APP(msg) qDebug() << msg
-#else
-#define DEBUG_APP(msg) ((void)0)
-#endif
+// Debug output routes through the logApp category, toggleable
+// at runtime via QT_LOGGING_RULES.
+#define DEBUG_APP(msg) LOG_DEBUG(logApp) << msg
 
 YUViewApplication::YUViewApplication(int argc, char *argv[]) : QApplication(argc, argv)
 {
@@ -141,6 +138,11 @@ YUViewApplication::YUViewApplication(int argc, char *argv[]) : QApplication(argc
 
   w.show();
   returnCode = exec();
+
+  // Explicitly shut down the Logger before the QApplication is destroyed.
+  // This avoids relying on the Logger singleton's destructor, which runs
+  // during static destruction when Qt may already be torn down.
+  Logger::instance().shutdown();
 }
 
 bool YUViewApplication::notify(QObject *receiver, QEvent *event)

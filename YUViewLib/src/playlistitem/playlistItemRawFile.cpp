@@ -31,6 +31,7 @@
  */
 
 #include "playlistItemRawFile.h"
+#include <logging/Macros.h>
 
 #include <new>
 
@@ -43,13 +44,9 @@
 #include <filesource/FrameFormatGuess.h>
 #include <handler/ItemMemoryHandler.h>
 
-// Activate this if you want to know when which buffer is loaded/converted to image and so on.
-#define PLAYLISTITEMRAWFILE_DEBUG_LOADING 0
-#if PLAYLISTITEMRAWFILE_DEBUG_LOADING && !NDEBUG
-#define DEBUG_RAWFILE(f) qDebug() << f
-#else
-#define DEBUG_RAWFILE(f) ((void)0)
-#endif
+// Debug output routes through the logApp category, toggleable
+// at runtime via QT_LOGGING_RULES.
+#define DEBUG_RAWFILE(msg) LOG_DEBUG(logApp) << msg
 
 using namespace std::string_view_literals;
 

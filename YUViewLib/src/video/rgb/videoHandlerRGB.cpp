@@ -31,6 +31,7 @@
  */
 
 #include "videoHandlerRGB.h"
+#include <logging/Macros.h>
 #include "common/Typedef.h"
 #include "video/PixelFormat.h"
 #include "video/rgb/PixelFormatRGB.h"
@@ -94,14 +95,9 @@ createConversionInfoItems(const PixelFormatRGB &pixelFormat, const Size &frameSi
 
 } // namespace
 
-// Activate this if you want to know when which buffer is loaded/converted to image and so on.
-#define VIDEOHANDLERRGB_DEBUG_LOADING 0
-#if VIDEOHANDLERRGB_DEBUG_LOADING && !NDEBUG
-#include <QDebug>
-#define DEBUG_RGB qDebug
-#else
-#define DEBUG_RGB(fmt, ...) ((void)0)
-#endif
+// Debug output routes through the logVideo category, toggleable
+// at runtime via QT_LOGGING_RULES.
+#define DEBUG_RGB(...) qCDebug(logVideo, __VA_ARGS__)
 
 // Restrict is basically a promise to the compiler that for the scope of the pointer, the target of
 // the pointer will only be accessed through that pointer (and pointers copied from it).
@@ -233,7 +229,8 @@ std::optional<std::string> videoHandlerRGB::getFormatAsString() const
 
 bool videoHandlerRGB::setFormatFromString(const std::string_view format)
 {
-  DEBUG_RGB("videoHandlerRGB::setFormatFromString " << format << "\n");
+  DEBUG_RGB("videoHandlerRGB::setFormatFromString %s",
+            QString::fromUtf8(format.data(), format.size()).toLatin1().data());
 
   const auto split = functions::splitString(format, ';');
   if (split.size() != 4 || split.at(2) != "RGB")

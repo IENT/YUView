@@ -31,6 +31,7 @@
  */
 
 #include "playlistItemOverlay.h"
+#include <logging/Macros.h>
 
 #include "playlistItemStatisticsFile.h"
 
@@ -42,13 +43,9 @@
 #include <common/EnumMapper.h>
 #include <common/FunctionsGui.h>
 
-#define PLAYLISTITEMOVERLAY_DEBUG 0
-#if PLAYLISTITEMOVERLAY_DEBUG && !NDEBUG
-#include <QDebug>
-#define DEBUG_OVERLAY qDebug
-#else
-#define DEBUG_OVERLAY(fmt, ...) ((void)0)
-#endif
+// Debug output routes through the logApp category, toggleable
+// at runtime via QT_LOGGING_RULES.
+#define DEBUG_OVERLAY(...) qCDebug(logApp, __VA_ARGS__)
 
 #define CUSTOM_POS_MAX 100000
 
@@ -144,8 +141,7 @@ ItemLoadingState playlistItemOverlay::needsLoading(int frameIdx, bool loadRawdat
     if (this->getChildPlaylistItem(i)->needsLoading(frameIdx, loadRawdata) ==
         ItemLoadingState::LoadingNeeded)
     {
-      DEBUG_OVERLAY("playlistItemOverlay::needsLoading LoadingNeeded child %s",
-                    this->getChildPlaylistItem(i)->getName().toLatin1().data());
+      DEBUG_OVERLAY("playlistItemOverlay::needsLoading LoadingNeeded child %d", i);
       return ItemLoadingState::LoadingNeeded;
     }
   }
@@ -154,8 +150,7 @@ ItemLoadingState playlistItemOverlay::needsLoading(int frameIdx, bool loadRawdat
     if (this->getChildPlaylistItem(i)->needsLoading(frameIdx, loadRawdata) ==
         ItemLoadingState::LoadingNeededDoubleBuffer)
     {
-      DEBUG_OVERLAY("playlistItemOverlay::needsLoading LoadingNeededDoubleBuffer child %s",
-                    this->getChildPlaylistItem(i)->getName().toLatin1().data());
+      DEBUG_OVERLAY("playlistItemOverlay::needsLoading LoadingNeededDoubleBuffer child %d", i);
       return ItemLoadingState::LoadingNeededDoubleBuffer;
     }
   }
@@ -243,7 +238,7 @@ void playlistItemOverlay::updateLayout(bool onlyIfItemsChanged)
     return;
 
   DEBUG_OVERLAY("playlistItemOverlay::updateLayout%s",
-                onlyIfNrItemsChanged ? " onlyIfNrItemsChanged" : "");
+                onlyIfItemsChanged ? " onlyIfItemsChanged" : "");
 
   if (nrItemsChanged || itemOrderChanged)
   {
@@ -393,12 +388,12 @@ void playlistItemOverlay::updateLayout(bool onlyIfItemsChanged)
       // Set item bounding rectangle
       this->childItemRects[i] = targetRect;
 
-      DEBUG_OVERLAY("playlistItemOverlay::updateLayout item %d size (%d,%d) alignmentMode %d "
+      DEBUG_OVERLAY("playlistItemOverlay::updateLayout item %d size (%d,%d) arangementMode %d "
                     "targetRect (%d,%d)",
                     i,
                     childSize.width(),
                     childSize.height(),
-                    alignmentMode,
+                    this->arangementMode,
                     targetRect.left(),
                     targetRect.top());
 
@@ -527,7 +522,7 @@ playlistItemOverlay *playlistItemOverlay::newPlaylistItemOverlay(const YUViewDom
 
     DEBUG_OVERLAY(
         "playlistItemOverlay::newPlaylistItemOverlay alignmentMode %d manualAlignment (%d,%d)",
-        alignment,
+        alignmentMode,
         manualAlignmentX,
         manualAlignmentY);
   }

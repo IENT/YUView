@@ -31,18 +31,15 @@
  */
 
 #include "playlistItemResample.h"
+#include <logging/Macros.h>
 
 #include <QPainter>
 
 #include <common/FunctionsGui.h>
 
-// Activate this if you want to know when which difference is loaded
-#define PLAYLISTITEMRESAMPLE_DEBUG_LOADING 0
-#if PLAYLISTITEMRESAMPLE_DEBUG_LOADING && !NDEBUG
-#define DEBUG_RESAMPLE qDebug
-#else
-#define DEBUG_RESAMPLE(fmt, ...) ((void)0)
-#endif
+// Debug output routes through the logApp category, toggleable
+// at runtime via QT_LOGGING_RULES.
+#define DEBUG_RESAMPLE(...) qCDebug(logApp, __VA_ARGS__)
 
 #define RESAMPLE_INFO_TEXT "Please drop an item onto this item to show a resampled version of it."
 

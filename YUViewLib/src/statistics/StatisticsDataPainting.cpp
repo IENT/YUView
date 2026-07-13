@@ -31,6 +31,7 @@
  */
 
 #include "StatisticsDataPainting.h"
+#include <logging/Macros.h>
 
 #include <common/FunctionsGui.h>
 #include <statistics/StatisticsType.h>
@@ -44,14 +45,9 @@
 namespace
 {
 
-// Activate this if you want to know when what is loaded.
-#define STATISTICS_DEBUG_PAINTING 0
-#if STATISTICS_DEBUG_PAINTING && !NDEBUG
-#define DEBUG_PAINT qDebug
-#else
-#define DEBUG_PAINT(fmt, ...) ((void)0)
-#endif
-
+// Debug output routes through the logStats category, toggleable
+// at runtime via QT_LOGGING_RULES.
+#define DEBUG_PAINT(...) qCDebug(logStats, __VA_ARGS__)
 QPolygon convertToQPolygon(const stats::Polygon &poly)
 {
   if (poly.empty())

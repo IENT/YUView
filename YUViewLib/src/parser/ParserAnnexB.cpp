@@ -31,6 +31,7 @@
  */
 
 #include "ParserAnnexB.h"
+#include <logging/Macros.h>
 
 #include <common/Formatting.h>
 #include <parser/common/SubByteReaderLogging.h>
@@ -39,13 +40,9 @@
 #include <QProgressDialog>
 #include <assert.h>
 
-#define PARSERANNEXB_DEBUG_OUTPUT 0
-#if PARSERANNEXB_DEBUG_OUTPUT && !NDEBUG
-#include <QDebug>
-#define DEBUG_ANNEXB(msg) qDebug() << msg
-#else
-#define DEBUG_ANNEXB(msg) ((void)0)
-#endif
+// Debug output routes through the logParser category, toggleable
+// at runtime via QT_LOGGING_RULES.
+#define DEBUG_ANNEXB(msg) LOG_DEBUG(logParser) << msg
 
 namespace parser
 {

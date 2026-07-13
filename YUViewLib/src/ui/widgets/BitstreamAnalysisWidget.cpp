@@ -31,6 +31,7 @@
  */
 
 #include "BitstreamAnalysisWidget.h"
+#include <logging/Macros.h>
 
 #include "TreeViewBranchStyle.h"
 #include <common/FunctionsGui.h>
@@ -86,13 +87,9 @@ public:
   }
 };
 
-#define BITSTREAM_ANALYSIS_WIDGET_DEBUG_OUTPUT 0
-#if BITSTREAM_ANALYSIS_WIDGET_DEBUG_OUTPUT
-#include <QDebug>
-#define DEBUG_ANALYSIS(msg) qDebug() << msg
-#else
-#define DEBUG_ANALYSIS(msg) ((void)0)
-#endif
+// Debug output routes through the logUI category, toggleable
+// at runtime via QT_LOGGING_RULES.
+#define DEBUG_ANALYSIS(msg) LOG_DEBUG(logUI) << msg
 
 BitstreamAnalysisWidget::BitstreamAnalysisWidget(QWidget *parent) : QWidget(parent)
 {

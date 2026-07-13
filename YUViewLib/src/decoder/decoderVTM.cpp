@@ -31,6 +31,7 @@
  */
 
 #include "decoderVTM.h"
+#include <logging/Macros.h>
 
 #include <QCoreApplication>
 #include <QDir>
@@ -43,29 +44,9 @@
 namespace decoder
 {
 
-// Debug the decoder ( 0:off 1:interactive decoder only 2:caching decoder only 3:both)
-#define DECODERVTM_DEBUG_OUTPUT 0
-#if DECODERVTM_DEBUG_OUTPUT && !NDEBUG
-#include <QDebug>
-#if DECODERVTM_DEBUG_OUTPUT == 1
-#define DEBUG_DECVTM                                                                               \
-  if (!isCachingDecoder)                                                                           \
-  qDebug
-#elif DECODERVTM_DEBUG_OUTPUT == 2
-#define DEBUG_DECVTM                                                                               \
-  if (isCachingDecoder)                                                                            \
-  qDebug
-#elif DECODERVTM_DEBUG_OUTPUT == 3
-#define DEBUG_DECVTM                                                                               \
-  if (isCachingDecoder)                                                                            \
-    qDebug("c:");                                                                                  \
-  else                                                                                             \
-    qDebug("i:");                                                                                  \
-  qDebug
-#endif
-#else
-#define DEBUG_DECVTM(fmt, ...) ((void)0)
-#endif
+// Debug output routes through the logDecoder category, toggleable
+// at runtime via QT_LOGGING_RULES.
+#define DEBUG_DECVTM(...) qCDebug(logDecoder, __VA_ARGS__)
 
 // Restrict is basically a promise to the compiler that for the scope of the pointer, the target of
 // the pointer will only be accessed through that pointer (and pointers copied from it).

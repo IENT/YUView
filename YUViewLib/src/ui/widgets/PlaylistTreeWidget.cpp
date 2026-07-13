@@ -31,6 +31,7 @@
  */
 
 #include "PlaylistTreeWidget.h"
+#include <logging/Macros.h>
 
 #include "TreeViewBranchStyle.h"
 
@@ -61,13 +62,9 @@
 #include "playlistitem/playlistItemText.h"
 #include "playlistitem/playlistItems.h"
 
-// Activate this if you want to know when which signals/slots are handled
-#define PLAYLISTTREEWIDGET_DEBUG_EVENTS 0
-#if PLAYLISTTREEWIDGET_DEBUG_EVENTS && !NDEBUG
-#define DEBUG_TREE_WIDGET qDebug
-#else
-#define DEBUG_TREE_WIDGET(fmt, ...) ((void)0)
-#endif
+// Debug output routes through the logUI category, toggleable
+// at runtime via QT_LOGGING_RULES.
+#define DEBUG_TREE_WIDGET(...) qCDebug(logUI, __VA_ARGS__)
 
 class bufferStatusWidget : public QWidget
 {

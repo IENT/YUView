@@ -31,6 +31,7 @@
  */
 
 #include "StatisticUIHandler.h"
+#include <logging/Macros.h>
 
 #include <QPainter>
 #include <QtGlobal>
@@ -47,13 +48,9 @@
 namespace stats
 {
 
-// Activate this if you want to know when what is loaded.
-#define STATISTICS_DEBUG_LOADING 0
-#if STATISTICS_DEBUG_LOADING && !NDEBUG
-#define DEBUG_STATUI qDebug
-#else
-#define DEBUG_STATUI(fmt, ...) ((void)0)
-#endif
+// Debug output routes through the logStats category, toggleable
+// at runtime via QT_LOGGING_RULES.
+#define DEBUG_STATUI(...) qCDebug(logStats, __VA_ARGS__)
 
 StatisticUIHandler::StatisticUIHandler()
 {

@@ -31,6 +31,7 @@
  */
 
 #include "ParserAnnexBMpeg2.h"
+#include <logging/Macros.h>
 
 #include "NalUnitMpeg2.h"
 #include "group_of_pictures_header.h"
@@ -43,13 +44,9 @@
 
 #include <algorithm>
 
-#define PARSER_MPEG2_DEBUG_OUTPUT 0
-#if PARSER_MPEG2_DEBUG_OUTPUT && !NDEBUG
-#include <QDebug>
-#define DEBUG_MPEG2(msg) qDebug() << msg
-#else
-#define DEBUG_MPEG2(msg) ((void)0)
-#endif
+// Debug output routes through the logParser category, toggleable
+// at runtime via QT_LOGGING_RULES.
+#define DEBUG_MPEG2(msg) LOG_DEBUG(logParser) << msg
 
 namespace parser
 {

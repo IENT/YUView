@@ -37,8 +37,11 @@
 #include <QDir>
 #include <QFileInfo>
 #include <QFileInfoList>
+#include <QLoggingCategory>
+#include <QProcessEnvironment>
 #include <QStandardPaths>
 #include <QTextStream>
+#include <QThread>
 
 #if !defined(Q_OS_WIN)
 #include <unistd.h>
@@ -92,6 +95,15 @@ void Logger::init()
     out << "Version: " << qApp->applicationVersion() << "\n";
     out << "==============================\n";
     bytesWritten = logFile.size();
+  }
+
+  // Configure QLoggingCategory filter rules so that category-based debug
+  // output (qCDebug / LOG_DEBUG) actually reaches the message handler.
+  // If the user set QT_LOGGING_RULES, honour it; otherwise enable yuv.* debug.
+  {
+    const auto env = QProcessEnvironment::systemEnvironment();
+    if (env.value(QStringLiteral("QT_LOGGING_RULES")).isEmpty())
+      QLoggingCategory::setFilterRules(QStringLiteral("yuv.*.debug=true\nyuv.*.info=true"));
   }
 
   qInstallMessageHandler(&Logger::qtMessageHandler);
@@ -269,7 +281,9 @@ void Logger::writeEntry(QtMsgType type, const QMessageLogContext &ctx, const QSt
   }
 
   const QString ts   = QDateTime::currentDateTime().toString("yyyy-MM-dd HH:mm:ss.zzz");
-  const QString line = QString("[%1] [%2]%3 %4").arg(ts, levelStr, location, msg);
+  const QString tid  = QString("0x%1").arg(reinterpret_cast<quintptr>(QThread::currentThreadId()),
+                                           QT_POINTER_SIZE * 2, 16, QChar('0'));
+  const QString line = QString("[%1] [%2] [%3]%4 %5").arg(ts, levelStr, tid, location, msg);
 
   QMutexLocker lock(&mutex);
 

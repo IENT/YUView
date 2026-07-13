@@ -31,6 +31,7 @@
  */
 
 #include "FileSourceFFmpegFile.h"
+#include <logging/Macros.h>
 
 #include <QProgressDialog>
 #include <QSettings>
@@ -41,13 +42,9 @@
 #include <parser/AV1/obu_header.h>
 #include <parser/common/SubByteReaderLogging.h>
 
-#define FILESOURCEFFMPEGFILE_DEBUG_OUTPUT 0
-#if FILESOURCEFFMPEGFILE_DEBUG_OUTPUT && !NDEBUG
-#include <QDebug>
-#define DEBUG_FFMPEG qDebug
-#else
-#define DEBUG_FFMPEG(fmt, ...) ((void)0)
-#endif
+// Debug output routes through the logFileSource category, toggleable
+// at runtime via QT_LOGGING_RULES.
+#define DEBUG_FFMPEG(...) qCDebug(logFileSource, __VA_ARGS__)
 
 using SubByteReaderLogging = parser::reader::SubByteReaderLogging;
 using namespace FFmpeg;

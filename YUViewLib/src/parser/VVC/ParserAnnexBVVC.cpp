@@ -31,6 +31,7 @@
  */
 
 #include "ParserAnnexBVVC.h"
+#include <logging/Macros.h>
 
 #include <algorithm>
 #include <cmath>
@@ -54,13 +55,9 @@
 #include "slice_layer_rbsp.h"
 #include "video_parameter_set_rbsp.h"
 
-#define PARSER_VVC_DEBUG_OUTPUT 0
-#if PARSER_VVC_DEBUG_OUTPUT && !NDEBUG
-#include <QDebug>
-#define DEBUG_VVC(msg) qDebug() << msg
-#else
-#define DEBUG_VVC(msg) ((void)0)
-#endif
+// Debug output routes through the logParser category, toggleable
+// at runtime via QT_LOGGING_RULES.
+#define DEBUG_VVC(msg) LOG_DEBUG(logParser) << msg
 
 namespace parser
 {

@@ -31,17 +31,14 @@
  */
 
 #include "ItemMemoryHandler.h"
+#include <logging/Macros.h>
 
 #include <QDateTime>
 #include <QSettings>
 
-#define ITEMMEMORYHANDLER_DEBUG 0
-#if ITEMMEMORYHANDLER_DEBUG && !NDEBUG
-#include <QDebug>
-#define DEBUG_MEMORY(msg) qDebug() << msg
-#else
-#define DEBUG_MEMORY(msg) ((void)0)
-#endif
+// Debug output routes through the logApp category, toggleable
+// at runtime via QT_LOGGING_RULES.
+#define DEBUG_MEMORY(msg) LOG_DEBUG(logApp) << msg
 
 namespace itemMemoryHandler
 {

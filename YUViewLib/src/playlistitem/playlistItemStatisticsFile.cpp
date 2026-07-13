@@ -31,6 +31,7 @@
  */
 
 #include "playlistItemStatisticsFile.h"
+#include <logging/Macros.h>
 
 #include <QDebug>
 #include <QTime>
@@ -45,12 +46,9 @@
 #include <statistics/StatisticsFileCSV.h>
 #include <statistics/StatisticsFileVTMBMS.h>
 
-#define PLAYLISTITEMSTATISTICS_DEBUG 0
-#if PLAYLISTITEMSTATISTICS_DEBUG && !NDEBUG
-#define DEBUG_STAT qDebug
-#else
-#define DEBUG_STAT(fmt, ...) ((void)0)
-#endif
+// Debug output routes through the logStats category, toggleable
+// at runtime via QT_LOGGING_RULES.
+#define DEBUG_STAT(...) qCDebug(logStats, __VA_ARGS__)
 
 // The internal buffer for parsing the starting positions. The buffer must not be larger than 2GB
 // so that we can address all the positions in it with int (using such a large buffer is not a good

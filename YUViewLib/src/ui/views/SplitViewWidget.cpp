@@ -31,6 +31,7 @@
  */
 
 #include "SplitViewWidget.h"
+#include <logging/Macros.h>
 
 #include <playlistitem/playlistItem.h>
 #include <ui/PlaybackController.h>
@@ -81,15 +82,9 @@ const int SPLITVIEWWIDGET_ZOOM_STEP_FACTOR = 2;
 // What message is shown when a playlist item is loading.
 const QString SPLITVIEWWIDGET_LOADING_TEXT = "Loading...";
 
-// Activate this if you want to know when which item is triggered to load and draw
-#define SPLITVIEWWIDGET_DEBUG_LOAD_DRAW 0
-#if SPLITVIEWWIDGET_DEBUG_LOAD_DRAW && !NDEBUG
-#include <QDebug>
-#define DEBUG_LOAD_DRAW(fmt) qDebug() << fmt
-#else
-#define DEBUG_LOAD_DRAW(fmt) ((void)0)
-#endif
-
+// Debug output routes through the logUI category, toggleable
+// at runtime via QT_LOGGING_RULES.
+#define DEBUG_LOAD_DRAW(msg) LOG_DEBUG(logUI) << msg
 splitViewWidget::splitViewWidget(QWidget *parent) : MoveAndZoomableView(parent)
 {
   paletteBackgroundColorSettingsTag = "View/BackgroundColor";

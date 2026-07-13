@@ -31,6 +31,7 @@
 */
 
 #include "UpdateHandler.h"
+#include <logging/Macros.h>
 
 #include "UpdateHandlerFile.h"
 
@@ -57,13 +58,9 @@
 // ONLY USE THIS FOR DEBGGING
 #define ALLOW_UNENCRYPTED_CONNECTIONS 0
 
-#define UPDATER_DEBUG_OUTPUT 0
-#if UPDATER_DEBUG_OUTPUT && !NDEBUG
-#include <QDebug>
-#define DEBUG_UPDATE(msg) qDebug() << msg
-#else
-#define DEBUG_UPDATE(msg) ((void)0)
-#endif
+// Debug output routes through the logUpdater category, toggleable
+// at runtime via QT_LOGGING_RULES.
+#define DEBUG_UPDATE(msg) LOG_DEBUG(logUpdater) << msg
 
 #define UPDATEFILEHANDLER_FILE_NAME "versioninfo.txt"
 #if ALLOW_UNENCRYPTED_CONNECTIONS

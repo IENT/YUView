@@ -31,6 +31,7 @@
  */
 
 #include "decoderBase.h"
+#include <logging/Macros.h>
 
 #include <QDir>
 #include <QSettings>
@@ -38,29 +39,10 @@
 namespace decoder
 {
 
-// Debug the decoder ( 0:off 1:interactive decoder only 2:caching decoder only 3:both)
-#define DECODERBASE_DEBUG_OUTPUT 0
-#if DECODERBASE_DEBUG_OUTPUT && !NDEBUG
-#include <QDebug>
-#if DECODERBASE_DEBUG_OUTPUT == 1
-#define DEBUG_HEVCDECODERBASE                                                                      \
-  if (!isCachingDecoder)                                                                           \
-  qDebug
-#elif DECODERBASE_DEBUG_OUTPUT == 2
-#define DEBUG_HEVCDECODERBASE                                                                      \
-  if (isCachingDecoder)                                                                            \
-  qDebug
-#elif DECODERBASE_DEBUG_OUTPUT == 3
-#define DEBUG_HEVCDECODERBASE                                                                      \
-  if (isCachingDecoder)                                                                            \
-    qDebug("c:");                                                                                  \
-  else                                                                                             \
-    qDebug("i:");                                                                                  \
-  qDebug
-#endif
-#else
-#define DEBUG_DECODERBASE(fmt, ...) ((void)0)
-#endif
+// Debug output routes through the logDecoder category, toggleable
+// at runtime via QT_LOGGING_RULES.
+#define DEBUG_DECODERBASE(...) qCDebug(logDecoder, __VA_ARGS__)
+#define DEBUG_HEVCDECODERBASE(msg) LOG_DEBUG(logDecoder) << msg
 
 decoderBase::decoderBase(bool cachingDecoder)
 {

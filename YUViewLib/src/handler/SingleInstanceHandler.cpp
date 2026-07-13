@@ -31,15 +31,11 @@
  */
 
 #include "SingleInstanceHandler.h"
+#include <logging/Macros.h>
 
-// Activate this if you want to know when which difference is loaded
-#define SINGLEINSTANCEHANDLER_DEBUG 0
-#if SINGLEINSTANCEHANDLER_DEBUG && !NDEBUG
-#include <qDebug>
-#define DEBUG_SINGLEISNTANCE qDebug
-#else
-#define DEBUG_SINGLEISNTANCE(fmt, ...) ((void)0)
-#endif
+// Debug output routes through the logApp category, toggleable
+// at runtime via QT_LOGGING_RULES.
+#define DEBUG_SINGLEISNTANCE(...) qCDebug(logApp, __VA_ARGS__)
 
 singleInstanceHandler::singleInstanceHandler(QObject *parent) : QObject(parent)
 {

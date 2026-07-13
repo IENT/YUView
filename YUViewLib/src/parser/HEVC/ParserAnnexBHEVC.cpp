@@ -31,6 +31,7 @@
  */
 
 #include "ParserAnnexBHEVC.h"
+#include <logging/Macros.h>
 
 #include <algorithm>
 #include <cmath>
@@ -47,13 +48,9 @@
 #include "video_parameter_set_rbsp.h"
 #include <parser/common/Functions.h>
 
-#define PARSER_HEVC_DEBUG_OUTPUT 0
-#if PARSER_HEVC_DEBUG_OUTPUT && !NDEBUG
-#include <QDebug>
-#define DEBUG_HEVC(msg) qDebug() << msg
-#else
-#define DEBUG_HEVC(msg) ((void)0)
-#endif
+// Debug output routes through the logParser category, toggleable
+// at runtime via QT_LOGGING_RULES.
+#define DEBUG_HEVC(msg) LOG_DEBUG(logParser) << msg
 
 namespace parser
 {

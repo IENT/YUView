@@ -31,6 +31,7 @@
  */
 
 #include "MoveAndZoomableView.h"
+#include <logging/Macros.h>
 
 #include <common/Functions.h>
 
@@ -42,13 +43,9 @@
 #include <QSettings>
 #include <QSwipeGesture>
 
-#define MOVEANDZOOMABLEVIEW_WIDGET_DEBUG_OUTPUT 0
-#if MOVEANDZOOMABLEVIEW_WIDGET_DEBUG_OUTPUT
-#include <QDebug>
-#define DEBUG_VIEW(fmt) qDebug() << fmt
-#else
-#define DEBUG_VIEW(fmt, ...) ((void)0)
-#endif
+// Debug output routes through the logUI category, toggleable
+// at runtime via QT_LOGGING_RULES.
+#define DEBUG_VIEW(msg) LOG_DEBUG(logUI) << msg
 
 const Range<double> MoveAndZoomableView::ZOOMINGLIMIT = {0.00001, 100000};
 

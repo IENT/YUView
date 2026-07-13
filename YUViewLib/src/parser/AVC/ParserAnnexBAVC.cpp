@@ -31,6 +31,7 @@
  */
 
 #include "ParserAnnexBAVC.h"
+#include <logging/Macros.h>
 
 #include <cmath>
 
@@ -47,13 +48,9 @@
 #include "slice_rbsp.h"
 #include <parser/common/Functions.h>
 
-#define PARSER_AVC_DEBUG_OUTPUT 0
-#if PARSER_AVC_DEBUG_OUTPUT && !NDEBUG
-#include <QDebug>
-#define DEBUG_AVC(msg) qDebug() << msg
-#else
-#define DEBUG_AVC(fmt) ((void)0)
-#endif
+// Debug output routes through the logParser category, toggleable
+// at runtime via QT_LOGGING_RULES.
+#define DEBUG_AVC(msg) LOG_DEBUG(logParser) << msg
 
 namespace parser
 {

@@ -31,16 +31,13 @@
  */
 
 #include "Parser.h"
+#include <logging/Macros.h>
 
 #include <assert.h>
 
-#define BASE_DEBUG_OUTPUT 0
-#if BASE_DEBUG_OUTPUT && !NDEBUG
-#include <QDebug>
-#define DEBUG_PARSER qDebug
-#else
-#define DEBUG_PARSER(fmt, ...) ((void)0)
-#endif
+// Debug output routes through the logParser category, toggleable
+// at runtime via QT_LOGGING_RULES.
+#define DEBUG_PARSER(...) qCDebug(logParser, __VA_ARGS__)
 
 namespace parser
 {

@@ -31,18 +31,15 @@
  */
 
 #include "VideoCacheInfoWidget.h"
+#include <logging/Macros.h>
 
 #include <QGroupBox>
 #include <QPainter>
 #include <QSettings>
 
-#define VIDEOCACHEINFOWIDGET_DEBUG_OUTPUT 0
-#if VIDEOCACHEINFOWIDGET_DEBUG_OUTPUT && !NDEBUG
-#include <QDebug>
-#define DEBUG_CACHINGINFO qDebug
-#else
-#define DEBUG_CACHINGINFO(fmt, ...) ((void)0)
-#endif
+// Debug output routes through the logUI category, toggleable
+// at runtime via QT_LOGGING_RULES.
+#define DEBUG_CACHINGINFO(...) qCDebug(logUI, __VA_ARGS__)
 
 using namespace VideoCacheStatusWidgetNamespace;
 

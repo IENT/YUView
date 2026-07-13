@@ -31,17 +31,14 @@
 */
 
 #include "UpdateHandlerFile.h"
+#include <logging/Macros.h>
 
 #include <QFileInfo>
 #include <QTextStream>
 
-#define UPDATER_DEBUG_FILE 0
-#if UPDATER_DEBUG_FILE && !NDEBUG
-#include <QDebug>
-#define DEBUG_UPDATE_FILE(msg) qDebug() << msg
-#else
-#define DEBUG_UPDATE_FILE(msg) ((void)0)
-#endif
+// Debug output routes through the logUpdater category, toggleable
+// at runtime via QT_LOGGING_RULES.
+#define DEBUG_UPDATE_FILE(msg) LOG_DEBUG(logUpdater) << msg
 
 const auto UPDATEFILEHANDLER_FILE_NAME = "versioninfo.txt";
 

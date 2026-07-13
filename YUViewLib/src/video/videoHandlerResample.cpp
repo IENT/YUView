@@ -31,6 +31,7 @@
  */
 
 #include "videoHandlerResample.h"
+#include <logging/Macros.h>
 
 #include <video/yuv/videoHandlerYUV.h>
 
@@ -41,13 +42,9 @@
 namespace video
 {
 
-// Activate this if you want to know when which buffer is loaded/converted to image and so on.
-#define VIDEOHANDLERRESAMPLE_DEBUG_LOADING 0
-#if VIDEOHANDLERRESAMPLE_DEBUG_LOADING && !NDEBUG
-#define DEBUG_RESAMPLE qDebug
-#else
-#define DEBUG_RESAMPLE(fmt, ...) ((void)0)
-#endif
+// Debug output routes through the logVideo category, toggleable
+// at runtime via QT_LOGGING_RULES.
+#define DEBUG_RESAMPLE(...) qCDebug(logVideo, __VA_ARGS__)
 
 videoHandlerResample::videoHandlerResample() : videoHandler()
 {

@@ -32,6 +32,8 @@
 
 #include "StatisticsFileVTMBMS.h"
 
+#include <logging/Macros.h>
+
 #include <QRegularExpression>
 #include <QTextStream>
 
@@ -167,14 +169,14 @@ void StatisticsFileVTMBMS::readFrameAndTypePositionsFromFile(std::atomic_bool &b
   }
   catch (const char *str)
   {
-    std::cerr << "Error while parsing meta data: " << str << "\n";
+    qWarning() << "Error while parsing meta data:" << str;
     this->errorMessage = QString("Error while parsing meta data: ") + QString(str);
     this->error        = true;
     return;
   }
   catch (const std::exception &ex)
   {
-    std::cerr << "Error while parsing:" << ex.what() << "\n";
+    qWarning() << "Error while parsing:" << ex.what();
     this->errorMessage = QString("Error while parsing: ") + QString(ex.what());
     this->error        = true;
     return;
@@ -400,13 +402,13 @@ void StatisticsFileVTMBMS::loadStatisticData(StatisticsData &statisticsData, int
   } // try
   catch (const char *str)
   {
-    std::cerr << "Error while parsing: " << str << '\n';
+    qWarning() << "Error while parsing:" << str;
     this->errorMessage = QString("Error while parsing meta data: ") + QString(str);
     return;
   }
   catch (...)
   {
-    std::cerr << "Error while parsing.";
+    qWarning() << "Error while parsing.";
     this->errorMessage = QString("Error while parsing meta data.");
     return;
   }
@@ -544,12 +546,12 @@ void StatisticsFileVTMBMS::readHeaderFromFile(StatisticsData &statisticsData)
   } // try
   catch (const char *str)
   {
-    std::cerr << "Error while parsing meta data: " << str << '\n';
+    qWarning() << "Error while parsing meta data:" << str;
     this->errorMessage = QString("Error while parsing meta data: ") + QString(str);
   }
   catch (...)
   {
-    std::cerr << "Error while parsing meta data.";
+    qWarning() << "Error while parsing meta data.";
     this->errorMessage = QString("Error while parsing meta data.");
   }
 }

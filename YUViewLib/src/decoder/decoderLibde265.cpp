@@ -31,6 +31,7 @@
  */
 
 #include "decoderLibde265.h"
+#include <logging/Macros.h>
 
 #include <QCoreApplication>
 #include <QDir>
@@ -43,29 +44,9 @@
 namespace decoder
 {
 
-// Debug the decoder ( 0:off 1:interactive decoder only 2:caching decoder only 3:both)
-#define DECODERLIBD265_DEBUG_OUTPUT 0
-#if DECODERLIBD265_DEBUG_OUTPUT && !NDEBUG
-#include <QDebug>
-#if DECODERLIBD265_DEBUG_OUTPUT == 1
-#define DEBUG_LIBDE265                                                                             \
-  if (!isCachingDecoder)                                                                           \
-  qDebug
-#elif DECODERLIBD265_DEBUG_OUTPUT == 2
-#define DEBUG_LIBDE265                                                                             \
-  if (isCachingDecoder)                                                                            \
-  qDebug
-#elif DECODERLIBD265_DEBUG_OUTPUT == 3
-#define DEBUG_LIBDE265                                                                             \
-  if (isCachingDecoder)                                                                            \
-    qDebug("c:");                                                                                  \
-  else                                                                                             \
-    qDebug("i:");                                                                                  \
-  qDebug
-#endif
-#else
-#define DEBUG_LIBDE265(fmt, ...) ((void)0)
-#endif
+// Debug output routes through the logDecoder category, toggleable
+// at runtime via QT_LOGGING_RULES.
+#define DEBUG_LIBDE265(...) qCDebug(logDecoder, __VA_ARGS__)
 
 using Subsampling = video::yuv::Subsampling;
 

@@ -31,14 +31,11 @@
  */
 
 #include "playlistItemWithVideo.h"
+#include <logging/Macros.h>
 
-// Activate this if you want to know when which buffer is loaded/converted to image and so on.
-#define PLAYLISTITEMWITHVIDEO_DEBUG_LOADING 0
-#if PLAYLISTITEMWITHVIDEO_DEBUG_LOADING && !NDEBUG
-#define DEBUG_PLVIDEO qDebug
-#else
-#define DEBUG_PLVIDEO(fmt, ...) ((void)0)
-#endif
+// Debug output routes through the logApp category, toggleable
+// at runtime via QT_LOGGING_RULES.
+#define DEBUG_PLVIDEO(...) qCDebug(logApp, __VA_ARGS__)
 
 playlistItemWithVideo::playlistItemWithVideo(const QString &itemNameOrFileName)
     : playlistItem(itemNameOrFileName, Type::Indexed)

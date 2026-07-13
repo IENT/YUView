@@ -31,15 +31,12 @@
  *   along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#define HRD_PLOT_MODE_DEBUG 0
-#if HRD_PLOT_MODE_DEBUG && !NDEBUG
-#include <QDebug>
-#define DEBUG_PLOT(msg) qDebug() << msg
-#else
-#define DEBUG_PLOT(msg) ((void)0)
-#endif
+// Debug output routes through the logParser category, toggleable
+// at runtime via QT_LOGGING_RULES.
+#define DEBUG_PLOT(msg) LOG_DEBUG(logParser) << msg
 
 #include "HRDPlotModel.h"
+#include <logging/Macros.h>
 
 #include <QTime>
 #include <common/Functions.h>
