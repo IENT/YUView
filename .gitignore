@@ -16,3 +16,4 @@ YUView.pro.user
 .vscode
 issues
 .DS_Store
+build-asan/

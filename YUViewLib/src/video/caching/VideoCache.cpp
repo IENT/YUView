@@ -137,9 +137,10 @@ VideoCache::~VideoCache()
       thread->wait();
     }
 
-  // Delete all threads
   for (auto thread : cachingThreadList)
     thread->deleteLater();
+  delete interactiveThread[0];
+  delete interactiveThread[1];
 }
 
 void VideoCache::startWorkerThreads(int nrThreads)

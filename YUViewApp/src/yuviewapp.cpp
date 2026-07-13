@@ -33,6 +33,7 @@
 #include <QCoreApplication>
 #include <QMessageBox>
 
+#include <cstdlib>
 #include <iostream>
 
 #include <common/Typedef.h>
@@ -53,7 +54,17 @@ int main(int argc, char *argv[])
   try
   {
     YUViewApplication app(argc, argv);
+#if defined(Q_OS_MAC) && QT_VERSION >= QT_VERSION_CHECK(6, 10, 0)
+    LOG_DEBUG(logApp) << "main: app constructed, about to exit";
+    // Workaround for a Qt regression on macOS >=6.10: ~QApplication() crashes with
+    // a null pointer dereference inside the Cocoa platform plugin during teardown.
+    // All application-layer cleanup (Logger, MainWindow, threads) has already
+    // completed in the YUViewApplication constructor body above.
+    fflush(stderr);
+    std::_Exit(app.returnCode);
+#else
     return app.returnCode;
+#endif
   }
   catch (const std::bad_alloc &)
   {
