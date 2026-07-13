@@ -1211,15 +1211,15 @@
        </item>
        <item>
         <widget class="QGroupBox" name="groupBoxFFMpeg">
-         <property name="toolTip">
-          <string>Specify the individual FFmpeg libraries to use. These will always be tried first.</string>
-         </property>
-         <property name="whatsThis">
-          <string>Specify the individual FFmpeg libraries to use. These will always be tried first.</string>
-         </property>
-         <property name="title">
-          <string>FFmpeg Libraries</string>
-         </property>
+          <property name="toolTip">
+           <string>Select a folder containing the FFmpeg libraries. These will always be tried first.</string>
+          </property>
+          <property name="whatsThis">
+           <string>Select a folder containing the FFmpeg libraries. These will always be tried first.</string>
+          </property>
+          <property name="title">
+           <string>FFmpeg Libraries</string>
+          </property>
          <layout class="QHBoxLayout" name="horizontalLayout">
           <item>
            <layout class="QGridLayout" name="gridLayout_5">
@@ -1313,12 +1313,12 @@
               <verstretch>0</verstretch>
              </sizepolicy>
             </property>
-            <property name="toolTip">
-             <string>Specify the 4 required ffmpeg library files. These will always be tried first.</string>
-            </property>
-            <property name="whatsThis">
-             <string>Specify the 4 required ffmpeg library files. These will always be tried first.</string>
-            </property>
+             <property name="toolTip">
+              <string>Select a folder containing the FFmpeg libraries. The four required libraries will be detected automatically.</string>
+             </property>
+             <property name="whatsThis">
+              <string>Select a folder containing the FFmpeg libraries. The four required libraries will be detected automatically.</string>
+             </property>
             <property name="text">
              <string/>
             </property>
@@ -1336,12 +1336,12 @@
               <verstretch>0</verstretch>
              </sizepolicy>
             </property>
-            <property name="toolTip">
-             <string>Remove the ffmpeg library paths.</string>
-            </property>
-            <property name="whatsThis">
-             <string>Remove the ffmpeg library paths.</string>
-            </property>
+             <property name="toolTip">
+              <string>Remove the FFmpeg library paths.</string>
+             </property>
+             <property name="whatsThis">
+              <string>Remove the FFmpeg library paths.</string>
+             </property>
             <property name="text">
              <string/>
             </property>

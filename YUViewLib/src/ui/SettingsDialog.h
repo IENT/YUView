@@ -88,4 +88,5 @@ private:
   QStringList getLibraryPath(QString currentFile, QString caption, bool multipleFiles=false);
 
   Ui::SettingsDialog ui;
+  QString lastFFmpegFolder;
 };

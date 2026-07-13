@@ -352,41 +352,80 @@ void SettingsDialog::on_pushButtonLibVVDecSelectFile_clicked()
 
 void SettingsDialog::on_pushButtonFFMpegSelectFile_clicked()
 {
-  QStringList newFiles = this->getLibraryPath(
-      ui.lineEditAVFormat->text(),
-      "Please select the 4 FFmpeg libraries AVCodec, AVFormat, AVUtil and SWResample.",
-      true);
-  if (newFiles.empty())
+  auto startPath = this->lastFFmpegFolder.isEmpty() ? QDir::currentPath() : this->lastFFmpegFolder;
+  auto dir = QFileDialog::getExistingDirectory(this,
+                                               "Select the folder containing FFmpeg libraries",
+                                               startPath);
+  if (dir.isEmpty())
     return;
 
-  // Get the 4 libraries from the list
-  QString avCodecLib, avFormatLib, avUtilLib, swResampleLib;
-  if (newFiles.count() == 4)
+  this->lastFFmpegFolder = dir;
+
+  auto findLib = [](const QDir &folder, const QString &baseName) -> QString
   {
-    for (auto file : newFiles)
+    QStringList unversioned;
+    QStringList versioned;
+
+    if constexpr (is_Q_OS_MAC)
     {
-      QFileInfo fileInfo(file);
-      if (fileInfo.baseName().contains("avcodec", Qt::CaseInsensitive))
-        avCodecLib = file;
-      if (fileInfo.baseName().contains("avformat", Qt::CaseInsensitive))
-        avFormatLib = file;
-      if (fileInfo.baseName().contains("avutil", Qt::CaseInsensitive))
-        avUtilLib = file;
-      if (fileInfo.baseName().contains("swresample", Qt::CaseInsensitive))
-        swResampleLib = file;
+      unversioned << "lib" + baseName + ".dylib";
+      versioned << "lib" + baseName + ".*.dylib";
     }
-  }
-  if (avCodecLib.isEmpty() || avFormatLib.isEmpty() || avUtilLib.isEmpty() ||
-      swResampleLib.isEmpty())
+    else if constexpr (is_Q_OS_WIN)
+    {
+      unversioned << baseName + ".dll";
+      versioned << baseName + "-*.dll";
+    }
+    else
+    {
+      unversioned << "lib" + baseName + ".so";
+      versioned << "lib" + baseName + ".so.*";
+      versioned << "lib" + baseName + "-ffmpeg.so.*";
+    }
+
+    for (const auto &pat : unversioned)
+    {
+      auto files =
+          folder.entryList({pat}, QDir::Files | QDir::NoDotAndDotDot, QDir::Name);
+      if (!files.isEmpty())
+        return folder.absoluteFilePath(files.first());
+    }
+    for (const auto &pat : versioned)
+    {
+      auto files =
+          folder.entryList({pat}, QDir::Files | QDir::NoDotAndDotDot, QDir::Name);
+      if (!files.isEmpty())
+        return folder.absoluteFilePath(files.first());
+    }
+    return {};
+  };
+
+  QDir      folder(dir);
+  auto      avUtilLib     = findLib(folder, "avutil");
+  auto      swResampleLib = findLib(folder, "swresample");
+  auto      avCodecLib    = findLib(folder, "avcodec");
+  auto      avFormatLib   = findLib(folder, "avformat");
+
+  QStringList missing;
+  if (avUtilLib.isEmpty())
+    missing << "libAVUtil";
+  if (swResampleLib.isEmpty())
+    missing << "libSWResample";
+  if (avCodecLib.isEmpty())
+    missing << "libAVCodec";
+  if (avFormatLib.isEmpty())
+    missing << "libAVFormat";
+
+  if (!missing.isEmpty())
   {
-    QMessageBox::critical(
-        this,
-        "Error in file selection",
-        "Please select the four FFmpeg files AVCodec, AVFormat, AVUtil and SWresample.");
+    QMessageBox::critical(this,
+                          "FFmpeg Libraries Not Found",
+                          QString("The selected folder does not contain all required FFmpeg "
+                                  "libraries.\n\nMissing: %1\n\nFolder: %2")
+                              .arg(missing.join(", "), dir));
     return;
   }
 
-  // Try to open ffmpeg using the four libraries
   QStringList logList;
   if (!FFmpeg::FFmpegVersionHandler::checkLibraryFiles(
           avCodecLib, avFormatLib, avUtilLib, swResampleLib, logList))
@@ -394,8 +433,8 @@ void SettingsDialog::on_pushButtonFFMpegSelectFile_clicked()
     QMessageBox::StandardButton b = QMessageBox::question(
         this,
         "Error opening the library",
-        "The selected file does not appear to be a usable ffmpeg avFormat library. \nWe have "
-        "collected a more detailed log. Do you want to save it to disk?");
+        "The selected folder does not appear to contain usable FFmpeg libraries.\n"
+        "We have collected a more detailed log. Do you want to save it to disk?");
     if (b == QMessageBox::Yes)
     {
       const auto filePath =
@@ -412,14 +451,13 @@ void SettingsDialog::on_pushButtonFFMpegSelectFile_clicked()
         QMessageBox::information(
             this, "Error opening file", "There was an error opening the log file " + filePath);
     }
+    return;
   }
-  else
-  {
-    ui.lineEditAVCodec->setText(avCodecLib);
-    ui.lineEditAVFormat->setText(avFormatLib);
-    ui.lineEditAVUtil->setText(avUtilLib);
-    ui.lineEditSWResample->setText(swResampleLib);
-  }
+
+  ui.lineEditAVCodec->setText(avCodecLib);
+  ui.lineEditAVFormat->setText(avFormatLib);
+  ui.lineEditAVUtil->setText(avUtilLib);
+  ui.lineEditSWResample->setText(swResampleLib);
 }
 
 void SettingsDialog::on_pushButtonSave_clicked()
