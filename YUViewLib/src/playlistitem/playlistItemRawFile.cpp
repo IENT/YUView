@@ -44,8 +44,6 @@
 #include <filesource/FrameFormatGuess.h>
 #include <handler/ItemMemoryHandler.h>
 
-// Debug output routes through the logApp category, toggleable
-// at runtime via QT_LOGGING_RULES.
 #define DEBUG_RAWFILE(msg) LOG_DEBUG(logApp) << msg
 
 using namespace std::string_view_literals;

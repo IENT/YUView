@@ -42,8 +42,6 @@
 
 using namespace std::chrono_literals;
 
-// Debug output routes through the logUI category, toggleable
-// at runtime via QT_LOGGING_RULES.
 #define DEBUG_PLAYBACK(...) qCDebug(logUI, __VA_ARGS__)
 
 namespace

@@ -44,8 +44,6 @@
 namespace decoder
 {
 
-// Debug output routes through the logDecoder category, toggleable
-// at runtime via QT_LOGGING_RULES.
 #define DEBUG_LIBDE265(...) qCDebug(logDecoder, __VA_ARGS__)
 
 using Subsampling = video::yuv::Subsampling;

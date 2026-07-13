@@ -47,8 +47,6 @@ namespace decoder
 
 using Subsampling = video::yuv::Subsampling;
 
-// Debug output routes through the logDecoder category, toggleable
-// at runtime via QT_LOGGING_RULES.
 #define DEBUG_DAV1D(...) qCDebug(logDecoder, __VA_ARGS__)
 
 namespace

@@ -40,8 +40,6 @@
 #include <QTextDocument>
 #include <cmath>
 
-// Debug output routes through the logUI category, toggleable
-// at runtime via QT_LOGGING_RULES.
 #define DEBUG_PLOT(msg) LOG_DEBUG(logUI) << msg
 
 const auto marginTop   = 5;

@@ -160,7 +160,7 @@ ExpectedImageAndMse generateExpectedImageAndMse(const FrameAandB &testFrames,
     const auto &pixelB = testFrames.second.at(i);
 
     auto diff = pixelA - pixelB;
-    diff.a = 0; // calculateDifferenceAndMSE does not compute MSE for the alpha channel
+    diff.a = 0; // calculateDifferenceAndMSE does not populate the alpha channel (always 0)
 
     sse.addSample(diff);
 

@@ -67,7 +67,8 @@ auto streamIndexColors = std::vector<Color>({Color("#90caf9"),   // blue (200)
                                               Color("#7cb342")}); // light green (600)
 auto rawStreamColor = Color("#b0bec5");  // blue-grey (200) for raw bitstream (idx=-1)
 
-// Softer variants for dark themes (Material Design 200 series)
+// Dark-theme palette: all 200-series colors (the light-theme list above mixes
+// 200 and 600 series; this one stays fully soft for dark backgrounds).
 auto streamIndexColorsDark = std::vector<Color>({Color("#90caf9"),   // blue (200)
                                                   Color("#a5d6a7"),   // green (200)
                                                   Color("#ffe082"),   // amber (200)

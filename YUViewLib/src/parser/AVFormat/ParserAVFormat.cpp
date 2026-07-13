@@ -47,8 +47,6 @@
 #include "parser/common/SubByteReaderLogging.h"
 #include <parser/common/Functions.h>
 
-// Debug output routes through the logParser category, toggleable
-// at runtime via QT_LOGGING_RULES.
 #define DEBUG_AVFORMAT(...) qCDebug(logParser, __VA_ARGS__)
 
 using namespace std::string_literals;

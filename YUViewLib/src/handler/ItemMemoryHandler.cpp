@@ -36,8 +36,6 @@
 #include <QDateTime>
 #include <QSettings>
 
-// Debug output routes through the logApp category, toggleable
-// at runtime via QT_LOGGING_RULES.
 #define DEBUG_MEMORY(msg) LOG_DEBUG(logApp) << msg
 
 namespace itemMemoryHandler

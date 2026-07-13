@@ -87,8 +87,6 @@ public:
   }
 };
 
-// Debug output routes through the logUI category, toggleable
-// at runtime via QT_LOGGING_RULES.
 #define DEBUG_ANALYSIS(msg) LOG_DEBUG(logUI) << msg
 
 BitstreamAnalysisWidget::BitstreamAnalysisWidget(QWidget *parent) : QWidget(parent)

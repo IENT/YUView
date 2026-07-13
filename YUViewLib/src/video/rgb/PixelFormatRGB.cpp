@@ -34,8 +34,6 @@
 #include <logging/Macros.h>
 #include "common/Functions.h"
 
-// Debug output routes through the logVideo category, toggleable
-// at runtime via QT_LOGGING_RULES.
 #define DEBUG_RGB_FORMAT(...) qCDebug(logVideo, __VA_ARGS__)
 
 namespace video::rgb

@@ -48,8 +48,6 @@
 namespace stats
 {
 
-// Debug output routes through the logStats category, toggleable
-// at runtime via QT_LOGGING_RULES.
 #define DEBUG_STATUI(...) qCDebug(logStats, __VA_ARGS__)
 
 StatisticUIHandler::StatisticUIHandler()

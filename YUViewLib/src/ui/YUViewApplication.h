@@ -41,8 +41,8 @@ public:
   YUViewApplication(int argc, char *argv[]);
   int returnCode{0};
 
-  // Override notify() to catch C++ exceptions thrown inside Qt event handlers.
-  // Without this, an exception escaping an event handler causes std::terminate
-  // which bypasses our crash handler.
+  // Override notify() to log C++ exceptions thrown inside Qt event handlers
+  // before re-throwing. The re-throw reaches std::set_terminate (installed by
+  // CrashHandler) which writes the crash report.
   bool notify(QObject *receiver, QEvent *event) override;
 };

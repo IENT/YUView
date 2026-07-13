@@ -62,8 +62,6 @@
 #include "playlistitem/playlistItemText.h"
 #include "playlistitem/playlistItems.h"
 
-// Debug output routes through the logUI category, toggleable
-// at runtime via QT_LOGGING_RULES.
 #define DEBUG_TREE_WIDGET(...) qCDebug(logUI, __VA_ARGS__)
 
 class bufferStatusWidget : public QWidget

@@ -49,10 +49,8 @@
 namespace video
 {
 
-// Debug output routes through the logCache category, toggleable
-// at runtime via QT_LOGGING_RULES.
 #define DEBUG_CACHING(...) qCDebug(logCache, __VA_ARGS__)
-#define DEBUG_CACHING_DETAIL(...) qCInfo(logCache, __VA_ARGS__)
+#define DEBUG_CACHING_DETAIL(...) qCDebug(logCache, __VA_ARGS__)
 
 #define CACHING_THREAD_JOBS_OUTPUT 0
 #if CACHING_THREAD_JOBS_OUTPUT && !NDEBUG
@@ -875,15 +873,19 @@ void VideoCache::threadCachingFinished()
 
   // Check if all threads have stopped.
   bool jobsRunning = false;
+  int  workingCount = 0;
   for (auto thread : cachingThreadList)
   {
-    DEBUG_CACHING_DETAIL("VideoCache::threadCachingFinished WorkerList - worker %p - working %d",
-                         thread,
-                         thread->worker()->isWorking());
     if (thread->worker()->isWorking())
+    {
       // A job is still running. Wait.
       jobsRunning = true;
+      workingCount++;
+    }
   }
+  DEBUG_CACHING_DETAIL(
+    "VideoCache::threadCachingFinished WorkerList - %d workers, %d working",
+    cachingThreadList.count(), workingCount);
 
   if (testMode)
   {

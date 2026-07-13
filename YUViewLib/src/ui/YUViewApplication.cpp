@@ -43,8 +43,6 @@
 #include <QSettings>
 #include <QStandardPaths>
 
-// Debug output routes through the logApp category, toggleable
-// at runtime via QT_LOGGING_RULES.
 #define DEBUG_APP(msg) LOG_DEBUG(logApp) << msg
 
 YUViewApplication::YUViewApplication(int argc, char *argv[]) : QApplication(argc, argv)

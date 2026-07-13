@@ -35,8 +35,6 @@
 
 #include <common/Functions.h>
 
-// Debug output routes through the logDecoder category, toggleable
-// at runtime via QT_LOGGING_RULES.
 #define DEBUG_FFMPEG(msg) LOG_DEBUG(logDecoder) << msg
 
 namespace decoder

@@ -36,6 +36,8 @@
 #include <QMutex>
 #include <QString>
 #include <QtMessageHandler>
+#include <array>
+#include <atomic>
 #include <functional>
 
 // ---------------------------------------------------------------------------
@@ -45,8 +47,11 @@
 // / qFatal output to a timestamped log file under
 //   Windows:  %APPDATA%/YUView/logs/
 //   macOS:    ~/Library/Application Support/YUView/logs/
+//   Linux:    ~/.local/share/<OrgName>/YUView/logs/
 //
-// Log rotation: keeps the 5 most recent files; older ones are deleted on init.
+// Log rotation: keeps at most 5 log files (4 old + 1 current session); older
+// ones are deleted on init.  cleanOldLogs() applies the same cap without
+// creating a new file.
 // The log file is also limited to MAX_LOG_FILE_BYTES to guard against runaway
 // output during a single session.
 //
@@ -124,10 +129,6 @@ public:
   // Path to the log file opened during this session (empty before init()).
   QString currentLogFilePath() const;
 
-  // Write a raw line directly to the log (used by the crash handler which
-  // cannot go through Qt's logging machinery safely).
-  void writeRaw(const char *utf8Line);
-
 private:
   Logger()  = default;
   ~Logger() { shutdown(); }
@@ -142,14 +143,27 @@ private:
   void rotateOldLogs(const QString &logDir);
   void writeEntry(QtMsgType type, const QMessageLogContext &ctx, const QString &msg);
 
+  // Open (or reopen) the log file, write a session header, and reset the
+  // byte counter. Called from init() and from setFileWriteEnabled(true).
+  void openLogFile();
+  // Load persisted settings (fileWriteEnabled, minLevel, per-category
+  // enables) from QSettings. Called from init().
+  void loadSettings();
+
   QFile   logFile;
   QMutex  mutex;
   bool    initialised{false};
   QString logFilePath;
 
-  bool categoryFileEnabled[static_cast<int>(LogCategory::COUNT)]{true, true};
-  bool    fileWriteEnabled{true};
-  LogLevel currentMinLevel{LogLevel::Info};
+  // Atomic so accessors (isCategoryFileEnabled / isFileWriteEnabled) can read
+  // them without the mutex — they are touched from the UI thread while worker
+  // threads may call the setters concurrently.
+  std::array<std::atomic<bool>, static_cast<int>(LogCategory::COUNT)> categoryFileEnabled{
+      true, true};
+  std::atomic<bool> fileWriteEnabled{true};
+  // Atomic so writeEntry() can read it without the mutex for a cheap early
+  // rejection of messages below the configured level.
+  std::atomic<LogLevel> currentMinLevel{LogLevel::Info};
 
   UiCallback uiCallback;  // protected by mutex
 

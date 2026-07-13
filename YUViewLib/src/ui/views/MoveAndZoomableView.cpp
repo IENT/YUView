@@ -43,8 +43,6 @@
 #include <QSettings>
 #include <QSwipeGesture>
 
-// Debug output routes through the logUI category, toggleable
-// at runtime via QT_LOGGING_RULES.
 #define DEBUG_VIEW(msg) LOG_DEBUG(logUI) << msg
 
 const Range<double> MoveAndZoomableView::ZOOMINGLIMIT = {0.00001, 100000};

@@ -33,8 +33,6 @@
 #include "SingleInstanceHandler.h"
 #include <logging/Macros.h>
 
-// Debug output routes through the logApp category, toggleable
-// at runtime via QT_LOGGING_RULES.
 #define DEBUG_SINGLEISNTANCE(...) qCDebug(logApp, __VA_ARGS__)
 
 singleInstanceHandler::singleInstanceHandler(QObject *parent) : QObject(parent)

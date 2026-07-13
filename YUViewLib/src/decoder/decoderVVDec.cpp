@@ -40,8 +40,6 @@
 #include <QSettings>
 #include <cstring>
 
-// Debug output routes through the logDecoder category, toggleable
-// at runtime via QT_LOGGING_RULES.
 #define DEBUG_vvdec(...) qCDebug(logDecoder, __VA_ARGS__)
 
 // Restrict is basically a promise to the compiler that for the scope of the pointer, the target of

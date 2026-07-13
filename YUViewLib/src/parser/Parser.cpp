@@ -35,8 +35,6 @@
 
 #include <assert.h>
 
-// Debug output routes through the logParser category, toggleable
-// at runtime via QT_LOGGING_RULES.
 #define DEBUG_PARSER(...) qCDebug(logParser, __VA_ARGS__)
 
 namespace parser

@@ -45,8 +45,6 @@
 namespace
 {
 
-// Debug output routes through the logStats category, toggleable
-// at runtime via QT_LOGGING_RULES.
 #define DEBUG_PAINT(...) qCDebug(logStats, __VA_ARGS__)
 QPolygon convertToQPolygon(const stats::Polygon &poly)
 {

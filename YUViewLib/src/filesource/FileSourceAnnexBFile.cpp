@@ -33,8 +33,6 @@
 #include "FileSourceAnnexBFile.h"
 #include <logging/Macros.h>
 
-// Debug output routes through the logFileSource category, toggleable
-// at runtime via QT_LOGGING_RULES.
 #define DEBUG_ANNEXBFILE(msg) LOG_DEBUG(logFileSource) << msg
 
 const auto BUFFERSIZE = 500000;

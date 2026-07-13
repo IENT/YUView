@@ -121,7 +121,9 @@ static void buildCrashLogPath(char *out, int outLen, const char *logDir)
   struct timespec ts{};
   clock_gettime(CLOCK_REALTIME, &ts);
 
-  // Convert seconds to broken-down time using gmtime_r (async-signal-safe).
+  // Convert seconds to broken-down time using gmtime_r (re-entrant; in
+  // practice async-signal-safe on glibc/Bionic, though not guaranteed by
+  // strict POSIX signal-safety(7)).
   struct tm tm_info{};
   time_t    sec = ts.tv_sec;
   gmtime_r(&sec, &tm_info);

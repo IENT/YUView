@@ -39,14 +39,10 @@
 #include <QFileInfoList>
 #include <QLoggingCategory>
 #include <QProcessEnvironment>
+#include <QSettings>
 #include <QStandardPaths>
 #include <QTextStream>
 #include <QThread>
-
-#if !defined(Q_OS_WIN)
-#include <unistd.h>
-#endif
-#include <cstring>
 
 // ---------------------------------------------------------------------------
 // Singleton
@@ -68,6 +64,11 @@ void Logger::init()
   if (initialised)
     return;
 
+  // Load persisted settings (fileWriteEnabled, minLevel, per-category
+  // enables) so that the user's preferences take effect from the very
+  // first message — before LogPanel is ever opened.
+  loadSettings();
+
   // Determine log directory
   const QString appData =
       QStandardPaths::writableLocation(QStandardPaths::AppLocalDataLocation);
@@ -76,26 +77,9 @@ void Logger::init()
   QDir().mkpath(logDir);
   rotateOldLogs(logDir);
 
-  // Build timestamped file name
-  const QString ts       = QDateTime::currentDateTime().toString("yyyyMMdd_HHmmss");
-  logFilePath            = logDir + QDir::separator() + "yuview_" + ts + ".log";
-  logFile.setFileName(logFilePath);
-
-  if (!logFile.open(QIODevice::WriteOnly | QIODevice::Text | QIODevice::Append))
-  {
-    // Can't open log file – silently continue without file logging.
-    logFilePath.clear();
-  }
-  else
-  {
-    // Write a session header
-    QTextStream out(&logFile);
-    out << "=== YUView Session Started ===\n";
-    out << "Time:    " << QDateTime::currentDateTime().toString(Qt::ISODateWithMs) << "\n";
-    out << "Version: " << qApp->applicationVersion() << "\n";
-    out << "==============================\n";
-    bytesWritten = logFile.size();
-  }
+  // Open the log file only if file writing is enabled.
+  if (fileWriteEnabled.load(std::memory_order_seq_cst))
+    openLogFile();
 
   // Configure QLoggingCategory filter rules so that category-based debug
   // output (qCDebug / LOG_DEBUG) actually reaches the message handler.
@@ -133,6 +117,62 @@ void Logger::shutdown()
 }
 
 // ---------------------------------------------------------------------------
+// openLogFile – create/open the timestamped log file and write a header
+// ---------------------------------------------------------------------------
+
+void Logger::openLogFile()
+{
+  // Caller must hold the mutex.
+  const QString appData =
+      QStandardPaths::writableLocation(QStandardPaths::AppLocalDataLocation);
+  const QString logDir = appData + QDir::separator() + "logs";
+
+  const QString ts = QDateTime::currentDateTime().toString("yyyyMMdd_HHmmss");
+  logFilePath      = logDir + QDir::separator() + "yuview_" + ts + ".log";
+  logFile.setFileName(logFilePath);
+
+  if (!logFile.open(QIODevice::WriteOnly | QIODevice::Text | QIODevice::Append))
+  {
+    logFilePath.clear();
+    return;
+  }
+
+  QTextStream out(&logFile);
+  out << "=== YUView Session Started ===\n";
+  out << "Time:    " << QDateTime::currentDateTime().toString(Qt::ISODateWithMs) << "\n";
+  out << "Version: " << qApp->applicationVersion() << "\n";
+  out << "==============================\n";
+  bytesWritten = logFile.size();
+}
+
+// ---------------------------------------------------------------------------
+// loadSettings – restore persisted settings from QSettings
+// ---------------------------------------------------------------------------
+
+void Logger::loadSettings()
+{
+  // Caller must hold the mutex.
+  QSettings settings;
+  settings.beginGroup("LogPanel");
+
+  fileWriteEnabled.store(settings.value("FileWriteEnabled", true).toBool(),
+                         std::memory_order_seq_cst);
+
+  currentMinLevel.store(
+      static_cast<LogLevel>(settings.value("MinLevel", static_cast<int>(LogLevel::Info)).toInt()),
+      std::memory_order_seq_cst);
+
+  settings.beginGroup("CategoryFileEnabled");
+  categoryFileEnabled[static_cast<int>(LogCategory::App)].store(
+      settings.value("App", true).toBool(), std::memory_order_seq_cst);
+  categoryFileEnabled[static_cast<int>(LogCategory::FFmpeg)].store(
+      settings.value("FFmpeg", true).toBool(), std::memory_order_seq_cst);
+  settings.endGroup();
+
+  settings.endGroup();
+}
+
+// ---------------------------------------------------------------------------
 // Accessors
 // ---------------------------------------------------------------------------
 
@@ -153,34 +193,6 @@ QString Logger::currentLogFilePath() const
 }
 
 // ---------------------------------------------------------------------------
-// writeRaw  (used by crash handler – must be async-signal-safe on POSIX)
-// ---------------------------------------------------------------------------
-
-void Logger::writeRaw(const char *utf8Line)
-{
-  // NOTE: On POSIX this is called from a signal handler.
-  // We use the low-level POSIX write() instead of Qt I/O when the file
-  // descriptor is valid.
-  if (!logFile.isOpen())
-    return;
-
-#if defined(Q_OS_WIN)
-  // On Windows SEH handler we are not in a signal context, so Qt I/O is fine.
-  QMutexLocker lock(&mutex);
-  logFile.write(utf8Line);
-  logFile.write("\n");
-  logFile.flush();
-#else
-  // POSIX: use raw write() – async-signal-safe.
-  int fd = logFile.handle();
-  if (fd < 0)
-    return;
-  ::write(fd, utf8Line, ::strlen(utf8Line));
-  ::write(fd, "\n", 1);
-#endif
-}
-
-// ---------------------------------------------------------------------------
 // Category detection
 // ---------------------------------------------------------------------------
 
@@ -198,12 +210,12 @@ LogCategory Logger::detectCategory(const QString &msg)
 void Logger::setCategoryFileEnabled(LogCategory cat, bool enabled)
 {
   QMutexLocker lock(&mutex);
-  categoryFileEnabled[static_cast<int>(cat)] = enabled;
+  categoryFileEnabled[static_cast<int>(cat)].store(enabled, std::memory_order_seq_cst);
 }
 
 bool Logger::isCategoryFileEnabled(LogCategory cat) const
 {
-  return categoryFileEnabled[static_cast<int>(cat)];
+  return categoryFileEnabled[static_cast<int>(cat)].load(std::memory_order_seq_cst);
 }
 
 // ---------------------------------------------------------------------------
@@ -213,12 +225,35 @@ bool Logger::isCategoryFileEnabled(LogCategory cat) const
 void Logger::setFileWriteEnabled(bool enabled)
 {
   QMutexLocker lock(&mutex);
-  fileWriteEnabled = enabled;
+  if (fileWriteEnabled.load(std::memory_order_seq_cst) == enabled)
+    return;
+  fileWriteEnabled.store(enabled, std::memory_order_seq_cst);
+
+  if (enabled)
+  {
+    // User re-enabled file logging — open a fresh log file.
+    if (!logFile.isOpen())
+      openLogFile();
+  }
+  else
+  {
+    // User disabled file logging — close the file immediately so that
+    // no further writes are possible (even ones already in flight).
+    if (logFile.isOpen())
+    {
+      QTextStream out(&logFile);
+      out << "=== File logging disabled by user ===\n";
+      logFile.flush();
+      logFile.close();
+      logFilePath.clear();
+      bytesWritten = 0;
+    }
+  }
 }
 
 bool Logger::isFileWriteEnabled() const
 {
-  return fileWriteEnabled;
+  return fileWriteEnabled.load(std::memory_order_seq_cst);
 }
 
 // ---------------------------------------------------------------------------
@@ -228,12 +263,12 @@ bool Logger::isFileWriteEnabled() const
 void Logger::setMinLevel(LogLevel level)
 {
   QMutexLocker lock(&mutex);
-  currentMinLevel = level;
+  currentMinLevel.store(level, std::memory_order_seq_cst);
 }
 
 LogLevel Logger::minLevel() const
 {
-  return currentMinLevel;
+  return currentMinLevel.load(std::memory_order_seq_cst);
 }
 
 // ---------------------------------------------------------------------------
@@ -316,8 +351,9 @@ void Logger::writeEntry(QtMsgType type, const QMessageLogContext &ctx, const QSt
   }
 
   // Drop messages below the configured minimum level (before any formatting
-  // or I/O – cheapest possible rejection).
-  if (typeToLevel(type) < currentMinLevel)
+  // or I/O – cheapest possible rejection). currentMinLevel is atomic, so this
+  // read is safe without the mutex.
+  if (typeToLevel(type) < currentMinLevel.load(std::memory_order_seq_cst))
     return;
 
   const LogCategory cat = detectCategory(msg);
@@ -355,9 +391,9 @@ void Logger::writeEntry(QtMsgType type, const QMessageLogContext &ctx, const QSt
 
   // ---- File write (gated by master switch + per-category enable + size cap) ----
   if (logFile.isOpen()
-      && fileWriteEnabled
+      && fileWriteEnabled.load(std::memory_order_seq_cst)
       && bytesWritten < MAX_LOG_FILE_BYTES
-      && categoryFileEnabled[static_cast<int>(cat)])
+      && categoryFileEnabled[static_cast<int>(cat)].load(std::memory_order_seq_cst))
   {
     const QByteArray bytes = (line + '\n').toUtf8();
     logFile.write(bytes);
@@ -382,6 +418,12 @@ void Logger::writeEntry(QtMsgType type, const QMessageLogContext &ctx, const QSt
 
 // ---------------------------------------------------------------------------
 // rotateOldLogs
+//
+// Ensures at most MAX_LOG_FILES - 1 log files remain on disk after this call.
+// The caller is responsible for creating the new session file (init path) or
+// not (cleanOldLogs path — current session file already counts toward the
+// total).  Sorts by modification time (newest first) and deletes the oldest
+// entries that exceed the keep limit.
 // ---------------------------------------------------------------------------
 
 void Logger::rotateOldLogs(const QString &logDir)
@@ -390,7 +432,8 @@ void Logger::rotateOldLogs(const QString &logDir)
   QFileInfoList files =
       dir.entryInfoList({"yuview_*.log"}, QDir::Files, QDir::Time | QDir::Reversed);
 
-  // Delete oldest files beyond the keep limit (MAX_LOG_FILES - 1 existing + 1 new).
+  // Keep at most MAX_LOG_FILES - 1 files so that, after the caller opens a new
+  // session log, the total never exceeds MAX_LOG_FILES.
   while (files.size() >= MAX_LOG_FILES)
   {
     QFile::remove(files.first().absoluteFilePath());

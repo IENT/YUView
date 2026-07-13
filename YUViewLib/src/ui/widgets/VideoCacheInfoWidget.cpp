@@ -37,8 +37,6 @@
 #include <QPainter>
 #include <QSettings>
 
-// Debug output routes through the logUI category, toggleable
-// at runtime via QT_LOGGING_RULES.
 #define DEBUG_CACHINGINFO(...) qCDebug(logUI, __VA_ARGS__)
 
 using namespace VideoCacheStatusWidgetNamespace;

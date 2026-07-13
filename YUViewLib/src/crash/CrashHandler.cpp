@@ -114,7 +114,8 @@ void CrashHandler::init(const QString &logDir)
     if (hFile != INVALID_HANDLE_VALUE)
     {
       DWORD written = 0;
-      // Use wf (not write) to avoid collision with the CRT ::write symbol.
+      // Use WriteFile via a lambda — CRT write() is not async-signal-safe
+      // and we are in a terminate handler.
       auto wf = [&](const char *msg)
       {
         WriteFile(hFile, msg, static_cast<DWORD>(strlen(msg)), &written, nullptr);
@@ -191,8 +192,11 @@ void CrashHandler::archiveCrashReport()
 
 // ---------------------------------------------------------------------------
 // writeCrashLogHeader / writeCrashLogTail
-// These are called from signal handlers so they MUST use only
-// async-signal-safe functions (write, not printf/fwrite).
+//
+// These are called from signal handlers / std::terminate, so they use
+// safeWrite() (raw write()/WriteFile) instead of buffered I/O.  Note:
+// s_appVersion.toUtf8() below is NOT async-signal-safe (it may allocate);
+// this is a known trade-off so that a version string appears in the report.
 // ---------------------------------------------------------------------------
 
 static void safeWrite(int fd, const char *s)

@@ -58,8 +58,6 @@
 // ONLY USE THIS FOR DEBGGING
 #define ALLOW_UNENCRYPTED_CONNECTIONS 0
 
-// Debug output routes through the logUpdater category, toggleable
-// at runtime via QT_LOGGING_RULES.
 #define DEBUG_UPDATE(msg) LOG_DEBUG(logUpdater) << msg
 
 #define UPDATEFILEHANDLER_FILE_NAME "versioninfo.txt"

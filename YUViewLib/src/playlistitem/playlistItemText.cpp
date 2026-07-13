@@ -40,8 +40,6 @@
 
 #include <common/FunctionsGui.h>
 
-// Debug output routes through the logApp category, toggleable
-// at runtime via QT_LOGGING_RULES.
 #define DEBUG_TEXT(...) qCDebug(logApp, __VA_ARGS__)
 
 playlistItemText::playlistItemText(const QString &initialText)

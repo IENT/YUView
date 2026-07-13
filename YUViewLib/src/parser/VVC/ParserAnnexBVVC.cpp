@@ -55,8 +55,6 @@
 #include "slice_layer_rbsp.h"
 #include "video_parameter_set_rbsp.h"
 
-// Debug output routes through the logParser category, toggleable
-// at runtime via QT_LOGGING_RULES.
 #define DEBUG_VVC(msg) LOG_DEBUG(logParser) << msg
 
 namespace parser

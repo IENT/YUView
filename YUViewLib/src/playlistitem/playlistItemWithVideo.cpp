@@ -33,8 +33,6 @@
 #include "playlistItemWithVideo.h"
 #include <logging/Macros.h>
 
-// Debug output routes through the logApp category, toggleable
-// at runtime via QT_LOGGING_RULES.
 #define DEBUG_PLVIDEO(...) qCDebug(logApp, __VA_ARGS__)
 
 playlistItemWithVideo::playlistItemWithVideo(const QString &itemNameOrFileName)

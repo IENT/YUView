@@ -32,13 +32,14 @@
 
 #include "LogPanel.h"
 
+#include <QCloseEvent>
 #include <QDesktopServices>
-#include <QGroupBox>
 #include <QHBoxLayout>
 #include <QLabel>
 #include <QMessageBox>
 #include <QPushButton>
 #include <QScrollBar>
+#include <QSettings>
 #include <QUrl>
 #include <QVBoxLayout>
 
@@ -50,25 +51,76 @@ LogPanel::LogPanel(QWidget *parent) : QDialog(parent)
 {
   setWindowTitle(tr("Log Viewer"));
   setWindowFlags(windowFlags() | Qt::WindowMinMaxButtonsHint);
+  // Delete on close so that ~LogPanel() saves settings and the QPointer in
+  // MainWindow is reset automatically.
+  setAttribute(Qt::WA_DeleteOnClose);
   resize(900, 550);
+
+  // Restore window geometry. Logger settings (minLevel, fileWriteEnabled,
+  // per-category) were already loaded by Logger::init() at application
+  // startup, so the UI sync code below picks them up automatically.
+  loadSettings();
 
   auto *mainLayout = new QVBoxLayout(this);
   mainLayout->setContentsMargins(8, 8, 8, 8);
   mainLayout->setSpacing(6);
 
   // ---- Log view ----
-  logView = new QTextEdit(this);
+  logView = new QPlainTextEdit(this);
   logView->setReadOnly(true);
   logView->document()->setMaximumBlockCount(MAX_DISPLAY_LINES);
-  logView->setLineWrapMode(QTextEdit::NoWrap);
+  logView->setLineWrapMode(QPlainTextEdit::NoWrap);
   QFont mono("Courier New", 9);
   mono.setStyleHint(QFont::Monospace);
   logView->setFont(mono);
   mainLayout->addWidget(logView, /*stretch=*/1);
 
-  // ---- Minimum level selector ----
+  // ---- Control row: file switches (left) + minimum level (right) ----
   auto *levelLayout = new QHBoxLayout;
   levelLayout->setContentsMargins(0, 0, 0, 0);
+
+  // File-write master switch + per-category checkboxes, grouped on the left.
+  fileWriteMasterCheck = new QCheckBox(tr("File"), this);
+  fileWriteMasterCheck->setChecked(Logger::instance().isFileWriteEnabled());
+  fileWriteMasterCheck->setToolTip(tr("Master switch for writing log messages to disk. "
+                                      "When off, no messages are written regardless of "
+                                      "the per-category checkboxes."));
+  connect(fileWriteMasterCheck, &QCheckBox::toggled, this, &LogPanel::onFileWriteToggle);
+  levelLayout->addWidget(fileWriteMasterCheck);
+
+  struct CatInfo
+  {
+    LogCategory cat;
+    const char *label;
+    const char *tooltip;
+  };
+  const CatInfo cats[] = {
+      {LogCategory::App,
+       "App",
+       "General qDebug / qWarning / qCritical messages from application code"},
+      {LogCategory::FFmpeg,
+       "FFmpeg",
+       "FFmpeg library log messages (errors, warnings, codec info)"},
+  };
+
+  for (const auto &info : cats)
+  {
+    const int idx = static_cast<int>(info.cat);
+    auto     *cb  = new QCheckBox(tr(info.label), this);
+    cb->setChecked(Logger::instance().isCategoryFileEnabled(info.cat));
+    cb->setToolTip(tr(info.tooltip));
+    cb->setEnabled(Logger::instance().isFileWriteEnabled());
+    checkboxes[idx] = cb;
+
+    connect(cb, &QCheckBox::stateChanged, this,
+            [this, cat = info.cat](int state)
+            { onCategoryCheckChanged(cat, state == Qt::Checked); });
+
+    levelLayout->addWidget(cb);
+  }
+
+  levelLayout->addStretch();
+
   auto *levelLabel = new QLabel(tr("Minimum level:"), this);
   levelLayout->addWidget(levelLabel);
 
@@ -95,60 +147,7 @@ LogPanel::LogPanel(QWidget *parent) : QDialog(parent)
   connect(levelCombo, QOverload<int>::of(&QComboBox::currentIndexChanged),
           this, &LogPanel::onMinLevelChanged);
   levelLayout->addWidget(levelCombo);
-  levelLayout->addStretch();
   mainLayout->addLayout(levelLayout);
-
-  // ---- "Write to file" checkboxes ----
-  auto *fileGroup  = new QGroupBox(tr("Write to file"), this);
-  auto *fileLayout = new QVBoxLayout(fileGroup);
-  fileLayout->setContentsMargins(8, 4, 8, 4);
-
-  // Master switch
-  fileWriteMasterCheck = new QCheckBox(tr("Enable file logging"), fileGroup);
-  fileWriteMasterCheck->setChecked(Logger::instance().isFileWriteEnabled());
-  fileWriteMasterCheck->setToolTip(tr("Master switch for writing log messages to disk. "
-                                      "When off, no messages are written regardless of "
-                                      "the per-category checkboxes below."));
-  connect(fileWriteMasterCheck, &QCheckBox::toggled, this, &LogPanel::onFileWriteToggle);
-  fileLayout->addWidget(fileWriteMasterCheck);
-
-  // Per-category checkboxes (on a sub-row)
-  auto *catRow = new QHBoxLayout;
-  catRow->setContentsMargins(20, 0, 0, 0); // indent under master switch
-
-  struct CatInfo
-  {
-    LogCategory cat;
-    const char *label;
-    const char *tooltip;
-  };
-  const CatInfo cats[] = {
-      {LogCategory::App,
-       "Application",
-       "General qDebug / qWarning / qCritical messages from application code"},
-      {LogCategory::FFmpeg,
-       "FFmpeg",
-       "FFmpeg library log messages (errors, warnings, codec info)"},
-  };
-
-  for (const auto &info : cats)
-  {
-    const int idx    = static_cast<int>(info.cat);
-    auto     *cb     = new QCheckBox(tr(info.label), fileGroup);
-    cb->setChecked(Logger::instance().isCategoryFileEnabled(info.cat));
-    cb->setToolTip(tr(info.tooltip));
-    cb->setEnabled(Logger::instance().isFileWriteEnabled());
-    checkboxes[idx] = cb;
-
-    connect(cb, &QCheckBox::stateChanged, this,
-            [this, cat = info.cat](int state)
-            { onCategoryCheckChanged(cat, state == Qt::Checked); });
-
-    catRow->addWidget(cb);
-  }
-  catRow->addStretch();
-  fileLayout->addLayout(catRow);
-  mainLayout->addWidget(fileGroup);
 
   // ---- Buttons ----
   auto *btnLayout = new QHBoxLayout;
@@ -173,17 +172,9 @@ LogPanel::LogPanel(QWidget *parent) : QDialog(parent)
 
   mainLayout->addLayout(btnLayout);
 
-  // ---- Register UI callback with Logger ----
-  // The callback is invoked from arbitrary threads, so we post back to the
-  // UI thread via Qt::QueuedConnection.
-  //
-  // Lifetime safety: `this` is passed as the context/receiver argument to
-  // invokeMethod (first positional argument in the Qt6 functor overload).
-  // Qt6 stores this internally and, when the LogPanel is destroyed,
-  // QObject::~QObject() calls QCoreApplication::removePostedEvents(this),
-  // which discards all pending MetaCall events for this object before the
-  // memory is freed.  The destructor also calls clearUiCallback() under the
-  // Logger mutex, preventing new callbacks from being queued after that point.
+  // Register UI callback: invoked from arbitrary threads, posted back to the
+  // UI thread via QueuedConnection. ~LogPanel calls clearUiCallback() so no
+  // new callbacks are queued after destruction.
   Logger::instance().setUiCallback(
       [this](LogCategory /*cat*/, const QString &line)
       {
@@ -198,6 +189,7 @@ LogPanel::LogPanel(QWidget *parent) : QDialog(parent)
 
 LogPanel::~LogPanel()
 {
+  saveSettings();
   Logger::instance().clearUiCallback();
 }
 
@@ -207,7 +199,7 @@ LogPanel::~LogPanel()
 
 void LogPanel::appendLine(const QString &line)
 {
-  logView->append(line);
+  logView->appendPlainText(line);
   // Auto-scroll to bottom.
   auto *sb = logView->verticalScrollBar();
   sb->setValue(sb->maximum());
@@ -255,4 +247,52 @@ void LogPanel::onCleanOldLogsClicked()
 void LogPanel::onOpenLogFolderClicked()
 {
   QDesktopServices::openUrl(QUrl::fromLocalFile(Logger::instance().logDirectory()));
+}
+
+// ---------------------------------------------------------------------------
+// closeEvent
+// ---------------------------------------------------------------------------
+
+void LogPanel::closeEvent(QCloseEvent *event)
+{
+  // WA_DeleteOnClose is set, so closing will trigger ~LogPanel() which
+  // calls saveSettings(). Nothing extra to do here.
+  QDialog::closeEvent(event);
+}
+
+// ---------------------------------------------------------------------------
+// loadSettings — restore window geometry.
+// Logger settings (minLevel, fileWriteEnabled, per-category) are already
+// loaded by Logger::init(), so the UI sync code in the constructor picks
+// them up automatically. We only restore the window geometry here.
+// ---------------------------------------------------------------------------
+
+void LogPanel::loadSettings()
+{
+  // Window geometry uses a flat key (same style as mainWindow/geometry).
+  QSettings settings;
+  restoreGeometry(settings.value("LogPanel/geometry").toByteArray());
+}
+
+// ---------------------------------------------------------------------------
+// saveSettings — persist current Logger state to QSettings
+// ---------------------------------------------------------------------------
+
+void LogPanel::saveSettings()
+{
+  QSettings settings;
+  settings.beginGroup("LogPanel");
+
+  settings.setValue("MinLevel", static_cast<int>(Logger::instance().minLevel()));
+  settings.setValue("FileWriteEnabled", Logger::instance().isFileWriteEnabled());
+
+  settings.beginGroup("CategoryFileEnabled");
+  settings.setValue("App", Logger::instance().isCategoryFileEnabled(LogCategory::App));
+  settings.setValue("FFmpeg", Logger::instance().isCategoryFileEnabled(LogCategory::FFmpeg));
+  settings.endGroup();
+
+  settings.endGroup();
+
+  // Window geometry uses a flat key (same style as mainWindow/geometry).
+  settings.setValue("LogPanel/geometry", saveGeometry());
 }

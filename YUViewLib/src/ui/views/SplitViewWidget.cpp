@@ -82,8 +82,6 @@ const int SPLITVIEWWIDGET_ZOOM_STEP_FACTOR = 2;
 // What message is shown when a playlist item is loading.
 const QString SPLITVIEWWIDGET_LOADING_TEXT = "Loading...";
 
-// Debug output routes through the logUI category, toggleable
-// at runtime via QT_LOGGING_RULES.
 #define DEBUG_LOAD_DRAW(msg) LOG_DEBUG(logUI) << msg
 splitViewWidget::splitViewWidget(QWidget *parent) : MoveAndZoomableView(parent)
 {

@@ -95,8 +95,6 @@ createConversionInfoItems(const PixelFormatRGB &pixelFormat, const Size &frameSi
 
 } // namespace
 
-// Debug output routes through the logVideo category, toggleable
-// at runtime via QT_LOGGING_RULES.
 #define DEBUG_RGB(...) qCDebug(logVideo, __VA_ARGS__)
 
 // Restrict is basically a promise to the compiler that for the scope of the pointer, the target of

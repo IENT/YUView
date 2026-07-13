@@ -37,8 +37,6 @@
 
 #include <common/FunctionsGui.h>
 
-// Debug output routes through the logApp category, toggleable
-// at runtime via QT_LOGGING_RULES.
 #define DEBUG_RESAMPLE(...) qCDebug(logApp, __VA_ARGS__)
 
 #define RESAMPLE_INFO_TEXT "Please drop an item onto this item to show a resampled version of it."

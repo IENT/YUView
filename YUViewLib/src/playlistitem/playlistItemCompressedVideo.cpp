@@ -62,8 +62,6 @@
 using namespace functions;
 using namespace decoder;
 
-// Debug output routes through the logDecoder category, toggleable
-// at runtime via QT_LOGGING_RULES.
 #define DEBUG_COMPRESSED(msg) LOG_DEBUG(logDecoder) << msg
 
 using namespace std::string_view_literals;

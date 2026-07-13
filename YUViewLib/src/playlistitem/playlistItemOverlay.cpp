@@ -43,8 +43,6 @@
 #include <common/EnumMapper.h>
 #include <common/FunctionsGui.h>
 
-// Debug output routes through the logApp category, toggleable
-// at runtime via QT_LOGGING_RULES.
 #define DEBUG_OVERLAY(...) qCDebug(logApp, __VA_ARGS__)
 
 #define CUSTOM_POS_MAX 100000

@@ -35,8 +35,6 @@
 
 #include <common/Functions.h>
 
-// Debug output routes through the logStats category, toggleable
-// at runtime via QT_LOGGING_RULES.
 #define DEBUG_STATDATA(msg) LOG_DEBUG(logStats) << msg
 
 namespace stats

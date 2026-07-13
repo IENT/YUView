@@ -48,8 +48,6 @@
 #include "slice_rbsp.h"
 #include <parser/common/Functions.h>
 
-// Debug output routes through the logParser category, toggleable
-// at runtime via QT_LOGGING_RULES.
 #define DEBUG_AVC(msg) LOG_DEBUG(logParser) << msg
 
 namespace parser

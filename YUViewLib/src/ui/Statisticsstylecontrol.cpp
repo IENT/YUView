@@ -47,8 +47,6 @@
 namespace
 {
 
-// Debug output routes through the logStats category, toggleable
-// at runtime via QT_LOGGING_RULES.
 #define DEBUG_STAT_STYLE(...) qCDebug(logStats, __VA_ARGS__)
 
 using MappingType = stats::color::MappingType;

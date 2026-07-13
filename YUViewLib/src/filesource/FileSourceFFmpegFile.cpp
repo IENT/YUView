@@ -42,8 +42,6 @@
 #include <parser/AV1/obu_header.h>
 #include <parser/common/SubByteReaderLogging.h>
 
-// Debug output routes through the logFileSource category, toggleable
-// at runtime via QT_LOGGING_RULES.
 #define DEBUG_FFMPEG(...) qCDebug(logFileSource, __VA_ARGS__)
 
 using SubByteReaderLogging = parser::reader::SubByteReaderLogging;

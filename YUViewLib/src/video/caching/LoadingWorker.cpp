@@ -36,8 +36,6 @@
 namespace video
 {
 
-// Debug output routes through the logCache category, toggleable
-// at runtime via QT_LOGGING_RULES.
 #define DEBUG_WORKER(...) qCDebug(logCache, __VA_ARGS__)
 
 LoadingWorker::LoadingWorker(QObject *parent) : QObject(parent)

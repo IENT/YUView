@@ -39,8 +39,6 @@
 namespace decoder
 {
 
-// Debug output routes through the logDecoder category, toggleable
-// at runtime via QT_LOGGING_RULES.
 #define DEBUG_DECODERBASE(...) qCDebug(logDecoder, __VA_ARGS__)
 #define DEBUG_HEVCDECODERBASE(msg) LOG_DEBUG(logDecoder) << msg
 

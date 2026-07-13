@@ -46,8 +46,6 @@
 #include <statistics/StatisticsFileCSV.h>
 #include <statistics/StatisticsFileVTMBMS.h>
 
-// Debug output routes through the logStats category, toggleable
-// at runtime via QT_LOGGING_RULES.
 #define DEBUG_STAT(...) qCDebug(logStats, __VA_ARGS__)
 
 // The internal buffer for parsing the starting positions. The buffer must not be larger than 2GB

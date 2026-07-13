@@ -34,6 +34,9 @@
 #include <QDateTime>
 #include <QDir>
 
+#include <cstdarg>
+#include <cstdio>
+
 namespace FFmpeg
 {
 
@@ -321,10 +324,32 @@ FFmpegVersionHandler::~FFmpegVersionHandler()
   this->lib.setLogList(nullptr);
 }
 
-void FFmpegVersionHandler::avLogCallback(void *, int level, const char *fmt, va_list vargs)
+// Format an FFmpeg log message (printf-style + va_list) into a QString.
+// QString::vasprintf is unreliable on Windows/MSVC when the va_list originates
+// from FFmpeg's callback (it returns empty strings). Use vsnprintf instead:
+// first call with nullptr/0 to get the length, then allocate and format.
+static QString formatFFmpegMessage(const char *fmt, va_list vargs)
 {
-  QString msg;
-  msg.vasprintf(fmt, vargs);
+  va_list argsCopy;
+  va_copy(argsCopy, vargs);
+  int len = vsnprintf(nullptr, 0, fmt, argsCopy);
+  va_end(argsCopy);
+
+  if (len < 0)
+    return {};
+
+  QByteArray ba(len + 1, '\0');
+  va_copy(argsCopy, vargs);
+  vsnprintf(ba.data(), ba.size(), fmt, argsCopy);
+  va_end(argsCopy);
+
+  return QString::fromUtf8(ba.constData(), len);
+}
+
+void FFmpegVersionHandler::avLogCallback(void *ptr, int level, const char *fmt, va_list vargs)
+{
+  Q_UNUSED(ptr)
+  const QString msg = formatFFmpegMessage(fmt, vargs);
 
   // Keep existing in-memory list for the "Show FFmpeg Log" UI dialog.
   {
@@ -335,16 +360,21 @@ void FFmpegVersionHandler::avLogCallback(void *, int level, const char *fmt, va_
   }
 
   // Also route through Qt's logging so the Logger / LogPanel can see it.
-  // AV_LOG_WARNING = 24, AV_LOG_ERROR = 16. Skip pure whitespace / newlines.
+  // Skip pure whitespace / newlines.
   const QString trimmed = msg.trimmed();
   if (trimmed.isEmpty())
     return;
 
   const QString tagged = QString("[FFmpeg L%1] %2").arg(level).arg(trimmed);
-  // level <= AV_LOG_WARNING(24) → qWarning, otherwise qDebug
-  if (level <= 24)
+  // Map FFmpeg severity to the closest Qt message type.
+  // FFmpeg levels: FATAL=8  ERROR=16  WARNING=24  INFO=32  VERBOSE=40  DEBUG=48  TRACE=56
+  if (level <= 16)        // ERROR / FATAL
+    qCritical().noquote() << tagged;
+  else if (level <= 24)   // WARNING
     qWarning().noquote() << tagged;
-  else
+  else if (level <= 32)   // INFO
+    qInfo().noquote() << tagged;
+  else                    // VERBOSE / DEBUG / TRACE
     qDebug().noquote() << tagged;
 }
 
@@ -406,7 +436,10 @@ void FFmpegVersionHandler::loadFFmpegLibraries()
   if (this->librariesLoaded)
   {
     this->lib.avutil.av_log_set_callback(&FFmpegVersionHandler::avLogCallback);
-    this->lib.avutil.av_log_set_level(32); // AV_LOG_INFO
+    // Let FFmpeg emit all messages (up to TRACE); the Logger / LogPanel level
+    // filter will decide what reaches the user. This keeps FFmpeg's verbosity
+    // under the same runtime control as the rest of the application.
+    this->lib.avutil.av_log_set_level(56); // AV_LOG_TRACE
   }
 }
 

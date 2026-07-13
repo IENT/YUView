@@ -36,8 +36,6 @@
 #include <QFileInfo>
 #include <QTextStream>
 
-// Debug output routes through the logUpdater category, toggleable
-// at runtime via QT_LOGGING_RULES.
 #define DEBUG_UPDATE_FILE(msg) LOG_DEBUG(logUpdater) << msg
 
 const auto UPDATEFILEHANDLER_FILE_NAME = "versioninfo.txt";

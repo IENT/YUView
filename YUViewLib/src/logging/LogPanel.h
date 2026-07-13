@@ -37,7 +37,7 @@
 #include <QCheckBox>
 #include <QComboBox>
 #include <QDialog>
-#include <QTextEdit>
+#include <QPlainTextEdit>
 
 // ---------------------------------------------------------------------------
 // LogPanel
@@ -46,16 +46,13 @@
 // which categories are written to the log file.
 //
 // Layout:
-//   ┌─────────────────────────────────────────┐
-//   │  [QPlainTextEdit – scrolling log view]  │
-//   ├─────────────────────────────────────────┤
-//   │  Minimum level: [Debug ▼]               │
-//   │  Write to file:                         │
-//   │    [x] Enable file logging              │
-//   │    [x] Application   [x] FFmpeg         │
-//   ├─────────────────────────────────────────┤
-//   │  [Clear]  [Clean old logs]  [Open Folder]│
-//   └─────────────────────────────────────────┘
+//   ┌────────────────────────────────────────────┐
+//   │  [QPlainTextEdit – scrolling log view]     │
+//   ├────────────────────────────────────────────┤
+//   │  [File] [App] [FFmpeg]  ←stretch→  Min: [▼]│
+//   ├────────────────────────────────────────────┤
+//   │  [Clear]  [Clean old logs]  ←stretch→ [Open]│
+//   └────────────────────────────────────────────┘
 // ---------------------------------------------------------------------------
 
 class LogPanel : public QDialog
@@ -69,6 +66,9 @@ public:
   // Append a formatted line to the text view (must be called on the UI thread).
   void appendLine(const QString &line);
 
+protected:
+  void closeEvent(QCloseEvent *event) override;
+
 private slots:
   void onCategoryCheckChanged(LogCategory cat, bool checked);
   void onMinLevelChanged(int index);
@@ -78,7 +78,10 @@ private slots:
   void onOpenLogFolderClicked();
 
 private:
-  QTextEdit *logView{nullptr};
+  void loadSettings();
+  void saveSettings();
+
+  QPlainTextEdit *logView{nullptr};
   QComboBox      *levelCombo{nullptr};
   QCheckBox      *fileWriteMasterCheck{nullptr};
   QCheckBox      *checkboxes[static_cast<int>(LogCategory::COUNT)]{};

@@ -31,8 +31,6 @@
  *   along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-// Debug output routes through the logParser category, toggleable
-// at runtime via QT_LOGGING_RULES.
 #define DEBUG_PLOT(msg) LOG_DEBUG(logParser) << msg
 
 #include "BitratePlotModel.h"

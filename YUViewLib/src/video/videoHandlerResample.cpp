@@ -42,8 +42,6 @@
 namespace video
 {
 
-// Debug output routes through the logVideo category, toggleable
-// at runtime via QT_LOGGING_RULES.
 #define DEBUG_RESAMPLE(...) qCDebug(logVideo, __VA_ARGS__)
 
 videoHandlerResample::videoHandlerResample() : videoHandler()

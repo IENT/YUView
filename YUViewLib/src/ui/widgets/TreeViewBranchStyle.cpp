@@ -63,9 +63,8 @@ void TreeViewBranchStyle::drawPrimitive(PrimitiveElement    element,
   const QRect rect = option->rect;
   const bool  isOpen = option->state & QStyle::State_Open;
 
-  // Use the palette text color so the arrow follows the active theme:
-  // light (#E0E0E0) on dark themes, dark (#202020) on light themes, system
-  // color on the Default theme.
+  // Use the palette text color so the arrow follows the active theme
+  // (typically light on dark themes, dark on light themes).
   const QColor arrowColor = option->palette.color(QPalette::Text);
 
   painter->save();

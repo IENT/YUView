@@ -60,8 +60,6 @@ using namespace std::string_view_literals;
 namespace video::yuv
 {
 
-// Debug output routes through the logVideo category, toggleable
-// at runtime via QT_LOGGING_RULES.
 #define DEBUG_YUV(msg) LOG_DEBUG(logVideo) << msg
 
 // Restrict is basically a promise to the compiler that for the scope of the pointer, the target of
