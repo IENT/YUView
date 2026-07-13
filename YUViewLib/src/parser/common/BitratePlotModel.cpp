@@ -47,17 +47,19 @@ PlotModel::StreamParameter BitratePlotModel::getStreamParameter(unsigned streamI
 {
   QMutexLocker locker(&this->dataMutex);
 
-  if (this->dataPerStream.contains(streamIndex))
+  auto it = this->dataPerStream.constFind(streamIndex);
+  if (it != this->dataPerStream.constEnd())
   {
+    const auto &list = *it;
     PlotModel::StreamParameter streamParameter;
     streamParameter.xRange.min = (sortMode == SortMode::DECODE_ORDER) ? double(this->rangeDts.min)
-                                                                      : double(this->rangePts.min);
+                                                                       : double(this->rangePts.min);
     streamParameter.xRange.max = (sortMode == SortMode::DECODE_ORDER) ? double(this->rangeDts.max)
-                                                                      : double(this->rangePts.max);
+                                                                       : double(this->rangePts.max);
     streamParameter.yRange.min = double(this->rangeBitratePerStream[streamIndex].min);
     streamParameter.yRange.max = double(this->rangeBitratePerStream[streamIndex].max);
 
-    const auto nrPoints = unsigned(this->dataPerStream[streamIndex].size());
+    const auto nrPoints = unsigned(list.size());
     streamParameter.plotParameters.append({PlotType::Bar, nrPoints});
     streamParameter.plotParameters.append({PlotType::Line, nrPoints});
 
@@ -91,12 +93,14 @@ BitratePlotModel::getPlotPoint(unsigned streamIndex, unsigned plotIndex, unsigne
 {
   QMutexLocker locker(&this->dataMutex);
 
-  if (!this->dataPerStream.contains(streamIndex))
+  auto it = this->dataPerStream.constFind(streamIndex);
+  if (it == this->dataPerStream.constEnd())
     return {};
 
-  if (pointIndex < unsigned(this->dataPerStream[streamIndex].size()))
+  const auto &list = *it;
+  if (pointIndex < unsigned(list.size()))
   {
-    const auto &entry = this->dataPerStream[streamIndex][pointIndex];
+    const auto &entry = list[pointIndex];
     PlotModel::Point point;
     if (this->sortMode == SortMode::DECODE_ORDER)
       point.x = entry.dts;
@@ -123,11 +127,11 @@ BitratePlotModel::getPointInfo(unsigned streamIndex, unsigned plotIndex, unsigne
 {
   QMutexLocker locker(&this->dataMutex);
 
-  if (!this->dataPerStream.contains(streamIndex) ||
-      unsigned(this->dataPerStream[streamIndex].size()) <= pointIndex)
+  auto it = this->dataPerStream.constFind(streamIndex);
+  if (it == this->dataPerStream.constEnd() || unsigned(it->size()) <= pointIndex)
     return {};
 
-  auto       entry         = this->dataPerStream[streamIndex][pointIndex];
+  auto       entry         = it->at(pointIndex);
   const auto isAveragePlot = (plotIndex == 1);
 
   if (isAveragePlot)
@@ -273,14 +277,19 @@ void BitratePlotModel::setBitrateSortingIndex(int index)
 }
 
 unsigned int BitratePlotModel::calculateAverageValue(unsigned streamIndex,
-                                                     unsigned pointIndex) const
+                                                      unsigned pointIndex) const
 {
+  auto it = this->dataPerStream.constFind(streamIndex);
+  if (it == this->dataPerStream.constEnd())
+    return 0;
+
+  const auto &list = *it;
   const unsigned int averageRange   = 10;
   unsigned           averageBitrate = 0;
   const unsigned     start          = std::max(unsigned(0), pointIndex - averageRange);
   const unsigned     end =
-      std::min(pointIndex + averageRange, unsigned(this->dataPerStream[streamIndex].size()));
+      std::min(pointIndex + averageRange, unsigned(list.size()));
   for (unsigned i = start; i < end; i++)
-    averageBitrate += unsigned(this->dataPerStream[streamIndex][i].bitrate);
+    averageBitrate += unsigned(list[i].bitrate);
   return averageBitrate / (end - start);
 }
