@@ -99,6 +99,18 @@ public:
   virtual void
   drawFrame(QPainter *painter, int frameIdx, double zoomFactor, bool drawRawData) override;
 
+  // --- Caching overrides ---
+  // videoHandlerYUV caches raw YUV bytes (not converted RGB) so that color matrix
+  // changes only require re-conversion, not re-reading/re-decoding.
+  void        cacheFrame(int frameIndex, bool testMode) override;
+  QList<int>  getCachedFrames() const override;
+  int         getNumberCachedFrames() const override;
+  bool        isInCache(int idx) const override;
+  void        removeFrameFromCache(int frameIndex) override;
+  void        removeAllFrameFromCache() override;
+  void        invalidateAllBuffers() override;
+  ItemLoadingState needsLoading(int frameIndex, bool loadRawValues) override;
+
   // Return the YUV values for the given pixel
   // If a second item is provided, return the difference values to that item at the given position.
   // If th second item cannot be cast to a videoHandlerYUV, we call the FrameHandler::getPixelValues
@@ -124,6 +136,9 @@ public:
   {
     return srcPixelFormat.bytesPerFrame(frameSize);
   }
+
+  // Override: when the frame size changes, the raw YUV cache is invalid.
+  virtual void setFrameSize(Size size) override;
 
   void
   guessAndSetPixelFormat(const filesource::frameFormatGuess::GuessedFrameFormat &frameFormat,
@@ -232,6 +247,20 @@ private:
   bool           diffReady{};
   QByteArray     diffYUV;
   PixelFormatYUV diffYUVFormat{};
+
+  // --- Raw YUV data cache (primary cache) ---
+  // Stores raw YUV bytes per frame index. RGB conversion is done on-the-fly in
+  // drawFrame. This way, changing color matrix / interpolation / math parameters
+  // only invalidates currentImage (one re-conversion), not the whole cache.
+  QMutex mutable        rawDataCacheAccess;
+  QMap<int, QByteArray> rawDataCache;
+  bool                  rawDataCacheValid{true};
+
+  // Set the raw data cache to invalid (in-flight threads will not insert).
+  void setRawDataCacheInvalid() { rawDataCacheValid = false; }
+
+  // Load raw YUV data for caching into the rawDataCache. Returns true on success.
+  bool loadRawYUVDataForCaching(int frameIndex, QByteArray &outData);
 
   static std::vector<PixelFormatYUV> formatPresetList;
 

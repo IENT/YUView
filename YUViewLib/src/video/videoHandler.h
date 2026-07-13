@@ -60,11 +60,11 @@ public:
   // --- Caching ----
   // These methods are all thread-safe and can be invoked from any thread.
   int              getNrFramesCached() const;
-  void             cacheFrame(int frameIndex, bool testMode);
+  virtual void     cacheFrame(int frameIndex, bool testMode);
   virtual unsigned getCachingFrameSize() const;
-  QList<int>       getCachedFrames() const;
-  int              getNumberCachedFrames() const;
-  bool             isInCache(int idx) const;
+  virtual QList<int> getCachedFrames() const;
+  virtual int        getNumberCachedFrames() const;
+  virtual bool       isInCache(int idx) const;
   virtual void     removeFrameFromCache(int frameIndex);
   virtual void     removeAllFrameFromCache();
 
@@ -103,7 +103,7 @@ public:
 
   // If reloading a raw file (because it changed), this function will clear all buffers (also the
   // cache). With the next drawFrame(), the data will be reloaded from file.
-  void invalidateAllBuffers();
+  virtual void invalidateAllBuffers();
 
   // The user changed the frame. Do we need to load something before we can draw it? Do we need to
   // update the double buffer? loadRawValues: Do we also need to update the buffer of the raw values

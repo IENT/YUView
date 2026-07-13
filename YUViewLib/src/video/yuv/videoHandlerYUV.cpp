@@ -2395,9 +2395,142 @@ videoHandlerYUV::~videoHandlerYUV()
 
 unsigned videoHandlerYUV::getCachingFrameSize() const
 {
-  auto hasAlpha = this->srcPixelFormat.hasAlpha();
-  auto bytes    = functionsGui::bytesPerPixel(functionsGui::platformImageFormat(hasAlpha));
-  return this->frameSize.width * this->frameSize.height * bytes;
+  // Return raw YUV bytes per frame (the cache stores raw YUV, not RGB).
+  return unsigned(this->getBytesPerFrame());
+}
+
+void videoHandlerYUV::setFrameSize(Size size)
+{
+  if (size != frameSize)
+  {
+    // Frame size changed: raw YUV data layout is different, clear the raw cache.
+    QMutexLocker lock(&rawDataCacheAccess);
+    rawDataCache.clear();
+    rawDataCacheValid = true;
+  }
+  videoHandler::setFrameSize(size);
+}
+
+void videoHandlerYUV::cacheFrame(int frameIdx, bool testMode)
+{
+  DEBUG_YUV("videoHandlerYUV::cacheFrame " << frameIdx << (testMode ? " testMode" : ""));
+
+  if (rawDataCacheValid && isInCache(frameIdx) && !testMode)
+  {
+    DEBUG_YUV("videoHandlerYUV::cacheFrame frame " << frameIdx << " already in raw cache - returning");
+    return;
+  }
+
+  // Load raw YUV data for caching
+  QByteArray rawYUVData;
+  if (!loadRawYUVDataForCaching(frameIdx, rawYUVData))
+  {
+    DEBUG_YUV("videoHandlerYUV::cacheFrame loading frame " << frameIdx << " for caching failed");
+    return;
+  }
+
+  if (testMode)
+    return; // testMode only measures load+convert speed, no insert
+
+  // Put the raw YUV data into the cache
+  DEBUG_YUV("videoHandlerYUV::cacheFrame insert frame " << frameIdx << " into raw cache");
+  QMutexLocker lock(&rawDataCacheAccess);
+  if (rawDataCacheValid)
+    rawDataCache.insert(frameIdx, rawYUVData);
+}
+
+QList<int> videoHandlerYUV::getCachedFrames() const
+{
+  QMutexLocker lock(&rawDataCacheAccess);
+  return rawDataCache.keys();
+}
+
+int videoHandlerYUV::getNumberCachedFrames() const
+{
+  QMutexLocker lock(&rawDataCacheAccess);
+  return rawDataCache.size();
+}
+
+bool videoHandlerYUV::isInCache(int idx) const
+{
+  QMutexLocker lock(&rawDataCacheAccess);
+  return rawDataCache.contains(idx);
+}
+
+void videoHandlerYUV::removeFrameFromCache(int frameIdx)
+{
+  DEBUG_YUV("videoHandlerYUV::removeFrameFromCache " << frameIdx);
+  QMutexLocker lock(&rawDataCacheAccess);
+  rawDataCache.remove(frameIdx);
+}
+
+void videoHandlerYUV::removeAllFrameFromCache()
+{
+  DEBUG_YUV("videoHandlerYUV::removeAllFrameFromCache");
+  QMutexLocker lock(&rawDataCacheAccess);
+  rawDataCache.clear();
+  rawDataCacheValid = true;
+}
+
+void videoHandlerYUV::invalidateAllBuffers()
+{
+  currentFrameRawData_frameIndex = -1;
+  rawData_frameIndex             = -1;
+
+  currentImageIndex       = -1;
+  currentImage_frameIndex = -1;
+  currentImageSetMutex.lock();
+  currentImage = QImage();
+  currentImageSetMutex.unlock();
+  requestedFrame_idx = -1;
+
+  QMutexLocker lock(&rawDataCacheAccess);
+  rawDataCache.clear();
+  rawDataCacheValid = true;
+}
+
+ItemLoadingState videoHandlerYUV::needsLoading(int frameIdx, bool loadRawValues)
+{
+  if (loadRawValues)
+  {
+    auto state = needsLoadingRawValues(frameIdx);
+    if (state != ItemLoadingState::LoadingNotNeeded)
+      return state;
+  }
+
+  // Check if the current frame is already loaded
+  if (frameIdx == currentImageIndex)
+  {
+    if (doubleBufferImageFrameIndex == frameIdx + 1)
+      return ItemLoadingState::LoadingNotNeeded;
+    else if (rawDataCacheValid && isInCache(frameIdx + 1))
+      return ItemLoadingState::LoadingNotNeeded;
+    else
+      return ItemLoadingState::LoadingNeededDoubleBuffer;
+  }
+
+  // Check the double buffer
+  if (doubleBufferImageFrameIndex == frameIdx)
+  {
+    if (rawDataCacheValid && isInCache(frameIdx + 1))
+      return ItemLoadingState::LoadingNotNeeded;
+    else
+      return ItemLoadingState::LoadingNeededDoubleBuffer;
+  }
+
+  // Check the raw data cache
+  if (rawDataCacheValid && isInCache(frameIdx))
+  {
+    if (doubleBufferImageFrameIndex == frameIdx + 1)
+      return ItemLoadingState::LoadingNotNeeded;
+    else if (rawDataCacheValid && isInCache(frameIdx + 1))
+      return ItemLoadingState::LoadingNotNeeded;
+    else
+      return ItemLoadingState::LoadingNeededDoubleBuffer;
+  }
+
+  // Frame not in cache. Request loading.
+  return ItemLoadingState::LoadingNeeded;
 }
 
 void videoHandlerYUV::loadValues(Size newFramesize, const QString &)
@@ -2426,9 +2559,70 @@ void videoHandlerYUV::drawFrame(QPainter *painter,
 
     // Draw the text
     painter->drawText(textRect, QString::fromStdString(msg));
+    return;
   }
-  else
-    videoHandler::drawFrame(painter, frameIdx, zoomFactor, drawRawData);
+
+  // Check if the frameIdx changed and we have to load a new frame
+  if (frameIdx != currentImageIndex)
+  {
+    // Check the double buffer first (holds a converted RGB QImage)
+    if (frameIdx == doubleBufferImageFrameIndex)
+    {
+      currentImage      = doubleBufferImage;
+      currentImageIndex = frameIdx;
+      DEBUG_YUV("videoHandlerYUV::drawFrame " << frameIdx << " loaded from double buffer");
+    }
+    else
+    {
+      // Try to get raw YUV data from the raw data cache
+      QByteArray rawYUVData;
+      {
+        QMutexLocker lock(&rawDataCacheAccess);
+        if (rawDataCacheValid && rawDataCache.contains(frameIdx))
+          rawYUVData = rawDataCache[frameIdx];
+      }
+
+      if (rawYUVData.isEmpty())
+      {
+        // Cache miss: load raw YUV data via the interactive path
+        if (!loadRawYUVData(frameIdx))
+          return; // Loading failed
+        rawYUVData = currentFrameRawData;
+      }
+
+      // Convert YUV to RGB on-the-fly
+      QImage newImage;
+      try
+      {
+        convertYUVToImage(rawYUVData,
+                          newImage,
+                          this->srcPixelFormat,
+                          this->frameSize,
+                          this->conversionSettings);
+      }
+      catch (const std::bad_alloc &)
+      {
+        qWarning() << "Out of memory in drawFrame convertYUVToImage.";
+        return;
+      }
+      QMutexLocker setLock(&currentImageSetMutex);
+      currentImage      = newImage;
+      currentImageIndex = frameIdx;
+    }
+  }
+
+  // Create the video QRect with the size of the sequence and center it.
+  QRect videoRect;
+  videoRect.setSize(QSize(frameSize.width * zoomFactor, frameSize.height * zoomFactor));
+  videoRect.moveCenter(QPoint(0, 0));
+
+  // Draw the current image
+  currentImageSetMutex.lock();
+  painter->drawImage(videoRect, currentImage);
+  currentImageSetMutex.unlock();
+
+  if (drawRawData && zoomFactor >= SPLITVIEW_DRAW_VALUES_ZOOMFACTOR)
+    drawPixelValues(painter, frameIdx, videoRect, zoomFactor);
 }
 
 QLayout *videoHandlerYUV::createVideoHandlerControls(bool isSizeAndFormatFixed)
@@ -2619,8 +2813,9 @@ void videoHandlerYUV::setSrcPixelFormat(PixelFormatYUV format, bool emitSignal)
     this->currentImageIndex       = -1;
     this->currentImage_frameIndex = -1;
 
-    // Set the cache to invalid until it is cleared an recached
-    this->setCacheInvalid();
+    // The pixel format changed. The raw YUV data must be re-interpreted, so the
+    // raw data cache is invalid.
+    this->setRawDataCacheInvalid();
 
     if (srcPixelFormat.bytesPerFrame(frameSize) != oldFormatBytesPerFrame)
       // The number of bytes per frame changed. The raw YUV data buffer is also out of date
@@ -2659,12 +2854,12 @@ void videoHandlerYUV::slotYUVControlChanged()
     this->conversionSettings.mathParameters[Component::Chroma].invert =
       ui.chromaInvertCheckBox->isChecked();
 
-    // Set the current frame in the buffer to be invalid and clear the cache.
-    // Emit that this item needs redraw and the cache needs updating.
+    // These parameters only affect YUV→RGB conversion, not the raw YUV data.
+    // So we only invalidate the current displayed image (force re-conversion) and
+    // do NOT clear the raw data cache or trigger a recache.
     this->currentImageIndex       = -1;
     this->currentImage_frameIndex = -1;
-    this->setCacheInvalid();
-    emit signalHandlerChanged(true, RECACHE_CLEAR);
+    emit signalHandlerChanged(true, RECACHE_NONE);
   }
   else if (sender == ui.yuvFormatComboBox)
   {
@@ -2673,14 +2868,13 @@ void videoHandlerYUV::slotYUVControlChanged()
     // Set the new YUV format
     // setSrcPixelFormat(yuvFormatList.getFromName(ui.yuvFormatComboBox->currentText()));
 
-    // Set the current frame in the buffer to be invalid and clear the cache.
-    // Emit that this item needs redraw and the cache needs updating.
+    // The YUV format changed. The raw YUV data must be re-interpreted, so the
+    // raw data cache is invalid.
     this->currentImageIndex       = -1;
     this->currentImage_frameIndex = -1;
     if (this->srcPixelFormat.bytesPerFrame(frameSize) != oldFormatBytesPerFrame)
-      // The number of bytes per frame changed. The raw YUV data buffer also has to be updated.
       this->currentFrameRawData_frameIndex = -1;
-    this->setCacheInvalid();
+    this->setRawDataCacheInvalid();
     emit signalHandlerChanged(true, RECACHE_CLEAR);
   }
 }
@@ -3262,7 +3456,7 @@ void videoHandlerYUV::loadFrameForCaching(int frameIndex, QImage &frameToCache)
 // Load the raw YUV data for the given frame index into currentFrameRawData.
 bool videoHandlerYUV::loadRawYUVData(int frameIndex)
 {
-  if (currentFrameRawData_frameIndex == frameIndex && cacheValid)
+  if (currentFrameRawData_frameIndex == frameIndex && rawDataCacheValid)
     // Buffer already up to date
     return true;
 
@@ -3286,6 +3480,28 @@ bool videoHandlerYUV::loadRawYUVData(int frameIndex)
   requestDataMutex.unlock();
 
   DEBUG_YUV("videoHandlerYUV::loadRawYUVData " << frameIndex << " Done");
+  return true;
+}
+
+// Load raw YUV data for caching (background thread). Does not modify currentFrameRawData.
+bool videoHandlerYUV::loadRawYUVDataForCaching(int frameIndex, QByteArray &outData)
+{
+  if (!isFormatValid())
+    return false;
+
+  DEBUG_YUV("videoHandlerYUV::loadRawYUVDataForCaching " << frameIndex);
+
+  requestDataMutex.lock();
+  emit signalRequestRawData(frameIndex, true);
+  outData = rawData;
+  requestDataMutex.unlock();
+
+  if (frameIndex != rawData_frameIndex || outData.isEmpty())
+  {
+    DEBUG_YUV("videoHandlerYUV::loadRawYUVDataForCaching Loading failed");
+    return false;
+  }
+
   return true;
 }
 
