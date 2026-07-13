@@ -104,7 +104,4 @@ template <typename T, typename R> inline T clip(T val, Range<R> range)
   return (val < T(range.min)) ? T(range.min) : (val > T(range.max)) ? T(range.max) : val;
 }
 
-std::optional<unsigned> toUnsigned(const std::string_view text);
-std::optional<int>      toInt(const std::string_view text);
-
 } // namespace functions
