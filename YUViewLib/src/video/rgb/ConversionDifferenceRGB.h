@@ -55,7 +55,7 @@ struct MSE
 
   bool operator==(const MSE &other) const
   {
-    return std::tie(r, g, b, a) == std::tie(other.r, other.g, other.b, a);
+    return std::tie(r, g, b, a) == std::tie(other.r, other.g, other.b, other.a);
   }
 };
 
