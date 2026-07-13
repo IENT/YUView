@@ -39,6 +39,7 @@
 #include "commonMaps.h"
 
 #include <memory>
+#include <limits>
 
 namespace parser
 {
@@ -69,6 +70,12 @@ struct ParsingState
     bool                      isKeyframe{};
     std::optional<pairUint64> fileStartEndPos;
     std::map<std::string, unsigned int> sliceTypes;
+
+    // QP aggregation across all slices/PH of this AU.
+    int      qpMin{std::numeric_limits<int>::max()};
+    int      qpMax{std::numeric_limits<int>::min()};
+    long     qpSum{0};
+    unsigned qpCount{0};
   };
   CurrentAU currentAU{};
 

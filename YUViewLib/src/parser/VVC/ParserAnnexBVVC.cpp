@@ -87,6 +87,12 @@ createBitrateEntryForAU(ParsingState                                 &parsingSta
   auto sliceTypes = convertSliceCountsToString(parsingState.currentAU.sliceTypes);
   if (!sliceTypes.empty())
     entry.frameType = QString::fromStdString(sliceTypes);
+  if (parsingState.currentAU.qpCount > 0)
+  {
+    entry.qpMin = parsingState.currentAU.qpMin;
+    entry.qpMax = parsingState.currentAU.qpMax;
+    entry.qpAvg = int(parsingState.currentAU.qpSum / parsingState.currentAU.qpCount);
+  }
   return entry;
 }
 
@@ -405,6 +411,23 @@ ParserAnnexBVVC::parseAndAddNALUnit(int                                         
           newPictureHeader->picture_header_structure_instance;
       updatedParsingState.currentAU.poc = pictureHeader->globalPOC;
 
+      // If QP delta is signaled in PH, compute QP = 26 + pps_init_qp_minus26 + ph_qp_delta.
+      {
+        const auto ppsID = pictureHeader->ph_pic_parameter_set_id;
+        if (this->activeParameterSets.ppsMap.count(ppsID) > 0)
+        {
+          const auto &pps = this->activeParameterSets.ppsMap.at(ppsID);
+          if (pps->pps_qp_delta_info_in_ph_flag)
+          {
+            const auto qp = 26 + pps->pps_init_qp_minus26 + pictureHeader->ph_qp_delta;
+            updatedParsingState.currentAU.qpMin = std::min(updatedParsingState.currentAU.qpMin, qp);
+            updatedParsingState.currentAU.qpMax = std::max(updatedParsingState.currentAU.qpMax, qp);
+            updatedParsingState.currentAU.qpSum += qp;
+            updatedParsingState.currentAU.qpCount++;
+          }
+        }
+      }
+
       // 8.3.1
       auto TemporalId = nalVVC->header.nuh_temporal_id_plus1 - 1;
       if (TemporalId == 0 && !pictureHeader->ph_non_ref_pic_flag && nalType != NalType::RASL_NUT &&
@@ -482,6 +505,24 @@ ParserAnnexBVVC::parseAndAddNALUnit(int                                         
            nalType == NalType::CRA_NUT);
       updatedParsingState.currentAU.sliceTypes[std::string(SliceTypeMapper.getName(
           newSliceLayer->slice_header_instance.sh_slice_type))]++;
+      // If QP delta is signaled in SH (not in PH), compute QP = 26 + pps_init_qp_minus26 + sh_qp_delta.
+      if (updatedParsingState.currentPictureHeaderStructure)
+      {
+        const auto ppsID = updatedParsingState.currentPictureHeaderStructure->ph_pic_parameter_set_id;
+        if (this->activeParameterSets.ppsMap.count(ppsID) > 0)
+        {
+          const auto &pps = this->activeParameterSets.ppsMap.at(ppsID);
+          if (!pps->pps_qp_delta_info_in_ph_flag)
+          {
+            const auto qp = 26 + pps->pps_init_qp_minus26 +
+                            newSliceLayer->slice_header_instance.sh_qp_delta;
+            updatedParsingState.currentAU.qpMin = std::min(updatedParsingState.currentAU.qpMin, qp);
+            updatedParsingState.currentAU.qpMax = std::max(updatedParsingState.currentAU.qpMax, qp);
+            updatedParsingState.currentAU.qpSum += qp;
+            updatedParsingState.currentAU.qpCount++;
+          }
+        }
+      }
       if (updatedParsingState.currentAU.isKeyframe)
       {
         nalVVC->rawData = data;
@@ -565,6 +606,10 @@ ParserAnnexBVVC::parseAndAddNALUnit(int                                         
     updatedParsingState.currentAU.sizeBytes       = 0;
     updatedParsingState.currentAU.counter++;
     updatedParsingState.currentAU.sliceTypes.clear();
+    updatedParsingState.currentAU.qpMin   = std::numeric_limits<int>::max();
+    updatedParsingState.currentAU.qpMax   = std::numeric_limits<int>::min();
+    updatedParsingState.currentAU.qpSum   = 0;
+    updatedParsingState.currentAU.qpCount = 0;
   }
   else if (nalStartEndPosFile)
   {

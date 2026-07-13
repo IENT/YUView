@@ -34,6 +34,7 @@
 #include <logging/Macros.h>
 
 #include <cmath>
+#include <algorithm>
 
 #include "NalUnitAVC.h"
 #include "SEI/buffering_period.h"
@@ -222,6 +223,12 @@ ParserAnnexBAVC::parseAndAddNALUnit(int                                         
         entry.keyframe = this->currentAUAllSlicesIntra;
         entry.frameType =
             QString::fromStdString(convertSliceCountsToString(this->currentAUSliceTypes));
+        if (this->currentAUQpCount > 0)
+        {
+          entry.qpMin = this->currentAUQpMin;
+          entry.qpMax = this->currentAUQpMax;
+          entry.qpAvg = int(this->currentAUQpSum / this->currentAUQpCount);
+        }
         parseResult.bitrateEntry = entry;
       }
     }
@@ -377,6 +384,21 @@ ParserAnnexBAVC::parseAndAddNALUnit(int                                         
 
       currentSliceIntra = isRandomAccess;
       currentSliceType  = to_string(newSliceHeader->slice_type);
+
+      // Compute slice QP = 26 + pic_init_qp_minus26 + slice_qp_delta and aggregate per AU.
+      {
+        const auto ppsID = newSliceHeader->pic_parameter_set_id;
+        if (this->activeParameterSets.ppsMap.count(ppsID) > 0)
+        {
+          const auto &pps = this->activeParameterSets.ppsMap.at(ppsID);
+          const auto  sliceQp = 26 + pps->pic_init_qp_minus26 +
+                               newSliceHeader->slice_qp_delta;
+          this->currentAUQpMin = std::min(this->currentAUQpMin, sliceQp);
+          this->currentAUQpMax = std::max(this->currentAUQpMax, sliceQp);
+          this->currentAUQpSum += sliceQp;
+          this->currentAUQpCount++;
+        }
+      }
 
       DEBUG_AVC("ParserAnnexBAVC::parseAndAddNALUnit Parsed Slice ("
                 << NalTypeMapper.getName(nalAVC->header.nal_unit_type)
@@ -535,6 +557,12 @@ ParserAnnexBAVC::parseAndAddNALUnit(int                                         
         entry.keyframe = this->currentAUAllSlicesIntra;
         entry.frameType =
             QString::fromStdString(convertSliceCountsToString(this->currentAUSliceTypes));
+        if (this->currentAUQpCount > 0)
+        {
+          entry.qpMin = this->currentAUQpMin;
+          entry.qpMax = this->currentAUQpMax;
+          entry.qpAvg = int(this->currentAUQpSum / this->currentAUQpCount);
+        }
         parseResult.bitrateEntry = entry;
 
         if (this->lastBufferingPeriodSEI && this->lastPicTimingSEI)
@@ -562,6 +590,10 @@ ParserAnnexBAVC::parseAndAddNALUnit(int                                         
       this->currentAUAssociatedSPS.reset();
       this->currentAUPartitionASPS.reset();
       this->curFrameData.reset();
+      this->currentAUQpMin   = std::numeric_limits<int>::max();
+      this->currentAUQpMax   = std::numeric_limits<int>::min();
+      this->currentAUQpSum   = 0;
+      this->currentAUQpCount = 0;
     }
   }
   curFrameData =

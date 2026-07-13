@@ -44,6 +44,7 @@
 
 #include <queue>
 #include <vector>
+#include <limits>
 
 namespace parser
 {
@@ -134,6 +135,12 @@ protected:
   int                                 counterAU{0};
   bool                                currentAUAllSlicesIntra{true};
   std::map<std::string, unsigned int> currentAUSliceTypes;
+
+  // QP aggregation for the current AU (across all slices).
+  int      currentAUQpMin{std::numeric_limits<int>::max()};
+  int      currentAUQpMax{std::numeric_limits<int>::min()};
+  long     currentAUQpSum{0};
+  unsigned currentAUQpCount{0};
 
   avc::HRD hrd;
 };

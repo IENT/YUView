@@ -145,21 +145,31 @@ BitratePlotModel::getPointInfo(unsigned streamIndex, unsigned plotIndex, unsigne
         .arg(entry.pts)
         .arg(entry.dts)
         .arg(this->calculateAverageValue(streamIndex, pointIndex));
-  else
-    return QString("<h4>Stream %1</h4>"
-                   "<table width=\"100%\">"
-                   "<tr><td>PTS:</td><td align=\"right\">%2</td></tr>"
-                   "<tr><td>DTS:</td><td align=\"right\">%3</td></tr>"
-                   "<tr><td>Duration:</td><td align=\"right\">%4</td></tr>"
-                   "<tr><td>Bitrate:</td><td align=\"right\">%5</td></tr>"
-                   "<tr><td>Type:</td><td align=\"right\">%6</td></tr>"
-                   "</table>")
-        .arg(streamIndex)
-        .arg(entry.pts)
-        .arg(entry.dts)
-        .arg(entry.duration)
-        .arg(entry.bitrate)
-        .arg(entry.frameType);
+
+  // QP row: only shown when QP data is available (HEVC/AVC/VVC AnnexB).
+  QString qpRow;
+  if (entry.qpMin >= 0)
+    qpRow = QString("<tr><td>QP:</td><td align=\"right\">%1 / %2 / %3</td></tr>")
+                .arg(entry.qpMin)
+                .arg(entry.qpMax)
+                .arg(entry.qpAvg);
+
+  return QString("<h4>Stream %1</h4>"
+                 "<table width=\"100%\">"
+                 "<tr><td>PTS:</td><td align=\"right\">%2</td></tr>"
+                 "<tr><td>DTS:</td><td align=\"right\">%3</td></tr>"
+                 "<tr><td>Duration:</td><td align=\"right\">%4</td></tr>"
+                 "<tr><td>Bitrate:</td><td align=\"right\">%5</td></tr>"
+                 "<tr><td>Type:</td><td align=\"right\">%6</td></tr>"
+                 "%7"
+                 "</table>")
+      .arg(streamIndex)
+      .arg(entry.pts)
+      .arg(entry.dts)
+      .arg(entry.duration)
+      .arg(entry.bitrate)
+      .arg(entry.frameType)
+      .arg(qpRow);
 }
 
 std::optional<unsigned> BitratePlotModel::getReasonabelRangeToShowOnXAxisPer100Pixels() const

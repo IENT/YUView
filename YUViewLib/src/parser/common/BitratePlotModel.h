@@ -64,6 +64,10 @@ public:
     size_t  bitrate{0};
     bool    keyframe{false};
     QString frameType{};
+    // QP statistics per AU (aggregated from all slices). -1 means unavailable.
+    int qpMin{-1};
+    int qpMax{-1};
+    int qpAvg{-1};
   };
 
   void addBitratePoint(int streamIndex, BitrateEntry &entry);

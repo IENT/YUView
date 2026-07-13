@@ -525,6 +525,21 @@ ParserAnnexBHEVC::parseAndAddNALUnit(int                                        
       }
       currentSliceType = to_string(newSlice->sliceSegmentHeader.slice_type);
 
+      // Compute slice QP = 26 + init_qp_minus26 + slice_qp_delta and aggregate per AU.
+      {
+        const auto ppsID = newSlice->sliceSegmentHeader.slice_pic_parameter_set_id;
+        if (this->activeParameterSets.ppsMap.count(ppsID) > 0)
+        {
+          const auto &pps = this->activeParameterSets.ppsMap.at(ppsID);
+          const auto  sliceQp = 26 + pps->init_qp_minus26 +
+                               newSlice->sliceSegmentHeader.slice_qp_delta;
+          this->currentAUQpMin = std::min(this->currentAUQpMin, sliceQp);
+          this->currentAUQpMax = std::max(this->currentAUQpMax, sliceQp);
+          this->currentAUQpSum += sliceQp;
+          this->currentAUQpCount++;
+        }
+      }
+
       const auto pocDetail = formatNalPOCDetail(poc, nalHEVC->header.nuh_layer_id);
       specificDescription << pocDetail;
       parseResult.nalTypeName = "Slice" + pocDetail;
@@ -643,6 +658,12 @@ ParserAnnexBHEVC::parseAndAddNALUnit(int                                        
     entry.bitrate   = this->sizeCurrentAU;
     entry.keyframe  = this->currentAUAllSlicesIntra;
     entry.frameType = QString::fromStdString(convertSliceCountsToString(this->currentAUSliceTypes));
+    if (this->currentAUQpCount > 0)
+    {
+      entry.qpMin = this->currentAUQpMin;
+      entry.qpMax = this->currentAUQpMax;
+      entry.qpAvg = int(this->currentAUQpSum / this->currentAUQpCount);
+    }
     parseResult.bitrateEntry = entry;
 
     this->sizeCurrentAU = 0;
@@ -651,6 +672,10 @@ ParserAnnexBHEVC::parseAndAddNALUnit(int                                        
     this->firstAUInDecodingOrder  = false;
     this->currentAUSliceTypes.clear();
     this->currentAUAssociatedSPS.reset();
+    this->currentAUQpMin   = std::numeric_limits<int>::max();
+    this->currentAUQpMax   = std::numeric_limits<int>::min();
+    this->currentAUQpSum   = 0;
+    this->currentAUQpCount = 0;
   }
   if (this->lastFramePOC != this->curFramePOC)
     this->lastFramePOC = this->curFramePOC;
