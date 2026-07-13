@@ -45,6 +45,16 @@ enum class Axis
   Y
 };
 
+// Frame type for color-coding in bar plots. Unknown covers cases where
+// the parser only provides a keyframe flag (e.g. AVFormat/FFmpeg).
+enum class FrameType
+{
+  Unknown,
+  I,
+  P,
+  B
+};
+
 class PlotModel : public QObject
 {
   Q_OBJECT
@@ -88,8 +98,9 @@ public:
 
   struct Point
   {
-    double x, y, width;
-    bool   intra;
+    double    x, y, width;
+    bool      intra;
+    FrameType frameType{FrameType::Unknown};
   };
 
   virtual unsigned        getNrStreams() const                           = 0;

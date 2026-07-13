@@ -79,7 +79,7 @@ PlotModel::Point HRDPlotModel::getPlotPoint(unsigned streamIndex, unsigned, unsi
     return {};
 
   if (pointIndex == 0)
-    return {0, 0, 0, false};
+    return {0, 0, 0, false, FrameType::Unknown};
 
   QMutexLocker locker(&this->dataMutex);
 

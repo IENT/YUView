@@ -638,8 +638,20 @@ void PlotViewWidget::drawPlot(QPainter &painter) const
 
       if (plotParam.type == PlotModel::PlotType::Bar)
       {
-        auto setPainterColor = [&painter, &detailedPainting](bool isIntra, bool isHighlight) {
-          QColor color = isIntra ? QColor(200, 100, 0, 100) : QColor(0, 0, 200, 100);
+        // Color per frame type: I=orange, P=blue, B=green, Unknown=grey.
+        auto colorForFrameType = [](FrameType ft) {
+          switch (ft)
+          {
+            case FrameType::I:       return QColor(200, 100, 0, 100);
+            case FrameType::P:       return QColor(0, 0, 200, 100);
+            case FrameType::B:       return QColor(0, 150, 0, 100);
+            case FrameType::Unknown: return QColor(128, 128, 128, 100);
+          }
+          return QColor(128, 128, 128, 100);
+        };
+        auto setPainterColor = [&painter, &detailedPainting, &colorForFrameType](
+                                   FrameType ft, bool isHighlight) {
+          QColor color = colorForFrameType(ft);
           if (isHighlight)
             color = color.lighter(150);
           if (detailedPainting)
@@ -649,8 +661,8 @@ void PlotViewWidget::drawPlot(QPainter &painter) const
           painter.setBrush(color);
         };
 
-        QVector<QRectF> normalBars;
-        QVector<QRectF> intraBars;
+        // Group bars by frame type for batch drawing.
+        QVector<QRectF> barsPerType[4];
         for (unsigned int i = 0; i < plotParam.nrpoints; i++)
         {
           const auto value = model->getPlotPoint(streamIndex, plotIndex, i);
@@ -672,25 +684,23 @@ void PlotViewWidget::drawPlot(QPainter &painter) const
           const auto r = QRectF(barTopLeft, barBottomRight);
           if (isHoveredBar)
           {
-            setPainterColor(value.intra, true);
+            setPainterColor(value.frameType, true);
             painter.drawRect(r);
           }
           else
-          {
-            if (value.intra)
-              intraBars.append(r);
-            else
-              normalBars.append(r);
-          }
+            barsPerType[int(value.frameType)].append(r);
         }
 
-        DEBUG_PLOT("PlotViewWidget::drawPlot Start drawing " << normalBars.size() << " bars");
-        setPainterColor(false, false);
-        painter.drawRects(normalBars);
-
-        DEBUG_PLOT("PlotViewWidget::drawPlot Start drawing " << intraBars.size() << " intra bars");
-        setPainterColor(true, false);
-        painter.drawRects(intraBars);
+        const FrameType types[] = {FrameType::Unknown, FrameType::I, FrameType::P, FrameType::B};
+        for (auto ft : types)
+        {
+          const auto &bars = barsPerType[int(ft)];
+          if (bars.isEmpty())
+            continue;
+          DEBUG_PLOT("PlotViewWidget::drawPlot drawing" << bars.size() << "bars of type" << int(ft));
+          setPainterColor(ft, false);
+          painter.drawRects(bars);
+        }
       }
       else if (plotParam.type == PlotModel::PlotType::Line)
       {

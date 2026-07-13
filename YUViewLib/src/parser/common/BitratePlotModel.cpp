@@ -66,6 +66,26 @@ PlotModel::StreamParameter BitratePlotModel::getStreamParameter(unsigned streamI
   return {};
 }
 
+// Parse the first frame-type token from a string like "I", "P(2) B", "Keyframe".
+// Returns Unknown if the type cannot be determined.
+static FrameType parseFrameType(const QString &frameTypeStr, bool keyframe)
+{
+  // AVFormat only provides "Keyframe" / "Frame".
+  if (frameTypeStr.isEmpty())
+    return keyframe ? FrameType::I : FrameType::Unknown;
+  const auto first = frameTypeStr.at(0);
+  if (first == 'I' || first == 'i')
+    return FrameType::I;
+  if (first == 'P' || first == 'p')
+    return FrameType::P;
+  if (first == 'B' || first == 'b')
+    return FrameType::B;
+  // "Keyframe" starts with 'K'
+  if (first == 'K' || first == 'k')
+    return FrameType::I;
+  return keyframe ? FrameType::I : FrameType::Unknown;
+}
+
 PlotModel::Point
 BitratePlotModel::getPlotPoint(unsigned streamIndex, unsigned plotIndex, unsigned pointIndex) const
 {
@@ -76,19 +96,21 @@ BitratePlotModel::getPlotPoint(unsigned streamIndex, unsigned plotIndex, unsigne
 
   if (pointIndex < unsigned(this->dataPerStream[streamIndex].size()))
   {
+    const auto &entry = this->dataPerStream[streamIndex][pointIndex];
     PlotModel::Point point;
     if (this->sortMode == SortMode::DECODE_ORDER)
-      point.x = this->dataPerStream[streamIndex][pointIndex].dts;
+      point.x = entry.dts;
     else
-      point.x = this->dataPerStream[streamIndex][pointIndex].pts;
-    point.intra = this->dataPerStream[streamIndex][pointIndex].keyframe;
+      point.x = entry.pts;
+    point.intra     = entry.keyframe;
+    point.frameType = parseFrameType(entry.frameType, entry.keyframe);
 
     const auto isAveragePlot = (plotIndex == 1);
     if (isAveragePlot)
       point.y = this->calculateAverageValue(streamIndex, pointIndex);
     else
-      point.y = this->dataPerStream[streamIndex][pointIndex].bitrate;
-    point.width = this->dataPerStream[streamIndex][pointIndex].duration;
+      point.y = entry.bitrate;
+    point.width = entry.duration;
 
     return point;
   }
