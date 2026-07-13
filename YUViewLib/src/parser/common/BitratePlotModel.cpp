@@ -175,7 +175,12 @@ void BitratePlotModel::addBitratePoint(int streamIndex, BitrateEntry &entry)
 
   const auto newStream = !this->dataPerStream.contains(streamIndex);
 
-  if (this->dataPerStream[streamIndex].empty())
+  // rangeDts/rangePts are global (shared across all streams). Only initialize
+  // them from the very first point of the very first stream; for subsequent
+  // points (including the first point of a later stream) use min/max update.
+  const bool noDataYet = this->dataPerStream.empty() ||
+                         (this->dataPerStream.size() == 1 && this->dataPerStream.begin()->isEmpty());
+  if (noDataYet)
   {
     rangeDts.min = entry.dts;
     rangeDts.max = entry.dts;

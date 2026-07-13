@@ -168,7 +168,7 @@ private:
   UiCallback uiCallback;  // protected by mutex
 
   // Per-session byte counter – stop writing when this exceeds the cap.
-  static constexpr qint64 MAX_LOG_FILE_BYTES = 10LL * 1024 * 1024; // 10 MB
+  static constexpr qint64 MAX_LOG_FILE_BYTES = 50LL * 1024 * 1024; // 50 MB
   qint64                  bytesWritten{0};
 
   // How many log files to keep.
