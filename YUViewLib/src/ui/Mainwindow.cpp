@@ -505,13 +505,6 @@ void MainWindow::createMenusAndActions()
                           logPanel->raise();
                           logPanel->activateWindow();
                         });
-  addLambdaActionToMenu(helpMenu,
-                        "Open Log Folder",
-                        []()
-                        {
-                          QDesktopServices::openUrl(
-                              QUrl::fromLocalFile(Logger::instance().logDirectory()));
-                        });
   // "Show Last Crash Report" – only enabled when a pending report exists.
   {
     auto *crashAction = new QAction(tr("Show Last Crash Report"), helpMenu);

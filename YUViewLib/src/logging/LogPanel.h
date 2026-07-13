@@ -35,8 +35,9 @@
 #include <logging/Logger.h>
 
 #include <QCheckBox>
+#include <QComboBox>
 #include <QDialog>
-#include <QPlainTextEdit>
+#include <QTextEdit>
 
 // ---------------------------------------------------------------------------
 // LogPanel
@@ -48,10 +49,12 @@
 //   ┌─────────────────────────────────────────┐
 //   │  [QPlainTextEdit – scrolling log view]  │
 //   ├─────────────────────────────────────────┤
+//   │  Minimum level: [Debug ▼]               │
 //   │  Write to file:                         │
-//   │  [x] Application   [x] FFmpeg           │
+//   │    [x] Enable file logging              │
+//   │    [x] Application   [x] FFmpeg         │
 //   ├─────────────────────────────────────────┤
-//   │  [Clear]        [Open Log Folder]       │
+//   │  [Clear]  [Clean old logs]  [Open Folder]│
 //   └─────────────────────────────────────────┘
 // ---------------------------------------------------------------------------
 
@@ -68,11 +71,16 @@ public:
 
 private slots:
   void onCategoryCheckChanged(LogCategory cat, bool checked);
+  void onMinLevelChanged(int index);
+  void onFileWriteToggle(bool checked);
   void onClearClicked();
+  void onCleanOldLogsClicked();
   void onOpenLogFolderClicked();
 
 private:
-  QPlainTextEdit *logView{nullptr};
+  QTextEdit *logView{nullptr};
+  QComboBox      *levelCombo{nullptr};
+  QCheckBox      *fileWriteMasterCheck{nullptr};
   QCheckBox      *checkboxes[static_cast<int>(LogCategory::COUNT)]{};
 
   // Maximum number of lines kept in the view.

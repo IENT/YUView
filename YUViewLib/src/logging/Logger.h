@@ -65,6 +65,18 @@ enum class LogCategory
   COUNT
 };
 
+// Log severity levels (ordered lowest → highest).
+// Messages below the configured minimum level are discarded entirely
+// (neither written to file nor forwarded to the UI panel).
+enum class LogLevel
+{
+  Debug,
+  Info,
+  Warning,
+  Critical,
+  Fatal
+};
+
 class Logger
 {
 public:
@@ -84,6 +96,23 @@ public:
   // Per-category file-write enable / disable (default: all enabled).
   void setCategoryFileEnabled(LogCategory cat, bool enabled);
   bool isCategoryFileEnabled(LogCategory cat) const;
+
+  // Global file-write master switch (default: enabled).
+  // When disabled, no messages are written to the log file, regardless of
+  // per-category settings.  The UI panel still receives messages.
+  void setFileWriteEnabled(bool enabled);
+  bool isFileWriteEnabled() const;
+
+  // Minimum severity level filter (default: Debug = show everything).
+  // Messages with a level below this are discarded before reaching the
+  // file or the UI panel.
+  void setMinLevel(LogLevel level);
+  LogLevel minLevel() const;
+
+  // Manually trigger cleanup of old log files (keeps the most recent
+  // MAX_LOG_FILES).  Called automatically on init(); exposed publicly so
+  // the LogPanel can offer a "Clean old logs" button.
+  void cleanOldLogs();
 
   // Register / clear the UI callback (thread-safe).
   void setUiCallback(UiCallback cb);
@@ -108,6 +137,7 @@ private:
 
   static void qtMessageHandler(QtMsgType type, const QMessageLogContext &ctx, const QString &msg);
   static LogCategory detectCategory(const QString &msg);
+  static LogLevel    typeToLevel(QtMsgType type);
 
   void rotateOldLogs(const QString &logDir);
   void writeEntry(QtMsgType type, const QMessageLogContext &ctx, const QString &msg);
@@ -118,6 +148,8 @@ private:
   QString logFilePath;
 
   bool categoryFileEnabled[static_cast<int>(LogCategory::COUNT)]{true, true};
+  bool    fileWriteEnabled{true};
+  LogLevel currentMinLevel{LogLevel::Info};
 
   UiCallback uiCallback;  // protected by mutex
 

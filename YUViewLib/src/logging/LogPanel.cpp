@@ -36,6 +36,7 @@
 #include <QGroupBox>
 #include <QHBoxLayout>
 #include <QLabel>
+#include <QMessageBox>
 #include <QPushButton>
 #include <QScrollBar>
 #include <QUrl>
@@ -56,19 +57,64 @@ LogPanel::LogPanel(QWidget *parent) : QDialog(parent)
   mainLayout->setSpacing(6);
 
   // ---- Log view ----
-  logView = new QPlainTextEdit(this);
+  logView = new QTextEdit(this);
   logView->setReadOnly(true);
-  logView->setMaximumBlockCount(MAX_DISPLAY_LINES);
-  logView->setLineWrapMode(QPlainTextEdit::NoWrap);
+  logView->document()->setMaximumBlockCount(MAX_DISPLAY_LINES);
+  logView->setLineWrapMode(QTextEdit::NoWrap);
   QFont mono("Courier New", 9);
   mono.setStyleHint(QFont::Monospace);
   logView->setFont(mono);
   mainLayout->addWidget(logView, /*stretch=*/1);
 
+  // ---- Minimum level selector ----
+  auto *levelLayout = new QHBoxLayout;
+  levelLayout->setContentsMargins(0, 0, 0, 0);
+  auto *levelLabel = new QLabel(tr("Minimum level:"), this);
+  levelLayout->addWidget(levelLabel);
+
+  levelCombo = new QComboBox(this);
+  levelCombo->addItem(tr("Debug"), static_cast<int>(LogLevel::Debug));
+  levelCombo->addItem(tr("Info"), static_cast<int>(LogLevel::Info));
+  levelCombo->addItem(tr("Warning"), static_cast<int>(LogLevel::Warning));
+  levelCombo->addItem(tr("Critical"), static_cast<int>(LogLevel::Critical));
+  levelCombo->addItem(tr("Fatal"), static_cast<int>(LogLevel::Fatal));
+  levelCombo->setToolTip(tr("Messages below this level are discarded entirely "
+                            "(neither written to file nor shown here)."));
+  // Sync combo to current Logger level.
+  {
+    const auto cur = Logger::instance().minLevel();
+    for (int i = 0; i < levelCombo->count(); ++i)
+    {
+      if (levelCombo->itemData(i).toInt() == static_cast<int>(cur))
+      {
+        levelCombo->setCurrentIndex(i);
+        break;
+      }
+    }
+  }
+  connect(levelCombo, QOverload<int>::of(&QComboBox::currentIndexChanged),
+          this, &LogPanel::onMinLevelChanged);
+  levelLayout->addWidget(levelCombo);
+  levelLayout->addStretch();
+  mainLayout->addLayout(levelLayout);
+
   // ---- "Write to file" checkboxes ----
   auto *fileGroup  = new QGroupBox(tr("Write to file"), this);
-  auto *fileLayout = new QHBoxLayout(fileGroup);
+  auto *fileLayout = new QVBoxLayout(fileGroup);
   fileLayout->setContentsMargins(8, 4, 8, 4);
+
+  // Master switch
+  fileWriteMasterCheck = new QCheckBox(tr("Enable file logging"), fileGroup);
+  fileWriteMasterCheck->setChecked(Logger::instance().isFileWriteEnabled());
+  fileWriteMasterCheck->setToolTip(tr("Master switch for writing log messages to disk. "
+                                      "When off, no messages are written regardless of "
+                                      "the per-category checkboxes below."));
+  connect(fileWriteMasterCheck, &QCheckBox::toggled, this, &LogPanel::onFileWriteToggle);
+  fileLayout->addWidget(fileWriteMasterCheck);
+
+  // Per-category checkboxes (on a sub-row)
+  auto *catRow = new QHBoxLayout;
+  catRow->setContentsMargins(20, 0, 0, 0); // indent under master switch
 
   struct CatInfo
   {
@@ -91,15 +137,17 @@ LogPanel::LogPanel(QWidget *parent) : QDialog(parent)
     auto     *cb     = new QCheckBox(tr(info.label), fileGroup);
     cb->setChecked(Logger::instance().isCategoryFileEnabled(info.cat));
     cb->setToolTip(tr(info.tooltip));
+    cb->setEnabled(Logger::instance().isFileWriteEnabled());
     checkboxes[idx] = cb;
 
     connect(cb, &QCheckBox::stateChanged, this,
             [this, cat = info.cat](int state)
             { onCategoryCheckChanged(cat, state == Qt::Checked); });
 
-    fileLayout->addWidget(cb);
+    catRow->addWidget(cb);
   }
-  fileLayout->addStretch();
+  catRow->addStretch();
+  fileLayout->addLayout(catRow);
   mainLayout->addWidget(fileGroup);
 
   // ---- Buttons ----
@@ -110,6 +158,11 @@ LogPanel::LogPanel(QWidget *parent) : QDialog(parent)
   clearBtn->setToolTip(tr("Clear the log view (does not affect the log file)"));
   connect(clearBtn, &QPushButton::clicked, this, &LogPanel::onClearClicked);
   btnLayout->addWidget(clearBtn);
+
+  auto *cleanBtn = new QPushButton(tr("Clean old logs"), this);
+  cleanBtn->setToolTip(tr("Delete old log files, keeping only the most recent few."));
+  connect(cleanBtn, &QPushButton::clicked, this, &LogPanel::onCleanOldLogsClicked);
+  btnLayout->addWidget(cleanBtn);
 
   btnLayout->addStretch();
 
@@ -154,7 +207,7 @@ LogPanel::~LogPanel()
 
 void LogPanel::appendLine(const QString &line)
 {
-  logView->appendPlainText(line);
+  logView->append(line);
   // Auto-scroll to bottom.
   auto *sb = logView->verticalScrollBar();
   sb->setValue(sb->maximum());
@@ -169,9 +222,34 @@ void LogPanel::onCategoryCheckChanged(LogCategory cat, bool checked)
   Logger::instance().setCategoryFileEnabled(cat, checked);
 }
 
+void LogPanel::onMinLevelChanged(int index)
+{
+  const auto level = static_cast<LogLevel>(levelCombo->itemData(index).toInt());
+  Logger::instance().setMinLevel(level);
+}
+
+void LogPanel::onFileWriteToggle(bool checked)
+{
+  Logger::instance().setFileWriteEnabled(checked);
+  // Enable/disable the per-category checkboxes to reflect the master state.
+  for (auto *cb : checkboxes)
+  {
+    if (cb)
+      cb->setEnabled(checked);
+  }
+}
+
 void LogPanel::onClearClicked()
 {
   logView->clear();
+}
+
+void LogPanel::onCleanOldLogsClicked()
+{
+  Logger::instance().cleanOldLogs();
+  QMessageBox::information(this, tr("Clean old logs"),
+                           tr("Old log files have been cleaned up. "
+                              "Only the most recent log files are kept."));
 }
 
 void LogPanel::onOpenLogFolderClicked()

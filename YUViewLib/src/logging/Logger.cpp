@@ -207,6 +207,63 @@ bool Logger::isCategoryFileEnabled(LogCategory cat) const
 }
 
 // ---------------------------------------------------------------------------
+// Global file-write master switch
+// ---------------------------------------------------------------------------
+
+void Logger::setFileWriteEnabled(bool enabled)
+{
+  QMutexLocker lock(&mutex);
+  fileWriteEnabled = enabled;
+}
+
+bool Logger::isFileWriteEnabled() const
+{
+  return fileWriteEnabled;
+}
+
+// ---------------------------------------------------------------------------
+// Minimum severity level filter
+// ---------------------------------------------------------------------------
+
+void Logger::setMinLevel(LogLevel level)
+{
+  QMutexLocker lock(&mutex);
+  currentMinLevel = level;
+}
+
+LogLevel Logger::minLevel() const
+{
+  return currentMinLevel;
+}
+
+// ---------------------------------------------------------------------------
+// cleanOldLogs – public wrapper around rotateOldLogs
+// ---------------------------------------------------------------------------
+
+void Logger::cleanOldLogs()
+{
+  QMutexLocker lock(&mutex);
+  rotateOldLogs(logDirectory());
+}
+
+// ---------------------------------------------------------------------------
+// typeToLevel – map Qt message type to our LogLevel enum
+// ---------------------------------------------------------------------------
+
+LogLevel Logger::typeToLevel(QtMsgType type)
+{
+  switch (type)
+  {
+    case QtDebugMsg:    return LogLevel::Debug;
+    case QtInfoMsg:     return LogLevel::Info;
+    case QtWarningMsg:  return LogLevel::Warning;
+    case QtCriticalMsg: return LogLevel::Critical;
+    case QtFatalMsg:    return LogLevel::Fatal;
+  }
+  return LogLevel::Debug;
+}
+
+// ---------------------------------------------------------------------------
 // UI callback
 // ---------------------------------------------------------------------------
 
@@ -258,6 +315,11 @@ void Logger::writeEntry(QtMsgType type, const QMessageLogContext &ctx, const QSt
       return;
   }
 
+  // Drop messages below the configured minimum level (before any formatting
+  // or I/O – cheapest possible rejection).
+  if (typeToLevel(type) < currentMinLevel)
+    return;
+
   const LogCategory cat = detectCategory(msg);
 
   const char *levelStr = "DEBUG   ";
@@ -282,7 +344,7 @@ void Logger::writeEntry(QtMsgType type, const QMessageLogContext &ctx, const QSt
 
   const QString ts   = QDateTime::currentDateTime().toString("yyyy-MM-dd HH:mm:ss.zzz");
   const QString tid  = QString("0x%1").arg(reinterpret_cast<quintptr>(QThread::currentThreadId()),
-                                           QT_POINTER_SIZE * 2, 16, QChar('0'));
+                                           8, 16, QChar('0'));
   const QString line = QString("[%1] [%2] [%3]%4 %5").arg(ts, levelStr, tid, location, msg);
 
   QMutexLocker lock(&mutex);
@@ -291,8 +353,9 @@ void Logger::writeEntry(QtMsgType type, const QMessageLogContext &ctx, const QSt
   if (uiCallback)
     uiCallback(cat, line);
 
-  // ---- File write (gated by per-category enable + size cap) ----
+  // ---- File write (gated by master switch + per-category enable + size cap) ----
   if (logFile.isOpen()
+      && fileWriteEnabled
       && bytesWritten < MAX_LOG_FILE_BYTES
       && categoryFileEnabled[static_cast<int>(cat)])
   {
