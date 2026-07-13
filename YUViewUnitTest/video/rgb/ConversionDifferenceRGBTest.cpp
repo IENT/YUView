@@ -56,8 +56,8 @@ FrameAandB createTestFrameData(const int bitDepth)
   std::vector<rgba_t> testValuesA;
   std::vector<rgba_t> testValuesB;
 
-  const auto maxValue = (1 << bitDepth) - 1;
-  const auto midValue = (1 << (bitDepth - 1));
+  const auto maxValue = bitDepth == 32 ? INT_MAX : (1 << bitDepth) - 1;
+  const auto midValue = bitDepth == 32 ? (INT_MAX >> 1) : (1 << (bitDepth - 1));
 
   // Add some special values that we definitely want to test
   testValuesA.push_back(rgba_t({0, maxValue, maxValue, 0}));
@@ -169,9 +169,9 @@ ExpectedImageAndMse generateExpectedImageAndMse(const FrameAandB &testFrames,
       outputPixel = {
         .r = diff.r != 0 ? 255 : 0, .g = diff.g != 0 ? 255 : 0, .b = diff.b != 0 ? 255 : 0};
     else
-      outputPixel = {.r = functions::clip(128 + diff.r * amplificationFactor, 0, 255),
-                     .g = functions::clip(128 + diff.g * amplificationFactor, 0, 255),
-                     .b = functions::clip(128 + diff.b * amplificationFactor, 0, 255)};
+      outputPixel = {.r = static_cast<int>(functions::clip(128 + static_cast<int64_t>(diff.r) * amplificationFactor, 0LL, 255LL)),
+                     .g = static_cast<int>(functions::clip(128 + static_cast<int64_t>(diff.g) * amplificationFactor, 0LL, 255LL)),
+                     .b = static_cast<int>(functions::clip(128 + static_cast<int64_t>(diff.b) * amplificationFactor, 0LL, 255LL))};
 
     const auto x = i % TEST_FRAME_SIZE.width;
     const auto y = i / TEST_FRAME_SIZE.width;

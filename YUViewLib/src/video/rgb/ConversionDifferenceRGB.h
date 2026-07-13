@@ -65,10 +65,10 @@ class SSE
 public:
   void addSample(const rgba_t &delta)
   {
-    this->r += delta.r * delta.r;
-    this->g += delta.g * delta.g;
-    this->b += delta.b * delta.b;
-    this->a += delta.a * delta.a;
+    this->r += static_cast<int64_t>(delta.r) * delta.r;
+    this->g += static_cast<int64_t>(delta.g) * delta.g;
+    this->b += static_cast<int64_t>(delta.b) * delta.b;
+    this->a += static_cast<int64_t>(delta.a) * delta.a;
     ++this->nrSamples;
   }
 
@@ -83,11 +83,11 @@ public:
   }
 
 private:
-  int64_t r{};
-  int64_t g{};
-  int64_t b{};
-  int64_t a{};
-  int64_t nrSamples{};
+  uint64_t r{};
+  uint64_t g{};
+  uint64_t b{};
+  uint64_t a{};
+  uint64_t nrSamples{};
 };
 
 std::pair<QImage, MSE> calculateDifferenceAndMSE(const InputFrameParameters &frame1,
