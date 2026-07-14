@@ -34,11 +34,13 @@
 
 #include <common/EnumMapper.h>
 #include <optional>
+
 #include <video/videoHandler.h>
 #include <video/yuv/PixelFormatYUV.h>
 
 #include "ui_videoHandlerYUV.h"
 
+#include <atomic>
 #include <map>
 
 namespace video::yuv
@@ -217,12 +219,8 @@ protected:
 
   virtual yuv_t getPixelValue(const QPoint &pixelPos) const;
 
-  // Load the given frame and return it for caching. The current buffers (currentFrameRawYUVData and
-  // currentFrame) will not be modified.
-  virtual void loadFrameForCaching(int frameIndex, QImage &frameToCache) override;
-
 private:
-  // Load the raw YUV data for the given frame index into currentFrameRawYUVData.
+  // Load the raw YUV data for the given frame index into currentFrameRawData.
   // Return false is loading failed.
   bool loadRawYUVData(int frameIndex);
 
@@ -254,10 +252,13 @@ private:
   // only invalidates currentImage (one re-conversion), not the whole cache.
   QMutex mutable        rawDataCacheAccess;
   QMap<int, QByteArray> rawDataCache;
-  bool                  rawDataCacheValid{true};
+  // Atomic: read without lock in cacheFrame() (fast path) and written from
+  // setRawDataCacheInvalid() without lock. The cacheFrame() insert path
+  // re-checks under the mutex to close the race window.
+  std::atomic<bool>     rawDataCacheValid{true};
 
   // Set the raw data cache to invalid (in-flight threads will not insert).
-  void setRawDataCacheInvalid() { rawDataCacheValid = false; }
+  void setRawDataCacheInvalid() { rawDataCacheValid.store(false, std::memory_order_release); }
 
   // Load raw YUV data for caching into the rawDataCache. Returns true on success.
   bool loadRawYUVDataForCaching(int frameIndex, QByteArray &outData);

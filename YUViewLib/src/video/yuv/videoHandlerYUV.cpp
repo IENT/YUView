@@ -2406,7 +2406,7 @@ void videoHandlerYUV::setFrameSize(Size size)
     // Frame size changed: raw YUV data layout is different, clear the raw cache.
     QMutexLocker lock(&rawDataCacheAccess);
     rawDataCache.clear();
-    rawDataCacheValid = true;
+    rawDataCacheValid.store(true, std::memory_order_release);
   }
   videoHandler::setFrameSize(size);
 }
@@ -2415,7 +2415,7 @@ void videoHandlerYUV::cacheFrame(int frameIdx, bool testMode)
 {
   DEBUG_YUV("videoHandlerYUV::cacheFrame " << frameIdx << (testMode ? " testMode" : ""));
 
-  if (rawDataCacheValid && isInCache(frameIdx) && !testMode)
+  if (rawDataCacheValid.load(std::memory_order_acquire) && isInCache(frameIdx) && !testMode)
   {
     DEBUG_YUV("videoHandlerYUV::cacheFrame frame " << frameIdx << " already in raw cache - returning");
     return;
@@ -2435,7 +2435,7 @@ void videoHandlerYUV::cacheFrame(int frameIdx, bool testMode)
   // Put the raw YUV data into the cache
   DEBUG_YUV("videoHandlerYUV::cacheFrame insert frame " << frameIdx << " into raw cache");
   QMutexLocker lock(&rawDataCacheAccess);
-  if (rawDataCacheValid)
+  if (rawDataCacheValid.load(std::memory_order_acquire))
     rawDataCache.insert(frameIdx, rawYUVData);
 }
 
@@ -2469,7 +2469,7 @@ void videoHandlerYUV::removeAllFrameFromCache()
   DEBUG_YUV("videoHandlerYUV::removeAllFrameFromCache");
   QMutexLocker lock(&rawDataCacheAccess);
   rawDataCache.clear();
-  rawDataCacheValid = true;
+  rawDataCacheValid.store(true, std::memory_order_release);
 }
 
 void videoHandlerYUV::invalidateAllBuffers()
@@ -2486,7 +2486,7 @@ void videoHandlerYUV::invalidateAllBuffers()
 
   QMutexLocker lock(&rawDataCacheAccess);
   rawDataCache.clear();
-  rawDataCacheValid = true;
+  rawDataCacheValid.store(true, std::memory_order_release);
 }
 
 ItemLoadingState videoHandlerYUV::needsLoading(int frameIdx, bool loadRawValues)
@@ -2503,7 +2503,7 @@ ItemLoadingState videoHandlerYUV::needsLoading(int frameIdx, bool loadRawValues)
   {
     if (doubleBufferImageFrameIndex == frameIdx + 1)
       return ItemLoadingState::LoadingNotNeeded;
-    else if (rawDataCacheValid && isInCache(frameIdx + 1))
+    else if (rawDataCacheValid.load(std::memory_order_acquire) && isInCache(frameIdx + 1))
       return ItemLoadingState::LoadingNotNeeded;
     else
       return ItemLoadingState::LoadingNeededDoubleBuffer;
@@ -2512,18 +2512,18 @@ ItemLoadingState videoHandlerYUV::needsLoading(int frameIdx, bool loadRawValues)
   // Check the double buffer
   if (doubleBufferImageFrameIndex == frameIdx)
   {
-    if (rawDataCacheValid && isInCache(frameIdx + 1))
+    if (rawDataCacheValid.load(std::memory_order_acquire) && isInCache(frameIdx + 1))
       return ItemLoadingState::LoadingNotNeeded;
     else
       return ItemLoadingState::LoadingNeededDoubleBuffer;
   }
 
   // Check the raw data cache
-  if (rawDataCacheValid && isInCache(frameIdx))
+  if (rawDataCacheValid.load(std::memory_order_acquire) && isInCache(frameIdx))
   {
     if (doubleBufferImageFrameIndex == frameIdx + 1)
       return ItemLoadingState::LoadingNotNeeded;
-    else if (rawDataCacheValid && isInCache(frameIdx + 1))
+    else if (rawDataCacheValid.load(std::memory_order_acquire) && isInCache(frameIdx + 1))
       return ItemLoadingState::LoadingNotNeeded;
     else
       return ItemLoadingState::LoadingNeededDoubleBuffer;
@@ -2578,7 +2578,7 @@ void videoHandlerYUV::drawFrame(QPainter *painter,
       QByteArray rawYUVData;
       {
         QMutexLocker lock(&rawDataCacheAccess);
-        if (rawDataCacheValid && rawDataCache.contains(frameIdx))
+        if (rawDataCacheValid.load(std::memory_order_acquire) && rawDataCache.contains(frameIdx))
           rawYUVData = rawDataCache[frameIdx];
       }
 
@@ -3417,52 +3417,16 @@ void videoHandlerYUV::loadFrame(int frameIndex, bool loadToDoubleBuffer)
   }
 }
 
-void videoHandlerYUV::loadFrameForCaching(int frameIndex, QImage &frameToCache)
-{
-  if (!isFormatValid())
-    return;
-
-  // Get the YUV format and the size here, so that the caching process does not crash if this
-  // changes.
-  const auto yuvFormat          = this->srcPixelFormat;
-  const auto curFrameSize       = this->frameSize;
-  const auto conversionSettings = this->conversionSettings;
-
-  requestDataMutex.lock();
-  emit       signalRequestRawData(frameIndex, true);
-  QByteArray tmpBufferRawYUVDataCaching = rawData;
-  requestDataMutex.unlock();
-
-  if (frameIndex != rawData_frameIndex)
-  {
-    // Loading failed
-    DEBUG_YUV("videoHandlerYUV::loadFrameForCaching Loading failed");
-    return;
-  }
-
-  // Convert YUV to image. This can then be cached.
-  try
-  {
-    convertYUVToImage(
-      tmpBufferRawYUVDataCaching, frameToCache, yuvFormat, curFrameSize, conversionSettings);
-  }
-  catch (const std::bad_alloc &)
-  {
-    qWarning() << "Out of memory in loadFrameForCaching convertYUVToImage.";
-    frameToCache = QImage();
-  }
-}
-
 // Load the raw YUV data for the given frame index into currentFrameRawData.
 bool videoHandlerYUV::loadRawYUVData(int frameIndex)
 {
-  if (currentFrameRawData_frameIndex == frameIndex && rawDataCacheValid)
+  if (currentFrameRawData_frameIndex == frameIndex && rawDataCacheValid.load(std::memory_order_acquire))
     // Buffer already up to date
     return true;
 
   DEBUG_YUV("videoHandlerYUV::loadRawYUVData " << frameIndex);
 
-  // The function loadFrameForCaching also uses the signalRequesRawYUVData to request raw data.
+  // The raw data loading path uses signalRequestRawData to request raw data.
   // However, only one thread can use this at a time.
   requestDataMutex.lock();
   emit signalRequestRawData(frameIndex, false);
