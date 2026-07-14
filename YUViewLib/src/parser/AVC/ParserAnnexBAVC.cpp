@@ -401,7 +401,7 @@ ParserAnnexBAVC::parseAndAddNALUnit(int                                         
       }
 
       DEBUG_AVC("ParserAnnexBAVC::parseAndAddNALUnit Parsed Slice ("
-                << NalTypeMapper.getName(nalAVC->header.nal_unit_type)
+                << QString::fromStdString(std::string(NalTypeMapper.getName(nalAVC->header.nal_unit_type)))
                 << ") POC " << newSliceHeader->globalPOC);
       parseResult.nalTypeName = "Slice(POC " + std::to_string(newSliceHeader->globalPOC) + ") ";
     }
