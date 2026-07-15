@@ -162,6 +162,10 @@ protected:
   // TODO: Could we somehow make shure that caching is always performed in display order?
   QMutex cachingMutex;
 
+  // Protect the loadingDecoder from being deleted/mutated (e.g. when the decoder engine is
+  // switched in the properties panel) while an interactive loading thread is using it.
+  QMutex loadingMutex;
+
   stats::StatisticUIHandler statisticsUIHandler;
   stats::StatisticsData     statisticsData;
 

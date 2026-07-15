@@ -34,6 +34,7 @@
 #include <logging/Macros.h>
 
 #include <QInputDialog>
+#include <QMutexLocker>
 #include <QPlainTextEdit>
 #include <QThread>
 
@@ -597,6 +598,8 @@ void playlistItemCompressedVideo::loadRawData(int frameIdx, bool caching)
 {
   if (caching && !this->cachingEnabled)
     return;
+  if (!caching && !this->loadingDecoder)
+    return;
   if (!caching && this->loadingDecoder->state() == decoder::DecoderState::Error)
   {
     if (frameIdx < this->currentFrameIdx[0])
@@ -607,7 +610,8 @@ void playlistItemCompressedVideo::loadRawData(int frameIdx, bool caching)
     else
       return;
   }
-  if (caching && this->cachingDecoder->state() == decoder::DecoderState::Error)
+  if (caching &&
+      (!this->cachingDecoder || this->cachingDecoder->state() == decoder::DecoderState::Error))
     return;
 
   DEBUG_COMPRESSED("playlistItemCompressedVideo::loadRawData " << frameIdx
@@ -818,7 +822,7 @@ void playlistItemCompressedVideo::loadRawData(int frameIdx, bool caching)
     // reload when the frame number changes.
     this->video->rawData_frameIndex = frameIdx;
   }
-  else if (this->loadingDecoder->state() == decoder::DecoderState::Error)
+  else if (this->loadingDecoder && this->loadingDecoder->state() == decoder::DecoderState::Error)
   {
     this->infoText = "There was an error in the decoder: \n";
     this->infoText += this->loadingDecoder->decoderErrorString();
@@ -1098,7 +1102,7 @@ void playlistItemCompressedVideo::loadStatistics(int frameIdx)
   DEBUG_COMPRESSED("playlistItemCompressedVideo::loadStatisticToCache Request statistics for frame "
                    << frameIdx);
 
-  if (!this->loadingDecoder->statisticsSupported())
+  if (!this->loadingDecoder || !this->loadingDecoder->statisticsSupported())
     return;
   if (!this->loadingDecoder->statisticsEnabled())
   {
@@ -1132,7 +1136,8 @@ ValuePairListSets playlistItemCompressedVideo::getPixelValues(const QPoint &pixe
   ValuePairListSets newSet;
 
   newSet.append("YUV", this->video->getPixelValues(pixelPos, frameIdx));
-  if (this->loadingDecoder->statisticsSupported() && this->loadingDecoder->statisticsEnabled())
+  if (this->loadingDecoder && this->loadingDecoder->statisticsSupported() &&
+      this->loadingDecoder->statisticsEnabled())
     newSet.append("Stats", this->statisticsData.getValuesAt(pixelPos));
 
   return newSet;
@@ -1237,6 +1242,10 @@ void playlistItemCompressedVideo::loadFrame(int  frameIdx,
   // The current thread must never be the main thread but one of the interactive threads.
   Q_ASSERT(QThread::currentThread() != QApplication::instance()->thread());
 
+  // Protect the loadingDecoder from being deleted/mutated (e.g. decoder engine switch) while we
+  // are using it.
+  QMutexLocker loadingLocker(&this->loadingMutex);
+
   auto stateYUV  = this->video->needsLoading(frameIdx, loadRawdata);
   auto stateStat = this->statisticsData.needsLoading(frameIdx);
 
@@ -1285,14 +1294,20 @@ void playlistItemCompressedVideo::displaySignalComboBoxChanged(int idx)
 {
   if (this->loadingDecoder && idx != this->loadingDecoder->getDecodeSignal())
   {
+    // Wait for any in-flight caching/loading job to finish before mutating the decoders.
+    QMutexLocker cachingLocker(&this->cachingMutex);
+    QMutexLocker loadingLocker(&this->loadingMutex);
+
     bool resetDecoder = false;
     this->loadingDecoder->setDecodeSignal(idx, resetDecoder);
-    this->cachingDecoder->setDecodeSignal(idx, resetDecoder);
+    if (this->cachingDecoder)
+      this->cachingDecoder->setDecodeSignal(idx, resetDecoder);
 
     if (resetDecoder)
     {
       this->loadingDecoder->resetDecoder();
-      this->cachingDecoder->resetDecoder();
+      if (this->cachingDecoder)
+        this->cachingDecoder->resetDecoder();
 
       // Reset the decoded frame indices so that decoding of the current frame is triggered
       this->currentFrameIdx[0] = -1;
@@ -1314,6 +1329,10 @@ void playlistItemCompressedVideo::decoderComboxBoxChanged(int idx)
   auto e = this->possibleDecoders.at(idx);
   if (e != this->decoderEngine)
   {
+    // Wait for any in-flight caching/loading job to finish before deleting the decoders.
+    QMutexLocker cachingLocker(&this->cachingMutex);
+    QMutexLocker loadingLocker(&this->loadingMutex);
+
     // Allocate a new decoder of the new type
     this->decoderEngine = e;
     this->allocateDecoder();
