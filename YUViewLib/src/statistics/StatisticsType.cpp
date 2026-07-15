@@ -76,6 +76,7 @@ std::vector<StatisticsType::ArrowHead> AllArrowHeads = {StatisticsType::ArrowHea
 StatisticsType::StatisticsType(int typeID, const QString &typeName)
     : typeID(typeID), typeName(typeName)
 {
+  this->gridStyle.color = Color(255, 255, 255);
 }
 
 StatisticsType::StatisticsType(int typeID, const QString &typeName, int vectorScaling)

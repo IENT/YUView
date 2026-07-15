@@ -184,17 +184,17 @@ TEST(StatisticsFileCSV, testCSVFileParsing)
   const auto valueColorRangeMin = std::vector<int>({-1, -1, -1, -1, 0, 0, 0, 0, 0, 0, 0, 0});
   const auto valueColorRangeMax = std::vector<int>({-1, -1, -1, -1, 1, 1, 5, 5, 1, 3, 3, 1});
   const auto valueGridColors    = std::vector<std::string>({"",
-                                                            "",
-                                                            "",
-                                                            "",
-                                                            "#ffffff",
-                                                            "#ffffff",
-                                                            "#ffffff",
-                                                            "#ffffff",
-                                                            "#000000",
-                                                            "#ffffff",
-                                                            "#ffffff",
-                                                            "#000000"});
+                                                             "",
+                                                             "",
+                                                             "",
+                                                             "#ffffff",
+                                                             "#ffffff",
+                                                             "#ffffff",
+                                                             "#ffffff",
+                                                             "#ffffff",
+                                                             "#ffffff",
+                                                             "#ffffff",
+                                                             "#ffffff"});
 
   for (int i = 0; i < 12; i++)
   {

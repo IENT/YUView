@@ -107,7 +107,7 @@ TEST(StatisticsFileCSV, testCSVFileParsing)
   EXPECT_EQ(types[0].colorMapper.valueRange.min, 0);
   EXPECT_EQ(types[0].colorMapper.valueRange.max, 4);
   EXPECT_EQ(types[0].colorMapper.predefinedType, stats::color::PredefinedType::Jet);
-  EXPECT_EQ(types[0].gridStyle.color.toHex(), std::string("#000000"));
+  EXPECT_EQ(types[0].gridStyle.color.toHex(), std::string("#ffffff"));
 
   EXPECT_EQ(types[1].hasVectorData, true);
   EXPECT_EQ(types[1].hasValueData, false);
