@@ -2385,7 +2385,7 @@ std::vector<PixelFormatYUV> videoHandlerYUV::formatPresetList = {
 videoHandlerYUV::videoHandlerYUV() : videoHandler()
 {
   // Set the default YUV transformation parameters.
-  this->conversionSettings.mathParameters[Component::Luma]   = MathParameters(1, 125, false);
+  this->conversionSettings.mathParameters[Component::Luma]   = MathParameters(1, 0, false);
   this->conversionSettings.mathParameters[Component::Chroma] = MathParameters(1, 128, false);
 
   // If we know nothing about the YUV format, assume YUV 4:2:0 8 bit planar by default.
@@ -2597,8 +2597,7 @@ void videoHandlerYUV::setSrcPixelFormat(PixelFormatYUV format, bool emitSignal)
   // Update the math parameter offset (the default offset depends on the bit depth and the range)
   int        shift     = format.getBitsPerSample() - 8;
   const bool fullRange = isFullRange(this->conversionSettings.colorConversion);
-  this->conversionSettings.mathParameters[Component::Luma].offset   = (fullRange ? 128 : 125)
-                                                                      << shift;
+  this->conversionSettings.mathParameters[Component::Luma].offset   = 0 << shift;
   this->conversionSettings.mathParameters[Component::Chroma].offset = 128 << shift;
 
   if (ui.created())
@@ -3765,7 +3764,7 @@ QImage videoHandlerYUV::calculateDifference(FrameHandler    *item2,
   {
     // Get the format of the tmpDiffYUV buffer and convert it to RGB
     ConversionSettings conversionSettings;
-    conversionSettings.mathParameters[Component::Luma]   = MathParameters(1, 125, false);
+    conversionSettings.mathParameters[Component::Luma]   = MathParameters(1, 0, false);
     conversionSettings.mathParameters[Component::Chroma] = MathParameters(1, 128, false);
     convertYUVPlanarToRGB(
       diffYUV, outputImage.bits(), Size(w_out, h_out), tmpDiffYUVFormat, conversionSettings);
