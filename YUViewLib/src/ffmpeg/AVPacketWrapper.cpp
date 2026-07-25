@@ -163,25 +163,28 @@ AVPacketWrapper::AVPacketWrapper(LibraryVersion libVersion, AVPacket *packet)
 
 void AVPacketWrapper::clear()
 {
-  this->pkt    = nullptr;
-  this->libVer = {};
+  this->pkt        = nullptr;
+  this->libVer     = {};
+  this->packetData = {};
 }
 
-void AVPacketWrapper::setData(QByteArray &set_data)
+void AVPacketWrapper::setData(const QByteArray &set_data)
 {
+  this->packetData = set_data;
+
   if (this->libVer.avcodec.major == 56)
   {
     auto p  = reinterpret_cast<AVPacket_56 *>(this->pkt);
-    p->data = (uint8_t *)set_data.data();
-    p->size = set_data.size();
+    p->data = reinterpret_cast<uint8_t *>(this->packetData.data());
+    p->size = this->packetData.size();
     data    = p->data;
     size    = p->size;
   }
   else if (this->libVer.avcodec.major == 57 || this->libVer.avcodec.major == 58)
   {
     auto p  = reinterpret_cast<AVPacket_57_58 *>(this->pkt);
-    p->data = (uint8_t *)set_data.data();
-    p->size = set_data.size();
+    p->data = reinterpret_cast<uint8_t *>(this->packetData.data());
+    p->size = this->packetData.size();
     data    = p->data;
     size    = p->size;
   }
@@ -190,8 +193,8 @@ void AVPacketWrapper::setData(QByteArray &set_data)
            this->libVer.avcodec.major == 61)
   {
     auto p  = reinterpret_cast<AVPacket_59_60_61 *>(this->pkt);
-    p->data = (uint8_t *)set_data.data();
-    p->size = set_data.size();
+    p->data = reinterpret_cast<uint8_t *>(this->packetData.data());
+    p->size = this->packetData.size();
     data    = p->data;
     size    = p->size;
   }

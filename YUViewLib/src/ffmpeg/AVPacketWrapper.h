@@ -123,7 +123,7 @@ public:
 
   void clear();
 
-  void setData(QByteArray &set_data);
+  void setData(const QByteArray &set_data);
   void setPTS(int64_t pts);
   void setDTS(int64_t dts);
 
@@ -168,6 +168,7 @@ private:
 
   AVPacket *       pkt{};
   LibraryVersion   libVer{};
+  QByteArray       packetData{};
   PacketDataFormat packetFormat{PacketDataFormat::Unknown};
 };
 
