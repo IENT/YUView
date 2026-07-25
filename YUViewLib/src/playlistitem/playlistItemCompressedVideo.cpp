@@ -1307,8 +1307,10 @@ void playlistItemCompressedVideo::displaySignalComboBoxChanged(int idx)
     // A different display signal was chosen. Invalidate the cache and signal that we will need a
     // redraw.
     auto yuvVideo = dynamic_cast<video::yuv::videoHandlerYUV *>(this->video.get());
-    yuvVideo->showPixelValuesAsDiff = this->loadingDecoder->isSignalDifference(idx);
-    yuvVideo->invalidateAllBuffers();
+    if (yuvVideo)
+      yuvVideo->showPixelValuesAsDiff = this->loadingDecoder->isSignalDifference(idx);
+    if (this->video)
+      this->video->invalidateAllBuffers();
 
     emit SignalItemChanged(true, RECACHE_CLEAR);
   }
@@ -1326,9 +1328,10 @@ void playlistItemCompressedVideo::decoderComboxBoxChanged(int idx)
     // A different display signal was chosen. Invalidate the cache and signal that we will need a
     // redraw.
     auto yuvVideo = dynamic_cast<video::yuv::videoHandlerYUV *>(this->video.get());
-    if (this->loadingDecoder)
+    if (yuvVideo && this->loadingDecoder)
       yuvVideo->showPixelValuesAsDiff = this->loadingDecoder->isSignalDifference(idx);
-    yuvVideo->invalidateAllBuffers();
+    if (this->video)
+      this->video->invalidateAllBuffers();
 
     // Reset the decoded frame indices so that decoding of the current frame is triggered
     this->currentFrameIdx[0] = -1;
