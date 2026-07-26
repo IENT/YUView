@@ -306,7 +306,6 @@ INSTANTIATE_TEST_SUITE_P(
 
       ),
 
-
   getTestName);
 
 // TEST(StatisticsFileCSVTest,
@@ -381,9 +380,6 @@ TEST(StatisticsFileCSVTest, loadingFromTestData1_testStateBeforeLoadingData_Shou
   statFile.readFrameAndTypePositionsFromFile(std::ref(breakAtomic));
 }
 
-// Create another test file that loads some simple data (2 types) and some few data points
-// and have it sorted by POC and sorted by type and check that both work
-
 TEST(StatisticsFileCSVTest, loadingFromTestData1_ShouldLoadTypesCorrectly)
 {
   yuviewTest::TemporaryFile csvFile(getCSVTestData1());
@@ -453,7 +449,7 @@ TEST(StatisticsFileCSVTest, loadingFromTestData1_ShouldLoadTypesCorrectly)
             StatisticsFileBase::ParsingInfo::FileSorting::SortedByType);
 }
 
-TEST(StatisticsFileCSVTest, testCSVFileParsingRealFile)
+TEST(StatisticsFileCSVTest, testCSVFileParsingRealFile_shouldLoadDataCorrectly)
 {
   yuviewTest::TemporaryFile csvFile(getCSVTestData2());
 
@@ -461,6 +457,10 @@ TEST(StatisticsFileCSVTest, testCSVFileParsingRealFile)
   stats::StatisticsFileCSV statFile(csvFile.getFilePathString(), statData);
 
   EXPECT_EQ(statData.getFrameSize(), Size(832, 480));
+
+  std::atomic_bool breakAtomic;
+  breakAtomic.store(false);
+  statFile.readFrameAndTypePositionsFromFile(std::ref(breakAtomic));
 
   const StatisticsTypesVec expectedTypes = {
     StatisticsTypeBuilder(0, "PredictionMode")
@@ -478,18 +478,55 @@ TEST(StatisticsFileCSVTest, testCSVFileParsingRealFile)
   auto &statTypes = statData.getStatisticsTypes();
   EXPECT_EQ(statTypes, expectedTypes);
 
-  const auto frameIndex = 0;
+  const auto FRAME_0 = 0;
 
-  EXPECT_EQ(statData.getTypesThatNeedLoading(frameIndex).size(), 0u)
-    << "As long as no types are set the render, none need loading.";
+  EXPECT_EQ(statData.getTypesThatNeedLoading(FRAME_0).size(), 0u)
+    << "As long as no types are set the render, none should need loading.";
 
   statTypes[0].render = true;
   statTypes[1].render = true;
 
-  const auto typesThatNeedLoading = statData.getTypesThatNeedLoading(frameIndex);
+  {
+    const auto typesThatNeedLoading = statData.getTypesThatNeedLoading(FRAME_0);
+    EXPECT_EQ(typesThatNeedLoading.size(), 2u)
+      << "After types are set to render, they should need loading.";
+  }
 
-  EXPECT_EQ(typesThatNeedLoading.size(), 2u)
-    << "After types are set to render, they should need loading.";
+  statFile.loadStatisticData(statData, FRAME_0, 0);
+  EXPECT_EQ(statFile.getParsingInfo().fileSorting,
+            StatisticsFileBase::ParsingInfo::FileSorting::SortedByType);
+
+  EXPECT_TRUE(statData.hasDataForTypeID(0))
+    << "After loading type 0, it should have data for this type.";
+  EXPECT_FALSE(statData.hasDataForTypeID(1))
+    << "After loading type 0, it should not have data for type 1 yet.";
+
+  {
+    const auto typesThatNeedLoading = statData.getTypesThatNeedLoading(FRAME_0);
+    EXPECT_EQ(typesThatNeedLoading.size(), 1u) << "One type was loaded, one was not.";
+  }
+
+  statFile.loadStatisticData(statData, FRAME_0, 1);
+  EXPECT_TRUE(statData.hasDataForTypeID(1))
+    << "After loading type 1, it should have data for this type.";
+
+  {
+    const auto typesThatNeedLoading = statData.getTypesThatNeedLoading(FRAME_0);
+    EXPECT_EQ(typesThatNeedLoading.size(), 0u)
+      << "Both types were loaded, none should need loading.";
+  }
+
+  EXPECT_EQ(statData.getFrameIndex(), FRAME_0);
+  EXPECT_EQ(statData[0].vectorData.size(), size_t(0));
+  yuviewTest::statistics::checkValueListStartsWith(
+    statData[0].valueData,
+    {{0, 0, 16, 4, 1}, {0, 4, 8, 4, 1}, {0, 8, 8, 4, 1}, {8, 4, 8, 8, 1}, {0, 12, 16, 4, 1}});
+
+  EXPECT_EQ(statData[1].vectorData.size(), size_t(0));
+  EXPECT_EQ(statData[1].valueData.size(), size_t(0)) << "There is no motion data for frame 0";
+
+  const auto FRAME_1 = 1;
+  statFile.loadStatisticData(statData, FRAME_1, 0);
 
   int debugStop = 22;
 }
