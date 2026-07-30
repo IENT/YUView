@@ -137,6 +137,8 @@ public:
   virtual std::optional<std::string> getFormatAsString() const override
   {
     const auto frameFormat = FrameHandler::getFormatAsString();
+    if (!frameFormat)
+      return {};
     return *frameFormat + ";YUV;" + this->srcPixelFormat.getName();
   }
   virtual bool setFormatFromString(const std::string_view format) override;
