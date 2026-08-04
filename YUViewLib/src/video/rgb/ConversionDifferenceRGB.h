@@ -37,6 +37,8 @@
 #include <QByteArray>
 #include <QImage>
 
+#include <ostream>
+
 namespace video::rgb
 {
 
@@ -59,6 +61,8 @@ struct MSE
   }
 };
 
+void PrintTo(const MSE &mse, std::ostream *os);
+
 // Sum of Squared Errors
 class SSE
 {
@@ -72,13 +76,13 @@ public:
     ++this->nrSamples;
   }
 
-  MSE getMSE() const
+  MSE getMSE(const bool hasAlpha) const
   {
     MSE mse;
     mse.r = static_cast<double>(this->r) / this->nrSamples;
     mse.g = static_cast<double>(this->g) / this->nrSamples;
     mse.b = static_cast<double>(this->b) / this->nrSamples;
-    mse.a = static_cast<double>(this->a) / this->nrSamples;
+    mse.a = hasAlpha ? static_cast<double>(this->a) / this->nrSamples : 0.0;
     return mse;
   }
 

@@ -147,7 +147,8 @@ FrameAandB createTestFrameDataRGB565()
 using ExpectedImageAndMse = std::pair<QImage, MSE>;
 ExpectedImageAndMse generateExpectedImageAndMse(const FrameAandB &testFrames,
                                                 const int         amplificationFactor,
-                                                bool              markDifference)
+                                                bool              markDifference,
+                                                bool              hasAlpha)
 {
   QImage image(QSize(TEST_FRAME_SIZE.width, TEST_FRAME_SIZE.height),
                functionsGui::platformImageFormat(false));
@@ -160,7 +161,6 @@ ExpectedImageAndMse generateExpectedImageAndMse(const FrameAandB &testFrames,
     const auto &pixelB = testFrames.second.at(i);
 
     auto diff = pixelA - pixelB;
-    diff.a = 0; // calculateDifferenceAndMSE does not compute MSE for the alpha channel
 
     sse.addSample(diff);
 
@@ -178,7 +178,7 @@ ExpectedImageAndMse generateExpectedImageAndMse(const FrameAandB &testFrames,
     image.setPixel(x, y, qRgb(outputPixel.r, outputPixel.g, outputPixel.b));
   }
 
-  return {image, sse.getMSE()};
+  return {image, sse.getMSE(hasAlpha)};
 }
 
 using GenerationResult = std::tuple<QByteArray, QByteArray, QImage, MSE>;
@@ -208,8 +208,8 @@ GenerationResult generateRawDataFramesExpectedResultAndMse(const PixelFormatRGB 
     std::get<1>(result) = createRawRGBData(pixelFormat, testFrames.second, bitDepth);
   }
 
-  std::tie(std::get<2>(result), std::get<3>(result)) =
-    generateExpectedImageAndMse(testFrames, amplificationFactor, markDifference);
+  std::tie(std::get<2>(result), std::get<3>(result)) = generateExpectedImageAndMse(
+    testFrames, amplificationFactor, markDifference, pixelFormat.hasAlpha());
 
   return result;
 }
