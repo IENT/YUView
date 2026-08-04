@@ -2,9 +2,10 @@ name: CI build
 
 on:
   push:
+  pull_request:
+    types: [opened, reopened]
   release:
-    types:
-      - created
+    types: [created]
 
 jobs:
   build-unix-native:
