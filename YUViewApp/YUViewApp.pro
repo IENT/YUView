@@ -1,4 +1,10 @@
+# Qt module configuration with version compatibility
 QT += core gui widgets opengl xml concurrent network
+
+# openglwidgets module only exists in Qt6, not in Qt5
+greaterThan(QT_MAJOR_VERSION, 5) {
+    QT += openglwidgets
+}
 
 TARGET = YUView
 TEMPLATE = app
@@ -78,6 +84,8 @@ win32 {
     RC_FILE += images/WindowsAppIcon.rc
     SVNN = $$system("git describe --tags")
     DEFINES += NOMINMAX
+    # Windows-specific libraries needed for HDR functionality
+    LIBS += -ldxgi -luser32 -lole32
 }
 
 LASTHASH = $$system("git rev-parse HEAD")

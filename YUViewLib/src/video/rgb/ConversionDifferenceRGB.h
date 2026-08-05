@@ -4,7 +4,7 @@
  *
  *   This program is free software; you can redistribute it and/or modify
  *   it under the terms of the GNU General Public License as published by
- *   the Free Software Foundation; either version 3 of the License, or
+ *   the Free Software Foundation, either version 3 of the License, or
  *   (at your option) any later version.
  *
  *   In addition, as a special exception, the copyright holders give
@@ -37,17 +37,55 @@
 #include <QByteArray>
 #include <QImage>
 
+#include <cstdint>
 #include <ostream>
+#include <tuple>
+#include <utility>
 
 namespace video::rgb
 {
 
+/**
+ * @brief Input parameters for one frame participating in an RGB difference calculation.
+ */
 struct InputFrameParameters
 {
   const QByteArray &rawDataItem;
   const Size        frameSize{};
 };
 
+/**
+ * @brief Signed per-channel difference between two rgba_t samples.
+ *
+ * Local rgba_t stores unsigned channel values; difference math must be signed so that
+ * negative deltas (and MSE / amplification) remain correct.
+ */
+struct rgba_diff_t
+{
+  int r{};
+  int g{};
+  int b{};
+  int a{};
+};
+
+/**
+ * @brief Compute a signed RGBA difference from two unsigned rgba_t samples.
+ *
+ * @param left Left-hand sample
+ * @param right Right-hand sample
+ * @return Signed per-channel difference (left - right)
+ */
+inline rgba_diff_t makeDiff(const rgba_t &left, const rgba_t &right)
+{
+  return rgba_diff_t{static_cast<int>(left.R) - static_cast<int>(right.R),
+                     static_cast<int>(left.G) - static_cast<int>(right.G),
+                     static_cast<int>(left.B) - static_cast<int>(right.B),
+                     static_cast<int>(left.A) - static_cast<int>(right.A)};
+}
+
+/**
+ * @brief Mean Squared Error aggregated over R/G/B/A channels.
+ */
 struct MSE
 {
   double r{};
@@ -63,19 +101,32 @@ struct MSE
 
 void PrintTo(const MSE &mse, std::ostream *os);
 
-// Sum of Squared Errors
+/**
+ * @brief Running Sum of Squared Errors accumulator used while scanning a frame.
+ */
 class SSE
 {
 public:
-  void addSample(const rgba_t &delta)
+  /**
+   * @brief Accumulate one signed per-pixel difference sample.
+   *
+   * @param delta Signed RGBA difference
+   */
+  void addSample(const rgba_diff_t &delta)
   {
-    this->r += delta.r * delta.r;
-    this->g += delta.g * delta.g;
-    this->b += delta.b * delta.b;
-    this->a += delta.a * delta.a;
+    this->r += static_cast<int64_t>(delta.r) * delta.r;
+    this->g += static_cast<int64_t>(delta.g) * delta.g;
+    this->b += static_cast<int64_t>(delta.b) * delta.b;
+    this->a += static_cast<int64_t>(delta.a) * delta.a;
     ++this->nrSamples;
   }
 
+  /**
+   * @brief Convert the accumulated SSE into a per-channel MSE.
+   *
+   * @param hasAlpha When false, alpha MSE is reported as 0
+   * @return Mean squared error for each channel
+   */
   MSE getMSE(const bool hasAlpha) const
   {
     MSE mse;
@@ -94,6 +145,16 @@ private:
   int64_t nrSamples{};
 };
 
+/**
+ * @brief Calculate an RGB difference image and the corresponding MSE.
+ *
+ * @param frame1 First input frame (raw RGB)
+ * @param frame2 Second input frame (raw RGB)
+ * @param pixelFormat Shared pixel format of both frames
+ * @param amplificationFactor Difference amplification for visualization
+ * @param markDifference When true, non-zero deltas become 255 and zeros stay 0
+ * @return Difference image and per-channel MSE
+ */
 std::pair<QImage, MSE> calculateDifferenceAndMSE(const InputFrameParameters &frame1,
                                                  const InputFrameParameters &frame2,
                                                  const PixelFormatRGB       &pixelFormat,

@@ -242,7 +242,6 @@ playlistItemImageFileSequence::newplaylistItemImageFileSequence(const YUViewDomE
     if (!fileInfo.exists() || !fileInfo.isFile())
     {
       // The file does not exist
-      // qDebug() << "Error while loading playlistItemImageFileSequence. The file " << absolutePath
       // << "could not be found.";
       newSequence->loadPlaylistFrameMissing = true;
     }

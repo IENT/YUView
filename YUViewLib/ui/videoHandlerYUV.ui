@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>216</width>
-    <height>230</height>
+    <width>354</width>
+    <height>363</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -128,14 +128,14 @@
      </item>
      <item>
       <layout class="QGridLayout" name="gridLayout" columnstretch="0,1">
-       <item row="1" column="1">
+       <item row="2" column="1">
         <widget class="QComboBox" name="colorComponentsComboBox">
          <property name="toolTip">
           <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Which of the YUV components should be displayed? You can choose all or the luma or one of the color planes individually.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
          </property>
         </widget>
        </item>
-       <item row="2" column="0">
+       <item row="3" column="0">
         <widget class="QLabel" name="label_2">
          <property name="toolTip">
           <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;If the color components are subsampled, how should interpolation to the full resolution be performed?&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
@@ -145,7 +145,7 @@
          </property>
         </widget>
        </item>
-       <item row="1" column="0">
+       <item row="2" column="0">
         <widget class="QLabel" name="label">
          <property name="toolTip">
           <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Which of the YUV components should be displayed? You can choose all or the luma or one of the color planes individually.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
@@ -155,7 +155,7 @@
          </property>
         </widget>
        </item>
-       <item row="3" column="0">
+       <item row="4" column="0">
         <widget class="QLabel" name="label_3">
          <property name="toolTip">
           <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;How to convert YUV to RGB.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
@@ -165,14 +165,14 @@
          </property>
         </widget>
        </item>
-       <item row="2" column="1">
+       <item row="3" column="1">
         <widget class="QComboBox" name="chromaInterpolationComboBox">
          <property name="toolTip">
           <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;If the color components are subsampled, how should interpolation to the full resolution be performed?&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
          </property>
         </widget>
        </item>
-       <item row="3" column="1">
+       <item row="4" column="1">
         <widget class="QComboBox" name="colorConversionComboBox">
          <property name="toolTip">
           <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;How to convert YUV to RGB. Several ITU recommendations are selectable.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
@@ -195,6 +195,216 @@
           <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;What is the source format of the YUV file? E.g: The subsampling and bit depth. Select one of the predefined formats or select 'custom...' to define a custom format.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
          </property>
         </widget>
+       </item>
+       <item row="1" column="0">
+        <widget class="QLabel" name="labelISPMode">
+         <property name="toolTip">
+          <string>ISP mode paints each YUV400 sample as a Bayer false color (R/G/B) for raw sensor preview. Available only for luma-only (YUV400) sources.</string>
+         </property>
+         <property name="text">
+          <string>ISP Mode</string>
+         </property>
+        </widget>
+       </item>
+       <item row="1" column="1">
+        <layout class="QVBoxLayout" name="ispModeLayout">
+         <item>
+          <widget class="QCheckBox" name="checkBoxEnableISPMode">
+           <property name="enabled">
+            <bool>false</bool>
+           </property>
+           <property name="toolTip">
+            <string>Enable Bayer false-color preview for YUV400 (8/10/12/16-bit) sources. Each mosaic sample is shown as red, green, or blue according to the selected Bayer pattern.</string>
+           </property>
+           <property name="text">
+            <string>Enable ISP mode</string>
+           </property>
+           <property name="checked">
+            <bool>false</bool>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <layout class="QHBoxLayout" name="ispBayerLayout">
+           <item>
+            <widget class="QLabel" name="labelBayerPattern">
+             <property name="text">
+              <string>Bayer</string>
+             </property>
+             <property name="toolTip">
+              <string>Camera Bayer mosaic layout starting at the top-left sample (e.g. RGGB).</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QComboBox" name="comboBoxBayerPattern">
+             <property name="enabled">
+              <bool>false</bool>
+             </property>
+             <property name="toolTip">
+              <string>Select the camera Bayer pattern. Matching samples are painted in that primary color (R/G/B).</string>
+             </property>
+            </widget>
+           </item>
+          </layout>
+         </item>
+         <item>
+          <layout class="QHBoxLayout" name="ispCellSizeLayout">
+           <item>
+            <widget class="QLabel" name="labelISPCellSize">
+             <property name="text">
+              <string>Cell size</string>
+             </property>
+             <property name="toolTip">
+              <string>Single: classic 1x1 Bayer cell. Quad: each color is a 2x2 block. Nine-in-one: each color is a 3x3 block.</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QComboBox" name="comboBoxISPCellSize">
+             <property name="enabled">
+              <bool>false</bool>
+             </property>
+             <property name="toolTip">
+              <string>Preview classic Bayer (Single), Quad Bayer / Tetracell (Quad), or Nonacell (Nine-in-one) mosaics.</string>
+             </property>
+            </widget>
+           </item>
+          </layout>
+         </item>
+        </layout>
+       </item>
+       <item row="5" column="0">
+        <widget class="QLabel" name="label_10bit">
+         <property name="toolTip">
+          <string>Enable HDR display with native 10-bit precision for HDR content. Choose between PQ (HDR10) and HLG transfer functions.</string>
+         </property>
+         <property name="text">
+          <string>HDR Display</string>
+         </property>
+        </widget>
+       </item>
+       <item row="5" column="1">
+        <layout class="QVBoxLayout" name="hdrDisplayLayout">
+         <item>
+          <widget class="QCheckBox" name="checkBoxEnable10BitDisplay">
+           <property name="enabled">
+            <bool>true</bool>
+           </property>
+           <property name="toolTip">
+            <string>Enable HDR display with native 10-bit precision for HDR content. Requires HDR-capable display and Windows HDR enabled.</string>
+           </property>
+           <property name="text">
+            <string>Enable HDR display</string>
+           </property>
+           <property name="checked">
+            <bool>false</bool>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QComboBox" name="comboBoxHDRMode">
+           <property name="enabled">
+            <bool>false</bool>
+           </property>
+           <property name="toolTip">
+            <string>Select HDR transfer function: PQ (SMPTE ST.2084) for HDR10 content, HLG (ARIB STD-B67) for broadcast HDR, or Linear (scRGB) for pass-through to display.</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <layout class="QHBoxLayout" name="toneMappingLayout">
+           <item>
+            <widget class="QLabel" name="labelToneMapping">
+             <property name="text">
+              <string>Tone Mapping</string>
+             </property>
+             <property name="toolTip">
+              <string>Drag the slider to set the target max luminance for ITU-R BT.2390 EETF tone mapping. PQ's 10000 nit range is mapped to the selected brightness.</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QSlider" name="sliderToneMapNits">
+             <property name="enabled">
+              <bool>false</bool>
+             </property>
+             <property name="toolTip">
+              <string>Target max luminance (500-10000 nits). ITU-R BT.2390 EETF maps PQ highlights to fit this range.</string>
+             </property>
+             <property name="minimum">
+              <number>0</number>
+             </property>
+             <property name="maximum">
+              <number>1000</number>
+             </property>
+             <property name="singleStep">
+              <number>1</number>
+             </property>
+             <property name="pageStep">
+              <number>50</number>
+             </property>
+             <property name="value">
+              <number>278</number>
+             </property>
+             <property name="orientation">
+              <enum>Qt::Horizontal</enum>
+             </property>
+             <property name="tickPosition">
+              <enum>QSlider::TicksBelow</enum>
+             </property>
+             <property name="tickInterval">
+              <number>100</number>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QSpinBox" name="spinBoxToneMapNits">
+             <property name="enabled">
+              <bool>false</bool>
+             </property>
+             <property name="toolTip">
+              <string>Enter an exact target max luminance in nits.</string>
+             </property>
+             <property name="minimumSize">
+              <size>
+               <width>100</width>
+               <height>0</height>
+              </size>
+             </property>
+             <property name="minimum">
+              <number>350</number>
+             </property>
+             <property name="maximum">
+              <number>10000</number>
+             </property>
+             <property name="value">
+              <number>1000</number>
+             </property>
+             <property name="suffix">
+              <string> nits</string>
+             </property>
+             <property name="alignment">
+              <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+             </property>
+            </widget>
+           </item>
+          </layout>
+         </item>
+         <item>
+          <widget class="QPushButton" name="buttonRestartNow">
+           <property name="text">
+            <string>Restart now</string>
+           </property>
+           <property name="toolTip">
+            <string>Restart YUView now to apply HDR display changes</string>
+           </property>
+           <property name="visible">
+            <bool>false</bool>
+           </property>
+          </widget>
+         </item>
+        </layout>
        </item>
       </layout>
      </item>

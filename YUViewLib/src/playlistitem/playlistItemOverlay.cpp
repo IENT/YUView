@@ -45,7 +45,6 @@
 #define PLAYLISTITEMOVERLAY_DEBUG 0
 #if PLAYLISTITEMOVERLAY_DEBUG && !NDEBUG
 #include <QDebug>
-#define DEBUG_OVERLAY qDebug
 #else
 #define DEBUG_OVERLAY(fmt, ...) ((void)0)
 #endif

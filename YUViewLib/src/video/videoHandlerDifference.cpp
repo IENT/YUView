@@ -37,7 +37,6 @@
 
 #include <common/Formatting.h>
 #include <common/Functions.h>
-#include <common/TypedefQtDeprecated.h>
 #include <video/yuv/videoHandlerYUV.h>
 
 using namespace std::string_view_literals;
@@ -48,7 +47,6 @@ namespace video
 // Activate this if you want to know when which buffer is loaded/converted to image and so on.
 #define VIDEOHANDLERDIFFERENCE_DEBUG_LOADING 0
 #if VIDEOHANDLERDIFFERENCE_DEBUG_LOADING && !NDEBUG
-#define DEBUG_VIDEO qDebug
 #else
 #define DEBUG_VIDEO(fmt, ...) ((void)0)
 #endif
@@ -65,12 +63,12 @@ void videoHandlerDifference::drawDifferenceFrame(QPainter *painter,
   if (!inputsValid())
     return;
 
-  // Check if the frameIdx changed and if we have to load a new frame
+         // Check if the frameIdx changed and if we have to load a new frame
   if (frameIdx != currentImageIndex)
   {
     // The current buffer is out of date. Update it.
 
-    // Check the double buffer
+           // Check the double buffer
     if (frameIdx == doubleBufferImageFrameIndex)
     {
       currentImage      = doubleBufferImage;
@@ -89,12 +87,12 @@ void videoHandlerDifference::drawDifferenceFrame(QPainter *painter,
     }
   }
 
-  // Create the video QRect with the size of the sequence and center it.
+         // Create the video QRect with the size of the sequence and center it.
   QRect videoRect;
   videoRect.setSize(QSize(frameSize.width * zoomFactor, frameSize.height * zoomFactor));
   videoRect.moveCenter(QPoint(0, 0));
 
-  // Draw the current image (currentImage)
+         // Draw the current image (currentImage)
   currentImageSetMutex.lock();
   painter->drawImage(videoRect, currentImage);
   currentImageSetMutex.unlock();
@@ -115,16 +113,20 @@ void videoHandlerDifference::loadFrameDifference(int frameIndex, bool)
 
   differenceInfoList.clear();
 
-  // Check if the second item is a video and the first one is not. In that case,
-  // make sure that the right frame is loaded for the video item.
-  const auto video0 = dynamic_cast<videoHandler *>(inputVideo[0].data());
-  const auto video1 = dynamic_cast<videoHandler *>(inputVideo[1].data());
+         // Check if the second item is a video and the first one is not. In that case,
+         // make sure that the right frame is loaded for the video item.
+  videoHandler *video0 = dynamic_cast<videoHandler *>(inputVideo[0].data());
+  videoHandler *video1 = dynamic_cast<videoHandler *>(inputVideo[1].data());
   if (video0 == nullptr && video1 != nullptr && video1->getCurrentImageIndex() != frameIndex)
     video1->loadFrame(frameIndex);
 
-  // Calculate the difference
-  auto newFrame = inputVideo[0]->calculateDifference(
-    inputVideo[1], frameIndex, frameIndex, differenceInfoList, amplificationFactor, markDifference);
+         // Calculate the difference
+  QImage newFrame = inputVideo[0]->calculateDifference(inputVideo[1],
+                                                       frameIndex,
+                                                       frameIndex,
+                                                       differenceInfoList,
+                                                       amplificationFactor,
+                                                       markDifference);
 
   if (!newFrame.isNull())
   {
@@ -159,7 +161,7 @@ void videoHandlerDifference::setInputVideos(FrameHandler *childVideo0, FrameHand
     {
       // We have two valid video "children"
 
-      // Get the frame size of the difference (min in x and y direction), and set it.
+             // Get the frame size of the difference (min in x and y direction), and set it.
       auto size0 = inputVideo[0]->getFrameSize();
       auto size1 = inputVideo[1]->getFrameSize();
       auto diffSize =
@@ -167,15 +169,15 @@ void videoHandlerDifference::setInputVideos(FrameHandler *childVideo0, FrameHand
       setFrameSize(diffSize);
     }
 
-    // If something changed, we might need a redraw
+           // If something changed, we might need a redraw
     emit signalHandlerChanged(true, RECACHE_NONE);
   }
 }
 
 QStringPairList videoHandlerDifference::getPixelValues(const QPoint &pixelPos,
                                                        int           frameIdx,
-                                                       const FrameHandler *const,
-                                                       const int frameIdx1) const
+                                                       FrameHandler *,
+                                                       const int frameIdx1)
 {
   if (!inputsValid())
     return QStringPairList();
@@ -196,15 +198,15 @@ QLayout *videoHandlerDifference::createDifferenceHandlerControls()
 
   ui.setupUi();
 
-  // Set all the values of the properties widget to the values of this class
+         // Set all the values of the properties widget to the values of this class
   ui.markDifferenceCheckBox->setChecked(markDifference);
   ui.amplificationFactorSpinBox->setValue(amplificationFactor);
   ui.codingOrderComboBox->addItems(QStringList() << "HEVC");
   ui.codingOrderComboBox->setCurrentIndex((int)codingOrder);
 
-  // Connect all the change signals from the controls to "connectWidgetSignals()"
+         // Connect all the change signals from the controls to "connectWidgetSignals()"
   connect(ui.markDifferenceCheckBox,
-          QCheckBoxStateChanged,
+          &QCheckBox::stateChanged,
           this,
           &videoHandlerDifference::slotDifferenceControlChanged);
   connect(ui.codingOrderComboBox,
@@ -228,8 +230,8 @@ void videoHandlerDifference::slotDifferenceControlChanged()
   {
     markDifference = ui.markDifferenceCheckBox->isChecked();
 
-    // Set the current frame in the buffer to be invalid and emit the signal that something has
-    // changed
+           // Set the current frame in the buffer to be invalid and emit the signal that something has
+           // changed
     currentImageIndex = -1;
     emit signalHandlerChanged(true, RECACHE_NONE);
   }
@@ -237,15 +239,15 @@ void videoHandlerDifference::slotDifferenceControlChanged()
   {
     codingOrder = (CodingOrder)ui.codingOrderComboBox->currentIndex();
 
-    // The calculation of the first difference in coding order changed but no redraw is necessary
+           // The calculation of the first difference in coding order changed but no redraw is necessary
     emit signalHandlerChanged(false, RECACHE_NONE);
   }
   else if (sender == ui.amplificationFactorSpinBox)
   {
     amplificationFactor = ui.amplificationFactorSpinBox->value();
 
-    // Set the current frame in the buffer to be invalid and emit the signal that something has
-    // changed
+           // Set the current frame in the buffer to be invalid and emit the signal that something has
+           // changed
     currentImageIndex = -1;
     emit signalHandlerChanged(true, RECACHE_NONE);
   }
@@ -315,7 +317,7 @@ void videoHandlerDifference::reportFirstDifferencePosition(QList<InfoItem> &info
     }
   }
 
-  // No difference was found
+         // No difference was found
   infoList.append(InfoItem("Difference"sv, "Frames are identical"));
 }
 
@@ -406,8 +408,8 @@ bool videoHandlerDifference::hierarchicalPosition(int           x,
       }
     }
 
-    // No difference found in this block. Count the number of 4x4 blocks scanned (that is the
-    // partIndex)
+           // No difference found in this block. Count the number of 4x4 blocks scanned (that is the
+           // partIndex)
     partIndex++;
   }
   else
@@ -451,23 +453,23 @@ bool videoHandlerDifference::hierarchicalPositionYUV(int                        
     // This block is entirely outside of the picture
     return false;
 
-  // The items can be of different size (we then calculate the difference of the top left aligned
-  // part)
+         // The items can be of different size (we then calculate the difference of the top left aligned
+         // part)
   const int w_in = frameSize.width;
   const int h_in = frameSize.height;
 
-  // Get subsampling modes (they are identical for both inputs and the output)
+         // Get subsampling modes (they are identical for both inputs and the output)
   const int subH = diffYUVFormat.getSubsamplingHor();
   const int subV = diffYUVFormat.getSubsamplingVer();
 
-  // Get the endianness of the inputs
+         // Get the endianness of the inputs
   const bool bigEndian = diffYUVFormat.isBigEndian();
 
-  // Get/Set the bit depth of the input
+         // Get/Set the bit depth of the input
   const int bps_in   = diffYUVFormat.getBitsPerSample();
   const int diffZero = 128 << (bps_in - 8);
 
-  // Get pointers to the inputs
+         // Get pointers to the inputs
   const int componentSizeLuma_In   = w_in * h_in;
   const int componentSizeChroma_In = (w_in / subH) * (h_in / subV);
   const int nrBytesLumaPlane_In    = bps_in > 8 ? 2 * componentSizeLuma_In : componentSizeLuma_In;
@@ -475,7 +477,7 @@ bool videoHandlerDifference::hierarchicalPositionYUV(int                        
     bps_in > 8 ? 2 * componentSizeChroma_In : componentSizeChroma_In;
   // Current item
 
-  // Calculate Luma sample difference
+         // Calculate Luma sample difference
   const int stride_in = bps_in > 8 ? w_in * 2 : w_in; // How many bytes to the next y line?
   const int strideC_in =
     w_in / subH * (bps_in > 8 ? 2 : 1); // How many bytes to the next U/V y line
@@ -492,12 +494,12 @@ bool videoHandlerDifference::hierarchicalPositionYUV(int                        
                                    ? srcY1 + nrBytesLumaPlane_In + nrBytesChromaPlane_In
                                    : srcY1 + nrBytesLumaPlane_In;
 
-    // adjust source pointer according to block position
+           // adjust source pointer according to block position
     srcY1 += y * stride_in;
     srcU1 += y / subV * strideC_in;
     srcV1 += y / subV * strideC_in;
 
-    // Check for a difference
+           // Check for a difference
     for (int subY = y; subY < y + 4; subY++)
     {
 
@@ -512,7 +514,7 @@ bool videoHandlerDifference::hierarchicalPositionYUV(int                        
           return true;
         }
 
-        // is this a position at which we have a chroma sample?
+               // is this a position at which we have a chroma sample?
         if (subX % subH == 0 && subY % subV == 0 && subX * subV < w_in)
         {
           int valU1 = getValueFromSource(srcU1, subX, bps_in, bigEndian);
@@ -526,10 +528,10 @@ bool videoHandlerDifference::hierarchicalPositionYUV(int                        
         }
       }
 
-      // Goto the next y line
+             // Goto the next y line
       srcY1 += stride_in;
 
-      // is this a position at which we have a chroma line?
+             // is this a position at which we have a chroma line?
       if (subY % subV == 0)
       {
         // Goto the next y line
@@ -538,8 +540,8 @@ bool videoHandlerDifference::hierarchicalPositionYUV(int                        
       }
     }
 
-    // No difference found in this block. Count the number of 4x4 blocks scanned (that is the
-    // partIndex)
+           // No difference found in this block. Count the number of 4x4 blocks scanned (that is the
+           // partIndex)
     partIndex++;
   }
   else

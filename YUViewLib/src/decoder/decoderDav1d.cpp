@@ -48,27 +48,7 @@ using Subsampling = video::yuv::Subsampling;
 
 // Debug the decoder (0:off 1:interactive decoder only 2:caching decoder only 3:both)
 #define DECODERDAV1D_DEBUG_OUTPUT 0
-#if DECODERDAV1D_DEBUG_OUTPUT && !NDEBUG
-#include <QDebug>
-#if DECODERDAV1D_DEBUG_OUTPUT == 1
-#define DEBUG_DAV1D                                                                                \
-  if (!isCachingDecoder)                                                                           \
-  qDebug
-#elif DECODERDAV1D_DEBUG_OUTPUT == 2
-#define DEBUG_DAV1D                                                                                \
-  if (isCachingDecoder)                                                                            \
-  qDebug
-#elif DECODERDAV1D_DEBUG_OUTPUT == 3
-#define DEBUG_DAV1D                                                                                \
-  if (isCachingDecoder)                                                                            \
-    qDebug("c:");                                                                                  \
-  else                                                                                             \
-    qDebug("i:");                                                                                  \
-  qDebug
-#endif
-#else
 #define DEBUG_DAV1D(fmt, ...) ((void)0)
-#endif
 
 namespace
 {

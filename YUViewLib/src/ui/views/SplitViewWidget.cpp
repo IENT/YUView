@@ -1,4 +1,4 @@
-/*  This file is part of YUView - The YUV player with advanced analytics toolset
+﻿/*  This file is part of YUView - The YUV player with advanced analytics toolset
  *   <https://github.com/IENT/YUView>
  *   Copyright (C) 2015  Institut für Nachrichtentechnik, RWTH Aachen University, GERMANY
  *
@@ -46,10 +46,19 @@
 #if QT_VERSION >= QT_VERSION_CHECK(5, 15, 0)
 #include <QPainterPath>
 #endif
+#include <QApplication>
+#include <QWheelEvent>
 #include <QColorDialog>
 #include <QPainter>
 #include <QSettings>
 #include <QTextDocument>
+#include <QScreen>
+#include <QGuiApplication>
+#include <QWindow>
+#include <video/hdr/HDRDetection.h>
+#include <video/hdr/HDRRenderingManager.h>  // Includes HDR_WindowType alias
+#include <video/yuv/videoHandlerYUV.h>
+#include <algorithm>
 
 // The splitter can be grabbed with a certain margin of pixels to the left and right. The margin
 // in pixels is calculated depending on the logical DPI of the user using:
@@ -85,14 +94,64 @@ const QString SPLITVIEWWIDGET_LOADING_TEXT = "Loading...";
 #define SPLITVIEWWIDGET_DEBUG_LOAD_DRAW 0
 #if SPLITVIEWWIDGET_DEBUG_LOAD_DRAW && !NDEBUG
 #include <QDebug>
-#define DEBUG_LOAD_DRAW(fmt) qDebug() << fmt
 #else
 #define DEBUG_LOAD_DRAW(fmt) ((void)0)
 #endif
 
+namespace
+{
+constexpr double kReferenceDpi = 96.0;
+}
+
+double splitViewWidget::devicePixelRatioForCurrentScreen() const
+{
+  if (auto *handle = windowHandle())
+  {
+    const qreal ratio = handle->devicePixelRatio();
+    if (ratio > 0.0)
+      return ratio;
+  }
+
+  if (auto *currentScreen = screen())
+  {
+    const qreal ratio = currentScreen->devicePixelRatio();
+    if (ratio > 0.0)
+      return ratio;
+  }
+
+  if (auto *primary = QGuiApplication::primaryScreen())
+  {
+    const qreal ratio = primary->devicePixelRatio();
+    if (ratio > 0.0)
+      return ratio;
+  }
+
+  const qreal logicalDpi = logicalDpiX();
+  if (logicalDpi > 0.0)
+    return std::max(qreal(1.0), logicalDpi / kReferenceDpi);
+
+  return 1.0;
+}
+
+double splitViewWidget::effectiveZoomFactor() const
+{
+  return effectiveZoomFactor(this->zoomFactor);
+}
+
+double splitViewWidget::effectiveZoomFactor(double rawZoom) const
+{
+  const double ratio = std::max(0.01, static_cast<double>(devicePixelRatioForCurrentScreen()));
+  return rawZoom / ratio;
+}
+
 splitViewWidget::splitViewWidget(QWidget *parent) : MoveAndZoomableView(parent)
 {
   paletteBackgroundColorSettingsTag = "View/BackgroundColor";
+
+  // Initialize multi-monitor HDR support tracking
+  m_currentScreen = nullptr;
+  m_currentDisplaySupportsHDR = false;
+  m_currentDisplayName = "";
 
   setFocusPolicy(Qt::NoFocus);
   setViewSplitMode(DISABLED);
@@ -100,7 +159,7 @@ splitViewWidget::splitViewWidget(QWidget *parent) : MoveAndZoomableView(parent)
   setContextMenuPolicy(Qt::PreventContextMenu);
 
   // No test running yet
-  connect(&testProgrssUpdateTimer, &QTimer::timeout, this, [this] { updateTestProgress(); });
+  connect(&testProgrssUpdateTimer, &QTimer::timeout, this, [=] { updateTestProgress(); });
 
   // Initialize the font and the position of the zoom factor indication
   zoomFactorFont = QFont(SPLITVIEWWIDGET_ZOOMFACTOR_FONT, SPLITVIEWWIDGET_ZOOMFACTOR_FONTSIZE);
@@ -111,6 +170,18 @@ splitViewWidget::splitViewWidget(QWidget *parent) : MoveAndZoomableView(parent)
   waitingForCachingPixmap = QPixmap(":/img_hourglass.png");
 
   this->createMenuActions();
+  
+  // Initialize display monitoring for HDR support
+  scheduleHDRSupportCheck(0);
+  
+  // Connect to screen change signals for multi-monitor HDR support
+  QGuiApplication* app = qobject_cast<QGuiApplication*>(QGuiApplication::instance());
+  if (app) {
+    connect(app, &QGuiApplication::screenAdded,
+            this, [this]{ scheduleHDRSupportCheck(250); });
+    connect(app, &QGuiApplication::screenRemoved,
+            this, [this]{ scheduleHDRSupportCheck(250); });
+  }
 }
 
 void splitViewWidget::setPlaylistTreeWidget(PlaylistTreeWidget *p)
@@ -147,6 +218,13 @@ void splitViewWidget::updateSettings()
   zoomBoxBackgroundColor     = settings.value(paletteBackgroundColorSettingsTag).value<QColor>();
   drawItemPathAndNameEnabled = settings.value("ShowFilePathInSplitMode", true).toBool();
 
+  // Keep HDR background consistent with view background
+  if (m_hdrOverlayWindow) {
+    if (auto hdrWindow = qobject_cast<HDR_WindowType*>(m_hdrOverlayWindow.data())) {
+      hdrWindow->setBackgroundColor(this->palette().color(QPalette::Window));
+    }
+  }
+
   // Something about how we draw might have been changed
   update();
 }
@@ -159,7 +237,38 @@ void splitViewWidget::paintEvent(QPaintEvent *)
     // The playlist was not initialized yet. Nothing to draw (yet)
     return;
 
+  bool hdrActive = m_hdrOverlayContainer && m_hdrOverlayContainer->isVisible() && m_hdrOverlayWindow;
+  bool hdrWindowReady = hdrActive ? m_hdrOverlayWindow->isExposed() : false;
+  if (hdrActive) {
+    if (!hdrWindowReady) {
+      // HDR widget exists but not ready yet - show loading indicator safely
+      if (isVisible() && width() > 0 && height() > 0 && !paintingActive()) {
+        try {
+          QPainter painter(this);
+          if (painter.isActive() && painter.device()) {
+            painter.fillRect(rect(), this->palette().color(QPalette::Window));
+            painter.setPen(Qt::white);
+            QFont font = painter.font();
+            font.setPointSize(12);
+            painter.setFont(font);
+            painter.drawText(rect(), Qt::AlignCenter, "Initializing HDR display...");
+            painter.end();
+          }
+        } catch (...) {}
+      }
+      // Do not return; allow SDR path to paint while HDR initializes.
+    }
+  }
+
+  if (!isVisible() || width() <= 0 || height() <= 0 || paintingActive()) {
+    return;
+  }
+
+  // If HDR overlay is active and ready, we will paint overlays in HDR window, not here
   QPainter painter(this);
+  if (!painter.isActive()) {
+    return;  // Failed to activate painter
+  }
 
   // Get the full size of the area that we can draw on (from the paint device base)
   QPoint drawArea_botR(width(), height());
@@ -209,10 +318,19 @@ void splitViewWidget::paintEvent(QPaintEvent *)
   // The x position of the split (if splitting)
   const int xSplit = int(drawArea_botR.x() * splittingPoint);
 
-  // Calculate the zoom to use
-  const double zoom   = this->zoomFactor;
-  const auto   offset = this->moveOffset;
+  // Calculate the zoom to use (compensate for device pixel ratio so that zoom 1.0 stays 1:1)
+  const double rawZoom = this->zoomFactor;
+  const auto   offset  = this->moveOffset;
+  const double zoom    = effectiveZoomFactor(rawZoom);
 
+  // Keep HDR window transform in sync with SDR painter and avoid double base draw for HDR items
+  // Pass both renderZoom (effectiveZoomFactor) for rendering and rawZoom for UI display
+  if (m_hdrOverlayWindow) {
+    if (auto hdrWindow = qobject_cast<HDR_WindowType*>(m_hdrOverlayWindow.data())) {
+      hdrWindow->updateTransform(zoom, offset, rawZoom);
+    }
+  }
+  
   const bool drawRawValues = showRawData() && !playing;
 
   // First determine the center points per of each view
@@ -235,7 +353,7 @@ void splitViewWidget::paintEvent(QPaintEvent *)
   // For the zoom box, calculate the pixel position under the cursor for each view. The following
   // things are calculated in this function:
   bool  pixelPosInItem[2] = {false,
-                             false}; //< Is the pixel position under the cursor within the item?
+                            false}; //< Is the pixel position under the cursor within the item?
   QRect zoomPixelRect[2];            //< A QRect around the pixel that is under the cursor
   if (anyItemsSelected && this->drawZoomBox)
   {
@@ -250,29 +368,133 @@ void splitViewWidget::paintEvent(QPaintEvent *)
       itemSize[1] = item[view]->getSize().height();
 
       // Is the pixel under the cursor within the item?
-      pixelPosInItem[view] =
-        (zoomBoxPixelUnderCursor[view].x() >= 0 &&
-         zoomBoxPixelUnderCursor[view].x() < itemSize[0]) &&
-        (zoomBoxPixelUnderCursor[view].y() >= 0 && zoomBoxPixelUnderCursor[view].y() < itemSize[1]);
+      pixelPosInItem[view] = (zoomBoxPixelUnderCursor[view].x() >= 0 &&
+                              zoomBoxPixelUnderCursor[view].x() < itemSize[0]) &&
+                             (zoomBoxPixelUnderCursor[view].y() >= 0 &&
+                              zoomBoxPixelUnderCursor[view].y() < itemSize[1]);
 
       // Mark the pixel under the cursor with a rectangle around it.
       if (pixelPosInItem[view])
       {
-        int pixelPoint[2];
-        pixelPoint[0]       = -((itemSize[0] / 2 - zoomBoxPixelUnderCursor[view].x()) * zoom);
-        pixelPoint[1]       = -((itemSize[1] / 2 - zoomBoxPixelUnderCursor[view].y()) * zoom);
-        zoomPixelRect[view] = QRect(pixelPoint[0], pixelPoint[1], zoom, zoom);
+        const int pixelExtent = std::max(1, qRound(zoom));
+        const int rectX = qRound(
+            -((itemSize[0] / 2 - zoomBoxPixelUnderCursor[view].x()) * zoom));
+        const int rectY = qRound(
+            -((itemSize[1] / 2 - zoomBoxPixelUnderCursor[view].y()) * zoom));
+        zoomPixelRect[view] = QRect(rectX, rectY, pixelExtent, pixelExtent);
       }
     }
+  }
+
+  // If HDR is active and ready, push overlay state into HDR window and skip SDR overlays
+  if (hdrActive && hdrWindowReady) {
+    if (auto hdrWindow = qobject_cast<HDR_WindowType*>(m_hdrOverlayWindow.data())) {
+      // Splitting mode mapping
+      HDR_WindowType::OverlaySplitMode overlayMode = HDR_WindowType::OverlaySplitDisabled;
+      if (viewSplitMode == SIDE_BY_SIDE) overlayMode = HDR_WindowType::OverlaySplitSideBySide;
+      else if (viewSplitMode == COMPARISON) overlayMode = HDR_WindowType::OverlaySplitComparison;
+
+      // Determine item names to draw (same as SDR logic)
+      QStringPair itemNamesToDraw = determineItemNamesToDraw(item[0], item[1]);
+      const bool drawItemNames = (drawItemPathAndNameEnabled && item[0] != nullptr && item[1] != nullptr &&
+                                  !itemNamesToDraw.first.isEmpty() && !itemNamesToDraw.second.isEmpty() &&
+                                  item[0]->properties().isFileSource && item[1]->properties().isFileSource);
+
+      // Loading flags (match SDR behavior)
+      bool loadingLeft = (!playing && item[0] && item[0]->isLoading());
+      bool loadingRight = (!playing && item[1] && item[1]->isLoading());
+
+      hdrWindow->setOverlayEnabled(true);
+      hdrWindow->setSplitting(overlayMode, splittingPoint);
+      hdrWindow->setGridParams(regularGridSize, regularGridColor);
+      hdrWindow->setZoomBoxState(drawZoomBox, zoomBoxPixelUnderCursor[0], zoomBoxPixelUnderCursor[1]);
+      hdrWindow->setDrawItemPathAndName(drawItemNames, itemNamesToDraw.first, itemNamesToDraw.second);
+      hdrWindow->setLoadingFlags(loadingLeft, loadingRight);
+      hdrWindow->setDrawRawValues(drawRawValues);
+      hdrWindow->setPlayingState(playing, waitingForCaching);
+      hdrWindow->setCachingIndicatorPixmap(waitingForCachingPixmap);
+
+            // Zoom-box preview needs a CPU-side image snapshot, but only for the
+      // tiny region that is actually painted (typically 5x5 pixels). Instead
+      // of converting the whole frame here every paint (which used to burn
+      // ~50MB/frame on 4K 10-bit content), we install a lazy patch provider
+      // that the HDR overlay calls from inside paintZoomBox with the exact
+      // source rectangle it needs. When drawZoomBox is off, nothing is
+      // requested at all.
+      //
+      // The provider is (re)installed only when the primary YUV handler
+      // changes so std::function churn is a non-issue.
+      {
+        video::yuv::videoHandlerYUV* yuvHandler = nullptr;
+        const int primaryIdx = item[0] ? 0 : 1;
+        if (item[primaryIdx]) {
+          if (auto handlerOwner = item[primaryIdx]->getFrameHandler()) {
+            yuvHandler = dynamic_cast<video::yuv::videoHandlerYUV*>(handlerOwner);
+          }
+        }
+
+        const void* yuvHandlerAsVoid = static_cast<const void*>(yuvHandler);
+        if (yuvHandlerAsVoid != m_hdrOverlayLastPatchHandler) {
+          if (yuvHandler) {
+            QPointer<video::yuv::videoHandlerYUV> guarded(yuvHandler);
+            hdrWindow->setOverlayPatchProvider(
+              [guarded](const QRect& region) -> QImage {
+                if (!guarded)
+                  return QImage();
+                return guarded->getCurrentFramePatchAsImage(region);
+              });
+            hdrWindow->setOverlayYuvPixelProvider(
+              [guarded](const QPoint& pixel, video::yuv::yuv_t& value) -> bool {
+                if (!guarded)
+                  return false;
+                return guarded->getYuvPixelValueAt(pixel, value);
+              });
+          } else {
+            hdrWindow->setOverlayPatchProvider({});
+            hdrWindow->setOverlayYuvPixelProvider({});
+          }
+          m_hdrOverlayLastPatchHandler = yuvHandlerAsVoid;
+        }
+      }
+
+      // Trigger HDR repaint with overlays
+      // Note: HDR_RhiVideoWindow inherits from QWindow, so use requestUpdate() not update()
+      hdrWindow->requestUpdate();
+    }
+
+    // Feed the HDR window with the current frame to ensure content updates on selection/deletion
+    // We intentionally invoke the item draw with a nullptr painter so the YUV handler pushes
+    // the frame into the HDR pipeline without drawing via QPainter.
+    if (!waitingForCaching) {
+      const int primaryIdx = item[0] ? 0 : 1;
+      if (item[primaryIdx]) {
+        // Avoid QPainter path; videoHandlerYUV::drawFrame handles nullptr when HDR is ready
+        item[primaryIdx]->drawItem(nullptr, frame, zoom, drawRawValues);
+      }
+    }
+
+    // Skip SDR overlays and item drawing to avoid redundant work
+    MoveAndZoomableView::updateMouseCursor();
+    if (testMode)
+    {
+      if (testLoopCount < 0)
+        testFinished(false);
+      else
+      {
+        testLoopCount--;
+        update();
+      }
+    }
+    return;
   }
 
   if (isSplitting())
   {
     QStringPair itemNamesToDraw = determineItemNamesToDraw(item[0], item[1]);
     const bool  drawItemNames =
-      (drawItemPathAndNameEnabled && item[0] != nullptr && item[1] != nullptr &&
-       !itemNamesToDraw.first.isEmpty() && !itemNamesToDraw.second.isEmpty() &&
-       item[0]->properties().isFileSource && item[1]->properties().isFileSource);
+        (drawItemPathAndNameEnabled && item[0] != nullptr && item[1] != nullptr &&
+         !itemNamesToDraw.first.isEmpty() && !itemNamesToDraw.second.isEmpty() &&
+         item[0]->properties().isFileSource && item[1]->properties().isFileSource);
 
     // Draw two items (or less, if less items are selected)
     if (item[0])
@@ -288,7 +510,7 @@ void splitViewWidget::paintEvent(QPaintEvent *)
       if (!waitingForCaching)
       {
         painter.setFont(
-          QFont(SPLITVIEWWIDGET_PIXEL_VALUES_FONT, SPLITVIEWWIDGET_PIXEL_VALUES_FONTSIZE));
+            QFont(SPLITVIEWWIDGET_PIXEL_VALUES_FONT, SPLITVIEWWIDGET_PIXEL_VALUES_FONTSIZE));
         item[0]->drawItem(&painter, frame, zoom, drawRawValues);
       }
 
@@ -344,7 +566,7 @@ void splitViewWidget::paintEvent(QPaintEvent *)
       if (!waitingForCaching)
       {
         painter.setFont(
-          QFont(SPLITVIEWWIDGET_PIXEL_VALUES_FONT, SPLITVIEWWIDGET_PIXEL_VALUES_FONTSIZE));
+            QFont(SPLITVIEWWIDGET_PIXEL_VALUES_FONT, SPLITVIEWWIDGET_PIXEL_VALUES_FONTSIZE));
         item[1]->drawItem(&painter, frame, zoom, drawRawValues);
       }
 
@@ -381,13 +603,13 @@ void splitViewWidget::paintEvent(QPaintEvent *)
       // is not identical.
       if (item[0]->getSize().height() != item[1]->getSize().height())
         paintPixelRulersY(
-          painter, item[1], drawArea_botR.y(), xSplit, zoom, centerPoints[1], offset);
+            painter, item[1], drawArea_botR.y(), xSplit, zoom, centerPoints[1], offset);
 
       // Draw the "loading" message (if needed)
       drawingLoadingMessage[1] = (!playing && item[1]->isLoading());
       if (drawingLoadingMessage[1])
         drawLoadingMessage(
-          &painter, QPoint(xSplit + (drawArea_botR.x() - xSplit) / 2, drawArea_botR.y() / 2));
+            &painter, QPoint(xSplit + (drawArea_botR.x() - xSplit) / 2, drawArea_botR.y() / 2));
 
       if (drawItemNames)
         drawItemPathAndName(&painter, xSplit, drawArea_botR.x() - xSplit, itemNamesToDraw.second);
@@ -409,7 +631,7 @@ void splitViewWidget::paintEvent(QPaintEvent *)
       if (!waitingForCaching)
       {
         painter.setFont(
-          QFont(SPLITVIEWWIDGET_PIXEL_VALUES_FONT, SPLITVIEWWIDGET_PIXEL_VALUES_FONTSIZE));
+            QFont(SPLITVIEWWIDGET_PIXEL_VALUES_FONT, SPLITVIEWWIDGET_PIXEL_VALUES_FONTSIZE));
         item[0]->drawItem(&painter, frame, zoom, drawRawValues);
       }
 
@@ -495,14 +717,17 @@ void splitViewWidget::paintEvent(QPaintEvent *)
       painter.setClipping(false);
   }
 
-  if (zoom != 1.0)
+  // Always draw the zoom factor (as requested by user)
   {
     // Draw the zoom factor
-    QString zoomString = QString("x") + QString::number(zoom, 'g', (zoom < 0.5) ? 4 : 2);
+    QString zoomString =
+        QString("x") + QString::number(rawZoom, 'g', (rawZoom < 0.5) ? 4 : 2);
     painter.setRenderHint(QPainter::TextAntialiasing);
     painter.setPen(QColor(Qt::black));
     painter.setFont(zoomFactorFont);
-    painter.drawText(zoomFactorFontPos, zoomString);
+    // Move the text a little lower to improve readability
+    QPoint adjustedPos = zoomFactorFontPos + QPoint(0, 6);
+    painter.drawText(adjustedPos, zoomString);
   }
 
   if (playback->isWaitingForCaching())
@@ -526,6 +751,179 @@ void splitViewWidget::paintEvent(QPaintEvent *)
     }
   }
 }
+
+
+void splitViewWidget::setHDROverlayContainer(QWidget* container)
+{
+  
+  // Remove previous container if different
+  if (m_hdrOverlayContainer && m_hdrOverlayContainer != container) {
+    m_hdrOverlayContainer->setParent(nullptr);
+    m_hdrOverlayContainer->hide();
+  }
+
+  m_hdrOverlayContainer = container;
+
+  if (m_hdrOverlayContainer) {
+    m_hdrOverlayContainer->setParent(this);
+    
+    // Allow mouse/wheel input to pass through to SplitViewWidget for zoom/pan handling
+    m_hdrOverlayContainer->setAttribute(Qt::WA_TransparentForMouseEvents, true);
+    
+    m_hdrOverlayContainer->setAutoFillBackground(false);
+    
+    // Ensure the HDR container always stays on top of child widgets
+    m_hdrOverlayContainer->setAttribute(Qt::WA_AlwaysStackOnTop, true);
+    
+    // Ensure we receive wheel events even if the container grabs them
+    m_hdrOverlayContainer->installEventFilter(this);
+    
+    QRect targetGeometry = rect();
+    if (targetGeometry.width() < 64 || targetGeometry.height() < 64) {
+      targetGeometry = QRect(0, 0, 640, 480);
+    }
+    
+    m_hdrOverlayContainer->setGeometry(targetGeometry);
+    
+    m_hdrOverlayContainer->setFocusPolicy(Qt::StrongFocus);
+    
+    m_hdrOverlayContainer->show();
+    
+    m_hdrOverlayContainer->raise();
+    
+  } else {
+  }
+}
+
+void splitViewWidget::setHDROverlayContainer(QWidget* container, QWindow* window)
+{
+  
+  setHDROverlayContainer(container);
+  
+  m_hdrOverlayWindow = window;
+
+  // Initialize HDR window background and transform to current view state
+  if (m_hdrOverlayWindow) {
+    if (auto hdrWindow = qobject_cast<HDR_WindowType*>(m_hdrOverlayWindow.data())) {
+      
+      hdrWindow->setBackgroundColor(this->palette().color(QPalette::Window));
+      
+      // Pass both renderZoom (effectiveZoomFactor) for rendering and zoomFactor for UI display
+      hdrWindow->updateTransform(this->effectiveZoomFactor(), this->moveOffset, this->zoomFactor);
+      
+      hdrWindow->setOverlayEnabled(false);
+
+      // Connect widgetInitialized for re-applying config after GL init
+      // This is a backup mechanism - the primary trigger is the immediate call below
+      connect(hdrWindow, &HDR_WindowType::widgetInitialized, this, [this, hdrWindow]() {
+        
+        hdrWindow->setBackgroundColor(this->palette().color(QPalette::Window));
+        hdrWindow->updateTransform(this->effectiveZoomFactor(), this->moveOffset, this->zoomFactor);
+        
+        // Trigger a repaint now that HDR window is fully initialized
+        this->update();
+      });
+
+      // Keep HDR window transform synced on any subsequent view transform changes
+      connect(this, &splitViewWidget::viewTransformChanged,
+              hdrWindow, &HDR_WindowType::updateTransform);
+
+            // Proactively trigger initialization after embedding into a QWidget container.
+      // With QWidget::createWindowContainer(), expose events can be delayed, so relying only
+      // on exposeEvent() may leave the HDR window uninitialized for too long (black screen).
+      QPointer<HDR_WindowType> safeHdrWindow = hdrWindow;
+      QPointer<splitViewWidget> safeThis = this;
+      auto scheduleInitAttempt = [this, safeThis, safeHdrWindow](int delayMs) {
+        QTimer::singleShot(delayMs, this, [safeThis, safeHdrWindow]() {
+          if (!safeThis || !safeHdrWindow) return;
+          // Request an update (may help the platform generate expose/update events),
+          // then try explicit initialization as a fallback.
+          safeHdrWindow->requestUpdate();
+          (void)safeHdrWindow->tryInitialize();
+          safeThis->update();
+        });
+      };
+      scheduleInitAttempt(50);
+      scheduleInitAttempt(150);
+      scheduleInitAttempt(300);
+    }
+
+    // Also listen for wheel events from the QOpenGLWindow itself
+    m_hdrOverlayWindow->installEventFilter(this);
+  }
+  
+  // Ensure HDR overlay visibility is updated immediately after embedding so
+  // the QOpenGLWindow receives expose events and can initialize GL.
+  // Previously, we waited for widgetInitialized signal, but that created a chicken-egg problem:
+  // - widgetInitialized requires the window to be exposed (for initializeGL to be called)
+  // - But the window wasn't properly shown until updateHDRVisibilityForSelection() was called
+  // - Which was waiting for widgetInitialized!
+  // By calling updateHDRVisibilityForSelection() immediately, we break this cycle.
+  if (this->playlist) {
+    const auto items = this->playlist->getSelectedItems();
+    this->updateHDRVisibilityForSelection(items[0], items[1]);
+  } else {
+    this->updateHDRVisibilityForSelection(nullptr, nullptr);
+  }
+  
+}
+
+void splitViewWidget::showHDROverlay(bool show)
+{
+  if (m_hdrOverlayContainer) {
+    if (show) {
+      QRect currentGeometry = rect();
+      m_hdrOverlayContainer->setGeometry(currentGeometry);
+      m_hdrOverlayContainer->show();
+      m_hdrOverlayContainer->raise();
+      m_hdrOverlayContainer->setFocus();
+      if (m_hdrOverlayWindow) {
+        if (auto hdrWindow = qobject_cast<HDR_WindowType*>(m_hdrOverlayWindow.data())) {
+          hdrWindow->setOverlayEnabled(true);
+          
+          // Schedule delayed updates to ensure HDR window gets exposed
+          QPointer<HDR_WindowType> safeWindow = hdrWindow;
+          QPointer<splitViewWidget> safeThis = this;
+          
+          auto scheduleUpdate = [safeThis, safeWindow](int delayMs) {
+            QTimer::singleShot(delayMs, [safeThis, safeWindow]() {
+              if (!safeThis || !safeWindow) return;
+              safeThis->update();
+            });
+          };
+          
+          scheduleUpdate(50);
+          scheduleUpdate(100);
+          scheduleUpdate(200);
+        }
+      }
+    } else {
+      m_hdrOverlayContainer->hide();
+      if (m_hdrOverlayWindow) {
+        if (auto hdrWindow = qobject_cast<HDR_WindowType*>(m_hdrOverlayWindow.data())) {
+          hdrWindow->clearFrame();
+          hdrWindow->setOverlayEnabled(false);
+        }
+      }
+    }
+    update();
+  }
+}
+
+// Override resizeEvent to keep HDR widget sized correctly
+void splitViewWidget::resizeEvent(QResizeEvent* event)
+{
+  MoveAndZoomableView::resizeEvent(event);
+
+  updateHDROverlayGeometry();
+  // Raise after resize to avoid transient stacking glitches during zoom/resize
+  if (m_hdrOverlayContainer && m_hdrOverlayContainer->isVisible())
+    m_hdrOverlayContainer->raise();
+  
+  // Check for display changes when window is resized (may indicate move to different screen)
+  scheduleHDRSupportCheck(200);
+}
+
 
 void splitViewWidget::updatePixelPositions()
 {
@@ -558,11 +956,12 @@ void splitViewWidget::updatePixelPositions()
 
   if (anyItemsSelected && this->drawZoomBox && geometry().contains(this->zoomBoxMousePosition))
   {
+    const double zoom = effectiveZoomFactor();
     // Is the mouse over the left or the right item? (mouseInLeftOrRightView: false=left,
     // true=right)
     const auto xSplit = int(drawAreaBotR.x() * splittingPoint);
     const bool mouseInLeftOrRightView =
-      (isSplitting() && (this->zoomBoxMousePosition.x() > xSplit));
+        (isSplitting() && (this->zoomBoxMousePosition.x() > xSplit));
 
     // The absolute center point of the item under the cursor
     const auto itemCenterMousePos = (mouseInLeftOrRightView) ? centerPoints[1] + this->moveOffset
@@ -570,8 +969,8 @@ void splitViewWidget::updatePixelPositions()
 
     // The difference in the item under the mouse (normalized by zoom factor)
     double diffInItem[2] = {
-      (double)(itemCenterMousePos.x() - this->zoomBoxMousePosition.x()) / this->zoomFactor + 0.5,
-      (double)(itemCenterMousePos.y() - this->zoomBoxMousePosition.y()) / this->zoomFactor + 0.5};
+        (double)(itemCenterMousePos.x() - this->zoomBoxMousePosition.x()) / zoom + 0.5,
+        (double)(itemCenterMousePos.y() - this->zoomBoxMousePosition.y()) / zoom + 0.5};
 
     // We now have the pixel difference value for the item under the cursor.
     // We now draw one zoom box per view
@@ -617,7 +1016,7 @@ void splitViewWidget::setZoomBoxPixelUnderCursor(QPoint posA,
 }
 
 void splitViewWidget::paintZoomBox(int           view,
-                                   QPainter     &painter,
+                                   QPainter &    painter,
                                    int           xSplit,
                                    const QPoint &drawArea_botR,
                                    playlistItem *item,
@@ -707,8 +1106,8 @@ void splitViewWidget::paintZoomBox(int           view,
                                       "<tr><td>X:</td><td align=\"right\">%1</td></tr>"
                                       "<tr><td>Y:</td><td align=\"right\">%2</td></tr>"
                                       "</table>")
-                                .arg(pixelPos.x())
-                                .arg(pixelPos.y());
+                                  .arg(pixelPos.x())
+                                  .arg(pixelPos.y());
 
     // If the pixel position is within the item, append information on the pixel vale
     if (pixelPosInItem)
@@ -723,9 +1122,10 @@ void splitViewWidget::paintZoomBox(int           view,
           pixelInfoString.append(QString("<h4>%1</h4><table width=\"100%\">").arg(title));
           for (int j = 0; j < pixelValues.size(); ++j)
             pixelInfoString.append(
-              QString("<tr><td><nobr>%1:</nobr></td><td align=\"right\"><nobr>%2</nobr></td></tr>")
-                .arg(pixelValues[j].first)
-                .arg(pixelValues[j].second));
+                QString(
+                    "<tr><td><nobr>%1:</nobr></td><td align=\"right\"><nobr>%2</nobr></td></tr>")
+                    .arg(pixelValues[j].first)
+                    .arg(pixelValues[j].second));
           pixelInfoString.append("</table>");
         }
     }
@@ -739,12 +1139,12 @@ void splitViewWidget::paintZoomBox(int           view,
     // Translate to the position where the text box shall be
     if (view == 0 && isSplitting())
       painter.translate(
-        xSplit - margin - zoomBoxSize - textDocument.size().width() - padding * 2 + 1,
-        drawArea_botR.y() - margin - textDocument.size().height() - padding * 2 + 1);
+          xSplit - margin - zoomBoxSize - textDocument.size().width() - padding * 2 + 1,
+          drawArea_botR.y() - margin - textDocument.size().height() - padding * 2 + 1);
     else
       painter.translate(
-        drawArea_botR.x() - margin - zoomBoxSize - textDocument.size().width() - padding * 2 + 1,
-        drawArea_botR.y() - margin - textDocument.size().height() - padding * 2 + 1);
+          drawArea_botR.x() - margin - zoomBoxSize - textDocument.size().width() - padding * 2 + 1,
+          drawArea_botR.y() - margin - textDocument.size().height() - padding * 2 + 1);
 
     // Draw a black rectangle and then the text on top of that
     QRect  rect(QPoint(0, 0), textDocument.size().toSize() + QSize(2 * padding, 2 * padding));
@@ -779,13 +1179,14 @@ void splitViewWidget::paintRegularGrid(QPainter *painter, playlistItem *item)
   if (this->regularGridSize == 0)
     return;
 
-  auto itemSize = item->getSize() * this->zoomFactor;
+  const double zoom = effectiveZoomFactor();
+  auto itemSize     = item->getSize() * zoom;
   painter->setPen(regularGridColor);
 
   // Draw horizontal lines
   const auto xMin     = -itemSize.width() / 2;
   const auto xMax     = itemSize.width() / 2;
-  const auto gridZoom = this->regularGridSize * this->zoomFactor;
+  const auto gridZoom = this->regularGridSize * zoom;
   for (int y = 1; y <= (itemSize.height() - 1) / gridZoom; y++)
   {
     int yPos = (-itemSize.height() / 2) + y * gridZoom;
@@ -802,7 +1203,7 @@ void splitViewWidget::paintRegularGrid(QPainter *painter, playlistItem *item)
   }
 }
 
-void splitViewWidget::paintPixelRulersX(QPainter     &painter,
+void splitViewWidget::paintPixelRulersX(QPainter &    painter,
                                         playlistItem *item,
                                         int           xPixMin,
                                         int           xPixMax,
@@ -856,7 +1257,7 @@ void splitViewWidget::paintPixelRulersX(QPainter     &painter,
   }
 }
 
-void splitViewWidget::paintPixelRulersY(QPainter     &painter,
+void splitViewWidget::paintPixelRulersY(QPainter &    painter,
                                         playlistItem *item,
                                         int           yPixMax,
                                         int           xPos,
@@ -999,7 +1400,7 @@ void splitViewWidget::mousePressEvent(QMouseEvent *mouse_event)
                           mouse_event->position().x() < (splitPosPix + margin));
 #else
     mouseOverSplitLine =
-      (mouse_event->x() > (splitPosPix - margin) && mouse_event->x() < (splitPosPix + margin));
+        (mouse_event->x() > (splitPosPix - margin) && mouse_event->x() < (splitPosPix + margin));
 #endif
   }
 
@@ -1069,6 +1470,16 @@ void splitViewWidget::setMoveOffset(QPointF offset)
       }
     }
   }
+  updateHDROverlayGeometry();
+  
+  // Notify HDR window of transform change if it exists
+  // Pass both renderZoom (effectiveZoomFactor) for rendering and zoomFactor for UI display
+  if (m_hdrOverlayWindow) {
+    if (auto hdrWindow = qobject_cast<HDR_WindowType*>(m_hdrOverlayWindow.data())) {
+      hdrWindow->updateTransform(this->effectiveZoomFactor(), this->moveOffset, this->zoomFactor);
+    }
+  }
+  emit viewTransformChanged(this->effectiveZoomFactor(), this->moveOffset, this->zoomFactor);
 }
 
 QPoint splitViewWidget::getMoveOffsetCoordinateSystemOrigin(const QPointF zoomPoint) const
@@ -1082,7 +1493,7 @@ QPoint splitViewWidget::getMoveOffsetCoordinateSystemOrigin(const QPointF zoomPo
     if (zoomPointInRightView)
     {
       const auto centerOfRightView =
-        QPoint(xSplit + (drawAreaBotR.x() - xSplit) / 2, drawAreaBotR.y() / 2);
+          QPoint(xSplit + (drawAreaBotR.x() - xSplit) / 2, drawAreaBotR.y() / 2);
       return centerOfRightView;
     }
     else
@@ -1102,7 +1513,7 @@ void splitViewWidget::onZoomRectUpdateOffsetAndZoom(QRectF zoomRect, double addi
     return;
 
   const auto zoomRectCenterOffset =
-    zoomRect.center() - this->getMoveOffsetCoordinateSystemOrigin(this->viewZoomingMousePosStart);
+      zoomRect.center() - this->getMoveOffsetCoordinateSystemOrigin(this->viewZoomingMousePosStart);
   this->setMoveOffset((this->moveOffset - zoomRectCenterOffset) * additionalZoomFactor);
   this->setZoomFactor(newZoom);
 }
@@ -1135,6 +1546,16 @@ void splitViewWidget::setZoomFactor(double zoom)
       }
     }
   }
+  updateHDROverlayGeometry();
+  
+  // Notify HDR window of transform change if it exists
+  // Pass both renderZoom (effectiveZoomFactor) for rendering and zoomFactor for UI display
+  if (m_hdrOverlayWindow) {
+    if (auto hdrWindow = qobject_cast<HDR_WindowType*>(m_hdrOverlayWindow.data())) {
+      hdrWindow->updateTransform(this->effectiveZoomFactor(), this->moveOffset, this->zoomFactor);
+    }
+  }
+  emit viewTransformChanged(this->effectiveZoomFactor(), this->moveOffset, this->zoomFactor);
 }
 
 void splitViewWidget::updateMouseTracking()
@@ -1194,7 +1615,7 @@ void splitViewWidget::gridSetCustom(bool)
 {
   bool ok;
   int  newValue = QInputDialog::getInt(
-    this, "Custom grid", "Please select a grid size value in pixels", 64, 1, 2147483647, 1, &ok);
+      this, "Custom grid", "Please select a grid size value in pixels", 64, 1, 2147483647, 1, &ok);
   if (ok)
   {
     this->regularGridSize = newValue;
@@ -1254,6 +1675,12 @@ void splitViewWidget::zoomToFitInternal()
     // We cannot zoom to anything
     return;
 
+  const double deviceRatio   = std::max(0.01, static_cast<double>(devicePixelRatioForCurrentScreen()));
+  const double widgetWidth   = static_cast<double>(size().width());
+  const double widgetHeight  = static_cast<double>(size().height());
+  const double physicalWidth = widgetWidth * deviceRatio;
+  const double physicalHeight = widgetHeight * deviceRatio;
+
   double fracZoom = 1.0;
   if (!isSplitting())
   {
@@ -1262,8 +1689,8 @@ void splitViewWidget::zoomToFitInternal()
     if (item0Size.width() <= 0 || item0Size.height() <= 0)
       return;
 
-    double zoomH = (double)size().width() / item0Size.width();
-    double zoomV = (double)size().height() / item0Size.height();
+    double zoomH = physicalWidth / item0Size.width();
+    double zoomV = physicalHeight / item0Size.height();
 
     fracZoom = std::min(zoomH, zoomV);
   }
@@ -1282,8 +1709,8 @@ void splitViewWidget::zoomToFitInternal()
         virtualItemSize.setHeight(item1Size.height());
     }
 
-    double zoomH = (double)size().width() / virtualItemSize.width();
-    double zoomV = (double)size().height() / virtualItemSize.height();
+    double zoomH = physicalWidth / virtualItemSize.width();
+    double zoomV = physicalHeight / virtualItemSize.height();
 
     fracZoom = std::min(zoomH, zoomV);
   }
@@ -1291,14 +1718,16 @@ void splitViewWidget::zoomToFitInternal()
   {
     // We have to know the size of the split parts and calculate a zoom factor for each part
     int xSplit = int(size().width() * splittingPoint);
+    const double leftWidthPhysical  = static_cast<double>(xSplit) * deviceRatio;
+    const double rightWidthPhysical = (widgetWidth - xSplit) * deviceRatio;
 
     // Left item
     QSize item0Size = item[0]->getSize();
     if (item0Size.width() <= 0 || item0Size.height() <= 0)
       return;
 
-    double zoomH = (double)xSplit / item0Size.width();
-    double zoomV = (double)size().height() / item0Size.height();
+    double zoomH = leftWidthPhysical / item0Size.width();
+    double zoomV = physicalHeight / item0Size.height();
     fracZoom     = std::min(zoomH, zoomV);
 
     // Right item
@@ -1307,8 +1736,8 @@ void splitViewWidget::zoomToFitInternal()
       QSize item1Size = item[1]->getSize();
       if (item1Size.width() > 0 && item1Size.height() > 0)
       {
-        double zoomH2        = (double)(size().width() - xSplit) / item1Size.width();
-        double zoomV2        = (double)size().height() / item1Size.height();
+        double zoomH2        = rightWidthPhysical / item1Size.width();
+        double zoomV2        = physicalHeight / item1Size.height();
         double item2FracZoom = std::min(zoomH2, zoomV2);
 
         // If we need to zoom out more for item 2, then do so.
@@ -1404,7 +1833,11 @@ void splitViewWidget::currentSelectedItemsChanged(playlistItem *item1, playlistI
   Q_ASSERT_X(this->isMasterView, Q_FUNC_INFO, "Call this function only on the primary widget.");
 
   if (!item1 && !item2)
+  {
+    // No items selected — ensure HDR overlay is hidden and cleared
+    updateHDRVisibilityForSelection(nullptr, nullptr);
     return;
+  }
 
   QSettings settings;
   bool savePositionAndZoomPerItem = settings.value("SavePositionAndZoomPerItem", false).toBool();
@@ -1430,6 +1863,25 @@ void splitViewWidget::currentSelectedItemsChanged(playlistItem *item1, playlistI
                     << item1->properties().id << " moveOffset " << this->moveOffset << " zoom "
                     << this->zoomFactor);
   }
+
+  // After restoring transforms, update HDR overlay visibility for the new selection
+  updateHDRVisibilityForSelection(item1, item2);
+
+  // Clear any previously shown HDR frame so the new selection doesn't show stale content
+  if (m_hdrOverlayWindow) {
+    if (auto hdrWindow = qobject_cast<HDR_WindowType*>(m_hdrOverlayWindow.data())) {
+      hdrWindow->clearFrame();
+    }
+  }
+}
+
+void splitViewWidget::onSelectedItemPropertiesChanged(bool redraw)
+{
+  Q_UNUSED(redraw);
+  if (!playlist)
+    return;
+  const auto items = playlist->getSelectedItems();
+  updateHDRVisibilityForSelection(items[0], items[1]);
 }
 
 QImage splitViewWidget::getScreenshot(bool fullItem)
@@ -1604,9 +2056,9 @@ void splitViewWidget::freezeView(bool freeze)
 }
 
 void splitViewWidget::getViewState(QPointF &offset,
-                                   double  &zoom,
-                                   double  &splitPoint,
-                                   int     &mode) const
+                                   double & zoom,
+                                   double & splitPoint,
+                                   int &    mode) const
 {
   offset     = this->moveOffset;
   zoom       = this->zoomFactor;
@@ -1656,15 +2108,14 @@ void splitViewWidget::createMenuActions()
   const bool menuActionsCreatedYet = bool(this->actionSplitViewGroup);
   Q_ASSERT_X(!menuActionsCreatedYet, Q_FUNC_INFO, "Only call this initialization function once.");
 
-  auto configureAction = [this](QAction            &action,
+  auto configureAction = [this](QAction &           action,
                                 QActionGroup *const actionGroup,
-                                const QString      &text,
+                                const QString &     text,
                                 const bool          checkable,
                                 const bool          checked,
                                 void (splitViewWidget::*func)(bool),
                                 const QKeySequence &shortcut  = {},
-                                const bool          isEnabled = true)
-  {
+                                const bool          isEnabled = true) {
     action.setParent(this);
     action.setCheckable(checkable);
     action.setChecked(checked);
@@ -1701,10 +2152,10 @@ void splitViewWidget::createMenuActions()
                   &splitViewWidget::splitViewComparison);
   this->actionSplitView[0].setToolTip("Show only one single Item.");
   this->actionSplitView[1].setToolTip(
-    "Show two items side-by-side so that the same part of each item is visible.");
+      "Show two items side-by-side so that the same part of each item is visible.");
   this->actionSplitView[2].setToolTip(
-    "Show two items at the same position with a split line that can be "
-    "moved to reveal either item.");
+      "Show two items at the same position with a split line that can be "
+      "moved to reveal either item.");
 
   this->actionGridGroup.reset(new QActionGroup(this));
   configureAction(this->actionGrid[0],
@@ -1742,8 +2193,8 @@ void splitViewWidget::createMenuActions()
                   "Custom...",
                   Checkable(true),
                   this->regularGridSize != 0 && this->regularGridSize != 16 &&
-                    this->regularGridSize != 32 && this->regularGridSize != 64 &&
-                    this->regularGridSize != 128,
+                      this->regularGridSize != 32 && this->regularGridSize != 64 &&
+                      this->regularGridSize != 128,
                   &splitViewWidget::gridSetCustom);
   configureAction(this->actionGrid[6],
                   this->actionGridGroup.get(),
@@ -1789,10 +2240,10 @@ void splitViewWidget::createMenuActions()
     this->actionSeparateView.setToolTip("Show a second window with another view to the same item. "
                                         "Especially helpful for multi screen setups.");
     this->actionSeparateViewLink.setToolTip(
-      "Link the second view so that any change in one view is also applied in the other view.");
+        "Link the second view so that any change in one view is also applied in the other view.");
     this->actionSeparateViewPlaybackBoth.setToolTip(
-      "For performance reasons playback only runs in one (the second) view. Activate this to run "
-      "playback in both views siultaneously.");
+        "For performance reasons playback only runs in one (the second) view. Activate this to run "
+        "playback in both views siultaneously.");
   }
 
   configureAction(this->actionFullScreen,
@@ -1957,7 +2408,7 @@ void splitViewWidget::testDrawingSpeed()
   if (selection[0] == nullptr)
   {
     QMessageBox::information(
-      this, "Test error", "Please select an item from the playlist to perform the test on.");
+        this, "Test error", "Please select an item from the playlist to perform the test on.");
     return;
   }
 
@@ -1996,8 +2447,8 @@ void splitViewWidget::addMenuActions(QMenu *menu)
   separateViewMenu->addAction(!isMasterView ? &this->getOtherWidget()->actionSeparateViewLink
                                             : &actionSeparateViewLink);
   separateViewMenu->addAction(!isMasterView
-                                ? &this->getOtherWidget()->actionSeparateViewPlaybackBoth
-                                : &actionSeparateViewPlaybackBoth);
+                                  ? &this->getOtherWidget()->actionSeparateViewPlaybackBoth
+                                  : &actionSeparateViewPlaybackBoth);
   separateViewMenu->setToolTipsVisible(true);
 
   menu->addAction(&this->actionFullScreen);
@@ -2041,11 +2492,11 @@ void splitViewWidget::testFinished(bool canceled)
   int64_t msec = testDuration.elapsed();
   double  rate = 1000.0 * 1000 / msec;
   QMessageBox::information(
-    this,
-    "Test results",
-    QString("We drew 1000 frames in %1 msec. The draw rate is %2 frames per second.")
-      .arg(msec)
-      .arg(rate));
+      this,
+      "Test results",
+      QString("We drew 1000 frames in %1 msec. The draw rate is %2 frames per second.")
+          .arg(msec)
+          .arg(rate));
 }
 
 QPointer<splitViewWidget> splitViewWidget::getOtherWidget() const
@@ -2074,4 +2525,215 @@ void splitViewWidget::getStateFromMaster()
   update();
 
   MoveAndZoomableView::getStateFromMaster();
+}
+
+QScreen* splitViewWidget::getCurrentScreen() const
+{
+  // Get the screen that contains the center of this widget
+  QWidget* topLevel = window();
+  if (!topLevel) {
+    return QGuiApplication::primaryScreen();
+  }
+  
+  QPoint widgetCenter = topLevel->geometry().center();
+  
+  // Find the screen that contains this point
+  for (QScreen* screen : QGuiApplication::screens()) {
+    if (screen->geometry().contains(widgetCenter)) {
+      return screen;
+    }
+  }
+  
+  // Fallback to primary screen
+  return QGuiApplication::primaryScreen();
+}
+
+void splitViewWidget::checkCurrentDisplayHDRSupport()
+{
+  QScreen* currentScreen = getCurrentScreen();
+  
+  if (currentScreen == m_currentScreen) {
+    // No change in screen, no need to check again
+    return;
+  }
+  
+  
+  m_currentScreen = currentScreen;
+  
+  if (!currentScreen) {
+    m_currentDisplaySupportsHDR = false;
+    m_currentDisplayName = "Unknown Display";
+    emit signalDisplayHDRSupportChanged(false, m_currentDisplayName);
+    return;
+  }
+  
+  m_currentDisplayName = currentScreen->name();
+  
+  // Use HDRDetection to check if current display supports HDR
+  HDRDetection* detector = HDRDetection::instance();
+  HDRDetection::HDRCapabilities capabilities = detector->detectHDRCapabilities(this);
+  bool hdrSupported = capabilities.isHDRSupported;
+  
+  
+  // Update state with confirmation when dropping HDR to avoid transient glitches
+  if (hdrSupported != m_currentDisplaySupportsHDR) {
+    if (!hdrSupported) {
+      // First time we detect HDR drop: verify a few times before committing
+      if (!m_hdrDropVerifyPending) {
+        m_hdrDropVerifyPending = true;
+        m_hdrDropVerifyAttempts = 0;
+      }
+      // Schedule a short verification loop
+      if (m_hdrDropVerifyAttempts < 3) {
+        m_hdrDropVerifyAttempts++;
+        QTimer::singleShot(120, this, [this]{ this->scheduleHDRSupportCheck(0); });
+        return; // Wait for confirmation
+      }
+      // Confirmed drop after retries
+      m_hdrDropVerifyPending = false;
+      m_hdrDropVerifyAttempts = 0;
+      m_currentDisplaySupportsHDR = false;
+      emit signalDisplayHDRSupportChanged(false, m_currentDisplayName);
+    } else {
+      // Upgrade to HDR immediately
+      m_hdrDropVerifyPending = false;
+      m_hdrDropVerifyAttempts = 0;
+      m_currentDisplaySupportsHDR = true;
+      emit signalDisplayHDRSupportChanged(true, m_currentDisplayName);
+    }
+  }
+}
+
+void splitViewWidget::scheduleHDRSupportCheck(int delayMs)
+{
+  // Debounce HDR checks to avoid transient false negatives during resize/moves
+  if (!m_hdrDebounceTimer.isActive()) {
+    m_hdrDebounceTimer.setSingleShot(true);
+    connect(&m_hdrDebounceTimer, &QTimer::timeout, this, &splitViewWidget::checkCurrentDisplayHDRSupport, Qt::UniqueConnection);
+  }
+  m_hdrDebounceTimer.start(std::max(0, delayMs));
+}
+
+void splitViewWidget::updateHDROverlayGeometry()
+{
+    // Only execute when HDR overlay exists and is visible
+    if ((!m_hdrOverlayContainer || !m_hdrOverlayContainer->isVisible())) {
+        return;
+    }
+
+    // Always make HDR widget cover the entire split view widget
+    // This ensures no gray areas appear around the edges
+    // The actual video rendering area will be handled by the projection matrix in HDR widget
+    if (m_hdrOverlayContainer && m_hdrOverlayContainer->isVisible()) {
+        m_hdrOverlayContainer->setGeometry(rect());
+        // Re-raise after geometry adjustments to prevent black overlays
+        m_hdrOverlayContainer->raise();
+    }
+}
+
+bool splitViewWidget::eventFilter(QObject* obj, QEvent* event)
+{
+  if (obj == m_hdrOverlayContainer.data() || obj == m_hdrOverlayWindow.data()) {
+    // Forward wheel events to this widget for zoom handling
+    if (event->type() == QEvent::Wheel) {
+      auto* we = static_cast<QWheelEvent*>(event);
+      // Synthesize a wheel event at the same position relative to this widget
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+      const QPoint localPos = mapFromGlobal(we->globalPosition().toPoint());
+      QWheelEvent forwarded(QPointF(localPos), we->globalPosition(),
+                            we->pixelDelta(), we->angleDelta(), we->buttons(), we->modifiers(),
+                            we->phase(), we->inverted(), we->source());
+#else
+      QWheelEvent forwarded(mapFromGlobal(we->globalPos()), we->delta(), we->buttons(),
+                            we->modifiers(), we->orientation());
+#endif
+      QApplication::sendEvent(this, &forwarded);
+      return true;
+    }
+    
+    // Forward mouse move events for ZoomBox coordinate tracking in HDR mode
+    // Without this, zoomBoxMousePosition never updates and coordinates stay at (0,0)
+    if (event->type() == QEvent::MouseMove) {
+      auto* me = static_cast<QMouseEvent*>(event);
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+      const QPoint localPos = mapFromGlobal(me->globalPosition().toPoint());
+      QMouseEvent forwarded(QEvent::MouseMove, QPointF(localPos), me->globalPosition(),
+                            me->button(), me->buttons(), me->modifiers());
+#else
+      const QPoint localPos = mapFromGlobal(me->globalPos());
+      QMouseEvent forwarded(QEvent::MouseMove, localPos, me->globalPos(),
+                            me->button(), me->buttons(), me->modifiers());
+#endif
+      QApplication::sendEvent(this, &forwarded);
+      return true;
+    }
+    
+    // Forward mouse press/release events for pan and drag operations in HDR mode
+    if (event->type() == QEvent::MouseButtonPress || event->type() == QEvent::MouseButtonRelease) {
+      auto* me = static_cast<QMouseEvent*>(event);
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+      const QPoint localPos = mapFromGlobal(me->globalPosition().toPoint());
+      QMouseEvent forwarded(event->type(), QPointF(localPos), me->globalPosition(),
+                            me->button(), me->buttons(), me->modifiers());
+#else
+      const QPoint localPos = mapFromGlobal(me->globalPos());
+      QMouseEvent forwarded(event->type(), localPos, me->globalPos(),
+                            me->button(), me->buttons(), me->modifiers());
+#endif
+      QApplication::sendEvent(this, &forwarded);
+      return true;
+    }
+  }
+  return QWidget::eventFilter(obj, event);
+}
+
+void splitViewWidget::onItemAboutToBeDeleted(playlistItem *item)
+{
+  // If the item about to be deleted is currently visible, hide and clear HDR to avoid stale or crash
+  if (!item)
+    return;
+
+  auto selected = playlist ? playlist->getSelectedItems() : std::array<playlistItem*,2>{nullptr,nullptr};
+  if (item == selected[0] || item == selected[1])
+  {
+    showHDROverlay(false);
+  }
+}
+
+void splitViewWidget::updateHDRVisibilityForSelection(playlistItem *item1, playlistItem *item2)
+{
+  // Determine if HDR is requested by user and content
+  bool userRequestsHDR = false;
+  bool sourceIsHDR10   = false;
+  {
+    playlistItem *primary = item1 ? item1 : item2;
+    
+    if (primary) {
+      if (auto handlerOwner = primary->getFrameHandler()) {
+        if (auto yuv = dynamic_cast<video::yuv::videoHandlerYUV*>(handlerOwner)) {
+          QSettings settings;
+          userRequestsHDR = settings.value("Enable10BitDisplay", false).toBool();
+          sourceIsHDR10   = yuv->isHDR10Candidate();
+        }
+      }
+    }
+  }
+
+  const bool needsHDR = userRequestsHDR && sourceIsHDR10;
+
+  // If HDR is desired, ensure detection/activation is started
+  if (needsHDR) {
+    if (auto mgr = HDRRenderingManager::instance()) {
+      const bool active = mgr->isHDRRenderingActive();
+      const bool detecting = mgr->isHDRDetectionInProgress();
+      
+      if (!active && !detecting) {
+        mgr->setHDRRenderingEnabled(true);
+      }
+    }
+  }
+
+  // Show HDR overlay only when we both need HDR and there is an overlay window/container available
+  const bool canShowHDR = needsHDR && m_hdrOverlayContainer && m_hdrOverlayWindow;
+  showHDROverlay(canShowHDR);
 }

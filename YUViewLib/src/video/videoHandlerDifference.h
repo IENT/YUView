@@ -69,10 +69,10 @@ public:
   QList<InfoItem> differenceInfoList;
 
   // The difference overloads this and returns the difference values (A-B)
-  virtual QStringPairList getPixelValues(const QPoint             &pixelPos,
-                                         int                       frameIdx,
-                                         const FrameHandler *const item2     = nullptr,
-                                         const int                 frameIdx1 = 0) const override;
+  virtual QStringPairList getPixelValues(const QPoint &pixelPos,
+                                         int           frameIdx,
+                                         FrameHandler *item2     = nullptr,
+                                         const int     frameIdx1 = 0) override;
 
   void
   guessAndSetPixelFormat(const filesource::frameFormatGuess::GuessedFrameFormat &frameFormat,

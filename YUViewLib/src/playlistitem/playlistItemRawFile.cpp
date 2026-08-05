@@ -44,7 +44,6 @@
 // Activate this if you want to know when which buffer is loaded/converted to image and so on.
 #define PLAYLISTITEMRAWFILE_DEBUG_LOADING 0
 #if PLAYLISTITEMRAWFILE_DEBUG_LOADING && !NDEBUG
-#define DEBUG_RAWFILE(f) qDebug() << f
 #else
 #define DEBUG_RAWFILE(f) ((void)0)
 #endif
@@ -63,9 +62,9 @@ constexpr auto CMYK_EXTENSIONS      = {"cmyk"};
 bool isInExtensions(const QString &testValue, const std::initializer_list<const char *> &extensions)
 {
   const auto it =
-    std::find_if(extensions.begin(),
-                 extensions.end(),
-                 [testValue](const char *extension) { return QString(extension) == testValue; });
+      std::find_if(extensions.begin(),
+                   extensions.end(),
+                   [testValue](const char *extension) { return QString(extension) == testValue; });
   return it != extensions.end();
 }
 
@@ -83,7 +82,7 @@ playlistItemRawFile::playlistItemRawFile(const QString &rawFilePath,
   this->prop.isFileSource          = true;
   this->prop.propertiesWidgetTitle = "Raw File Properties";
 
-  this->dataSource.openFile(std::filesystem::path(rawFilePath.toStdString()));
+  this->dataSource.openFile(functions::qStringToFsPath(rawFilePath));
 
   if (!this->dataSource.isOk())
   {
@@ -122,10 +121,10 @@ playlistItemRawFile::playlistItemRawFile(const QString &rawFilePath,
     if (!this->parseY4MFile())
       return;
   }
-  else if (pixelFormatFromMemory)
+  else if (!pixelFormatFromMemory.isEmpty())
   {
     // Use the format that we got from the memory. Don't do any auto detection.
-    this->video->setFormatFromString(*pixelFormatFromMemory);
+    this->video->setFormatFromString(pixelFormatFromMemory);
   }
   else if (!frameSize.isValid() && sourcePixelFormat.isEmpty())
   {
@@ -158,6 +157,14 @@ playlistItemRawFile::playlistItemRawFile(const QString &rawFilePath,
           this,
           &playlistItemRawFile::loadRawData,
           Qt::DirectConnection);
+
+  // PERFORMANCE OPTIMIZATION: Set up direct read callback for parallel caching
+  // This bypasses the shared rawData buffer and requestDataMutex, enabling
+  // true parallel frame loading when multiple caching threads are active.
+  this->video->setDirectReadCallback(
+      [this](int frameIndex, QByteArray& targetBuffer) -> int64_t {
+        return this->readFrameDataDirect(frameIndex, targetBuffer);
+      });
 
   // Connect the basic signals from the video
   playlistItemWithVideo::connectVideo();
@@ -206,7 +213,7 @@ InfoData playlistItemRawFile::getInfo() const
     info.items.append(infoItem);
 
   const auto nrFrames =
-    (this->properties().startEndRange.second - this->properties().startEndRange.first + 1);
+      (this->properties().startEndRange.second - this->properties().startEndRange.first + 1);
   info.items.append(InfoItem("Num Frames", std::to_string(nrFrames)));
   info.items.append(InfoItem("Bytes per Frame", std::to_string(this->video->getBytesPerFrame())));
 
@@ -221,7 +228,7 @@ InfoData playlistItemRawFile::getInfo() const
     {
       if ((*fileSize % bpf) != 0)
         info.items.append(InfoItem(
-          "Warning"sv, "The file size and the given video size and/or raw format do not match."));
+            "Warning"sv, "The file size and the given video size and/or raw format do not match."));
     }
     else
       info.items.append(InfoItem("Warning"sv, "Could not obtain file size from input."));
@@ -251,7 +258,7 @@ bool playlistItemRawFile::parseY4MFile()
   unsigned width  = 0;
   unsigned height = 0;
   auto     format =
-    video::yuv::PixelFormatYUV(video::yuv::Subsampling::YUV_420, 8, video::yuv::PlaneOrder::YUV);
+      video::yuv::PixelFormatYUV(video::yuv::Subsampling::YUV_420, 8, video::yuv::PlaneOrder::YUV);
 
   while (rawData.at(offset++) == ' ')
   {
@@ -389,7 +396,7 @@ bool playlistItemRawFile::parseY4MFile()
 
   if (width == 0 || height == 0)
     return setError(
-      "Error parsing the Y4M header: The size could not be obtained from the header.");
+        "Error parsing the Y4M header: The size could not be obtained from the header.");
 
   // Next, all frames should follow. Each frame starts with the sequence 'FRAME', followed by a set
   // of paramters for the frame. The 'FRAME' indicator is terminated by a 0x0A. The list of
@@ -452,7 +459,7 @@ bool playlistItemRawFile::parseY4MFile()
 void playlistItemRawFile::setFormatFromFileName()
 {
   const auto fileInfoForGuess = filesource::frameFormatGuess::getFileInfoForGuessFromPath(
-    this->dataSource.getAbsoluteFilePath());
+      this->dataSource.getAbsoluteFilePath());
 
   const auto frameFormat = filesource::frameFormatGuess::guessFrameFormat(fileInfoForGuess);
 
@@ -493,10 +500,10 @@ void playlistItemRawFile::createPropertiesWidget()
 
 void playlistItemRawFile::savePlaylist(QDomElement &root, const QDir &playlistDir) const
 {
-  QUrl fileURL(QString::fromStdString(dataSource.getAbsoluteFilePath()));
+  const QString absolutePath = functions::fsPathToQString(dataSource.getAbsoluteFilePath());
+  QUrl fileURL(absolutePath);
   fileURL.setScheme("file");
-  auto relativePath =
-    playlistDir.relativeFilePath(QString::fromStdString(dataSource.getAbsoluteFilePath()));
+  auto relativePath = playlistDir.relativeFilePath(absolutePath);
 
   auto d = YUViewDomElement(root.ownerDocument().createElement("playlistItemRawFile"));
 
@@ -523,7 +530,7 @@ playlistItemRawFile *playlistItemRawFile::newplaylistItemRawFile(const YUViewDom
 
   // check if file with absolute path exists, otherwise check relative path
   const auto filePath =
-    functions::getAbsPathFromAbsAndRel(playlistFilePath, absolutePath, relativePath);
+      functions::getAbsPathFromAbsAndRel(playlistFilePath, absolutePath, relativePath);
   if (filePath.isEmpty())
     return nullptr;
 
@@ -552,20 +559,59 @@ void playlistItemRawFile::loadRawData(int frameIdx)
 
   DEBUG_RAWFILE("playlistItemRawFile::loadRawData Start loading frame " << frameIdx << " bytes "
                                                                         << int(nrBytes));
-  if (this->dataSource.readBytes(this->video->rawData, fileStartPos, nrBytes) < nrBytes)
+  
+  // Use parallel read for better performance when multiple caching threads are active
+  // This avoids mutex contention by using thread-local file handles
+  if (this->dataSource.readBytesParallel(this->video->rawData, fileStartPos, nrBytes) < nrBytes)
     return; // Error
   this->video->rawData_frameIndex = frameIdx;
 
   DEBUG_RAWFILE("playlistItemRawFile::loadRawData Frame " << frameIdx << " loaded");
 }
 
+int64_t playlistItemRawFile::readFrameDataDirect(int frameIndex, QByteArray& targetBuffer)
+{
+  // PERFORMANCE OPTIMIZATION: Direct parallel frame reading
+  // This method bypasses the shared rawData buffer, enabling true parallel I/O.
+  // Each caching thread provides its own buffer, eliminating mutex contention.
+  
+  if (!this->video->isFormatValid())
+    return 0;
+
+  const auto nrBytes = this->video->getBytesPerFrame();
+  
+  // Calculate file position for the requested frame
+  int64_t fileStartPos;
+  if (this->isY4MFile)
+  {
+    if (frameIndex < 0 || frameIndex >= this->y4mFrameIndices.size())
+      return 0;
+    fileStartPos = this->y4mFrameIndices.at(frameIndex);
+  }
+  else
+  {
+    fileStartPos = static_cast<int64_t>(frameIndex) * nrBytes;
+  }
+
+  DEBUG_RAWFILE("playlistItemRawFile::readFrameDataDirect frame " << frameIndex 
+                << " pos " << fileStartPos << " bytes " << nrBytes);
+
+  // Use parallel read - each thread gets its own file handle
+  const auto bytesRead = this->dataSource.readBytesParallel(targetBuffer, fileStartPos, nrBytes);
+  
+  DEBUG_RAWFILE("playlistItemRawFile::readFrameDataDirect frame " << frameIndex 
+                << " read " << bytesRead << " bytes");
+
+  return bytesRead;
+}
+
 void playlistItemRawFile::slotVideoPropertiesChanged()
 {
   DEBUG_RAWFILE("playlistItemRawFile::slotVideoPropertiesChanged");
 
-  const auto currentPixelFormat = video->getFormatAsString();
-  if (currentPixelFormat && currentPixelFormat != this->pixelFormatAfterLoading)
-    itemMemoryHandler::itemMemoryAddFormat(this->properties().name, *currentPixelFormat);
+  auto currentPixelFormat = video->getFormatAsString();
+  if (currentPixelFormat != this->pixelFormatAfterLoading)
+    itemMemoryHandler::itemMemoryAddFormat(this->properties().name, currentPixelFormat);
 }
 
 ValuePairListSets playlistItemRawFile::getPixelValues(const QPoint &pixelPos, int frameIdx)
@@ -594,7 +640,7 @@ void playlistItemRawFile::getSupportedFileExtensions(QStringList &allExtensions,
 void playlistItemRawFile::reloadItemSource()
 {
   // Reopen the file
-  this->dataSource.openFile(this->properties().name.toStdString());
+  this->dataSource.openFile(functions::qStringToFsPath(this->properties().name));
   if (!this->dataSource.isOk())
     // Opening the file failed.
     return;

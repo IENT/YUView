@@ -78,6 +78,11 @@ public:
   virtual void reloadItemSource() override { needToLoadImage = false; }
   virtual void updateSettings() override;
 
+  virtual void createPropertiesWidget() override;
+
+  void setBitDepth(int depth);
+  int  getBitDepth() const { return m_bitDepth; }
+
   // Load the frame. Emit SignalItemChanged(true,false) when done. Always called from a thread.
   virtual void
   loadFrame(int frameIdx, bool playing, bool loadRawdata, bool emitSignals = true) override;
@@ -99,4 +104,6 @@ private:
   // Does the image need to be loaded? Is it currently loading?
   bool              needToLoadImage{true};
   std::atomic<bool> imageLoading{false};
+
+  int m_bitDepth{10};
 };

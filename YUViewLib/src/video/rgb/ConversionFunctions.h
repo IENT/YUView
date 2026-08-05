@@ -4,7 +4,7 @@
  *
  *   This program is free software; you can redistribute it and/or modify
  *   it under the terms of the GNU General Public License as published by
- *   the Free Software Foundation; either version 3 of the License, or
+ *   the Free Software Foundation, either version 3 of the License, or
  *   (at your option) any later version.
  *
  *   In addition, as a special exception, the copyright holders give
@@ -36,9 +36,16 @@
 
 #include "PixelFormatRGB.h"
 
+#include <stdexcept>
+
 namespace video::rgb
 {
 
+/**
+ * @brief Pointers into the start of each RGB(A) plane/component in a raw frame buffer.
+ *
+ * @tparam T Sample storage type (uint8_t / uint16_t / uint32_t)
+ */
 template <typename T> struct DataPointers
 {
   const T *r{};
@@ -46,16 +53,34 @@ template <typename T> struct DataPointers
   const T *b{};
   const T *a{};
 
+  /**
+   * @brief Advance all component pointers by the same sample offset.
+   *
+   * @param offset Number of samples to advance
+   * @return Updated pointer set
+   */
   DataPointers operator+=(const int offset)
   {
     this->r += offset;
     this->g += offset;
     this->b += offset;
-    this->a += offset;
+    if (this->a)
+      this->a += offset;
     return *this;
   }
 };
 
+/**
+ * @brief Compute pointers to the first R/G/B(/A) sample for planar or packed RGB layouts.
+ *
+ * Adapted to the local PixelFormatRGB API (bytesPerFrame / getChannelPosition).
+ *
+ * @tparam T Sample storage type
+ * @param rawFrameData Raw RGB frame bytes
+ * @param frameSize Frame dimensions
+ * @param pixelFormat Source RGB format
+ * @return Pointers to the first R, G, B and optional A samples
+ */
 template <typename T>
 DataPointers<T> calculatePointersToStartOfComponents(const QByteArray     &rawFrameData,
                                                      const Size           &frameSize,
@@ -65,7 +90,7 @@ DataPointers<T> calculatePointersToStartOfComponents(const QByteArray     &rawFr
     throw std::invalid_argument("Pixel format must be valid");
   if (!frameSize)
     throw std::invalid_argument("Frame size must be valid");
-  if (rawFrameData.size() < pixelFormat.getBytesPerFrame(frameSize))
+  if (rawFrameData.size() < static_cast<int>(pixelFormat.bytesPerFrame(frameSize)))
     throw std::invalid_argument("Raw frame data too small");
 
   const auto posR = pixelFormat.getChannelPosition(Channel::Red);
@@ -84,7 +109,7 @@ DataPointers<T> calculatePointersToStartOfComponents(const QByteArray     &rawFr
     dataPointers.g = castDataPointer + (posG * offsetToNextPlane);
     dataPointers.b = castDataPointer + (posB * offsetToNextPlane);
     dataPointers.a =
-      pixelFormat.hasAlpha() ? castDataPointer + (posA * offsetToNextPlane) : nullptr;
+        pixelFormat.hasAlpha() ? castDataPointer + (posA * offsetToNextPlane) : nullptr;
   }
   else
   {
@@ -97,6 +122,34 @@ DataPointers<T> calculatePointersToStartOfComponents(const QByteArray     &rawFr
   return dataPointers;
 }
 
+/**
+ * @brief Swap byte order of an integer sample for big-endian RGB sources.
+ *
+ * @tparam bitDepth Nominal bit depth of the sample (8 / 16 / 32)
+ * @tparam T Sample value type
+ * @param val Input sample
+ * @return Endianness-corrected sample
+ */
+template <int bitDepth, typename T> inline T swapBytesEndianness(const T &val)
+{
+  if (bitDepth <= 8)
+    return val;
+  if (bitDepth <= 16)
+    return static_cast<T>(((val & 0xff) << 8) | ((val & 0xff00) >> 8));
+  return static_cast<T>(((val & 0xff) << 24) | ((val & 0xff00) << 8) | ((val & 0xff0000) >> 8) |
+                        ((val & 0xff000000) >> 24));
+}
+
+/**
+ * @brief Decode one packed RGB565 pixel into an rgba_t value.
+ *
+ * RGB565 is not a first-class PixelFormatRGB on this branch; this helper is kept for
+ * callers that already know the buffer layout is RGB565.
+ *
+ * @param data Pointer to two packed RGB565 bytes
+ * @param endianness Byte order of the 16-bit word
+ * @return Decoded RGBA sample (A fixed to 255)
+ */
 inline rgba_t extractRGB565Value(const unsigned char *data, const Endianness endianness)
 {
   int byte1 = *data;
@@ -107,11 +160,11 @@ inline rgba_t extractRGB565Value(const unsigned char *data, const Endianness end
 
   const auto value = byte1 + (byte2 << 8);
 
-  const int r = ((value & 0b11111000'00000000) >> 11);
-  const int g = ((value & 0b00000111'11100000) >> 5);
-  const int b = (value & 0b00000000'00011111);
+  const unsigned r = static_cast<unsigned>((value & 0b11111000'00000000) >> 11);
+  const unsigned g = static_cast<unsigned>((value & 0b00000111'11100000) >> 5);
+  const unsigned b = static_cast<unsigned>(value & 0b00000000'00011111);
 
-  return {r, g, b, 255};
+  return rgba_t{r, g, b, 255u};
 }
 
 } // namespace video::rgb

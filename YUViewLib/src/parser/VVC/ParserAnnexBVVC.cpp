@@ -55,7 +55,6 @@
 #define PARSER_VVC_DEBUG_OUTPUT 0
 #if PARSER_VVC_DEBUG_OUTPUT && !NDEBUG
 #include <QDebug>
-#define DEBUG_VVC(msg) qDebug() << msg
 #else
 #define DEBUG_VVC(msg) ((void)0)
 #endif

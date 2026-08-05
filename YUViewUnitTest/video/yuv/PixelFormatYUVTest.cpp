@@ -49,7 +49,7 @@ std::vector<PixelFormatYUV> getAllFormats()
     for (const auto bitsPerSample : BitDepthList)
     {
       const auto endianList =
-        (bitsPerSample > 8) ? std::vector<bool>({false, true}) : std::vector<bool>({false});
+          (bitsPerSample > 8) ? std::vector<bool>({false, true}) : std::vector<bool>({false});
 
       // Planar
       for (const auto planeOrder : PlaneOrderMapper.getValues())
@@ -61,7 +61,7 @@ std::vector<PixelFormatYUV> getAllFormats()
         for (const auto bytePacking : {false, true})
           for (const auto bigEndian : endianList)
             allFormats.push_back(
-              PixelFormatYUV(subsampling, bitsPerSample, packingOrder, bytePacking, bigEndian));
+                PixelFormatYUV(subsampling, bitsPerSample, packingOrder, bytePacking, bigEndian));
     }
   }
 
@@ -86,25 +86,24 @@ TEST(PixelFormatYUVTest, testFormatFromToString)
                            << name;
 
     EXPECT_EQ(fmt.getSubsampling(), fmtNew.getSubsampling())
-      << "Format " << name << " subsampling missmatch";
+        << "Format " << name << " subsampling missmatch";
     EXPECT_EQ(fmt.getBitsPerSample(), fmtNew.getBitsPerSample())
-      << "Format " << name << " bits per sample missmatch";
+        << "Format " << name << " bits per sample missmatch";
     EXPECT_EQ(fmt.isPlanar(), fmtNew.isPlanar()) << "Format " << name << " planar missmatch";
     EXPECT_EQ(fmt.getChromaOffset(), fmtNew.getChromaOffset())
-      << "Format " << name << " chroma offset missmatch";
+        << "Format " << name << " chroma offset missmatch";
     EXPECT_EQ(fmt.getPlaneOrder(), fmtNew.getPlaneOrder())
-      << "Format " << name << " plane order missmatch";
+        << "Format " << name << " plane order missmatch";
     EXPECT_EQ(fmt.isUVInterleaved(), fmtNew.isUVInterleaved())
-      << "Format " << name << " uv inteleaved missmatch";
+        << "Format " << name << " uv inteleaved missmatch";
     EXPECT_EQ(fmt.getPackingOrder(), fmtNew.getPackingOrder())
-      << "Format " << name << " packing order missmatch";
+        << "Format " << name << " packing order missmatch";
     EXPECT_EQ(fmt.isBytePacking(), fmtNew.isBytePacking())
-      << "Format " << name << " byte packing missmatch";
+        << "Format " << name << " byte packing missmatch";
 
     if (fmt.getBitsPerSample())
     {
-      EXPECT_EQ(fmt.isBigEndian(), fmtNew.isBigEndian())
-        << "Format " << name << " endianness wrong";
+      EXPECT_EQ(fmt.isBigEndian(), fmtNew.isBigEndian()) << "Format " << name << " endianess wrong";
     }
   }
 }

@@ -60,7 +60,6 @@
 #define UPDATER_DEBUG_OUTPUT 0
 #if UPDATER_DEBUG_OUTPUT && !NDEBUG
 #include <QDebug>
-#define DEBUG_UPDATE(msg) qDebug() << msg
 #else
 #define DEBUG_UPDATE(msg) ((void)0)
 #endif
@@ -101,18 +100,15 @@ void updateHandler::sslErrors(QNetworkReply *reply, const QList<QSslError> &erro
   for (auto s : errors)
   {
     QString errorString = s.errorString();
-    qDebug() << s.errorString();
 
     auto cert = s.certificate();
     QStringList certText = cert.toText().split("\n");
     for (QString s : certText)
-      qDebug() << s;
 
     auto altNames = cert.subjectAlternativeNames();
     QMultiMap<QSsl::AlternativeNameEntryType, QString>::iterator i = altNames.begin();
     while (i != altNames.end())
     {
-      qDebug() << i.key() << " - " << i.value();
       ++i;
     }
   }
@@ -125,6 +121,10 @@ void updateHandler::sslErrors(QNetworkReply *reply, const QList<QSslError> &erro
 // Start the asynchronous checking for an update.
 void updateHandler::startCheckForNewVersion(bool userRequest, bool force)
 {
+  // Skip automatic update check - disable the annoying version popup
+  if (!userRequest && !force)
+    return;
+    
   QSettings settings;
   settings.beginGroup("updates");
   bool checkForUpdates = settings.value("checkForUpdates", true).toBool();

@@ -38,6 +38,8 @@ class YUViewApplication : public QApplication
 {
   Q_OBJECT
 public:
-  YUViewApplication(int argc, char *argv[]);
+  YUViewApplication(int argc, char *argv[], bool hdrModeEnabled = false, 
+                   bool hardwareFallbackOccurred = false, 
+                   const QString& fallbackMessage = QString());
   int returnCode{0};
 };

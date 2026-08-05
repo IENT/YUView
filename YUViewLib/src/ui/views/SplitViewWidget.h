@@ -1,4 +1,4 @@
-/*  This file is part of YUView - The YUV player with advanced analytics toolset
+﻿/*  This file is part of YUView - The YUV player with advanced analytics toolset
  *   <https://github.com/IENT/YUView>
  *   Copyright (C) 2015  Institut für Nachrichtentechnik, RWTH Aachen University, GERMANY
  *
@@ -36,6 +36,9 @@
 #include <common/SaveUi.h>
 #include <common/Typedef.h>
 #include <ui/views/MoveAndZoomableView.h>
+#include <QScreen>
+#include <QImage>
+#include <QKeyEvent>
 
 #include <QAction>
 #include <QActionGroup>
@@ -45,10 +48,11 @@
 #include <QPointer>
 #include <QProgressDialog>
 #include <QTimer>
-
+#include <QWindow>
 #include <memory>
 
 class QDockWidget;
+class QWidget;
 class PlaybackController;
 class playlistItem;
 class PlaylistTreeWidget;
@@ -117,7 +121,21 @@ public:
   // Add the split views menu items to the given menu. This is called from the main window.
   void addMenuActions(QMenu *menu);
 
+  // Use container + window (QOpenGLWindow) for HDR overlay
+  void showHDROverlay(bool show);
+  void resizeEvent(QResizeEvent* event);
+  // Set an HDR overlay container created from QOpenGLWindow (createWindowContainer)
+  void setHDROverlayContainer(QWidget* container);
+  void setHDROverlayContainer(QWidget* container, QWindow* window);
+
+  // Multi-monitor HDR support
+  void checkCurrentDisplayHDRSupport();
+  QScreen* getCurrentScreen() const;
+  // Schedule debounced HDR capability re-check to avoid transient false negatives
+  void scheduleHDRSupportCheck(int delayMs = 250);
+  
   virtual void resetViewInternal() override;
+
 
 signals:
 
@@ -126,11 +144,24 @@ signals:
 
   void signalToggleFullScreen();
 
+  // Multi-monitor HDR support - emitted when display HDR capabilities change
+  void signalDisplayHDRSupportChanged(bool hdrSupported, const QString& displayName);
+
+  // Emitted whenever the view transform changes (zoom or pan)
+  // 'renderZoom' is the effective zoom for rendering (DPI-compensated)
+  // 'displayZoom' is the raw zoom factor for UI display (matches SDR zoom label)
+  void viewTransformChanged(double renderZoom, const QPointF& offset, double displayZoom);
+
 public slots:
 
   // Accept the signal from the playlisttreewidget that signals if a new (or two) item was selected.
   // This function will restore the view/position of the items (if enabled)
   void currentSelectedItemsChanged(playlistItem *item1, playlistItem *item2);
+  // React to property changes (format, HDR toggles) of the currently selected item(s)
+  void onSelectedItemPropertiesChanged(bool redraw);
+
+  // An item is about to be deleted; if it is currently displayed in HDR, hide/clear overlay
+  void onItemAboutToBeDeleted(playlistItem *item);
 
   void triggerActionSeparateView() { actionSeparateView.trigger(); }
   void toggleFullScreenAction() { actionFullScreen.trigger(); }
@@ -155,6 +186,22 @@ private slots:
   void toggleFullScreen(bool checked);
 
 protected:
+  QPointer<QWidget> m_hdrOverlayContainer;
+  QPointer<QWindow> m_hdrOverlayWindow;
+    // Last YUV frame handler we wired a lazy overlay patch provider for. Used
+  // to avoid reinstalling the provider every paint when the primary item has
+  // not changed. Stored as a void* (only compared, never dereferenced) so
+  // that this header does not need to pull in the full videoHandlerYUV API.
+  const void* m_hdrOverlayLastPatchHandler{nullptr};
+  
+  // Multi-monitor HDR support tracking
+  QScreen* m_currentScreen;
+  bool m_currentDisplaySupportsHDR;
+  QString m_currentDisplayName;
+  QTimer m_hdrDebounceTimer; // Debounce timer for HDR capability checks
+  bool m_hdrDropVerifyPending{false}; // Require confirmation for HDR->SDR drop
+  int  m_hdrDropVerifyAttempts{0};
+  
   // Set the widget to the given view mode
   enum ViewSplitMode
   {
@@ -179,6 +226,9 @@ protected:
     this->actionFullScreen.trigger();
     event->accept();
   }
+
+  // Forward wheel events from HDR overlay container/window to this widget
+  bool eventFilter(QObject* obj, QEvent* event) override;
 
   virtual void onSwipeLeft() override;
   virtual void onSwipeRight() override;
@@ -210,6 +260,9 @@ protected:
   }
   virtual QSize minimumSizeHint() const override { return minSizeHint; }
   QSize         minSizeHint;
+
+  // Decide whether HDR overlay should be shown for the given selection and update state
+  void updateHDRVisibilityForSelection(playlistItem *item1, playlistItem *item2);
 
   bool   splittingDragging{false}; //!< True if the user is currently dragging the splitter
   void   setSplittingPoint(double p, bool setOtherViewIfLinked = true);
@@ -300,6 +353,10 @@ protected:
                          QPoint        centerPoints,
                          QPointF       offset);
 
+  double devicePixelRatioForCurrentScreen() const;
+  double effectiveZoomFactor() const;
+  double effectiveZoomFactor(double rawZoom) const;
+
   // Class to save the current view statue (center point and zoom, splitting settings) so that we
   // can quickly switch between them using the keyboard.
   class splitViewWidgetState
@@ -333,6 +390,7 @@ protected:
 
   QPointer<splitViewWidget> getOtherWidget() const;
   void                      getStateFromMaster() override;
+  void                      updateHDROverlayGeometry();
 };
 
 #endif // SPLITVIEWWIDGET_H

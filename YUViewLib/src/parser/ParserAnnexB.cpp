@@ -42,7 +42,6 @@
 #define PARSERANNEXB_DEBUG_OUTPUT 0
 #if PARSERANNEXB_DEBUG_OUTPUT && !NDEBUG
 #include <QDebug>
-#define DEBUG_ANNEXB(msg) qDebug() << msg
 #else
 #define DEBUG_ANNEXB(msg) ((void)0)
 #endif

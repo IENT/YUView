@@ -50,7 +50,10 @@ class MainWindow : public QMainWindow
   Q_OBJECT
 
 public:
-  explicit MainWindow(bool useAlternativeSources, QWidget *parent = 0);
+  explicit MainWindow(bool useAlternativeSources, bool hdrModeEnabled = false, 
+                      bool hardwareFallbackOccurred = false, 
+                      const QString& fallbackMessage = QString(), 
+                      QWidget *parent = 0);
 
   void closeEvent(QCloseEvent *event) override;
 
@@ -81,6 +84,12 @@ private slots:
   void showFileOpenDialog();
   void resetWindowLayout();
   void closeAndClearSettings();
+  
+  // Multi-monitor HDR support
+  void onDisplayHDRSupportChanged(bool hdrSupported, const QString& displayName);
+  
+  // HDR fallback notification (PRD Requirement 5.5)
+  void showHDRFallbackNotification(const QString& message);
 
   void onMenuResetView(bool checked)
   {
@@ -165,4 +174,5 @@ private:
   SeparateWindow                     separateViewWindow;
   bool showNormalMaximized;     // When going to full screen: Was this windows maximized?
   bool panelsVisible[5]{false}; // Which panels are visible when going to full-screen mode?
+  
 };

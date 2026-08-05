@@ -40,10 +40,9 @@
 #endif
 #include <QtMath>
 
-#include <common/FunctionsGui.h>
-#include <common/TypedefQtDeprecated.h>
 #include <statistics/StatisticsData.h>
 #include <statistics/StatisticsType.h>
+#include <common/FunctionsGui.h>
 
 namespace stats
 {
@@ -51,7 +50,6 @@ namespace stats
 // Activate this if you want to know when what is loaded.
 #define STATISTICS_DEBUG_LOADING 0
 #if STATISTICS_DEBUG_LOADING && !NDEBUG
-#define DEBUG_STATUI qDebug
 #else
 #define DEBUG_STATUI(fmt, ...) ((void)0)
 #endif
@@ -65,10 +63,7 @@ StatisticUIHandler::StatisticUIHandler()
           Qt::QueuedConnection);
 }
 
-void StatisticUIHandler::setStatisticsData(StatisticsData *data)
-{
-  this->statisticsData = data;
-}
+void StatisticUIHandler::setStatisticsData(StatisticsData *data) { this->statisticsData = data; }
 
 QLayout *StatisticUIHandler::createStatisticsHandlerControls(bool recreateControlsOnly)
 {
@@ -76,7 +71,7 @@ QLayout *StatisticUIHandler::createStatisticsHandlerControls(bool recreateContro
   {
     // Absolutely always only do this once
     Q_ASSERT_X(
-      !ui.created(), Q_FUNC_INFO, "The primary statistics controls must only be created once.");
+        !ui.created(), Q_FUNC_INFO, "The primary statistics controls must only be created once.");
     ui.setupUi();
   }
 
@@ -97,8 +92,10 @@ QLayout *StatisticUIHandler::createStatisticsHandlerControls(bool recreateContro
     itemNameCheck->setChecked(statType.render);
     itemNameCheck->setToolTip(statType.description);
     ui.gridLayout->addWidget(itemNameCheck, int(row + 2), 0);
-    connect(
-      itemNameCheck, QCheckBoxStateChanged, this, &StatisticUIHandler::onStatisticsControlChanged);
+    connect(itemNameCheck,
+            &QCheckBox::stateChanged,
+            this,
+            &StatisticUIHandler::onStatisticsControlChanged);
     itemNameCheckBoxes[0].push_back(itemNameCheck);
 
     // Append the opacity slider
@@ -107,16 +104,17 @@ QLayout *StatisticUIHandler::createStatisticsHandlerControls(bool recreateContro
     opacitySlider->setMaximum(100);
     opacitySlider->setValue(statType.alphaFactor);
     ui.gridLayout->addWidget(opacitySlider, int(row + 2), 1);
-    connect(
-      opacitySlider, &QSlider::valueChanged, this, &StatisticUIHandler::onStatisticsControlChanged);
+    connect(opacitySlider,
+            &QSlider::valueChanged,
+            this,
+            &StatisticUIHandler::onStatisticsControlChanged);
     itemOpacitySliders[0].push_back(opacitySlider);
 
     // Append the change style buttons
     QPushButton *pushButton = new QPushButton(
-      functionsGui::convertIcon(":img_edit.png"), QString(), ui.scrollAreaWidgetContents);
+        functionsGui::convertIcon(":img_edit.png"), QString(), ui.scrollAreaWidgetContents);
     ui.gridLayout->addWidget(pushButton, int(row + 2), 2);
-    connect(
-      pushButton, &QPushButton::released, this, [this, row] { this->onStyleButtonClicked(row); });
+    connect(pushButton, &QPushButton::released, this, [=] { onStyleButtonClicked(row); });
     itemStyleButtons[0].push_back(pushButton);
   }
 
@@ -145,7 +143,7 @@ QWidget *StatisticUIHandler::getSecondaryStatisticsHandlerControls(bool recreate
     if (!this->statisticsData)
     {
       DEBUG_STATUI(
-        "StatisticUIHandler::getSecondaryStatisticsHandlerControls statisticsData not set");
+          "StatisticUIHandler::getSecondaryStatisticsHandlerControls statisticsData not set");
       return {};
     }
 
@@ -160,7 +158,7 @@ QWidget *StatisticUIHandler::getSecondaryStatisticsHandlerControls(bool recreate
       itemNameCheck->setChecked(statType.render);
       ui2.gridLayout->addWidget(itemNameCheck, int(row + 2), 0);
       connect(itemNameCheck,
-              QCheckBoxStateChanged,
+              &QCheckBox::stateChanged,
               this,
               &StatisticUIHandler::onSecondaryStatisticsControlChanged);
       itemNameCheckBoxes[1].push_back(itemNameCheck);
@@ -179,10 +177,9 @@ QWidget *StatisticUIHandler::getSecondaryStatisticsHandlerControls(bool recreate
 
       // Append the change style buttons
       QPushButton *pushButton = new QPushButton(
-        functionsGui::convertIcon(":img_edit.png"), QString(), ui2.scrollAreaWidgetContents);
+          functionsGui::convertIcon(":img_edit.png"), QString(), ui2.scrollAreaWidgetContents);
       ui2.gridLayout->addWidget(pushButton, int(row + 2), 2);
-      connect(
-        pushButton, &QPushButton::released, this, [this, row] { this->onStyleButtonClicked(row); });
+      connect(pushButton, &QPushButton::released, this, [=] { onStyleButtonClicked(row); });
       itemStyleButtons[1].push_back(pushButton);
     }
 
@@ -192,7 +189,7 @@ QWidget *StatisticUIHandler::getSecondaryStatisticsHandlerControls(bool recreate
     if (true || ui2.created())
     {
       QSpacerItem *verticalSpacer =
-        new QSpacerItem(1, 1, QSizePolicy::Minimum, QSizePolicy::Expanding);
+          new QSpacerItem(1, 1, QSizePolicy::Minimum, QSizePolicy::Expanding);
       ui2.gridLayout->addItem(verticalSpacer, int(statTypes.size() + 2), 0, 1, 1);
       spacerItems[1] = verticalSpacer;
     }
@@ -323,8 +320,8 @@ void StatisticUIHandler::updateStatisticsHandlerControls()
   }
 
   // First run a check if all statisticsTypes are identical
-  bool  controlsStillValid = true;
-  auto &statTypes          = this->statisticsData->getStatisticsTypes();
+  bool controlsStillValid = true;
+  auto &statTypes = this->statisticsData->getStatisticsTypes();
   if (statTypes.size() != itemNameCheckBoxes[0].size())
     // There are more or less statistics types as before
     controlsStillValid = false;

@@ -64,7 +64,6 @@ using namespace decoder;
 #define COMPRESSED_VIDEO_DEBUG_OUTPUT 0
 #if COMPRESSED_VIDEO_DEBUG_OUTPUT
 #include <QDebug>
-#define DEBUG_COMPRESSED(f) qDebug() << f
 #else
 #define DEBUG_COMPRESSED(f) ((void)0)
 #endif
@@ -145,7 +144,7 @@ playlistItemCompressedVideo::playlistItemCompressedVideo(const QString &compress
   {
     // Open file
     DEBUG_COMPRESSED("playlistItemCompressedVideo::playlistItemCompressedVideo Open annexB file");
-    const auto filePath          = std::filesystem::path(compressedFilePath.toStdString());
+    const auto filePath = functions::qStringToFsPath(compressedFilePath);
     this->inputFileAnnexBLoading = std::make_unique<FileSourceAnnexBFile>(filePath);
     if (this->cachingEnabled)
       this->inputFileAnnexBCaching = std::make_unique<FileSourceAnnexBFile>(filePath);

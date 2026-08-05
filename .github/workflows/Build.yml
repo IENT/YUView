@@ -21,7 +21,25 @@ jobs:
     - name: Install Linux packages
       run: |
         sudo apt-get update
-        sudo apt-get install qt6-base-dev
+        # qt6-base-private-dev: QRhi / gui-private headers for HDR
+        sudo apt-get install -y qt6-base-dev qt6-base-private-dev libpng-dev
+        # qsb / shadertools package names differ by Ubuntu release:
+        #   22.04: qt6-shader-baker + libqt6shadertools6-dev
+        #   24.04+: also provides qt6-shadertools-dev
+        sudo apt-get install -y qt6-shader-baker || true
+        sudo apt-get install -y libqt6shadertools6-dev || true
+        sudo apt-get install -y qt6-shadertools-dev || true
+        echo "/usr/lib/qt6/bin" >> "$GITHUB_PATH"
+        echo "/usr/lib/$(dpkg-architecture -qDEB_HOST_MULTIARCH)/qt6/bin" >> "$GITHUB_PATH"
+        if ! command -v qsb >/dev/null 2>&1 && ! command -v qsb6 >/dev/null 2>&1 && \
+           [ ! -x /usr/lib/qt6/bin/qsb ]; then
+          echo "ERROR: qsb not found after installing shadertools packages"
+          exit 1
+        fi
+    - name: Compile HDR shaders
+      run: |
+        chmod +x "$GITHUB_WORKSPACE/YUViewLib/resources/shaders/compile_shaders.sh"
+        "$GITHUB_WORKSPACE/YUViewLib/resources/shaders/compile_shaders.sh"
     - name: Build
       run: |
         cd $GITHUB_WORKSPACE
@@ -44,7 +62,13 @@ jobs:
         submodules: true
     - run: git fetch --prune --unshallow
     - name: Install packages
-      run: brew install qt
+      run: |
+        brew install qt
+        echo "$(brew --prefix qt)/bin" >> "$GITHUB_PATH"
+    - name: Compile HDR shaders
+      run: |
+        chmod +x "$GITHUB_WORKSPACE/YUViewLib/resources/shaders/compile_shaders.sh"
+        "$GITHUB_WORKSPACE/YUViewLib/resources/shaders/compile_shaders.sh"
     - name: Build
       run: |
         cd $GITHUB_WORKSPACE
@@ -90,7 +114,29 @@ jobs:
       if: runner.os == 'Linux'
       run: |
         sudo apt-get update
-        sudo apt-get install libgl1-mesa-dev libxkbcommon-x11-0 libpcre2-16-0 '^libxcb.*-dev' libx11-xcb-dev libglu1-mesa-dev libxi-dev libxkbcommon-dev libxkbcommon-x11-dev libatspi2.0-dev libfuse2
+        sudo apt-get install -y libgl1-mesa-dev libxkbcommon-x11-0 libpcre2-16-0 '^libxcb.*-dev' libx11-xcb-dev libglu1-mesa-dev libxi-dev libxkbcommon-dev libxkbcommon-x11-dev libatspi2.0-dev libfuse2
+        # qsb package names differ by Ubuntu release (see build-unix-native)
+        sudo apt-get install -y qt6-shader-baker || true
+        sudo apt-get install -y libqt6shadertools6-dev || true
+        sudo apt-get install -y qt6-shadertools-dev || true
+        echo "/usr/lib/qt6/bin" >> "$GITHUB_PATH"
+        echo "/usr/lib/$(dpkg-architecture -qDEB_HOST_MULTIARCH)/qt6/bin" >> "$GITHUB_PATH"
+        if ! command -v qsb >/dev/null 2>&1 && ! command -v qsb6 >/dev/null 2>&1 && \
+           [ ! -x /usr/lib/qt6/bin/qsb ]; then
+          echo "ERROR: qsb not found after installing shadertools packages"
+          exit 1
+        fi
+    - name: Ensure qsb on macOS
+      if: runner.os == 'macOS'
+      run: |
+        if ! command -v qsb >/dev/null 2>&1; then
+          brew install qt
+          echo "$(brew --prefix qt)/bin" >> "$GITHUB_PATH"
+        fi
+    - name: Compile HDR shaders
+      run: |
+        chmod +x "$GITHUB_WORKSPACE/YUViewLib/resources/shaders/compile_shaders.sh"
+        "$GITHUB_WORKSPACE/YUViewLib/resources/shaders/compile_shaders.sh"
     - name: Download libde265 (Linux)
       if: runner.os == 'Linux'
       run: curl -L https://github.com/ChristianFeldmann/libde265/releases/download/v1.1/libde265.so -o libde265-internals.so
@@ -180,6 +226,23 @@ jobs:
       if: matrix.autoUpdate == true
       run: sed -i -- "s/#define UPDATE_FEATURE_ENABLE 0/#define UPDATE_FEATURE_ENABLE 1/g" YUViewLib/src/common/Typedef.h
       shell: bash
+    - name: Ensure qsb and compile HDR shaders
+      shell: pwsh
+      run: |
+        $qsb = Get-Command qsb.exe -ErrorAction SilentlyContinue
+        if (-not $qsb) {
+          Write-Host "qsb.exe not on PATH; installing Qt Shader Tools via aqtinstall"
+          python -m pip install --upgrade pip aqtinstall
+          $qtOut = Join-Path $env:RUNNER_TEMP "qt-shadertools"
+          # Host tool only used to bake .qsb; output is portable across Qt 6.x
+          aqt install-qt windows desktop 6.9.0 win64_msvc2022_64 -m qtshadertools --outputdir $qtOut
+          $qsbPath = Get-ChildItem -Path $qtOut -Recurse -Filter qsb.exe | Select-Object -First 1 -ExpandProperty FullName
+          if (-not $qsbPath) { throw "Failed to locate qsb.exe after aqtinstall" }
+          $env:QSB = $qsbPath
+          Write-Host "Using QSB=$env:QSB"
+        }
+        & "$env:GITHUB_WORKSPACE\YUViewLib\resources\shaders\compile_shaders.bat"
+        if ($LASTEXITCODE -ne 0) { throw "compile_shaders.bat failed with exit code $LASTEXITCODE" }
     - name: Build
       run: |
         echo "Creating Build dir and entering it"

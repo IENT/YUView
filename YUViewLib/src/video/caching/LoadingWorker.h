@@ -36,10 +36,16 @@
 
 #include <QObject>
 #include <QString>
+#include <QMutex>
+#include <QMutexLocker>
+#include <atomic>
 
 namespace video
 {
 
+// Thread-safe loading worker with proper synchronization for concurrent cache operations.
+// This class ensures that the 4K 10-bit YUV buffer loading process is protected against
+// race conditions when users drag new files or change color conversion settings.
 class LoadingWorker : public QObject
 {
   Q_OBJECT
@@ -47,27 +53,47 @@ public:
   LoadingWorker(QObject *parent);
   ~LoadingWorker() {}
 
-  playlistItem *getCacheItem() { return this->currentCacheItem; }
-  int           getCacheFrame() { return this->currentFrame; }
-  void          setJob(playlistItem *item, int frame, bool test = false);
-  void          setWorking(bool state) { this->working = state; }
-  bool          isWorking() { return this->working; }
-  QString       getStatus();
+  // Thread-safe getters - use mutex for compound operations
+  playlistItem *getCacheItem() { 
+    QMutexLocker lock(&m_stateMutex);
+    return this->currentCacheItem; 
+  }
+  int getCacheFrame() { 
+    QMutexLocker lock(&m_stateMutex);
+    return this->currentFrame; 
+  }
+  
+  // Thread-safe job setup
+  void setJob(playlistItem *item, int frame, bool test = false);
+  
+  // Atomic working state for lock-free fast path checks
+  void setWorking(bool state) { m_working.store(state, std::memory_order_release); }
+  bool isWorking() const { return m_working.load(std::memory_order_acquire); }
+  
+  // Get current item safely for comparison (used in deletion checks)
+  playlistItem* getCacheItemUnsafe() const { return currentCacheItem; }
+  
+  QString getStatus();
 
   // Process the job in the thread that this worker was moved to. This function can be directly
   // called from the main thread. It will still process the call in the separate thread.
   void processCacheJob();
   void processLoadingJob(bool playing, bool loadRawData);
+  
 signals:
   void loadingFinished();
+  
 private slots:
   void processCacheJobInternal();
   void processLoadingJobInternal(bool playing, bool loadRawData);
 
 private:
+  // Mutex for protecting state access during job setup and processing
+  mutable QMutex m_stateMutex;
+  
   playlistItem *currentCacheItem{};
   int           currentFrame{};
-  bool          working{};
+  std::atomic<bool> m_working{false};  // Atomic for fast lock-free checks
   bool          testMode{};
   int           id{}; // A static ID of the thread. Only used in getStatus().
 };

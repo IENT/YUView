@@ -1,4 +1,4 @@
-/*  This file is part of YUView - The YUV player with advanced analytics toolset
+﻿/*  This file is part of YUView - The YUV player with advanced analytics toolset
  *   <https://github.com/IENT/YUView>
  *   Copyright (C) 2015  Institut für Nachrichtentechnik, RWTH Aachen University, GERMANY
  *
@@ -42,7 +42,6 @@ namespace video
 // Activate this if you want to know when which buffer is loaded/converted to image and so on.
 #define VIDEOHANDLER_DEBUG_LOADING 0
 #if VIDEOHANDLER_DEBUG_LOADING && !NDEBUG
-#define DEBUG_VIDEO qDebug
 #else
 #define DEBUG_VIDEO(fmt, ...) ((void)0)
 #endif
@@ -56,10 +55,10 @@ void videoHandler::slotVideoControlChanged()
   // Update the controls and get the new selected size
   auto newSize = getNewSizeFromControls();
 
-  // Set the current frame in the buffer to be invalid
+         // Set the current frame in the buffer to be invalid
   this->currentImageIndex = -1;
 
-  // The cache is invalid until the item is recached
+         // The cache is invalid until the item is recached
   setCacheInvalid();
 
   if (newSize != frameSize && newSize.isValid())
@@ -93,10 +92,10 @@ ItemLoadingState videoHandler::needsLoading(int frameIdx, bool loadRawValues)
       return state;
   }
 
-  // Lock the mutex for checking the cache
+         // Lock the mutex for checking the cache
   QMutexLocker lock(&imageCacheAccess);
 
-  // The raw values are not needed.
+         // The raw values are not needed.
   if (frameIdx == currentImageIndex)
   {
     if (doubleBufferImageFrameIndex == frameIdx + 1)
@@ -122,7 +121,7 @@ ItemLoadingState videoHandler::needsLoading(int frameIdx, bool loadRawValues)
     }
   }
 
-  // Check the double buffer
+         // Check the double buffer
   if (doubleBufferImageFrameIndex == frameIdx)
   {
     // The frame in question is in the double buffer...
@@ -143,8 +142,15 @@ ItemLoadingState videoHandler::needsLoading(int frameIdx, bool loadRawValues)
     }
   }
 
-  // Check the cache
-  if (cacheValid && imageCache.contains(frameIdx))
+         // Check the cache (both RGB and raw YUV caches)
+  bool inImageCache = cacheValid && imageCache.contains(frameIdx);
+  bool inRawCache = false;
+  {
+    QMutexLocker rawLock(&m_rawCacheAccess);
+    inRawCache = cacheValid && m_rawYUVCache.contains(frameIdx);
+  }
+  
+  if (inImageCache || inRawCache)
   {
     // What about the next frame? Is it also in the cache or in the double buffer?
     if (doubleBufferImageFrameIndex == frameIdx + 1)
@@ -154,7 +160,15 @@ ItemLoadingState videoHandler::needsLoading(int frameIdx, bool loadRawValues)
                   frameIdx + 1);
       return ItemLoadingState::LoadingNotNeeded;
     }
-    else if (cacheValid && imageCache.contains(frameIdx + 1))
+    
+    bool nextInImageCache = cacheValid && imageCache.contains(frameIdx + 1);
+    bool nextInRawCache = false;
+    {
+      QMutexLocker rawLock(&m_rawCacheAccess);
+      nextInRawCache = cacheValid && m_rawYUVCache.contains(frameIdx + 1);
+    }
+    
+    if (nextInImageCache || nextInRawCache)
     {
       DEBUG_VIDEO(
         "videoHandler::needsLoading %d in cache and %d found in cache", frameIdx, frameIdx + 1);
@@ -170,7 +184,7 @@ ItemLoadingState videoHandler::needsLoading(int frameIdx, bool loadRawValues)
     }
   }
 
-  // Frame not in buffer. Return false and request the background loading thread to load the frame.
+         // Frame not in buffer. Return false and request the background loading thread to load the frame.
   DEBUG_VIDEO("videoHandler::needsLoading %d not found in cache - request load", frameIdx);
   return ItemLoadingState::LoadingNeeded;
 }
@@ -182,7 +196,7 @@ void videoHandler::drawFrame(QPainter *painter, int frameIdx, double zoomFactor,
   {
     // The current buffer is out of date. Update it.
 
-    // Check the double buffer
+           // Check the double buffer
     if (frameIdx == doubleBufferImageFrameIndex)
     {
       currentImage      = doubleBufferImage;
@@ -204,12 +218,12 @@ void videoHandler::drawFrame(QPainter *painter, int frameIdx, double zoomFactor,
   DEBUG_VIDEO(
     "videoHandler::drawFrame frameIdx %d currentImageIndex %d", frameIdx, currentImageIndex);
 
-  // Create the video QRect with the size of the sequence and center it.
+         // Create the video QRect with the size of the sequence and center it.
   QRect videoRect;
   videoRect.setSize(QSize(frameSize.width * zoomFactor, frameSize.height * zoomFactor));
   videoRect.moveCenter(QPoint(0, 0));
 
-  // Draw the current image (currentImage)
+         // Draw the current image (currentImage)
   currentImageSetMutex.lock();
   painter->drawImage(videoRect, currentImage);
   currentImageSetMutex.unlock();
@@ -221,7 +235,7 @@ void videoHandler::drawFrame(QPainter *painter, int frameIdx, double zoomFactor,
   }
 }
 
-QImage videoHandler::calculateDifference(FrameHandler    *item2,
+QImage videoHandler::calculateDifference(FrameHandler *   item2,
                                          const int        frameIdxItem0,
                                          const int        frameIdxItem1,
                                          QList<InfoItem> &differenceInfoList,
@@ -236,11 +250,15 @@ QImage videoHandler::calculateDifference(FrameHandler    *item2,
     if (currentImageIndex != frameIdxItem0)
       loadFrame(frameIdxItem0);
     // Call the FrameHandler implementation to calculate the difference
-    return FrameHandler::calculateDifference(
-      item2, frameIdxItem0, frameIdxItem1, differenceInfoList, amplificationFactor, markDifference);
+    return FrameHandler::calculateDifference(item2,
+                                             frameIdxItem0,
+                                             frameIdxItem1,
+                                             differenceInfoList,
+                                             amplificationFactor,
+                                             markDifference);
   }
 
-  // Load the right images, if not already loaded)
+         // Load the right images, if not already loaded)
   if (currentImageIndex != frameIdxItem0)
     loadFrame(frameIdxItem0);
   if (videoItem2->currentImageIndex != frameIdxItem1)
@@ -250,7 +268,7 @@ QImage videoHandler::calculateDifference(FrameHandler    *item2,
     item2, frameIdxItem0, frameIdxItem1, differenceInfoList, amplificationFactor, markDifference);
 }
 
-QRgb videoHandler::getPixelVal(int x, int y) const
+QRgb videoHandler::getPixelVal(int x, int y)
 {
   return currentImage.pixel(x, y);
 }
@@ -265,7 +283,48 @@ int videoHandler::getNrFramesCached() const
 void videoHandler::cacheFrame(int frameIdx, bool testMode)
 {
   DEBUG_VIDEO("videoHandler::cacheFrame %d %s", frameIdx, testMode ? "testMode" : "");
+  
+  // Check cache mode - use raw YUV cache for HDR 10-bit mode
+  // This avoids expensive CPU-side YUV->RGB conversion during caching
+  if (shouldUseRawYUVCache())
+  {
+    // HDR 10-bit optimized path: cache raw YUV data
+    if (cacheValid && isInRawCache(frameIdx) && !testMode)
+    {
+      DEBUG_VIDEO("videoHandler::cacheFrame frame %i already in raw cache - returning", frameIdx);
+      return;
+    }
+    
+    QByteArray rawData;
+    loadRawFrameForCaching(frameIdx, rawData);
+    
+    if (!rawData.isEmpty())
+    {
+      DEBUG_VIDEO("videoHandler::cacheFrame insert frame %i into raw YUV cache", frameIdx);
+      const bool switchingToRawMode = (m_cacheMode != CacheMode::RawYUV);
+      QMutexLocker rawCacheLock(&m_rawCacheAccess);
+      if (cacheValid && !testMode)
+      {
+        m_rawYUVCache.insert(frameIdx, rawData);
+        m_cacheMode = CacheMode::RawYUV;
+      }
+      rawCacheLock.unlock();
 
+      // Drop stale RGB entries once when entering raw-YUV cache mode.
+      if (switchingToRawMode)
+      {
+        QMutexLocker imageCacheLock(&imageCacheAccess);
+        imageCache.clear();
+      }
+    }
+    else
+    {
+      DEBUG_VIDEO("videoHandler::cacheFrame loading raw frame %i for caching failed", frameIdx);
+    }
+    return;
+  }
+
+         // Traditional path: cache converted RGB image
   if (cacheValid && isInCache(frameIdx) && !testMode)
   {
     // No need to add it again
@@ -273,17 +332,29 @@ void videoHandler::cacheFrame(int frameIdx, bool testMode)
     return;
   }
 
-  // Load the frame. While this is happening in the background the frame size must not change.
+         // Load the frame. While this is happening in the background the frame size must not change.
   QImage cacheImage;
   loadFrameForCaching(frameIdx, cacheImage);
 
-  // Put it into the cache
+         // Put it into the cache
   if (!cacheImage.isNull())
   {
     DEBUG_VIDEO("videoHandler::cacheFrame insert frame %i into cache", frameIdx);
+    const bool switchingToRgbMode = (m_cacheMode != CacheMode::ConvertedRGB);
     QMutexLocker imageCacheLock(&imageCacheAccess);
     if (cacheValid && !testMode)
+    {
       imageCache.insert(frameIdx, cacheImage);
+      m_cacheMode = CacheMode::ConvertedRGB;
+    }
+    imageCacheLock.unlock();
+
+    // Drop stale raw-YUV entries once when entering RGB cache mode.
+    if (switchingToRgbMode)
+    {
+      QMutexLocker rawCacheLock(&m_rawCacheAccess);
+      m_rawYUVCache.clear();
+    }
   }
   else
     DEBUG_VIDEO("videoHandler::cacheFrame loading frame %i for caching failed", frameIdx);
@@ -298,12 +369,24 @@ unsigned videoHandler::getCachingFrameSize() const
 
 QList<int> videoHandler::getCachedFrames() const
 {
+  // Return frames from appropriate cache based on mode
+  if (m_cacheMode == CacheMode::RawYUV)
+  {
+    QMutexLocker lock(&m_rawCacheAccess);
+    return m_rawYUVCache.keys();
+  }
   QMutexLocker lock(&imageCacheAccess);
   return imageCache.keys();
 }
 
 int videoHandler::getNumberCachedFrames() const
 {
+  // Return count from appropriate cache based on mode
+  if (m_cacheMode == CacheMode::RawYUV)
+  {
+    QMutexLocker lock(&m_rawCacheAccess);
+    return m_rawYUVCache.size();
+  }
   QMutexLocker lock(&imageCacheAccess);
   return imageCache.size();
 }
@@ -314,12 +397,56 @@ bool videoHandler::isInCache(int idx) const
   return imageCache.contains(idx);
 }
 
+// Check if frame exists in raw YUV cache
+bool videoHandler::isInRawCache(int idx) const
+{
+  QMutexLocker lock(&m_rawCacheAccess);
+  return m_rawYUVCache.contains(idx);
+}
+
+// Get raw YUV data from cache (thread-safe copy)
+QByteArray videoHandler::getRawYUVFromCache(int idx) const
+{
+  QMutexLocker lock(&m_rawCacheAccess);
+  return m_rawYUVCache.value(idx);
+}
+
+/**
+ * @brief Remove a cached raw YUV frame and transfer ownership to the caller.
+ *
+ * Unlike getRawYUVFromCache(), this erases the map entry so peak memory during
+ * playback is cache-free for the frame currently on screen.
+ */
+bool videoHandler::takeRawYUVFromCache(int idx, QByteArray &out)
+{
+  QMutexLocker lock(&m_rawCacheAccess);
+  if (!m_rawYUVCache.contains(idx))
+    return false;
+
+  out = m_rawYUVCache.take(idx);
+  return !out.isEmpty();
+}
+
+// Default implementation for loading raw frame data
+// Subclasses (videoHandlerYUV) should override this for actual implementation
+void videoHandler::loadRawFrameForCaching(int frameIndex, QByteArray &rawDataToCache)
+{
+  (void)frameIndex;
+  rawDataToCache.clear();
+  // Base class does nothing - subclasses implement actual raw data loading
+}
+
 void videoHandler::removeFrameFromCache(int frameIdx)
 {
   DEBUG_VIDEO("removeFrameFromCache %d", frameIdx);
   QMutexLocker lock(&imageCacheAccess);
   imageCache.remove(frameIdx);
   lock.unlock();
+  
+  // Also remove from raw cache
+  QMutexLocker rawLock(&m_rawCacheAccess);
+  m_rawYUVCache.remove(frameIdx);
+  rawLock.unlock();
 }
 
 void videoHandler::removeAllFrameFromCache()
@@ -329,6 +456,11 @@ void videoHandler::removeAllFrameFromCache()
   imageCache.clear();
   cacheValid = true;
   lock.unlock();
+  
+  // Also clear raw cache
+  QMutexLocker rawLock(&m_rawCacheAccess);
+  m_rawYUVCache.clear();
+  rawLock.unlock();
 }
 
 void videoHandler::loadFrame(int frameIndex, bool loadToDoubleBuffer)
@@ -342,7 +474,7 @@ void videoHandler::loadFrame(int frameIndex, bool loadToDoubleBuffer)
     // function)
     QMutexLocker lock(&requestDataMutex);
 
-    // Request the image to be loaded
+           // Request the image to be loaded
     emit signalRequestFrame(frameIndex, false);
 
     if (requestedFrame_idx != frameIndex)
@@ -371,7 +503,7 @@ void videoHandler::loadFrameForCaching(int frameIndex, QImage &frameToCache)
 
   QMutexLocker lock(&requestDataMutex);
 
-  // Request the image to be loaded
+         // Request the image to be loaded
   emit signalRequestFrame(frameIndex, true);
 
   if (requestedFrame_idx != frameIndex)
@@ -386,7 +518,7 @@ void videoHandler::invalidateAllBuffers()
   currentFrameRawData_frameIndex = -1;
   rawData_frameIndex             = -1;
 
-  // Set the current frame in the buffer to be invalid
+         // Set the current frame in the buffer to be invalid
   currentImageIndex       = -1;
   currentImage_frameIndex = -1;
   currentImageSetMutex.lock();

@@ -182,10 +182,9 @@ FileInfoForGuess getFileInfoForGuessFromPath(const std::filesystem::path filePat
 {
   FileInfoForGuess fileInfoForGuess;
 
-  fileInfoForGuess.filename = filePath.filename().string();
-  // Todo: This is not really correct. We only want the direct parents path and not the whole parent
-  // path.
-  fileInfoForGuess.parentFolderName = filePath.parent_path().string();
+  // Use UTF-8 via Qt so CJK filenames do not throw on path.string() (ACP).
+  fileInfoForGuess.filename         = functions::fsPathToUtf8String(filePath.filename());
+  fileInfoForGuess.parentFolderName = functions::fsPathToUtf8String(filePath.parent_path());
 
   try
   {

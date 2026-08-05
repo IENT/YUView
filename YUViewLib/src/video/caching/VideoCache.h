@@ -40,6 +40,9 @@
 #include <QQueue>
 #include <QTimer>
 #include <QWidget>
+#include <QMutex>
+#include <QMutexLocker>
+#include <QReadWriteLock>
 
 #include "ui/widgets/PlaylistTreeWidget.h"
 #include "LoadingThread.h"
@@ -181,6 +184,11 @@ private:
 
   // A list of caching threads that process caching of frames in parallel in the background
   QList<LoadingThread *> cachingThreadList;
+  
+  // Mutex to protect access to thread lists and item deletion operations
+  // This prevents race conditions when users drag new files during 4K 10-bit buffer loading
+  mutable QMutex m_threadListMutex;
+  mutable QMutex m_itemDeletionMutex;
 
   // Two threads with a higher priority that performs interactive loading (if the user is the source
   // of the request)

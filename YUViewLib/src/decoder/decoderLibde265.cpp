@@ -45,27 +45,7 @@ namespace decoder
 
 // Debug the decoder ( 0:off 1:interactive decoder only 2:caching decoder only 3:both)
 #define DECODERLIBD265_DEBUG_OUTPUT 0
-#if DECODERLIBD265_DEBUG_OUTPUT && !NDEBUG
-#include <QDebug>
-#if DECODERLIBD265_DEBUG_OUTPUT == 1
-#define DEBUG_LIBDE265                                                                             \
-  if (!isCachingDecoder)                                                                           \
-  qDebug
-#elif DECODERLIBD265_DEBUG_OUTPUT == 2
-#define DEBUG_LIBDE265                                                                             \
-  if (isCachingDecoder)                                                                            \
-  qDebug
-#elif DECODERLIBD265_DEBUG_OUTPUT == 3
-#define DEBUG_LIBDE265                                                                             \
-  if (isCachingDecoder)                                                                            \
-    qDebug("c:");                                                                                  \
-  else                                                                                             \
-    qDebug("i:");                                                                                  \
-  qDebug
-#endif
-#else
 #define DEBUG_LIBDE265(fmt, ...) ((void)0)
-#endif
 
 using Subsampling = video::yuv::Subsampling;
 

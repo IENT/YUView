@@ -1,4 +1,4 @@
-/*  This file is part of YUView - The YUV player with advanced analytics toolset
+﻿/*  This file is part of YUView - The YUV player with advanced analytics toolset
  *   <https://github.com/IENT/YUView>
  *   Copyright (C) 2015  Institut für Nachrichtentechnik, RWTH Aachen University, GERMANY
  *
@@ -40,9 +40,20 @@
 #include <QBasicTimer>
 #include <QFileInfo>
 #include <QMutex>
+#include <QSettings>
+#include <atomic>
+#include <functional>
 
 namespace video
 {
+
+// Cache mode for HDR 10-bit optimization
+// RawYUV mode caches original YUV data, avoiding CPU conversion overhead
+// GPU does the YUV->RGB conversion in realtime using shaders
+enum class CacheMode {
+  ConvertedRGB,  // Traditional mode: cache CPU-converted RGB QImage
+  RawYUV         // HDR optimized mode: cache raw YUV data, GPU converts at render time
+};
 
 class videoHandler : public FrameHandler
 {
@@ -67,6 +78,28 @@ public:
   bool             isInCache(int idx) const;
   virtual void     removeFrameFromCache(int frameIndex);
   virtual void     removeAllFrameFromCache();
+  
+  // Raw YUV cache for HDR 10-bit mode
+  // Returns true if the frame exists in raw YUV cache
+  bool isInRawCache(int idx) const;
+  // Get raw YUV data from cache (thread-safe copy via QByteArray COW)
+  QByteArray getRawYUVFromCache(int idx) const;
+  /**
+   * @brief Remove and return raw YUV data from cache (ownership transfer).
+   *
+   * On cache hit, the frame is erased from m_rawYUVCache and moved into out.
+   * Playback can then hand the buffer to the HDR renderer without retaining a
+   * second full-frame reference in the cache map.
+   *
+   * @param idx Frame index to take.
+   * @param out Output buffer receiving the cache entry on success.
+   * @return true when idx was present and out is non-empty.
+   */
+  bool takeRawYUVFromCache(int idx, QByteArray &out);
+  // Get current cache mode
+  CacheMode getCurrentCacheMode() const { return m_cacheMode; }
+  // Check if raw YUV caching is enabled (HDR 10-bit mode)
+  virtual bool shouldUseRawYUVCache() const { return false; }
 
   // Get the number of bytes for one frame (RGB or YUV) with the current format (if this video
   // handler uses raw data)
@@ -154,7 +187,40 @@ signals:
   // function returns.
   void signalRequestRawData(int frameIndex, bool caching);
 
+public:
+  /**
+   * @brief Callback type for direct parallel data reading
+   * 
+   * PERFORMANCE OPTIMIZATION: This callback enables parallel frame loading
+   * by bypassing the shared rawData buffer and requestDataMutex.
+   * 
+   * Each caching thread can provide its own buffer and read directly,
+   * eliminating the serialization bottleneck.
+   * 
+   * @param frameIndex Frame index to load
+   * @param targetBuffer Output buffer (caller-owned, thread-local)
+   * @return Number of bytes read, or 0 on failure
+   */
+  using DirectReadCallback = std::function<int64_t(int frameIndex, QByteArray& targetBuffer)>;
+
+  /**
+   * @brief Set callback for direct parallel data reading
+   * 
+   * When set, loadRawFrameForCaching can use this callback to read data
+   * directly into a thread-local buffer, bypassing the shared buffer.
+   * 
+   * @param callback The direct read callback function
+   */
+  void setDirectReadCallback(DirectReadCallback callback) { m_directReadCallback = callback; }
+
+  /**
+   * @brief Check if direct parallel reading is available
+   */
+  bool hasDirectReadCallback() const { return m_directReadCallback != nullptr; }
+
 protected:
+  // Callback for parallel data reading (bypasses requestDataMutex)
+  DirectReadCallback m_directReadCallback;
   // --- Drawing: The current frame is kept in the FrameHandler::currentImage. But if
   // currentImageIndex is not identical to the requested frame in the draw event, we will have to
   // update currentImage.
@@ -162,7 +228,7 @@ protected:
 
   // As the FrameHandler implementations, we get the pixel values from currentImage. For a video,
   // however, we have to first check if currentImage contains the correct frame.
-  virtual QRgb getPixelVal(int x, int y) const override;
+  virtual QRgb getPixelVal(int x, int y) override;
 
   // The video handler wants to cache a frame. After the operation the frameToCache should contain
   // the requested frame. No other internal state of the specific video format handler should be
@@ -203,6 +269,23 @@ protected:
   // however, the items that are in the cache (or are being put into the cache by the still running
   // threads) are invalid.
   bool cacheValid{true};
+  
+  // Raw YUV data cache for HDR 10-bit mode optimization
+  // This cache stores original YUV data instead of converted RGB images
+  // Benefits: 1) ~25% smaller memory footprint (YUV 4:2:0 vs RGBA)
+  //           2) No CPU conversion overhead during caching
+  //           3) GPU performs YUV->RGB conversion in realtime
+  QMutex mutable m_rawCacheAccess;
+  QMap<int, QByteArray> m_rawYUVCache;
+  CacheMode m_cacheMode{CacheMode::ConvertedRGB};
+  
+  // Cached QSettings value to avoid disk I/O per frame
+  // This is updated when cache mode changes or at initialization
+  mutable std::atomic<bool> m_enable10BitDisplayCached{false};
+  mutable std::atomic<bool> m_settingsCacheValid{false};
+  
+  // Load raw YUV data for caching (no CPU conversion)
+  virtual void loadRawFrameForCaching(int frameIndex, QByteArray &rawDataToCache);
 
 private slots:
   // Override the slotVideoControlChanged slot. For a videoHandler, also the number of frames might

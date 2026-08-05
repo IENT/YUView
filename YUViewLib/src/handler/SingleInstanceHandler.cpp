@@ -35,8 +35,7 @@
 // Activate this if you want to know when which difference is loaded
 #define SINGLEINSTANCEHANDLER_DEBUG 0
 #if SINGLEINSTANCEHANDLER_DEBUG && !NDEBUG
-#include <qDebug>
-#define DEBUG_SINGLEISNTANCE qDebug
+#include <QDebug>
 #else
 #define DEBUG_SINGLEISNTANCE(fmt, ...) ((void)0)
 #endif

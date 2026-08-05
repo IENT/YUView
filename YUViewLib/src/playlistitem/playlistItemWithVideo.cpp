@@ -35,7 +35,6 @@
 // Activate this if you want to know when which buffer is loaded/converted to image and so on.
 #define PLAYLISTITEMWITHVIDEO_DEBUG_LOADING 0
 #if PLAYLISTITEMWITHVIDEO_DEBUG_LOADING && !NDEBUG
-#define DEBUG_PLVIDEO qDebug
 #else
 #define DEBUG_PLVIDEO(fmt, ...) ((void)0)
 #endif
@@ -113,8 +112,10 @@ void playlistItemWithVideo::loadFrame(int  frameIdx,
       emit SignalItemChanged(true, RECACHE_NONE);
   }
 
-  if (playing && (state == ItemLoadingState::LoadingNeeded ||
-                  state == ItemLoadingState::LoadingNeededDoubleBuffer))
+  const bool useDoubleBufferPreload = !this->usesRawYUVCache();
+  if (useDoubleBufferPreload && playing &&
+      (state == ItemLoadingState::LoadingNeeded ||
+       state == ItemLoadingState::LoadingNeededDoubleBuffer))
   {
     // Load the next frame into the double buffer
     int nextFrameIdx = frameIdx + 1;

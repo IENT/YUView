@@ -50,7 +50,6 @@
 #define PARSER_AVC_DEBUG_OUTPUT 0
 #if PARSER_AVC_DEBUG_OUTPUT && !NDEBUG
 #include <QDebug>
-#define DEBUG_AVC(msg) qDebug() << msg
 #else
 #define DEBUG_AVC(fmt) ((void)0)
 #endif

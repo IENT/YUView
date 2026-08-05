@@ -39,7 +39,6 @@
 // Activate this if you want to know when which difference is loaded
 #define PLAYLISTITEMDIFFERENCE_DEBUG_LOADING 0
 #if PLAYLISTITEMDIFFERENCE_DEBUG_LOADING && !NDEBUG
-#define DEBUG_DIFF qDebug
 #else
 #define DEBUG_DIFF(fmt, ...) ((void)0)
 #endif

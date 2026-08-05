@@ -1,18 +1,95 @@
-Makefile
+# Qt Creator user files
+*.pro.user
+*.pro.user.*
+*.qbs.user
+*.qbs.user.*
+*.qmlproject.user
+*.qmlproject.user.*
 .qmake.stash
-YUView.pro.user
-# Exclude files that will be created by visual studio
+.qmake.cache
+
+# Visual Studio files
+.vs/
+*.sln
+*.vcxproj
+*.vcxproj.*
+*.filters
+*.user
 *.VC.opendb
 *.VC.db
-*.sln
-*.vcxproj*
-/.vs
-/build
-/buildRelease
-/GeneratedFiles
-/x64
-/deploy
-/decoders
-.vscode
-issues
+
+# Build directories
+build/
+build_*/
+buildRelease/
+debug/
+release/
+bin/
+obj/
+x64/
+GeneratedFiles/
+deploy/
+decoders/
+
+# Compiled object files
+*.o
+*.obj
+
+# Compiled executable and library files
+*.exe
+*.dll
+*.so
+*.so.*
+*.dylib
+*.a
+*.lib
+
+# Qt generated files
+moc_*.cpp
+qrc_*.cpp
+ui_*.h
+Makefile*
+*.qrc.depends
+
+# Core dump
+core
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS generated files
+Thumbs.db
 .DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Desktop.ini
+
+# Temporary and log files
+*.log
+*.tmp
+*.temp
+
+# Issue tracking (local)
+issues/
+
+# Local development artifacts (not for upstream PR)
+temp_docs/
+_upstream_ref/
+HDR_DEBUG_VERIFICATION.md
+docs/HDR_*.md
+docs/hdr_*.md
+docs/Buffer_Pipeline_Investigation_Report.md
+docs/PR_HDR_Debug_Plan_Verification.md
+
+# Compiled shader binaries
+# These should be generated during build, not committed
+*.qsb
+_diff_list.txt
+_substantive_diff.txt

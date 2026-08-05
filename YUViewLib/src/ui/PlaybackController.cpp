@@ -44,7 +44,6 @@ using namespace std::chrono_literals;
 // Activate this if you want to know when which buffer is loaded/converted to image and so on.
 #define PLAYBACKCONTROLLER_DEBUG 0
 #if PLAYBACKCONTROLLER_DEBUG && !NDEBUG
-#define DEBUG_PLAYBACK qDebug
 #else
 #define DEBUG_PLAYBACK(fmt, ...) ((void)0)
 #endif

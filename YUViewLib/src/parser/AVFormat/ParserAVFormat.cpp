@@ -36,6 +36,8 @@
 #include <cmath>
 #include <iomanip>
 
+#include <common/Functions.h>
+
 #include "../AVC/ParserAnnexBAVC.h"
 #include "../HEVC/ParserAnnexBHEVC.h"
 #include "../Mpeg2/ParserAnnexBMpeg2.h"
@@ -49,7 +51,6 @@
 #define PARSERAVCFORMAT_DEBUG_OUTPUT 0
 #if PARSERAVCFORMAT_DEBUG_OUTPUT && !NDEBUG
 #include <QDebug>
-#define DEBUG_AVFORMAT qDebug
 #else
 #define DEBUG_AVFORMAT(fmt, ...) ((void)0)
 #endif
@@ -581,7 +582,7 @@ bool ParserAVFormat::runParsingOfFile(const std::filesystem::path &compressedFil
   // Open the file but don't parse it yet.
   FileSourceFFmpegFile ffmpegFile;
   if (!ffmpegFile.openFile(
-          QString::fromStdString(compressedFilePath.string()), nullptr, nullptr, false))
+          functions::fsPathToQString(compressedFilePath), nullptr, nullptr, false))
   {
     emit backgroundParsingDone("Error opening the ffmpeg file.");
     return false;

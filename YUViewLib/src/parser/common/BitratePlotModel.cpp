@@ -34,7 +34,6 @@
 #define BITRATE_PLOT_MODE_DEBUG 0
 #if BITRATE_PLOT_MODE_DEBUG && !NDEBUG
 #include <QDebug>
-#define DEBUG_PLOT(msg) qDebug() << msg
 #else
 #define DEBUG_PLOT(msg) ((void)0)
 #endif

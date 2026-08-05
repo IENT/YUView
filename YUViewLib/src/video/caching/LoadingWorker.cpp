@@ -37,7 +37,6 @@ namespace video
 
 #define LOADINGWORKER_DEBUG_LOADING 0
 #if LOADINGWORKER_DEBUG_LOADING && !NDEBUG
-#define DEBUG_WORKER qDebug
 #else
 #define DEBUG_WORKER(fmt, ...) ((void)0)
 #endif
@@ -50,8 +49,9 @@ LoadingWorker::LoadingWorker(QObject *parent) : QObject(parent)
 
 QString LoadingWorker::getStatus()
 {
-  return QString("T%1: %2").arg(id).arg(this->working ? QString::number(this->currentFrame)
-                                                      : QString("-"));
+  QMutexLocker lock(&m_stateMutex);
+  return QString("T%1: %2").arg(id).arg(isWorking() ? QString::number(this->currentFrame)
+                                                    : QString("-"));
 }
 
 void LoadingWorker::setJob(playlistItem *item, int frame, bool test)
@@ -59,6 +59,9 @@ void LoadingWorker::setJob(playlistItem *item, int frame, bool test)
   Q_ASSERT_X(item != nullptr, Q_FUNC_INFO, "Given item is nullptr");
   Q_ASSERT_X(
     frame >= 0 || !item->properties().isIndexedByFrame(), Q_FUNC_INFO, "Given frame index invalid");
+  
+  // Thread-safe job setup - protect against concurrent modifications
+  QMutexLocker lock(&m_stateMutex);
   this->currentCacheItem = item;
   this->currentFrame     = frame;
   this->testMode         = test;

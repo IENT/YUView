@@ -32,6 +32,8 @@
 
 #include "StatisticsFileBase.h"
 
+#include <common/Functions.h>
+
 using namespace std::string_view_literals;
 
 namespace stats
@@ -39,7 +41,7 @@ namespace stats
 
 StatisticsFileBase::StatisticsFileBase(const QString &filename)
 {
-  this->file.openFile(filename.toStdString());
+  this->file.openFile(functions::qStringToFsPath(filename));
   if (!this->file.isOk())
   {
     this->errorMessage = "Error opening file " + filename;

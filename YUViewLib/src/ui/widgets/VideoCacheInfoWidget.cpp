@@ -39,7 +39,6 @@
 #define VIDEOCACHEINFOWIDGET_DEBUG_OUTPUT 0
 #if VIDEOCACHEINFOWIDGET_DEBUG_OUTPUT && !NDEBUG
 #include <QDebug>
-#define DEBUG_CACHINGINFO qDebug
 #else
 #define DEBUG_CACHINGINFO(fmt, ...) ((void)0)
 #endif
