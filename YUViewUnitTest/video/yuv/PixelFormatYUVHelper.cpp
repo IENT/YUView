@@ -30,38 +30,40 @@
  *   along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <QObject>
-#include <queue>
+#include "PixelFormatYUVHelper.h"
 
-namespace video
+namespace video::yuv::test
 {
-class videoHandler;
+
+std::vector<PixelFormatYUV> getAllPixelFormats()
+{
+  std::vector<PixelFormatYUV> allFormats;
+
+  for (const auto subsampling : SubsamplingMapper.getValues())
+  {
+    for (const auto bitsPerSample : BitDepthList)
+    {
+      const auto endianList =
+        (bitsPerSample > 8) ? std::vector<bool>({false, true}) : std::vector<bool>({false});
+
+      // Planar
+      for (const auto planeOrder : PlaneOrderMapper.getValues())
+        for (const auto bigEndian : endianList)
+          allFormats.push_back(PixelFormatYUV(subsampling, bitsPerSample, planeOrder, bigEndian));
+
+      // Packet
+      for (const auto packingOrder : getSupportedPackingFormats(subsampling))
+        for (const auto bytePacking : {false, true})
+          for (const auto bigEndian : endianList)
+            allFormats.push_back(
+              PixelFormatYUV(subsampling, bitsPerSample, packingOrder, bytePacking, bigEndian));
+    }
+  }
+
+  for (auto predefinedFormat : PredefinedPixelFormatMapper.getValues())
+    allFormats.push_back(PixelFormatYUV(predefinedFormat));
+
+  return allFormats;
 }
 
-namespace video::rgb::test
-{
-
-class videoHandlerDataLoadingTest : public QObject
-{
-  Q_OBJECT
-public:
-  videoHandlerDataLoadingTest(video::videoHandler *video);
-
-  struct LoadingRequest
-  {
-    int        frameIdx{0};
-    QByteArray rawData;
-  };
-
-  void addExpectedLoadingRequests(LoadingRequest expectedLoadingRequest);
-
-public slots:
-  void loadRawTestData(int frameIdx, bool forceDecodingNow);
-
-private:
-  video::videoHandler *video{};
-
-  std::queue<LoadingRequest> expectedLoadingRequests;
-};
-
-} // namespace video::rgb::test
+} // namespace video::yuv::test

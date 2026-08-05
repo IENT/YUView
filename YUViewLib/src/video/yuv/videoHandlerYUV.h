@@ -134,13 +134,7 @@ public:
   virtual void setFormatFromCorrelation(const QByteArray &rawYUVData,
                                         int64_t           fileSize = -1) override;
 
-  virtual std::optional<std::string> getFormatAsString() const override
-  {
-    const auto frameFormat = FrameHandler::getFormatAsString();
-    if (!frameFormat)
-      return {};
-    return *frameFormat + ";YUV;" + this->srcPixelFormat.getName();
-  }
+  virtual std::optional<std::string> getFormatAsString() const override;
   virtual bool setFormatFromString(const std::string_view format) override;
 
   // Create the YUV controls and return a pointer to the layout.

@@ -30,49 +30,13 @@
  *   along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <common/Testing.h>
-
 #include <video/yuv/PixelFormatYUV.h>
 
-#include "PixelFormatYUVHelper.h"
+#include <vector>
 
 namespace video::yuv::test
 {
 
-TEST(PixelFormatYUVTest, testFormatFromToString)
-{
-  for (const auto fmt : getAllPixelFormats())
-  {
-    const auto name = fmt.getName();
-    EXPECT_TRUE(fmt.isValid()) << "Format " << name << " is invalid.";
-    EXPECT_FALSE(name.empty()) << "Format " << name << " getName is empty.";
+std::vector<PixelFormatYUV> getAllPixelFormats();
 
-    const auto fmtNew = PixelFormatYUV(name);
-    EXPECT_EQ(fmt, fmtNew) << "New format " << fmtNew.getName() << " unequal to initial format "
-                           << name;
-
-    EXPECT_EQ(fmt.getSubsampling(), fmtNew.getSubsampling())
-      << "Format " << name << " subsampling missmatch";
-    EXPECT_EQ(fmt.getBitsPerSample(), fmtNew.getBitsPerSample())
-      << "Format " << name << " bits per sample missmatch";
-    EXPECT_EQ(fmt.isPlanar(), fmtNew.isPlanar()) << "Format " << name << " planar missmatch";
-    EXPECT_EQ(fmt.getChromaOffset(), fmtNew.getChromaOffset())
-      << "Format " << name << " chroma offset missmatch";
-    EXPECT_EQ(fmt.getPlaneOrder(), fmtNew.getPlaneOrder())
-      << "Format " << name << " plane order missmatch";
-    EXPECT_EQ(fmt.isUVInterleaved(), fmtNew.isUVInterleaved())
-      << "Format " << name << " uv inteleaved missmatch";
-    EXPECT_EQ(fmt.getPackingOrder(), fmtNew.getPackingOrder())
-      << "Format " << name << " packing order missmatch";
-    EXPECT_EQ(fmt.isBytePacking(), fmtNew.isBytePacking())
-      << "Format " << name << " byte packing missmatch";
-
-    if (fmt.getBitsPerSample())
-    {
-      EXPECT_EQ(fmt.isBigEndian(), fmtNew.isBigEndian())
-        << "Format " << name << " endianness wrong";
-    }
-  }
 }
-
-} // namespace video::yuv::test
