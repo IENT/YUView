@@ -724,14 +724,15 @@ void HDR_RhiVideoWindow::renderFrame(QRhiCommandBuffer* cb)
     std::memcpy(uniformData.colorMatrix, m_cachedColorMatrix, 16 * sizeof(float));
     std::memcpy(uniformData.offsetVec, m_cachedOffsetVec, 4 * sizeof(float));
 
-           // hdrParams.x = target exposure luminance in nits
-           // hdrParams.y = display max luminance (nits) for Linear mode scRGB scaling
+           // hdrParams.x = target exposure luminance in nits (PQ/HLG)
+           // hdrParams.y = display max luminance (nits); kept for UI/metadata,
+           //               Linear shader path does not scale by this value
            // hdrParams.z = render mode (1=PQ, 2=HLG, 3=Linear)
            // hdrParams.w = exposure enabled flag (0=disabled, 1=enabled)
     const auto renderMode = static_cast<video::hdr::RenderMode>(m_renderMode);
     // Keep exposure activation aligned with the shader contract:
     // PQ uses the BT.2390 tone-mapping range, HLG uses the 350-1000 nit exposure range,
-    // and Linear mode always bypasses exposure scaling.
+    // and Linear is a pass-through (1.0 linear = 80 nits scRGB) with gamut convert only.
     const bool isPQExposureActive =
         renderMode == video::hdr::RenderMode::PQ &&
         m_toneMapTargetNits >= video::hdr::ToneMapping::MIN_TARGET_NITS &&
@@ -743,7 +744,7 @@ void HDR_RhiVideoWindow::renderFrame(QRhiCommandBuffer* cb)
     const bool exposureEnabled = isPQExposureActive || isHLGExposureActive;
 
     uniformData.hdrParams[0] = exposureEnabled ? m_toneMapTargetNits : 0.0f;
-    // Linear mode scales BT.2020 linear light into scRGB using display peak nits.
+    // Display peak nits (overlay / future use). Linear pass-through ignores this.
     uniformData.hdrParams[1] = m_displayMaxLuminance;
     uniformData.hdrParams[2] = static_cast<float>(m_renderMode);
     uniformData.hdrParams[3] = exposureEnabled ? 1.0f : 0.0f;

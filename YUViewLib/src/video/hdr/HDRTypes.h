@@ -25,13 +25,13 @@ namespace video::hdr
  * 
  * Mode_BT2020_PQ_10bit: HDR10 with PQ transfer function (SMPTE ST.2084)
  * Mode_BT2020_HLG_10bit: HDR with HLG transfer function, processed in shader
- * Mode_BT2020_Linear_16bit: Linear light pass-through (scRGB, 16-bit float)
+ * Mode_BT2020_Linear_16bit: Linear BT.2020 pass-through to scRGB (1.0 = 80 nits)
  */
 enum class RenderMode
 {
   PQ     = 1,  // HDR10 BT.2020 PQ 10-bit rendering (SMPTE ST.2084)
   HLG    = 2,  // HLG rendering with realtime shader math
-  Linear = 3   // Linear light pass-through to display (scRGB, RGBA16F)
+  Linear = 3   // Linear pass-through to scRGB (1.0 = 80 nits, gamut only)
 };
 
 /**

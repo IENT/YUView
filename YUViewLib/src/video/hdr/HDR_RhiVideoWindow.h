@@ -103,13 +103,13 @@ public:
    * 
    * Mode_BT2020_PQ_10bit: HDR10 with PQ transfer function (SMPTE ST.2084)
    * Mode_BT2020_HLG_10bit: HDR with HLG transfer function, processed in shader
-   * Mode_BT2020_Linear_16bit: Linear light pass-through to display (HDRExtendedDisplayP3Linear)
-   *                           Uses RGBA16F textures and scRGB color space
+   * Mode_BT2020_Linear_16bit: Linear BT.2020 light pass-through to scRGB
+   *                           (1.0 = 80 nits). Gamut convert only; no peak scaling.
    */
   enum RenderMode {
     Mode_BT2020_PQ_10bit = 1,     // HDR10 BT.2020 PQ 10-bit rendering (SMPTE ST.2084)
     Mode_BT2020_HLG_10bit = 2,    // HLG rendering with realtime shader math
-    Mode_BT2020_Linear_16bit = 3  // Linear light pass-through (scRGB, 16-bit float)
+    Mode_BT2020_Linear_16bit = 3  // Linear pass-through (scRGB, 1.0 = 80 nits)
   };
 
   /**

@@ -11,7 +11,7 @@
 // Exposure uses a linear luminance multiplier:
 //   display_luminance *= userSelectedNits / EOTF_peak_nits
 // with logarithmic UI spacing handled in C++.
-// Active for PQ and HLG. Linear mode bypasses exposure.
+// Active for PQ and HLG. Linear is gamut-only pass-through (1.0 = 80 nits).
 //
 // Output: Linear light in scRGB space (1.0 = 80 nits)
 // ============================================================================
@@ -80,6 +80,7 @@ const mat3 MAT_BT2020_TO_SRGB = mat3(
 
 const int MODE_PQ = 1;
 const int MODE_HLG = 2;
+// Linear / unknown fall through to the final else (mode == 3).
 
 // ============================================================================
 // Main Fragment Shader
@@ -142,10 +143,15 @@ void main() {
     }
     else {
         // ====================================================================
-        // Linear Mode: gamut conversion only (NO tone mapping)
+        // Linear Mode: BT.2020 linear light pass-through -> scRGB
         // ====================================================================
-        float scale = hdrParams.y * 0.0125;
-        rgb = MAT_BT2020_TO_SRGB * rgb * scale;
+        // Contract: input rgb is already linear BT.2020 with 1.0 = 80 nits
+        // (scRGB reference white). Only apply the gamut matrix.
+        //
+        // Do NOT multiply by displayPeakNits/80 here. That treated reference
+        // white as display peak and blew the whole frame to white.
+        // One mat3*vec3 keeps this branch cheaper than PQ/HLG paths.
+        rgb = MAT_BT2020_TO_SRGB * rgb;
     }
 
     // Stage 3: Output (scRGB can be negative for wide gamut)
