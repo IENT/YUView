@@ -341,28 +341,19 @@ private:
   bool pushCurrentFrameToHDR(int frameIndex);
 
   /**
-   * @brief Ownership tag for a resolved raw YUV payload destined for HDR upload.
-   */
-  enum class HDRYUVOwnership
-  {
-    Exclusive, ///< Caller may std::move the buffer into the HDR pipeline.
-    Shared     ///< Buffer is a snapshot of a live/shared source; copy path required.
-  };
-
-  /**
-   * @brief Resolved raw YUV frame ready for HDR GPU upload.
+   * @brief Resolved raw YUV frame ready for HDR GPU upload (shared/COW buffer).
    */
   struct ResolvedHDRYUVFrame
   {
-    QByteArray     yuvData;
-    HDRYUVOwnership ownership{HDRYUVOwnership::Shared};
+    QByteArray yuvData;
   };
 
   /**
-   * @brief Resolve raw YUV data for a frame using the unified cache/live/load priority.
+   * @brief Resolve raw YUV for HDR: borrow from raw cache → live snapshot → load.
    *
-   * Priority: take from raw cache (ownership transfer) → live buffer snapshot →
-   * load from source.
+   * Cache entries are borrowed (QByteArray COW), never taken/erased, so
+   * VideoCache::cacheLevelCurrent stays consistent and looped playback keeps
+   * lookahead frames.
    *
    * @param frameIndex Frame to resolve.
    * @param out Output payload on success.
@@ -371,10 +362,7 @@ private:
   bool resolveRawYUVForHDR(int frameIndex, ResolvedHDRYUVFrame &out);
 
   /**
-   * @brief Single entry point for pushing a YUV frame into the HDR renderer.
-   *
-   * Consolidates drawFrame() and pushCurrentFrameToHDR() GPU paths. Uses move
-   * semantics when the payload owns its buffer (cache take).
+   * @brief Push a YUV frame into the HDR renderer (shared-buffer upload path).
    *
    * @param frameIndex Frame index to render.
    * @return true when the HDR renderer accepted a GPU YUV payload.

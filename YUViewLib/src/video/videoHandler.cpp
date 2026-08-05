@@ -414,8 +414,8 @@ QByteArray videoHandler::getRawYUVFromCache(int idx) const
 /**
  * @brief Remove a cached raw YUV frame and transfer ownership to the caller.
  *
- * Unlike getRawYUVFromCache(), this erases the map entry so peak memory during
- * playback is cache-free for the frame currently on screen.
+ * Prefer getRawYUVFromCache() for HDR display: taking entries desyncs
+ * VideoCache::cacheLevelCurrent. Kept for callers that intentionally evict.
  */
 bool videoHandler::takeRawYUVFromCache(int idx, QByteArray &out)
 {

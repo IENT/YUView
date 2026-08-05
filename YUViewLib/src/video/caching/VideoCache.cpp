@@ -32,6 +32,8 @@
 
 #include "VideoCache.h"
 
+#include <QCoreApplication>
+#include <QEventLoop>
 #include <QMessageBox>
 #include <QPainter>
 #include <QScrollArea>
@@ -120,6 +122,10 @@ VideoCache::VideoCache(PlaylistTreeWidget *playlistTreeWidget,
           &PlaybackController::signalPlaybackStarting,
           this,
           &VideoCache::updateCacheQueue);
+  connect(playback.data(),
+          &PlaybackController::signalPlaybackStopping,
+          this,
+          &VideoCache::flushAndWaitInteractiveLoaders);
   connect(&statusUpdateTimer, &QTimer::timeout, this, [=] { emit updateCacheStatus(); });
   connect(&testProgrssUpdateTimer, &QTimer::timeout, this, [=] { updateTestProgress(); });
 }
@@ -241,6 +247,30 @@ void VideoCache::updateSettings()
   scheduleCachingListUpdate();
 
   settings.endGroup();
+}
+
+void VideoCache::flushAndWaitInteractiveLoaders()
+{
+  // 丢弃排队任务并汇合交互加载线程，避免停播重绘与 loadRawYUVData 竞态。
+  interactiveItemQueued[0]     = nullptr;
+  interactiveItemQueued_Idx[0] = -1;
+  interactiveItemQueued[1]     = nullptr;
+  interactiveItemQueued_Idx[1] = -1;
+
+  QElapsedTimer waitTimer;
+  waitTimer.start();
+  constexpr int kMaxWaitMs = 2000;
+  while ((interactiveThread[0]->worker()->isWorking() ||
+          interactiveThread[1]->worker()->isWorking()) &&
+         waitTimer.elapsed() < kMaxWaitMs)
+  {
+    QCoreApplication::processEvents(QEventLoop::ExcludeUserInputEvents, 50);
+  }
+
+  DEBUG_CACHING("VideoCache::flushAndWaitInteractiveLoaders done working=[%d,%d] waited=%lldms",
+                interactiveThread[0]->worker()->isWorking(),
+                interactiveThread[1]->worker()->isWorking(),
+                static_cast<long long>(waitTimer.elapsed()));
 }
 
 void VideoCache::loadFrame(playlistItem *item, int frameIndex, int loadingSlot)

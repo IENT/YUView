@@ -181,7 +181,11 @@ void PlaybackController::on_playPauseButton_clicked()
     DEBUG_PLAYBACK("PlaybackController::on_playPauseButton_clicked Stop");
     this->timer.stop();
     this->playbackMode = PlaybackMode::Stopped;
+    this->waitingForItem[0] = false;
+    this->waitingForItem[1] = false;
     emit(waitForItemCaching(nullptr));
+    // Join interactive loaders before HDR redraw (avoids loadRawYUVData / RHI races).
+    emit(signalPlaybackStopping());
     this->ui.fpsLabel->setText("0");
     this->ui.fpsLabel->setStyleSheet("");
     this->splitViewPrimary->freezeView(false);

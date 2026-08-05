@@ -73,6 +73,13 @@ public:
   // visible at the same time.
   void loadFrame(playlistItem *item, int frameIndex, int loadingSlot);
 
+  /**
+   * @brief Drop queued interactive loads and wait for in-flight workers to finish.
+   *
+   * Called when playback stops so pause/redraw does not race worker loadRawYUVData.
+   */
+  void flushAndWaitInteractiveLoaders();
+
   // Test the conversion speed with the currently selected item
   void testConversionSpeed();
 

@@ -1354,21 +1354,22 @@ bool videoHandlerYUV::canUseGPUYUVHDRPath() const
 }
 
 /**
- * @brief Resolve raw YUV for HDR using cache-take → live snapshot → load priority.
+ * @brief 解析 HDR 用原始 YUV：借用缓存（COW）→ 当前缓冲快照 → 从源加载。
+ * @param frameIndex 帧索引
+ * @param out 输出载荷
+ * @return 成功得到非空 yuvData 时为 true
  */
 bool videoHandlerYUV::resolveRawYUVForHDR(int frameIndex, ResolvedHDRYUVFrame &out)
 {
     out.yuvData.clear();
-    out.ownership = HDRYUVOwnership::Shared;
 
     if (frameIndex < 0)
         return false;
 
-    if (takeRawYUVFromCache(frameIndex, out.yuvData))
-    {
-        out.ownership = HDRYUVOwnership::Exclusive;
-        return !out.yuvData.isEmpty();
-    }
+    // Borrow (do not take/erase): preserves VideoCache accounting and loop lookahead.
+    out.yuvData = getRawYUVFromCache(frameIndex);
+    if (!out.yuvData.isEmpty())
+        return true;
 
     if (getCurrentRawFrameSnapshot(frameIndex, out.yuvData))
         return !out.yuvData.isEmpty();
@@ -1380,7 +1381,9 @@ bool videoHandlerYUV::resolveRawYUVForHDR(int frameIndex, ResolvedHDRYUVFrame &o
 }
 
 /**
- * @brief Unified HDR GPU push: move on exclusive ownership, copy on shared buffers.
+ * @brief 将指定帧推入 HDR GPU 渲染管线（共享缓冲上传）。
+ * @param frameIndex 帧索引
+ * @return HDR 渲染器接受载荷时为 true
  */
 bool videoHandlerYUV::pushFrameToHDR(int frameIndex)
 {
@@ -1396,18 +1399,8 @@ bool videoHandlerYUV::pushFrameToHDR(int frameIndex)
 
     const int width = static_cast<int>(frameSize.width);
     const int height = static_cast<int>(frameSize.height);
-    const auto colorConversion = conversionSettings.colorConversion;
-
-    if (resolved.ownership == HDRYUVOwnership::Exclusive)
-    {
-        m_hdrRenderingManager->updateHDRFrameYUVMove(
-            std::move(resolved.yuvData), width, height, srcPixelFormat, colorConversion);
-    }
-    else
-    {
-        m_hdrRenderingManager->updateHDRFrameYUV(
-            resolved.yuvData, width, height, srcPixelFormat, colorConversion);
-    }
+    m_hdrRenderingManager->updateHDRFrameYUV(
+        resolved.yuvData, width, height, srcPixelFormat, conversionSettings.colorConversion);
 
     return true;
 }

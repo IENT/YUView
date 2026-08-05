@@ -87,9 +87,8 @@ public:
   /**
    * @brief Remove and return raw YUV data from cache (ownership transfer).
    *
-   * On cache hit, the frame is erased from m_rawYUVCache and moved into out.
-   * Playback can then hand the buffer to the HDR renderer without retaining a
-   * second full-frame reference in the cache map.
+   * HDR display should use getRawYUVFromCache() (borrow/COW) instead: taking
+   * entries desyncs VideoCache::cacheLevelCurrent and starves loop lookahead.
    *
    * @param idx Frame index to take.
    * @param out Output buffer receiving the cache entry on success.
