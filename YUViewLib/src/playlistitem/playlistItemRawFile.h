@@ -64,7 +64,7 @@ public:
   // Create a new playlistItemRawFile from the playlist file entry. Return nullptr if parsing
   // failed.
   static playlistItemRawFile *newplaylistItemRawFile(const YUViewDomElement &root,
-                                                     const QString          &playlistFilePath);
+                                                     const QString &         playlistFilePath);
 
   virtual bool canBeUsedInProcessing() const override { return true; }
 
@@ -85,6 +85,23 @@ public:
       dataSource.clearFileCache();
     playlistItemWithVideo::cacheFrame(idx, testMode);
   }
+
+  /**
+   * @brief Direct frame data read for parallel caching (thread-safe)
+   * 
+   * PERFORMANCE OPTIMIZATION: This method reads frame data directly into
+   * the caller's buffer without going through the shared rawData buffer.
+   * This enables true parallel I/O when multiple caching threads are active.
+   * 
+   * Unlike loadRawData() which uses a shared buffer protected by mutex,
+   * this method can be called concurrently from multiple threads, each
+   * with their own buffer.
+   * 
+   * @param frameIndex Frame index to read
+   * @param targetBuffer Output buffer (caller-owned, will be resized)
+   * @return Number of bytes read, or 0 on failure
+   */
+  int64_t readFrameDataDirect(int frameIndex, QByteArray& targetBuffer);
 
 private slots:
   // Load the raw data for the given frame index from file. This slot is called by the videoHandler
@@ -116,5 +133,5 @@ private:
   bool            isY4MFile{};
   QList<uint64_t> y4mFrameIndices;
 
-  std::optional<std::string> pixelFormatAfterLoading{};
+  QString pixelFormatAfterLoading{};
 };

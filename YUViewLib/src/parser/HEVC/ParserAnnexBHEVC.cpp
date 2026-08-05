@@ -50,7 +50,6 @@
 #define PARSER_HEVC_DEBUG_OUTPUT 0
 #if PARSER_HEVC_DEBUG_OUTPUT && !NDEBUG
 #include <QDebug>
-#define DEBUG_HEVC(msg) qDebug() << msg
 #else
 #define DEBUG_HEVC(msg) ((void)0)
 #endif

@@ -42,7 +42,6 @@
 // Activate this if you want to know when which buffer is loaded/converted to image and so on.
 #define PLAYLISTITEMTEXT_DEBUG 0
 #if PLAYLISTITEMTEXT_DEBUG && !NDEBUG
-#define DEBUG_TEXT qDebug
 #else
 #define DEBUG_TEXT(fmt, ...) ((void)0)
 #endif

@@ -60,7 +60,9 @@ public:
       video->activateDoubleBuffer();
   }
 
-  // Do we need to load the frame first?
+  /**
+   * @brief Whether frameIdx needs loading; HDR may return DoubleBuffer to trigger prefetch.
+   */
   virtual ItemLoadingState needsLoading(int frameIdx, bool loadRawValues) override;
 
   // -- Caching
@@ -76,6 +78,16 @@ public:
   virtual int        getNumberCachedFrames() const override
   {
     return unresolvableError ? 0 : video->getNumberCachedFrames();
+  }
+  /**
+   * @brief Return whether this item uses raw YUV caching.
+   *
+   * Raw YUV caching is enabled for HDR playback paths where GPU-based
+   * conversion is used and CPU-side double-buffer RGB conversion is not needed.
+   */
+  bool usesRawYUVCache() const
+  {
+    return video && video->shouldUseRawYUVCache();
   }
   // How many bytes will caching one frame use (in bytes)?
   virtual unsigned int getCachingFrameSize() const override
@@ -99,8 +111,12 @@ public:
     return !unresolvableError && playlistItem::isCachable() && video->isFormatValid();
   }
 
-  // Load the frame in the video item. Emit SignalItemChanged(true,false) when done. Always called
-  // from a thread.
+  /**
+   * @brief Load frameIdx; while playing, prefetch the next frame then signal completion.
+   *
+   * HDR raw-YUV mode prefetches via cacheFrame (does not clobber currentFrameRawData)
+   * and always emits signalItemDoubleBufferLoaded so Stalled playback can resume.
+   */
   virtual void
   loadFrame(int frameIdx, bool playing, bool loadRawData, bool emitSignals = true) override;
 

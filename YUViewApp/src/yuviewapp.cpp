@@ -1,4 +1,4 @@
-/*  This file is part of YUView - The YUV player with advanced analytics toolset
+﻿/*  This file is part of YUView - The YUV player with advanced analytics toolset
 *   <https://github.com/IENT/YUView>
 *   Copyright (C) 2015  Institut für Nachrichtentechnik, RWTH Aachen University, GERMANY
 *
@@ -31,22 +31,87 @@
 */
 
 #include <QCoreApplication>
+#include <QSurfaceFormat>
+#include <QColorSpace>
+#include <QDebug>
+#include <QSettings>
+#include <QMessageBox>
 
 #include <common/Typedef.h>
 #include <ui/YUViewApplication.h>
 
+
 int main(int argc, char *argv[])
 {
-#if QT_VERSION >= QT_VERSION_CHECK(5, 6, 0) && QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
-  QCoreApplication::setAttribute(Qt::AA_EnableHighDpiScaling); // DPI support
-  QCoreApplication::setAttribute(Qt::AA_UseHighDpiPixmaps); // DPI support
-#endif
+  // ========================================
+  // BASIC OPENGL SETUP - MUST BE FIRST
+  // ========================================
+  
+  // Set basic OpenGL attributes before any application creation
+  // Qt6 enables high-DPI scaling by default.
   QCoreApplication::setAttribute(Qt::AA_SynthesizeMouseForUnhandledTouchEvents,false);
   QCoreApplication::setAttribute(Qt::AA_SynthesizeTouchForUnhandledMouseEvents,false);
 
+  // ========================================
+  // STARTUP-BASED HDR DECISION LOGIC (PRD Requirement 5.1-5.5)
+  // Simplified branch structure: HDR vs SDR path determined once at startup
+  // ========================================
+
   qRegisterMetaType<recacheIndicator>("recacheIndicator");
   
-  YUViewApplication app(argc, argv);
+  // Set application identity before using QSettings
+  QCoreApplication::setApplicationName("YUView");
+  QCoreApplication::setOrganizationName("Institut für Nachrichtentechnik, RWTH Aachen University");
+  QCoreApplication::setOrganizationDomain("ient.rwth-aachen.de");
+  
+  // Read HDR preference from configuration (PRD Requirement 5.2)
+  QSettings settings;
+  const bool userWantsHDR = settings.value("Enable10BitDisplay", false).toBool();
+  
+  bool hdrModeEnabled = false;
+  bool hardwareFallbackOccurred = false;
+  QString fallbackMessage;
+  
+  
+  // Simplified pure branch structure for HDR/SDR decision
+  // When userWantsHDR is true: configure 10-bit OpenGL surface format for HDR rendering
+  // When userWantsHDR is false: use Qt default format, rely on standard QPainter path
+  // This eliminates the redundant 8-bit -> 10-bit reconfiguration pattern
+  if (userWantsHDR) {
+    // HDR PATH: Configure 10-bit OpenGL surface format with Qt 6.8+ native HDR color space
+    // This format is required for HDR_VideoWindow to render 10-bit content correctly
+    QSurfaceFormat hdrFormat;
+    hdrFormat.setProfile(QSurfaceFormat::CoreProfile);
+    hdrFormat.setVersion(3, 3);
+    hdrFormat.setSwapBehavior(QSurfaceFormat::DoubleBuffer);
+    hdrFormat.setSwapInterval(1);
+    // HDR RGBA16F requires 16-bit per channel for linear light rendering
+    hdrFormat.setRedBufferSize(16);
+    hdrFormat.setGreenBufferSize(16);
+    hdrFormat.setBlueBufferSize(16);
+    hdrFormat.setAlphaBufferSize(16);
+    
+    // Qt 6.8+ Native HDR: Use extended sRGB linear color space for RGBA16F
+    // The QRhi swap chain will be configured with HDRExtendedSrgbLinear format
+    // which uses scRGB linear light (values > 1.0 represent HDR content)
+    // PQ/HLG/Linear OETF will be applied in fragment shader (homework assignment)
+#if QT_VERSION >= QT_VERSION_CHECK(6, 8, 0)
+    hdrFormat.setColorSpace(QColorSpace(QColorSpace::SRgbLinear));
+#else
+#endif
+    
+    QSurfaceFormat::setDefaultFormat(hdrFormat);
+    
+    hdrModeEnabled = true;
+  } else {
+    // SDR PATH: Use Qt default format, no explicit QSurfaceFormat configuration needed
+    // Standard QPainter rendering path handles 8-bit display automatically
+    hdrModeEnabled = false;
+  }
+  
+  // Create the main YUView application with HDR decision made
+  
+  YUViewApplication app(argc, argv, hdrModeEnabled, hardwareFallbackOccurred, fallbackMessage);
 
   return app.returnCode;
 }

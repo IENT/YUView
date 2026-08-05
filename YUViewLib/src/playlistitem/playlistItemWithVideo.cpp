@@ -35,7 +35,6 @@
 // Activate this if you want to know when which buffer is loaded/converted to image and so on.
 #define PLAYLISTITEMWITHVIDEO_DEBUG_LOADING 0
 #if PLAYLISTITEMWITHVIDEO_DEBUG_LOADING && !NDEBUG
-#define DEBUG_PLVIDEO qDebug
 #else
 #define DEBUG_PLVIDEO(fmt, ...) ((void)0)
 #endif
@@ -97,6 +96,7 @@ void playlistItemWithVideo::loadFrame(int  frameIdx,
                                       bool loadRawData,
                                       bool emitSignals)
 {
+  // 加载当前帧；播放中预取下一帧。HDR Raw 路径用 cacheFrame 预取并通知 Stall 恢复。
   auto state = video->needsLoading(frameIdx, loadRawData);
 
   if (state == ItemLoadingState::LoadingNeeded)
@@ -113,35 +113,64 @@ void playlistItemWithVideo::loadFrame(int  frameIdx,
       emit SignalItemChanged(true, RECACHE_NONE);
   }
 
-  if (playing && (state == ItemLoadingState::LoadingNeeded ||
-                  state == ItemLoadingState::LoadingNeededDoubleBuffer))
+  if (!playing || (state != ItemLoadingState::LoadingNeeded &&
+                   state != ItemLoadingState::LoadingNeededDoubleBuffer))
+    return;
+
+  const int nextFrameIdx = frameIdx + 1;
+  const int lastFrameIdx = properties().startEndRange.second;
+
+  if (this->usesRawYUVCache())
   {
-    // Load the next frame into the double buffer
-    int nextFrameIdx = frameIdx + 1;
-    if (nextFrameIdx <= properties().startEndRange.second)
+    // HDR: prefetch next frame into the raw YUV cache (keeps currentFrameRawData intact).
+    if (nextFrameIdx <= lastFrameIdx &&
+        video->needsLoading(nextFrameIdx, false) == ItemLoadingState::LoadingNeeded)
     {
-      DEBUG_PLVIDEO("playlistItemWithVideo::loadFrame loading frame into double buffer %d%s%s",
-                    nextFrameIdx,
-                    playing ? " playing" : "",
-                    loadRawData ? " raw" : "");
+      DEBUG_PLVIDEO("playlistItemWithVideo::loadFrame prefetch raw YUV frame %d", nextFrameIdx);
       isFrameLoadingDoubleBuffer = true;
-      video->loadFrame(nextFrameIdx, true);
+      this->cacheFrame(nextFrameIdx, false);
       isFrameLoadingDoubleBuffer = false;
-      if (emitSignals)
-        emit signalItemDoubleBufferLoaded();
     }
+    // Always notify so Stalled playback resumes even when the next frame was already cached.
+    if (emitSignals)
+      emit signalItemDoubleBufferLoaded();
+    return;
+  }
+
+  // SDR: classic RGB double-buffer preload of the next frame.
+  if (nextFrameIdx <= lastFrameIdx)
+  {
+    DEBUG_PLVIDEO("playlistItemWithVideo::loadFrame loading frame into double buffer %d%s%s",
+                  nextFrameIdx,
+                  playing ? " playing" : "",
+                  loadRawData ? " raw" : "");
+    isFrameLoadingDoubleBuffer = true;
+    video->loadFrame(nextFrameIdx, true);
+    isFrameLoadingDoubleBuffer = false;
+    if (emitSignals)
+      emit signalItemDoubleBufferLoaded();
   }
 }
 
 ItemLoadingState playlistItemWithVideo::needsLoading(int frameIdx, bool loadRawValues)
 {
-  // See if the item has so many frames
+  // HDR Raw：当前就绪但下一帧缺失时返回 DoubleBuffer，触发播放预取。
   auto range = this->properties().startEndRange;
   if (frameIdx < range.first || frameIdx > range.second)
     return ItemLoadingState::LoadingNotNeeded;
 
-  if (video)
-    return video->needsLoading(frameIdx, loadRawValues);
+  if (!video)
+    return ItemLoadingState::LoadingNotNeeded;
+
+  const auto state = video->needsLoading(frameIdx, loadRawValues);
+  if (!this->usesRawYUVCache() || state != ItemLoadingState::LoadingNotNeeded)
+    return state;
+
+  const int nextFrameIdx = frameIdx + 1;
+  if (nextFrameIdx <= range.second &&
+      video->needsLoading(nextFrameIdx, false) == ItemLoadingState::LoadingNeeded)
+    return ItemLoadingState::LoadingNeededDoubleBuffer;
+
   return ItemLoadingState::LoadingNotNeeded;
 }
 

@@ -1,4 +1,4 @@
-/*  This file is part of YUView - The YUV player with advanced analytics toolset
+﻿/*  This file is part of YUView - The YUV player with advanced analytics toolset
  *   <https://github.com/IENT/YUView>
  *   Copyright (C) 2015  Institut f�r Nachrichtentechnik, RWTH Aachen University, GERMANY
  *
@@ -40,7 +40,6 @@
 
 #if PARSERCOMMON_DEBUG_FILTER_OUTPUT && !NDEBUG
 #include <QDebug>
-#define DEBUG_FILTER qDebug
 #else
 #define DEBUG_FILTER(fmt, ...) ((void)0)
 #endif
@@ -197,7 +196,15 @@ void PacketItemModel::setUseColorCoding(bool colorCoding)
     return;
 
   useColorCoding = colorCoding;
-  emit dataChanged(QModelIndex(), QModelIndex(), QVector<int>() << Qt::BackgroundRole);
+  // Use valid index range to avoid Qt warning about invalid indices
+  // Only emit dataChanged if we have data to update
+  const int rows = rowCount();
+  if (rows > 0)
+  {
+    const QModelIndex topLeft = index(0, 0);
+    const QModelIndex bottomRight = index(rows - 1, columnCount() - 1);
+    emit dataChanged(topLeft, bottomRight, QVector<int>() << Qt::BackgroundRole);
+  }
 }
 
 void PacketItemModel::setShowVideoStreamOnly(bool videoOnly)
@@ -206,7 +213,15 @@ void PacketItemModel::setShowVideoStreamOnly(bool videoOnly)
     return;
 
   showVideoOnly = videoOnly;
-  emit dataChanged(QModelIndex(), QModelIndex());
+  // Use valid index range to avoid Qt warning about invalid indices
+  // Only emit dataChanged if we have data to update
+  const int rows = rowCount();
+  if (rows > 0)
+  {
+    const QModelIndex topLeft = index(0, 0);
+    const QModelIndex bottomRight = index(rows - 1, columnCount() - 1);
+    emit dataChanged(topLeft, bottomRight);
+  }
 }
 
 /// ------------------- FilterByStreamIndexProxyModel -----------------------------

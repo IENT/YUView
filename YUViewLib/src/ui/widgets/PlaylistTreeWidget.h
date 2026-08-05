@@ -1,4 +1,4 @@
-/*  This file is part of YUView - The YUV player with advanced analytics toolset
+﻿/*  This file is part of YUView - The YUV player with advanced analytics toolset
  *   <https://github.com/IENT/YUView>
  *   Copyright (C) 2015  Institut für Nachrichtentechnik, RWTH Aachen University, GERMANY
  *
@@ -87,12 +87,16 @@ public:
   void updateSettings();
 
   // Update the caching status of all items
-  void updateCachingStatus() { emit dataChanged(QModelIndex(), QModelIndex()); };
+  // Use viewport()->update() instead of dataChanged with invalid indices
+  // The previous approach triggered Qt warning: "dataChanged() called with an invalid index range"
+  void updateCachingStatus() { viewport()->update(); };
 
   bool isAutosaveAvailable();
   void loadAutosavedPlaylist();
   void dropAutosavedPlaylist();
   void startAutosaveTimer();
+  // Explicitly persist current playlist to QSettings autosave key immediately
+  void saveAutosaveNow();
 
 public slots:
   void savePlaylistToFile();

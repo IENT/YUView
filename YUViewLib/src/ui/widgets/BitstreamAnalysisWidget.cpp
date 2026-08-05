@@ -38,10 +38,11 @@
 #include "parser/Mpeg2/ParserAnnexBMpeg2.h"
 #include "parser/VVC/ParserAnnexBVVC.h"
 
+#include <common/Functions.h>
+
 #define BITSTREAM_ANALYSIS_WIDGET_DEBUG_OUTPUT 0
 #if BITSTREAM_ANALYSIS_WIDGET_DEBUG_OUTPUT
 #include <QDebug>
-#define DEBUG_ANALYSIS(msg) qDebug() << msg
 #else
 #define DEBUG_ANALYSIS(msg) ((void)0)
 #endif
@@ -196,7 +197,8 @@ void BitstreamAnalysisWidget::stopAndDeleteParserBlocking()
 void BitstreamAnalysisWidget::backgroundParsingFunction()
 {
   if (this->parser)
-    this->parser->runParsingOfFile(this->currentCompressedVideo->properties().name.toStdString());
+    this->parser->runParsingOfFile(
+        functions::qStringToFsPath(this->currentCompressedVideo->properties().name));
 }
 
 void BitstreamAnalysisWidget::currentSelectedItemsChanged(playlistItem *item1, playlistItem *, bool)

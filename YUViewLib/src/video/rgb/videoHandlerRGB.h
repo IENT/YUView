@@ -32,8 +32,6 @@
 
 #pragma once
 
-#include <optional>
-#include <string>
 #include <video/rgb/PixelFormatRGB.h>
 #include <video/videoHandler.h>
 
@@ -74,15 +72,15 @@ public:
   unsigned getCachingFrameSize() const override;
 
   // Return the RGB values for the given pixel
-  virtual QStringPairList getPixelValues(const QPoint             &pixelPos,
-                                         int                       frameIdx,
-                                         const FrameHandler *const item2,
-                                         const int                 frameIdx1 = 0) const override;
+  virtual QStringPairList getPixelValues(const QPoint &pixelPos,
+                                         int           frameIdx,
+                                         FrameHandler *item2,
+                                         const int     frameIdx1 = 0) override;
 
   // Get the number of bytes for one RGB frame with the current format
   virtual int64_t getBytesPerFrame() const override
   {
-    return this->srcPixelFormat.getBytesPerFrame(this->frameSize);
+    return srcPixelFormat.bytesPerFrame(frameSize);
   }
 
   // Try to guess and set the format (frameSize/srcPixelFormat) from the raw RGB data.
@@ -90,8 +88,12 @@ public:
   virtual void setFormatFromCorrelation(const QByteArray &rawRGBData,
                                         int64_t           fileSize = -1) override;
 
-  virtual std::optional<std::string> getFormatAsString() const override;
-  virtual bool                       setFormatFromString(const std::string_view format) override;
+  virtual QString getFormatAsString() const override
+  {
+    return FrameHandler::getFormatAsString() + ";RGB;" +
+           QString::fromStdString(this->srcPixelFormat.getName());
+  }
+  virtual bool setFormatFromString(QString format) override;
 
   // Create the RGB controls and return a pointer to the layout.
   // rgbFormatFixed: For example a RGB file does not have a fixed format (the user can change this),
@@ -101,13 +103,13 @@ public:
   void updateControlsForNewPixelFormat();
 
   // Get the name of the currently selected RGB pixel format
-  virtual std::optional<std::string> getRawRGBPixelFormatName() const
+  virtual QString getRawRGBPixelFormatName() const
   {
-    return this->srcPixelFormat.getName();
+    return QString::fromStdString(srcPixelFormat.getName());
   }
   // Set the current raw format and update the control. Only emit a signalHandlerChanged signal
   // if emitSignal is true.
-  virtual void setRGBPixelFormat(const PixelFormatRGB &format, bool emitSignal = false)
+  virtual void setRGBPixelFormat(const rgb::PixelFormatRGB &format, bool emitSignal = false)
   {
     setSrcPixelFormat(format);
     if (emitSignal)
@@ -115,7 +117,7 @@ public:
   }
   virtual void setRGBPixelFormatByName(const QString &name, bool emitSignal = false)
   {
-    this->setRGBPixelFormat(PixelFormatRGB(name.toStdString()), emitSignal);
+    this->setRGBPixelFormat(rgb::PixelFormatRGB(name.toStdString()), emitSignal);
   }
 
   void
@@ -165,7 +167,7 @@ protected:
   bool limitedRange{};
 
   // Get the RGB values for the given pixel.
-  virtual rgba_t getPixelValue(const QPoint &pixelPos) const;
+  virtual rgb::rgba_t getPixelValue(const QPoint &pixelPos) const;
 
   // Load the given frame and return it for caching. The current buffers (currentFrameRawRGBData and
   // currentFrame) will not be modified.
@@ -181,7 +183,7 @@ private:
   void convertRGBToImage(const QByteArray &sourceBuffer, QImage &outputImage);
 
   // Set the new pixel format thread save (lock the mutex)
-  void setSrcPixelFormat(const PixelFormatRGB &newFormat);
+  void setSrcPixelFormat(const rgb::PixelFormatRGB &newFormat);
 
   // Convert one frame from the current pixel format to RGB888
   void       convertSourceToRGBA32Bit(const QByteArray &sourceBuffer,

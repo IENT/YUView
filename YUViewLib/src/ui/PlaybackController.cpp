@@ -44,7 +44,6 @@ using namespace std::chrono_literals;
 // Activate this if you want to know when which buffer is loaded/converted to image and so on.
 #define PLAYBACKCONTROLLER_DEBUG 0
 #if PLAYBACKCONTROLLER_DEBUG && !NDEBUG
-#define DEBUG_PLAYBACK qDebug
 #else
 #define DEBUG_PLAYBACK(fmt, ...) ((void)0)
 #endif
@@ -182,7 +181,11 @@ void PlaybackController::on_playPauseButton_clicked()
     DEBUG_PLAYBACK("PlaybackController::on_playPauseButton_clicked Stop");
     this->timer.stop();
     this->playbackMode = PlaybackMode::Stopped;
+    this->waitingForItem[0] = false;
+    this->waitingForItem[1] = false;
     emit(waitForItemCaching(nullptr));
+    // Join interactive loaders before HDR redraw (avoids loadRawYUVData / RHI races).
+    emit(signalPlaybackStopping());
     this->ui.fpsLabel->setText("0");
     this->ui.fpsLabel->setStyleSheet("");
     this->splitViewPrimary->freezeView(false);

@@ -32,6 +32,8 @@
 
 #include "DataSourceLocalFile.h"
 
+#include <common/Functions.h>
+
 #ifdef Q_OS_WIN
 #include <windows.h>
 #endif
@@ -60,9 +62,15 @@ getLastWriteTime(const std::filesystem::path &filePath) noexcept
 DataSourceLocalFile::DataSourceLocalFile(const std::filesystem::path &filePath)
 {
   this->filePath = filePath;
-  this->file.open(this->filePath.string(), std::ios_base::in | std::ios_base::binary);
+  // Open via filesystem::path so Windows uses the wide API for Unicode paths.
+  this->file.open(this->filePath, std::ios_base::in | std::ios_base::binary);
   if (this->isOk())
     this->lastWriteTime = getLastWriteTime(this->filePath);
+}
+
+DataSourceLocalFile::~DataSourceLocalFile()
+{
+  cleanupFileHandlePool();
 }
 
 std::vector<InfoItem> DataSourceLocalFile::getInfoList() const
@@ -71,8 +79,9 @@ std::vector<InfoItem> DataSourceLocalFile::getInfoList() const
     return {};
 
   std::vector<InfoItem> infoList;
-  infoList.push_back(
-      InfoItem({"File Path", this->filePath.string(), "The absolute path of the local file"}));
+  infoList.push_back(InfoItem({"File Path",
+                               functions::fsPathToUtf8String(this->filePath),
+                               "The absolute path of the local file"}));
   if (const auto size = this->getFileSize())
     infoList.push_back(InfoItem({"File Size", std::to_string(*size)}));
 
@@ -109,12 +118,12 @@ void DataSourceLocalFile::clearFileCache()
   const std::lock_guard<std::mutex> readLock(this->readingMutex);
   this->file.close();
 
-  LPCWSTR file = this->filePath.wstring().c_str();
-  HANDLE  hFile =
-      CreateFile(file, GENERIC_READ, 0, NULL, OPEN_EXISTING, FILE_FLAG_NO_BUFFERING, NULL);
+  const std::wstring widePath = this->filePath.wstring();
+  HANDLE hFile =
+      CreateFileW(widePath.c_str(), GENERIC_READ, 0, NULL, OPEN_EXISTING, FILE_FLAG_NO_BUFFERING, NULL);
   CloseHandle(hFile);
 
-  this->file.open(this->filePath.string(), std::ios_base::in | std::ios_base::binary);
+  this->file.open(this->filePath, std::ios_base::in | std::ios_base::binary);
 #endif
 }
 
@@ -132,7 +141,7 @@ bool DataSourceLocalFile::wasSourceModified() const
 void DataSourceLocalFile::reloadAndResetDataSource()
 {
   this->file.close();
-  this->file.open(this->filePath.string(), std::ios_base::in | std::ios_base::binary);
+  this->file.open(this->filePath, std::ios_base::in | std::ios_base::binary);
   if (this->isOk())
     this->lastWriteTime = getLastWriteTime(this->filePath);
 }
@@ -181,6 +190,81 @@ std::optional<std::int64_t> DataSourceLocalFile::getFileSize() const
 [[nodiscard]] std::filesystem::path DataSourceLocalFile::getFilePath() const
 {
   return this->filePath;
+}
+
+std::int64_t DataSourceLocalFile::readAt(ByteVector &buffer, 
+                                         const std::int64_t position, 
+                                         const std::int64_t nrBytes)
+{
+  // Get thread-local file handle for lock-free parallel reading
+  std::ifstream* threadFile = getThreadLocalFileHandle();
+  if (!threadFile || !threadFile->is_open())
+  {
+    // Fallback to serialized read if thread-local handle unavailable
+    const std::lock_guard<std::mutex> readLock(this->readingMutex);
+    if (!this->seek(position))
+      return 0;
+    return this->read(buffer, nrBytes);
+  }
+
+  // Seek to position (no mutex needed - each thread has its own handle)
+  threadFile->clear();
+  threadFile->seekg(static_cast<std::streampos>(position));
+  if (threadFile->fail())
+    return 0;
+
+  // Resize buffer if needed
+  const auto size = static_cast<size_t>(nrBytes);
+  if (static_cast<std::int64_t>(buffer.size()) < nrBytes)
+    buffer.resize(size);
+
+  // Read data directly without mutex contention
+  threadFile->read(reinterpret_cast<char *>(buffer.data()), size);
+  const auto bytesRead = threadFile->gcount();
+  buffer.resize(bytesRead);
+
+  return static_cast<std::int64_t>(bytesRead);
+}
+
+std::ifstream* DataSourceLocalFile::getThreadLocalFileHandle()
+{
+  const auto threadId = std::this_thread::get_id();
+  
+  // Fast path: check if handle already exists (with minimal lock time)
+  {
+    std::lock_guard<std::mutex> lock(poolMutex);
+    auto it = fileHandlePool.find(threadId);
+    if (it != fileHandlePool.end())
+      return it->second.get();
+  }
+
+  // Slow path: create new handle for this thread
+  auto newHandle = std::make_unique<std::ifstream>();
+  newHandle->open(this->filePath, std::ios_base::in | std::ios_base::binary);
+  
+  if (!newHandle->is_open())
+    return nullptr;
+
+  std::ifstream* rawPtr = newHandle.get();
+  
+  // Insert into pool
+  {
+    std::lock_guard<std::mutex> lock(poolMutex);
+    fileHandlePool[threadId] = std::move(newHandle);
+  }
+  
+  return rawPtr;
+}
+
+void DataSourceLocalFile::cleanupFileHandlePool()
+{
+  std::lock_guard<std::mutex> lock(poolMutex);
+  for (auto& [threadId, handle] : fileHandlePool)
+  {
+    if (handle && handle->is_open())
+      handle->close();
+  }
+  fileHandlePool.clear();
 }
 
 } // namespace datasource

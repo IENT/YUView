@@ -42,7 +42,6 @@
 #define PLOTVIEW_WIDGET_DEBUG_OUTPUT 0
 #if PLOTVIEW_WIDGET_DEBUG_OUTPUT
 #include <QDebug>
-#define DEBUG_PLOT(fmt) qDebug() << fmt
 #else
 #define DEBUG_PLOT(fmt, ...) ((void)0)
 #endif

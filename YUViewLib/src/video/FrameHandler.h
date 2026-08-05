@@ -40,7 +40,6 @@
 #include <QImage>
 #include <QObject>
 #include <QSettings>
-#include <string>
 
 #include "ui_FrameHandler.h"
 
@@ -62,36 +61,41 @@ public:
   // (loadCurrentImageFromFile).
   FrameHandler();
 
-  // Get the size/bit depth of the (current) frame
+         // Get the size/bit depth of the (current) frame
   Size getFrameSize() const { return frameSize; }
   int  getImageBitDepth() const { return currentImage.depth(); }
+  void setBitDepth(int depth) { m_bitDepth = depth; }
+  int  getBitDepth() const { return m_bitDepth; }
 
-  // Draw the (current) frame with the given zoom factor
+         // Draw the (current) frame with the given zoom factor
   void drawFrame(QPainter *painter, double zoomFactor, bool drawRawValues);
 
-  // Set the values and update the controls. Only emit an event if emitSignal is set.
+         // Set the values and update the controls. Only emit an event if emitSignal is set.
   virtual void setFrameSize(Size size);
 
-  // Return the RGB values of the given pixel. If a second item is provided, return the difference
-  // values to that item.
-  virtual QStringPairList getPixelValues(const QPoint             &pixelPos,
-                                         int                       frameIdx,
-                                         const FrameHandler *const item2     = nullptr,
-                                         const int                 frameIdx1 = 0) const;
+         // Return the RGB values of the given pixel. If a second item is provided, return the difference
+         // values to that item.
+  virtual QStringPairList getPixelValues(const QPoint &pixelPos,
+                                         int           frameIdx,
+                                         FrameHandler *item2     = nullptr,
+                                         const int     frameIdx1 = 0);
   // Is the pixel under the cursor brighter or darker than the middle brightness level?
-  virtual bool isPixelDark(const QPoint &pixelPos) const;
+  virtual bool isPixelDark(const QPoint &pixelPos);
 
-  // Is the current format of the FrameHandler valid? The default implementation will check if the
-  // frameSize is valid but more specialized implementations may also check other things: For
-  // example the videoHandlerYUV also checks if a valid YUV format is set.
-  virtual bool isFormatValid() const { return this->frameSize.isValid(); }
+         // Is the current format of the FrameHandler valid? The default implementation will check if the
+         // frameSize is valid but more specialized implementations may also check other things: For
+         // example the videoHandlerYUV also checks if a valid YUV format is set.
+  virtual bool isFormatValid() const { return frameSize.width > 0 && frameSize.height > 0; }
 
-  virtual std::optional<std::string> getFormatAsString() const;
-  virtual bool                       setFormatFromString(const std::string_view format);
+  virtual QString getFormatAsString() const
+  {
+    return QString("%1;%2").arg(this->frameSize.width).arg(this->frameSize.height);
+  }
+  virtual bool setFormatFromString(QString format);
 
-  // Calculate the difference of this FrameHandler to another FrameHandler. This
-  // function can be overloaded by more specialized video items. For example the videoHandlerYUV
-  // overloads this and calculates the difference directly on the YUV values (if possible).
+         // Calculate the difference of this FrameHandler to another FrameHandler. This
+         // function can be overloaded by more specialized video items. For example the videoHandlerYUV
+         // overloads this and calculates the difference directly on the YUV values (if possible).
   virtual QImage calculateDifference(FrameHandler    *item2,
                                      const int        frameIdxItem0,
                                      const int        frameIdxItem1,
@@ -99,20 +103,20 @@ public:
                                      const int        amplificationFactor,
                                      const bool       markDifference);
 
-  // Create the frame controls and return a pointer to the layout. This can be used by
-  // inherited classes to create a properties widget.
-  // isSizeFixed: For example a YUV file does not have a fixed size (the user can change this),
-  // other sources might provide a fixed size which the user cannot change (HEVC file, PNG image
-  // sequences ...) If the size is fixed, do not add the controls for the size.
+         // Create the frame controls and return a pointer to the layout. This can be used by
+         // inherited classes to create a properties widget.
+         // isSizeFixed: For example a YUV file does not have a fixed size (the user can change this),
+         // other sources might provide a fixed size which the user cannot change (HEVC file, PNG image
+         // sequences ...) If the size is fixed, do not add the controls for the size.
   virtual QLayout *createFrameHandlerControls(bool isSizeFixed = false);
 
-  // Draw the pixel values of the visible pixels in the center of each pixel.
-  // Only draw values for the given range of pixels and frame index.
-  // The playlistItemVideo implementation of this function will draw the RGB vales. However, if a
-  // derived class knows other source values to show it can overload this function (like the
-  // playlistItemYUVSource). If a second FrameHandler item is provided, the difference values will
-  // be drawn. For the second item, a second frame index must be provided (set markDifference if you
-  // want only differing values to be marked).
+         // Draw the pixel values of the visible pixels in the center of each pixel.
+         // Only draw values for the given range of pixels and frame index.
+         // The playlistItemVideo implementation of this function will draw the RGB vales. However, if a
+         // derived class knows other source values to show it can overload this function (like the
+         // playlistItemYUVSource). If a second FrameHandler item is provided, the difference values will
+         // be drawn. For the second item, a second frame index must be provided (set markDifference if you
+         // want only differing values to be marked).
   virtual void drawPixelValues(QPainter     *painter,
                                const int     frameIdx,
                                const QRect  &videoRect,
@@ -123,7 +127,7 @@ public:
 
   QImage getCurrentFrameAsImage() const { return currentImage; }
 
-  // Load the current image from file and set the correct size.
+         // Load the current image from file and set the correct size.
   bool loadCurrentImageFromFile(const QString &filePath);
 
   virtual void savePlaylist(YUViewDomElement &root) const;
@@ -137,12 +141,13 @@ signals:
 protected:
   QImage currentImage;
   Size   frameSize;
+  int    m_bitDepth{16};
 
-  // Get the pixel value from currentImage. Make sure that currentImage is the correct image.
-  QRgb         getPixelVal(const QPoint &pos) const { return getPixelVal(pos.x(), pos.y()); }
-  virtual QRgb getPixelVal(int x, int y) const { return currentImage.pixel(x, y); }
+         // Get the pixel value from currentImage. Make sure that currentImage is the correct image.
+  QRgb         getPixelVal(const QPoint &pos) { return getPixelVal(pos.x(), pos.y()); }
+  virtual QRgb getPixelVal(int x, int y) { return currentImage.pixel(x, y); }
 
-  // When slotVideoControlChanged is called, update the controls and return the new selected size
+         // When slotVideoControlChanged is called, update the controls and return the new selected size
   Size getNewSizeFromControls();
 
   QSettings settings;
@@ -151,14 +156,14 @@ private:
   // A list of all frame size presets. Only used privately in this class. Defined in the .cpp file.
   class frameSizePresetList;
 
-  // The (static) list of frame size presets (like CIF, QCIF, 4k ...)
+         // The (static) list of frame size presets (like CIF, QCIF, 4k ...)
   static frameSizePresetList presetFrameSizes;
 
   SafeUi<Ui::FrameHandler> ui;
 
 protected slots:
 
-  // All the valueChanged() signals from the controls are connected here.
+         // All the valueChanged() signals from the controls are connected here.
   virtual void slotVideoControlChanged();
 };
 

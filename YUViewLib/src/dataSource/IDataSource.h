@@ -58,6 +58,40 @@ public:
 
   [[nodiscard]] virtual bool         seek(const std::int64_t pos)                         = 0;
   [[nodiscard]] virtual std::int64_t read(ByteVector &buffer, const std::int64_t nrBytes) = 0;
+
+  /**
+   * @brief Read data at specific position without mutex serialization
+   * 
+   * This method supports parallel reading from multiple threads by using
+   * separate file handles per thread. Unlike seek()+read() which are serialized
+   * by a mutex, this method can be called concurrently from multiple threads.
+   * 
+   * Performance improvement: For large video files (>10GB), this enables true
+   * parallel I/O when caching frames, significantly reducing buffer loading time.
+   * 
+   * Default implementation falls back to seek()+read() for compatibility.
+   * 
+   * @param buffer Output buffer for read data
+   * @param position File position to start reading from
+   * @param nrBytes Number of bytes to read
+   * @return Number of bytes actually read
+   */
+  [[nodiscard]] virtual std::int64_t readAt(ByteVector &buffer, 
+                                            const std::int64_t position, 
+                                            const std::int64_t nrBytes)
+  {
+    // Default implementation: fallback to serialized seek+read
+    if (!this->seek(position))
+      return 0;
+    return this->read(buffer, nrBytes);
+  }
+
+  /**
+   * @brief Check if parallel reading is supported
+   * 
+   * @return true if readAt() uses true parallel I/O (no global mutex)
+   */
+  [[nodiscard]] virtual bool supportsParallelRead() const { return false; }
 };
 
 } // namespace datasource

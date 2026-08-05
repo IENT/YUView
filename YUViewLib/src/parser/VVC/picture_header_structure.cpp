@@ -40,7 +40,6 @@
 #define PARSER_VVC_PICTURE_HEADER_DEBUG_OUTPUT 0
 #if PARSER_VVC_PICTURE_HEADER_DEBUG_OUTPUT && !NDEBUG
 #include <QDebug>
-#define DEBUG_PICHEADER(msg) qDebug() << msg
 #else
 #define DEBUG_PICHEADER(msg) ((void)0)
 #endif

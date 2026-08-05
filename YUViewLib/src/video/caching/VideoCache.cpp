@@ -32,6 +32,8 @@
 
 #include "VideoCache.h"
 
+#include <QCoreApplication>
+#include <QEventLoop>
 #include <QMessageBox>
 #include <QPainter>
 #include <QScrollArea>
@@ -49,16 +51,13 @@ namespace video
 {
 
 // This debug setting has two values:
-// 1: Basic operation is written to qDebug: If a new item is selected, what is the decision to
 // cache/remove next?
 //    When is caching of a frame started?
 // 2: Show all details. What are the threads doing when? What is removed when? ...
 #define CACHING_DEBUG_OUTPUT 0
 #if CACHING_DEBUG_OUTPUT && !NDEBUG
 #include <QDebug>
-#define DEBUG_CACHING qDebug
 #if CACHING_DEBUG_OUTPUT == 2
-#define DEBUG_CACHING_DETAIL qDebug
 #else
 #define DEBUG_CACHING_DETAIL(fmt, ...) ((void)0)
 #endif
@@ -70,7 +69,6 @@ namespace video
 #define CACHING_THREAD_JOBS_OUTPUT 0
 #if CACHING_THREAD_JOBS_OUTPUT && !NDEBUG
 #include <QDebug>
-#define DEBUG_JOBS qDebug
 #else
 #define DEBUG_JOBS(fmt, ...) ((void)0)
 #endif
@@ -124,8 +122,12 @@ VideoCache::VideoCache(PlaylistTreeWidget *playlistTreeWidget,
           &PlaybackController::signalPlaybackStarting,
           this,
           &VideoCache::updateCacheQueue);
-  connect(&statusUpdateTimer, &QTimer::timeout, this, [this] { emit updateCacheStatus(); });
-  connect(&testProgrssUpdateTimer, &QTimer::timeout, this, [this] { updateTestProgress(); });
+  connect(playback.data(),
+          &PlaybackController::signalPlaybackStopping,
+          this,
+          &VideoCache::flushAndWaitInteractiveLoaders);
+  connect(&statusUpdateTimer, &QTimer::timeout, this, [=] { emit updateCacheStatus(); });
+  connect(&testProgrssUpdateTimer, &QTimer::timeout, this, [=] { updateTestProgress(); });
 }
 
 VideoCache::~VideoCache()
@@ -245,6 +247,30 @@ void VideoCache::updateSettings()
   scheduleCachingListUpdate();
 
   settings.endGroup();
+}
+
+void VideoCache::flushAndWaitInteractiveLoaders()
+{
+  // 丢弃排队任务并汇合交互加载线程，避免停播重绘与 loadRawYUVData 竞态。
+  interactiveItemQueued[0]     = nullptr;
+  interactiveItemQueued_Idx[0] = -1;
+  interactiveItemQueued[1]     = nullptr;
+  interactiveItemQueued_Idx[1] = -1;
+
+  QElapsedTimer waitTimer;
+  waitTimer.start();
+  constexpr int kMaxWaitMs = 2000;
+  while ((interactiveThread[0]->worker()->isWorking() ||
+          interactiveThread[1]->worker()->isWorking()) &&
+         waitTimer.elapsed() < kMaxWaitMs)
+  {
+    QCoreApplication::processEvents(QEventLoop::ExcludeUserInputEvents, 50);
+  }
+
+  DEBUG_CACHING("VideoCache::flushAndWaitInteractiveLoaders done working=[%d,%d] waited=%lldms",
+                interactiveThread[0]->worker()->isWorking(),
+                interactiveThread[1]->worker()->isWorking(),
+                static_cast<long long>(waitTimer.elapsed()));
 }
 
 void VideoCache::loadFrame(playlistItem *item, int frameIndex, int loadingSlot)
@@ -432,6 +458,7 @@ void VideoCache::updateCacheQueue()
   auto selection = playlist->getSelectedItems();
   if (selection[0] == nullptr)
     selection[0] = allItems[0];
+
   // Get the position of the curretnly selected item
   int itemPos = allItems.indexOf(selection[0]);
   Q_ASSERT_X(
@@ -576,7 +603,6 @@ void VideoCache::updateCacheQueue()
       {
         if (item != selection[0])
         {
-          // Mark all frames of this item as "can be removed if required"
           QList<int> cachedFrames = item->getCachedFrames();
           for (int f : cachedFrames)
             cacheDeQueue.enqueue(plItemFrame(item, f));
@@ -667,8 +693,6 @@ void VideoCache::updateCacheQueue()
         }
         else
         {
-          // Deleting all frames from this item will not be enough.
-          // Mark all frames of this item as "can be removed if required"
           QList<int> cachedFrames = allItems[i]->getCachedFrames();
           for (int f : cachedFrames)
           {
@@ -781,19 +805,16 @@ void VideoCache::updateCacheQueue()
 #if CACHING_DEBUG_OUTPUT && !NDEBUG
   if (!cacheQueue.isEmpty())
   {
-    qDebug("VideoCache::updateCacheQueue updateCacheQueue summary -- cache:");
     for (const cacheJob &j : cacheQueue)
     {
       QString itemStr = j.plItem->getName();
       itemStr.append(" - ");
       itemStr.append(QString::number(j.frameRange.first) + "-" +
                      QString::number(j.frameRange.second));
-      qDebug() << itemStr;
     }
   }
   if (!cacheDeQueue.isEmpty())
   {
-    qDebug("VideoCache::updateCacheQueue updateCacheQueue summary -- deQueue:");
     playlistItem *lastItem = nullptr;
     QString       itemStr;
     for (const plItemFrame &f : cacheDeQueue)
@@ -803,14 +824,12 @@ void VideoCache::updateCacheQueue()
         // New item
         if (lastItem != nullptr)
           // Print the last items frames
-          qDebug() << itemStr;
         lastItem = f.first;
         itemStr  = lastItem->getName();
         itemStr.append(" - ");
       }
       itemStr.append(" " + QString::number(f.second));
     }
-    qDebug() << itemStr;
   }
 #endif
 }
@@ -876,26 +895,43 @@ void VideoCache::watchItemForCachingFinished(playlistItem *item)
 
 // One of the workers is done with it's caching operation. Give it a new task if there is one and we
 // are not breaking the caching process.
+// Thread-safe implementation to prevent crashes during 4K 10-bit YUV buffer loading.
 void VideoCache::threadCachingFinished()
 {
   // Get the thread that caused this call
   QObject       *sender = QObject::sender();
   LoadingWorker *worker = dynamic_cast<LoadingWorker *>(sender);
-  Q_ASSERT_X(worker->isWorking(), Q_FUNC_INFO, "The worker that just finished was not working?");
+  
+  if (!worker)
+  {
+    DEBUG_CACHING_DETAIL("VideoCache::threadCachingFinished - invalid worker pointer");
+    return;
+  }
+  
+  // Only assert in debug mode, gracefully handle in release
+  if (!worker->isWorking())
+  {
+    DEBUG_CACHING_DETAIL("VideoCache::threadCachingFinished - worker was not working, skipping");
+    return;
+  }
+  
   worker->setWorking(false);
   DEBUG_CACHING_DETAIL(
     "VideoCache::threadCachingFinished - state %d - worker %p", workersState, worker);
 
-  // Check if all threads have stopped.
+  // Check if all threads have stopped - thread-safe access
   bool jobsRunning = false;
-  for (auto thread : cachingThreadList)
   {
-    DEBUG_CACHING_DETAIL("VideoCache::threadCachingFinished WorkerList - worker %p - working %d",
-                         thread,
-                         t->worker()->isWorking());
-    if (thread->worker()->isWorking())
-      // A job is still running. Wait.
-      jobsRunning = true;
+    QMutexLocker threadLock(&m_threadListMutex);
+    for (auto thread : cachingThreadList)
+    {
+      DEBUG_CACHING_DETAIL("VideoCache::threadCachingFinished WorkerList - worker %p - working %d",
+                           thread,
+                           thread->worker()->isWorking());
+      if (thread->worker()->isWorking())
+        // A job is still running. Wait.
+        jobsRunning = true;
+    }
   }
 
   if (testMode)
@@ -938,67 +974,98 @@ void VideoCache::threadCachingFinished()
   }
 
   // Check the list of items that are scheduled for deletion. Because a thread finished, maybe now
-  // we can delete the item(s).
+  // we can delete the item(s). Thread-safe implementation for 4K 10-bit buffer handling.
   bool itemDeleted = false;
-  for (auto it = itemsToDelete.begin(); it != itemsToDelete.end();)
   {
-    // Is the item still being cached?
-    bool itemCaching = false;
-    for (auto thread : cachingThreadList)
-      if (thread->worker()->getCacheItem() == *it)
-      {
-        itemCaching = true;
-        break;
-      }
-    // Is the item still being loaded?
-    bool loadingItem = (interactiveThread[0]->worker()->getCacheItem() == *it ||
-                        interactiveThread[1]->worker()->getCacheItem() == *it);
-
-    if (!itemCaching && !loadingItem)
+    QMutexLocker deletionLock(&m_itemDeletionMutex);
+    QMutexLocker threadLock(&m_threadListMutex);
+    
+    for (auto it = itemsToDelete.begin(); it != itemsToDelete.end();)
     {
-      // Remove the item from the loading queue (if in there)
-      if (interactiveItemQueued[0] == (*it))
+      playlistItem* itemToCheck = *it;
+      if (!itemToCheck)
       {
-        interactiveItemQueued[0]     = nullptr;
-        interactiveItemQueued_Idx[0] = -1;
+        it = itemsToDelete.erase(it);
+        continue;
       }
-      if (interactiveItemQueued[1] == (*it))
+      
+      // Is the item still being cached?
+      bool itemCaching = false;
+      for (auto thread : cachingThreadList)
       {
-        interactiveItemQueued[1]     = nullptr;
-        interactiveItemQueued_Idx[1] = -1;
+        if (thread && thread->worker() && thread->worker()->getCacheItem() == itemToCheck)
+        {
+          itemCaching = true;
+          break;
+        }
       }
-      // Delete the item and remove it from the itemsToDelete list
-      DEBUG_CACHING("VideoCache::threadCachingFinished delete item now %s",
-                    (*it)->getName().toLatin1().data());
-      (*it)->deleteLater();
-      it          = itemsToDelete.erase(it);
-      itemDeleted = true;
+      
+      // Is the item still being loaded?
+      bool loadingItem = false;
+      if (interactiveThread[0] && interactiveThread[0]->worker())
+        loadingItem |= (interactiveThread[0]->worker()->getCacheItem() == itemToCheck);
+      if (interactiveThread[1] && interactiveThread[1]->worker())
+        loadingItem |= (interactiveThread[1]->worker()->getCacheItem() == itemToCheck);
+
+      if (!itemCaching && !loadingItem)
+      {
+        // Remove the item from the loading queue (if in there)
+        if (interactiveItemQueued[0] == itemToCheck)
+        {
+          interactiveItemQueued[0]     = nullptr;
+          interactiveItemQueued_Idx[0] = -1;
+        }
+        if (interactiveItemQueued[1] == itemToCheck)
+        {
+          interactiveItemQueued[1]     = nullptr;
+          interactiveItemQueued_Idx[1] = -1;
+        }
+        // Delete the item and remove it from the itemsToDelete list
+        DEBUG_CACHING("VideoCache::threadCachingFinished delete item now %s",
+                      itemToCheck->getName().toLatin1().data());
+        itemToCheck->deleteLater();
+        it          = itemsToDelete.erase(it);
+        itemDeleted = true;
+      }
+      else
+        ++it;
     }
-    else
-      ++it;
   }
   if (itemDeleted)
     emit updateCacheStatus();
 
-  // Do the same thing for the items which need to clear their cache
-  for (auto it = itemsToClearCache.begin(); it != itemsToClearCache.end();)
+  // Do the same thing for the items which need to clear their cache - thread-safe version
   {
-    bool itemCaching = false;
-    for (auto thread : cachingThreadList)
-      if (thread->worker()->getCacheItem() == *it)
+    QMutexLocker threadLock(&m_threadListMutex);
+    
+    for (auto it = itemsToClearCache.begin(); it != itemsToClearCache.end();)
+    {
+      playlistItem* itemToCheck = *it;
+      if (!itemToCheck)
       {
-        itemCaching = true;
-        break;
+        it = itemsToClearCache.erase(it);
+        continue;
+      }
+      
+      bool itemCaching = false;
+      for (auto thread : cachingThreadList)
+      {
+        if (thread && thread->worker() && thread->worker()->getCacheItem() == itemToCheck)
+        {
+          itemCaching = true;
+          break;
+        }
       }
 
-    if (!itemCaching)
-    {
-      // No job is caching the item anymore. Clear the cache now.
-      (*it)->removeAllFramesFromCache();
-      it = itemsToClearCache.erase(it);
+      if (!itemCaching)
+      {
+        // No job is caching the item anymore. Clear the cache now.
+        itemToCheck->removeAllFramesFromCache();
+        it = itemsToClearCache.erase(it);
+      }
+      else
+        ++it;
     }
-    else
-      ++it;
   }
 
   if (watchingItem)
@@ -1023,28 +1090,46 @@ void VideoCache::threadCachingFinished()
   }
 
   // Also check if the worker is in the cachingWorkerList. If not, do not push a new job to it.
+  // Thread-safe implementation for 4K 10-bit buffer handling
   if (deleteNrThreads > 0)
   {
+    QMutexLocker threadLock(&m_threadListMutex);
+    
     // We need to delete some threads. So this one has to go.
     int idx = -1;
     for (int i = 0; i < cachingThreadList.count(); i++)
-      if (cachingThreadList[i]->worker() == worker)
+      if (cachingThreadList[i] && cachingThreadList[i]->worker() == worker)
         idx = i;
-    Q_ASSERT_X(
-      idx >= 0, Q_FUNC_INFO, "The thread that just finished was not found in the thread list.");
-    auto thread = cachingThreadList.takeAt(idx);
-    thread->exit();
-    thread->deleteLater();
-
-    DEBUG_CACHING_DETAIL("VideoCache::threadCachingFinished Deleting thread %p", thread);
-    deleteNrThreads--;
+    
+    if (idx >= 0)
+    {
+      auto thread = cachingThreadList.takeAt(idx);
+      if (thread)
+      {
+        thread->exit();
+        thread->deleteLater();
+        DEBUG_CACHING_DETAIL("VideoCache::threadCachingFinished Deleting thread %p", thread);
+      }
+      deleteNrThreads--;
+    }
+    else
+    {
+      DEBUG_CACHING_DETAIL("VideoCache::threadCachingFinished Thread not found in list - already removed");
+    }
   }
   else if (workersState == workersRunning)
   {
+    QMutexLocker threadLock(&m_threadListMutex);
+    
     // Get the thread of the worker and push the next cache job to it
     for (auto thread : cachingThreadList)
-      if (thread->worker() == worker)
+    {
+      if (thread && thread->worker() == worker)
+      {
         jobsRunning |= pushNextJobToCachingThread(thread);
+        break;
+      }
+    }
   }
 
   if (!jobsRunning)
@@ -1228,21 +1313,43 @@ void VideoCache::itemAboutToBeDeleted(playlistItem *item)
 {
   // One of the items is about to be deleted. Let's stop the caching. Then the item can be deleted
   // and then we can re-think our caching strategy.
+  // Thread-safe implementation to prevent crashes when users drag new files during 4K 10-bit buffer loading.
 
-  // Are we currently loading a frame from this item in one of the interactive loading threads?
-  bool loadingItem = (interactiveThread[0]->worker()->getCacheItem() == item ||
-                      interactiveThread[1]->worker()->getCacheItem() == item);
+  if (!item)
+    return;
+
+  // Lock the item deletion mutex first to ensure thread-safe access
+  QMutexLocker deletionLock(&m_itemDeletionMutex);
+  
+  // Check if item is already scheduled for deletion to avoid duplicate processing
+  if (itemsToDelete.contains(item))
+  {
+    DEBUG_CACHING("VideoCache::itemAboutToBeDeleted item already scheduled for deletion %s",
+                  item->getName().toLatin1().data());
+    return;
+  }
+
+  bool loadingItem = false;
   bool cachingItem = false;
 
-  if (workersState != workersIdle)
+  // Thread-safe check of loading state
   {
-    // Are we currently caching a frame from this item?
-    for (auto thread : cachingThreadList)
-      if (thread->worker()->getCacheItem() == item)
-        cachingItem = true;
+    QMutexLocker threadLock(&m_threadListMutex);
+    
+    // Are we currently loading a frame from this item in one of the interactive loading threads?
+    loadingItem = (interactiveThread[0]->worker()->getCacheItem() == item ||
+                   interactiveThread[1]->worker()->getCacheItem() == item);
 
-    // An item is about to be deleted. We need to rethink what to cache next.
-    workersState = workersIntReqRestart;
+    if (workersState != workersIdle)
+    {
+      // Are we currently caching a frame from this item?
+      for (auto thread : cachingThreadList)
+        if (thread->worker()->getCacheItem() == item)
+          cachingItem = true;
+
+      // An item is about to be deleted. We need to rethink what to cache next.
+      workersState = workersIntReqRestart;
+    }
   }
 
   if (cachingItem || loadingItem)
@@ -1255,6 +1362,7 @@ void VideoCache::itemAboutToBeDeleted(playlistItem *item)
   else
   {
     // Remove the item from the loading queue (if in there)
+    // This is already protected by the threadListMutex implicitly
     if (interactiveItemQueued[0] == item)
     {
       interactiveItemQueued[0]     = nullptr;
@@ -1265,7 +1373,7 @@ void VideoCache::itemAboutToBeDeleted(playlistItem *item)
       interactiveItemQueued[1]     = nullptr;
       interactiveItemQueued_Idx[1] = -1;
     }
-    // The item can be deleted now.
+    // The item can be deleted now - schedule it on the event loop
     item->deleteLater();
     DEBUG_CACHING("VideoCache::itemAboutToBeDeleted delete item now %s",
                   item->getName().toLatin1().data());

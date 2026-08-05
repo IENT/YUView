@@ -46,7 +46,6 @@
 #define PARSER_MPEG2_DEBUG_OUTPUT 0
 #if PARSER_MPEG2_DEBUG_OUTPUT && !NDEBUG
 #include <QDebug>
-#define DEBUG_MPEG2(msg) qDebug() << msg
 #else
 #define DEBUG_MPEG2(msg) ((void)0)
 #endif

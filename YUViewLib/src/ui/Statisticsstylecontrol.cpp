@@ -49,7 +49,6 @@ namespace
 #define STATISTICS_STYLE_CONTROL_DEBUG_OUTPUT 0
 #if STATISTICS_STYLE_CONTROL_DEBUG_OUTPUT
 #include <QDebug>
-#define DEBUG_STAT_STYLE qDebug
 #else
 #define DEBUG_STAT_STYLE(fmt, ...) ((void)0)
 #endif

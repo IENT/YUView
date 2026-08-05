@@ -41,27 +41,7 @@
 
 // Debug the decoder ( 0:off 1:interactive decoder only 2:caching decoder only 3:both)
 #define decoderVVDec_DEBUG_OUTPUT 0
-#if decoderVVDec_DEBUG_OUTPUT && !NDEBUG
-#include <QDebug>
-#if decoderVVDec_DEBUG_OUTPUT == 1
-#define DEBUG_vvdec                                                                                \
-  if (!isCachingDecoder)                                                                           \
-  qDebug
-#elif decoderVVDec_DEBUG_OUTPUT == 2
-#define DEBUG_vvdec                                                                                \
-  if (isCachingDecoder)                                                                            \
-  qDebug
-#elif decoderVVDec_DEBUG_OUTPUT == 3
-#define DEBUG_vvdec                                                                                \
-  if (isCachingDecoder)                                                                            \
-    qDebug("c:");                                                                                  \
-  else                                                                                             \
-    qDebug("i:");                                                                                  \
-  qDebug
-#endif
-#else
 #define DEBUG_vvdec(fmt, ...) ((void)0)
-#endif
 
 // Restrict is basically a promise to the compiler that for the scope of the pointer, the target of
 // the pointer will only be accessed through that pointer (and pointers copied from it).
@@ -98,7 +78,6 @@ void loggingCallback(void *ptr, int level, const char *msg, va_list list)
 #if decoderVVDec_DEBUG_OUTPUT && !NDEBUG
   char buf[200];
   vsnprintf(buf, 200, msg, list);
-  qDebug() << "decoderVVDec::decoderVVDec vvdeclog(" << level << "): " << buf;
 #endif
 }
 

@@ -132,6 +132,14 @@ signals:
 
   void signalPlaybackStarting();
 
+  /**
+   * @brief Emitted when playback stops (pause/stop), before view redraw.
+   *
+   * VideoCache connects this to flush queued interactive loads and join in-flight
+   * workers so HDR pause cannot race loadRawYUVData with RHI upload.
+   */
+  void signalPlaybackStopping();
+
 public slots:
   void itemCachingFinished(playlistItem *item);
 

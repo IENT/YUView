@@ -36,8 +36,6 @@ using Subsampling    = video::yuv::Subsampling;
 using PlaneOrder     = video::yuv::PlaneOrder;
 using PixelFormatYUV = video::yuv::PixelFormatYUV;
 
-using namespace std::rel_ops;
-
 namespace FFmpeg
 {
 
@@ -388,6 +386,7 @@ bool AVPixFmtDescriptorWrapper::operator==(const AVPixFmtDescriptorWrapper &othe
     return false;
   if (this->log2_chroma_h != other.log2_chroma_h)
     return false;
+  // C++20 rewrites != from Flags::operator==; no std::rel_ops needed.
   if (this->flags != other.flags)
     return false;
 

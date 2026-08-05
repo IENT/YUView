@@ -103,6 +103,8 @@ public:
   QString               aliases{};
   AVComponentDescriptor comp[4];
 
+  // const is required under C++20: a non-const member == makes
+  // the primary and the reversed rewritten candidate equally ranked (MSVC C2666).
   bool operator==(const AVPixFmtDescriptorWrapper &a) const;
 };
 

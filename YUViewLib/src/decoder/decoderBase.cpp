@@ -40,27 +40,7 @@ namespace decoder
 
 // Debug the decoder ( 0:off 1:interactive decoder only 2:caching decoder only 3:both)
 #define DECODERBASE_DEBUG_OUTPUT 0
-#if DECODERBASE_DEBUG_OUTPUT && !NDEBUG
-#include <QDebug>
-#if DECODERBASE_DEBUG_OUTPUT == 1
-#define DEBUG_HEVCDECODERBASE                                                                      \
-  if (!isCachingDecoder)                                                                           \
-  qDebug
-#elif DECODERBASE_DEBUG_OUTPUT == 2
-#define DEBUG_HEVCDECODERBASE                                                                      \
-  if (isCachingDecoder)                                                                            \
-  qDebug
-#elif DECODERBASE_DEBUG_OUTPUT == 3
-#define DEBUG_HEVCDECODERBASE                                                                      \
-  if (isCachingDecoder)                                                                            \
-    qDebug("c:");                                                                                  \
-  else                                                                                             \
-    qDebug("i:");                                                                                  \
-  qDebug
-#endif
-#else
 #define DEBUG_DECODERBASE(fmt, ...) ((void)0)
-#endif
 
 decoderBase::decoderBase(bool cachingDecoder)
 {

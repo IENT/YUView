@@ -62,7 +62,6 @@
 // Activate this if you want to know when which signals/slots are handled
 #define PLAYLISTTREEWIDGET_DEBUG_EVENTS 0
 #if PLAYLISTTREEWIDGET_DEBUG_EVENTS && !NDEBUG
-#define DEBUG_TREE_WIDGET qDebug
 #else
 #define DEBUG_TREE_WIDGET(fmt, ...) ((void)0)
 #endif
@@ -167,8 +166,13 @@ PlaylistTreeWidget::~PlaylistTreeWidget()
   // This is a conventional quit. Remove the automatically saved playlist.
   autosaveTimer.stop();
   QSettings settings;
-  if (settings.contains("Autosaveplaylist"))
-    settings.remove("Autosaveplaylist");
+  // Do not remove autosave if we are performing a controlled restart
+  const bool controlledRestart = settings.value("ControlledRestart", false).toBool();
+  if (!controlledRestart)
+  {
+    if (settings.contains("Autosaveplaylist"))
+      settings.remove("Autosaveplaylist");
+  }
 }
 
 playlistItem *PlaylistTreeWidget::getDropTarget(const QPoint &pos) const
@@ -291,7 +295,7 @@ void PlaylistTreeWidget::updateAllContainterItems()
 {
   for (int i = 0; i < topLevelItemCount(); i++)
   {
-    QTreeWidgetItem       *item          = topLevelItem(i);
+    QTreeWidgetItem *      item          = topLevelItem(i);
     playlistItemContainer *containerItem = dynamic_cast<playlistItemContainer *>(item);
     if (containerItem != nullptr)
       containerItem->updateChildItems();
@@ -726,7 +730,6 @@ void PlaylistTreeWidget::deletePlaylistItems(bool deleteAllItems)
 
 void PlaylistTreeWidget::loadFiles(const QStringList &files)
 {
-  // qDebug() << QTime::currentTime().toString("hh:mm:ss.zzz") << "MainWindow::loadFiles()";
 
   // this might be used to associate a statistics item with a video item
   playlistItem *lastAddedItem = nullptr;
@@ -818,7 +821,7 @@ QString PlaylistTreeWidget::getPlaylistString(QDir dirName)
   // Create the XML document structure
   QDomDocument document;
   document.appendChild(document.createProcessingInstruction(
-    QStringLiteral("xml"), QStringLiteral("version=\"1.0\" encoding=\"UTF-8\"")));
+      QStringLiteral("xml"), QStringLiteral("version=\"1.0\" encoding=\"UTF-8\"")));
   QDomElement plist = document.createElement(QStringLiteral("playlistItems"));
   plist.setAttribute(QStringLiteral("version"), QStringLiteral("2.0"));
   document.appendChild(plist);
@@ -920,18 +923,33 @@ bool PlaylistTreeWidget::loadPlaylistFromByteArray(QByteArray data, QString file
 {
   // Try to open the DOM document
   QDomDocument doc;
-  QString      errorMessage;
-  int          errorLine;
-  int          errorColumn;
-  bool         success = doc.setContent(data, false, &errorMessage, &errorLine, &errorColumn);
-  if (!success)
+#if QT_VERSION >= QT_VERSION_CHECK(6, 5, 0)
+  const auto parseResult = doc.setContent(data, QDomDocument::ParseOption::Default);
+  if (!parseResult)
   {
     QMessageBox::critical(this,
                           "Error loading playlist.",
-                          errorMessage +
-                            QString(" in line/column %1/%2").arg(errorLine).arg(errorColumn));
+                          parseResult.errorMessage +
+                              QString(" in line/column %1/%2")
+                                  .arg(parseResult.errorLine)
+                                  .arg(parseResult.errorColumn));
     return false;
   }
+#else
+  QString errorMsg;
+  int errorLine = 0;
+  int errorColumn = 0;
+  if (!doc.setContent(data, &errorMsg, &errorLine, &errorColumn))
+  {
+    QMessageBox::critical(this,
+                          "Error loading playlist.",
+                          errorMsg +
+                              QString(" in line/column %1/%2")
+                                  .arg(errorLine)
+                                  .arg(errorColumn));
+    return false;
+  }
+#endif
 
   // Get the root and parser the header
   auto root = doc.documentElement();
@@ -941,16 +959,16 @@ bool PlaylistTreeWidget::loadPlaylistFromByteArray(QByteArray data, QString file
   {
     // This is a playlist file in the old format. This is not supported anymore.
     QMessageBox::critical(
-      this,
-      "Error loading playlist.",
-      "The given playlist file seems to be in the old XML format. The playlist format was "
-      "changed a while back and the old format is no longer supported.");
+        this,
+        "Error loading playlist.",
+        "The given playlist file seems to be in the old XML format. The playlist format was "
+        "changed a while back and the old format is no longer supported.");
     return false;
   }
   if (root.tagName() != "playlistItems" || root.attribute("version") != "2.0")
   {
     QMessageBox::critical(
-      this, "Error loading playlist.", "The playlist file format could not be recognized.");
+        this, "Error loading playlist.", "The playlist file format could not be recognized.");
     return false;
   }
 
@@ -1003,19 +1021,19 @@ void PlaylistTreeWidget::checkAndUpdateItems()
   if (!changedItems.empty())
   {
     auto ret =
-      QMessageBox::question(parentWidget(),
-                            "Item changed",
-                            "The source of one or more currently loaded items has changed. "
-                            "Do you want to reload the item(s)?");
+        QMessageBox::question(parentWidget(),
+                              "Item changed",
+                              "The source of one or more currently loaded items has changed. "
+                              "Do you want to reload the item(s)?");
     if (ret != QMessageBox::Yes)
     {
       ret = QMessageBox::question(
-        parentWidget(),
-        "Item changed",
-        "It is really recommended to reload the changed items. YUView does not always buffer all "
-        "data from the items. We can not guarantee that the data you are shown is correct "
-        "anymore. For the shown values, there is no indication if they are old or new. Parsing "
-        "of statistics files may fail. So again:  Do you want to reload the item(s)?");
+          parentWidget(),
+          "Item changed",
+          "It is really recommended to reload the changed items. YUView does not always buffer all "
+          "data from the items. We can not guarantee that the data you are shown is correct "
+          "anymore. For the shown values, there is no indication if they are old or new. Parsing "
+          "of statistics files may fail. So again:  Do you want to reload the item(s)?");
       if (ret != QMessageBox::Yes)
         return; // Really no
     }
@@ -1115,6 +1133,21 @@ void PlaylistTreeWidget::autoSavePlaylist()
   }
 }
 
+void PlaylistTreeWidget::saveAutosaveNow()
+{
+  QSettings settings;
+  if (topLevelItemCount() == 0)
+  {
+    if (settings.contains("Autosaveplaylist"))
+      settings.remove("Autosaveplaylist");
+    return;
+  }
+
+  QString    playlistAsString   = getPlaylistString(QDir::current());
+  QByteArray compressedPlaylist = qCompress(playlistAsString.toLatin1());
+  settings.setValue("Autosaveplaylist", compressedPlaylist);
+}
+
 void PlaylistTreeWidget::startAutosaveTimer()
 {
   autosaveTimer.setTimerType(Qt::VeryCoarseTimer);
@@ -1147,7 +1180,7 @@ QList<playlistItem *> PlaylistTreeWidget::getAllPlaylistItems(const bool topLeve
   for (int i = 0; i < topLevelItemCount(); i++)
   {
     QTreeWidgetItem *item   = topLevelItem(i);
-    playlistItem    *plItem = dynamic_cast<playlistItem *>(item);
+    playlistItem *   plItem = dynamic_cast<playlistItem *>(item);
     if (plItem != nullptr)
     {
       returnList.append(plItem);

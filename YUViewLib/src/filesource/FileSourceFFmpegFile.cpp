@@ -37,6 +37,7 @@
 #include <fstream>
 
 #include <common/Formatting.h>
+#include <common/Functions.h>
 #include <ffmpeg/AVCodecContextWrapper.h>
 #include <parser/AV1/obu_header.h>
 #include <parser/common/SubByteReaderLogging.h>
@@ -44,7 +45,6 @@
 #define FILESOURCEFFMPEGFILE_DEBUG_OUTPUT 0
 #if FILESOURCEFFMPEGFILE_DEBUG_OUTPUT && !NDEBUG
 #include <QDebug>
-#define DEBUG_FFMPEG qDebug
 #else
 #define DEBUG_FFMPEG(fmt, ...) ((void)0)
 #endif
@@ -245,7 +245,7 @@ ByteVector FileSourceFFmpegFile::getLhvCData()
     End
   };
 
-  std::ifstream inputFile(this->fileName.toStdString(), std::ios::binary);
+  std::ifstream inputFile(functions::qStringToFsPath(this->fileName), std::ios::binary);
   for (const auto searchPosition : {SearchPosition::Beginning, SearchPosition::End})
   {
     constexpr auto NR_SEARCH_BYTES = 5120;

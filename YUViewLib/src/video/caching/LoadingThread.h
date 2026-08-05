@@ -33,6 +33,7 @@
 #pragma once
 
 #include <QThread>
+#include <atomic>
 
 #include "LoadingWorker.h"
 
@@ -41,11 +42,12 @@ namespace video
 
 #define LOADINGTHREAD_DEBUG_LOADING 0
 #if LOADINGTHREAD_DEBUG_LOADING && !NDEBUG
-#define DEBUG_THREAD qDebug
 #else
 #define DEBUG_THREAD(fmt, ...) ((void)0)
 #endif
 
+// Thread-safe loading thread with atomic quitting flag.
+// This ensures proper synchronization when the user drags new files during 4K 10-bit buffer loading.
 class LoadingThread : public QThread
 {
   Q_OBJECT
@@ -60,7 +62,7 @@ public:
 
   void quitWhenDone()
   {
-    this->quitting = true;
+    m_quitting.store(true, std::memory_order_release);
     if (this->threadWorker->isWorking())
     {
       // We must wait until the worker is done.
@@ -68,11 +70,12 @@ public:
       connect(worker(),
               &LoadingWorker::loadingFinished,
               this,
-              [this]
+              [=]
               {
                 DEBUG_THREAD("loadingThread::quitWhenDone worker done -> quit");
                 quit();
-              });
+              },
+              Qt::UniqueConnection);  // Prevent duplicate connections
     }
     else
     {
@@ -82,11 +85,11 @@ public:
   }
 
   LoadingWorker *worker() { return this->threadWorker.get(); }
-  bool           isQuitting() { return this->quitting; }
+  bool isQuitting() const { return m_quitting.load(std::memory_order_acquire); }
 
 private:
   std::unique_ptr<LoadingWorker> threadWorker{};
-  bool quitting{}; // Are er quitting the job? If yes, do not push new jobs to it.
+  std::atomic<bool> m_quitting{false}; // Atomic flag for thread-safe quit signaling
 };
 
 } // namespace video

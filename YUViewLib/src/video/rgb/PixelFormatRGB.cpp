@@ -31,13 +31,11 @@
  */
 
 #include "PixelFormatRGB.h"
-#include "common/Functions.h"
 
 // Activate this if you want to know when which buffer is loaded/converted to image and so on.
 #define RGBPIXELFORMAT_DEBUG 0
 #if RGBPIXELFORMAT_DEBUG && !NDEBUG
 #include <QDebug>
-#define DEBUG_RGB_FORMAT qDebug
 #else
 #define DEBUG_RGB_FORMAT(fmt, ...) ((void)0)
 #endif
@@ -45,75 +43,53 @@
 namespace video::rgb
 {
 
-PixelFormatRGB::PixelFormatRGB(const int          bitsPerComponent,
-                               const DataLayout   dataLayout,
-                               const ChannelOrder channelOrder,
-                               const AlphaMode    alphaMode,
-                               const Endianness   endianness)
-    : bitsPerComponent(bitsPerComponent), dataLayout(dataLayout), channelOrder(channelOrder),
+PixelFormatRGB::PixelFormatRGB(unsigned     bitsPerSample,
+                               DataLayout   dataLayout,
+                               ChannelOrder channelOrder,
+                               AlphaMode    alphaMode,
+                               Endianness   endianness)
+    : bitsPerSample(bitsPerSample), dataLayout(dataLayout), channelOrder(channelOrder),
       alphaMode(alphaMode), endianness(endianness)
 {
 }
 
-PixelFormatRGB::PixelFormatRGB(const std::string_view name)
+PixelFormatRGB::PixelFormatRGB(const std::string &name)
 {
-  for (const auto &predefinedFormat : PredefinedPixelFormatMapper)
+  if (name != "Unknown Pixel Format")
   {
-    if (name == predefinedFormat.second)
+    auto channelOrderString = name.substr(0, 3);
+    if (name[0] == 'a' || name[0] == 'A')
     {
-      this->predefinedPixelFormat = predefinedFormat.first;
-      return;
+      this->alphaMode    = AlphaMode::First;
+      channelOrderString = name.substr(1, 3);
     }
-    const auto predefinedFormatWithBE = std::string(predefinedFormat.second) + "BE";
-    if (name == predefinedFormatWithBE)
+    else if (name[3] == 'a' || name[3] == 'A')
     {
-      this->predefinedPixelFormat = predefinedFormat.first;
-      this->endianness            = Endianness::Big;
-      return;
+      this->alphaMode    = AlphaMode::Last;
+      channelOrderString = name.substr(0, 3);
     }
-  }
+    auto order = ChannelOrderMapper.getValue(channelOrderString);
+    if (order)
+      this->channelOrder = *order;
 
-  auto channelOrderString = name.substr(0, 3);
-  if (name[0] == 'a' || name[0] == 'A')
-  {
-    this->alphaMode    = AlphaMode::First;
-    channelOrderString = name.substr(1, 3);
+    auto bitIdx = name.find("bit");
+    if (bitIdx != std::string::npos)
+      this->bitsPerSample = std::stoi(name.substr(bitIdx - 2, 2), nullptr);
+    if (name.find("planar") != std::string::npos)
+      this->dataLayout = DataLayout::Planar;
+    if (this->bitsPerSample > 8 && name.find("BE") != std::string::npos)
+      this->endianness = Endianness::Big;
   }
-  else if (name[3] == 'a' || name[3] == 'A')
-  {
-    this->alphaMode    = AlphaMode::Last;
-    channelOrderString = name.substr(0, 3);
-  }
-  auto order = ChannelOrderMapper.getValue(channelOrderString);
-  if (order)
-    this->channelOrder = *order;
-
-  auto bitIdx = name.find("bit");
-  if (bitIdx != std::string::npos)
-    if (auto value = functions::toInt(functions::stripWhitespace(name.substr(bitIdx - 2, 2))))
-      this->bitsPerComponent = *value;
-  if (name.find("planar") != std::string::npos)
-    this->dataLayout = DataLayout::Planar;
-  if (this->bitsPerComponent > 8 && name.find("BE") != std::string::npos)
-    this->endianness = Endianness::Big;
-}
-
-PixelFormatRGB::PixelFormatRGB(const PredefinedPixelFormat predefinedPixelFormat,
-                               const Endianness            endianness)
-{
-  this->predefinedPixelFormat = predefinedPixelFormat;
-  this->endianness            = endianness;
 }
 
 bool PixelFormatRGB::isValid() const
 {
-  if (this->predefinedPixelFormat)
-    return true;
+  return this->bitsPerSample >= 8 && this->bitsPerSample <= 32;
+}
 
-  if (this->bitsPerComponent == 8 && this->endianness == Endianness::Big)
-    return false;
-
-  return this->bitsPerComponent >= 8 && this->bitsPerComponent <= 32;
+unsigned PixelFormatRGB::nrChannels() const
+{
+  return this->alphaMode != AlphaMode::None ? 4 : 3;
 }
 
 bool PixelFormatRGB::hasAlpha() const
@@ -121,19 +97,10 @@ bool PixelFormatRGB::hasAlpha() const
   return this->alphaMode != AlphaMode::None;
 }
 
-std::optional<std::string> PixelFormatRGB::getName() const
+std::string PixelFormatRGB::getName() const
 {
   if (!this->isValid())
-    return {};
-
-  if (this->predefinedPixelFormat)
-  {
-    auto name = std::string(PredefinedPixelFormatMapper.getName(*this->predefinedPixelFormat));
-    if (this->predefinedPixelFormat == PredefinedPixelFormat::RGB565 &&
-        this->endianness == Endianness::Big)
-      name += "BE";
-    return name;
-  }
+    return "Unknown Pixel Format";
 
   std::string name;
   if (this->alphaMode == AlphaMode::First)
@@ -142,78 +109,30 @@ std::optional<std::string> PixelFormatRGB::getName() const
   if (this->alphaMode == AlphaMode::Last)
     name += "A";
 
-  name += " " + std::to_string(this->bitsPerComponent) + "bit";
+  name += " " + std::to_string(this->bitsPerSample) + "bit";
   if (this->dataLayout == DataLayout::Planar)
     name += " planar";
-  if (this->bitsPerComponent > 8 && this->endianness == Endianness::Big)
+  if (this->bitsPerSample > 8 && this->endianness == Endianness::Big)
     name += " BE";
 
   return name;
 }
 
-int PixelFormatRGB::getBitsPerComponent() const
+/* Get the number of bytes for a frame with this RGB format and the given size
+ */
+std::size_t PixelFormatRGB::bytesPerFrame(Size frameSize) const
 {
-  return this->bitsPerComponent;
-}
-
-DataLayout PixelFormatRGB::getDataLayout() const
-{
-  return this->dataLayout;
-}
-
-ChannelOrder PixelFormatRGB::getChannelOrder() const
-{
-  return this->channelOrder;
-}
-
-AlphaMode PixelFormatRGB::getAlphaMode() const
-{
-  return this->alphaMode;
-}
-
-Endianness PixelFormatRGB::getEndianness() const
-{
-  return this->endianness;
-}
-
-std::optional<PredefinedPixelFormat> PixelFormatRGB::getPredefinedPixelFormat() const
-{
-  return this->predefinedPixelFormat;
-}
-
-int PixelFormatRGB::getNrChannels() const
-{
-  if (this->predefinedPixelFormat == PredefinedPixelFormat::RGB565)
-    return 3;
-
-  return this->alphaMode != AlphaMode::None ? 4 : 3;
-}
-
-int PixelFormatRGB::getBytesPerFrame(const Size frameSize) const
-{
-  if (!this->isValid() || !frameSize.isValid())
+  const auto bpsValid = this->bitsPerSample >= 8 && this->bitsPerSample <= 32;
+  if (!bpsValid || !frameSize.isValid())
     return 0;
 
-  const auto numberSamples = std::size_t(frameSize.height) * std::size_t(frameSize.width);
-
-  int numberBytesPerFrame;
-  if (this->predefinedPixelFormat == PredefinedPixelFormat::RGB565)
-  {
-    numberBytesPerFrame = numberSamples * 2;
-  }
-  else
-  {
-    const auto numberBytesPerComponent = ((this->bitsPerComponent + 7) / 8);
-    numberBytesPerFrame = numberSamples * numberBytesPerComponent * this->getNrChannels();
-  }
-
-  DEBUG_RGB_FORMAT(
-    "PixelFormatRGB::bytesPerFrame numberSamples %d numberSamples %d numberBytesPerFrame %d",
-    int(numberSamples),
-    this->nrChannels(),
-    numberBytesPerFrame);
-
-  return numberBytesPerFrame;
+  auto numSamples = std::size_t(frameSize.height) * std::size_t(frameSize.width);
+  auto nrBytes    = numSamples * this->nrChannels() * ((this->bitsPerSample + 7) / 8);
+  DEBUG_RGB_FORMAT("PixelFormatRGB::bytesPerFrame samples %d channels %d bytes %d",
+                   int(numSamples),
+                   this->nrChannels(),
+                   nrBytes);
+  return nrBytes;
 }
 
 int PixelFormatRGB::getChannelPosition(Channel channel) const
@@ -307,74 +226,6 @@ Channel PixelFormatRGB::getChannelAtPosition(int position) const
   }
 
   throw std::invalid_argument("Invalid argument for channel position");
-}
-
-TextRendering PixelFormatRGB::getPixelValueTextRendering(rgba_t value) const
-{
-  // Shift the values to 8 bit
-  if (this->predefinedPixelFormat)
-  {
-    value.r = (value.r << 3);
-    value.g = (value.g << 2);
-    value.b = (value.b << 3);
-  }
-  else if (this->bitsPerComponent > 8)
-  {
-    const auto shift = (this->bitsPerComponent - 8);
-    value.r          = (value.r >> shift);
-    value.g          = (value.g >> shift);
-    value.b          = (value.b >> shift);
-  }
-
-  // Approximation of Y = 0.375 R + 0.5 G + 0.125 B to be closer to the percieved brightness.
-  const auto luminance = (3 * value.r + 4 * value.g + value.b) >> 3;
-  return luminance < 128 ? TextRendering::White : TextRendering::Black;
-}
-
-bool PixelFormatRGB::operator==(const PixelFormatRGB &other) const
-{
-  if (!this->isValid() || !other.isValid())
-    return false;
-
-  if (this->predefinedPixelFormat)
-  {
-    if (this->predefinedPixelFormat != other.predefinedPixelFormat)
-      return false;
-    if (this->predefinedPixelFormat == PredefinedPixelFormat::RGB565)
-      return this->endianness == other.endianness;
-    return true;
-  }
-
-  return this->bitsPerComponent == other.bitsPerComponent && this->dataLayout == other.dataLayout &&
-         this->channelOrder == other.channelOrder && this->alphaMode == other.alphaMode &&
-         this->endianness == other.endianness;
-}
-
-bool PixelFormatRGB::operator!=(const PixelFormatRGB &a) const
-{
-  return !(*this == a);
-}
-
-bool PixelFormatRGB::operator==(const std::string &a) const
-{
-  if (!this->isValid())
-    return false;
-
-  return *this->getName() == a;
-}
-
-bool PixelFormatRGB::operator!=(const std::string &a) const
-{
-  if (!this->isValid())
-    return true;
-
-  return *this->getName() != a;
-}
-
-void PrintTo(const PixelFormatRGB &pixelFormat, std::ostream *os)
-{
-  if (pixelFormat.isValid())
-    *os << *pixelFormat.getName();
 }
 
 } // namespace video::rgb

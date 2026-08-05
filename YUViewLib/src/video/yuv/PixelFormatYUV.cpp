@@ -120,7 +120,7 @@ std::string formatSubsamplingWithColons(const Subsampling &subsampling)
   return s.str();
 }
 
-PixelFormatYUV::PixelFormatYUV(const std::string_view name)
+PixelFormatYUV::PixelFormatYUV(const std::string &name)
 {
   if (auto predefinedFormat = PredefinedPixelFormatMapper.getValue(name))
   {
@@ -133,21 +133,20 @@ PixelFormatYUV::PixelFormatYUV(const std::string_view name)
     "]?(packed-B|packed)?[ ]?(Cx[0-9]+)?[ ]?(Cy[0-9]+)?");
 
   std::smatch sm;
-  const auto  nameAsString = std::string(name);
-  if (!std::regex_match(nameAsString, sm, strExpr))
+  if (!std::regex_match(name, sm, strExpr))
     return;
 
   try
   {
     PixelFormatYUV newFormat;
 
-    // Is this a packed format or not?
+           // Is this a packed format or not?
     auto packed      = sm.str(5);
     newFormat.planar = packed.empty();
     if (!newFormat.planar)
       newFormat.bytePacking = (packed == "packed-B");
 
-    // Parse the YUV order (planar or packed)
+           // Parse the YUV order (planar or packed)
     if (newFormat.planar)
     {
       auto yuvName = sm.str(1);
@@ -170,7 +169,7 @@ PixelFormatYUV::PixelFormatYUV(const std::string_view name)
     if (auto subsampling = parseSubsamplingText(sm.str(2)))
       newFormat.subsampling = *subsampling;
 
-    // Get the bit depth
+           // Get the bit depth
     {
       auto   bitdepthStr = sm.str(3);
       size_t sz;
@@ -179,10 +178,10 @@ PixelFormatYUV::PixelFormatYUV(const std::string_view name)
         newFormat.bitsPerSample = bitDepth;
     }
 
-    // Get the endianness. If not in the name, assume LE
+           // Get the endianness. If not in the name, assume LE
     newFormat.bigEndian = (sm.str(4) == "BE");
 
-    // Get the chroma offsets
+           // Get the chroma offsets
     newFormat.setDefaultChromaOffset();
     auto chromaOffsetXStr = sm.str(6);
     if (chromaOffsetXStr.substr(0, 2) == "Cx")
@@ -202,7 +201,7 @@ PixelFormatYUV::PixelFormatYUV(const std::string_view name)
         newFormat.chromaOffset.y = offsetY;
     }
 
-    // Check if the format is valid.
+           // Check if the format is valid.
     if (newFormat.isValid())
     {
       // Set all the values from the new format
@@ -315,7 +314,7 @@ bool PixelFormatYUV::canConvertToRGB(Size imageSize, std::string *whyNot) const
     return false;
   }
 
-  // Check the bit depth
+         // Check the bit depth
   const int bps        = this->bitsPerSample;
   bool      canConvert = true;
   if (bps < 8 || bps > 16)
@@ -395,8 +394,8 @@ int64_t PixelFormatYUV::bytesPerFrame(const Size &frameSize) const
     if (this->subsampling == Subsampling::YUV_444)
       bytes += frameSize.width * frameSize.height * bytesPerSample * 2; // U/V planes
     else if (this->subsampling == Subsampling::YUV_422 || this->subsampling == Subsampling::YUV_440)
-      bytes +=
-        (frameSize.width / 2) * frameSize.height * bytesPerSample * 2; // U/V planes, half the width
+      bytes += (frameSize.width / 2) * frameSize.height * bytesPerSample *
+               2; // U/V planes, half the width
     else if (this->subsampling == Subsampling::YUV_420)
       bytes += (frameSize.width / 2) * (frameSize.height / 2) * bytesPerSample *
                2; // U/V planes, half the width and height
@@ -463,7 +462,11 @@ std::string PixelFormatYUV::getName() const
   if (!this->isValid())
     return "Invalid";
   if (this->predefinedPixelFormat)
-    return std::string(PredefinedPixelFormatMapper.getName(*this->predefinedPixelFormat));
+  {
+    if (*this->predefinedPixelFormat == PredefinedPixelFormat::V210)
+      return "V210";
+    return "Invalid";
+  }
 
   std::stringstream ss;
 
@@ -480,14 +483,14 @@ std::string PixelFormatYUV::getName() const
   ss << " " << formatSubsamplingWithColons(this->subsampling) << " " << this->bitsPerSample
      << "-bit";
 
-  // Add the endianness (if the bit depth is greater 8)
+         // Add the endianness (if the bit depth is greater 8)
   if (this->bitsPerSample > 8)
     ss << ((this->bigEndian) ? " BE" : " LE");
 
   if (!this->planar && this->subsampling != Subsampling::YUV_400)
     ss << (this->bytePacking ? " packed-B" : " packed");
 
-  // Add the Chroma offsets (if it is not the default offset)
+         // Add the Chroma offsets (if it is not the default offset)
   if (!isDefaultChromaFormat(this->chromaOffset.x, true, this->subsampling))
     ss << " Cx" << this->chromaOffset.x;
   if (!isDefaultChromaFormat(this->chromaOffset.y, false, this->subsampling))

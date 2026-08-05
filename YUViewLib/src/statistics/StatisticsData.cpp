@@ -38,7 +38,6 @@
 #define STATISTICS_DEBUG_LOADING 0
 #if STATISTICS_DEBUG_LOADING && !NDEBUG
 #include <QDebug>
-#define DEBUG_STATDATA(fmt) qDebug() << fmt
 #else
 #define DEBUG_STATDATA(fmt) ((void)0)
 #endif

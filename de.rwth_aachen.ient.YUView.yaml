@@ -45,3 +45,8 @@ modules:
     sources:
       - type: dir
         path: .
+      # Bake .qsb before qmake/rcc so shaders.qrc can embed them.
+      - type: shell
+        commands:
+          - chmod +x YUViewLib/resources/shaders/compile_shaders.sh
+          - ./YUViewLib/resources/shaders/compile_shaders.sh

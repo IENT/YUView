@@ -36,7 +36,6 @@
 
 #include <QPainter>
 #include <QPushButton>
-#include <algorithm>
 
 namespace video
 {
@@ -44,7 +43,6 @@ namespace video
 // Activate this if you want to know when which buffer is loaded/converted to image and so on.
 #define VIDEOHANDLERRESAMPLE_DEBUG_LOADING 0
 #if VIDEOHANDLERRESAMPLE_DEBUG_LOADING && !NDEBUG
-#define DEBUG_RESAMPLE qDebug
 #else
 #define DEBUG_RESAMPLE(fmt, ...) ((void)0)
 #endif
@@ -75,7 +73,7 @@ QImage videoHandlerResample::calculateDifference(FrameHandler    *item2,
 
   auto mappedIndex = this->mapFrameIndex(frameIndex0);
   return videoHandler::calculateDifference(
-      item2, mappedIndex, frameIndex1, differenceInfoList, amplificationFactor, markDifference);
+    item2, mappedIndex, frameIndex1, differenceInfoList, amplificationFactor, markDifference);
 }
 
 ItemLoadingState videoHandlerResample::needsLoading(int frameIndex, bool loadRawValues)
@@ -96,12 +94,12 @@ void videoHandlerResample::loadResampledFrame(int frameIndex, bool loadToDoubleB
     video->loadFrame(mappedIndex);
 
   auto interpolationMode = (this->interpolation == Interpolation::Bilinear)
-                               ? Qt::SmoothTransformation
-                               : Qt::FastTransformation;
+                             ? Qt::SmoothTransformation
+                             : Qt::FastTransformation;
 
   auto qFrameSize = QSize(this->getFrameSize().width, this->getFrameSize().height);
   auto newFrame   = this->inputVideo->getCurrentFrameAsImage().scaled(
-      qFrameSize, Qt::IgnoreAspectRatio, interpolationMode);
+    qFrameSize, Qt::IgnoreAspectRatio, interpolationMode);
 
   if (newFrame.isNull())
     return;
@@ -175,8 +173,8 @@ void videoHandlerResample::setCutAndSample(indexRange startEnd, int sampling)
 }
 
 void videoHandlerResample::guessAndSetPixelFormat(
-    const filesource::frameFormatGuess::GuessedFrameFormat &,
-    const filesource::frameFormatGuess::FileInfoForGuess &)
+  const filesource::frameFormatGuess::GuessedFrameFormat &,
+  const filesource::frameFormatGuess::FileInfoForGuess &)
 {
   assert(false);
 }
@@ -185,7 +183,7 @@ int videoHandlerResample::mapFrameIndex(int frameIndex)
 {
   auto mappedIndex = (frameIndex * this->sampling) + this->cutRange.first;
   DEBUG_RESAMPLE(
-      "videoHandlerResample::mapFrameIndex frameIndex %d mapped to %d", frameIndex, mappedIndex);
+    "videoHandlerResample::mapFrameIndex frameIndex %d mapped to %d", frameIndex, mappedIndex);
   return mappedIndex;
 }
 

@@ -38,12 +38,15 @@
 #include <QMutex>
 #include <QMutexLocker>
 #include <QString>
+#include <QThread>
 
 #include <common/EnumMapper.h>
 #include <common/InfoItemAndData.h>
 #include <common/Typedef.h>
 
 #include <filesystem>
+#include <memory>
+#include <unordered_map>
 
 enum class InputFormat
 {
@@ -76,7 +79,11 @@ public:
 
   virtual std::vector<InfoItem> getFileInfoList() const;
   std::optional<int64_t>        getFileSize() const;
-  std::string                   getAbsoluteFilePath() const;
+  /**
+   * @brief Return the absolute path of the opened file as a native filesystem path.
+   * @return Empty path when no file is open.
+   */
+  std::filesystem::path getAbsoluteFilePath() const;
   QFile                        *getQFile() { return &this->srcFile; }
   bool                          getAndResetFileChangedFlag();
 
@@ -94,8 +101,35 @@ public:
   // Resize the QByteArray if necessary. Return how many bytes were read.
   int64_t readBytes(QByteArray &targetBuffer, int64_t startPos, int64_t nrBytes);
 
+  /**
+   * @brief Read bytes at position using parallel I/O
+   * 
+   * This method enables true parallel file I/O by using thread-local file handles.
+   * For large video files (>10GB), this significantly improves cache loading
+   * performance when multiple threads read simultaneously.
+   * 
+   * PERFORMANCE IMPROVEMENT:
+   * - Traditional readBytes: All reads serialized by single mutex
+   * - readBytesParallel: Each thread gets own file handle, no mutex contention
+   * 
+   * @param targetBuffer Output buffer (will be resized if needed)
+   * @param startPos Byte offset to start reading from
+   * @param nrBytes Number of bytes to read
+   * @return Number of bytes actually read
+   */
+  int64_t readBytesParallel(QByteArray &targetBuffer, int64_t startPos, int64_t nrBytes);
+
+  /**
+   * @brief Check if parallel reading is supported
+   * @return true (always supported for local files)
+   */
+  bool supportsParallelRead() const { return true; }
+
   void updateFileWatchSetting();
   void clearFileCache();
+
+  // Cleanup parallel file handles on destruction
+  virtual ~FileSource();
 
 private slots:
   void fileSystemWatcherFileChanged(const QString &) { fileChanged = true; }
@@ -106,8 +140,28 @@ protected:
   bool                  isFileOpened{};
 
 private:
+  /**
+   * @brief Get or create thread-local file handle for parallel reads
+   * 
+   * Each calling thread gets its own QFile handle, enabling lock-free I/O.
+   * Handles are cached per thread-ID and reused.
+   * 
+   * @return Pointer to thread-local QFile, or nullptr on error
+   */
+  QFile* getThreadLocalFileHandle();
+
+  /**
+   * @brief Clean up all pooled file handles
+   */
+  void cleanupFileHandlePool();
+
   QFileSystemWatcher fileWatcher{};
   bool               fileChanged{};
 
   QMutex readMutex;
+
+  // Thread-local file handle pool for parallel reading
+  // Maps thread ID to unique QFile handle
+  std::unordered_map<Qt::HANDLE, std::unique_ptr<QFile>> fileHandlePool;
+  QMutex poolMutex;  // Only protects pool access, not individual reads
 };
