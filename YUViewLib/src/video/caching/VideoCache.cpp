@@ -892,7 +892,7 @@ void VideoCache::threadCachingFinished()
   {
     DEBUG_CACHING_DETAIL("VideoCache::threadCachingFinished WorkerList - worker %p - working %d",
                          thread,
-                         t->worker()->isWorking());
+                         thread->worker()->isWorking());
     if (thread->worker()->isWorking())
       // A job is still running. Wait.
       jobsRunning = true;
