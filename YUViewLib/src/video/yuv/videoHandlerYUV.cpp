@@ -3151,6 +3151,14 @@ void videoHandlerYUV::setFormatFromCorrelation(const QByteArray &rawYUVData, int
   }
 }
 
+std::optional<std::string> videoHandlerYUV::getFormatAsString() const
+{
+  const auto frameFormat = FrameHandler::getFormatAsString();
+  if (!frameFormat)
+    return {};
+  return *frameFormat + ";YUV;" + this->srcPixelFormat.getName();
+}
+
 bool videoHandlerYUV::setFormatFromString(const std::string_view format)
 {
   DEBUG_YUV("videoHandlerYUV::setFormatFromString " << format << "\n");

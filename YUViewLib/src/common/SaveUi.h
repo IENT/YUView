@@ -65,7 +65,7 @@ public:
 
   void clear()
   {
-    memset(static_cast<Ui *>(this), 0, sizeof(Ui));
+    *static_cast<Ui *>(this) = Ui{};
     m_created = false;
   }
 

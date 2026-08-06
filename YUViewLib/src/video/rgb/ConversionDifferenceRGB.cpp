@@ -124,11 +124,12 @@ calculateDifferencePredefinedPixelFormat(const InputFrameParameters &frame1,
     dst += 4;
   }
 
-  return {outputImage, sse.getMSE()};
+  return {outputImage, sse.getMSE(false)};
 }
 
 template <typename T>
-rgba_t getRGBAndConvertEndianness(const DataPointers<T> dataPointers, const Endianness endianness)
+rgba_t getRGBAndConvertEndianness(const DataPointers<T> dataPointers,
+                                  const PixelFormatRGB &pixelFormat)
 {
   constexpr auto bitDepth =
     (std::is_same_v<T, uint8_t> ? 8 : (std::is_same_v<T, uint16_t> ? 16 : 32));
@@ -136,15 +137,26 @@ rgba_t getRGBAndConvertEndianness(const DataPointers<T> dataPointers, const Endi
   auto r = *dataPointers.r;
   auto g = *dataPointers.g;
   auto b = *dataPointers.b;
+  T    a = 0;
 
-  if (endianness == Endianness::Big)
+  if (pixelFormat.getEndianness() == Endianness::Big)
   {
     r = swapBytesEndianness<bitDepth>(r);
     g = swapBytesEndianness<bitDepth>(g);
     b = swapBytesEndianness<bitDepth>(b);
   }
 
-  return rgba_t({.r = static_cast<int>(r), .g = static_cast<int>(g), .b = static_cast<int>(b)});
+  if (pixelFormat.hasAlpha())
+  {
+    a = *dataPointers.a;
+    if (pixelFormat.getEndianness() == Endianness::Big)
+      a = swapBytesEndianness<bitDepth>(a);
+  }
+
+  return rgba_t({.r = static_cast<int>(r),
+                 .g = static_cast<int>(g),
+                 .b = static_cast<int>(b),
+                 .a = static_cast<int>(a)});
 }
 
 template <typename T>
@@ -163,9 +175,9 @@ std::pair<QImage, MSE> calculateDifferenceAndMSE(const InputFrameParameters &fra
     calculatePointersToStartOfComponents<T>(frame2.rawDataItem, frame2.frameSize, pixelFormat);
 
   const auto frameSize   = Size(std::min(frame1.frameSize.width, frame2.frameSize.width),
-                              std::min(frame1.frameSize.height, frame2.frameSize.height));
+                                std::min(frame1.frameSize.height, frame2.frameSize.height));
   auto       outputImage = QImage(QSize(frameSize.width, frameSize.height),
-                            functionsGui::platformImageFormat(pixelFormat.hasAlpha()));
+                                  functionsGui::platformImageFormat(pixelFormat.hasAlpha()));
   SSE        sse;
 
   unsigned char *restrict dst = outputImage.bits();
@@ -174,8 +186,8 @@ std::pair<QImage, MSE> calculateDifferenceAndMSE(const InputFrameParameters &fra
 
   for (unsigned i = 0; i < frameSize.width * frameSize.height; ++i)
   {
-    const auto rgb1 = getRGBAndConvertEndianness(dataPointers1, pixelFormat.getEndianness());
-    const auto rgb2 = getRGBAndConvertEndianness(dataPointers2, pixelFormat.getEndianness());
+    const auto rgb1 = getRGBAndConvertEndianness(dataPointers1, pixelFormat);
+    const auto rgb2 = getRGBAndConvertEndianness(dataPointers2, pixelFormat);
 
     const auto delta = rgb1 - rgb2;
 
@@ -190,10 +202,15 @@ std::pair<QImage, MSE> calculateDifferenceAndMSE(const InputFrameParameters &fra
     dst += 4;
   }
 
-  return {outputImage, sse.getMSE()};
+  return {outputImage, sse.getMSE(pixelFormat.hasAlpha())};
 }
 
 } // namespace
+
+void PrintTo(const MSE &mse, std::ostream *os)
+{
+  *os << "MSE(r=" << mse.r << ", g=" << mse.g << ", b=" << mse.b << ", a=" << mse.a << ")";
+}
 
 std::pair<QImage, MSE> calculateDifferenceAndMSE(const InputFrameParameters &frame1,
                                                  const InputFrameParameters &frame2,
