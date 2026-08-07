@@ -184,6 +184,8 @@ struct Ratio
 
 struct Size
 {
+  static constexpr unsigned MAX_DIMENSION = 100000;
+
   constexpr Size(unsigned width, unsigned height) : width(width), height(height) {}
   constexpr Size() = default;
 
@@ -196,9 +198,14 @@ struct Size
     return this->width != other.width || this->height != other.height;
   }
   explicit       operator bool() const { return this->isValid(); }
-  constexpr bool isValid() const { return this->width > 0 && this->height > 0; }
-  unsigned       width{};
-  unsigned       height{};
+  constexpr bool isValid() const
+  {
+    return this->width > 0 && this->width < MAX_DIMENSION && //
+           this->height > 0 && this->height < MAX_DIMENSION;
+  }
+
+  unsigned width{};
+  unsigned height{};
 };
 
 struct Offset
