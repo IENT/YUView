@@ -285,9 +285,12 @@ void VideoCache::loadFrame(playlistItem *item, int frameIndex, int loadingSlot)
 void VideoCache::interactiveLoaderFinished()
 {
   // Get the thread that caused this call
-  QObject       *sender   = QObject::sender();
-  LoadingWorker *worker   = dynamic_cast<LoadingWorker *>(sender);
-  int            threadID = (interactiveThread[0]->worker() == worker) ? 0 : 1;
+  auto sender = QObject::sender();
+  auto worker = dynamic_cast<LoadingWorker *>(sender);
+  if (!worker)
+    return;
+
+  auto threadID = (interactiveThread[0]->worker() == worker) ? 0 : 1;
   assert(worker == interactiveThread[0]->worker() || worker == interactiveThread[1]->worker());
 
   // Check the list of items that are scheduled for deletion. Because a loading thread finished,
@@ -879,9 +882,11 @@ void VideoCache::watchItemForCachingFinished(playlistItem *item)
 void VideoCache::threadCachingFinished()
 {
   // Get the thread that caused this call
-  QObject       *sender = QObject::sender();
-  LoadingWorker *worker = dynamic_cast<LoadingWorker *>(sender);
-  Q_ASSERT_X(worker->isWorking(), Q_FUNC_INFO, "The worker that just finished was not working?");
+  auto sender = QObject::sender();
+  auto worker = dynamic_cast<LoadingWorker *>(sender);
+  Q_ASSERT_X(
+    worker && worker->isWorking(), Q_FUNC_INFO, "The worker that just finished was not working?");
+    
   worker->setWorking(false);
   DEBUG_CACHING_DETAIL(
     "VideoCache::threadCachingFinished - state %d - worker %p", workersState, worker);
