@@ -316,7 +316,7 @@ void VideoCache::interactiveLoaderFinished()
       }
       // Delete the item and remove it from the itemsToDelete list
       DEBUG_CACHING("VideoCache::interactiveLoaderFinished delete item now %s",
-                    (*it)->getName().toLatin1().data());
+                    (*it)->properties().name.toLatin1().data());
       (*it)->deleteLater();
       it = itemsToDelete.erase(it);
     }
@@ -700,7 +700,7 @@ void VideoCache::updateCacheQueue()
       if (additionalItemSpaceNeeded > 0)
       {
         DEBUG_CACHING("VideoCache::updateCacheQueue All frames of %s fit.",
-                      selection[0]->getName().toLatin1().data());
+                      selection[0]->properties().name.toLatin1().data());
         // All frames from the current item will fit and there is probably even space for more
         // items. In case of playback, we will continue with the next items and delete all frames
         // that were already played out. Otherwise, we don't delete any frames from the cache but we
@@ -735,7 +735,7 @@ void VideoCache::updateCacheQueue()
         }
 
         DEBUG_CACHING("VideoCache::updateCacheQueue Attempt caching of next item %s.",
-                      allItems[i]->getName().toLatin1().data());
+                      allItems[i]->properties().name.toLatin1().data());
         // How much space is there in the cache (excluding what is cached from the current item)?
         // Get the cache level without the current item (frames from the current item do not really
         // occupy space in the cache. We want to cache them anyways)
@@ -750,7 +750,7 @@ void VideoCache::updateCacheQueue()
         if ((itemCacheSize + cacheLevelWithoutCurrent) <= cacheLevelMax)
         {
           DEBUG_CACHING("VideoCache::updateCacheQueue Entire next item %s fits.",
-                        allItems[i]->getName().toLatin1().data());
+                        allItems[i]->properties().name.toLatin1().data());
           // The entire item fits
           enqueueCacheJob(allItems[i], range);
         }
@@ -764,7 +764,7 @@ void VideoCache::updateCacheQueue()
               (cacheLevelMax - cacheLevelWithoutCurrent) / allItems[i]->getCachingFrameSize();
             DEBUG_CACHING("VideoCache::updateCacheQueue Only %lld frames of next item %s fit.",
                           nrFramesCachable,
-                          allItems[i]->getName().toLatin1().data());
+                          allItems[i]->properties().name.toLatin1().data());
             range.second = range.first + nrFramesCachable - 1;
             enqueueCacheJob(allItems[i], range);
 
@@ -784,7 +784,7 @@ void VideoCache::updateCacheQueue()
     qDebug("VideoCache::updateCacheQueue updateCacheQueue summary -- cache:");
     for (const cacheJob &j : cacheQueue)
     {
-      QString itemStr = j.plItem->getName();
+      QString itemStr = j.plItem->properties().name;
       itemStr.append(" - ");
       itemStr.append(QString::number(j.frameRange.first) + "-" +
                      QString::number(j.frameRange.second));
@@ -805,7 +805,7 @@ void VideoCache::updateCacheQueue()
           // Print the last items frames
           qDebug() << itemStr;
         lastItem = f.first;
-        itemStr  = lastItem->getName();
+        itemStr  = lastItem->properties().name;
         itemStr.append(" - ");
       }
       itemStr.append(" " + QString::number(f.second));
@@ -969,7 +969,7 @@ void VideoCache::threadCachingFinished()
       }
       // Delete the item and remove it from the itemsToDelete list
       DEBUG_CACHING("VideoCache::threadCachingFinished delete item now %s",
-                    (*it)->getName().toLatin1().data());
+                    (*it)->properties().name.toLatin1().data());
       (*it)->deleteLater();
       it          = itemsToDelete.erase(it);
       itemDeleted = true;
@@ -1095,7 +1095,7 @@ bool VideoCache::pushNextJobToCachingThread(LoadingThread *thread)
     thread->worker()->processCacheJob();
     DEBUG_CACHING_DETAIL("VideoCache::pushNextJobToCachingThread - %d of %s",
                          frameNr,
-                         testItem->getName().toStdString().c_str());
+                         testItem->properties().name.toStdString().c_str());
     testLoopCount--;
     return true;
   }
@@ -1196,7 +1196,7 @@ bool VideoCache::pushNextJobToCachingThread(LoadingThread *thread)
 
     DEBUG_CACHING_DETAIL("VideoCache::pushNextJobToCachingThread Remove frame %d of %s",
                          frameToRemove.second,
-                         frameToRemove.first->getName().toStdString().c_str());
+                         frameToRemove.first->properties().name.toStdString().c_str());
     frameToRemove.first->removeFrameFromCache(frameToRemove.second);
     cacheLevelCurrent -= frameToRemoveSize;
   }
@@ -1216,7 +1216,7 @@ bool VideoCache::pushNextJobToCachingThread(LoadingThread *thread)
   thread->worker()->processCacheJob();
   DEBUG_CACHING_DETAIL("VideoCache::pushNextJobToCachingThread - %d of %s",
                        frameToCache,
-                       plItem->getName().toStdString().c_str());
+                       plItem->properties().name.toStdString().c_str());
 
   // Update the cache level
   cacheLevelCurrent += frameSize;
@@ -1250,7 +1250,7 @@ void VideoCache::itemAboutToBeDeleted(playlistItem *item)
     // The item can be deleted when all caching/loading threads of the item returned.
     itemsToDelete.append(item);
     DEBUG_CACHING("VideoCache::itemAboutToBeDeleted delete item later %s",
-                  item->getName().toLatin1().data());
+                  item->properties().name.toLatin1().data());
   }
   else
   {
@@ -1268,7 +1268,7 @@ void VideoCache::itemAboutToBeDeleted(playlistItem *item)
     // The item can be deleted now.
     item->deleteLater();
     DEBUG_CACHING("VideoCache::itemAboutToBeDeleted delete item now %s",
-                  item->getName().toLatin1().data());
+                  item->properties().name.toLatin1().data());
   }
 
   emit updateCacheStatus();
