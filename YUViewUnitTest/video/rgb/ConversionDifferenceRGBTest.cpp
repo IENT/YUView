@@ -173,8 +173,8 @@ ExpectedImageAndMse generateExpectedImageAndMse(const FrameAandB &testFrames,
                      .g = functions::clip(128 + diff.g * amplificationFactor, 0, 255),
                      .b = functions::clip(128 + diff.b * amplificationFactor, 0, 255)};
 
-    const auto x = i % TEST_FRAME_SIZE.width;
-    const auto y = i / TEST_FRAME_SIZE.width;
+    const auto x = static_cast<int>(i % TEST_FRAME_SIZE.width);
+    const auto y = static_cast<int>(i / TEST_FRAME_SIZE.width);
     image.setPixel(x, y, qRgb(outputPixel.r, outputPixel.g, outputPixel.b));
   }
 
