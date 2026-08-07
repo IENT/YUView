@@ -91,6 +91,9 @@ public:
     // Draw the cached frames
     auto frameList = plItem->getCachedFrames();
     auto range     = plItem->properties().startEndRange;
+    if (range.second <= 0)
+      return;
+
     if (frameList.count() > 0)
     {
       int lastPos = frameList[0];
@@ -206,6 +209,11 @@ void PlaylistTreeWidget::dragMoveEvent(QDragMoveEvent *event)
   }
 
   const auto draggedItem = dynamic_cast<playlistItem *>(draggedItems[0]);
+  if (!draggedItem)
+  {
+    event->ignore();
+    return;
+  }
 
   if (!dropTarget->acceptDrops(draggedItem))
   {
@@ -352,7 +360,7 @@ void PlaylistTreeWidget::addResampleItem()
   for (int i = 0; i < this->selectedItems().count(); i++)
   {
     auto item = dynamic_cast<playlistItem *>(this->selectedItems()[i]);
-    if (item->canBeUsedInProcessing())
+    if (item && item->canBeUsedInProcessing())
       selection.append(this->selectedItems()[i]);
   }
 
@@ -844,7 +852,13 @@ void PlaylistTreeWidget::savePlaylistToFile()
   // Write the XML structure to file
   QFile file(filename);
   if (!file.open(QIODevice::WriteOnly | QIODevice::Text))
+  {
+    QMessageBox::warning(this,
+                         tr("Save Playlist"),
+                         tr("Could not save playlist to \"%1\": %2")
+                           .arg(filename, file.errorString()));
     return;
+  }
   QTextStream outStream(&file);
   outStream << getPlaylistString(dirName);
   file.close();

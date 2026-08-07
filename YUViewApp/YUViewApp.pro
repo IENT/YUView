@@ -59,7 +59,7 @@ macx {
     isEmpty(PREFIX) {
         PREFIX = /
     }
-    isEmpty(BIINDIR) {
+    isEmpty(BINDIR) {
         BINDIR = Applications
     }
 

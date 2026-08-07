@@ -30,74 +30,38 @@
  *   along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#pragma once
+#include <QObject>
+#include <queue>
 
-#include <video/rgb/PixelFormatRGB.h>
+namespace video
+{
+class videoHandler;
+}
 
-#include <QByteArray>
-#include <QImage>
-
-#include <ostream>
-
-namespace video::rgb
+namespace video::test
 {
 
-struct InputFrameParameters
+class videoHandlerDataLoadingTest : public QObject
 {
-  const QByteArray &rawDataItem;
-  const Size        frameSize{};
-};
-
-struct MSE
-{
-  double r{};
-  double g{};
-  double b{};
-  double a{};
-
-  bool operator==(const MSE &other) const
-  {
-    return std::tie(r, g, b, a) == std::tie(other.r, other.g, other.b, other.a);
-  }
-};
-
-void PrintTo(const MSE &mse, std::ostream *os);
-
-// Sum of Squared Errors
-class SSE
-{
+  Q_OBJECT
 public:
-  void addSample(const rgba_t &delta)
-  {
-    this->r += delta.r * delta.r;
-    this->g += delta.g * delta.g;
-    this->b += delta.b * delta.b;
-    this->a += delta.a * delta.a;
-    ++this->nrSamples;
-  }
+  videoHandlerDataLoadingTest(video::videoHandler *video);
 
-  MSE getMSE(const bool hasAlpha) const
+  struct LoadingRequest
   {
-    MSE mse;
-    mse.r = static_cast<double>(this->r) / this->nrSamples;
-    mse.g = static_cast<double>(this->g) / this->nrSamples;
-    mse.b = static_cast<double>(this->b) / this->nrSamples;
-    mse.a = hasAlpha ? static_cast<double>(this->a) / this->nrSamples : 0.0;
-    return mse;
-  }
+    int        frameIdx{0};
+    QByteArray rawData;
+  };
+
+  void addExpectedLoadingRequests(LoadingRequest expectedLoadingRequest);
+
+public slots:
+  void loadRawTestData(int frameIdx, bool forceDecodingNow);
 
 private:
-  int64_t r{};
-  int64_t g{};
-  int64_t b{};
-  int64_t a{};
-  int64_t nrSamples{};
+  video::videoHandler *video{};
+
+  std::queue<LoadingRequest> expectedLoadingRequests;
 };
 
-std::pair<QImage, MSE> calculateDifferenceAndMSE(const InputFrameParameters &frame1,
-                                                 const InputFrameParameters &frame2,
-                                                 const PixelFormatRGB       &pixelFormat,
-                                                 const int                   amplificationFactor,
-                                                 const bool                  markDifference);
-
-} // namespace video::rgb
+} // namespace video::test
