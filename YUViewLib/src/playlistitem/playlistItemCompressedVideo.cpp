@@ -698,7 +698,7 @@ void playlistItemCompressedVideo::loadRawData(int frameIdx, bool caching)
         auto ffmpegDec =
           (caching ? dynamic_cast<decoder::decoderFFmpeg *>(this->cachingDecoder.get())
                    : dynamic_cast<decoder::decoderFFmpeg *>(this->loadingDecoder.get()));
-        if (!ffmpegDec->pushAVPacket(pkt))
+        if (!ffmpegDec || !ffmpegDec->pushAVPacket(pkt))
         {
           if (ffmpegDec->state() != decoder::DecoderState::RetrieveFrames)
             // The decoder did not switch to decoding frame mode. Error.
