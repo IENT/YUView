@@ -143,7 +143,7 @@ PixelFormatYUV testFormatFromSizeAndNamePlanar(const std::string            &nam
                 formatName << bitDepth << endianness;
               formatName << interlacedString;
               auto fmt = PixelFormatYUV(
-                  subsampling, bitDepth, entry.second, endianness == "be", {}, interlaced);
+                subsampling, bitDepth, entry.second, endianness == "be", {}, interlaced);
               if (name.find(formatName.str()) != std::string::npos &&
                   doesPixelFormatMatchFileSize(fmt, *guessedFrameFormat.frameSize, fileSize))
                 return fmt;
@@ -158,7 +158,7 @@ PixelFormatYUV testFormatFromSizeAndNamePlanar(const std::string            &nam
                 formatName << bitDepth << endianness;
               formatName << interlacedString;
               auto fmt = PixelFormatYUV(
-                  subsampling, bitDepth, entry.second, endianness == "be", {}, interlaced);
+                subsampling, bitDepth, entry.second, endianness == "be", {}, interlaced);
               if (name.find(formatName.str()) != std::string::npos &&
                   doesPixelFormatMatchFileSize(fmt, *guessedFrameFormat.frameSize, fileSize))
                 return fmt;
@@ -242,17 +242,19 @@ checkSpecificFileExtensions(const GuessedFrameFormat &guessedFrameFormat,
   if (fileExtension == ".raw")
   {
     const auto rawBayerFormat =
-        PixelFormatYUV(Subsampling::YUV_400, guessedFrameFormat.bitDepth.value_or(8));
+      PixelFormatYUV(Subsampling::YUV_400, guessedFrameFormat.bitDepth.value_or(8));
     if (!guessedFrameFormat.frameSize)
       return rawBayerFormat;
     if (doesPixelFormatMatchFileSize(
-            rawBayerFormat, *guessedFrameFormat.frameSize, fileInfo.fileSize))
+          rawBayerFormat, *guessedFrameFormat.frameSize, fileInfo.fileSize))
       return rawBayerFormat;
   }
 
   if (fileExtension == ".v210" || fileExtension == ".V210")
   {
     const auto v210Format = PixelFormatYUV(PredefinedPixelFormat::V210);
+    if (!guessedFrameFormat.frameSize)
+      return v210Format;
     if (doesPixelFormatMatchFileSize(v210Format, *guessedFrameFormat.frameSize, fileInfo.fileSize))
       return v210Format;
   }
@@ -300,20 +302,20 @@ checkFFmpegPixelFormatNames(const std::string        &name,
   const auto checkPackedFormatsFirst = (guessedFrameFormat.dataLayout == DataLayout::Packed);
   if (checkPackedFormatsFirst)
   {
-    if (const auto fmt = testFormatFromSizeAndNamePacked(
-            name, guessedFrameFormat, subsampling, fileInfo.fileSize))
+    if (const auto fmt =
+          testFormatFromSizeAndNamePacked(name, guessedFrameFormat, subsampling, fileInfo.fileSize))
       return fmt;
-    if (const auto fmt = testFormatFromSizeAndNamePlanar(
-            name, guessedFrameFormat, subsampling, fileInfo.fileSize))
+    if (const auto fmt =
+          testFormatFromSizeAndNamePlanar(name, guessedFrameFormat, subsampling, fileInfo.fileSize))
       return fmt;
   }
   else
   {
-    if (const auto fmt = testFormatFromSizeAndNamePlanar(
-            name, guessedFrameFormat, subsampling, fileInfo.fileSize))
+    if (const auto fmt =
+          testFormatFromSizeAndNamePlanar(name, guessedFrameFormat, subsampling, fileInfo.fileSize))
       return fmt;
-    if (const auto fmt = testFormatFromSizeAndNamePacked(
-            name, guessedFrameFormat, subsampling, fileInfo.fileSize))
+    if (const auto fmt =
+          testFormatFromSizeAndNamePacked(name, guessedFrameFormat, subsampling, fileInfo.fileSize))
       return fmt;
   }
 
@@ -375,10 +377,10 @@ checkForSubsamplingIndiatorInName(const std::string        &name,
 }
 
 std::optional<PixelFormatYUV> ignoreNameAndJustCheckIfSomeBasicFormatsMatchTheFileSize(
-    const GuessedFrameFormat &guessedFrameFormat, const FileInfoForGuess &fileInfo)
+  const GuessedFrameFormat &guessedFrameFormat, const FileInfoForGuess &fileInfo)
 {
   const auto testSubsamplings =
-      std::vector<Subsampling>({Subsampling::YUV_420, Subsampling::YUV_444, Subsampling::YUV_422});
+    std::vector<Subsampling>({Subsampling::YUV_420, Subsampling::YUV_444, Subsampling::YUV_422});
 
   std::vector<int> testBitDepths;
   if (guessedFrameFormat.bitDepth)
@@ -412,19 +414,19 @@ PixelFormatYUV guessPixelFormatFromSizeAndName(const GuessedFrameFormat &guessed
        {functions::toLower(fileInfo.filename), functions::toLower(fileInfo.parentFolderName)})
   {
     if (const auto pixelFormat =
-            checForNVIndicator(name, *guessedFrameFormat.frameSize, fileInfo.fileSize))
+          checForNVIndicator(name, *guessedFrameFormat.frameSize, fileInfo.fileSize))
       return *pixelFormat;
 
     if (const auto pixelFormat = checkFFmpegPixelFormatNames(name, guessedFrameFormat, fileInfo))
       return *pixelFormat;
 
     if (const auto pixelFormat =
-            checkForSubsamplingIndiatorInName(name, guessedFrameFormat, fileInfo))
+          checkForSubsamplingIndiatorInName(name, guessedFrameFormat, fileInfo))
       return *pixelFormat;
   }
 
   if (const auto pixelFormat =
-          ignoreNameAndJustCheckIfSomeBasicFormatsMatchTheFileSize(guessedFrameFormat, fileInfo))
+        ignoreNameAndJustCheckIfSomeBasicFormatsMatchTheFileSize(guessedFrameFormat, fileInfo))
     return *pixelFormat;
 
   return {};

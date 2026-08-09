@@ -104,10 +104,6 @@ playlistItemRawFile::playlistItemRawFile(const QString &rawFilePath,
   {
     this->video     = std::make_unique<video::yuv::videoHandlerYUV>();
     this->rawFormat = video::RawFormat::YUV;
-    if (isInExtensions(ext, RAW_BAYER_EXTENSIONS))
-    {
-      this->getYUVVideo()->setPixelFormatYUV(video::yuv::PixelFormatYUV(video::yuv::Subsampling::YUV_400, 8, video::yuv::PlaneOrder::YUV));
-    }
   }
   else if (isInExtensions(ext, RGB_EXTENSIONS) || isInExtensions(ext, RGBA_EXTENSIONS) ||
            isInExtensions(ext, CMYK_EXTENSIONS) || fmt.toLower() == "rgb")
