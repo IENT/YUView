@@ -30,61 +30,64 @@
  *   along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#pragma once
+#include <common/Testing.h>
 
-#include "FFMpegLibrariesTypes.h"
+#include <common/Offset.h>
 
-#include <common/Size.h>
-#include <common/Typedef.h>
-
-namespace FFmpeg
+namespace common::test
 {
 
-class AVFrameWrapper
+TEST(OffsetTest, defaultConstruction)
 {
-public:
-  AVFrameWrapper() = default;
-  AVFrameWrapper(LibraryVersion libVersion, AVFrame *frame);
-  ~AVFrameWrapper() = default;
+  Offset offset;
 
-  void clear();
+  EXPECT_EQ(offset.x, 0);
+  EXPECT_EQ(offset.y, 0);
+}
 
-  uint8_t      *getData(int component);
-  int           getLineSize(int component);
-  AVFrame      *getFrame() const;
-  int           getWidth();
-  int           getHeight();
-  Size          getSize();
-  int           getPTS();
-  AVPictureType getPictType();
-  int           getKeyFrame();
-  AVDictionary *getMetadata();
+TEST(OffsetTest, valueConstruction)
+{
+  Offset offset(22, 43);
 
-  explicit operator bool() const { return this->frame != nullptr; }
+  EXPECT_EQ(offset.x, 22);
+  EXPECT_EQ(offset.y, 43);
+}
 
-private:
-  void update();
+TEST(OffsetTest, equalityTestForEqualOffsets)
+{
+  Offset offset1(22, 43);
+  Offset offset2(22, 43);
+  EXPECT_TRUE(offset1 == offset2);
+  EXPECT_FALSE(offset1 != offset2);
 
-  // These are private. Use "update" to update them from the AVFormatContext
-  uint8_t      *data[AV_NUM_DATA_POINTERS]{};
-  int           linesize[AV_NUM_DATA_POINTERS]{};
-  int           width{};
-  int           height{};
-  int           nb_samples{};
-  int           format{};
-  int           key_frame{};
-  AVPictureType pict_type{};
-  AVRational    sample_aspect_ratio{};
-  int64_t       pts{};
-  int64_t       pkt_pts{};
-  int64_t       pkt_dts{};
-  int           coded_picture_number{};
-  int           display_picture_number{};
-  int           quality{};
-  AVDictionary *metadata{};
+  Offset offset3(0, 0);
+  Offset offset4;
+  EXPECT_TRUE(offset3 == offset4);
+  EXPECT_FALSE(offset3 != offset4);
+}
 
-  AVFrame       *frame{};
-  LibraryVersion libVer{};
-};
+TEST(OffsetTest, equalityTestForUnequalOffsets_widthDifferentWidth)
+{
+  Offset offset1(22, 44);
+  Offset offset2(222, 44);
+  EXPECT_TRUE(offset1 != offset2);
+  EXPECT_FALSE(offset1 == offset2);
+}
 
-} // namespace FFmpeg
+TEST(OffsetTest, equalityTestForUnequalOffsets_widthDifferentHeight)
+{
+  Offset offset1(22, 44);
+  Offset offset2(22, 444);
+  EXPECT_TRUE(offset1 != offset2);
+  EXPECT_FALSE(offset1 == offset2);
+}
+
+TEST(OffsetTest, equalityTestForUnequalOffsets_widthDifferentWidthAndHeight)
+{
+  Offset offset1(22, 44);
+  Offset offset2(222, 444);
+  EXPECT_TRUE(offset1 != offset2);
+  EXPECT_FALSE(offset1 == offset2);
+}
+
+} // namespace common::test

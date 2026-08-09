@@ -35,6 +35,7 @@
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
+#include <common/Size.h>
 #include <common/Typedef.h>
 
 using ::testing::Bool;

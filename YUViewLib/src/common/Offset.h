@@ -32,59 +32,14 @@
 
 #pragma once
 
-#include "FFMpegLibrariesTypes.h"
-
-#include <common/Size.h>
-#include <common/Typedef.h>
-
-namespace FFmpeg
+struct Offset
 {
+  Offset() = default;
+  Offset(int x, int y) : x(x), y(y) {}
 
-class AVFrameWrapper
-{
-public:
-  AVFrameWrapper() = default;
-  AVFrameWrapper(LibraryVersion libVersion, AVFrame *frame);
-  ~AVFrameWrapper() = default;
+  bool operator==(const Offset &other) const { return this->x == other.x && this->y == other.y; }
+  bool operator!=(const Offset &other) const { return this->x != other.x || this->y != other.y; }
 
-  void clear();
-
-  uint8_t      *getData(int component);
-  int           getLineSize(int component);
-  AVFrame      *getFrame() const;
-  int           getWidth();
-  int           getHeight();
-  Size          getSize();
-  int           getPTS();
-  AVPictureType getPictType();
-  int           getKeyFrame();
-  AVDictionary *getMetadata();
-
-  explicit operator bool() const { return this->frame != nullptr; }
-
-private:
-  void update();
-
-  // These are private. Use "update" to update them from the AVFormatContext
-  uint8_t      *data[AV_NUM_DATA_POINTERS]{};
-  int           linesize[AV_NUM_DATA_POINTERS]{};
-  int           width{};
-  int           height{};
-  int           nb_samples{};
-  int           format{};
-  int           key_frame{};
-  AVPictureType pict_type{};
-  AVRational    sample_aspect_ratio{};
-  int64_t       pts{};
-  int64_t       pkt_pts{};
-  int64_t       pkt_dts{};
-  int           coded_picture_number{};
-  int           display_picture_number{};
-  int           quality{};
-  AVDictionary *metadata{};
-
-  AVFrame       *frame{};
-  LibraryVersion libVer{};
+  int x{};
+  int y{};
 };
-
-} // namespace FFmpeg
