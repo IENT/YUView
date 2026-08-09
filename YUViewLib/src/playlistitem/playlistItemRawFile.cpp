@@ -542,13 +542,18 @@ void playlistItemRawFile::loadRawData(int frameIdx)
     return;
 
   auto nrBytes = this->video->getBytesPerFrame();
+  if (nrBytes < 0)
+    return;
 
   // Load the raw data for the given frameIdx from file and set it in the video
   int64_t fileStartPos;
   if (this->isY4MFile)
     fileStartPos = this->y4mFrameIndices.at(frameIdx);
   else
-    fileStartPos = frameIdx * nrBytes;
+    fileStartPos = static_cast<int64_t>(frameIdx) * nrBytes;
+
+  if (fileStartPos < 0)
+    return;
 
   DEBUG_RAWFILE("playlistItemRawFile::loadRawData Start loading frame " << frameIdx << " bytes "
                                                                         << int(nrBytes));

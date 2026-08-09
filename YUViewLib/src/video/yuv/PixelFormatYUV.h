@@ -33,7 +33,10 @@
 #pragma once
 
 #include <common/EnumMapper.h>
+#include <common/Offset.h>
+#include <common/Size.h>
 #include <common/Typedef.h>
+
 #include <video/PixelFormat.h>
 
 // The YUV_Internals namespace. We use this namespace because of the dialog. We want to be able to
@@ -239,7 +242,7 @@ public:
   bool operator!=(const PixelFormatYUV &a) const { return getName() != a.getName(); }
   bool operator==(const std::string &a) const { return getName() == a; }
   bool operator!=(const std::string &a) const { return getName() != a; }
-  operator bool() const { return this->isValid(); }
+       operator bool() const { return this->isValid(); }
 
 private:
   // If this is set, the format is defined according to a specific standard and does not

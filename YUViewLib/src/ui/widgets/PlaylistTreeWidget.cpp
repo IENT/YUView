@@ -91,6 +91,9 @@ public:
     // Draw the cached frames
     auto frameList = plItem->getCachedFrames();
     auto range     = plItem->properties().startEndRange;
+    if (range.second <= 0)
+      return;
+
     if (frameList.count() > 0)
     {
       int lastPos = frameList[0];
@@ -170,18 +173,18 @@ PlaylistTreeWidget::~PlaylistTreeWidget()
 
 playlistItem *PlaylistTreeWidget::getDropTarget(const QPoint &pos) const
 {
-  auto pItem = dynamic_cast<playlistItem *>(this->itemAt(pos));
-  if (pItem != nullptr)
-  {
-    // check if dropped on or below/above pItem
-    auto rc    = this->visualItemRect(pItem);
-    auto rcNew = QRect(rc.left(), rc.top() + 2, rc.width(), rc.height() - 4);
-    if (!rcNew.contains(pos, true))
-      // dropped next to pItem
-      pItem = nullptr;
-  }
+  auto item = dynamic_cast<playlistItem *>(this->itemAt(pos));
+  if (!item)
+    return {};
 
-  return pItem;
+  // check if dropped on or below/above pItem
+  auto rc    = this->visualItemRect(item);
+  auto rcNew = QRect(rc.left(), rc.top() + 2, rc.width(), rc.height() - 4);
+  if (!rcNew.contains(pos, true))
+    // dropped next to item
+    return nullptr;
+
+  return item;
 }
 
 void PlaylistTreeWidget::dragMoveEvent(QDragMoveEvent *event)
@@ -206,6 +209,11 @@ void PlaylistTreeWidget::dragMoveEvent(QDragMoveEvent *event)
   }
 
   const auto draggedItem = dynamic_cast<playlistItem *>(draggedItems[0]);
+  if (!draggedItem)
+  {
+    event->ignore();
+    return;
+  }
 
   if (!dropTarget->acceptDrops(draggedItem))
   {
@@ -244,19 +252,14 @@ void PlaylistTreeWidget::dropEvent(QDropEvent *event)
   }
   else
   {
-    // get the list of the items that are about to be dragged
-    QList<QTreeWidgetItem *> dragItems = selectedItems();
-
-    // Actually move all the items
     QTreeWidget::dropEvent(event);
 
     // Query the selected items that were dropped and add a new bufferStatusWidget
     // for each of them. The old bufferStatusWidget will be deleted by the tree widget.
     QList<int> toRows;
-    for (QTreeWidgetItem *item : dragItems)
+    for (auto item : selectedItems())
     {
-      playlistItem *plItem = dynamic_cast<playlistItem *>(item);
-      if (plItem)
+      if (const auto plItem = dynamic_cast<playlistItem *>(item))
         setItemWidget(item, 1, new bufferStatusWidget(plItem, this));
     }
 
@@ -283,9 +286,9 @@ void PlaylistTreeWidget::updateAllContainterItems()
 {
   for (int i = 0; i < topLevelItemCount(); i++)
   {
-    QTreeWidgetItem       *item          = topLevelItem(i);
-    playlistItemContainer *containerItem = dynamic_cast<playlistItemContainer *>(item);
-    if (containerItem != nullptr)
+    auto item          = topLevelItem(i);
+    auto containerItem = dynamic_cast<playlistItemContainer *>(item);
+    if (containerItem)
       containerItem->updateChildItems();
   }
 }
@@ -311,8 +314,8 @@ void PlaylistTreeWidget::addDifferenceItem()
   QVector<QTreeWidgetItem *> selection;
   for (int i = 0; i < this->selectedItems().count(); i++)
   {
-    auto item = dynamic_cast<playlistItem *>(this->selectedItems()[i]);
-    if (item->canBeUsedInProcessing())
+    auto plItem = dynamic_cast<playlistItem *>(this->selectedItems()[i]);
+    if (plItem && plItem->canBeUsedInProcessing())
       selection.append(this->selectedItems()[i]);
   }
 
@@ -357,7 +360,7 @@ void PlaylistTreeWidget::addResampleItem()
   for (int i = 0; i < this->selectedItems().count(); i++)
   {
     auto item = dynamic_cast<playlistItem *>(this->selectedItems()[i]);
-    if (item->canBeUsedInProcessing())
+    if (item && item->canBeUsedInProcessing())
       selection.append(this->selectedItems()[i]);
   }
 
@@ -399,8 +402,7 @@ void PlaylistTreeWidget::addOverlayItem()
   QList<QTreeWidgetItem *> selection;
   for (int i = 0; i < selectedItems().count(); i++)
   {
-    playlistItem *item = dynamic_cast<playlistItem *>(selectedItems()[i]);
-    if (item)
+    if (const auto plItem = dynamic_cast<playlistItem *>(selectedItems()[i]))
       selection.append(selectedItems()[i]);
   }
 
@@ -510,8 +512,8 @@ void PlaylistTreeWidget::slotItemChanged(bool redraw, recacheIndicator recache)
 
   if (recache != RECACHE_NONE)
   {
-    playlistItem *senderItem = dynamic_cast<playlistItem *>(sender);
-    emit          signalItemRecache(senderItem, recache);
+    auto senderItem = dynamic_cast<playlistItem *>(sender);
+    emit signalItemRecache(senderItem, recache);
   }
 }
 
@@ -665,7 +667,7 @@ void PlaylistTreeWidget::deletePlaylistItems(bool deleteAllItems)
   QList<playlistItem *> unfoldedItemList;
   for (playlistItem *plItem : itemList)
   {
-    playlistItemContainer *containerItem = dynamic_cast<playlistItemContainer *>(plItem);
+    auto containerItem = dynamic_cast<playlistItemContainer *>(plItem);
     if (containerItem)
     {
       // Add all children (if not yet in the list)
@@ -692,8 +694,7 @@ void PlaylistTreeWidget::deletePlaylistItems(bool deleteAllItems)
 
     // If the item is in a container item we have to inform the container that the item will be
     // deleted.
-    playlistItem *parentItem = plItem->parentPlaylistItem();
-    if (parentItem)
+    if (auto parentItem = plItem->parentPlaylistItem())
       parentItem->itemAboutToBeDeleted(plItem);
     else
     {
@@ -818,10 +819,8 @@ QString PlaylistTreeWidget::getPlaylistString(QDir dirName)
   // Append all the playlist items to the output
   for (int i = 0; i < topLevelItemCount(); ++i)
   {
-    QTreeWidgetItem *item   = topLevelItem(i);
-    playlistItem    *plItem = dynamic_cast<playlistItem *>(item);
-
-    plItem->savePlaylist(plist, dirName);
+    if (auto plItm = dynamic_cast<playlistItem *>(topLevelItem(i)))
+      plItm->savePlaylist(plist, dirName);
   }
 
   // Append the view states
@@ -852,7 +851,14 @@ void PlaylistTreeWidget::savePlaylistToFile()
 
   // Write the XML structure to file
   QFile file(filename);
-  file.open(QIODevice::WriteOnly | QIODevice::Text);
+  if (!file.open(QIODevice::WriteOnly | QIODevice::Text))
+  {
+    QMessageBox::warning(this,
+                         tr("Save Playlist"),
+                         tr("Could not save playlist to \"%1\": %2")
+                           .arg(filename, file.errorString()));
+    return;
+  }
   QTextStream outStream(&file);
   outStream << getPlaylistString(dirName);
   file.close();
@@ -977,9 +983,7 @@ void PlaylistTreeWidget::checkAndUpdateItems()
   for (int i = 0; i < topLevelItemCount(); ++i)
   {
     auto plItem = dynamic_cast<playlistItem *>(this->topLevelItem(i));
-
-    // Check (and reset) the flag if the source was changed.
-    if (plItem->isSourceChanged())
+    if (plItem && plItem->isSourceChanged())
       changedItems.push_back(plItem);
   }
 
@@ -1012,8 +1016,8 @@ void PlaylistTreeWidget::updateSettings()
 {
   for (int i = 0; i < this->topLevelItemCount(); ++i)
   {
-    auto plItem = dynamic_cast<playlistItem *>(this->topLevelItem(i));
-    plItem->updateSettings();
+    if (auto plItem = dynamic_cast<playlistItem *>(this->topLevelItem(i)))
+      plItem->updateSettings();
   }
 }
 
@@ -1129,15 +1133,12 @@ QList<playlistItem *> PlaylistTreeWidget::getAllPlaylistItems(const bool topLeve
   QList<playlistItem *> returnList;
   for (int i = 0; i < topLevelItemCount(); i++)
   {
-    QTreeWidgetItem *item   = topLevelItem(i);
-    playlistItem    *plItem = dynamic_cast<playlistItem *>(item);
-    if (plItem != nullptr)
+    if (auto plItem = dynamic_cast<playlistItem *>(topLevelItem(i)))
     {
       returnList.append(plItem);
       if (!topLevelOnly)
       {
-        playlistItemContainer *container = dynamic_cast<playlistItemContainer *>(plItem);
-        if (container)
+        if (auto container = dynamic_cast<playlistItemContainer *>(plItem))
           returnList.append(container->getAllChildPlaylistItems());
       }
     }

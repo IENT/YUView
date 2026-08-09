@@ -49,7 +49,7 @@ getLastWriteTime(const std::filesystem::path &filePath) noexcept
   {
     return {std::filesystem::last_write_time(filePath)};
   }
-  catch (const std::exception &e)
+  catch (const std::exception &)
   {
     return {};
   }

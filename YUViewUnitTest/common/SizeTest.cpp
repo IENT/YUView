@@ -30,38 +30,64 @@
  *   along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <QObject>
-#include <queue>
+#include <common/Testing.h>
 
-namespace video
+#include <common/Size.h>
+
+namespace common::test
 {
-class videoHandler;
+
+TEST(SizeTest, defaultConstruction)
+{
+  Size size;
+
+  EXPECT_EQ(size.width, 0);
+  EXPECT_EQ(size.height, 0);
 }
 
-namespace video::rgb::test
+TEST(SizeTest, valueConstruction)
 {
+  Size size(22, 43);
 
-class videoHandlerDataLoadingTest : public QObject
+  EXPECT_EQ(size.width, 22);
+  EXPECT_EQ(size.height, 43);
+}
+
+TEST(SizeTest, equalityTestForEqualSizes)
 {
-  Q_OBJECT
-public:
-  videoHandlerDataLoadingTest(video::videoHandler *video);
+  Size size1(22, 43);
+  Size size2(22, 43);
+  EXPECT_TRUE(size1 == size2);
+  EXPECT_FALSE(size1 != size2);
 
-  struct LoadingRequest
-  {
-    int        frameIdx{0};
-    QByteArray rawData;
-  };
+  Size size3(0, 0);
+  Size size4;
+  EXPECT_TRUE(size3 == size4);
+  EXPECT_FALSE(size3 != size4);
+}
 
-  void addExpectedLoadingRequests(LoadingRequest expectedLoadingRequest);
+TEST(SizeTest, equalityTestForUnequalSizes_widthDifferentWidth)
+{
+  Size size1(22, 44);
+  Size size2(222, 44);
+  EXPECT_TRUE(size1 != size2);
+  EXPECT_FALSE(size1 == size2);
+}
 
-public slots:
-  void loadRawTestData(int frameIdx, bool forceDecodingNow);
+TEST(SizeTest, equalityTestForUnequalSizes_widthDifferentHeight)
+{
+  Size size1(22, 44);
+  Size size2(22, 444);
+  EXPECT_TRUE(size1 != size2);
+  EXPECT_FALSE(size1 == size2);
+}
 
-private:
-  video::videoHandler *video{};
+TEST(SizeTest, equalityTestForUnequalSizes_widthDifferentWidthAndHeight)
+{
+  Size size1(22, 44);
+  Size size2(222, 444);
+  EXPECT_TRUE(size1 != size2);
+  EXPECT_FALSE(size1 == size2);
+}
 
-  std::queue<LoadingRequest> expectedLoadingRequests;
-};
-
-} // namespace video::rgb::test
+} // namespace common::test

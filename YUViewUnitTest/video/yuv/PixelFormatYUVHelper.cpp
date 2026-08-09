@@ -30,74 +30,40 @@
  *   along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#pragma once
+#include "PixelFormatYUVHelper.h"
 
-#include <video/rgb/PixelFormatRGB.h>
-
-#include <QByteArray>
-#include <QImage>
-
-#include <ostream>
-
-namespace video::rgb
+namespace video::yuv::test
 {
 
-struct InputFrameParameters
+std::vector<PixelFormatYUV> getAllPixelFormats()
 {
-  const QByteArray &rawDataItem;
-  const Size        frameSize{};
-};
+  std::vector<PixelFormatYUV> allFormats;
 
-struct MSE
-{
-  double r{};
-  double g{};
-  double b{};
-  double a{};
-
-  bool operator==(const MSE &other) const
+  for (const auto subsampling : SubsamplingMapper.getValues())
   {
-    return std::tie(r, g, b, a) == std::tie(other.r, other.g, other.b, other.a);
-  }
-};
+    for (const auto bitsPerSample : BitDepthList)
+    {
+      const auto endianList =
+        (bitsPerSample > 8) ? std::vector<bool>({false, true}) : std::vector<bool>({false});
 
-void PrintTo(const MSE &mse, std::ostream *os);
+      // Planar
+      for (const auto planeOrder : PlaneOrderMapper.getValues())
+        for (const auto bigEndian : endianList)
+          allFormats.push_back(PixelFormatYUV(subsampling, bitsPerSample, planeOrder, bigEndian));
 
-// Sum of Squared Errors
-class SSE
-{
-public:
-  void addSample(const rgba_t &delta)
-  {
-    this->r += delta.r * delta.r;
-    this->g += delta.g * delta.g;
-    this->b += delta.b * delta.b;
-    this->a += delta.a * delta.a;
-    ++this->nrSamples;
+      // Packet
+      for (const auto packingOrder : getSupportedPackingFormats(subsampling))
+        for (const auto bytePacking : {false, true})
+          for (const auto bigEndian : endianList)
+            allFormats.push_back(
+              PixelFormatYUV(subsampling, bitsPerSample, packingOrder, bytePacking, bigEndian));
+    }
   }
 
-  MSE getMSE(const bool hasAlpha) const
-  {
-    MSE mse;
-    mse.r = static_cast<double>(this->r) / this->nrSamples;
-    mse.g = static_cast<double>(this->g) / this->nrSamples;
-    mse.b = static_cast<double>(this->b) / this->nrSamples;
-    mse.a = hasAlpha ? static_cast<double>(this->a) / this->nrSamples : 0.0;
-    return mse;
-  }
+  for (auto predefinedFormat : PredefinedPixelFormatMapper.getValues())
+    allFormats.push_back(PixelFormatYUV(predefinedFormat));
 
-private:
-  int64_t r{};
-  int64_t g{};
-  int64_t b{};
-  int64_t a{};
-  int64_t nrSamples{};
-};
+  return allFormats;
+}
 
-std::pair<QImage, MSE> calculateDifferenceAndMSE(const InputFrameParameters &frame1,
-                                                 const InputFrameParameters &frame2,
-                                                 const PixelFormatRGB       &pixelFormat,
-                                                 const int                   amplificationFactor,
-                                                 const bool                  markDifference);
-
-} // namespace video::rgb
+} // namespace video::yuv::test

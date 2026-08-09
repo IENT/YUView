@@ -32,6 +32,8 @@
 
 #pragma once
 
+#include <common/Size.h>
+
 #include "FrameTypeData.h"
 #include "StatisticsType.h"
 

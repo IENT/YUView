@@ -34,6 +34,7 @@
 
 #include <common/InfoItemAndData.h>
 #include <common/SaveUi.h>
+#include <common/Size.h>
 #include <common/Typedef.h>
 #include <common/YUViewDomElement.h>
 

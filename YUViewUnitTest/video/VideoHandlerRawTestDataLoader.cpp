@@ -32,9 +32,9 @@
 
 #include "VideoHandlerRawTestDataLoader.h"
 
-#include <video/rgb/videoHandlerRGB.h>
+#include <video/videoHandler.h>
 
-namespace video::rgb::test
+namespace video::test
 {
 
 videoHandlerDataLoadingTest::videoHandlerDataLoadingTest(video::videoHandler *video) : video(video)
@@ -79,4 +79,4 @@ void videoHandlerDataLoadingTest::loadRawTestData(int frameIdx, bool forceDecodi
   video->rawData_frameIndex = frameIdx;
 }
 
-} // namespace video::rgb::test
+} // namespace video::test

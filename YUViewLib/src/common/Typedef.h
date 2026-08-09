@@ -182,35 +182,6 @@ struct Ratio
   int den{};
 };
 
-struct Size
-{
-  constexpr Size(unsigned width, unsigned height) : width(width), height(height) {}
-  constexpr Size() = default;
-
-  constexpr bool operator==(const Size &other) const
-  {
-    return this->width == other.width && this->height == other.height;
-  }
-  constexpr bool operator!=(const Size &other) const
-  {
-    return this->width != other.width || this->height != other.height;
-  }
-  explicit       operator bool() const { return this->isValid(); }
-  constexpr bool isValid() const { return this->width > 0 && this->height > 0; }
-  unsigned       width{};
-  unsigned       height{};
-};
-
-struct Offset
-{
-  Offset(int x, int y) : x(x), y(y) {}
-  Offset() = default;
-  bool operator==(const Offset &other) const { return this->x == other.x && this->x == other.x; }
-  bool operator!=(const Offset &other) const { return this->x != other.x || this->y != other.y; }
-  int  x{};
-  int  y{};
-};
-
 // A list of value pair lists, where every list has a string (title)
 class ValuePairListSets : public QList<QPair<QString, QStringPairList>>
 {
