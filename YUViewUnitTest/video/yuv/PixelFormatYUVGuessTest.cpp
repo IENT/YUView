@@ -86,6 +86,7 @@ TEST_P(GuessYUVFormatFromFilenameFrameSizeFileSizeDataLayoutAndBitDepth, TestGue
     << parameters.fileInfoForGuess.fileSize.value_or(-1);
 }
 
+constexpr auto BYTES_IRRELEVANT      = 123;
 constexpr auto BYTES_1080P           = 1920 * 1080 * 3 * 6;      // 12 frames 420
 constexpr auto BYTES_720P            = 1280 * 720 * 3 * 6;       // 6 frames 444
 constexpr auto BYTES_720P_V210       = 1296u * 720 / 6 * 16 * 3; // 3 frames
@@ -192,7 +193,21 @@ INSTANTIATE_TEST_SUITE_P(
     TestParameters({FileInfoForGuess({"VisualAcuityLandolt_3840x2160_60fps_10bit_420p_BT709.yuv",
                                       "",
                                       BYTES_2160p_10bit_420}),
-                    PixelFormatYUV(Subsampling::YUV_420, 10)})
+                    PixelFormatYUV(Subsampling::YUV_420, 10)}),
+
+    // Files that do not indicate a frame size. Issue 663.
+    TestParameters({FileInfoForGuess({"sample_noResolution_something.raw", "", BYTES_IRRELEVANT}),
+                    PixelFormatYUV(Subsampling::YUV_400, 8)}),
+    TestParameters({FileInfoForGuess({"sample_noResolution_something.v210", "", BYTES_IRRELEVANT}),
+                    PixelFormatYUV(PredefinedPixelFormat::V210)}),
+    TestParameters({FileInfoForGuess({"sample_noResolution_something.V210", "", BYTES_IRRELEVANT}),
+                    PixelFormatYUV(PredefinedPixelFormat::V210)}),
+    TestParameters(
+      {FileInfoForGuess({"sample_noResolution_nv12_something.yuv", "", BYTES_IRRELEVANT}),
+       PixelFormatYUV(Subsampling::YUV_420, 8, PlaneOrder::YUV, false, {}, true)}),
+    TestParameters(
+      {FileInfoForGuess({"sample_noResolution_nv21_something.yuv", "", BYTES_IRRELEVANT}),
+       PixelFormatYUV(Subsampling::YUV_420, 8, PlaneOrder::YVU, false, {}, true)})
 
     // More tests please :)
 

@@ -42,6 +42,9 @@ using filesource::frameFormatGuess::GuessedFrameFormat;
 namespace video::yuv
 {
 
+namespace
+{
+
 Subsampling findSubsamplingTypeIndicatorInName(const std::string &name)
 {
   std::string matcher = "(?:_|\\.|-)(";
@@ -94,13 +97,13 @@ std::vector<Subsampling> getDetectionSubsamplingList(Subsampling subsamplingToFo
 }
 
 bool doesPixelFormatMatchFileSize(const PixelFormatYUV         &pixelFormat,
-                                  const Size                   &frameSize,
+                                  const std::optional<Size>    &frameSize,
                                   const std::optional<int64_t> &fileSize)
 {
-  if (!fileSize)
+  if (!fileSize || !frameSize)
     return true;
 
-  const auto bytesPerFrame = pixelFormat.bytesPerFrame(frameSize);
+  const auto bytesPerFrame = pixelFormat.bytesPerFrame(*frameSize);
   if (bytesPerFrame <= 0)
     return false;
 
@@ -145,7 +148,7 @@ PixelFormatYUV testFormatFromSizeAndNamePlanar(const std::string            &nam
               auto fmt = PixelFormatYUV(
                 subsampling, bitDepth, entry.second, endianness == "be", {}, interlaced);
               if (name.find(formatName.str()) != std::string::npos &&
-                  doesPixelFormatMatchFileSize(fmt, *guessedFrameFormat.frameSize, fileSize))
+                  doesPixelFormatMatchFileSize(fmt, guessedFrameFormat.frameSize, fileSize))
                 return fmt;
             }
 
@@ -160,7 +163,7 @@ PixelFormatYUV testFormatFromSizeAndNamePlanar(const std::string            &nam
               auto fmt = PixelFormatYUV(
                 subsampling, bitDepth, entry.second, endianness == "be", {}, interlaced);
               if (name.find(formatName.str()) != std::string::npos &&
-                  doesPixelFormatMatchFileSize(fmt, *guessedFrameFormat.frameSize, fileSize))
+                  doesPixelFormatMatchFileSize(fmt, guessedFrameFormat.frameSize, fileSize))
                 return fmt;
             }
           }
@@ -182,7 +185,7 @@ PixelFormatYUV testFormatFromSizeAndNamePacked(const std::string            &nam
   if (std::regex_search(name, sm, strExpr))
   {
     const auto fmt = PixelFormatYUV(PredefinedPixelFormat::V210);
-    if (doesPixelFormatMatchFileSize(fmt, *guessedFrameFormat.frameSize, fileSize))
+    if (doesPixelFormatMatchFileSize(fmt, guessedFrameFormat.frameSize, fileSize))
       return fmt;
   }
 
@@ -209,7 +212,7 @@ PixelFormatYUV testFormatFromSizeAndNamePacked(const std::string            &nam
               formatName << std::to_string(bitDepth) + endianness;
             auto fmt = PixelFormatYUV(subsampling, bitDepth, packing, false, endianness == "be");
             if (name.find(formatName.str()) != std::string::npos &&
-                doesPixelFormatMatchFileSize(fmt, *guessedFrameFormat.frameSize, fileSize))
+                doesPixelFormatMatchFileSize(fmt, guessedFrameFormat.frameSize, fileSize))
               return fmt;
           }
 
@@ -222,7 +225,7 @@ PixelFormatYUV testFormatFromSizeAndNamePacked(const std::string            &nam
               formatName << bitDepth << endianness;
             auto fmt = PixelFormatYUV(subsampling, bitDepth, packing, false, endianness == "be");
             if (name.find(formatName.str()) != std::string::npos &&
-                doesPixelFormatMatchFileSize(fmt, *guessedFrameFormat.frameSize, fileSize))
+                doesPixelFormatMatchFileSize(fmt, guessedFrameFormat.frameSize, fileSize))
               return fmt;
           }
         }
@@ -243,19 +246,15 @@ checkSpecificFileExtensions(const GuessedFrameFormat &guessedFrameFormat,
   {
     const auto rawBayerFormat =
       PixelFormatYUV(Subsampling::YUV_400, guessedFrameFormat.bitDepth.value_or(8));
-    if (!guessedFrameFormat.frameSize)
-      return rawBayerFormat;
     if (doesPixelFormatMatchFileSize(
-          rawBayerFormat, *guessedFrameFormat.frameSize, fileInfo.fileSize))
+          rawBayerFormat, guessedFrameFormat.frameSize, fileInfo.fileSize))
       return rawBayerFormat;
   }
 
   if (fileExtension == ".v210" || fileExtension == ".V210")
   {
     const auto v210Format = PixelFormatYUV(PredefinedPixelFormat::V210);
-    if (!guessedFrameFormat.frameSize)
-      return v210Format;
-    if (doesPixelFormatMatchFileSize(v210Format, *guessedFrameFormat.frameSize, fileInfo.fileSize))
+    if (doesPixelFormatMatchFileSize(v210Format, guessedFrameFormat.frameSize, fileInfo.fileSize))
       return v210Format;
   }
 
@@ -263,7 +262,7 @@ checkSpecificFileExtensions(const GuessedFrameFormat &guessedFrameFormat,
 }
 
 std::optional<PixelFormatYUV> checForNVIndicator(const std::string_view             name,
-                                                 const Size                        &frameSize,
+                                                 const std::optional<Size>         &frameSize,
                                                  const std::optional<std::int64_t> &fileSize)
 {
   if (name.find("nv12") != std::string::npos)
@@ -324,7 +323,7 @@ checkFFmpegPixelFormatNames(const std::string        &name,
   {
     // Check if the format and the file size match
     auto fmt = PixelFormatYUV(Subsampling::YUV_444, 16, PackingOrder::AYUV, false, false);
-    if (doesPixelFormatMatchFileSize(fmt, *guessedFrameFormat.frameSize, fileInfo.fileSize))
+    if (doesPixelFormatMatchFileSize(fmt, guessedFrameFormat.frameSize, fileInfo.fileSize))
       return fmt;
   }
 
@@ -334,7 +333,7 @@ checkFFmpegPixelFormatNames(const std::string        &name,
     if (name.find("gray" + std::to_string(bitDepth) + "le") != std::string::npos)
     {
       auto fmt = PixelFormatYUV(Subsampling::YUV_400, bitDepth);
-      if (doesPixelFormatMatchFileSize(fmt, *guessedFrameFormat.frameSize, fileInfo.fileSize))
+      if (doesPixelFormatMatchFileSize(fmt, guessedFrameFormat.frameSize, fileInfo.fileSize))
         return fmt;
     }
   }
@@ -367,7 +366,7 @@ checkForSubsamplingIndiatorInName(const std::string        &name,
           fmt = PixelFormatYUV(subsampling, bitDepth, PackingOrder::YUV);
         else
           fmt = PixelFormatYUV(subsampling, bitDepth, PlaneOrder::YUV);
-        if (doesPixelFormatMatchFileSize(fmt, *guessedFrameFormat.frameSize, fileInfo.fileSize))
+        if (doesPixelFormatMatchFileSize(fmt, guessedFrameFormat.frameSize, fileInfo.fileSize))
           return fmt;
       }
     }
@@ -393,7 +392,7 @@ std::optional<PixelFormatYUV> ignoreNameAndJustCheckIfSomeBasicFormatsMatchTheFi
     for (const auto bd : testBitDepths)
     {
       auto fmt = PixelFormatYUV(subsampling, bd, PlaneOrder::YUV);
-      if (doesPixelFormatMatchFileSize(fmt, *guessedFrameFormat.frameSize, fileInfo.fileSize))
+      if (doesPixelFormatMatchFileSize(fmt, guessedFrameFormat.frameSize, fileInfo.fileSize))
         return fmt;
     }
   }
@@ -401,10 +400,12 @@ std::optional<PixelFormatYUV> ignoreNameAndJustCheckIfSomeBasicFormatsMatchTheFi
   return {};
 }
 
+} // namespace
+
 PixelFormatYUV guessPixelFormatFromSizeAndName(const GuessedFrameFormat &guessedFrameFormat,
                                                const FileInfoForGuess   &fileInfo)
 {
-  if (!guessedFrameFormat.frameSize || fileInfo.filename.empty())
+  if (fileInfo.filename.empty())
     return {};
 
   if (const auto pixelFormat = checkSpecificFileExtensions(guessedFrameFormat, fileInfo))
@@ -414,7 +415,7 @@ PixelFormatYUV guessPixelFormatFromSizeAndName(const GuessedFrameFormat &guessed
        {functions::toLower(fileInfo.filename), functions::toLower(fileInfo.parentFolderName)})
   {
     if (const auto pixelFormat =
-          checForNVIndicator(name, *guessedFrameFormat.frameSize, fileInfo.fileSize))
+          checForNVIndicator(name, guessedFrameFormat.frameSize, fileInfo.fileSize))
       return *pixelFormat;
 
     if (const auto pixelFormat = checkFFmpegPixelFormatNames(name, guessedFrameFormat, fileInfo))
