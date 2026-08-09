@@ -37,7 +37,7 @@ struct Offset
   Offset() = default;
   Offset(int x, int y) : x(x), y(y) {}
 
-  bool operator==(const Offset &other) const { return this->x == other.x && this->x == other.x; }
+  bool operator==(const Offset &other) const { return this->x == other.x && this->y == other.y; }
   bool operator!=(const Offset &other) const { return this->x != other.x || this->y != other.y; }
 
   int x{};

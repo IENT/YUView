@@ -39,18 +39,18 @@ namespace common::test
 
 TEST(SizeTest, defaultConstruction)
 {
-  Size size();
+  Size size;
 
-  EXPECT_EQ(size.x, 0);
-  EXPECT_EQ(size.y, 0);
+  EXPECT_EQ(size.width, 0);
+  EXPECT_EQ(size.height, 0);
 }
 
 TEST(SizeTest, valueConstruction)
 {
   Size size(22, 43);
 
-  EXPECT_EQ(size.x, 22);
-  EXPECT_EQ(size.y, 43);
+  EXPECT_EQ(size.width, 22);
+  EXPECT_EQ(size.height, 43);
 }
 
 TEST(SizeTest, equalityTestForEqualSizes)
