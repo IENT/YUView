@@ -30,61 +30,64 @@
  *   along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#pragma once
-
-#include "FFMpegLibrariesTypes.h"
+#include <common/Testing.h>
 
 #include <common/Size.h>
-#include <common/Typedef.h>
 
-namespace FFmpeg
+namespace common::test
 {
 
-class AVFrameWrapper
+TEST(SizeTest, defaultConstruction)
 {
-public:
-  AVFrameWrapper() = default;
-  AVFrameWrapper(LibraryVersion libVersion, AVFrame *frame);
-  ~AVFrameWrapper() = default;
+  Size size();
 
-  void clear();
+  EXPECT_EQ(size.x, 0);
+  EXPECT_EQ(size.y, 0);
+}
 
-  uint8_t      *getData(int component);
-  int           getLineSize(int component);
-  AVFrame      *getFrame() const;
-  int           getWidth();
-  int           getHeight();
-  Size          getSize();
-  int           getPTS();
-  AVPictureType getPictType();
-  int           getKeyFrame();
-  AVDictionary *getMetadata();
+TEST(SizeTest, valueConstruction)
+{
+  Size size(22, 43);
 
-  explicit operator bool() const { return this->frame != nullptr; }
+  EXPECT_EQ(size.x, 22);
+  EXPECT_EQ(size.y, 43);
+}
 
-private:
-  void update();
+TEST(SizeTest, equalityTestForEqualSizes)
+{
+  Size size1(22, 43);
+  Size size2(22, 43);
+  EXPECT_TRUE(size1 == size2);
+  EXPECT_FALSE(size1 != size2);
 
-  // These are private. Use "update" to update them from the AVFormatContext
-  uint8_t      *data[AV_NUM_DATA_POINTERS]{};
-  int           linesize[AV_NUM_DATA_POINTERS]{};
-  int           width{};
-  int           height{};
-  int           nb_samples{};
-  int           format{};
-  int           key_frame{};
-  AVPictureType pict_type{};
-  AVRational    sample_aspect_ratio{};
-  int64_t       pts{};
-  int64_t       pkt_pts{};
-  int64_t       pkt_dts{};
-  int           coded_picture_number{};
-  int           display_picture_number{};
-  int           quality{};
-  AVDictionary *metadata{};
+  Size size3(0, 0);
+  Size size4;
+  EXPECT_TRUE(size3 == size4);
+  EXPECT_FALSE(size3 != size4);
+}
 
-  AVFrame       *frame{};
-  LibraryVersion libVer{};
-};
+TEST(SizeTest, equalityTestForUnequalSizes_widthDifferentWidth)
+{
+  Size size1(22, 44);
+  Size size2(222, 44);
+  EXPECT_TRUE(size1 != size2);
+  EXPECT_FALSE(size1 == size2);
+}
 
-} // namespace FFmpeg
+TEST(SizeTest, equalityTestForUnequalSizes_widthDifferentHeight)
+{
+  Size size1(22, 44);
+  Size size2(22, 444);
+  EXPECT_TRUE(size1 != size2);
+  EXPECT_FALSE(size1 == size2);
+}
+
+TEST(SizeTest, equalityTestForUnequalSizes_widthDifferentWidthAndHeight)
+{
+  Size size1(22, 44);
+  Size size2(222, 444);
+  EXPECT_TRUE(size1 != size2);
+  EXPECT_FALSE(size1 == size2);
+}
+
+} // namespace common::test
