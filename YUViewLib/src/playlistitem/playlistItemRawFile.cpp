@@ -457,15 +457,13 @@ void playlistItemRawFile::setFormatFromFileName()
   const auto frameFormat = filesource::frameFormatGuess::guessFrameFormat(fileInfoForGuess);
 
   if (frameFormat.frameSize)
-  {
     this->video->setFrameSize(*frameFormat.frameSize);
 
-    // We were able to extract width and height from the file name using
-    // regular expressions. Try to get the pixel format by checking with the file size.
-    this->video->guessAndSetPixelFormat(frameFormat, fileInfoForGuess);
-    if (frameFormat.frameRate)
-      this->prop.frameRate = *frameFormat.frameRate;
-  }
+  // Try to get the pixel format. If we know a frame size, we will check the format
+  // against the file size.
+  this->video->guessAndSetPixelFormat(frameFormat, fileInfoForGuess);
+  if (frameFormat.frameRate)
+    this->prop.frameRate = *frameFormat.frameRate;
 }
 
 void playlistItemRawFile::createPropertiesWidget()
