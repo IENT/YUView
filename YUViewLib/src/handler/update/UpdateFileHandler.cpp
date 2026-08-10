@@ -30,7 +30,7 @@
 *   along with this program. If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "UpdateHandlerFile.h"
+#include "UpdateFileHandler.h"
 
 #include <QFileInfo>
 #include <QTextStream>
@@ -43,31 +43,31 @@
 #define DEBUG_UPDATE_FILE(msg) ((void)0)
 #endif
 
-const auto UPDATEFILEHANDLER_FILE_NAME = "versioninfo.txt";
+const auto UpdateFileHandler_FILE_NAME = "versioninfo.txt";
 
-updateFileHandler::updateFileHandler()
+UpdateFileHandler::UpdateFileHandler()
 {}
 
-updateFileHandler::updateFileHandler(QString fileName, QString updatePath) : 
+UpdateFileHandler::UpdateFileHandler(QString fileName, QString updatePath) : 
   updatePath(updatePath) 
 { 
   this->readFromFile(fileName); 
 }
 
-updateFileHandler::updateFileHandler(QByteArray &byteArray)
+UpdateFileHandler::UpdateFileHandler(QByteArray &byteArray)
 { 
   this->readRemoteFromData(byteArray); 
 }
 
-void updateFileHandler::readFromFile(QString fileName)
+void UpdateFileHandler::readFromFile(QString fileName)
 {
-  DEBUG_UPDATE_FILE("updateFileHandler::readFromFile Current working dir " << this->updatePath);
+  DEBUG_UPDATE_FILE("UpdateFileHandler::readFromFile Current working dir " << this->updatePath);
 
   // Open the file and get all files and their current version (int) from the file.
   QFileInfo updateFileInfo(fileName);
   if (!updateFileInfo.exists() || !updateFileInfo.isFile())
   {
-    DEBUG_UPDATE_FILE("updateFileHandler::readFromFile local update file " << fileName << " not found");
+    DEBUG_UPDATE_FILE("UpdateFileHandler::readFromFile local update file " << fileName << " not found");
     return;
   }
 
@@ -87,7 +87,7 @@ void updateFileHandler::readFromFile(QString fileName)
   this->loaded = true;
 }
   
-void updateFileHandler::readRemoteFromData(QByteArray &arr)
+void UpdateFileHandler::readRemoteFromData(QByteArray &arr)
 {
   const QString reply = QString(arr);
   const QStringList lines = reply.split("\n");
@@ -95,13 +95,13 @@ void updateFileHandler::readRemoteFromData(QByteArray &arr)
     this->parseOneLine(line);
 }
 
-void updateFileHandler::parseOneLine(QString &line, bool checkExistence)
+void UpdateFileHandler::parseOneLine(QString &line, bool checkExistence)
 {
   QStringList lineSplit = line.split(" ");
   if (line.startsWith("Last Commit"))
   {
     if (line.startsWith("Last Commit: "))
-      DEBUG_UPDATE_FILE("updateFileHandler::parseOneLine Local file last commit: " << lineSplit[2]);
+      DEBUG_UPDATE_FILE("UpdateFileHandler::parseOneLine Local file last commit: " << lineSplit[2]);
     return;
   }
   // Ignore all lines that start with %, / or #
@@ -120,7 +120,7 @@ void updateFileHandler::parseOneLine(QString &line, bool checkExistence)
       else
         // The file does not exist locally. That is strange since it is in the update info file.
         // Files that do not exist locally should always be downloaded so we don't put them into the list.
-        DEBUG_UPDATE_FILE("updateFileHandler::parseOneLine The local file " << fInfo.absoluteFilePath() << " could not be found.");
+        DEBUG_UPDATE_FILE("UpdateFileHandler::parseOneLine The local file " << fInfo.absoluteFilePath() << " could not be found.");
     }
     else
       // Do not check if the file exists
@@ -128,7 +128,7 @@ void updateFileHandler::parseOneLine(QString &line, bool checkExistence)
   }
 }
   
-QList<downloadFile> updateFileHandler::getFilesToUpdate(updateFileHandler &localFiles) const
+QList<downloadFile> UpdateFileHandler::getFilesToUpdate(UpdateFileHandler &localFiles) const
 {
   QList<downloadFile> updateList;
   for (auto remoteFile : this->updateFileList)
@@ -149,11 +149,11 @@ QList<downloadFile> updateFileHandler::getFilesToUpdate(updateFileHandler &local
       updateList.append(downloadFile(remoteFile.filePath, remoteFile.fileSize));
   }
   // No matter what, we will update the "versioninfo.txt" file (assume it to be 10kbyte)
-  updateList.append(downloadFile(UPDATEFILEHANDLER_FILE_NAME, 10000));
+  updateList.append(downloadFile(UpdateFileHandler_FILE_NAME, 10000));
   return updateList;
 }
 
-QString updateFileHandler::getInfo() const
+QString UpdateFileHandler::getInfo() const
 {
   QString s;
   for (auto f : this->updateFileList)
@@ -163,7 +163,7 @@ QString updateFileHandler::getInfo() const
   return s;
 }
 
-updateFileHandler::fileListEntry updateFileHandler::createFileEntry(QStringList &lineSplit) const
+UpdateFileHandler::fileListEntry UpdateFileHandler::createFileEntry(QStringList &lineSplit) const
 {
   fileListEntry entry;
   

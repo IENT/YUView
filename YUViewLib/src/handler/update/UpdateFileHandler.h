@@ -39,12 +39,12 @@
 
 typedef QPair<QString, int> downloadFile;
 
-class updateFileHandler
+class UpdateFileHandler
 {
 public:
-  updateFileHandler();
-  updateFileHandler(QString fileName, QString updatePath);
-  updateFileHandler(QByteArray &byteArray);
+  UpdateFileHandler();
+  UpdateFileHandler(QString fileName, QString updatePath);
+  UpdateFileHandler(QByteArray &byteArray);
 
   // Parse the local file list and add all files that exist locally to the list of files
   // which potentially might require an update.
@@ -60,7 +60,7 @@ public:
 
   // Call this on the remote file list with a reference to the local file list to get a list
   // of files that require an update (that need to be downloaded).
-  QList<downloadFile> getFilesToUpdate(updateFileHandler &localFiles) const;
+  QList<downloadFile> getFilesToUpdate(UpdateFileHandler &localFiles) const;
 
   QString getInfo() const;
 

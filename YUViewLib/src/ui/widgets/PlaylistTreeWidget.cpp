@@ -853,10 +853,10 @@ void PlaylistTreeWidget::savePlaylistToFile()
   QFile file(filename);
   if (!file.open(QIODevice::WriteOnly | QIODevice::Text))
   {
-    QMessageBox::warning(this,
-                         tr("Save Playlist"),
-                         tr("Could not save playlist to \"%1\": %2")
-                           .arg(filename, file.errorString()));
+    QMessageBox::warning(
+      this,
+      tr("Save Playlist"),
+      tr("Could not save playlist to \"%1\": %2").arg(filename, file.errorString()));
     return;
   }
   QTextStream outStream(&file);
