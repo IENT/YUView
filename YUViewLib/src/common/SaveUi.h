@@ -32,7 +32,6 @@
 
 #pragma once
 
-#include <QLabel>
 #include <QLayout>
 #include <QLayoutItem>
 #include <QObject>

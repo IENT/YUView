@@ -38,7 +38,7 @@
 namespace filesource::frameFormatGuess::test
 {
 
-static std::string formatFileInfoForGuessForTestName(const FileInfoForGuess &fileInfoForGuess)
+inline std::string formatFileInfoForGuessForTestName(const FileInfoForGuess &fileInfoForGuess)
 {
   return yuviewTest::formatTestName("Filename",
                                     fileInfoForGuess.filename,
@@ -48,7 +48,7 @@ static std::string formatFileInfoForGuessForTestName(const FileInfoForGuess &fil
                                     fileInfoForGuess.fileSize);
 }
 
-static std::string formatGuessedFrameFormatForTestName(const GuessedFrameFormat &guessedFrameFormat)
+inline std::string formatGuessedFrameFormatForTestName(const GuessedFrameFormat &guessedFrameFormat)
 {
   auto name = yuviewTest::formatTestName("frameSize",
                                          guessedFrameFormat.frameSize,
