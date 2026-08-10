@@ -1,4 +1,4 @@
-QT += core xml 
+QT += core xml widgets
 
 TARGET = YUViewUnitTest
 TEMPLATE = app
@@ -23,7 +23,8 @@ SOURCES -= \
 INCLUDEPATH += $$top_srcdir/submodules/googletest/googletest/include \
                $$top_srcdir/submodules/googletest/googlemock/include \
                $$top_srcdir/YUViewLib/src \
-               $$top_srcdir/YUViewUnitTest/common
+               $$top_srcdir/YUViewUnitTest/common \
+               $$top_builddir/YUViewLib
 LIBS += -L$$top_builddir/submodules/googletest-qmake/gtest -lgtest
 LIBS += -L$$top_builddir/submodules/googletest-qmake/gtest_main -lgtest_main
 LIBS += -L$$top_builddir/YUViewLib -lYUViewLib
