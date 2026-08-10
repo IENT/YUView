@@ -91,6 +91,9 @@ public:
     // Draw the cached frames
     auto frameList = plItem->getCachedFrames();
     auto range     = plItem->properties().startEndRange;
+    if (range.second <= 0)
+      return;
+
     if (frameList.count() > 0)
     {
       int lastPos = frameList[0];
@@ -170,39 +173,52 @@ PlaylistTreeWidget::~PlaylistTreeWidget()
 
 playlistItem *PlaylistTreeWidget::getDropTarget(const QPoint &pos) const
 {
-  auto pItem = dynamic_cast<playlistItem *>(this->itemAt(pos));
-  if (pItem != nullptr)
-  {
-    // check if dropped on or below/above pItem
-    auto rc    = this->visualItemRect(pItem);
-    auto rcNew = QRect(rc.left(), rc.top() + 2, rc.width(), rc.height() - 4);
-    if (!rcNew.contains(pos, true))
-      // dropped next to pItem
-      pItem = nullptr;
-  }
+  auto item = dynamic_cast<playlistItem *>(this->itemAt(pos));
+  if (!item)
+    return {};
 
-  return pItem;
+  // check if dropped on or below/above pItem
+  auto rc    = this->visualItemRect(item);
+  auto rcNew = QRect(rc.left(), rc.top() + 2, rc.width(), rc.height() - 4);
+  if (!rcNew.contains(pos, true))
+    // dropped next to item
+    return nullptr;
+
+  return item;
 }
 
 void PlaylistTreeWidget::dragMoveEvent(QDragMoveEvent *event)
 {
 #if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
-  auto dropTarget = this->getDropTarget(event->position().toPoint());
+  const auto dropTarget = this->getDropTarget(event->position().toPoint());
 #else
-  auto dropTarget = getDropTarget(event->pos());
+  const auto dropTarget = getDropTarget(event->pos());
 #endif
-  if (dropTarget)
-  {
-    auto draggedItems = selectedItems();
-    auto draggedItem  = dynamic_cast<playlistItem *>(draggedItems[0]);
 
-    // handle video items as target
-    if (!dropTarget->acceptDrops(draggedItem))
-    {
-      // no valid drop
-      event->ignore();
-      return;
-    }
+  if (!dropTarget)
+  {
+    event->ignore();
+    return;
+  }
+
+  const auto draggedItems = this->selectedItems();
+  if (draggedItems.empty())
+  {
+    event->ignore();
+    return;
+  }
+
+  const auto draggedItem = dynamic_cast<playlistItem *>(draggedItems[0]);
+  if (!draggedItem)
+  {
+    event->ignore();
+    return;
+  }
+
+  if (!dropTarget->acceptDrops(draggedItem))
+  {
+    event->ignore();
+    return;
   }
 
   QTreeWidget::dragMoveEvent(event);
@@ -236,19 +252,14 @@ void PlaylistTreeWidget::dropEvent(QDropEvent *event)
   }
   else
   {
-    // get the list of the items that are about to be dragged
-    QList<QTreeWidgetItem *> dragItems = selectedItems();
-
-    // Actually move all the items
     QTreeWidget::dropEvent(event);
 
     // Query the selected items that were dropped and add a new bufferStatusWidget
     // for each of them. The old bufferStatusWidget will be deleted by the tree widget.
     QList<int> toRows;
-    for (QTreeWidgetItem *item : dragItems)
+    for (auto item : selectedItems())
     {
-      playlistItem *plItem = dynamic_cast<playlistItem *>(item);
-      if (plItem)
+      if (const auto plItem = dynamic_cast<playlistItem *>(item))
         setItemWidget(item, 1, new bufferStatusWidget(plItem, this));
     }
 
@@ -275,9 +286,9 @@ void PlaylistTreeWidget::updateAllContainterItems()
 {
   for (int i = 0; i < topLevelItemCount(); i++)
   {
-    QTreeWidgetItem *      item          = topLevelItem(i);
-    playlistItemContainer *containerItem = dynamic_cast<playlistItemContainer *>(item);
-    if (containerItem != nullptr)
+    auto item          = topLevelItem(i);
+    auto containerItem = dynamic_cast<playlistItemContainer *>(item);
+    if (containerItem)
       containerItem->updateChildItems();
   }
 }
@@ -303,8 +314,8 @@ void PlaylistTreeWidget::addDifferenceItem()
   QVector<QTreeWidgetItem *> selection;
   for (int i = 0; i < this->selectedItems().count(); i++)
   {
-    auto item = dynamic_cast<playlistItem *>(this->selectedItems()[i]);
-    if (item->canBeUsedInProcessing())
+    auto plItem = dynamic_cast<playlistItem *>(this->selectedItems()[i]);
+    if (plItem && plItem->canBeUsedInProcessing())
       selection.append(this->selectedItems()[i]);
   }
 
@@ -349,7 +360,7 @@ void PlaylistTreeWidget::addResampleItem()
   for (int i = 0; i < this->selectedItems().count(); i++)
   {
     auto item = dynamic_cast<playlistItem *>(this->selectedItems()[i]);
-    if (item->canBeUsedInProcessing())
+    if (item && item->canBeUsedInProcessing())
       selection.append(this->selectedItems()[i]);
   }
 
@@ -391,8 +402,7 @@ void PlaylistTreeWidget::addOverlayItem()
   QList<QTreeWidgetItem *> selection;
   for (int i = 0; i < selectedItems().count(); i++)
   {
-    playlistItem *item = dynamic_cast<playlistItem *>(selectedItems()[i]);
-    if (item)
+    if (const auto plItem = dynamic_cast<playlistItem *>(selectedItems()[i]))
       selection.append(selectedItems()[i]);
   }
 
@@ -502,8 +512,8 @@ void PlaylistTreeWidget::slotItemChanged(bool redraw, recacheIndicator recache)
 
   if (recache != RECACHE_NONE)
   {
-    playlistItem *senderItem = dynamic_cast<playlistItem *>(sender);
-    emit          signalItemRecache(senderItem, recache);
+    auto senderItem = dynamic_cast<playlistItem *>(sender);
+    emit signalItemRecache(senderItem, recache);
   }
 }
 
@@ -657,7 +667,7 @@ void PlaylistTreeWidget::deletePlaylistItems(bool deleteAllItems)
   QList<playlistItem *> unfoldedItemList;
   for (playlistItem *plItem : itemList)
   {
-    playlistItemContainer *containerItem = dynamic_cast<playlistItemContainer *>(plItem);
+    auto containerItem = dynamic_cast<playlistItemContainer *>(plItem);
     if (containerItem)
     {
       // Add all children (if not yet in the list)
@@ -684,8 +694,7 @@ void PlaylistTreeWidget::deletePlaylistItems(bool deleteAllItems)
 
     // If the item is in a container item we have to inform the container that the item will be
     // deleted.
-    playlistItem *parentItem = plItem->parentPlaylistItem();
-    if (parentItem)
+    if (auto parentItem = plItem->parentPlaylistItem())
       parentItem->itemAboutToBeDeleted(plItem);
     else
     {
@@ -802,7 +811,7 @@ QString PlaylistTreeWidget::getPlaylistString(QDir dirName)
   // Create the XML document structure
   QDomDocument document;
   document.appendChild(document.createProcessingInstruction(
-      QStringLiteral("xml"), QStringLiteral("version=\"1.0\" encoding=\"UTF-8\"")));
+    QStringLiteral("xml"), QStringLiteral("version=\"1.0\" encoding=\"UTF-8\"")));
   QDomElement plist = document.createElement(QStringLiteral("playlistItems"));
   plist.setAttribute(QStringLiteral("version"), QStringLiteral("2.0"));
   document.appendChild(plist);
@@ -810,10 +819,8 @@ QString PlaylistTreeWidget::getPlaylistString(QDir dirName)
   // Append all the playlist items to the output
   for (int i = 0; i < topLevelItemCount(); ++i)
   {
-    QTreeWidgetItem *item   = topLevelItem(i);
-    playlistItem *   plItem = dynamic_cast<playlistItem *>(item);
-
-    plItem->savePlaylist(plist, dirName);
+    if (auto plItm = dynamic_cast<playlistItem *>(topLevelItem(i)))
+      plItm->savePlaylist(plist, dirName);
   }
 
   // Append the view states
@@ -844,7 +851,14 @@ void PlaylistTreeWidget::savePlaylistToFile()
 
   // Write the XML structure to file
   QFile file(filename);
-  file.open(QIODevice::WriteOnly | QIODevice::Text);
+  if (!file.open(QIODevice::WriteOnly | QIODevice::Text))
+  {
+    QMessageBox::warning(this,
+                         tr("Save Playlist"),
+                         tr("Could not save playlist to \"%1\": %2")
+                           .arg(filename, file.errorString()));
+    return;
+  }
   QTextStream outStream(&file);
   outStream << getPlaylistString(dirName);
   file.close();
@@ -904,7 +918,7 @@ bool PlaylistTreeWidget::loadPlaylistFromByteArray(QByteArray data, QString file
     QMessageBox::critical(this,
                           "Error loading playlist.",
                           errorMessage +
-                              QString(" in line/column %1/%2").arg(errorLine).arg(errorColumn));
+                            QString(" in line/column %1/%2").arg(errorLine).arg(errorColumn));
     return false;
   }
 
@@ -916,16 +930,16 @@ bool PlaylistTreeWidget::loadPlaylistFromByteArray(QByteArray data, QString file
   {
     // This is a playlist file in the old format. This is not supported anymore.
     QMessageBox::critical(
-        this,
-        "Error loading playlist.",
-        "The given playlist file seems to be in the old XML format. The playlist format was "
-        "changed a while back and the old format is no longer supported.");
+      this,
+      "Error loading playlist.",
+      "The given playlist file seems to be in the old XML format. The playlist format was "
+      "changed a while back and the old format is no longer supported.");
     return false;
   }
   if (root.tagName() != "playlistItems" || root.attribute("version") != "2.0")
   {
     QMessageBox::critical(
-        this, "Error loading playlist.", "The playlist file format could not be recognized.");
+      this, "Error loading playlist.", "The playlist file format could not be recognized.");
     return false;
   }
 
@@ -969,28 +983,26 @@ void PlaylistTreeWidget::checkAndUpdateItems()
   for (int i = 0; i < topLevelItemCount(); ++i)
   {
     auto plItem = dynamic_cast<playlistItem *>(this->topLevelItem(i));
-
-    // Check (and reset) the flag if the source was changed.
-    if (plItem->isSourceChanged())
+    if (plItem && plItem->isSourceChanged())
       changedItems.push_back(plItem);
   }
 
   if (!changedItems.empty())
   {
     auto ret =
-        QMessageBox::question(parentWidget(),
-                              "Item changed",
-                              "The source of one or more currently loaded items has changed. "
-                              "Do you want to reload the item(s)?");
+      QMessageBox::question(parentWidget(),
+                            "Item changed",
+                            "The source of one or more currently loaded items has changed. "
+                            "Do you want to reload the item(s)?");
     if (ret != QMessageBox::Yes)
     {
       ret = QMessageBox::question(
-          parentWidget(),
-          "Item changed",
-          "It is really recommended to reload the changed items. YUView does not always buffer all "
-          "data from the items. We can not guarantee that the data you are shown is correct "
-          "anymore. For the shown values, there is no indication if they are old or new. Parsing "
-          "of statistics files may fail. So again:  Do you want to reload the item(s)?");
+        parentWidget(),
+        "Item changed",
+        "It is really recommended to reload the changed items. YUView does not always buffer all "
+        "data from the items. We can not guarantee that the data you are shown is correct "
+        "anymore. For the shown values, there is no indication if they are old or new. Parsing "
+        "of statistics files may fail. So again:  Do you want to reload the item(s)?");
       if (ret != QMessageBox::Yes)
         return; // Really no
     }
@@ -1004,8 +1016,8 @@ void PlaylistTreeWidget::updateSettings()
 {
   for (int i = 0; i < this->topLevelItemCount(); ++i)
   {
-    auto plItem = dynamic_cast<playlistItem *>(this->topLevelItem(i));
-    plItem->updateSettings();
+    if (auto plItem = dynamic_cast<playlistItem *>(this->topLevelItem(i)))
+      plItem->updateSettings();
   }
 }
 
@@ -1121,15 +1133,12 @@ QList<playlistItem *> PlaylistTreeWidget::getAllPlaylistItems(const bool topLeve
   QList<playlistItem *> returnList;
   for (int i = 0; i < topLevelItemCount(); i++)
   {
-    QTreeWidgetItem *item   = topLevelItem(i);
-    playlistItem *   plItem = dynamic_cast<playlistItem *>(item);
-    if (plItem != nullptr)
+    if (auto plItem = dynamic_cast<playlistItem *>(topLevelItem(i)))
     {
       returnList.append(plItem);
       if (!topLevelOnly)
       {
-        playlistItemContainer *container = dynamic_cast<playlistItemContainer *>(plItem);
-        if (container)
+        if (auto container = dynamic_cast<playlistItemContainer *>(plItem))
           returnList.append(container->getAllChildPlaylistItems());
       }
     }

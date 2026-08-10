@@ -108,6 +108,5 @@ void setupUi(void *ui, void (*setupUi)(void *ui, QWidget *widget));
 
 // Return the icon/pixmap from the given file path (inverted if necessary)
 QIcon   convertIcon(QString iconPath);
-QPixmap convertPixmap(QString pixmapPath);
 
 } // namespace functionsGui

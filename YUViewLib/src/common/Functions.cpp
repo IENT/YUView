@@ -198,6 +198,32 @@ std::string toLower(const std::string_view str)
   return lowercaseStr;
 }
 
+std::vector<std::string_view> splitString(const std::string_view str, const char delimiter)
+{
+  std::vector<std::string_view> result;
+  size_t                        start = 0;
+  size_t                        end   = str.find(delimiter);
+  while (end != std::string_view::npos)
+  {
+    result.emplace_back(str.substr(start, end - start));
+    start = end + 1;
+    end   = str.find(delimiter, start);
+  }
+  if (start != str.size())
+    result.emplace_back(str.substr(start));
+  return result;
+}
+
+std::string_view stripWhitespace(std::string_view str)
+{
+  str.remove_prefix(std::min(str.find_first_not_of(" "), str.size()));
+
+  const auto lastNonWhitespace = str.find_last_not_of(" ");
+  if (lastNonWhitespace != std::string_view::npos)
+    str.remove_suffix(str.size() - lastNonWhitespace - 1);
+  return str;
+}
+
 ByteVector readData(std::istream &istream, const size_t nrBytes)
 {
   ByteVector data;
@@ -211,11 +237,12 @@ ByteVector readData(std::istream &istream, const size_t nrBytes)
 std::optional<unsigned> toUnsigned(const std::string_view text)
 {
   unsigned   value{};
-  const auto result = std::from_chars(text.data(), text.data() + text.size(), value);
+  const auto endPointer = text.data() + text.size();
+  const auto result     = std::from_chars(text.data(), endPointer, value);
 
   if (result.ec != std::errc())
     return {};
-  const auto allCharactersParsed = (result.ptr == &(*text.end()));
+  const auto allCharactersParsed = (result.ptr == endPointer);
   if (!allCharactersParsed)
     return {};
 
@@ -225,11 +252,12 @@ std::optional<unsigned> toUnsigned(const std::string_view text)
 std::optional<int> toInt(const std::string_view text)
 {
   int        value{};
-  const auto result = std::from_chars(text.data(), text.data() + text.size(), value);
+  const auto endPointer = text.data() + text.size();
+  const auto result     = std::from_chars(text.data(), endPointer, value);
 
   if (result.ec != std::errc())
     return {};
-  const auto allCharactersParsed = (result.ptr == &(*text.end()));
+  const auto allCharactersParsed = (result.ptr == endPointer);
   if (!allCharactersParsed)
     return {};
 

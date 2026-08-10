@@ -35,10 +35,12 @@
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
+#include <common/Size.h>
 #include <common/Typedef.h>
 
 using ::testing::Bool;
 using ::testing::Combine;
+using ::testing::ConvertGenerator;
 using ::testing::ElementsAre;
 using ::testing::TestWithParam;
 using ::testing::Values;

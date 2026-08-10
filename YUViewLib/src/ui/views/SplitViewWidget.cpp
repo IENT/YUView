@@ -100,7 +100,7 @@ splitViewWidget::splitViewWidget(QWidget *parent) : MoveAndZoomableView(parent)
   setContextMenuPolicy(Qt::PreventContextMenu);
 
   // No test running yet
-  connect(&testProgrssUpdateTimer, &QTimer::timeout, this, [=] { updateTestProgress(); });
+  connect(&testProgrssUpdateTimer, &QTimer::timeout, this, [this] { updateTestProgress(); });
 
   // Initialize the font and the position of the zoom factor indication
   zoomFactorFont = QFont(SPLITVIEWWIDGET_ZOOMFACTOR_FONT, SPLITVIEWWIDGET_ZOOMFACTOR_FONTSIZE);
@@ -235,7 +235,7 @@ void splitViewWidget::paintEvent(QPaintEvent *)
   // For the zoom box, calculate the pixel position under the cursor for each view. The following
   // things are calculated in this function:
   bool  pixelPosInItem[2] = {false,
-                            false}; //< Is the pixel position under the cursor within the item?
+                             false}; //< Is the pixel position under the cursor within the item?
   QRect zoomPixelRect[2];            //< A QRect around the pixel that is under the cursor
   if (anyItemsSelected && this->drawZoomBox)
   {
@@ -250,10 +250,10 @@ void splitViewWidget::paintEvent(QPaintEvent *)
       itemSize[1] = item[view]->getSize().height();
 
       // Is the pixel under the cursor within the item?
-      pixelPosInItem[view] = (zoomBoxPixelUnderCursor[view].x() >= 0 &&
-                              zoomBoxPixelUnderCursor[view].x() < itemSize[0]) &&
-                             (zoomBoxPixelUnderCursor[view].y() >= 0 &&
-                              zoomBoxPixelUnderCursor[view].y() < itemSize[1]);
+      pixelPosInItem[view] =
+        (zoomBoxPixelUnderCursor[view].x() >= 0 &&
+         zoomBoxPixelUnderCursor[view].x() < itemSize[0]) &&
+        (zoomBoxPixelUnderCursor[view].y() >= 0 && zoomBoxPixelUnderCursor[view].y() < itemSize[1]);
 
       // Mark the pixel under the cursor with a rectangle around it.
       if (pixelPosInItem[view])
@@ -270,9 +270,9 @@ void splitViewWidget::paintEvent(QPaintEvent *)
   {
     QStringPair itemNamesToDraw = determineItemNamesToDraw(item[0], item[1]);
     const bool  drawItemNames =
-        (drawItemPathAndNameEnabled && item[0] != nullptr && item[1] != nullptr &&
-         !itemNamesToDraw.first.isEmpty() && !itemNamesToDraw.second.isEmpty() &&
-         item[0]->properties().isFileSource && item[1]->properties().isFileSource);
+      (drawItemPathAndNameEnabled && item[0] != nullptr && item[1] != nullptr &&
+       !itemNamesToDraw.first.isEmpty() && !itemNamesToDraw.second.isEmpty() &&
+       item[0]->properties().isFileSource && item[1]->properties().isFileSource);
 
     // Draw two items (or less, if less items are selected)
     if (item[0])
@@ -288,7 +288,7 @@ void splitViewWidget::paintEvent(QPaintEvent *)
       if (!waitingForCaching)
       {
         painter.setFont(
-            QFont(SPLITVIEWWIDGET_PIXEL_VALUES_FONT, SPLITVIEWWIDGET_PIXEL_VALUES_FONTSIZE));
+          QFont(SPLITVIEWWIDGET_PIXEL_VALUES_FONT, SPLITVIEWWIDGET_PIXEL_VALUES_FONTSIZE));
         item[0]->drawItem(&painter, frame, zoom, drawRawValues);
       }
 
@@ -344,7 +344,7 @@ void splitViewWidget::paintEvent(QPaintEvent *)
       if (!waitingForCaching)
       {
         painter.setFont(
-            QFont(SPLITVIEWWIDGET_PIXEL_VALUES_FONT, SPLITVIEWWIDGET_PIXEL_VALUES_FONTSIZE));
+          QFont(SPLITVIEWWIDGET_PIXEL_VALUES_FONT, SPLITVIEWWIDGET_PIXEL_VALUES_FONTSIZE));
         item[1]->drawItem(&painter, frame, zoom, drawRawValues);
       }
 
@@ -381,13 +381,13 @@ void splitViewWidget::paintEvent(QPaintEvent *)
       // is not identical.
       if (item[0]->getSize().height() != item[1]->getSize().height())
         paintPixelRulersY(
-            painter, item[1], drawArea_botR.y(), xSplit, zoom, centerPoints[1], offset);
+          painter, item[1], drawArea_botR.y(), xSplit, zoom, centerPoints[1], offset);
 
       // Draw the "loading" message (if needed)
       drawingLoadingMessage[1] = (!playing && item[1]->isLoading());
       if (drawingLoadingMessage[1])
         drawLoadingMessage(
-            &painter, QPoint(xSplit + (drawArea_botR.x() - xSplit) / 2, drawArea_botR.y() / 2));
+          &painter, QPoint(xSplit + (drawArea_botR.x() - xSplit) / 2, drawArea_botR.y() / 2));
 
       if (drawItemNames)
         drawItemPathAndName(&painter, xSplit, drawArea_botR.x() - xSplit, itemNamesToDraw.second);
@@ -409,7 +409,7 @@ void splitViewWidget::paintEvent(QPaintEvent *)
       if (!waitingForCaching)
       {
         painter.setFont(
-            QFont(SPLITVIEWWIDGET_PIXEL_VALUES_FONT, SPLITVIEWWIDGET_PIXEL_VALUES_FONTSIZE));
+          QFont(SPLITVIEWWIDGET_PIXEL_VALUES_FONT, SPLITVIEWWIDGET_PIXEL_VALUES_FONTSIZE));
         item[0]->drawItem(&painter, frame, zoom, drawRawValues);
       }
 
@@ -562,7 +562,7 @@ void splitViewWidget::updatePixelPositions()
     // true=right)
     const auto xSplit = int(drawAreaBotR.x() * splittingPoint);
     const bool mouseInLeftOrRightView =
-        (isSplitting() && (this->zoomBoxMousePosition.x() > xSplit));
+      (isSplitting() && (this->zoomBoxMousePosition.x() > xSplit));
 
     // The absolute center point of the item under the cursor
     const auto itemCenterMousePos = (mouseInLeftOrRightView) ? centerPoints[1] + this->moveOffset
@@ -570,8 +570,8 @@ void splitViewWidget::updatePixelPositions()
 
     // The difference in the item under the mouse (normalized by zoom factor)
     double diffInItem[2] = {
-        (double)(itemCenterMousePos.x() - this->zoomBoxMousePosition.x()) / this->zoomFactor + 0.5,
-        (double)(itemCenterMousePos.y() - this->zoomBoxMousePosition.y()) / this->zoomFactor + 0.5};
+      (double)(itemCenterMousePos.x() - this->zoomBoxMousePosition.x()) / this->zoomFactor + 0.5,
+      (double)(itemCenterMousePos.y() - this->zoomBoxMousePosition.y()) / this->zoomFactor + 0.5};
 
     // We now have the pixel difference value for the item under the cursor.
     // We now draw one zoom box per view
@@ -617,7 +617,7 @@ void splitViewWidget::setZoomBoxPixelUnderCursor(QPoint posA,
 }
 
 void splitViewWidget::paintZoomBox(int           view,
-                                   QPainter &    painter,
+                                   QPainter     &painter,
                                    int           xSplit,
                                    const QPoint &drawArea_botR,
                                    playlistItem *item,
@@ -707,8 +707,8 @@ void splitViewWidget::paintZoomBox(int           view,
                                       "<tr><td>X:</td><td align=\"right\">%1</td></tr>"
                                       "<tr><td>Y:</td><td align=\"right\">%2</td></tr>"
                                       "</table>")
-                                  .arg(pixelPos.x())
-                                  .arg(pixelPos.y());
+                                .arg(pixelPos.x())
+                                .arg(pixelPos.y());
 
     // If the pixel position is within the item, append information on the pixel vale
     if (pixelPosInItem)
@@ -723,10 +723,9 @@ void splitViewWidget::paintZoomBox(int           view,
           pixelInfoString.append(QString("<h4>%1</h4><table width=\"100%\">").arg(title));
           for (int j = 0; j < pixelValues.size(); ++j)
             pixelInfoString.append(
-                QString(
-                    "<tr><td><nobr>%1:</nobr></td><td align=\"right\"><nobr>%2</nobr></td></tr>")
-                    .arg(pixelValues[j].first)
-                    .arg(pixelValues[j].second));
+              QString("<tr><td><nobr>%1:</nobr></td><td align=\"right\"><nobr>%2</nobr></td></tr>")
+                .arg(pixelValues[j].first)
+                .arg(pixelValues[j].second));
           pixelInfoString.append("</table>");
         }
     }
@@ -740,12 +739,12 @@ void splitViewWidget::paintZoomBox(int           view,
     // Translate to the position where the text box shall be
     if (view == 0 && isSplitting())
       painter.translate(
-          xSplit - margin - zoomBoxSize - textDocument.size().width() - padding * 2 + 1,
-          drawArea_botR.y() - margin - textDocument.size().height() - padding * 2 + 1);
+        xSplit - margin - zoomBoxSize - textDocument.size().width() - padding * 2 + 1,
+        drawArea_botR.y() - margin - textDocument.size().height() - padding * 2 + 1);
     else
       painter.translate(
-          drawArea_botR.x() - margin - zoomBoxSize - textDocument.size().width() - padding * 2 + 1,
-          drawArea_botR.y() - margin - textDocument.size().height() - padding * 2 + 1);
+        drawArea_botR.x() - margin - zoomBoxSize - textDocument.size().width() - padding * 2 + 1,
+        drawArea_botR.y() - margin - textDocument.size().height() - padding * 2 + 1);
 
     // Draw a black rectangle and then the text on top of that
     QRect  rect(QPoint(0, 0), textDocument.size().toSize() + QSize(2 * padding, 2 * padding));
@@ -803,7 +802,7 @@ void splitViewWidget::paintRegularGrid(QPainter *painter, playlistItem *item)
   }
 }
 
-void splitViewWidget::paintPixelRulersX(QPainter &    painter,
+void splitViewWidget::paintPixelRulersX(QPainter     &painter,
                                         playlistItem *item,
                                         int           xPixMin,
                                         int           xPixMax,
@@ -857,7 +856,7 @@ void splitViewWidget::paintPixelRulersX(QPainter &    painter,
   }
 }
 
-void splitViewWidget::paintPixelRulersY(QPainter &    painter,
+void splitViewWidget::paintPixelRulersY(QPainter     &painter,
                                         playlistItem *item,
                                         int           yPixMax,
                                         int           xPos,
@@ -1000,7 +999,7 @@ void splitViewWidget::mousePressEvent(QMouseEvent *mouse_event)
                           mouse_event->position().x() < (splitPosPix + margin));
 #else
     mouseOverSplitLine =
-        (mouse_event->x() > (splitPosPix - margin) && mouse_event->x() < (splitPosPix + margin));
+      (mouse_event->x() > (splitPosPix - margin) && mouse_event->x() < (splitPosPix + margin));
 #endif
   }
 
@@ -1083,7 +1082,7 @@ QPoint splitViewWidget::getMoveOffsetCoordinateSystemOrigin(const QPointF zoomPo
     if (zoomPointInRightView)
     {
       const auto centerOfRightView =
-          QPoint(xSplit + (drawAreaBotR.x() - xSplit) / 2, drawAreaBotR.y() / 2);
+        QPoint(xSplit + (drawAreaBotR.x() - xSplit) / 2, drawAreaBotR.y() / 2);
       return centerOfRightView;
     }
     else
@@ -1103,7 +1102,7 @@ void splitViewWidget::onZoomRectUpdateOffsetAndZoom(QRectF zoomRect, double addi
     return;
 
   const auto zoomRectCenterOffset =
-      zoomRect.center() - this->getMoveOffsetCoordinateSystemOrigin(this->viewZoomingMousePosStart);
+    zoomRect.center() - this->getMoveOffsetCoordinateSystemOrigin(this->viewZoomingMousePosStart);
   this->setMoveOffset((this->moveOffset - zoomRectCenterOffset) * additionalZoomFactor);
   this->setZoomFactor(newZoom);
 }
@@ -1195,7 +1194,7 @@ void splitViewWidget::gridSetCustom(bool)
 {
   bool ok;
   int  newValue = QInputDialog::getInt(
-      this, "Custom grid", "Please select a grid size value in pixels", 64, 1, 2147483647, 1, &ok);
+    this, "Custom grid", "Please select a grid size value in pixels", 64, 1, 2147483647, 1, &ok);
   if (ok)
   {
     this->regularGridSize = newValue;
@@ -1605,9 +1604,9 @@ void splitViewWidget::freezeView(bool freeze)
 }
 
 void splitViewWidget::getViewState(QPointF &offset,
-                                   double & zoom,
-                                   double & splitPoint,
-                                   int &    mode) const
+                                   double  &zoom,
+                                   double  &splitPoint,
+                                   int     &mode) const
 {
   offset     = this->moveOffset;
   zoom       = this->zoomFactor;
@@ -1657,14 +1656,15 @@ void splitViewWidget::createMenuActions()
   const bool menuActionsCreatedYet = bool(this->actionSplitViewGroup);
   Q_ASSERT_X(!menuActionsCreatedYet, Q_FUNC_INFO, "Only call this initialization function once.");
 
-  auto configureAction = [this](QAction &           action,
+  auto configureAction = [this](QAction            &action,
                                 QActionGroup *const actionGroup,
-                                const QString &     text,
+                                const QString      &text,
                                 const bool          checkable,
                                 const bool          checked,
                                 void (splitViewWidget::*func)(bool),
                                 const QKeySequence &shortcut  = {},
-                                const bool          isEnabled = true) {
+                                const bool          isEnabled = true)
+  {
     action.setParent(this);
     action.setCheckable(checkable);
     action.setChecked(checked);
@@ -1701,10 +1701,10 @@ void splitViewWidget::createMenuActions()
                   &splitViewWidget::splitViewComparison);
   this->actionSplitView[0].setToolTip("Show only one single Item.");
   this->actionSplitView[1].setToolTip(
-      "Show two items side-by-side so that the same part of each item is visible.");
+    "Show two items side-by-side so that the same part of each item is visible.");
   this->actionSplitView[2].setToolTip(
-      "Show two items at the same position with a split line that can be "
-      "moved to reveal either item.");
+    "Show two items at the same position with a split line that can be "
+    "moved to reveal either item.");
 
   this->actionGridGroup.reset(new QActionGroup(this));
   configureAction(this->actionGrid[0],
@@ -1742,8 +1742,8 @@ void splitViewWidget::createMenuActions()
                   "Custom...",
                   Checkable(true),
                   this->regularGridSize != 0 && this->regularGridSize != 16 &&
-                      this->regularGridSize != 32 && this->regularGridSize != 64 &&
-                      this->regularGridSize != 128,
+                    this->regularGridSize != 32 && this->regularGridSize != 64 &&
+                    this->regularGridSize != 128,
                   &splitViewWidget::gridSetCustom);
   configureAction(this->actionGrid[6],
                   this->actionGridGroup.get(),
@@ -1789,10 +1789,10 @@ void splitViewWidget::createMenuActions()
     this->actionSeparateView.setToolTip("Show a second window with another view to the same item. "
                                         "Especially helpful for multi screen setups.");
     this->actionSeparateViewLink.setToolTip(
-        "Link the second view so that any change in one view is also applied in the other view.");
+      "Link the second view so that any change in one view is also applied in the other view.");
     this->actionSeparateViewPlaybackBoth.setToolTip(
-        "For performance reasons playback only runs in one (the second) view. Activate this to run "
-        "playback in both views siultaneously.");
+      "For performance reasons playback only runs in one (the second) view. Activate this to run "
+      "playback in both views siultaneously.");
   }
 
   configureAction(this->actionFullScreen,
@@ -1957,7 +1957,7 @@ void splitViewWidget::testDrawingSpeed()
   if (selection[0] == nullptr)
   {
     QMessageBox::information(
-        this, "Test error", "Please select an item from the playlist to perform the test on.");
+      this, "Test error", "Please select an item from the playlist to perform the test on.");
     return;
   }
 
@@ -1996,8 +1996,8 @@ void splitViewWidget::addMenuActions(QMenu *menu)
   separateViewMenu->addAction(!isMasterView ? &this->getOtherWidget()->actionSeparateViewLink
                                             : &actionSeparateViewLink);
   separateViewMenu->addAction(!isMasterView
-                                  ? &this->getOtherWidget()->actionSeparateViewPlaybackBoth
-                                  : &actionSeparateViewPlaybackBoth);
+                                ? &this->getOtherWidget()->actionSeparateViewPlaybackBoth
+                                : &actionSeparateViewPlaybackBoth);
   separateViewMenu->setToolTipsVisible(true);
 
   menu->addAction(&this->actionFullScreen);
@@ -2041,11 +2041,11 @@ void splitViewWidget::testFinished(bool canceled)
   int64_t msec = testDuration.elapsed();
   double  rate = 1000.0 * 1000 / msec;
   QMessageBox::information(
-      this,
-      "Test results",
-      QString("We drew 1000 frames in %1 msec. The draw rate is %2 frames per second.")
-          .arg(msec)
-          .arg(rate));
+    this,
+    "Test results",
+    QString("We drew 1000 frames in %1 msec. The draw rate is %2 frames per second.")
+      .arg(msec)
+      .arg(rate));
 }
 
 QPointer<splitViewWidget> splitViewWidget::getOtherWidget() const

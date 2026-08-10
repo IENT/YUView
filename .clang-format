@@ -2,7 +2,7 @@ IndentWidth: 2
 ContinuationIndentWidth: 2
 ---
 Language: Cpp
-Standard: c++17
+Standard: c++20
 ColumnLimit: 100
 AlignAfterOpenBracket: Align
 BreakBeforeBraces: Allman

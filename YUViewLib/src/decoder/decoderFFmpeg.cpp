@@ -204,14 +204,14 @@ void decoderFFmpeg::copyCurImageToBuffer()
     for (unsigned plane = 0; plane < pixFmt.getNrPlanes(); plane++)
     {
       const auto component =
-          (plane == 0) ? video::yuv::Component::Luma : video::yuv::Component::Chroma;
+        (plane == 0) ? video::yuv::Component::Luma : video::yuv::Component::Chroma;
       auto       src         = frame.getData(plane);
       const auto srcLinesize = frame.getLineSize(plane);
       auto       dst         = this->currentOutputBuffer.data();
       if (plane > 0)
         dst += (nrBytesY + (plane - 1) * nrBytesC);
       const auto dstLinesize =
-          this->frameSize.width / pixFmt.getSubsamplingHor(component) * nrBytesPerSample;
+        this->frameSize.width / pixFmt.getSubsamplingHor(component) * nrBytesPerSample;
       const auto height = this->frameSize.height / pixFmt.getSubsamplingVer(component);
       for (unsigned y = 0; y < height; y++)
       {
@@ -224,10 +224,10 @@ void decoderFFmpeg::copyCurImageToBuffer()
   else if (this->rawFormat == video::RawFormat::RGB)
   {
     const auto pixFmt           = this->getRGBPixelFormat();
-    const auto nrBytesPerSample = pixFmt.getBitsPerSample() <= 8 ? 1 : 2;
+    const auto nrBytesPerSample = pixFmt.getBitsPerComponent() <= 8 ? 1 : 2;
     const auto nrBytesPerComponent =
-        this->frameSize.width * this->frameSize.height * nrBytesPerSample;
-    const auto nrBytes = nrBytesPerComponent * pixFmt.nrChannels();
+      this->frameSize.width * this->frameSize.height * nrBytesPerSample;
+    const auto nrBytes = nrBytesPerComponent * pixFmt.getNrChannels();
 
     // Is the output big enough?
     if (auto c = functions::clipToUnsigned(this->currentOutputBuffer.capacity()); c < nrBytes)
@@ -257,7 +257,7 @@ void decoderFFmpeg::copyCurImageToBuffer()
     else
     {
       // We only need to iterate over the image once and copy all values per line at once (RGB(A))
-      const auto wDst        = this->frameSize.width * nrBytesPerSample * pixFmt.nrChannels();
+      const auto wDst        = this->frameSize.width * nrBytesPerSample * pixFmt.getNrChannels();
       auto       src         = frame.getData(0);
       const auto srcLinesize = frame.getLineSize(0);
       for (unsigned y = 0; y < hDst; y++)
@@ -291,9 +291,9 @@ void decoderFFmpeg::cacheCurStatistics()
       const int16_t mvY    = mvs.dst_y - mvs.src_y;
 
       this->statisticsData->at(mvs.source < 0 ? 0 : 1)
-          .addBlockValue(blockX, blockY, mvs.w, mvs.h, (int)mvs.source);
+        .addBlockValue(blockX, blockY, mvs.w, mvs.h, (int)mvs.source);
       this->statisticsData->at(mvs.source < 0 ? 2 : 3)
-          .addBlockVector(blockX, blockY, mvs.w, mvs.h, mvX, mvY);
+        .addBlockVector(blockX, blockY, mvs.w, mvs.h, mvX, mvY);
     }
   }
 }
@@ -339,7 +339,7 @@ bool decoderFFmpeg::pushAVPacket(FFmpeg::AVPacketWrapper &pkt)
   if (this->flushing)
   {
     DEBUG_FFMPEG(
-        "decoderFFmpeg::pushAVPacket: Error no new packets should be pushed in flushing mode.");
+      "decoderFFmpeg::pushAVPacket: Error no new packets should be pushed in flushing mode.");
     return false;
   }
 
@@ -351,7 +351,7 @@ bool decoderFFmpeg::pushAVPacket(FFmpeg::AVPacketWrapper &pkt)
 #if DECODERFFMPEG_DEBUG_OUTPUT
     {
       QString meaning =
-          QString("decoderFFmpeg::pushAVPacket: Error sending packet - err %1").arg(retPush);
+        QString("decoderFFmpeg::pushAVPacket: Error sending packet - err %1").arg(retPush);
       if (retPush == -1094995529)
         meaning += " INDA";
       // Log the first bytes
@@ -379,7 +379,7 @@ bool decoderFFmpeg::pushAVPacket(FFmpeg::AVPacketWrapper &pkt)
   {
     // Enough data pushed. Decode and retrieve frames now.
     DEBUG_FFMPEG(
-        "decoderFFmpeg::pushAVPacket: Enough data pushed. Decode and retrieve frames now.");
+      "decoderFFmpeg::pushAVPacket: Enough data pushed. Decode and retrieve frames now.");
     this->decoderState = DecoderState::RetrieveFrames;
     return false;
   }
@@ -430,7 +430,7 @@ bool decoderFFmpeg::decodeFrame()
 void decoderFFmpeg::fillStatisticList(stats::StatisticsData &statisticsData) const
 {
   auto sourceColorMapper =
-      stats::color::ColorMapper({-2, 2}, stats::color::PredefinedType::Col3_bblg);
+    stats::color::ColorMapper({-2, 2}, stats::color::PredefinedType::Col3_bblg);
 
   statisticsData.addStatType(stats::StatisticsType(0, "Source -", sourceColorMapper));
   statisticsData.addStatType(stats::StatisticsType(1, "Source +", sourceColorMapper));
@@ -454,7 +454,7 @@ bool decoderFFmpeg::createDecoder(FFmpeg::AVCodecIDWrapper         codecID,
   this->decCtx = this->ff.allocDecoder(this->videoCodec);
   if (!this->decCtx)
     return this->setErrorB(
-        QStringLiteral("Could not allocate video decoder (avcodec_alloc_context3)"));
+      QStringLiteral("Could not allocate video decoder (avcodec_alloc_context3)"));
 
   if (codecpar && !this->ff.configureDecoder(decCtx, codecpar))
     return this->setErrorB(QStringLiteral("Unable to configure decoder from codecpar"));
@@ -474,13 +474,13 @@ bool decoderFFmpeg::createDecoder(FFmpeg::AVCodecIDWrapper         codecID,
   int                         ret = this->ff.dictSet(opts, "flags2", "+export_mvs", 0);
   if (ret < 0)
     return this->setErrorB(
-        QStringLiteral("Could not request motion vector retrieval. Return code %1").arg(ret));
+      QStringLiteral("Could not request motion vector retrieval. Return code %1").arg(ret));
 
   // Open codec
   ret = this->ff.avcodecOpen2(decCtx, videoCodec, opts);
   if (ret < 0)
     return this->setErrorB(
-        QStringLiteral("Could not open the video codec (avcodec_open2). Return code %1.").arg(ret));
+      QStringLiteral("Could not open the video codec (avcodec_open2). Return code %1.").arg(ret));
 
   this->frame = ff.allocateFrame();
   if (!this->frame)

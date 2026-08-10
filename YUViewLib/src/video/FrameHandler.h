@@ -34,12 +34,14 @@
 
 #include <common/InfoItemAndData.h>
 #include <common/SaveUi.h>
+#include <common/Size.h>
 #include <common/Typedef.h>
 #include <common/YUViewDomElement.h>
 
 #include <QImage>
 #include <QObject>
 #include <QSettings>
+#include <string>
 
 #include "ui_FrameHandler.h"
 
@@ -73,23 +75,20 @@ public:
 
   // Return the RGB values of the given pixel. If a second item is provided, return the difference
   // values to that item.
-  virtual QStringPairList getPixelValues(const QPoint &pixelPos,
-                                         int           frameIdx,
-                                         FrameHandler *item2     = nullptr,
-                                         const int     frameIdx1 = 0);
+  virtual QStringPairList getPixelValues(const QPoint             &pixelPos,
+                                         int                       frameIdx,
+                                         const FrameHandler *const item2     = nullptr,
+                                         const int                 frameIdx1 = 0) const;
   // Is the pixel under the cursor brighter or darker than the middle brightness level?
-  virtual bool isPixelDark(const QPoint &pixelPos);
+  virtual bool isPixelDark(const QPoint &pixelPos) const;
 
   // Is the current format of the FrameHandler valid? The default implementation will check if the
   // frameSize is valid but more specialized implementations may also check other things: For
   // example the videoHandlerYUV also checks if a valid YUV format is set.
-  virtual bool isFormatValid() const { return frameSize.width > 0 && frameSize.height > 0; }
+  virtual bool isFormatValid() const { return this->frameSize.isValid(); }
 
-  virtual QString getFormatAsString() const
-  {
-    return QString("%1;%2").arg(this->frameSize.width).arg(this->frameSize.height);
-  }
-  virtual bool setFormatFromString(QString format);
+  virtual std::optional<std::string> getFormatAsString() const;
+  virtual bool                       setFormatFromString(const std::string_view format);
 
   // Calculate the difference of this FrameHandler to another FrameHandler. This
   // function can be overloaded by more specialized video items. For example the videoHandlerYUV
@@ -141,8 +140,8 @@ protected:
   Size   frameSize;
 
   // Get the pixel value from currentImage. Make sure that currentImage is the correct image.
-  QRgb         getPixelVal(const QPoint &pos) { return getPixelVal(pos.x(), pos.y()); }
-  virtual QRgb getPixelVal(int x, int y) { return currentImage.pixel(x, y); }
+  QRgb         getPixelVal(const QPoint &pos) const { return getPixelVal(pos.x(), pos.y()); }
+  virtual QRgb getPixelVal(int x, int y) const { return currentImage.pixel(x, y); }
 
   // When slotVideoControlChanged is called, update the controls and return the new selected size
   Size getNewSizeFromControls();

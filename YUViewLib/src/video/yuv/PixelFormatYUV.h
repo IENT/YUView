@@ -33,7 +33,10 @@
 #pragma once
 
 #include <common/EnumMapper.h>
+#include <common/Offset.h>
+#include <common/Size.h>
 #include <common/Typedef.h>
+
 #include <video/PixelFormat.h>
 
 // The YUV_Internals namespace. We use this namespace because of the dialog. We want to be able to
@@ -69,12 +72,12 @@ enum class ColorConversion
 };
 
 constexpr EnumMapper<ColorConversion, 6> ColorConversionMapper = {
-    std::make_pair(ColorConversion::BT709_LimitedRange, "ITU-R.BT709"),
-    std::make_pair(ColorConversion::BT709_FullRange, "ITU-R.BT709 Full Range"),
-    std::make_pair(ColorConversion::BT601_LimitedRange, "ITU-R.BT601"),
-    std::make_pair(ColorConversion::BT601_FullRange, "ITU-R.BT601 Full Range"),
-    std::make_pair(ColorConversion::BT2020_LimitedRange, "ITU-R.BT2020"),
-    std::make_pair(ColorConversion::BT2020_FullRange, "ITU-R.BT2020 Full Range")};
+  std::make_pair(ColorConversion::BT709_LimitedRange, "ITU-R.BT709"),
+  std::make_pair(ColorConversion::BT709_FullRange, "ITU-R.BT709 Full Range"),
+  std::make_pair(ColorConversion::BT601_LimitedRange, "ITU-R.BT601"),
+  std::make_pair(ColorConversion::BT601_FullRange, "ITU-R.BT601 Full Range"),
+  std::make_pair(ColorConversion::BT2020_LimitedRange, "ITU-R.BT2020"),
+  std::make_pair(ColorConversion::BT2020_FullRange, "ITU-R.BT2020 Full Range")};
 
 void getColorConversionCoefficients(ColorConversion colorConversion, int RGBConv[5]);
 
@@ -87,9 +90,9 @@ enum class ChromaInterpolation
 };
 
 constexpr EnumMapper<ChromaInterpolation, 3> ChromaInterpolationMapper = {
-    std::make_pair(ChromaInterpolation::NearestNeighbor, "Nearest Neighbor"),
-    std::make_pair(ChromaInterpolation::Bilinear, "Bilinear"),
-    std::make_pair(ChromaInterpolation::Interstitial, "Interstitial")};
+  std::make_pair(ChromaInterpolation::NearestNeighbor, "Nearest Neighbor"),
+  std::make_pair(ChromaInterpolation::Bilinear, "Bilinear"),
+  std::make_pair(ChromaInterpolation::Interstitial, "Interstitial")};
 
 class MathParameters
 {
@@ -114,7 +117,7 @@ enum class PredefinedPixelFormat
 };
 
 constexpr EnumMapper<PredefinedPixelFormat, 1> PredefinedPixelFormatMapper = {
-    std::make_pair(PredefinedPixelFormat::V210, "V210")};
+  std::make_pair(PredefinedPixelFormat::V210, "V210")};
 
 enum class PackingOrder
 {
@@ -135,15 +138,15 @@ enum class PackingOrder
 };
 
 constexpr EnumMapper<PackingOrder, 9> PackingOrderMapper = {
-    std::make_pair(PackingOrder::YUV, "YUV"),
-    std::make_pair(PackingOrder::YVU, "YVU"),
-    std::make_pair(PackingOrder::AYUV, "AYUV"),
-    std::make_pair(PackingOrder::YUVA, "YUVA"),
-    std::make_pair(PackingOrder::VUYA, "VUYA"),
-    std::make_pair(PackingOrder::UYVY, "UYVY"),
-    std::make_pair(PackingOrder::VYUY, "VYUY"),
-    std::make_pair(PackingOrder::YUYV, "YUYV"),
-    std::make_pair(PackingOrder::YVYU, "YVYU")};
+  std::make_pair(PackingOrder::YUV, "YUV"),
+  std::make_pair(PackingOrder::YVU, "YVU"),
+  std::make_pair(PackingOrder::AYUV, "AYUV"),
+  std::make_pair(PackingOrder::YUVA, "YUVA"),
+  std::make_pair(PackingOrder::VUYA, "VUYA"),
+  std::make_pair(PackingOrder::UYVY, "UYVY"),
+  std::make_pair(PackingOrder::VYUY, "VYUY"),
+  std::make_pair(PackingOrder::YUYV, "YUYV"),
+  std::make_pair(PackingOrder::YVYU, "YVYU")};
 
 enum class Subsampling
 {
@@ -158,13 +161,13 @@ enum class Subsampling
 };
 
 constexpr EnumMapper<Subsampling, 7> SubsamplingMapper = {
-    std::make_pair(Subsampling::YUV_444, "444"),
-    std::make_pair(Subsampling::YUV_422, "422"),
-    std::make_pair(Subsampling::YUV_420, "420"),
-    std::make_pair(Subsampling::YUV_440, "440"),
-    std::make_pair(Subsampling::YUV_410, "410"),
-    std::make_pair(Subsampling::YUV_411, "411"),
-    std::make_pair(Subsampling::YUV_400, "400")};
+  std::make_pair(Subsampling::YUV_444, "444"),
+  std::make_pair(Subsampling::YUV_422, "422"),
+  std::make_pair(Subsampling::YUV_420, "420"),
+  std::make_pair(Subsampling::YUV_440, "440"),
+  std::make_pair(Subsampling::YUV_410, "410"),
+  std::make_pair(Subsampling::YUV_411, "411"),
+  std::make_pair(Subsampling::YUV_400, "400")};
 
 std::string formatSubsamplingWithColons(const Subsampling &subsampling);
 
@@ -192,8 +195,8 @@ class PixelFormatYUV
 {
 public:
   PixelFormatYUV() = default;
-  PixelFormatYUV(const std::string &name); // Set the pixel format by name. The name should have the
-                                           // format that is returned by getName().
+  PixelFormatYUV(const std::string_view name); // Set the pixel format by name. The name should have
+                                               // the format that is returned by getName().
   PixelFormatYUV(Subsampling subsampling,
                  unsigned    bitsPerSample,
                  PlaneOrder  planeOrder    = PlaneOrder::YUV,
@@ -239,7 +242,7 @@ public:
   bool operator!=(const PixelFormatYUV &a) const { return getName() != a.getName(); }
   bool operator==(const std::string &a) const { return getName() == a; }
   bool operator!=(const std::string &a) const { return getName() != a; }
-  operator bool() const { return this->isValid(); }
+       operator bool() const { return this->isValid(); }
 
 private:
   // If this is set, the format is defined according to a specific standard and does not

@@ -103,7 +103,7 @@ InfoData playlistItemStatisticsFile::getInfo() const
 }
 
 playlistItemStatisticsFile *playlistItemStatisticsFile::newplaylistItemStatisticsFile(
-    const YUViewDomElement &root, const QString &playlistFilePath, OpenMode openMode)
+  const YUViewDomElement &root, const QString &playlistFilePath, OpenMode openMode)
 {
   // Parse the DOM element. It should have all values of a playlistItemStatisticsFile
   auto absolutePath = root.findChildValue("absolutePath");
@@ -111,7 +111,7 @@ playlistItemStatisticsFile *playlistItemStatisticsFile::newplaylistItemStatistic
 
   // check if file with absolute path exists, otherwise check relative path
   const auto filePath =
-      functions::getAbsPathFromAbsAndRel(playlistFilePath, absolutePath, relativePath);
+    functions::getAbsPathFromAbsAndRel(playlistFilePath, absolutePath, relativePath);
   if (filePath.isEmpty())
     return nullptr;
 
@@ -299,12 +299,12 @@ void playlistItemStatisticsFile::openStatisticsFile()
   this->timer.start(1000, this);
   this->breakBackgroundAtomic.store(false);
   this->backgroundParserFuture = QtConcurrent::run(
-      [=](stats::StatisticsFileBase *file)
-      { file->readFrameAndTypePositionsFromFile(std::ref(this->breakBackgroundAtomic)); },
-      this->file.get());
+    [this](stats::StatisticsFileBase *file)
+    { file->readFrameAndTypePositionsFromFile(std::ref(this->breakBackgroundAtomic)); },
+    this->file.get());
 
   DEBUG_STAT(
-      "playlistItemStatisticsFile::openStatisticsFile File opened. Background parsing started.");
+    "playlistItemStatisticsFile::openStatisticsFile File opened. Background parsing started.");
 }
 
 // This timer event is called regularly when the background loading process is running.

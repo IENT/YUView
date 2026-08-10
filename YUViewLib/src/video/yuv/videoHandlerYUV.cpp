@@ -37,6 +37,7 @@
 #include <cstdio>
 #include <iomanip>
 #include <sstream>
+#include <string_view>
 #include <type_traits>
 #include <vector>
 
@@ -47,6 +48,7 @@
 #include <common/Functions.h>
 #include <common/FunctionsGui.h>
 #include <common/InfoItemAndData.h>
+#include <common/TypedefQtDeprecated.h>
 #include <video/LimitedRangeToFullRange.h>
 #include <video/yuv/PixelFormatYUVGuess.h>
 #include <video/yuv/videoHandlerYUVCustomFormatDialog.h>
@@ -241,8 +243,8 @@ std::pair<bool, PixelFormatYUV> convertYUVPackedToPlanar(const QByteArray     &s
     const int oY = (packing == PackingOrder::AYUV) ? 1 : (packing == PackingOrder::VUYA) ? 2 : 0;
     const int oU = (packing == PackingOrder::YUV || packing == PackingOrder::YUVA ||
                     packing == PackingOrder::VUYA)
-                       ? 1
-                       : 2;
+                     ? 1
+                     : 2;
     const int oV = (packing == PackingOrder::YVU)    ? 1
                    : (packing == PackingOrder::AYUV) ? 3
                    : (packing == PackingOrder::VUYA) ? 0
@@ -421,7 +423,7 @@ yuv_t getPixelValueV210(const QByteArray &sourceBuffer,
   {
     ret.U = (src[startInBuffer + 8 + 2] >> 4) + ((src[startInBuffer + 8 + 3] & 0x3f) << 4);
     ret.V =
-        ((src[startInBuffer + 12 + 1] >> 2) & 0x3f) + ((src[startInBuffer + 12 + 2] & 0x0f) << 6);
+      ((src[startInBuffer + 12 + 1] >> 2) & 0x3f) + ((src[startInBuffer + 12 + 2] & 0x0f) << 6);
   }
 
   return ret;
@@ -451,7 +453,7 @@ bool convertYUV420ToRGB(const QByteArray         &sourceBuffer,
   int componentLenghtY  = frameWidth * frameHeight;
   int componentLengthUV = componentLenghtY >> 2;
   Q_ASSERT(sourceBuffer.size() >= componentLenghtY + componentLengthUV +
-                                      componentLengthUV); // YUV 420 must be (at least) 1.5*Y-area
+                                    componentLengthUV); // YUV 420 must be (at least) 1.5*Y-area
 
   static unsigned char *clip_buf = clp_buf + 384;
   if (!clp_buf_initialized)
@@ -468,13 +470,13 @@ bool convertYUV420ToRGB(const QByteArray         &sourceBuffer,
 
   // Get pointers to the source and the output array
   const bool uPplaneFirst =
-      (format.getPlaneOrder() == PlaneOrder::YUV ||
-       format.getPlaneOrder() == PlaneOrder::YUVA); // Is the U plane the first or the second?
+    (format.getPlaneOrder() == PlaneOrder::YUV ||
+     format.getPlaneOrder() == PlaneOrder::YUVA); // Is the U plane the first or the second?
   const auto *restrict srcY = InValueType(sourceBuffer.data());
   const auto *restrict srcU =
-      uPplaneFirst ? srcY + componentLenghtY : srcY + componentLenghtY + componentLengthUV;
+    uPplaneFirst ? srcY + componentLenghtY : srcY + componentLenghtY + componentLengthUV;
   const auto *restrict srcV =
-      uPplaneFirst ? srcY + componentLenghtY + componentLengthUV : srcY + componentLenghtY;
+    uPplaneFirst ? srcY + componentLenghtY + componentLengthUV : srcY + componentLenghtY;
 
   for (unsigned yh = 0; yh < frameHeight / 2; yh++)
   {
@@ -572,11 +574,8 @@ inline int clip8Bit(int val)
  * to the offset value. The input can be 8 to 16 bit. The output will be of the same bit depth. The
  * output is clamped to (0...clipMax).
  */
-inline int transformYUV(const bool         invert,
-                        const int          scale,
-                        const int          offset,
-                        const unsigned int value,
-                        const int          clipMax)
+inline int transformYUV(
+  const bool invert, const int scale, const int offset, const unsigned int value, const int clipMax)
 {
   int newValue = value;
   if (invert)
@@ -615,8 +614,8 @@ inline void convertYUVToRGB8Bit(const unsigned int valY,
     const int U_tmp = (valU >> 2) - cZero;
     const int V_tmp = (valV >> 2) - cZero;
 
-    const int R_tmp = (Y_tmp + V_tmp * RGBConv[1]) >>
-                      (16 + bps - 10); // 32 to 16 bit conversion by right shifting
+    const int R_tmp =
+      (Y_tmp + V_tmp * RGBConv[1]) >> (16 + bps - 10); // 32 to 16 bit conversion by right shifting
     const int G_tmp = (Y_tmp + U_tmp * RGBConv[2] + V_tmp * RGBConv[3]) >> (16 + bps - 10);
     const int B_tmp = (Y_tmp + U_tmp * RGBConv[4]) >> (16 + bps - 10);
 
@@ -634,7 +633,7 @@ inline void convertYUVToRGB8Bit(const unsigned int valY,
     const int V_tmp = valV - cZero;
 
     const int R_tmp =
-        (Y_tmp + V_tmp * RGBConv[1]) >> (16 + bps - 8); // 32 to 16 bit conversion by right shifting
+      (Y_tmp + V_tmp * RGBConv[1]) >> (16 + bps - 8); // 32 to 16 bit conversion by right shifting
     const int G_tmp = (Y_tmp + U_tmp * RGBConv[2] + V_tmp * RGBConv[3]) >> (16 + bps - 8);
     const int B_tmp = (Y_tmp + U_tmp * RGBConv[4]) >> (16 + bps - 8);
 
@@ -659,7 +658,7 @@ inline int getValueFromSource(const unsigned char *restrict src,
 }
 
 inline void setValueInBuffer(
-    unsigned char *restrict dst, const int val, const int idx, const int bps, const bool bigEndian)
+  unsigned char *restrict dst, const int val, const int idx, const int bps, const bool bigEndian)
 {
   if (bps > 8)
   {
@@ -1183,9 +1182,9 @@ inline void YUVPlaneToRGB_422(const int            w,
       // Convert to 2 RGB values and save them (BGRA)
       int valR1, valR2, valG1, valG2, valB1, valB2;
       convertYUVToRGB8Bit(
-          valY1, curUSample, curVSample, valR1, valG1, valB1, RGBConv, fullRange, bps);
+        valY1, curUSample, curVSample, valR1, valG1, valB1, RGBConv, fullRange, bps);
       convertYUVToRGB8Bit(
-          valY2, interpolatedU, interpolatedV, valR2, valG2, valB2, RGBConv, fullRange, bps);
+        valY2, interpolatedU, interpolatedV, valR2, valG2, valB2, RGBConv, fullRange, bps);
       const int pos = (y * w + x * 2) * 4;
       dst[pos]      = valB1;
       dst[pos + 1]  = valG1;
@@ -1216,9 +1215,9 @@ inline void YUVPlaneToRGB_422(const int            w,
     // Convert to 2 RGB values and save them
     int valR1, valR2, valG1, valG2, valB1, valB2;
     convertYUVToRGB8Bit(
-        valY1, curUSample, curVSample, valR1, valG1, valB1, RGBConv, fullRange, bps);
+      valY1, curUSample, curVSample, valR1, valG1, valB1, RGBConv, fullRange, bps);
     convertYUVToRGB8Bit(
-        valY2, curUSample, curVSample, valR2, valG2, valB2, RGBConv, fullRange, bps);
+      valY2, curUSample, curVSample, valR2, valG2, valB2, RGBConv, fullRange, bps);
     const int pos = ((y + 1) * w) * 4;
     dst[pos - 8]  = valB1;
     dst[pos - 7]  = valG1;
@@ -1289,9 +1288,9 @@ inline void YUVPlaneToRGB_440(const int            w,
       // Convert to 2 RGB values and save them
       int valR1, valR2, valG1, valG2, valB1, valB2;
       convertYUVToRGB8Bit(
-          valY1, curUSample, curVSample, valR1, valG1, valB1, RGBConv, fullRange, bps);
+        valY1, curUSample, curVSample, valR1, valG1, valB1, RGBConv, fullRange, bps);
       convertYUVToRGB8Bit(
-          valY2, interpolatedU, interpolatedV, valR2, valG2, valB2, RGBConv, fullRange, bps);
+        valY2, interpolatedU, interpolatedV, valR2, valG2, valB2, RGBConv, fullRange, bps);
       const int pos1 = (y * 2 * w + x) * 4;
       const int pos2 = pos1 + 4 * w;
       dst[pos1]      = valB1;
@@ -1323,9 +1322,9 @@ inline void YUVPlaneToRGB_440(const int            w,
     // Convert to 2 RGB values and save them
     int valR1, valR2, valG1, valG2, valB1, valB2;
     convertYUVToRGB8Bit(
-        valY1, curUSample, curVSample, valR1, valG1, valB1, RGBConv, fullRange, bps);
+      valY1, curUSample, curVSample, valR1, valG1, valB1, RGBConv, fullRange, bps);
     convertYUVToRGB8Bit(
-        valY2, curUSample, curVSample, valR2, valG2, valB2, RGBConv, fullRange, bps);
+      valY2, curUSample, curVSample, valR2, valG2, valB2, RGBConv, fullRange, bps);
     const int pos1 = ((h - 2) * w + x) * 4;
     const int pos2 = pos1 + w * 4;
     dst[pos1]      = valB1;
@@ -1397,15 +1396,15 @@ inline void YUVPlaneToRGB_420(const int            w,
 
       // From the current and the next U/V sample, interpolate the 3 UV samples in between
       int interpolatedU_Hor =
-          interpolateUVSample(interpolation, curU, nextU); // Horizontal interpolation
+        interpolateUVSample(interpolation, curU, nextU); // Horizontal interpolation
       int interpolatedV_Hor = interpolateUVSample(interpolation, curV, nextV);
       int interpolatedU_Ver =
-          interpolateUVSample(interpolation, curU, curU_NL); // Vertical interpolation
+        interpolateUVSample(interpolation, curU, curU_NL); // Vertical interpolation
       int interpolatedV_Ver = interpolateUVSample(interpolation, curV, curV_NL);
       int interpolatedU_Bi =
-          interpolateUVSample2D(interpolation, curU, nextU, curU_NL, nextU_NL); // 2D interpolation
+        interpolateUVSample2D(interpolation, curU, nextU, curU_NL, nextU_NL); // 2D interpolation
       int interpolatedV_Bi =
-          interpolateUVSample2D(interpolation, curV, nextV, curV_NL, nextV_NL); // 2D interpolation
+        interpolateUVSample2D(interpolation, curV, nextV, curV_NL, nextV_NL); // 2D interpolation
 
       // Get the 4 Y samples
       int valY1 = getValueFromSource(srcY, (y * w + x) * 2, bps, bigEndian);
@@ -1423,15 +1422,8 @@ inline void YUVPlaneToRGB_420(const int            w,
       // Convert to 4 RGB values and save them
       int valR1, valR2, valG1, valG2, valB1, valB2;
       convertYUVToRGB8Bit(valY1, curU, curV, valR1, valG1, valB1, RGBConv, fullRange, bps);
-      convertYUVToRGB8Bit(valY2,
-                          interpolatedU_Hor,
-                          interpolatedV_Hor,
-                          valR2,
-                          valG2,
-                          valB2,
-                          RGBConv,
-                          fullRange,
-                          bps);
+      convertYUVToRGB8Bit(
+        valY2, interpolatedU_Hor, interpolatedV_Hor, valR2, valG2, valB2, RGBConv, fullRange, bps);
       const int pos1 = (y * 2 * w + x * 2) * 4;
       dst[pos1]      = valB1;
       dst[pos1 + 1]  = valG1;
@@ -1451,7 +1443,7 @@ inline void YUVPlaneToRGB_420(const int            w,
                           fullRange,
                           bps); // Second line
       convertYUVToRGB8Bit(
-          valY4, interpolatedU_Bi, interpolatedV_Bi, valR2, valG2, valB2, RGBConv, fullRange, bps);
+        valY4, interpolatedU_Bi, interpolatedV_Bi, valR2, valG2, valB2, RGBConv, fullRange, bps);
       const int pos2 = pos1 + w * 4; // Next line
       dst[pos2]      = valB1;
       dst[pos2 + 1]  = valG1;
@@ -1472,7 +1464,7 @@ inline void YUVPlaneToRGB_420(const int            w,
     // For the last x value (the right border), there is no next value. Just sample and hold. Only
     // vertical interpolation is required.
     int interpolatedU_Ver =
-        interpolateUVSample(interpolation, curU, curU_NL); // Vertical interpolation
+      interpolateUVSample(interpolation, curU, curU_NL); // Vertical interpolation
     int interpolatedV_Ver = interpolateUVSample(interpolation, curV, curV_NL);
 
     // Get the 4 Y samples
@@ -1511,7 +1503,7 @@ inline void YUVPlaneToRGB_420(const int            w,
                         fullRange,
                         bps); // Second line
     convertYUVToRGB8Bit(
-        valY4, interpolatedU_Ver, interpolatedV_Ver, valR2, valG2, valB2, RGBConv, fullRange, bps);
+      valY4, interpolatedU_Ver, interpolatedV_Ver, valR2, valG2, valB2, RGBConv, fullRange, bps);
     const int pos2 = pos1 + w * 4; // Next line
     dst[pos2 - 8]  = valB1;
     dst[pos2 - 7]  = valG1;
@@ -1554,7 +1546,7 @@ inline void YUVPlaneToRGB_420(const int            w,
 
     // From the current and the next U/V sample, interpolate the 3 UV samples in between
     int interpolatedU_Hor =
-        interpolateUVSample(interpolation, curU, nextU); // Horizontal interpolation
+      interpolateUVSample(interpolation, curU, nextU); // Horizontal interpolation
     int interpolatedV_Hor = interpolateUVSample(interpolation, curV, nextV);
 
     // Get the 4 Y samples
@@ -1574,7 +1566,7 @@ inline void YUVPlaneToRGB_420(const int            w,
     int valR1, valR2, valG1, valG2, valB1, valB2;
     convertYUVToRGB8Bit(valY1, curU, curV, valR1, valG1, valB1, RGBConv, fullRange, bps);
     convertYUVToRGB8Bit(
-        valY2, interpolatedU_Hor, interpolatedV_Hor, valR2, valG2, valB2, RGBConv, fullRange, bps);
+      valY2, interpolatedU_Hor, interpolatedV_Hor, valR2, valG2, valB2, RGBConv, fullRange, bps);
     const int pos1 = (y2 * w + x * 2) * 4;
     dst[pos1]      = valB1;
     dst[pos1 + 1]  = valG1;
@@ -1585,9 +1577,9 @@ inline void YUVPlaneToRGB_420(const int            w,
     dst[pos1 + 6]  = valR2;
     dst[pos1 + 7]  = 255;
     convertYUVToRGB8Bit(
-        valY3, curU, curV, valR1, valG1, valB1, RGBConv, fullRange, bps); // Second line
+      valY3, curU, curV, valR1, valG1, valB1, RGBConv, fullRange, bps); // Second line
     convertYUVToRGB8Bit(
-        valY4, interpolatedU_Hor, interpolatedV_Hor, valR2, valG2, valB2, RGBConv, fullRange, bps);
+      valY4, interpolatedU_Hor, interpolatedV_Hor, valR2, valG2, valB2, RGBConv, fullRange, bps);
     const int pos2 = pos1 + w * 4; // Next line
     dst[pos2]      = valB1;
     dst[pos2 + 1]  = valG1;
@@ -1633,7 +1625,7 @@ inline void YUVPlaneToRGB_420(const int            w,
   dst[pos1 - 2]  = valR2;
   dst[pos1 - 1]  = 255;
   convertYUVToRGB8Bit(
-      valY3, curU, curV, valR1, valG1, valB1, RGBConv, fullRange, bps); // Second line
+    valY3, curU, curV, valR1, valG1, valB1, RGBConv, fullRange, bps); // Second line
   convertYUVToRGB8Bit(valY4, curU, curV, valR2, valG2, valB2, RGBConv, fullRange, bps);
   const int pos2 = pos1 + w * 4; // Next line
   dst[pos2 - 8]  = valB1;
@@ -1677,9 +1669,9 @@ inline void YUVPlaneToRGB_410(const int            w,
     int       curU      = getValueFromSource(srcU, srcIdxUV0 * inValSkip, bps, bigEndian);
     int       curV      = getValueFromSource(srcV, srcIdxUV0 * inValSkip, bps, bigEndian);
     int       curU_NL =
-        (y < hq - 1) ? getValueFromSource(srcU, srcIdxUV1 * inValSkip, bps, bigEndian) : curU;
+      (y < hq - 1) ? getValueFromSource(srcU, srcIdxUV1 * inValSkip, bps, bigEndian) : curU;
     int curV_NL =
-        (y < hq - 1) ? getValueFromSource(srcV, srcIdxUV1 * inValSkip, bps, bigEndian) : curV;
+      (y < hq - 1) ? getValueFromSource(srcV, srcIdxUV1 * inValSkip, bps, bigEndian) : curV;
     if (applyMathChroma)
     {
       curU    = transformYUV(mathC.invert, mathC.scale, mathC.offset, curU, inMax);
@@ -1696,15 +1688,15 @@ inline void YUVPlaneToRGB_410(const int            w,
       const int srcIdxUVLine0 = srcIdxUV0 + x + 1;
       const int srcIdxUVLine1 = srcIdxUV1 + x + 1;
       int       nextU =
-          (x < wq - 1) ? getValueFromSource(srcU, srcIdxUVLine0 * inValSkip, bps, bigEndian) : curU;
+        (x < wq - 1) ? getValueFromSource(srcU, srcIdxUVLine0 * inValSkip, bps, bigEndian) : curU;
       int nextV =
-          (x < wq - 1) ? getValueFromSource(srcV, srcIdxUVLine0 * inValSkip, bps, bigEndian) : curV;
+        (x < wq - 1) ? getValueFromSource(srcV, srcIdxUVLine0 * inValSkip, bps, bigEndian) : curV;
       int nextU_NL = (x < wq - 1)
-                         ? getValueFromSource(srcU, srcIdxUVLine1 * inValSkip, bps, bigEndian)
-                         : curU_NL;
+                       ? getValueFromSource(srcU, srcIdxUVLine1 * inValSkip, bps, bigEndian)
+                       : curU_NL;
       int nextV_NL = (x < wq - 1)
-                         ? getValueFromSource(srcV, srcIdxUVLine1 * inValSkip, bps, bigEndian)
-                         : curV_NL;
+                       ? getValueFromSource(srcV, srcIdxUVLine1 * inValSkip, bps, bigEndian)
+                       : curV_NL;
       if (applyMathChroma)
       {
         nextU    = transformYUV(mathC.invert, mathC.scale, mathC.offset, nextU, inMax);
@@ -1825,19 +1817,19 @@ inline void YUVPlaneToRGB_411(const int            w,
       dst[pos + 2] = valR;
       dst[pos + 3] = 255;
       convertYUVToRGB8Bit(
-          valY2, interpolatedU1, interpolatedV1, valR, valG, valB, RGBConv, fullRange, bps);
+        valY2, interpolatedU1, interpolatedV1, valR, valG, valB, RGBConv, fullRange, bps);
       dst[pos + 4] = valB;
       dst[pos + 5] = valG;
       dst[pos + 6] = valR;
       dst[pos + 7] = 255;
       convertYUVToRGB8Bit(
-          valY3, interpolatedU2, interpolatedV2, valR, valG, valB, RGBConv, fullRange, bps);
+        valY3, interpolatedU2, interpolatedV2, valR, valG, valB, RGBConv, fullRange, bps);
       dst[pos + 8]  = valB;
       dst[pos + 9]  = valG;
       dst[pos + 10] = valR;
       dst[pos + 11] = 255;
       convertYUVToRGB8Bit(
-          valY4, interpolatedU3, interpolatedV3, valR, valG, valB, RGBConv, fullRange, bps);
+        valY4, interpolatedU3, interpolatedV3, valR, valG, valB, RGBConv, fullRange, bps);
       dst[pos + 12] = valB;
       dst[pos + 13] = valG;
       dst[pos + 14] = valR;
@@ -1921,7 +1913,7 @@ bool convertYUVPlanarToRGB(const QByteArray         &sourceBuffer,
   // subsampling.
   const auto componentSizeLuma = (w * h);
   const auto componentSizeChroma =
-      (w / format.getSubsamplingHor()) * (h / format.getSubsamplingVer());
+    (w / format.getSubsamplingHor()) * (h / format.getSubsamplingVer());
 
   // How many bytes are in each component?
   const auto nrBytesLumaPlane   = (bps > 8) ? componentSizeLuma * 2 : componentSizeLuma;
@@ -1929,12 +1921,12 @@ bool convertYUVPlanarToRGB(const QByteArray         &sourceBuffer,
 
   // If the U and V (and A if present) components are interlevaed, we have to skip every nth value
   // in the input when reading U and V
-  const auto inputValSkip = format.isUVInterleaved()
-                                ? ((format.getPlaneOrder() == PlaneOrder::YUV ||
-                                    format.getPlaneOrder() == PlaneOrder::YVU)
-                                       ? 2
-                                       : 3)
-                                : 1;
+  const auto inputValSkip =
+    format.isUVInterleaved()
+      ? ((format.getPlaneOrder() == PlaneOrder::YUV || format.getPlaneOrder() == PlaneOrder::YVU)
+           ? 2
+           : 3)
+      : 1;
 
   // A pointer to the output
   unsigned char *restrict dst = targetBuffer;
@@ -1949,7 +1941,7 @@ bool convertYUVPlanarToRGB(const QByteArray         &sourceBuffer,
       // Luma only. The chroma subsampling does not matter.
       const unsigned char *restrict srcY = (unsigned char *)sourceBuffer.data();
       YUVPlaneToRGBMonochrome_444(
-          componentSizeLuma, mathY, srcY, dst, inputMax, bps, format.isBigEndian(), 1, fullRange);
+        componentSizeLuma, mathY, srcY, dst, inputMax, bps, format.isBigEndian(), 1, fullRange);
     }
     else
     {
@@ -1993,13 +1985,13 @@ bool convertYUVPlanarToRGB(const QByteArray         &sourceBuffer,
                                     fullRange);
       else if (format.getSubsampling() == Subsampling::YUV_420)
         YUVPlaneToRGBMonochrome_420(
-            w, h, mathC, srcC, dst, inputMax, bps, format.isBigEndian(), inputValSkip, fullRange);
+          w, h, mathC, srcC, dst, inputMax, bps, format.isBigEndian(), inputValSkip, fullRange);
       else if (format.getSubsampling() == Subsampling::YUV_440)
         YUVPlaneToRGBMonochrome_440(
-            w, h, mathC, srcC, dst, inputMax, bps, format.isBigEndian(), inputValSkip, fullRange);
+          w, h, mathC, srcC, dst, inputMax, bps, format.isBigEndian(), inputValSkip, fullRange);
       else if (format.getSubsampling() == Subsampling::YUV_410)
         YUVPlaneToRGBMonochrome_410(
-            w, h, mathC, srcC, dst, inputMax, bps, format.isBigEndian(), inputValSkip, fullRange);
+          w, h, mathC, srcC, dst, inputMax, bps, format.isBigEndian(), inputValSkip, fullRange);
       else if (format.getSubsampling() == Subsampling::YUV_411)
         YUVPlaneToRGBMonochrome_411(componentSizeChroma,
                                     mathC,
@@ -2018,7 +2010,7 @@ bool convertYUVPlanarToRGB(const QByteArray         &sourceBuffer,
   {
     // Is the U plane the first or the second?
     const bool uPlaneFirst =
-        (format.getPlaneOrder() == PlaneOrder::YUV || format.getPlaneOrder() == PlaneOrder::YUVA);
+      (format.getPlaneOrder() == PlaneOrder::YUV || format.getPlaneOrder() == PlaneOrder::YUVA);
 
     // In case the U and V (and A if present) components are interleaved, the skip to the next plane
     // is just 1 (or 2) bytes
@@ -2049,12 +2041,10 @@ bool convertYUVPlanarToRGB(const QByteArray         &sourceBuffer,
       unsigned char *restrict dstV = (unsigned char *)uvPlaneChromaResampled[1].data();
 
       unsigned char *restrict srcY = (unsigned char *)sourceBuffer.data();
-      unsigned char *restrict srcU = uPlaneFirst
-                                         ? srcY + nrBytesLumaPlane
-                                         : srcY + nrBytesLumaPlane + nrBytesToNextChromaPlane;
-      unsigned char *restrict srcV = uPlaneFirst
-                                         ? srcY + nrBytesLumaPlane + nrBytesToNextChromaPlane
-                                         : srcY + nrBytesLumaPlane;
+      unsigned char *restrict srcU =
+        uPlaneFirst ? srcY + nrBytesLumaPlane : srcY + nrBytesLumaPlane + nrBytesToNextChromaPlane;
+      unsigned char *restrict srcV =
+        uPlaneFirst ? srcY + nrBytesLumaPlane + nrBytesToNextChromaPlane : srcY + nrBytesLumaPlane;
 
       UVPlaneResamplingChromaOffset(format,
                                     w / format.getSubsamplingHor(),
@@ -2166,12 +2156,10 @@ bool convertYUVPlanarToRGB(const QByteArray         &sourceBuffer,
     {
       // Get the pointers to the source planes (8 bit per sample)
       const unsigned char *restrict srcY = (unsigned char *)sourceBuffer.data();
-      const unsigned char *restrict srcU = uPlaneFirst
-                                               ? srcY + nrBytesLumaPlane
-                                               : srcY + nrBytesLumaPlane + nrBytesToNextChromaPlane;
-      const unsigned char *restrict srcV = uPlaneFirst
-                                               ? srcY + nrBytesLumaPlane + nrBytesToNextChromaPlane
-                                               : srcY + nrBytesLumaPlane;
+      const unsigned char *restrict srcU =
+        uPlaneFirst ? srcY + nrBytesLumaPlane : srcY + nrBytesLumaPlane + nrBytesToNextChromaPlane;
+      const unsigned char *restrict srcV =
+        uPlaneFirst ? srcY + nrBytesLumaPlane + nrBytesToNextChromaPlane : srcY + nrBytesLumaPlane;
 
       if (format.getSubsampling() == Subsampling::YUV_444)
         YUVPlaneToRGB_444(componentSizeLuma,
@@ -2269,7 +2257,7 @@ bool convertYUVPlanarToRGB(const QByteArray         &sourceBuffer,
                           inputValSkip);
       else if (format.getSubsampling() == Subsampling::YUV_400)
         YUVPlaneToRGBMonochrome_444(
-            componentSizeLuma, mathY, srcY, dst, fullRange, inputMax, bps, format.isBigEndian(), 1);
+          componentSizeLuma, mathY, srcY, dst, fullRange, inputMax, bps, format.isBigEndian(), 1);
       else
         return false;
     }
@@ -2337,14 +2325,14 @@ void convertYUVToImage(const QByteArray         &sourceBuffer,
     {
       if (yuvFormat.getBitsPerSample() == 8)
         convOK = convertYUV420ToRGB<8>(
-            sourceBuffer, outputImage.bits(), curFrameSize, yuvFormat, conversionSettings);
+          sourceBuffer, outputImage.bits(), curFrameSize, yuvFormat, conversionSettings);
       else if (yuvFormat.getBitsPerSample() == 10)
         convOK = convertYUV420ToRGB<10>(
-            sourceBuffer, outputImage.bits(), curFrameSize, yuvFormat, conversionSettings);
+          sourceBuffer, outputImage.bits(), curFrameSize, yuvFormat, conversionSettings);
     }
     else
       convOK = convertYUVPlanarToRGB(
-          sourceBuffer, outputImage.bits(), curFrameSize, yuvFormat, conversionSettings);
+        sourceBuffer, outputImage.bits(), curFrameSize, yuvFormat, conversionSettings);
   }
   else
   {
@@ -2357,17 +2345,17 @@ void convertYUVToImage(const QByteArray         &sourceBuffer,
     {
       if (*predefinedFormat == PredefinedPixelFormat::V210)
         std::tie(convOK, newPixelFormat) =
-            convertV210PackedToPlanar(sourceBuffer, tmpPlanarYUVSource, curFrameSize);
+          convertV210PackedToPlanar(sourceBuffer, tmpPlanarYUVSource, curFrameSize);
       else
         convOK = false;
     }
     else
       std::tie(convOK, newPixelFormat) =
-          convertYUVPackedToPlanar(sourceBuffer, tmpPlanarYUVSource, curFrameSize, yuvFormat);
+        convertYUVPackedToPlanar(sourceBuffer, tmpPlanarYUVSource, curFrameSize, yuvFormat);
 
     if (convOK)
       convOK &= convertYUVPlanarToRGB(
-          tmpPlanarYUVSource, outputImage.bits(), curFrameSize, newPixelFormat, conversionSettings);
+        tmpPlanarYUVSource, outputImage.bits(), curFrameSize, newPixelFormat, conversionSettings);
   }
 
   assert(convOK);
@@ -2388,11 +2376,11 @@ void convertYUVToImage(const QByteArray         &sourceBuffer,
 } // namespace
 
 std::vector<PixelFormatYUV> videoHandlerYUV::formatPresetList = {
-    PixelFormatYUV(Subsampling::YUV_420, 8, PlaneOrder::YUV),
-    PixelFormatYUV(Subsampling::YUV_420, 10, PlaneOrder::YUV),
-    PixelFormatYUV(Subsampling::YUV_422, 8, PlaneOrder::YUV),
-    PixelFormatYUV(Subsampling::YUV_444, 8, PlaneOrder::YUV),
-    PixelFormatYUV(PredefinedPixelFormat::V210)};
+  PixelFormatYUV(Subsampling::YUV_420, 8, PlaneOrder::YUV),
+  PixelFormatYUV(Subsampling::YUV_420, 10, PlaneOrder::YUV),
+  PixelFormatYUV(Subsampling::YUV_422, 8, PlaneOrder::YUV),
+  PixelFormatYUV(Subsampling::YUV_444, 8, PlaneOrder::YUV),
+  PixelFormatYUV(PredefinedPixelFormat::V210)};
 
 videoHandlerYUV::videoHandlerYUV() : videoHandler()
 {
@@ -2475,7 +2463,7 @@ QLayout *videoHandlerYUV::createVideoHandlerControls(bool isSizeAndFormatFixed)
     ui.yuvFormatComboBox->addItem(QString::fromStdString(format.getName()));
 
   const auto currentFormatInPresetList =
-      vectorContains(videoHandlerYUV::formatPresetList, this->srcPixelFormat);
+    vectorContains(videoHandlerYUV::formatPresetList, this->srcPixelFormat);
   if (!currentFormatInPresetList && this->srcPixelFormat.isValid())
   {
     videoHandlerYUV::formatPresetList.push_back(this->srcPixelFormat);
@@ -2485,36 +2473,36 @@ QLayout *videoHandlerYUV::createVideoHandlerControls(bool isSizeAndFormatFixed)
   ui.yuvFormatComboBox->setEnabled(!isSizeAndFormatFixed);
 
   if (const auto presetIndex =
-          vectorIndexOf(videoHandlerYUV::formatPresetList, this->srcPixelFormat))
+        vectorIndexOf(videoHandlerYUV::formatPresetList, this->srcPixelFormat))
     ui.yuvFormatComboBox->setCurrentIndex(static_cast<int>(*presetIndex));
 
   // Set all the values of the properties widget to the values of this class
   const auto hasChroma = (srcPixelFormat.getSubsampling() != Subsampling::YUV_400);
   ui.colorComponentsComboBox->addItems(
-      functions::toQStringList(ComponentDisplayModeMapper.getNames()));
+    functions::toQStringList(ComponentDisplayModeMapper.getNames()));
   ui.colorComponentsComboBox->setCurrentIndex(
-      int(ComponentDisplayModeMapper.indexOf(this->conversionSettings.componentDisplayMode)));
+    int(ComponentDisplayModeMapper.indexOf(this->conversionSettings.componentDisplayMode)));
   ui.colorComponentsComboBox->setEnabled(hasChroma);
   ui.chromaInterpolationComboBox->addItems(
-      functions::toQStringList(ChromaInterpolationMapper.getNames()));
+    functions::toQStringList(ChromaInterpolationMapper.getNames()));
   ui.chromaInterpolationComboBox->setCurrentIndex(
-      int(ChromaInterpolationMapper.indexOf(this->conversionSettings.chromaInterpolation)));
+    int(ChromaInterpolationMapper.indexOf(this->conversionSettings.chromaInterpolation)));
   ui.chromaInterpolationComboBox->setEnabled(hasChroma && srcPixelFormat.isChromaSubsampled());
   ui.colorConversionComboBox->addItems(functions::toQStringList(ColorConversionMapper.getNames()));
   ui.colorConversionComboBox->setCurrentIndex(
-      int(ColorConversionMapper.indexOf(this->conversionSettings.colorConversion)));
+    int(ColorConversionMapper.indexOf(this->conversionSettings.colorConversion)));
   ui.colorConversionComboBox->setEnabled(hasChroma);
   ui.lumaScaleSpinBox->setValue(this->conversionSettings.mathParameters[Component::Luma].scale);
   ui.lumaOffsetSpinBox->setMaximum(1000);
   ui.lumaOffsetSpinBox->setValue(this->conversionSettings.mathParameters[Component::Luma].offset);
   ui.lumaInvertCheckBox->setChecked(
-      this->conversionSettings.mathParameters[Component::Luma].invert);
+    this->conversionSettings.mathParameters[Component::Luma].invert);
   ui.chromaScaleSpinBox->setValue(this->conversionSettings.mathParameters[Component::Chroma].scale);
   ui.chromaOffsetSpinBox->setMaximum(1000);
   ui.chromaOffsetSpinBox->setValue(
-      this->conversionSettings.mathParameters[Component::Chroma].offset);
+    this->conversionSettings.mathParameters[Component::Chroma].offset);
   ui.chromaInvertCheckBox->setChecked(
-      this->conversionSettings.mathParameters[Component::Chroma].invert);
+    this->conversionSettings.mathParameters[Component::Chroma].invert);
 
   // Connect all the change signals from the controls to "connectWidgetSignals()"
   connect(ui.yuvFormatComboBox,
@@ -2541,10 +2529,8 @@ QLayout *videoHandlerYUV::createVideoHandlerControls(bool isSizeAndFormatFixed)
           QOverload<int>::of(&QSpinBox::valueChanged),
           this,
           &videoHandlerYUV::slotYUVControlChanged);
-  connect(ui.lumaInvertCheckBox,
-          &QCheckBox::stateChanged,
-          this,
-          &videoHandlerYUV::slotYUVControlChanged);
+  connect(
+    ui.lumaInvertCheckBox, QCheckBoxStateChanged, this, &videoHandlerYUV::slotYUVControlChanged);
   connect(ui.chromaScaleSpinBox,
           QOverload<int>::of(&QSpinBox::valueChanged),
           this,
@@ -2553,10 +2539,8 @@ QLayout *videoHandlerYUV::createVideoHandlerControls(bool isSizeAndFormatFixed)
           QOverload<int>::of(&QSpinBox::valueChanged),
           this,
           &videoHandlerYUV::slotYUVControlChanged);
-  connect(ui.chromaInvertCheckBox,
-          &QCheckBox::stateChanged,
-          this,
-          &videoHandlerYUV::slotYUVControlChanged);
+  connect(
+    ui.chromaInvertCheckBox, QCheckBoxStateChanged, this, &videoHandlerYUV::slotYUVControlChanged);
 
   if (!isSizeAndFormatFixed && newVBoxLayout)
     newVBoxLayout->addLayout(ui.topVBoxLayout);
@@ -2569,7 +2553,7 @@ void videoHandlerYUV::slotYUVFormatControlChanged(int selectionIndex)
   auto newFormat = this->srcPixelFormat;
 
   const auto customFormatSelected =
-      (selectionIndex == static_cast<int>(videoHandlerYUV::formatPresetList.size()));
+    (selectionIndex == static_cast<int>(videoHandlerYUV::formatPresetList.size()));
   if (customFormatSelected)
   {
     videoHandlerYUVCustomFormatDialog dialog(srcPixelFormat);
@@ -2613,8 +2597,8 @@ void videoHandlerYUV::setSrcPixelFormat(PixelFormatYUV format, bool emitSignal)
   // Update the math parameter offset (the default offset depends on the bit depth and the range)
   int        shift     = format.getBitsPerSample() - 8;
   const bool fullRange = isFullRange(this->conversionSettings.colorConversion);
-  this->conversionSettings.mathParameters[Component::Luma].offset = (fullRange ? 128 : 125)
-                                                                    << shift;
+  this->conversionSettings.mathParameters[Component::Luma].offset   = (fullRange ? 128 : 125)
+                                                                      << shift;
   this->conversionSettings.mathParameters[Component::Chroma].offset = 128 << shift;
 
   if (ui.created())
@@ -2631,7 +2615,7 @@ void videoHandlerYUV::setSrcPixelFormat(PixelFormatYUV format, bool emitSignal)
     ui.colorConversionComboBox->setEnabled(hasChroma);
     ui.lumaOffsetSpinBox->setValue(this->conversionSettings.mathParameters[Component::Luma].offset);
     ui.chromaOffsetSpinBox->setValue(
-        this->conversionSettings.mathParameters[Component::Chroma].offset);
+      this->conversionSettings.mathParameters[Component::Chroma].offset);
   }
 
   if (emitSignal)
@@ -2663,22 +2647,22 @@ void videoHandlerYUV::slotYUVControlChanged()
       sender == ui.chromaInvertCheckBox)
   {
     this->conversionSettings.chromaInterpolation =
-        *ChromaInterpolationMapper.getValueAt(ui.chromaInterpolationComboBox->currentIndex());
+      *ChromaInterpolationMapper.getValueAt(ui.chromaInterpolationComboBox->currentIndex());
     this->conversionSettings.componentDisplayMode =
-        *ComponentDisplayModeMapper.getValueAt(ui.colorComponentsComboBox->currentIndex());
+      *ComponentDisplayModeMapper.getValueAt(ui.colorComponentsComboBox->currentIndex());
     this->conversionSettings.colorConversion =
-        *ColorConversionMapper.getValueAt(ui.colorConversionComboBox->currentIndex());
+      *ColorConversionMapper.getValueAt(ui.colorConversionComboBox->currentIndex());
 
     this->conversionSettings.mathParameters[Component::Luma].scale  = ui.lumaScaleSpinBox->value();
     this->conversionSettings.mathParameters[Component::Luma].offset = ui.lumaOffsetSpinBox->value();
     this->conversionSettings.mathParameters[Component::Luma].invert =
-        ui.lumaInvertCheckBox->isChecked();
+      ui.lumaInvertCheckBox->isChecked();
     this->conversionSettings.mathParameters[Component::Chroma].scale =
-        ui.chromaScaleSpinBox->value();
+      ui.chromaScaleSpinBox->value();
     this->conversionSettings.mathParameters[Component::Chroma].offset =
-        ui.chromaOffsetSpinBox->value();
+      ui.chromaOffsetSpinBox->value();
     this->conversionSettings.mathParameters[Component::Chroma].invert =
-        ui.chromaInvertCheckBox->isChecked();
+      ui.chromaInvertCheckBox->isChecked();
 
     // Set the current frame in the buffer to be invalid and clear the cache.
     // Emit that this item needs redraw and the cache needs updating.
@@ -2709,18 +2693,18 @@ void videoHandlerYUV::slotYUVControlChanged()
 /* Get the pixels values so we can show them in the info part of the zoom box.
  * If a second frame handler is provided, the difference values from that item will be returned.
  */
-QStringPairList videoHandlerYUV::getPixelValues(const QPoint &pixelPos,
-                                                int           frameIdx,
-                                                FrameHandler *item2,
-                                                const int     frameIdx1)
+QStringPairList videoHandlerYUV::getPixelValues(const QPoint             &pixelPos,
+                                                int                       frameIdx,
+                                                const FrameHandler *const item2,
+                                                const int                 frameIdx1) const
 {
   QStringPairList values;
 
   const int formatBase = settings.value("ShowPixelValuesHex").toBool() ? 16 : 10;
   if (item2 != nullptr)
   {
-    videoHandlerYUV *yuvItem2 = dynamic_cast<videoHandlerYUV *>(item2);
-    if (yuvItem2 == nullptr)
+    auto yuvItem2 = dynamic_cast<const videoHandlerYUV *const>(item2);
+    if (!yuvItem2)
       // The given item is not a YUV source. We cannot compare YUV values to non YUV values.
       // Call the base class comparison function to compare the items using the RGB values.
       return FrameHandler::getPixelValues(pixelPos, frameIdx, item2, frameIdx1);
@@ -2837,12 +2821,12 @@ void videoHandlerYUV::drawPixelValues(QPainter     *painter,
                                       const int     frameIdxItem1)
 {
   // Get the other YUV item (if any)
-  auto yuvItem2 = (item2 == nullptr) ? nullptr : dynamic_cast<videoHandlerYUV *>(item2);
-  if (item2 != nullptr && yuvItem2 == nullptr)
+  auto yuvItem2 = dynamic_cast<videoHandlerYUV *>(item2);
+  if (item2 && !yuvItem2)
   {
     // The other item is not a yuv item
     FrameHandler::drawPixelValues(
-        painter, frameIdx, videoRect, zoomFactor, item2, markDifference, frameIdxItem1);
+      painter, frameIdx, videoRect, zoomFactor, item2, markDifference, frameIdxItem1);
     return;
   }
 
@@ -2962,7 +2946,7 @@ void videoHandlerYUV::drawPixelValues(QPainter     *painter,
           drawWhite = (Y == 0);
         else
           drawWhite =
-              (mathParameters.at(Component::Luma).invert) ? (Y > whiteLimit) : (Y < whiteLimit);
+            (mathParameters.at(Component::Luma).invert) ? (Y > whiteLimit) : (Y < whiteLimit);
       }
       else if (showPixelValuesAsDiff)
       {
@@ -2980,7 +2964,7 @@ void videoHandlerYUV::drawPixelValues(QPainter     *painter,
         U           = int(value.U);
         V           = int(value.V);
         drawWhite =
-            (mathParameters.at(Component::Luma).invert) ? (Y > whiteLimit) : (Y < whiteLimit);
+          (mathParameters.at(Component::Luma).invert) ? (Y > whiteLimit) : (Y < whiteLimit);
       }
 
       const int     formatBase = settings.value("ShowPixelValuesHex").toBool() ? 16 : 10;
@@ -3030,8 +3014,8 @@ void videoHandlerYUV::drawPixelValues(QPainter     *painter,
 }
 
 void videoHandlerYUV::guessAndSetPixelFormat(
-    const filesource::frameFormatGuess::GuessedFrameFormat &frameFormat,
-    const filesource::frameFormatGuess::FileInfoForGuess   &fileInfo)
+  const filesource::frameFormatGuess::GuessedFrameFormat &frameFormat,
+  const filesource::frameFormatGuess::FileInfoForGuess   &fileInfo)
 {
   auto format = guessPixelFormatFromSizeAndName(frameFormat, fileInfo);
   if (format.isValid())
@@ -3092,7 +3076,7 @@ void videoHandlerYUV::setFormatFromCorrelation(const QByteArray &rawYUVData, int
     for (const auto &subsampling : SubsamplingMapper.getValues())
       for (const auto &size : testSizes)
         formatList.push_back(
-            testFormatAndSize(size, PixelFormatYUV(subsampling, bits, PlaneOrder::YUV)));
+          testFormatAndSize(size, PixelFormatYUV(subsampling, bits, PlaneOrder::YUV)));
   }
 
   if (fileSize > 0)
@@ -3167,18 +3151,27 @@ void videoHandlerYUV::setFormatFromCorrelation(const QByteArray &rawYUVData, int
   }
 }
 
-bool videoHandlerYUV::setFormatFromString(QString format)
+std::optional<std::string> videoHandlerYUV::getFormatAsString() const
+{
+  const auto frameFormat = FrameHandler::getFormatAsString();
+  if (!frameFormat)
+    return {};
+  return *frameFormat + ";YUV;" + this->srcPixelFormat.getName();
+}
+
+bool videoHandlerYUV::setFormatFromString(const std::string_view format)
 {
   DEBUG_YUV("videoHandlerYUV::setFormatFromString " << format << "\n");
 
-  auto split = format.split(";");
-  if (split.length() != 4 || split[2] != "YUV")
+  auto split = functions::splitString(format, ';');
+  if (split.size() != 4 || split[2] != "YUV")
     return false;
 
-  if (!FrameHandler::setFormatFromString(split[0] + ";" + split[1]))
+  const auto frameFormat = std::string(split.at(0)) + ";" + std::string(split.at(1));
+  if (!FrameHandler::setFormatFromString(frameFormat))
     return false;
 
-  auto fmt = PixelFormatYUV(split[3].toStdString());
+  auto fmt = PixelFormatYUV(split.at(3));
   if (!fmt.isValid())
     return false;
 
@@ -3250,7 +3243,7 @@ void videoHandlerYUV::loadFrameForCaching(int frameIndex, QImage &frameToCache)
 
   // Convert YUV to image. This can then be cached.
   convertYUVToImage(
-      tmpBufferRawYUVDataCaching, frameToCache, yuvFormat, curFrameSize, conversionSettings);
+    tmpBufferRawYUVDataCaching, frameToCache, yuvFormat, curFrameSize, conversionSettings);
 }
 
 // Load the raw YUV data for the given frame index into currentFrameRawData.
@@ -3302,36 +3295,36 @@ yuv_t videoHandlerYUV::getPixelValue(const QPoint &pixelPos) const
     // subsampling.
     const int componentSizeLuma = (w * h);
     const int componentSizeChroma =
-        (w / format.getSubsamplingHor()) * (h / format.getSubsamplingVer());
+      (w / format.getSubsamplingHor()) * (h / format.getSubsamplingVer());
 
     // How many bytes are in each component?
     const int nrBytesLumaPlane =
-        (format.getBitsPerSample() > 8) ? componentSizeLuma * 2 : componentSizeLuma;
+      (format.getBitsPerSample() > 8) ? componentSizeLuma * 2 : componentSizeLuma;
     const int nrBytesChromaPlane =
-        (format.getBitsPerSample() > 8) ? componentSizeChroma * 2 : componentSizeChroma;
+      (format.getBitsPerSample() > 8) ? componentSizeChroma * 2 : componentSizeChroma;
 
     // Luma first
     const unsigned char *restrict srcY   = (unsigned char *)currentFrameRawData.data();
     const unsigned int offsetCoordinateY = w * pixelPos.y() + pixelPos.x();
-    value.Y                              = getValueFromSource(
-        srcY, offsetCoordinateY, format.getBitsPerSample(), format.isBigEndian());
+    value.Y =
+      getValueFromSource(srcY, offsetCoordinateY, format.getBitsPerSample(), format.isBigEndian());
 
     if (format.getSubsampling() != Subsampling::YUV_400)
     {
       // Now Chroma
       const bool uFirst =
-          (format.getPlaneOrder() == PlaneOrder::YUV || format.getPlaneOrder() == PlaneOrder::YUVA);
-      const bool hasAlpha = (format.getPlaneOrder() == PlaneOrder::YUVA ||
-                             format.getPlaneOrder() == PlaneOrder::YVUA);
+        (format.getPlaneOrder() == PlaneOrder::YUV || format.getPlaneOrder() == PlaneOrder::YUVA);
+      const bool hasAlpha =
+        (format.getPlaneOrder() == PlaneOrder::YUVA || format.getPlaneOrder() == PlaneOrder::YVUA);
       if (format.isUVInterleaved())
       {
         // U, V (and alpha) are interleaved
         const unsigned char *restrict srcUVA = srcY + nrBytesLumaPlane;
         const unsigned int mult              = hasAlpha ? 3 : 2;
         const unsigned int offsetCoordinateUV =
-            ((w / format.getSubsamplingHor() * (pixelPos.y() / format.getSubsamplingVer())) +
-             pixelPos.x() / format.getSubsamplingHor()) *
-            mult;
+          ((w / format.getSubsamplingHor() * (pixelPos.y() / format.getSubsamplingVer())) +
+           pixelPos.x() / format.getSubsamplingHor()) *
+          mult;
 
         value.U = getValueFromSource(srcUVA,
                                      offsetCoordinateUV + (uFirst ? 0 : 1),
@@ -3345,19 +3338,19 @@ yuv_t videoHandlerYUV::getPixelValue(const QPoint &pixelPos) const
       else
       {
         const unsigned char *restrict srcU =
-            uFirst ? srcY + nrBytesLumaPlane : srcY + nrBytesLumaPlane + nrBytesChromaPlane;
+          uFirst ? srcY + nrBytesLumaPlane : srcY + nrBytesLumaPlane + nrBytesChromaPlane;
         const unsigned char *restrict srcV =
-            uFirst ? srcY + nrBytesLumaPlane + nrBytesChromaPlane : srcY + nrBytesLumaPlane;
+          uFirst ? srcY + nrBytesLumaPlane + nrBytesChromaPlane : srcY + nrBytesLumaPlane;
 
         // Get the YUV data from the currentFrameRawData
         const unsigned int offsetCoordinateUV =
-            (w / format.getSubsamplingHor() * (pixelPos.y() / format.getSubsamplingVer())) +
-            pixelPos.x() / format.getSubsamplingHor();
+          (w / format.getSubsamplingHor() * (pixelPos.y() / format.getSubsamplingVer())) +
+          pixelPos.x() / format.getSubsamplingHor();
 
         value.U = getValueFromSource(
-            srcU, offsetCoordinateUV, format.getBitsPerSample(), format.isBigEndian());
+          srcU, offsetCoordinateUV, format.getBitsPerSample(), format.isBigEndian());
         value.V = getValueFromSource(
-            srcV, offsetCoordinateUV, format.getBitsPerSample(), format.isBigEndian());
+          srcV, offsetCoordinateUV, format.getBitsPerSample(), format.isBigEndian());
       }
     }
   }
@@ -3383,7 +3376,7 @@ yuv_t videoHandlerYUV::getPixelValue(const QPoint &pixelPos) const
         // The format is 4 values in 40 bits (5 bytes) which fits exactly for 422 10 bit.
         auto offsetInInput = pixelPos.y() * (pixelPos.x() / 2) * 5;
         const unsigned char *restrict src =
-            (unsigned char *)currentFrameRawData.data() + offsetInInput;
+          (unsigned char *)currentFrameRawData.data() + offsetInInput;
 
         unsigned short values[4];
         values[0] = (src[0] << 2) + (src[1] >> 6);
@@ -3401,10 +3394,10 @@ yuv_t videoHandlerYUV::getPixelValue(const QPoint &pixelPos) const
       else
       {
         // The offset of the pixel in bytes
-        const unsigned offsetCoordinate4Block = (w * 2 * pixelPos.y() + (pixelPos.x() / 2 * 4)) *
-                                                (format.getBitsPerSample() > 8 ? 2 : 1);
+        const unsigned offsetCoordinate4Block =
+          (w * 2 * pixelPos.y() + (pixelPos.x() / 2 * 4)) * (format.getBitsPerSample() > 8 ? 2 : 1);
         const unsigned char *restrict src =
-            (unsigned char *)currentFrameRawData.data() + offsetCoordinate4Block;
+          (unsigned char *)currentFrameRawData.data() + offsetCoordinate4Block;
 
         value.Y = getValueFromSource(src,
                                      (pixelPos.x() % 2 == 0) ? oY : oY + 2,
@@ -3421,8 +3414,8 @@ yuv_t videoHandlerYUV::getPixelValue(const QPoint &pixelPos) const
       const int oY = (packing == PackingOrder::AYUV) ? 1 : (packing == PackingOrder::VUYA) ? 2 : 0;
       const int oU = (packing == PackingOrder::YUV || packing == PackingOrder::YUVA ||
                       packing == PackingOrder::VUYA)
-                         ? 1
-                         : 2;
+                       ? 1
+                       : 2;
       const int oV = (packing == PackingOrder::YVU)    ? 1
                      : (packing == PackingOrder::AYUV) ? 3
                      : (packing == PackingOrder::VUYA) ? 0
@@ -3430,8 +3423,8 @@ yuv_t videoHandlerYUV::getPixelValue(const QPoint &pixelPos) const
 
       // How many bytes to the next sample?
       const int offsetNext =
-          (packing == PackingOrder::YUV || packing == PackingOrder::YVU ? 3 : 4) *
-          (format.getBitsPerSample() > 8 ? 2 : 1);
+        (packing == PackingOrder::YUV || packing == PackingOrder::YVU ? 3 : 4) *
+        (format.getBitsPerSample() > 8 ? 2 : 1);
       const int offsetSrc               = (w * pixelPos.y() + pixelPos.x()) * offsetNext;
       const unsigned char *restrict src = (unsigned char *)currentFrameRawData.data() + offsetSrc;
 
@@ -3466,7 +3459,7 @@ bool videoHandlerYUV::markDifferencesYUVPlanarToRGB(const QByteArray     &source
   // subsampling.
   const int componentSizeLuma = (w * h);
   const int componentSizeChroma =
-      (w / format.getSubsamplingHor()) * (h / format.getSubsamplingVer());
+    (w / format.getSubsamplingHor()) * (h / format.getSubsamplingVer());
 
   // How many bytes are in each component?
   const int nrBytesLumaPlane   = (bps > 8) ? componentSizeLuma * 2 : componentSizeLuma;
@@ -3481,13 +3474,13 @@ bool videoHandlerYUV::markDifferencesYUVPlanarToRGB(const QByteArray     &source
   // Get the pointers to the source planes (8 bit per sample)
   const unsigned char *restrict srcY = (unsigned char *)sourceBuffer.data();
   const unsigned char *restrict srcU =
-      (format.getPlaneOrder() == PlaneOrder::YUV || format.getPlaneOrder() == PlaneOrder::YUVA)
-          ? srcY + nrBytesLumaPlane
-          : srcY + nrBytesLumaPlane + nrBytesChromaPlane;
+    (format.getPlaneOrder() == PlaneOrder::YUV || format.getPlaneOrder() == PlaneOrder::YUVA)
+      ? srcY + nrBytesLumaPlane
+      : srcY + nrBytesLumaPlane + nrBytesChromaPlane;
   const unsigned char *restrict srcV =
-      (format.getPlaneOrder() == PlaneOrder::YUV || format.getPlaneOrder() == PlaneOrder::YUVA)
-          ? srcY + nrBytesLumaPlane + nrBytesChromaPlane
-          : srcY + nrBytesLumaPlane;
+    (format.getPlaneOrder() == PlaneOrder::YUV || format.getPlaneOrder() == PlaneOrder::YUVA)
+      ? srcY + nrBytesLumaPlane + nrBytesChromaPlane
+      : srcY + nrBytesLumaPlane;
 
   const int sampleBlocksX = format.getSubsamplingHor();
   const int sampleBlocksY = format.getSubsamplingVer();
@@ -3552,25 +3545,17 @@ QImage videoHandlerYUV::calculateDifference(FrameHandler    *item2,
 {
   this->diffReady = false;
 
-  videoHandlerYUV *yuvItem2 = dynamic_cast<videoHandlerYUV *>(item2);
-  if (yuvItem2 == nullptr)
+  auto yuvItem2 = dynamic_cast<videoHandlerYUV *>(item2);
+  if (!yuvItem2)
     // The given item is not a YUV source. We cannot compare YUV values to non YUV values.
     // Call the base class comparison function to compare the items using the RGB values.
-    return videoHandler::calculateDifference(item2,
-                                             frameIdxItem0,
-                                             frameIdxItem1,
-                                             differenceInfoList,
-                                             amplificationFactor,
-                                             markDifference);
+    return videoHandler::calculateDifference(
+      item2, frameIdxItem0, frameIdxItem1, differenceInfoList, amplificationFactor, markDifference);
 
   if (srcPixelFormat.getSubsampling() != yuvItem2->srcPixelFormat.getSubsampling())
     // The two items have different subsampling modes. Compare RGB values instead.
-    return videoHandler::calculateDifference(item2,
-                                             frameIdxItem0,
-                                             frameIdxItem1,
-                                             differenceInfoList,
-                                             amplificationFactor,
-                                             markDifference);
+    return videoHandler::calculateDifference(
+      item2, frameIdxItem0, frameIdxItem1, differenceInfoList, amplificationFactor, markDifference);
 
   // Get/Set the bit depth of the input and output
   // If the bit depth of the two items is different, we will scale the item with the lower bit depth
@@ -3582,10 +3567,10 @@ QImage videoHandlerYUV::calculateDifference(FrameHandler    *item2,
   const unsigned bitDepthScale[2] = {bps_out - bps_in[0], bps_out - bps_in[1]};
   if (bitDepthScale[0] > 0 || bitDepthScale[1] > 0)
     differenceInfoList.append(
-        InfoItem("Warning"sv,
-                 "The bit depth of the two items differs.",
-                 "The bit depth of the two input items is different. The lower bit depth will be "
-                 "scaled up and the difference is calculated."));
+      InfoItem("Warning"sv,
+               "The bit depth of the two items differs.",
+               "The bit depth of the two input items is different. The lower bit depth will be "
+               "scaled up and the difference is calculated."));
 
   // What are the maximum and middle value for the output bit depth
   const int diffZero = 128 << (bps_out - 8);
@@ -3616,10 +3601,10 @@ QImage videoHandlerYUV::calculateDifference(FrameHandler    *item2,
   // Append a warning if the frame sizes are different
   if (frameSize != yuvItem2->frameSize)
     differenceInfoList.append(
-        InfoItem("Warning"sv,
-                 "The size of the two items differs.",
-                 "The size of the two input items is different. The difference of the top left "
-                 "aligned part that overlaps will be calculated."));
+      InfoItem("Warning"sv,
+               "The size of the two items differs.",
+               "The size of the two input items is different. The difference of the top left "
+               "aligned part that overlaps will be calculated."));
 
   PixelFormatYUV tmpDiffYUVFormat(srcPixelFormat.getSubsampling(), bps_out, PlaneOrder::YUV, true);
   diffYUVFormat = tmpDiffYUVFormat;
@@ -3639,35 +3624,35 @@ QImage videoHandlerYUV::calculateDifference(FrameHandler    *item2,
   const unsigned componentSizeChroma_In[2] = {(w_in[0] / subH) * (h_in[0] / subV),
                                               (w_in[1] / subH) * (h_in[1] / subV)};
   const unsigned nrBytesLumaPlane_In[2]    = {
-      bps_in[0] > 8 ? 2 * componentSizeLuma_In[0] : componentSizeLuma_In[0],
-      bps_in[1] > 8 ? 2 * componentSizeLuma_In[1] : componentSizeLuma_In[1]};
+    bps_in[0] > 8 ? 2 * componentSizeLuma_In[0] : componentSizeLuma_In[0],
+    bps_in[1] > 8 ? 2 * componentSizeLuma_In[1] : componentSizeLuma_In[1]};
   const unsigned nrBytesChromaPlane_In[2] = {
-      bps_in[0] > 8 ? 2 * componentSizeChroma_In[0] : componentSizeChroma_In[0],
-      bps_in[1] > 8 ? 2 * componentSizeChroma_In[1] : componentSizeChroma_In[1]};
+    bps_in[0] > 8 ? 2 * componentSizeChroma_In[0] : componentSizeChroma_In[0],
+    bps_in[1] > 8 ? 2 * componentSizeChroma_In[1] : componentSizeChroma_In[1]};
   // Current item
   const unsigned char *restrict srcY1 = (unsigned char *)currentFrameRawData.data();
   const unsigned char *restrict srcU1 =
-      (srcPixelFormat.getPlaneOrder() == PlaneOrder::YUV ||
-       srcPixelFormat.getPlaneOrder() == PlaneOrder::YUVA)
-          ? srcY1 + nrBytesLumaPlane_In[0]
-          : srcY1 + nrBytesLumaPlane_In[0] + nrBytesChromaPlane_In[0];
+    (srcPixelFormat.getPlaneOrder() == PlaneOrder::YUV ||
+     srcPixelFormat.getPlaneOrder() == PlaneOrder::YUVA)
+      ? srcY1 + nrBytesLumaPlane_In[0]
+      : srcY1 + nrBytesLumaPlane_In[0] + nrBytesChromaPlane_In[0];
   const unsigned char *restrict srcV1 =
-      (srcPixelFormat.getPlaneOrder() == PlaneOrder::YUV ||
-       srcPixelFormat.getPlaneOrder() == PlaneOrder::YUVA)
-          ? srcY1 + nrBytesLumaPlane_In[0] + nrBytesChromaPlane_In[0]
-          : srcY1 + nrBytesLumaPlane_In[0];
+    (srcPixelFormat.getPlaneOrder() == PlaneOrder::YUV ||
+     srcPixelFormat.getPlaneOrder() == PlaneOrder::YUVA)
+      ? srcY1 + nrBytesLumaPlane_In[0] + nrBytesChromaPlane_In[0]
+      : srcY1 + nrBytesLumaPlane_In[0];
   // The other item
   const unsigned char *restrict srcY2 = (unsigned char *)yuvItem2->currentFrameRawData.data();
   const unsigned char *restrict srcU2 =
-      (yuvItem2->srcPixelFormat.getPlaneOrder() == PlaneOrder::YUV ||
-       yuvItem2->srcPixelFormat.getPlaneOrder() == PlaneOrder::YUVA)
-          ? srcY2 + nrBytesLumaPlane_In[1]
-          : srcY2 + nrBytesLumaPlane_In[1] + nrBytesChromaPlane_In[1];
+    (yuvItem2->srcPixelFormat.getPlaneOrder() == PlaneOrder::YUV ||
+     yuvItem2->srcPixelFormat.getPlaneOrder() == PlaneOrder::YUVA)
+      ? srcY2 + nrBytesLumaPlane_In[1]
+      : srcY2 + nrBytesLumaPlane_In[1] + nrBytesChromaPlane_In[1];
   const unsigned char *restrict srcV2 =
-      (yuvItem2->srcPixelFormat.getPlaneOrder() == PlaneOrder::YUV ||
-       yuvItem2->srcPixelFormat.getPlaneOrder() == PlaneOrder::YUVA)
-          ? srcY2 + nrBytesLumaPlane_In[1] + nrBytesChromaPlane_In[1]
-          : srcY2 + nrBytesLumaPlane_In[1];
+    (yuvItem2->srcPixelFormat.getPlaneOrder() == PlaneOrder::YUV ||
+     yuvItem2->srcPixelFormat.getPlaneOrder() == PlaneOrder::YUVA)
+      ? srcY2 + nrBytesLumaPlane_In[1] + nrBytesChromaPlane_In[1]
+      : srcY2 + nrBytesLumaPlane_In[1];
 
   // Get pointers to the output
   const int componentSizeLuma_out   = w_out * h_out * (bps_out > 8 ? 2 : 1); // Size in bytes
@@ -3715,8 +3700,8 @@ QImage videoHandlerYUV::calculateDifference(FrameHandler    *item2,
 
   // Next U/V
   const unsigned strideC_in[2] = {
-      w_in[0] / subH * (bps_in[0] > 8 ? 2 : 1),
-      w_in[1] / subH * (bps_in[1] > 8 ? 2 : 1)}; // How many bytes to the next U/V y line
+    w_in[0] / subH * (bps_in[0] > 8 ? 2 : 1),
+    w_in[1] / subH * (bps_in[1] > 8 ? 2 : 1)}; // How many bytes to the next U/V y line
   for (unsigned y = 0; y < h_out / subV; y++)
   {
     for (unsigned x = 0; x < w_out / subH; x++)
@@ -3783,7 +3768,7 @@ QImage videoHandlerYUV::calculateDifference(FrameHandler    *item2,
   if (markDifference)
     // We don't want to see the actual difference but just where differences are.
     markDifferencesYUVPlanarToRGB(
-        diffYUV, outputImage.bits(), Size(w_out, h_out), tmpDiffYUVFormat);
+      diffYUV, outputImage.bits(), Size(w_out, h_out), tmpDiffYUVFormat);
   else
   {
     // Get the format of the tmpDiffYUV buffer and convert it to RGB
@@ -3791,11 +3776,11 @@ QImage videoHandlerYUV::calculateDifference(FrameHandler    *item2,
     conversionSettings.mathParameters[Component::Luma]   = MathParameters(1, 125, false);
     conversionSettings.mathParameters[Component::Chroma] = MathParameters(1, 128, false);
     convertYUVPlanarToRGB(
-        diffYUV, outputImage.bits(), Size(w_out, h_out), tmpDiffYUVFormat, conversionSettings);
+      diffYUV, outputImage.bits(), Size(w_out, h_out), tmpDiffYUVFormat, conversionSettings);
   }
 
   differenceInfoList.append(InfoItem(
-      "Difference Type", "YUV " + formatSubsamplingWithColons(srcPixelFormat.getSubsampling())));
+    "Difference Type", "YUV " + formatSubsamplingWithColons(srcPixelFormat.getSubsampling())));
 
   {
     const auto nrPixelsLuma = w_out * h_out;
@@ -3871,7 +3856,7 @@ void videoHandlerYUV::setYUVColorConversion(ColorConversion conversion)
 
     if (ui.created())
       ui.colorConversionComboBox->setCurrentIndex(
-          int(ColorConversionMapper.indexOf(this->conversionSettings.colorConversion)));
+        int(ColorConversionMapper.indexOf(this->conversionSettings.colorConversion)));
   }
 }
 
@@ -3905,7 +3890,7 @@ void videoHandlerYUV::loadPlaylist(const YUViewDomElement &element)
   if (!lumaOffset.isEmpty())
     this->conversionSettings.mathParameters[Component::Luma].offset = lumaOffset.toInt();
   this->conversionSettings.mathParameters[Component::Luma].invert =
-      (element.findChildValue("math.luma.invert") == "True");
+    (element.findChildValue("math.luma.invert") == "True");
 
   auto chromaScale = element.findChildValue("math.chroma.scale");
   if (!chromaScale.isEmpty())
@@ -3914,7 +3899,7 @@ void videoHandlerYUV::loadPlaylist(const YUViewDomElement &element)
   if (!chromaOffset.isEmpty())
     this->conversionSettings.mathParameters[Component::Chroma].offset = chromaOffset.toInt();
   this->conversionSettings.mathParameters[Component::Chroma].invert =
-      (element.findChildValue("math.chroma.invert") == "True");
+    (element.findChildValue("math.chroma.invert") == "True");
 }
 
 } // namespace video::yuv

@@ -2,6 +2,17 @@
 import pickle
 from parseTables import *
 from pathlib import Path
+from dataclasses import dataclass, field
+
+
+@dataclass
+class WritingSettings:
+    outputPath: str = "cpp"
+    namespace: str = "parser"
+    baseClass: str = "NalRBSP"
+    readerName: str = "SubByteReaderLogging"
+    includes: list[str] = field(default_factory=list)
+
 
 def writeLicense(writer):
     writer.write(
@@ -38,15 +49,18 @@ def writeLicense(writer):
  */\n\n""")
 
 class HeaderFile:
-    def __init__ (self, path, name, namespace):
-        self.f = open(f"{path}/{name}.h", "w")
+    def __init__ (self, settings: WritingSettings, name: str):
+        self.f = open(f"{settings.outputPath}/{name}.h", "w")
         writeLicense(self.f)
         self.f.write("#pragma once\n\n")
-        self.f.write("#include \"NalUnitVVC.h\"\n")
-        self.f.write("#include \"parser/common/SubByteReaderLogging.h\"\n\n")
-        self.f.write(f"""namespace {namespace}""")
+        for include in settings.includes:
+            self.f.write(f"#include \"{include}\"\n")
+        self.f.write("\n")
+        self.f.write("#include <vector>")
+        self.f.write("\n")
+        self.f.write(f"""namespace {settings.namespace}""")
         self.f.write("\n{\n\n")
-        self.namespace = namespace
+        self.namespace = settings.namespace
         self.spaces = 0
     def __del__(self):
         self.f.write(f"""}} // namespace {self.namespace}""")
@@ -57,14 +71,14 @@ class HeaderFile:
         self.f.write(s)
 
 class CppFile:
-    def __init__ (self, path, name, namespace):
-        self.f = open(f"{path}/{name}.cpp", "w")
+    def __init__ (self, settings: WritingSettings, name: str):
+        self.f = open(f"{settings.outputPath}/{name}.cpp", "w")
         writeLicense(self.f)
         self.f.write(f"""#include "{name}.h"\n""")
         self.f.write("""\n""")
-        self.f.write(f"""namespace {namespace}""")
+        self.f.write(f"""namespace {settings.namespace}""")
         self.f.write("\n{\n\n")
-        self.namespace = namespace
+        self.namespace = settings.namespace
         self.spaces = 0
     def __del__(self):
         self.f.write(f"""}} // namespace {self.namespace}""")
@@ -83,21 +97,26 @@ def argumentsToString(arguments, variableType = ""):
         s += f", {variableType}{arg}"
     return s
 
-def writeBeginningToHeader(table, file):
-    file.write(f"class {table.name} : public NalRBSP\n")
+def writeBeginningToHeader(table, file, readerName: str):
+    if table.type == TableType.NAL_UNIT:
+        file.write(f"class {table.name} : public NalRBSP\n")
+    if table.type == TableType.SEI_MESSAGE:
+        file.write(f"class {table.name} : public SEI\n")
+    else:
+        file.write(f"class {table.name}\n")
     file.write("{\n")
     file.write(f"public:\n")
     file.write(f"  {table.name}() = default;\n")
     file.write(f"  ~{table.name}() = default;\n")
-    file.write(f"  void parse(SubByteReaderLogging &reader{argumentsToString(table.arguments, 'int')});\n\n")
+    file.write(f"  void parse({readerName} &reader{argumentsToString(table.arguments, 'int')});\n\n")
 
 def writeEndToHeader(file):
     file.spaces = 0
     file.write("};\n")
     file.write("\n")
 
-def writeBeginnginToSource(table, file):
-    file.write(f"void {table.name}::parse(SubByteReaderLogging &reader)\n")
+def writeBeginnginToSource(table, file, readerName: str):
+    file.write(f"void {table.name}::parse({readerName} &reader{argumentsToString(table.arguments, 'int')})\n")
     file.write("{\n")
 
 def writeEndToSource(file):
@@ -112,29 +131,48 @@ def writeItemsInContainer(container, files):
         writeItemToFiles(item, files)
     files[1].spaces -= 2
 
+def formatCondition(condition: str):
+    if "byte_aligned" in condition:
+        return "reader.byte_aligned()"
+    return condition
+
 def writeItemToFiles(item, files):
     header = files[0]
     cpp = files[1]
     if (type(item) == Variable):
         typeString = "unsigned"
         arguments = ""
-        if (item.coding.codingType == Coding.UNSIGNED_VARIABLE and item.coding.length == 0):
-            # Length for code should be known. Write the info and something that will not compile
-            header.write(f"int {item.name} {{}};\n")
-            cpp.write(f"""this->{item.name} = reader.readBits("{item.name}", unknown)\n""")
-            return
-        if (item.coding.codingType in [Coding.FIXED_CODE, Coding.UNSIGNED_VARIABLE, Coding.UNSIGNED_FIXED]):
-            if (item.coding.length == 1):
+        if item.coding.codingType == Coding.UNSIGNED_VARIABLE:
+            nrBitsText = "variable"
+            if item.description != None and item.description.variableParsingLength != None:
+                nrBitsText = item.description.variableParsingLength
+            typeString = "int"
+            parseFunction = "readBits"
+            arguments = f", {nrBitsText}"
+        if (item.coding.codingType in [Coding.FIXED_CODE, Coding.UNSIGNED_FIXED]):
+            if item.coding.length == 1:
                 typeString = "bool"
                 parseFunction = "readFlag"
             else:
                 parseFunction = "readBits"
                 arguments = f", {item.coding.length}"
-        elif (item.coding.codingType == Coding.UNSIGNED_EXP):
+        elif item.coding.codingType == Coding.UNSIGNED_EXP:
             parseFunction = "readUEV"
-        elif (item.coding.codingType == Coding.SIGNED_EXP):
+        elif item.coding.codingType == Coding.SIGNED_EXP:
             parseFunction = "readSEV"
             typeString = "int"
+        elif item.coding.codingType == Coding.BYTE:
+            parseFunction = "readBits"
+            arguments = ", 8"
+        elif item.coding.codingType == Coding.SIGNED_FIXED:
+            parseFunction = "readBitsSigned"
+            typeString = "int"
+            arguments = f", {item.coding.length}"
+        elif item.coding.codingType == Coding.STRING:
+            parseFunction = "readString"
+            typeString = "std::string"
+        elif item.coding.codingType == Coding.UNKNOWN:
+            parseFunction = "unknown"
 
         name = item.name
         if (item.arrayIndex != None):
@@ -152,12 +190,17 @@ def writeItemToFiles(item, files):
         header.write(f"{item.functionName} {item.functionName}_instance;\n")
         cpp.write(f"this->{item.functionName}_instance.parse(reader{argumentsToString(item.arguments)});\n")
     elif (type(item) == ContainerIf):
-        cpp.write(f"if ({item.condition})\n")
+        if item.isElse:
+            cpp.write(f"else\n")
+        elif item.isElseIf:
+            cpp.write(f"else if ({formatCondition(item.condition)})\n")
+        else:
+            cpp.write(f"if ({formatCondition(item.condition)})\n")
         cpp.write("{\n")
         writeItemsInContainer(item, files)
         cpp.write("}\n")
     elif (type(item) == ContainerWhile):
-        cpp.write(f"while ({item.condition})\n")
+        cpp.write(f"while ({formatCondition(item.condition)})\n")
         cpp.write("{\n")
         writeItemsInContainer(item, files)
         cpp.write("}\n")
@@ -166,7 +209,7 @@ def writeItemToFiles(item, files):
         cpp.write("{\n")
         writeItemsInContainer(item, files)
         cpp.write("} ")
-        cpp.write(f"while({item.condition})\n")
+        cpp.write(f"while({formatCondition(item.condition)})\n")
     elif (type(item) == ContainerFor):
         variableType = "unsigned"
         if ("--" in item.increment):
@@ -176,27 +219,29 @@ def writeItemToFiles(item, files):
         writeItemsInContainer(item, files)
         cpp.write("}\n")
 
-def writeTableToFiles(table, files):
-    writeBeginningToHeader(table, files[0])
-    writeBeginnginToSource(table, files[1])
+def writeTableToFiles(table, files, readerName):
+    writeBeginningToHeader(table, files[0], readerName)
+    writeBeginnginToSource(table, files[1], readerName)
     writeItemsInContainer(table, files)
     writeEndToSource(files[1])
     writeEndToHeader(files[0])
 
-def writeTablesToCpp(parsedTables, path):
-    Path(path).mkdir(parents=True, exist_ok=True)
-
-    namespace = "parser::vvc"
+def writeTablesToCpp(parsedTables, settings: WritingSettings):
+    Path(settings.outputPath).mkdir(parents=True, exist_ok=True)
 
     for table in parsedTables:
         assert(type(table) == ContainerTable)
         print(f"Writing {table.name}")
-        files = (HeaderFile(path, table.name, namespace), CppFile(path, table.name, namespace))
-        writeTableToFiles(table, files)
+        files = (HeaderFile(settings, table.name), CppFile(settings, table.name))
+        writeTableToFiles(table, files, settings.readerName)
         
 def main():
+    settings = WritingSettings()
+    settings.includes = ["Units.h", "SubByteReaderDummy.h"]
+    settings.readerName = "SubByteReaderDummy"
+
     parsedTables = pickle.load(open("tempPiclkle.p", "rb"))
-    writeTablesToCpp(parsedTables, "cpp")
+    writeTablesToCpp(parsedTables, settings)
 
 if __name__ == "__main__":
     main()

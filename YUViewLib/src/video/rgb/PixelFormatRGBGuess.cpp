@@ -31,6 +31,7 @@
  */
 
 #include "PixelFormatRGBGuess.h"
+#include "video/PixelFormat.h"
 
 #include <common/Functions.h>
 
@@ -71,7 +72,7 @@ bool doesPixelFormatMatchFileSize(const PixelFormatRGB         &pixelFormat,
   if (!fileSize)
     return true;
 
-  const auto bytesPerFrame = pixelFormat.bytesPerFrame(frameSize);
+  const auto bytesPerFrame = pixelFormat.getBytesPerFrame(frameSize);
   if (bytesPerFrame <= 0)
     return false;
 
@@ -82,7 +83,7 @@ bool doesPixelFormatMatchFileSize(const PixelFormatRGB         &pixelFormat,
 } // namespace
 
 std::optional<PixelFormatRGB> checkForPixelFormatIndicatorInName(
-    const std::string &filename, const Size &frameSize, const std::optional<std::int64_t> &fileSize)
+  const std::string &filename, const Size &frameSize, const std::optional<std::int64_t> &fileSize)
 {
   std::string matcher = "(?:_|\\.|-)(";
 
@@ -115,14 +116,21 @@ std::optional<PixelFormatRGB> checkForPixelFormatIndicatorInName(
             name += "a";
           name += bitDepthString + endiannessName;
           stringToMatchingFormat[name] =
-              PixelFormatRGB(bitDepth, DataLayout::Packed, channelOrder, alphaMode, endianness);
+            PixelFormatRGB(bitDepth, DataLayout::Packed, channelOrder, alphaMode, endianness);
           matcher += name + "|";
         }
       }
     }
   }
 
-  matcher.pop_back(); // Remove last |
+  stringToMatchingFormat["rgb565"] = PixelFormatRGB(PredefinedPixelFormat::RGB565);
+  matcher += "rgb565|";
+  stringToMatchingFormat["rgb565le"] = PixelFormatRGB(PredefinedPixelFormat::RGB565);
+  matcher += "rgb565le|";
+  stringToMatchingFormat["rgb565be"] =
+    PixelFormatRGB(PredefinedPixelFormat::RGB565, Endianness::Big);
+  matcher += "rgb565be";
+
   matcher += ")(?:_|\\.|-)";
 
   std::smatch sm;
@@ -136,16 +144,22 @@ std::optional<PixelFormatRGB> checkForPixelFormatIndicatorInName(
   auto format = stringToMatchingFormat[matchName];
   if (doesPixelFormatMatchFileSize(format, frameSize, fileSize))
   {
+    if (format.getPredefinedPixelFormat())
+      return format;
+
     const auto dataLayout = findDataLayoutInName(filename);
-    format.setDataLayout(dataLayout);
-    return format;
+    return PixelFormatRGB(format.getBitsPerComponent(),
+                          dataLayout,
+                          format.getChannelOrder(),
+                          format.getAlphaMode(),
+                          format.getEndianness());
   }
 
   return {};
 }
 
 std::optional<PixelFormatRGB> checkForPixelFormatIndicatorInFileExtension(
-    const std::string &filename, const Size &frameSize, const std::optional<std::int64_t> &fileSize)
+  const std::string &filename, const Size &frameSize, const std::optional<std::int64_t> &fileSize)
 {
   const auto fileExtension = std::filesystem::path(filename).extension();
 
@@ -157,8 +171,11 @@ std::optional<PixelFormatRGB> checkForPixelFormatIndicatorInFileExtension(
       if (doesPixelFormatMatchFileSize(format, frameSize, fileSize))
       {
         const auto dataLayout = findDataLayoutInName(filename);
-        format.setDataLayout(dataLayout);
-        return format;
+        return PixelFormatRGB(format.getBitsPerComponent(),
+                              dataLayout,
+                              format.getChannelOrder(),
+                              format.getAlphaMode(),
+                              format.getEndianness());
       }
     }
   }
@@ -166,13 +183,25 @@ std::optional<PixelFormatRGB> checkForPixelFormatIndicatorInFileExtension(
 }
 
 std::optional<PixelFormatRGB> checkSpecificFileExtensions(
-    const std::string &filename, const Size &frameSize, const std::optional<std::int64_t> &fileSize)
+  const std::string &filename, const Size &frameSize, const std::optional<std::int64_t> &fileSize)
 {
   const auto fileExtension = std::filesystem::path(filename).extension();
 
   if (fileExtension == ".cmyk")
   {
     const auto format = PixelFormatRGB(8, DataLayout::Packed, ChannelOrder::RGB, AlphaMode::Last);
+    if (doesPixelFormatMatchFileSize(format, frameSize, fileSize))
+      return format;
+  }
+  if (fileExtension == ".rgb565")
+  {
+    const auto format = PixelFormatRGB(PredefinedPixelFormat::RGB565);
+    if (doesPixelFormatMatchFileSize(format, frameSize, fileSize))
+      return format;
+  }
+  if (fileExtension == ".rgb565be")
+  {
+    const auto format = PixelFormatRGB(PredefinedPixelFormat::RGB565, Endianness::Big);
     if (doesPixelFormatMatchFileSize(format, frameSize, fileSize))
       return format;
   }
@@ -197,11 +226,11 @@ PixelFormatRGB guessPixelFormatFromSizeAndName(const GuessedFrameFormat &guessed
     return *pixelFormat;
 
   if (const auto pixelFormat =
-          checkForPixelFormatIndicatorInFileExtension(filename, frameSize, fileSize))
+        checkForPixelFormatIndicatorInFileExtension(filename, frameSize, fileSize))
     return *pixelFormat;
 
   if (const auto pixelFormat = checkForPixelFormatIndicatorInName(
-          functions::toLower(fileInfo.parentFolderName), frameSize, fileSize))
+        functions::toLower(fileInfo.parentFolderName), frameSize, fileSize))
     return *pixelFormat;
 
   if (guessedFrameFormat.frameSize)

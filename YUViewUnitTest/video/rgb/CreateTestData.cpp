@@ -31,6 +31,9 @@
  */
 
 #include "CreateTestData.h"
+#include "video/PixelFormat.h"
+#include "video/rgb/PixelFormatRGB.h"
+#include <stdexcept>
 
 namespace video::rgb::test
 {
@@ -38,19 +41,20 @@ namespace video::rgb::test
 namespace
 {
 
-void scaleValueToBitDepthAndPushIntoArra(QByteArray      &data,
-                                         const unsigned   value,
-                                         const int        bitDepth,
-                                         const Endianness endianness)
+void scaleValueToBitDepthAndPushIntoArray(QByteArray      &data,
+                                          const unsigned   value,
+                                          const int        valueBitDepth,
+                                          const int        outputBitDepth,
+                                          const Endianness endianness)
 {
-  const auto scaledValue = convertBitness(value, 12, bitDepth);
+  const auto scaledValue = convertBitness(value, valueBitDepth, outputBitDepth);
 
-  if (bitDepth == 8)
+  if (outputBitDepth == 8)
     data.push_back(scaledValue);
-  else if (bitDepth <= 16)
+  else if (outputBitDepth <= 16)
   {
-    const auto upperByte   = ((scaledValue & 0xff00) >> 8);
-    const auto lowerByte   = (scaledValue & 0xff);
+    const auto upperByte = ((scaledValue & 0xff00) >> 8);
+    const auto lowerByte = (scaledValue & 0xff);
     if (endianness == Endianness::Little)
     {
       data.push_back(lowerByte);
@@ -61,7 +65,9 @@ void scaleValueToBitDepthAndPushIntoArra(QByteArray      &data,
       data.push_back(upperByte);
       data.push_back(lowerByte);
     }
-  } else {
+  }
+  else
+  {
     if (endianness == Endianness::Little)
     {
       data.push_back((scaledValue >> 0) & 0xFF);
@@ -79,38 +85,118 @@ void scaleValueToBitDepthAndPushIntoArra(QByteArray      &data,
   }
 }
 
-} // namespace
-
-auto createRawRGBData(const PixelFormatRGB &format) -> QByteArray
+void convertToRGB565AndPushIntoArray(QByteArray      &data,
+                                     const rgba_t    &value,
+                                     const Endianness endianness)
 {
-  QByteArray data;
-  const auto bitDepth   = format.getBitsPerSample();
-  const auto endianness = format.getEndianess();
+  if (value.r > 31 || value.g > 63 || value.b > 31)
+    throw std::invalid_argument("Values for RGB565 must be in range R:0-31, G:0-63, B:0-31");
 
-  if (format.getDataLayout() == DataLayout::Packed)
+  int dataBytes = ((value.r << 11) & 0b11111000'00000000) + ((value.g << 5) & 0b00000111'11100000) +
+                  (value.b & 0b00000000'00011111);
+
+  const int byte1 = (dataBytes >> 8);
+  const int byte2 = (dataBytes & 0b1111'1111);
+
+  if (endianness == Endianness::Big)
   {
-    for (auto value : TEST_VALUES_12BIT)
-    {
-      for (int channelPosition = 0; channelPosition < static_cast<int>(format.nrChannels());
-           channelPosition++)
-      {
-        const auto channel = format.getChannelAtPosition(channelPosition);
-        scaleValueToBitDepthAndPushIntoArra(data, value[channel], bitDepth, endianness);
-      }
-    }
+    data.push_back(byte1);
+    data.push_back(byte2);
   }
   else
   {
-    for (int channelPosition = 0; channelPosition < static_cast<int>(format.nrChannels());
-         channelPosition++)
+    data.push_back(byte2);
+    data.push_back(byte1);
+  }
+}
+
+void scaleToRGB565AndPushIntoArray(QByteArray      &data,
+                                   const rgba_t    &value,
+                                   const int        valueBitDepth,
+                                   const Endianness endianness)
+{
+  const auto r = convertBitness(value.r, valueBitDepth, 5);
+  const auto g = convertBitness(value.g, valueBitDepth, 6);
+  const auto b = convertBitness(value.b, valueBitDepth, 5);
+
+  convertToRGB565AndPushIntoArray(data, {r, g, b, 255}, endianness);
+}
+
+} // namespace
+
+QByteArray createRawRGBData(const PixelFormatRGB      &format,
+                            const std::vector<rgba_t> &values,
+                            const int                  valuesBitDepth)
+{
+  if (format.getPredefinedPixelFormat())
+    throw std::invalid_argument(
+      "This function does not support predefined pixel formats. Use the corresponding overload.");
+
+  QByteArray data;
+
+  const auto bitDepth   = format.getBitsPerComponent();
+  const auto endianness = format.getEndianness();
+
+  if (format.getPredefinedPixelFormat() == PredefinedPixelFormat::RGB565)
+  {
+    for (const auto value : values)
+      convertToRGB565AndPushIntoArray(data, value, endianness);
+  }
+  else if (format.getPredefinedPixelFormat())
+  {
+    throw std::logic_error("Support for pixel format not implemented");
+  }
+  else
+  {
+    if (format.getDataLayout() == DataLayout::Packed)
     {
-      const auto channel = format.getChannelAtPosition(channelPosition);
-      for (auto value : TEST_VALUES_12BIT)
-        scaleValueToBitDepthAndPushIntoArra(data, value[channel], bitDepth, endianness);
+      for (const auto value : values)
+      {
+        for (int channelPosition = 0; channelPosition < static_cast<int>(format.getNrChannels());
+             channelPosition++)
+        {
+          const auto channel = format.getChannelAtPosition(channelPosition);
+          scaleValueToBitDepthAndPushIntoArray(
+            data, value.at(channel), valuesBitDepth, bitDepth, endianness);
+        }
+      }
+    }
+    else
+    {
+      for (int channelPosition = 0; channelPosition < static_cast<int>(format.getNrChannels());
+           channelPosition++)
+      {
+        const auto channel = format.getChannelAtPosition(channelPosition);
+        for (const auto value : values)
+          scaleValueToBitDepthAndPushIntoArray(
+            data, value.at(channel), valuesBitDepth, bitDepth, endianness);
+      }
     }
   }
 
   data.squeeze();
+  return data;
+}
+
+QByteArray createRawRGBData(const PredefinedPixelFormat predefinedPixelFormat,
+                            const Endianness            endianness,
+                            const std::vector<rgba_t>  &values,
+                            std::optional<int>          valuesBitDepth)
+{
+  QByteArray data;
+
+  if (predefinedPixelFormat == PredefinedPixelFormat::RGB565)
+  {
+    if (valuesBitDepth)
+      for (const auto value : values)
+        scaleToRGB565AndPushIntoArray(data, value, *valuesBitDepth, endianness);
+    else
+      for (const auto value : values)
+        convertToRGB565AndPushIntoArray(data, value, endianness);
+  }
+  else
+    throw std::logic_error("Support for given pixel format not implemented");
+
   return data;
 }
 

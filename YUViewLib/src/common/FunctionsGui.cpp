@@ -108,40 +108,6 @@ QIcon functionsGui::convertIcon(QString iconPath)
   return outIcon;
 }
 
-QPixmap functionsGui::convertPixmap(QString pixmapPath)
-{
-  QSettings settings;
-  QString   themeName = settings.value("Theme", "Default").toString();
-
-  // Get the active and inactive colors
-  QStringList colors = functions::getThemeColors(themeName);
-  QRgb        activeColor;
-  if (colors.size() == 4)
-  {
-    QColor active(colors[1]);
-    activeColor = active.rgb();
-  }
-  else
-    activeColor = qRgb(0, 0, 0);
-
-  QImage input(pixmapPath);
-
-  QImage active(input.size(), input.format());
-  for (int y = 0; y < input.height(); y++)
-  {
-    for (int x = 0; x < input.width(); x++)
-    {
-      QRgb in = input.pixel(x, y);
-      if (qAlpha(in) != 0)
-        active.setPixel(x, y, activeColor);
-      else
-        active.setPixel(x, y, in);
-    }
-  }
-
-  return QPixmap::fromImage(active);
-}
-
 QString functionsGui::pixelFormatToString(QImage::Format f)
 {
   if (f == QImage::Format_Invalid)

@@ -109,7 +109,7 @@ ItemLoadingState videoHandler::needsLoading(int frameIdx, bool loadRawValues)
     else if (cacheValid && imageCache.contains(frameIdx + 1))
     {
       DEBUG_VIDEO(
-          "videoHandler::needsLoading %d is current and %d found in cache", frameIdx, frameIdx + 1);
+        "videoHandler::needsLoading %d is current and %d found in cache", frameIdx, frameIdx + 1);
       return ItemLoadingState::LoadingNotNeeded;
     }
     else
@@ -157,7 +157,7 @@ ItemLoadingState videoHandler::needsLoading(int frameIdx, bool loadRawValues)
     else if (cacheValid && imageCache.contains(frameIdx + 1))
     {
       DEBUG_VIDEO(
-          "videoHandler::needsLoading %d in cache and %d found in cache", frameIdx, frameIdx + 1);
+        "videoHandler::needsLoading %d in cache and %d found in cache", frameIdx, frameIdx + 1);
       return ItemLoadingState::LoadingNotNeeded;
     }
     else
@@ -202,7 +202,7 @@ void videoHandler::drawFrame(QPainter *painter, int frameIdx, double zoomFactor,
   }
 
   DEBUG_VIDEO(
-      "videoHandler::drawFrame frameIdx %d currentImageIndex %d", frameIdx, currentImageIndex);
+    "videoHandler::drawFrame frameIdx %d currentImageIndex %d", frameIdx, currentImageIndex);
 
   // Create the video QRect with the size of the sequence and center it.
   QRect videoRect;
@@ -221,7 +221,7 @@ void videoHandler::drawFrame(QPainter *painter, int frameIdx, double zoomFactor,
   }
 }
 
-QImage videoHandler::calculateDifference(FrameHandler *   item2,
+QImage videoHandler::calculateDifference(FrameHandler    *item2,
                                          const int        frameIdxItem0,
                                          const int        frameIdxItem1,
                                          QList<InfoItem> &differenceInfoList,
@@ -229,19 +229,15 @@ QImage videoHandler::calculateDifference(FrameHandler *   item2,
                                          const bool       markDifference)
 {
   // Try to cast item2 to a videoHandler
-  videoHandler *videoItem2 = dynamic_cast<videoHandler *>(item2);
-  if (videoItem2 == nullptr)
+  auto videoItem2 = dynamic_cast<videoHandler *>(item2);
+  if (!videoItem2)
   {
     // The item2 is not a videoItem but this one is.
     if (currentImageIndex != frameIdxItem0)
       loadFrame(frameIdxItem0);
     // Call the FrameHandler implementation to calculate the difference
-    return FrameHandler::calculateDifference(item2,
-                                             frameIdxItem0,
-                                             frameIdxItem1,
-                                             differenceInfoList,
-                                             amplificationFactor,
-                                             markDifference);
+    return FrameHandler::calculateDifference(
+      item2, frameIdxItem0, frameIdxItem1, differenceInfoList, amplificationFactor, markDifference);
   }
 
   // Load the right images, if not already loaded)
@@ -251,10 +247,10 @@ QImage videoHandler::calculateDifference(FrameHandler *   item2,
     videoItem2->loadFrame(frameIdxItem1);
 
   return FrameHandler::calculateDifference(
-      item2, frameIdxItem0, frameIdxItem1, differenceInfoList, amplificationFactor, markDifference);
+    item2, frameIdxItem0, frameIdxItem1, differenceInfoList, amplificationFactor, markDifference);
 }
 
-QRgb videoHandler::getPixelVal(int x, int y)
+QRgb videoHandler::getPixelVal(int x, int y) const
 {
   return currentImage.pixel(x, y);
 }
@@ -338,7 +334,7 @@ void videoHandler::removeAllFrameFromCache()
 void videoHandler::loadFrame(int frameIndex, bool loadToDoubleBuffer)
 {
   DEBUG_VIDEO(
-      "videoHandler::loadFrame %d %s\n", frameIndex, (loadToDoubleBuffer) ? "toDoubleBuffer" : "");
+    "videoHandler::loadFrame %d %s\n", frameIndex, (loadToDoubleBuffer) ? "toDoubleBuffer" : "");
 
   if (requestedFrame_idx != frameIndex)
   {

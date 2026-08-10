@@ -68,7 +68,7 @@ public:
       connect(worker(),
               &LoadingWorker::loadingFinished,
               this,
-              [=]
+              [this]
               {
                 DEBUG_THREAD("loadingThread::quitWhenDone worker done -> quit");
                 quit();
