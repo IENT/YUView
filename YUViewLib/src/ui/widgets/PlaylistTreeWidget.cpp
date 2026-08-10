@@ -195,30 +195,27 @@ void PlaylistTreeWidget::dragMoveEvent(QDragMoveEvent *event)
   const auto dropTarget = getDropTarget(event->pos());
 #endif
 
-  if (!dropTarget)
+  if (dropTarget)
   {
-    event->ignore();
-    return;
-  }
+    const auto draggedItems = this->selectedItems();
+    if (draggedItems.empty())
+    {
+      event->ignore();
+      return;
+    }
 
-  const auto draggedItems = this->selectedItems();
-  if (draggedItems.empty())
-  {
-    event->ignore();
-    return;
-  }
+    const auto draggedItem = dynamic_cast<playlistItem *>(draggedItems[0]);
+    if (!draggedItem)
+    {
+      event->ignore();
+      return;
+    }
 
-  const auto draggedItem = dynamic_cast<playlistItem *>(draggedItems[0]);
-  if (!draggedItem)
-  {
-    event->ignore();
-    return;
-  }
-
-  if (!dropTarget->acceptDrops(draggedItem))
-  {
-    event->ignore();
-    return;
+    if (!dropTarget->acceptDrops(draggedItem))
+    {
+      event->ignore();
+      return;
+    }
   }
 
   QTreeWidget::dragMoveEvent(event);
@@ -853,10 +850,10 @@ void PlaylistTreeWidget::savePlaylistToFile()
   QFile file(filename);
   if (!file.open(QIODevice::WriteOnly | QIODevice::Text))
   {
-    QMessageBox::warning(this,
-                         tr("Save Playlist"),
-                         tr("Could not save playlist to \"%1\": %2")
-                           .arg(filename, file.errorString()));
+    QMessageBox::warning(
+      this,
+      tr("Save Playlist"),
+      tr("Could not save playlist to \"%1\": %2").arg(filename, file.errorString()));
     return;
   }
   QTextStream outStream(&file);
