@@ -10,13 +10,13 @@
 #include <QByteArray>
 #include <QPointer>
 
-// HDR Window backend: QRhi with D3D12 for native Windows HDR10 support
-// Requires Qt 6.4+ for QRhi API (Qt 6.6+ uses public API, 6.4-6.5 uses private API)
+// HDR window backend: QRhi (Qt 6.4+) or a no-op stub (Qt < 6.4, e.g. Ubuntu 22.04 CI).
 #if QT_VERSION >= QT_VERSION_CHECK(6, 4, 0)
 #include "HDR_RhiVideoWindow.h"
 using HDR_WindowType = HDR_RhiVideoWindow;
 #else
-#error "HDR10 rendering requires Qt 6.4 or later for QRhi API support"
+#include "HDR_WindowStub.h"
+using HDR_WindowType = HDR_WindowStub;
 #endif
 
 #include "HDRDetectionWorker.h"

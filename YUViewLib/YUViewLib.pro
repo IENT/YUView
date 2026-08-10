@@ -66,6 +66,16 @@ unix {
 SOURCES += $$files(src/*.cpp, true)
 HEADERS += $$files(src/*.h, true)
 
+# Real QRhi HDR window needs Qt 6.4+. On older kits (Ubuntu 22.04 apt Qt 6.2)
+# keep the stub from HDR_WindowStub.h and skip compiling the RHI translation units.
+!versionAtLeast(QT_VERSION, 6.4.0) {
+    SOURCES -= \
+        src/video/hdr/HDR_RhiVideoWindow.cpp \
+        src/video/hdr/HDR_RhiVideoWindow_Overlays.cpp
+    HEADERS -= src/video/hdr/HDR_RhiVideoWindow.h
+    message("YUViewLib: Qt < 6.4 — HDR RHI window stubbed (no QRhi build)")
+}
+
 # AVX2 kernel TU must not be compiled with the portable baseline flags (MSVC
 # rejects _mm256_* without /arch:AVX2). Strip it from SOURCES and rebuild via
 # QMAKE_EXTRA_COMPILERS with an ISA-specific command line on x86 only.
