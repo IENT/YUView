@@ -53,8 +53,11 @@ inline QString fsPathToQString(const std::filesystem::path &path)
 #ifdef Q_OS_WIN
   return QString::fromStdWString(path.wstring());
 #else
-  // path.u8string() is UTF-8; fromStdString uses UTF-8 in Qt 5/6.
-  return QString::fromStdString(path.u8string());
+  // C++20: path.u8string() returns std::u8string (char8_t), not std::string.
+  // QString::fromStdString cannot accept it; decode UTF-8 bytes explicitly.
+  const std::u8string u8 = path.u8string();
+  return QString::fromUtf8(reinterpret_cast<const char *>(u8.data()),
+                           static_cast<int>(u8.size()));
 #endif
 }
 
