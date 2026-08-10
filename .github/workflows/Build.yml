@@ -22,7 +22,8 @@ jobs:
       run: |
         sudo apt-get update
         # qt6-base-private-dev: QRhi / gui-private headers for HDR
-        sudo apt-get install -y qt6-base-dev qt6-base-private-dev libpng-dev
+        # libgl1-mesa-dev: GL/gl.h required by QtGui QOpenGLContext (FrameHandler)
+        sudo apt-get install -y qt6-base-dev qt6-base-private-dev libpng-dev libgl1-mesa-dev libglu1-mesa-dev
         # qsb / shadertools package names differ by Ubuntu release:
         #   22.04: qt6-shader-baker + libqt6shadertools6-dev
         #   24.04+: also provides qt6-shadertools-dev

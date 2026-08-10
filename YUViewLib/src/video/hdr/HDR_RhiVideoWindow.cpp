@@ -216,17 +216,20 @@ bool HDR_RhiVideoWindow::initializeRhi()
     m_rhi.reset(QRhi::create(QRhi::D3D11, &d3d11Params));
   }
 
-#elif defined(Q_OS_LINUX) || defined(Q_OS_UNIX)
+#elif defined(Q_OS_MACOS) || defined(Q_OS_IOS)
+  // Checked before any UNIX/Linux branch: macOS/iOS also define Q_OS_UNIX.
+  QRhiMetalInitParams metalParams;
+  m_rhi.reset(QRhi::create(QRhi::Metal, &metalParams));
+
+#elif defined(Q_OS_LINUX)
+#if QT_CONFIG(vulkan)
   QRhiVulkanInitParams vulkanParams;
   vulkanParams.inst = nullptr;
   m_rhi.reset(QRhi::create(QRhi::Vulkan, &vulkanParams));
-
-#elif defined(Q_OS_MACOS)
-  QRhiMetalInitParams metalParams;
-  m_rhi.reset(QRhi::create(QRhi::Metal, &metalParams));
+#endif
 #endif
 
-         // Fallback to OpenGL if platform-specific backend fails
+  // Fallback to OpenGL if platform-specific backend fails / is unavailable
   if (!m_rhi) {
     QRhiGles2InitParams glParams;
     m_fallbackSurface.reset(QRhiGles2InitParams::newFallbackSurface());

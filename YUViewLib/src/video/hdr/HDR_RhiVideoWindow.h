@@ -54,11 +54,10 @@
 #include <QtGui/private/qrhid3d12_p.h>
 #endif
 #endif
-#if defined(Q_OS_LINUX) || defined(Q_OS_UNIX)
-#include <QtGui/private/qrhivulkan_p.h>
-#endif
-#ifdef Q_OS_MACOS
+#if defined(Q_OS_MACOS) || defined(Q_OS_IOS)
 #include <QtGui/private/qrhimetal_p.h>
+#elif defined(Q_OS_LINUX)
+#include <QtGui/private/qrhivulkan_p.h>
 #endif
 #include <QtGui/private/qrhigles2_p.h>
 #define YUVIEW_HAVE_QRHI 1
