@@ -53,23 +53,46 @@ TEST(FunctionsTest, toUnsigned)
   EXPECT_FALSE(toUnsigned("NotANumber"));
 }
 
-TEST(FunctionsTest, toInt)
+TEST(FunctionsTest, toIntStdString)
 {
-  EXPECT_EQ(toInt("0"), 0);
-  EXPECT_EQ(toInt("256"), 256);
-  EXPECT_EQ(toInt("2147483647"), 2147483647);
-  EXPECT_EQ(toInt("-1"), -1);
-  EXPECT_EQ(toInt("-256"), -256);
-  EXPECT_EQ(toInt("-2147483648"), -2147483648);
+  using namespace std::string_literals;
 
-  EXPECT_FALSE(toInt(""));
-  EXPECT_FALSE(toInt(" "));
-  EXPECT_FALSE(toInt("2147483648"));
-  EXPECT_FALSE(toInt("-2147483649"));
-  EXPECT_FALSE(toInt("24A"));
-  EXPECT_FALSE(toInt("A24"));
-  EXPECT_FALSE(toInt(" 24"));
-  EXPECT_FALSE(toInt("NotANumber"));
+  EXPECT_EQ(toInt("0"s), 0);
+  EXPECT_EQ(toInt("256"s), 256);
+  EXPECT_EQ(toInt("2147483647"s), 2147483647);
+  EXPECT_EQ(toInt("-1"s), -1);
+  EXPECT_EQ(toInt("-256"s), -256);
+  EXPECT_EQ(toInt("-2147483648"s), -2147483648);
+
+  EXPECT_FALSE(toInt(""s));
+  EXPECT_FALSE(toInt(" "s));
+  EXPECT_FALSE(toInt("2147483648"s));
+  EXPECT_FALSE(toInt("-2147483649"s));
+  EXPECT_FALSE(toInt("24A"s));
+  EXPECT_FALSE(toInt("A24"s));
+  EXPECT_FALSE(toInt(" 24"s));
+  EXPECT_FALSE(toInt("NotANumber"s));
+}
+
+TEST(FunctionsTest, toIntQString)
+{
+  using namespace std::string_literals;
+
+  EXPECT_EQ(toInt(QString("0")), 0);
+  EXPECT_EQ(toInt(QString("256")), 256);
+  EXPECT_EQ(toInt(QString("2147483647")), 2147483647);
+  EXPECT_EQ(toInt(QString("-1")), -1);
+  EXPECT_EQ(toInt(QString("-256")), -256);
+  EXPECT_EQ(toInt(QString("-2147483648")), -2147483648);
+  EXPECT_EQ(toInt(QString(" 24")), 24);
+
+  EXPECT_FALSE(toInt(QString("")));
+  EXPECT_FALSE(toInt(QString(" ")));
+  EXPECT_FALSE(toInt(QString("2147483648")));
+  EXPECT_FALSE(toInt(QString("-2147483649")));
+  EXPECT_FALSE(toInt(QString("24A")));
+  EXPECT_FALSE(toInt(QString("A24")));
+  EXPECT_FALSE(toInt(QString("NotANumber")));
 }
 
 TEST(FunctionsTest, stringToLower)
