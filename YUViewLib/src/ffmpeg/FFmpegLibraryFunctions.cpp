@@ -36,12 +36,29 @@
 namespace FFmpeg
 {
 
+static QMutex mutex;
+static bool isLibLoaded;
+static QString avformatLibPath;
+static QString avcodecLibPath;
+static QString avutilLibPath;
+static QString swresampleLibPath;
+static QString libDirectoryPath;
+static QLibrary libAvutil;
+static QLibrary libSwresample;
+static QLibrary libAvcodec;
+static QLibrary libAvformat;
+
+FFmpegLibraryFunctions::AvFormatFunctions FFmpegLibraryFunctions::avformat{};
+FFmpegLibraryFunctions::AvCodecFunctions FFmpegLibraryFunctions::avcodec{};
+FFmpegLibraryFunctions::AvUtilFunctions FFmpegLibraryFunctions::avutil{};
+FFmpegLibraryFunctions::SwResampleFunction FFmpegLibraryFunctions::swresample{};
+
 namespace
 {
 
 template <typename T>
 bool resolveFunction(QLibrary &        lib,
-                     std::function<T> &function,
+                     T &function,
                      const char *      symbolName,
                      QStringList *     logList)
 {
@@ -53,7 +70,7 @@ bool resolveFunction(QLibrary &        lib,
     return false;
   }
 
-  function = reinterpret_cast<T *>(ptr);
+  function = reinterpret_cast<T>(ptr);
   return true;
 }
 
@@ -179,13 +196,15 @@ bool bindLibraryFunctions(QLibrary &                                  lib,
 
 FFmpegLibraryFunctions::~FFmpegLibraryFunctions()
 {
-  this->unloadAllLibraries();
 }
 
 bool FFmpegLibraryFunctions::loadFFmpegLibraryInPath(QString path, LibraryVersion &libraryVersion)
 {
   // We will load the following libraries (in this order):
   // avutil, swresample, avcodec, avformat.
+  QMutexLocker locker(&mutex);
+  if (isLibLoaded && libDirectoryPath == path) 
+    return true;
 
   if (!path.isEmpty())
   {
@@ -210,7 +229,7 @@ bool FFmpegLibraryFunctions::loadFFmpegLibraryInPath(QString path, LibraryVersio
   bool     success = false;
   for (unsigned i = 0; i < nrNames; i++)
   {
-    this->unloadAllLibraries();
+    this->unloadAllLibrariesLocked();
 
     // This is how we the library name is constructed per platform
     QString constructLibName;
@@ -224,21 +243,22 @@ bool FFmpegLibraryFunctions::loadFFmpegLibraryInPath(QString path, LibraryVersio
       constructLibName = "lib%1.%2.dylib";
 
     auto loadLibrary =
-        [this, &constructLibName, &path](QLibrary &lib, QString libName, unsigned version) {
+        [this, &constructLibName, &path](QLibrary &lib, QString libName, unsigned version, QString &output) {
           auto filename = constructLibName.arg(libName).arg(version);
           lib.setFileName(path + filename);
           auto success = lib.load();
           this->log("Loading library " + filename + (success ? " succeded" : " failed"));
+          output = path + filename;
           return success;
         };
 
-    if (!loadLibrary(this->libAvutil, "avutil", libraryVersion.avutil.major))
+    if (!loadLibrary(libAvutil, "avutil", libraryVersion.avutil.major, avutilLibPath))
       continue;
-    if (!loadLibrary(this->libSwresample, "swresample", libraryVersion.swresample.major))
+    if (!loadLibrary(libSwresample, "swresample", libraryVersion.swresample.major, swresampleLibPath))
       continue;
-    if (!loadLibrary(this->libAvcodec, "avcodec", libraryVersion.avcodec.major))
+    if (!loadLibrary(libAvcodec, "avcodec", libraryVersion.avcodec.major, avcodecLibPath))
       continue;
-    if (!loadLibrary(this->libAvformat, "avformat", libraryVersion.avformat.major))
+    if (!loadLibrary(libAvformat, "avformat", libraryVersion.avformat.major, avformatLibPath))
       continue;
 
     success = true;
@@ -247,16 +267,22 @@ bool FFmpegLibraryFunctions::loadFFmpegLibraryInPath(QString path, LibraryVersio
 
   if (!success)
   {
-    this->unloadAllLibraries();
+    this->unloadAllLibrariesLocked();
     return false;
   }
 
-  success = (bindLibraryFunctions(this->libAvformat, this->avformat, this->logList) &&
-             bindLibraryFunctions(this->libAvcodec, this->avcodec, this->logList) &&
-             bindLibraryFunctions(this->libAvutil, this->avutil, this->logList) &&
-             bindLibraryFunctions(this->libSwresample, this->swresample, this->logList));
+  success = (bindLibraryFunctions(libAvformat, avformat, this->logList) &&
+             bindLibraryFunctions(libAvcodec, avcodec, this->logList) &&
+             bindLibraryFunctions(libAvutil, avutil, this->logList) &&
+             bindLibraryFunctions(libSwresample, swresample, this->logList));
   this->log(QString("Binding functions ") + (success ? "successfull" : "failed"));
+  if (!success)
+  {
+    this->unloadAllLibrariesLocked();
+    return false;
+  }
 
+  isLibLoaded = true;
   return success;
 }
 
@@ -265,7 +291,18 @@ bool FFmpegLibraryFunctions::loadFFMpegLibrarySpecific(QString avFormatLib,
                                                        QString avUtilLib,
                                                        QString swResampleLib)
 {
-  this->unloadAllLibraries();
+  QMutexLocker locker(&mutex);
+  this->log("loadFFMpegLibrarySpecific()...");
+  if (isLibLoaded 
+    && avFormatLib == avformatLibPath 
+    && avCodecLib == avcodecLibPath 
+    && avUtilLib == avutilLibPath
+    && swResampleLib == swresampleLibPath) {
+    return true;
+  }
+  if (isLibLoaded) {
+    this->unloadAllLibrariesLocked();
+  }
 
   auto loadLibrary = [this](QLibrary &lib, QString libPath) {
     lib.setFileName(libPath);
@@ -274,23 +311,31 @@ bool FFmpegLibraryFunctions::loadFFMpegLibrarySpecific(QString avFormatLib,
     return success;
   };
 
-  auto success = (loadLibrary(this->libAvutil, avUtilLib) &&         //
-                  loadLibrary(this->libSwresample, swResampleLib) && //
-                  loadLibrary(this->libAvcodec, avCodecLib) &&       //
-                  loadLibrary(this->libAvformat, avFormatLib));
+  auto success = (loadLibrary(libAvutil, avUtilLib) &&         //
+                  loadLibrary(libSwresample, swResampleLib) && //
+                  loadLibrary(libAvcodec, avCodecLib) &&       //
+                  loadLibrary(libAvformat, avFormatLib));
 
-  if (!success)
-  {
-    this->unloadAllLibraries();
+  if (!success) {
+    this->unloadAllLibrariesLocked();
     return false;
   }
 
-  success = (bindLibraryFunctions(this->libAvformat, this->avformat, this->logList) &&
-             bindLibraryFunctions(this->libAvcodec, this->avcodec, this->logList) &&
-             bindLibraryFunctions(this->libAvutil, this->avutil, this->logList) &&
-             bindLibraryFunctions(this->libSwresample, this->swresample, this->logList));
+  success = (bindLibraryFunctions(libAvformat, avformat, this->logList) &&
+             bindLibraryFunctions(libAvcodec, avcodec, this->logList) &&
+             bindLibraryFunctions(libAvutil, avutil, this->logList) &&
+             bindLibraryFunctions(libSwresample, swresample, this->logList));
   this->log(QString("Binding functions ") + (success ? "successfull" : "failed"));
+  if (!success) {
+    this->unloadAllLibrariesLocked();
+    return false;
+  }
 
+  avformatLibPath = avFormatLib;
+  avcodecLibPath = avCodecLib;
+  avutilLibPath = avUtilLib;
+  swresampleLibPath = swResampleLib;
+  isLibLoaded = true;
   return success;
 }
 
@@ -311,13 +356,18 @@ void FFmpegLibraryFunctions::addLibNamesToList(QString         libName,
   }
 }
 
-void FFmpegLibraryFunctions::unloadAllLibraries()
+void FFmpegLibraryFunctions::unloadAllLibrariesLocked()
 {
   this->log("Unloading all loaded libraries");
-  this->libAvutil.unload();
-  this->libSwresample.unload();
-  this->libAvcodec.unload();
-  this->libAvformat.unload();
+  libAvutil.unload();
+  libSwresample.unload();
+  libAvcodec.unload();
+  libAvformat.unload();
+  avcodec = {};
+  avformat = {};
+  avutil = {};
+  swresample = {};
+  isLibLoaded = false;
 }
 
 QStringList FFmpegLibraryFunctions::getLibPaths() const
@@ -338,10 +388,10 @@ QStringList FFmpegLibraryFunctions::getLibPaths() const
     }
   };
 
-  addName("AVCodec", this->libAvcodec);
-  addName("AVFormat", this->libAvformat);
-  addName("AVUtil", this->libAvutil);
-  addName("SwResample", this->libSwresample);
+  addName("AVCodec", libAvcodec);
+  addName("AVFormat", libAvformat);
+  addName("AVUtil", libAvutil);
+  addName("SwResample", libSwresample);
 
   return libPaths;
 }
