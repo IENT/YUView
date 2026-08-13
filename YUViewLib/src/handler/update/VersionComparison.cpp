@@ -32,9 +32,11 @@
 
 #include "VersionComparison.h"
 
+#include <common/Functions.h>
+
 #include <QRegularExpression>
 
-#define VERSIONCOMPARE_DEBUG_OUTPUT 1
+#define VERSIONCOMPARE_DEBUG_OUTPUT 0
 #if UPDATER_DEBUG_OUTPUT && !NDEBUG
 #include <QDebug>
 #define DEBUG_VERSION(msg) qDebug() << msg
@@ -76,15 +78,6 @@ struct Version
   }
 };
 
-std::optional<int> toInt(const QString &str)
-{
-  bool       ok{};
-  const auto value = str.toInt(&ok);
-  if (ok)
-    return value;
-  return {};
-}
-
 std::optional<Version> parseVersionFromString(QString str)
 {
   QRegularExpression versionRegexp(
@@ -94,13 +87,13 @@ std::optional<Version> parseVersionFromString(QString str)
     return {};
 
   Version version;
-  if (const auto major = toInt(versionMatch.captured("major")))
+  if (const auto major = functions::toInt(versionMatch.captured("major")))
     version.major = *major;
   else
     return {};
 
-  version.minor            = toInt(versionMatch.captured("minor")).value_or(0);
-  version.min              = toInt(versionMatch.captured("min")).value_or(0);
+  version.minor            = functions::toInt(versionMatch.captured("minor")).value_or(0);
+  version.min              = functions::toInt(versionMatch.captured("min")).value_or(0);
   version.hasAdditionalTag = !versionMatch.captured("tag").isEmpty();
 
   return version;
