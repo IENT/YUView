@@ -36,6 +36,9 @@
 
 #include <QSettings>
 
+namespace update
+{
+
 UpdateDialog::UpdateDialog(QWidget *parent) : QDialog(parent)
 {
   ui.setupUi(this);
@@ -76,3 +79,5 @@ void UpdateDialog::on_updateButton_clicked()
   // The update request was accepted by the user
   accept();
 }
+
+} // namespace update

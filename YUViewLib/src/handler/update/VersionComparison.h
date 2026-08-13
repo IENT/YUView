@@ -32,24 +32,11 @@
 
 #pragma once
 
-#include "ui_updateDialog.h"
+#include <QString>
 
 namespace update
 {
 
-// Ask the user if he wants to update to the new version and how to handle updates in the future.
-class UpdateDialog : public QDialog
-{
-  Q_OBJECT
+bool isServerVersionNewer(const QString &serverVersion, const QString &currentVersion);
 
-public:
-  explicit UpdateDialog(QWidget *parent = 0);
-
-private slots:
-  void on_updateButton_clicked();
-
-private:
-  Ui::UpdateDialog ui;
-};
-
-} // namespace update
+}

@@ -61,7 +61,7 @@ MainWindow::MainWindow(bool useAlternativeSources, QWidget *parent) : QMainWindo
   ui.setupUi(this);
 
   // Create the update handler
-  updater = std::make_unique<UpdateHandler>(this, useAlternativeSources);
+  updater = std::make_unique<update::UpdateHandler>(this, useAlternativeSources);
 
   setFocusPolicy(Qt::StrongFocus);
 

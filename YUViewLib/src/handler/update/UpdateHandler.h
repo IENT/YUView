@@ -40,6 +40,9 @@
 class QNetworkReply;
 class QProgressDialog;
 
+namespace update
+{
+
 /* The update handler does what it's name suggestes. It handles updates for YUView.
  * Updates are enabled if UPDATE_FEATURE_ENABLE is set to 1. In order for automatic
  * updates to work, different compilations of YUView must not be mixed. Therefor,
@@ -124,8 +127,10 @@ private:
 
   // When downloading files is started, these contains the size (in bytes) of all files to be
   // downloaded and the current amount of bytes that were already downloaded.
-  int totalDownloadSize {};
-  int currentDownloadProgress {};
+  int totalDownloadSize{};
+  int currentDownloadProgress{};
 
   QString updatePath{};
 };
+
+} // namespace update

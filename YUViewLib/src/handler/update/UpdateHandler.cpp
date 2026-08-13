@@ -34,6 +34,7 @@
 
 #include "UpdateDialog.h"
 #include "UpdateFileHandler.h"
+#include "VersionComparison.h"
 
 #include <QCheckBox>
 #include <QDir>
@@ -58,7 +59,7 @@
 // ONLY USE THIS FOR DEBGGING
 #define ALLOW_UNENCRYPTED_CONNECTIONS 0
 
-#define UPDATER_DEBUG_OUTPUT 1
+#define UPDATER_DEBUG_OUTPUT 0
 #if UPDATER_DEBUG_OUTPUT && !NDEBUG
 #include <QDebug>
 #define DEBUG_UPDATE(msg) qDebug() << msg
@@ -78,6 +79,9 @@
 #define UPDATEFILEHANDLER_TESTDEPLOY_URL                                                           \
   "https://raw.githubusercontent.com/IENT/YUViewReleases/dev/win/autoupdate/"
 #endif
+
+namespace update
+{
 
 UpdateHandler::UpdateHandler(QWidget *mainWindow, bool useAltSources) : mainWidget(mainWindow)
 {
@@ -307,11 +311,8 @@ void UpdateHandler::replyFinished(QNetworkReply *reply)
       }
       else
       {
-        QString serverVersion = jsonObject["tag_name"].toString();
-        QString buildVersion  = QString::fromUtf8(YUVIEW_VERSION);
-        DEBUG_UPDATE("UpdateHandler::replyFinished serverVersion "
-                     << serverVersion << " buildVersion " << buildVersion);
-        if (serverVersion != buildVersion)
+        const auto serverVersion = jsonObject["tag_name"].toString();
+        if (isServerVersionNewer(serverVersion, QString::fromUtf8(YUVIEW_VERSION)))
         {
           QMessageBox msgBox;
           msgBox.setTextFormat(Qt::RichText);
@@ -642,3 +643,5 @@ void UpdateHandler::forceUpdateElevated()
     startCheckForNewVersion(false, true);
   }
 }
+
+} // namespace update

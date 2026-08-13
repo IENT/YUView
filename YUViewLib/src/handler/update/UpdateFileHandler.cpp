@@ -1,34 +1,34 @@
 /*  This file is part of YUView - The YUV player with advanced analytics toolset
-*   <https://github.com/IENT/YUView>
-*   Copyright (C) 2015  Institut für Nachrichtentechnik, RWTH Aachen University, GERMANY
-*
-*   This program is free software; you can redistribute it and/or modify
-*   it under the terms of the GNU General Public License as published by
-*   the Free Software Foundation; either version 3 of the License, or
-*   (at your option) any later version.
-*
-*   In addition, as a special exception, the copyright holders give
-*   permission to link the code of portions of this program with the
-*   OpenSSL library under certain conditions as described in each
-*   individual source file, and distribute linked combinations including
-*   the two.
-*   
-*   You must obey the GNU General Public License in all respects for all
-*   of the code used other than OpenSSL. If you modify file(s) with this
-*   exception, you may extend this exception to your version of the
-*   file(s), but you are not obligated to do so. If you do not wish to do
-*   so, delete this exception statement from your version. If you delete
-*   this exception statement from all source files in the program, then
-*   also delete it here.
-*
-*   This program is distributed in the hope that it will be useful,
-*   but WITHOUT ANY WARRANTY; without even the implied warranty of
-*   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-*   GNU General Public License for more details.
-*
-*   You should have received a copy of the GNU General Public License
-*   along with this program. If not, see <http://www.gnu.org/licenses/>.
-*/
+ *   <https://github.com/IENT/YUView>
+ *   Copyright (C) 2015  Institut für Nachrichtentechnik, RWTH Aachen University, GERMANY
+ *
+ *   This program is free software; you can redistribute it and/or modify
+ *   it under the terms of the GNU General Public License as published by
+ *   the Free Software Foundation; either version 3 of the License, or
+ *   (at your option) any later version.
+ *
+ *   In addition, as a special exception, the copyright holders give
+ *   permission to link the code of portions of this program with the
+ *   OpenSSL library under certain conditions as described in each
+ *   individual source file, and distribute linked combinations including
+ *   the two.
+ *
+ *   You must obey the GNU General Public License in all respects for all
+ *   of the code used other than OpenSSL. If you modify file(s) with this
+ *   exception, you may extend this exception to your version of the
+ *   file(s), but you are not obligated to do so. If you do not wish to do
+ *   so, delete this exception statement from your version. If you delete
+ *   this exception statement from all source files in the program, then
+ *   also delete it here.
+ *
+ *   This program is distributed in the hope that it will be useful,
+ *   but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ *   GNU General Public License for more details.
+ *
+ *   You should have received a copy of the GNU General Public License
+ *   along with this program. If not, see <http://www.gnu.org/licenses/>.
+ */
 
 #include "UpdateFileHandler.h"
 
@@ -43,20 +43,23 @@
 #define DEBUG_UPDATE_FILE(msg) ((void)0)
 #endif
 
+namespace update
+{
+
 const auto UpdateFileHandler_FILE_NAME = "versioninfo.txt";
 
 UpdateFileHandler::UpdateFileHandler()
-{}
+{
+}
 
-UpdateFileHandler::UpdateFileHandler(QString fileName, QString updatePath) : 
-  updatePath(updatePath) 
-{ 
-  this->readFromFile(fileName); 
+UpdateFileHandler::UpdateFileHandler(QString fileName, QString updatePath) : updatePath(updatePath)
+{
+  this->readFromFile(fileName);
 }
 
 UpdateFileHandler::UpdateFileHandler(QByteArray &byteArray)
-{ 
-  this->readRemoteFromData(byteArray); 
+{
+  this->readRemoteFromData(byteArray);
 }
 
 void UpdateFileHandler::readFromFile(QString fileName)
@@ -67,7 +70,8 @@ void UpdateFileHandler::readFromFile(QString fileName)
   QFileInfo updateFileInfo(fileName);
   if (!updateFileInfo.exists() || !updateFileInfo.isFile())
   {
-    DEBUG_UPDATE_FILE("UpdateFileHandler::readFromFile local update file " << fileName << " not found");
+    DEBUG_UPDATE_FILE("UpdateFileHandler::readFromFile local update file " << fileName
+                                                                           << " not found");
     return;
   }
 
@@ -86,10 +90,10 @@ void UpdateFileHandler::readFromFile(QString fileName)
   }
   this->loaded = true;
 }
-  
+
 void UpdateFileHandler::readRemoteFromData(QByteArray &arr)
 {
-  const QString reply = QString(arr);
+  const QString     reply = QString(arr);
   const QStringList lines = reply.split("\n");
   for (auto line : lines)
     this->parseOneLine(line);
@@ -110,7 +114,7 @@ void UpdateFileHandler::parseOneLine(QString &line, bool checkExistence)
   if (lineSplit.count() == 4)
   {
     auto entry = createFileEntry(lineSplit);
-    
+
     if (checkExistence)
     {
       // Check if the file exists locally
@@ -119,28 +123,31 @@ void UpdateFileHandler::parseOneLine(QString &line, bool checkExistence)
         this->updateFileList.append(entry);
       else
         // The file does not exist locally. That is strange since it is in the update info file.
-        // Files that do not exist locally should always be downloaded so we don't put them into the list.
-        DEBUG_UPDATE_FILE("UpdateFileHandler::parseOneLine The local file " << fInfo.absoluteFilePath() << " could not be found.");
+        // Files that do not exist locally should always be downloaded so we don't put them into the
+        // list.
+        DEBUG_UPDATE_FILE("UpdateFileHandler::parseOneLine The local file "
+                          << fInfo.absoluteFilePath() << " could not be found.");
     }
     else
       // Do not check if the file exists
       this->updateFileList.append(entry);
   }
 }
-  
+
 QList<downloadFile> UpdateFileHandler::getFilesToUpdate(UpdateFileHandler &localFiles) const
 {
   QList<downloadFile> updateList;
   for (auto remoteFile : this->updateFileList)
   {
-    bool fileFound = false;
+    bool fileFound    = false;
     bool updateNeeded = false;
-    for(auto localFile : localFiles.updateFileList)
+    for (auto localFile : localFiles.updateFileList)
     {
       if (localFile.filePath.toLower() == remoteFile.filePath.toLower())
       {
         // File found. Do we need to update it?
-        updateNeeded = (localFile.version != remoteFile.version) || (localFile.hash != remoteFile.hash);
+        updateNeeded =
+          (localFile.version != remoteFile.version) || (localFile.hash != remoteFile.hash);
         fileFound = true;
         break;
       }
@@ -166,7 +173,7 @@ QString UpdateFileHandler::getInfo() const
 UpdateFileHandler::fileListEntry UpdateFileHandler::createFileEntry(QStringList &lineSplit) const
 {
   fileListEntry entry;
-  
+
   entry.filePath = lineSplit[0];
   if (entry.filePath.endsWith(","))
     // There is a comma at the end. Remove it.
@@ -181,6 +188,8 @@ UpdateFileHandler::fileListEntry UpdateFileHandler::createFileEntry(QStringList 
   if (sizeString.endsWith(","))
     sizeString.chop(1);
   entry.fileSize = sizeString.toInt();
-  
+
   return entry;
 }
+
+} // namespace update

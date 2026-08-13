@@ -157,12 +157,12 @@ private:
 
   void performanceTest();
 
-  QPointer<QAction>                  recentFileActions[MAX_RECENT_FILES];
-  std::unique_ptr<video::VideoCache> cache;
-  bool                               saveWindowsStateOnExit;
-  std::unique_ptr<UpdateHandler>     updater;
-  ViewStateHandler                   stateHandler;
-  SeparateWindow                     separateViewWindow;
+  QPointer<QAction>                      recentFileActions[MAX_RECENT_FILES];
+  std::unique_ptr<video::VideoCache>     cache;
+  bool                                   saveWindowsStateOnExit;
+  std::unique_ptr<update::UpdateHandler> updater;
+  ViewStateHandler                       stateHandler;
+  SeparateWindow                         separateViewWindow;
   bool showNormalMaximized;     // When going to full screen: Was this windows maximized?
   bool panelsVisible[5]{false}; // Which panels are visible when going to full-screen mode?
 };
