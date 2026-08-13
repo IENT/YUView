@@ -195,11 +195,25 @@ void HDR_RhiVideoWindow::releaseRhiResources()
 
   m_renderPassDesc.reset();
   m_swapChain.reset();
-  m_fallbackSurface.reset();
   m_rhi.reset();
+  m_fallbackSurface.reset();
 
   m_initialized = false;
 }
+
+/*
+ * 详尽中文注释：
+ * 函数名称：HDR_RhiVideoWindow::releaseRhiResources
+ * 功能描述：显式释放该窗口关联的所有 Qt RHI (Rendering Hardware Interface) 图形渲染资源与实例。
+ * 算法原理与生命周期管理：
+ * 1. 在图形渲染 API (如 Vulkan, Metal, Direct3D, OpenGL) 中，所有由 RHI 实例分配的子资源 (如 Buffer, Texture, Sampler, Pipeline, SwapChain 等)
+ *    其生命周期都严格绑定并依赖于底层的 QRhi 实例。如果在 QRhi 实例销毁后依然尝试析构或访问子资源，将导致极其严重的悬空指针访问 (Dangling Pointer) 或驱动级别的内存破坏。
+ * 2. 因此，本函数严格遵循“逆序销毁”原则：优先销毁顶层的渲染管线 (Pipeline)、着色器资源绑定 (SRB)，再销毁具体的数据缓冲区 (Buffer) 与图像纹理 (Texture)，
+ *    其次销毁渲染通道描述符 (RenderPassDesc) 与交换链 (SwapChain)。
+ * 3. 针对 OpenGL (GLES2) 回退路径，RHI 的释放需要在一个有效的绘图表面 (Surface) 上将 OpenGL 上下文设置为当前 (Make Current) 才能安全销毁底层的 OpenGL 资源。
+ *    为此，必须首先显式重置并销毁 QRhi 实例 (m_rhi.reset())，在此期间 RHI 会利用 fallbackSurface 完成最后一次上下文清理；在这之后，
+ *    才能安全地销毁并释放回退表面实例 (m_fallbackSurface.reset())。若将其顺序颠倒，会导致 RHI 析构时无法找到有效表面来绑定 OpenGL 上下文，进而导致 GPU 内存泄漏或程序崩溃。
+ */
 
 bool HDR_RhiVideoWindow::initializeRhi()
 {

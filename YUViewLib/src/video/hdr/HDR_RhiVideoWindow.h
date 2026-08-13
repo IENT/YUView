@@ -408,8 +408,8 @@ private:
   bool m_loggedNotExposedState{false};
 
          // Qt RHI resources
-  std::unique_ptr<QRhi> m_rhi;
   std::unique_ptr<QOffscreenSurface> m_fallbackSurface;  // For OpenGL fallback
+  std::unique_ptr<QRhi> m_rhi;
   std::unique_ptr<QRhiSwapChain> m_swapChain;
   std::unique_ptr<QRhiRenderPassDescriptor> m_renderPassDesc;
   
@@ -526,16 +526,32 @@ private:
 
          // Overlay rendering resources
   QImage m_overlayImage;
+  std::unique_ptr<QRhiBuffer> m_overlayUniformBuffer;
   std::unique_ptr<QRhiTexture> m_overlayTexture;
   std::unique_ptr<QRhiSampler> m_overlaySampler;
   std::unique_ptr<QRhiShaderResourceBindings> m_overlaySrb;
   std::unique_ptr<QRhiGraphicsPipeline> m_overlayPipeline;
-  std::unique_ptr<QRhiBuffer> m_overlayUniformBuffer;
   bool m_overlayResourcesInitialized{false};
   
   // Overlay rendering helper
   void renderOverlayInPass(QRhiCommandBuffer* cb);
   bool initializeOverlayPipeline();
 };
+
+/*
+ * 详尽中文注释：
+ * 类名称：HDR_RhiVideoWindow
+ * 功能描述：基于 Qt RHI (Rendering Hardware Interface) 实现的高性能 HDR 视频渲染窗口。
+ * 算法原理与生命周期管理机制：
+ * 1. 资源独占所有权：全部底层 RHI 图形资源 (如 Buffer, Texture, Sampler, Pipeline, SwapChain, RenderPassDesc)
+ *    均采用 std::unique_ptr 智能指针封装。此举在避免显式内存管理和防止意外拷贝的同时，保障了对象发生异常或提早返回时的图形内存安全性。
+ * 2. 自动逆序析构（成员变量生命周期设计）：根据 C++ 标准，类成员变量的销毁顺序与声明顺序严格相反。为了保障图形底层的生命周期依赖：
+ *    - 必须将 m_fallbackSurface (OpenGL 回退离屏表面) 声明在 m_rhi (QRhi 实例) 之前。这是由于在 OpenGL (GLES2) 后端执行销毁时，
+ *      QRhi 需要确保 fallbackSurface 依然存活，以便能将 OpenGL 上下文设置为当前 (Make Current) 进而执行底层 GPU 资源的释构。
+ *    - 必须将底层实体资源 (m_vertexBuffer, m_videoTexture, m_overlayUniformBuffer 等) 声明在对应的绑定资源 (m_srb, m_overlaySrb) 
+ *      和图形管线 (m_pipeline, m_overlayPipeline) 之前。这使得析构时首先销毁引用了这些实体的管线和绑定，最后才析构实体本身。
+ * 3. 交换链依赖设计：m_swapChain 声明在 m_rhi 之后、而其兼容的渲染通道描述符 m_renderPassDesc 声明在 m_swapChain 之后，
+ *    以确保析构时首先清理 RenderPassDesc，再清理 SwapChain，最后清理 QRhi 实例。
+ */
 
 #endif // HDR_RHIVIDEOWINDOW_H
