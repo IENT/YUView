@@ -80,6 +80,24 @@ TemporaryFile::TemporaryFile(const ByteVector &data)
   tempFileWriter.close();
 }
 
+TemporaryFile::TemporaryFile(const char *data)
+{
+  this->temporaryFilePath = std::filesystem::temp_directory_path() / generateRandomFileName();
+
+  std::ofstream tempFileWriter(this->temporaryFilePath, std::iostream::out | std::iostream::binary);
+  tempFileWriter << data;
+  tempFileWriter.close();
+}
+
+TemporaryFile::TemporaryFile(std::string_view data)
+{
+  this->temporaryFilePath = std::filesystem::temp_directory_path() / generateRandomFileName();
+
+  std::ofstream tempFileWriter(this->temporaryFilePath, std::iostream::out | std::iostream::binary);
+  tempFileWriter << data;
+  tempFileWriter.close();
+}
+
 TemporaryFile::~TemporaryFile()
 {
   std::filesystem::remove(this->temporaryFilePath);

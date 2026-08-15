@@ -32,38 +32,28 @@
 
 #pragma once
 
-#include <common/Testing.h>
-#include <filesource/FrameFormatGuess.h>
+#include <common/Color.h>
+#include <common/Modified.h>
+#include <common/Typedef.h>
 
-namespace filesource::frameFormatGuess::test
+void PrintTo(const bool &flag, std::ostream *os)
 {
-
-static std::string formatFileInfoForGuessForTestName(const FileInfoForGuess &fileInfoForGuess)
-{
-  return yuviewTest::formatTestName("Filename",
-                                    fileInfoForGuess.filename,
-                                    "parentFolderName",
-                                    fileInfoForGuess.parentFolderName,
-                                    "fileSize",
-                                    fileInfoForGuess.fileSize);
+  *os << (flag ? "True" : "False");
 }
 
-[[maybe_unused]] static std::string formatGuessedFrameFormatForTestName(const GuessedFrameFormat &guessedFrameFormat)
+template <typename T> void PrintTo(const Range<T> &range, std::ostream *os)
 {
-  auto name = yuviewTest::formatTestName("frameSize",
-                                         guessedFrameFormat.frameSize,
-                                         "frameRate",
-                                         guessedFrameFormat.frameRate,
-                                         "bitDepth",
-                                         guessedFrameFormat.bitDepth);
-
-  name += "_DataLayout_";
-  if (guessedFrameFormat.dataLayout)
-    name += video::DataLayoutMapper.getName(*guessedFrameFormat.dataLayout);
-  else
-    name += "NA";
-
-  return name;
+  *os << "(" << range.min << "," << range.max << ")";
 }
 
-} // namespace filesource::frameFormatGuess::test
+template <typename T> void PrintTo(const modified<T> &value, std::ostream *os)
+{
+  if (value.wasModified())
+    *os << "*";
+  PrintTo(*value, os);
+}
+
+void PrintTo(const Color &color, std::ostream *os)
+{
+  *os << "RGBA(" << color.R() << "," << color.G() << "," << color.B() << "," << color.A() << ")";
+}

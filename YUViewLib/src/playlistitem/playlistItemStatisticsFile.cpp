@@ -279,10 +279,12 @@ void playlistItemStatisticsFile::openStatisticsFile()
   auto suffix = QFileInfo(this->prop.name).suffix();
   if (this->openMode == OpenMode::CSVFile ||
       (this->openMode == OpenMode::Extension && suffix == "csv"))
-    this->file.reset(new stats::StatisticsFileCSV(this->prop.name, this->statisticsData));
+    this->file.reset(
+        new stats::StatisticsFileCSV(this->prop.name.toStdString(), this->statisticsData));
   else if (this->openMode == OpenMode::VTMBMSFile ||
            (this->openMode == OpenMode::Extension && suffix == "vtmbmsstats"))
-    this->file.reset(new stats::StatisticsFileVTMBMS(this->prop.name, this->statisticsData));
+    this->file.reset(
+        new stats::StatisticsFileVTMBMS(this->prop.name.toStdString(), this->statisticsData));
   else
     assert(false);
 

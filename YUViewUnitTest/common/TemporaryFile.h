@@ -43,6 +43,8 @@ class TemporaryFile
 {
 public:
   TemporaryFile(const ByteVector &data);
+  TemporaryFile(const char *data);
+  TemporaryFile(std::string_view data);
   ~TemporaryFile();
 
   std::filesystem::path getFilePath() const;

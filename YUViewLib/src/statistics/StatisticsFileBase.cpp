@@ -37,19 +37,24 @@ using namespace std::string_view_literals;
 namespace stats
 {
 
-StatisticsFileBase::StatisticsFileBase(const QString &filename)
+namespace
 {
-  this->file.openFile(filename.toStdString());
-  if (!this->file.isOk())
-  {
-    this->errorMessage = "Error opening file " + filename;
-    this->error        = true;
-  }
+
+std::string sortingToString(StatisticsFileBase::ParsingInfo::FileSorting fileSorting)
+{
+  using FileSorting = StatisticsFileBase::ParsingInfo::FileSorting;
+  if (fileSorting == FileSorting::SortedByPOC)
+    return "By POC";
+  return "By Type";
 }
 
-StatisticsFileBase::~StatisticsFileBase()
+} // namespace
+
+StatisticsFileBase::StatisticsFileBase(const std::string &filename)
 {
-  this->abortParsingDestroy = true;
+  this->file.openFile(filename);
+  if (!this->file.isOk())
+    this->parsingInfo.errorMessage = "Error opening file " + filename;
 }
 
 InfoData StatisticsFileBase::getInfo() const
@@ -58,14 +63,16 @@ InfoData StatisticsFileBase::getInfo() const
 
   for (const auto &infoItem : this->file.getFileInfoList())
     info.items.append(infoItem);
-  info.items.append(InfoItem("Sorted by POC"sv, this->fileSortedByPOC ? "Yes" : "No"));
-  info.items.append(InfoItem("Parsing:", std::to_string(this->parsingProgress) + "..."));
-  if (this->blockOutsideOfFramePOC != -1)
+  info.items.append(InfoItem("Sorting"sv, sortingToString(this->parsingInfo.fileSorting)));
+  info.items.append(
+      InfoItem("Parsing:", std::to_string(this->parsingInfo.parsingProgress) + "..."));
+  if (this->parsingInfo.pocWithDataOutsideOfFrame)
     info.items.append(InfoItem("Warning",
-                               "A block in frame " + std::to_string(this->blockOutsideOfFramePOC) +
+                               "A block in frame " +
+                                   std::to_string(*this->parsingInfo.pocWithDataOutsideOfFrame) +
                                    " is outside of the given size of the statistics."));
-  if (this->error)
-    info.items.append(InfoItem("Parsing Error:", this->errorMessage.toStdString()));
+  if (this->parsingInfo.errorMessage)
+    info.items.append(InfoItem("Parsing Error:", *this->parsingInfo.errorMessage));
 
   return info;
 }

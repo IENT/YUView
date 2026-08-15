@@ -42,7 +42,7 @@ namespace stats
 class StatisticsFileCSV : public StatisticsFileBase
 {
 public:
-  StatisticsFileCSV(const QString &filename, StatisticsData &statisticsData);
+  StatisticsFileCSV(const std::string &filename, StatisticsData &statisticsData);
   virtual ~StatisticsFileCSV() = default;
 
   // -1 if it could not be parser from the file
@@ -53,8 +53,8 @@ public:
   void readFrameAndTypePositionsFromFile(std::atomic_bool &breakFunction) override;
 
   // Load the statistics for "poc/type" from file and put it into the statisticsData.
-  // If the statistics file is in an interleaved format (types are mixed within one POC) this function also parses
-  // types which were not requested by the given 'type'.
+  // If the statistics file is in an interleaved format (types are mixed within one POC) this
+  // function also parses types which were not requested by the given 'type'.
   virtual void loadStatisticData(StatisticsData &statisticsData, int poc, int typeID) override;
 
 protected:

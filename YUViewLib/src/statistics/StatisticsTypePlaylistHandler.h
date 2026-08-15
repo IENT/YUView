@@ -32,38 +32,18 @@
 
 #pragma once
 
-#include <common/Testing.h>
-#include <filesource/FrameFormatGuess.h>
+#include <common/YUViewDomElement.h>
 
-namespace filesource::frameFormatGuess::test
+#include "StatisticsType.h"
+
+namespace stats
 {
 
-static std::string formatFileInfoForGuessForTestName(const FileInfoForGuess &fileInfoForGuess)
+class StatisticsTypePlaylistHandler
 {
-  return yuviewTest::formatTestName("Filename",
-                                    fileInfoForGuess.filename,
-                                    "parentFolderName",
-                                    fileInfoForGuess.parentFolderName,
-                                    "fileSize",
-                                    fileInfoForGuess.fileSize);
-}
+public:
+  static void saveToPlaylist(const StatisticsType &type, YUViewDomElement &root);
+  static void tryToLoadFromPlaylist(StatisticsType &type, const YUViewDomElement &root);
+};
 
-[[maybe_unused]] static std::string formatGuessedFrameFormatForTestName(const GuessedFrameFormat &guessedFrameFormat)
-{
-  auto name = yuviewTest::formatTestName("frameSize",
-                                         guessedFrameFormat.frameSize,
-                                         "frameRate",
-                                         guessedFrameFormat.frameRate,
-                                         "bitDepth",
-                                         guessedFrameFormat.bitDepth);
-
-  name += "_DataLayout_";
-  if (guessedFrameFormat.dataLayout)
-    name += video::DataLayoutMapper.getName(*guessedFrameFormat.dataLayout);
-  else
-    name += "NA";
-
-  return name;
-}
-
-} // namespace filesource::frameFormatGuess::test
+} // namespace stats

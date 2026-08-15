@@ -34,6 +34,7 @@
 
 #include <common/Typedef.h>
 
+#include <cmath>
 #include <istream>
 #include <optional>
 #include <string_view>
@@ -106,5 +107,16 @@ template <typename T, typename R> inline T clip(T val, Range<R> range)
 
 std::optional<unsigned> toUnsigned(const std::string_view text);
 std::optional<int>      toInt(const std::string_view text);
+
+template <typename T, typename P> inline T scaleValueByPercent(T value, P percent)
+{
+  static_assert(std::is_integral<T>::value, "Type T must be an integral type.");
+  static_assert(std::is_integral<P>::value || std::is_floating_point<P>::value,
+                "Type P must be an integral or floating point type type.");
+
+  const auto factor      = static_cast<double>(percent) / 100.0;
+  const auto scaledValue = static_cast<double>(value) * factor;
+  return static_cast<T>(std::round(scaledValue));
+}
 
 } // namespace functions

@@ -32,38 +32,27 @@
 
 #pragma once
 
-#include <common/Testing.h>
-#include <filesource/FrameFormatGuess.h>
-
-namespace filesource::frameFormatGuess::test
+template <typename T> class modified
 {
+public:
+  modified() = default;
+  modified(const T &value) : internalValue(value), initialValue(value) {}
 
-static std::string formatFileInfoForGuessForTestName(const FileInfoForGuess &fileInfoForGuess)
-{
-  return yuviewTest::formatTestName("Filename",
-                                    fileInfoForGuess.filename,
-                                    "parentFolderName",
-                                    fileInfoForGuess.parentFolderName,
-                                    "fileSize",
-                                    fileInfoForGuess.fileSize);
-}
+  T        operator*() const { return this->internalValue; }
+  T        value() const { return this->internalValue; }
+  const T *operator->() const { return &this->internalValue; }
+  T       *operator->() { return &this->internalValue; }
+  operator T() const { return this->internalValue; }
 
-[[maybe_unused]] static std::string formatGuessedFrameFormatForTestName(const GuessedFrameFormat &guessedFrameFormat)
-{
-  auto name = yuviewTest::formatTestName("frameSize",
-                                         guessedFrameFormat.frameSize,
-                                         "frameRate",
-                                         guessedFrameFormat.frameRate,
-                                         "bitDepth",
-                                         guessedFrameFormat.bitDepth);
+  void operator=(const T &newValue) { this->internalValue = newValue; }
 
-  name += "_DataLayout_";
-  if (guessedFrameFormat.dataLayout)
-    name += video::DataLayoutMapper.getName(*guessedFrameFormat.dataLayout);
-  else
-    name += "NA";
+  bool operator==(const T &other) const { return this->internalValue == other; }
+  bool operator==(const modified<T> &other) const { return this->internalValue == other.value(); }
 
-  return name;
-}
+  [[nodiscard]] bool wasModified() const { return !(this->internalValue == this->initialValue); }
+  void               setUnmodified() { this->initialValue = this->internalValue; }
 
-} // namespace filesource::frameFormatGuess::test
+private:
+  T internalValue{};
+  T initialValue{};
+};

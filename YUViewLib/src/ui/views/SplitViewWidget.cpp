@@ -100,7 +100,7 @@ splitViewWidget::splitViewWidget(QWidget *parent) : MoveAndZoomableView(parent)
   setContextMenuPolicy(Qt::PreventContextMenu);
 
   // No test running yet
-  connect(&testProgrssUpdateTimer, &QTimer::timeout, this, [this] { updateTestProgress(); });
+  connect(&testProgrssUpdateTimer, &QTimer::timeout, this, [this] { this->updateTestProgress(); });
 
   // Initialize the font and the position of the zoom factor indication
   zoomFactorFont = QFont(SPLITVIEWWIDGET_ZOOMFACTOR_FONT, SPLITVIEWWIDGET_ZOOMFACTOR_FONTSIZE);

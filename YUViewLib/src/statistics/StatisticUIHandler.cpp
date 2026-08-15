@@ -93,9 +93,10 @@ QLayout *StatisticUIHandler::createStatisticsHandlerControls(bool recreateContro
     auto &statType = statTypes.at(row);
 
     // Append the name (with the check box to enable/disable the statistics item)
-    QCheckBox *itemNameCheck = new QCheckBox(statType.typeName, ui.scrollAreaWidgetContents);
+    QCheckBox *itemNameCheck =
+        new QCheckBox(QString::fromStdString(statType.getTypeName()), ui.scrollAreaWidgetContents);
     itemNameCheck->setChecked(statType.render);
-    itemNameCheck->setToolTip(statType.description);
+    itemNameCheck->setToolTip(QString::fromStdString(statType.getDescription()));
     ui.gridLayout->addWidget(itemNameCheck, int(row + 2), 0);
     connect(
       itemNameCheck, QCheckBoxStateChanged, this, &StatisticUIHandler::onStatisticsControlChanged);
@@ -156,7 +157,8 @@ QWidget *StatisticUIHandler::getSecondaryStatisticsHandlerControls(bool recreate
       auto &statType = statTypes.at(row);
 
       // Append the name (with the check box to enable/disable the statistics item)
-      QCheckBox *itemNameCheck = new QCheckBox(statType.typeName, ui2.scrollAreaWidgetContents);
+      QCheckBox *itemNameCheck = new QCheckBox(QString::fromStdString(statType.getTypeName()),
+                                               ui2.scrollAreaWidgetContents);
       itemNameCheck->setChecked(statType.render);
       ui2.gridLayout->addWidget(itemNameCheck, int(row + 2), 0);
       connect(itemNameCheck,
@@ -332,7 +334,7 @@ void StatisticUIHandler::updateStatisticsHandlerControls()
   {
     for (unsigned row = 0; row < statTypes.size(); row++)
     {
-      if (itemNameCheckBoxes[0][row]->text() != statTypes[row].typeName)
+      if (itemNameCheckBoxes[0][row]->text().toStdString() != statTypes[row].getTypeName())
       {
         // One of the statistics types changed it's name or the order of statistics types changed.
         // Either way, we will create new controls.
@@ -408,15 +410,15 @@ void StatisticUIHandler::updateStatisticsHandlerControls()
     {
       for (unsigned j = 0; j < statTypes.size(); j++)
       {
-        if (statsTypeListBackup[i].typeName == statTypes[j].typeName)
+        if (statsTypeListBackup[i].getTypeName() == statTypes[j].getTypeName())
         {
           // In the new list of statistics types we found one that has the same name as this one.
           // This is enough indication. Apply the old settings to this new type.
-          statTypes[j].render           = statsTypeListBackup[i].render;
-          statTypes[j].renderValueData  = statsTypeListBackup[i].renderValueData;
-          statTypes[j].renderVectorData = statsTypeListBackup[i].renderVectorData;
-          statTypes[j].renderGrid       = statsTypeListBackup[i].renderGrid;
-          statTypes[j].alphaFactor      = statsTypeListBackup[i].alphaFactor;
+          statTypes[j].render            = statsTypeListBackup[i].render;
+          statTypes[j].valueDataOptions  = statsTypeListBackup[i].valueDataOptions;
+          statTypes[j].vectorDataOptions = statsTypeListBackup[i].vectorDataOptions;
+          statTypes[j].gridOptions       = statsTypeListBackup[i].gridOptions;
+          statTypes[j].alphaFactor       = statsTypeListBackup[i].alphaFactor;
         }
       }
     }

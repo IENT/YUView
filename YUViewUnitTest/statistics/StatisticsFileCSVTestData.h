@@ -30,40 +30,12 @@
  *   along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#pragma once
+#include <common/Typedef.h>
 
-#include <common/Testing.h>
-#include <filesource/FrameFormatGuess.h>
-
-namespace filesource::frameFormatGuess::test
+namespace stats::test
 {
 
-static std::string formatFileInfoForGuessForTestName(const FileInfoForGuess &fileInfoForGuess)
-{
-  return yuviewTest::formatTestName("Filename",
-                                    fileInfoForGuess.filename,
-                                    "parentFolderName",
-                                    fileInfoForGuess.parentFolderName,
-                                    "fileSize",
-                                    fileInfoForGuess.fileSize);
-}
+const char *getCSVTestData1();
+const char *getCSVTestData2();
 
-[[maybe_unused]] static std::string formatGuessedFrameFormatForTestName(const GuessedFrameFormat &guessedFrameFormat)
-{
-  auto name = yuviewTest::formatTestName("frameSize",
-                                         guessedFrameFormat.frameSize,
-                                         "frameRate",
-                                         guessedFrameFormat.frameRate,
-                                         "bitDepth",
-                                         guessedFrameFormat.bitDepth);
-
-  name += "_DataLayout_";
-  if (guessedFrameFormat.dataLayout)
-    name += video::DataLayoutMapper.getName(*guessedFrameFormat.dataLayout);
-  else
-    name += "NA";
-
-  return name;
-}
-
-} // namespace filesource::frameFormatGuess::test
+} // namespace stats::test
