@@ -32,6 +32,7 @@
 
 #pragma once
 
+#include <common/Size.h>
 #include <common/Typedef.h>
 #include <video/PixelFormat.h>
 

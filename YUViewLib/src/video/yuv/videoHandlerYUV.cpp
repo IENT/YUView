@@ -2704,7 +2704,7 @@ QStringPairList videoHandlerYUV::getPixelValues(const QPoint             &pixelP
   if (item2 != nullptr)
   {
     auto yuvItem2 = dynamic_cast<const videoHandlerYUV *const>(item2);
-    if (yuvItem2 == nullptr)
+    if (!yuvItem2)
       // The given item is not a YUV source. We cannot compare YUV values to non YUV values.
       // Call the base class comparison function to compare the items using the RGB values.
       return FrameHandler::getPixelValues(pixelPos, frameIdx, item2, frameIdx1);
@@ -2821,8 +2821,8 @@ void videoHandlerYUV::drawPixelValues(QPainter     *painter,
                                       const int     frameIdxItem1)
 {
   // Get the other YUV item (if any)
-  auto yuvItem2 = (item2 == nullptr) ? nullptr : dynamic_cast<videoHandlerYUV *>(item2);
-  if (item2 != nullptr && yuvItem2 == nullptr)
+  auto yuvItem2 = dynamic_cast<videoHandlerYUV *>(item2);
+  if (item2 && !yuvItem2)
   {
     // The other item is not a yuv item
     FrameHandler::drawPixelValues(
@@ -3149,6 +3149,14 @@ void videoHandlerYUV::setFormatFromCorrelation(const QByteArray &rawYUVData, int
     setSrcPixelFormat(bestFormat, false);
     setFrameSize(bestSize);
   }
+}
+
+std::optional<std::string> videoHandlerYUV::getFormatAsString() const
+{
+  const auto frameFormat = FrameHandler::getFormatAsString();
+  if (!frameFormat)
+    return {};
+  return *frameFormat + ";YUV;" + this->srcPixelFormat.getName();
 }
 
 bool videoHandlerYUV::setFormatFromString(const std::string_view format)
@@ -3537,8 +3545,8 @@ QImage videoHandlerYUV::calculateDifference(FrameHandler    *item2,
 {
   this->diffReady = false;
 
-  videoHandlerYUV *yuvItem2 = dynamic_cast<videoHandlerYUV *>(item2);
-  if (yuvItem2 == nullptr)
+  auto yuvItem2 = dynamic_cast<videoHandlerYUV *>(item2);
+  if (!yuvItem2)
     // The given item is not a YUV source. We cannot compare YUV values to non YUV values.
     // Call the base class comparison function to compare the items using the RGB values.
     return videoHandler::calculateDifference(

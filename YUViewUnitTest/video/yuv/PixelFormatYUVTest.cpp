@@ -34,48 +34,14 @@
 
 #include <video/yuv/PixelFormatYUV.h>
 
+#include "PixelFormatYUVHelper.h"
+
 namespace video::yuv::test
 {
 
-namespace
-{
-
-std::vector<PixelFormatYUV> getAllFormats()
-{
-  std::vector<PixelFormatYUV> allFormats;
-
-  for (const auto subsampling : SubsamplingMapper.getValues())
-  {
-    for (const auto bitsPerSample : BitDepthList)
-    {
-      const auto endianList =
-        (bitsPerSample > 8) ? std::vector<bool>({false, true}) : std::vector<bool>({false});
-
-      // Planar
-      for (const auto planeOrder : PlaneOrderMapper.getValues())
-        for (const auto bigEndian : endianList)
-          allFormats.push_back(PixelFormatYUV(subsampling, bitsPerSample, planeOrder, bigEndian));
-
-      // Packet
-      for (const auto packingOrder : getSupportedPackingFormats(subsampling))
-        for (const auto bytePacking : {false, true})
-          for (const auto bigEndian : endianList)
-            allFormats.push_back(
-              PixelFormatYUV(subsampling, bitsPerSample, packingOrder, bytePacking, bigEndian));
-    }
-  }
-
-  for (auto predefinedFormat : PredefinedPixelFormatMapper.getValues())
-    allFormats.push_back(PixelFormatYUV(predefinedFormat));
-
-  return allFormats;
-}
-
-} // namespace
-
 TEST(PixelFormatYUVTest, testFormatFromToString)
 {
-  for (const auto fmt : getAllFormats())
+  for (const auto fmt : getAllPixelFormats())
   {
     const auto name = fmt.getName();
     EXPECT_TRUE(fmt.isValid()) << "Format " << name << " is invalid.";

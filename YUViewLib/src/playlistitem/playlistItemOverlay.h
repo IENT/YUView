@@ -109,7 +109,7 @@ private:
   QGridLayout *customPositionGrid{};
   void         updateCustomPositionGrid();
   void         clear(int startRow);
-  QPoint       getCutomPositionOfItem(int itemIndex) const;
+  QPoint       getCustomPositionOfItem(int itemIndex) const;
 
   int               overlayMode{0};
   int               arangementMode{0};

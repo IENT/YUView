@@ -124,10 +124,10 @@ QLayout *FrameHandler::createFrameHandlerControls(bool isSizeFixed)
   ui.setupUi();
 
   // Set default values
-  ui.widthSpinBox->setMaximum(100000);
+  ui.widthSpinBox->setMaximum(Size::MAX_DIMENSION);
   ui.widthSpinBox->setValue(frameSize.width);
   ui.widthSpinBox->setEnabled(!isSizeFixed);
-  ui.heightSpinBox->setMaximum(100000);
+  ui.heightSpinBox->setMaximum(Size::MAX_DIMENSION);
   ui.heightSpinBox->setValue(frameSize.height);
   ui.heightSpinBox->setEnabled(!isSizeFixed);
   ui.frameSizeComboBox->addItems(presetFrameSizes.getFormattedNames());

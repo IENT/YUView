@@ -119,7 +119,7 @@ void videoHandlerDifference::loadFrameDifference(int frameIndex, bool)
   // make sure that the right frame is loaded for the video item.
   const auto video0 = dynamic_cast<videoHandler *>(inputVideo[0].data());
   const auto video1 = dynamic_cast<videoHandler *>(inputVideo[1].data());
-  if (video0 == nullptr && video1 != nullptr && video1->getCurrentImageIndex() != frameIndex)
+  if (!video0 && video1 && video1->getCurrentImageIndex() != frameIndex)
     video1->loadFrame(frameIndex);
 
   // Calculate the difference
@@ -278,7 +278,7 @@ void videoHandlerDifference::reportFirstDifferencePosition(QList<InfoItem> &info
         int firstX, firstY, partIndex = 0;
 
         auto videoYUV0 = dynamic_cast<yuv::videoHandlerYUV *>(inputVideo[0].data());
-        if (videoYUV0 != NULL && videoYUV0->isDiffReady())
+        if (videoYUV0 && videoYUV0->isDiffReady())
         {
           // find first difference using YUV instead of QImage. The latter does not work for 10bit
           // videos and very small differences, since it only supports 8bit

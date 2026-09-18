@@ -575,7 +575,7 @@ void playlistItemOverlay::slotControlChanged()
   this->arangementMode = this->ui.comboBoxArangementMode->currentIndex();
   for (int i = 1; i < this->childCount(); i++)
   {
-    auto p                       = this->getCutomPositionOfItem(i);
+    auto p                       = this->getCustomPositionOfItem(i);
     this->customPositions[i - 1] = p;
   }
 
@@ -759,36 +759,30 @@ void playlistItemOverlay::updateCustomPositionGrid()
   }
 }
 
-QPoint playlistItemOverlay::getCutomPositionOfItem(int itemIdx) const
+QPoint playlistItemOverlay::getCustomPositionOfItem(int itemIdx) const
 {
   assert(itemIdx >= 1);
 
-  if (this->customPositionGrid == nullptr)
-    return {};
-  if (this->customPositionGrid->columnCount() < 3)
+  if (!this->customPositionGrid || this->customPositionGrid->columnCount() < 3)
     return {};
 
   int gridRowIdx = itemIdx - 1;
   if (gridRowIdx >= this->customPositionGrid->rowCount())
-    return QPoint();
+    return {};
 
   // There should be 2 spin boxes in this row
-  auto layoutItemX   = this->customPositionGrid->itemAtPosition(gridRowIdx, 1);
-  auto layoutWidgetX = dynamic_cast<QWidgetItem *>(layoutItemX);
-  if (layoutWidgetX == nullptr)
+  auto layoutWidgetX = dynamic_cast<QWidgetItem *>(this->customPositionGrid->itemAtPosition(gridRowIdx, 1));
+  if (!layoutWidgetX)
     return {};
-  auto widgetX  = dynamic_cast<QWidget *>(layoutWidgetX->widget());
-  auto spinBoxX = dynamic_cast<QSpinBox *>(widgetX);
-  if (spinBoxX == nullptr)
+  auto spinBoxX = dynamic_cast<QSpinBox *>(layoutWidgetX->widget());
+  if (!spinBoxX)
     return {};
 
-  auto layoutItemY   = this->customPositionGrid->itemAtPosition(gridRowIdx, 2);
-  auto layoutWidgetY = dynamic_cast<QWidgetItem *>(layoutItemY);
-  if (layoutWidgetY == nullptr)
+  auto layoutWidgetY = dynamic_cast<QWidgetItem *>(this->customPositionGrid->itemAtPosition(gridRowIdx, 2));
+  if (!layoutWidgetY)
     return {};
-  auto widgetY  = dynamic_cast<QWidget *>(layoutWidgetY->widget());
-  auto spinBoxY = dynamic_cast<QSpinBox *>(widgetY);
-  if (spinBoxY == nullptr)
+  auto spinBoxY = dynamic_cast<QSpinBox *>(layoutWidgetY->widget());
+  if (!spinBoxY)
     return {};
 
   return QPoint(spinBoxX->value(), spinBoxY->value());
@@ -800,9 +794,8 @@ void playlistItemOverlay::guessBestLayout()
   bool statisticsPresent = false;
   for (int i = 0; i < this->childCount(); i++)
   {
-    auto childItem = this->getChildPlaylistItem(i);
-    auto childStas = dynamic_cast<playlistItemStatisticsFile *>(childItem);
-    if (childStas)
+    auto childStats = dynamic_cast<playlistItemStatisticsFile *>(this->getChildPlaylistItem(i));
+    if (childStats)
       statisticsPresent = true;
   }
 

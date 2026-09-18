@@ -32,72 +32,29 @@
 
 #pragma once
 
-#include <video/rgb/PixelFormatRGB.h>
-
-#include <QByteArray>
-#include <QImage>
-
-#include <ostream>
-
-namespace video::rgb
+struct Size
 {
+  static constexpr unsigned MAX_DIMENSION = 100000;
 
-struct InputFrameParameters
-{
-  const QByteArray &rawDataItem;
-  const Size        frameSize{};
-};
+  constexpr Size(unsigned width, unsigned height) : width(width), height(height) {}
+  constexpr Size() = default;
 
-struct MSE
-{
-  double r{};
-  double g{};
-  double b{};
-  double a{};
-
-  bool operator==(const MSE &other) const
+  constexpr bool operator==(const Size &other) const
   {
-    return std::tie(r, g, b, a) == std::tie(other.r, other.g, other.b, other.a);
+    return this->width == other.width && this->height == other.height;
   }
-};
-
-void PrintTo(const MSE &mse, std::ostream *os);
-
-// Sum of Squared Errors
-class SSE
-{
-public:
-  void addSample(const rgba_t &delta)
+  constexpr bool operator!=(const Size &other) const
   {
-    this->r += delta.r * delta.r;
-    this->g += delta.g * delta.g;
-    this->b += delta.b * delta.b;
-    this->a += delta.a * delta.a;
-    ++this->nrSamples;
+    return this->width != other.width || this->height != other.height;
+  }
+  
+  explicit       operator bool() const { return this->isValid(); }
+  constexpr bool isValid() const
+  {
+    return this->width > 0 && this->width < MAX_DIMENSION && //
+           this->height > 0 && this->height < MAX_DIMENSION;
   }
 
-  MSE getMSE(const bool hasAlpha) const
-  {
-    MSE mse;
-    mse.r = static_cast<double>(this->r) / this->nrSamples;
-    mse.g = static_cast<double>(this->g) / this->nrSamples;
-    mse.b = static_cast<double>(this->b) / this->nrSamples;
-    mse.a = hasAlpha ? static_cast<double>(this->a) / this->nrSamples : 0.0;
-    return mse;
-  }
-
-private:
-  int64_t r{};
-  int64_t g{};
-  int64_t b{};
-  int64_t a{};
-  int64_t nrSamples{};
+  unsigned width{};
+  unsigned height{};
 };
-
-std::pair<QImage, MSE> calculateDifferenceAndMSE(const InputFrameParameters &frame1,
-                                                 const InputFrameParameters &frame2,
-                                                 const PixelFormatRGB       &pixelFormat,
-                                                 const int                   amplificationFactor,
-                                                 const bool                  markDifference);
-
-} // namespace video::rgb

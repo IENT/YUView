@@ -30,74 +30,64 @@
  *   along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#pragma once
+#include <common/Testing.h>
 
-#include <video/rgb/PixelFormatRGB.h>
+#include <common/Offset.h>
 
-#include <QByteArray>
-#include <QImage>
-
-#include <ostream>
-
-namespace video::rgb
+namespace common::test
 {
 
-struct InputFrameParameters
+TEST(OffsetTest, defaultConstruction)
 {
-  const QByteArray &rawDataItem;
-  const Size        frameSize{};
-};
+  Offset offset;
 
-struct MSE
+  EXPECT_EQ(offset.x, 0);
+  EXPECT_EQ(offset.y, 0);
+}
+
+TEST(OffsetTest, valueConstruction)
 {
-  double r{};
-  double g{};
-  double b{};
-  double a{};
+  Offset offset(22, 43);
 
-  bool operator==(const MSE &other) const
-  {
-    return std::tie(r, g, b, a) == std::tie(other.r, other.g, other.b, other.a);
-  }
-};
+  EXPECT_EQ(offset.x, 22);
+  EXPECT_EQ(offset.y, 43);
+}
 
-void PrintTo(const MSE &mse, std::ostream *os);
-
-// Sum of Squared Errors
-class SSE
+TEST(OffsetTest, equalityTestForEqualOffsets)
 {
-public:
-  void addSample(const rgba_t &delta)
-  {
-    this->r += delta.r * delta.r;
-    this->g += delta.g * delta.g;
-    this->b += delta.b * delta.b;
-    this->a += delta.a * delta.a;
-    ++this->nrSamples;
-  }
+  Offset offset1(22, 43);
+  Offset offset2(22, 43);
+  EXPECT_TRUE(offset1 == offset2);
+  EXPECT_FALSE(offset1 != offset2);
 
-  MSE getMSE(const bool hasAlpha) const
-  {
-    MSE mse;
-    mse.r = static_cast<double>(this->r) / this->nrSamples;
-    mse.g = static_cast<double>(this->g) / this->nrSamples;
-    mse.b = static_cast<double>(this->b) / this->nrSamples;
-    mse.a = hasAlpha ? static_cast<double>(this->a) / this->nrSamples : 0.0;
-    return mse;
-  }
+  Offset offset3(0, 0);
+  Offset offset4;
+  EXPECT_TRUE(offset3 == offset4);
+  EXPECT_FALSE(offset3 != offset4);
+}
 
-private:
-  int64_t r{};
-  int64_t g{};
-  int64_t b{};
-  int64_t a{};
-  int64_t nrSamples{};
-};
+TEST(OffsetTest, equalityTestForUnequalOffsets_widthDifferentWidth)
+{
+  Offset offset1(22, 44);
+  Offset offset2(222, 44);
+  EXPECT_TRUE(offset1 != offset2);
+  EXPECT_FALSE(offset1 == offset2);
+}
 
-std::pair<QImage, MSE> calculateDifferenceAndMSE(const InputFrameParameters &frame1,
-                                                 const InputFrameParameters &frame2,
-                                                 const PixelFormatRGB       &pixelFormat,
-                                                 const int                   amplificationFactor,
-                                                 const bool                  markDifference);
+TEST(OffsetTest, equalityTestForUnequalOffsets_widthDifferentHeight)
+{
+  Offset offset1(22, 44);
+  Offset offset2(22, 444);
+  EXPECT_TRUE(offset1 != offset2);
+  EXPECT_FALSE(offset1 == offset2);
+}
 
-} // namespace video::rgb
+TEST(OffsetTest, equalityTestForUnequalOffsets_widthDifferentWidthAndHeight)
+{
+  Offset offset1(22, 44);
+  Offset offset2(222, 444);
+  EXPECT_TRUE(offset1 != offset2);
+  EXPECT_FALSE(offset1 == offset2);
+}
+
+} // namespace common::test

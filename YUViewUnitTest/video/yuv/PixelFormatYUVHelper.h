@@ -30,74 +30,13 @@
  *   along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#pragma once
+#include <video/yuv/PixelFormatYUV.h>
 
-#include <video/rgb/PixelFormatRGB.h>
+#include <vector>
 
-#include <QByteArray>
-#include <QImage>
-
-#include <ostream>
-
-namespace video::rgb
+namespace video::yuv::test
 {
 
-struct InputFrameParameters
-{
-  const QByteArray &rawDataItem;
-  const Size        frameSize{};
-};
+std::vector<PixelFormatYUV> getAllPixelFormats();
 
-struct MSE
-{
-  double r{};
-  double g{};
-  double b{};
-  double a{};
-
-  bool operator==(const MSE &other) const
-  {
-    return std::tie(r, g, b, a) == std::tie(other.r, other.g, other.b, other.a);
-  }
-};
-
-void PrintTo(const MSE &mse, std::ostream *os);
-
-// Sum of Squared Errors
-class SSE
-{
-public:
-  void addSample(const rgba_t &delta)
-  {
-    this->r += delta.r * delta.r;
-    this->g += delta.g * delta.g;
-    this->b += delta.b * delta.b;
-    this->a += delta.a * delta.a;
-    ++this->nrSamples;
-  }
-
-  MSE getMSE(const bool hasAlpha) const
-  {
-    MSE mse;
-    mse.r = static_cast<double>(this->r) / this->nrSamples;
-    mse.g = static_cast<double>(this->g) / this->nrSamples;
-    mse.b = static_cast<double>(this->b) / this->nrSamples;
-    mse.a = hasAlpha ? static_cast<double>(this->a) / this->nrSamples : 0.0;
-    return mse;
-  }
-
-private:
-  int64_t r{};
-  int64_t g{};
-  int64_t b{};
-  int64_t a{};
-  int64_t nrSamples{};
-};
-
-std::pair<QImage, MSE> calculateDifferenceAndMSE(const InputFrameParameters &frame1,
-                                                 const InputFrameParameters &frame2,
-                                                 const PixelFormatRGB       &pixelFormat,
-                                                 const int                   amplificationFactor,
-                                                 const bool                  markDifference);
-
-} // namespace video::rgb
+}

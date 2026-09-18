@@ -457,15 +457,13 @@ void playlistItemRawFile::setFormatFromFileName()
   const auto frameFormat = filesource::frameFormatGuess::guessFrameFormat(fileInfoForGuess);
 
   if (frameFormat.frameSize)
-  {
     this->video->setFrameSize(*frameFormat.frameSize);
 
-    // We were able to extract width and height from the file name using
-    // regular expressions. Try to get the pixel format by checking with the file size.
-    this->video->guessAndSetPixelFormat(frameFormat, fileInfoForGuess);
-    if (frameFormat.frameRate)
-      this->prop.frameRate = *frameFormat.frameRate;
-  }
+  // Try to get the pixel format. If we know a frame size, we will check the format
+  // against the file size.
+  this->video->guessAndSetPixelFormat(frameFormat, fileInfoForGuess);
+  if (frameFormat.frameRate)
+    this->prop.frameRate = *frameFormat.frameRate;
 }
 
 void playlistItemRawFile::createPropertiesWidget()
@@ -542,13 +540,18 @@ void playlistItemRawFile::loadRawData(int frameIdx)
     return;
 
   auto nrBytes = this->video->getBytesPerFrame();
+  if (nrBytes < 0)
+    return;
 
   // Load the raw data for the given frameIdx from file and set it in the video
   int64_t fileStartPos;
   if (this->isY4MFile)
     fileStartPos = this->y4mFrameIndices.at(frameIdx);
   else
-    fileStartPos = frameIdx * nrBytes;
+    fileStartPos = static_cast<int64_t>(frameIdx) * nrBytes;
+
+  if (fileStartPos < 0)
+    return;
 
   DEBUG_RAWFILE("playlistItemRawFile::loadRawData Start loading frame " << frameIdx << " bytes "
                                                                         << int(nrBytes));

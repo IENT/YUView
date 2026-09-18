@@ -33,12 +33,13 @@
 #include <common/Testing.h>
 #include <video/rgb/videoHandlerRGB.h>
 
-#include "VideoHandlerRawTestDataLoader.h"
+#include "../VideoHandlerRawTestDataLoader.h"
 
 namespace video::rgb::test
 {
 
 using namespace std::string_literals;
+using video::test::videoHandlerDataLoadingTest;
 
 namespace
 {

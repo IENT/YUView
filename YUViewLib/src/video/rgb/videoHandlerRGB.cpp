@@ -158,7 +158,7 @@ QStringPairList videoHandlerRGB::getPixelValues(const QPoint             &pixelP
   if (item2 != nullptr)
   {
     auto rgbItem2 = dynamic_cast<const videoHandlerRGB *const>(item2);
-    if (rgbItem2 == nullptr)
+    if (!rgbItem2)
       // The second item is not a videoHandlerRGB. Get the values from the FrameHandler.
       return FrameHandler::getPixelValues(pixelPos, frameIdx, item2, frameIdx1);
 
@@ -772,7 +772,7 @@ void videoHandlerRGB::drawPixelValues(QPainter     *painter,
 
   // Get the other RGB item (if any)
   auto rgbItem2 = dynamic_cast<videoHandlerRGB *>(item2);
-  if (item2 != nullptr && rgbItem2 == nullptr)
+  if (item2 && !rgbItem2)
   {
     // The second item is not a videoHandlerRGB item
     FrameHandler::drawPixelValues(
@@ -869,8 +869,8 @@ QImage videoHandlerRGB::calculateDifference(FrameHandler    *item2,
                                             const int        amplificationFactor,
                                             const bool       markDifference)
 {
-  videoHandlerRGB *rgbItem2 = dynamic_cast<videoHandlerRGB *>(item2);
-  if (rgbItem2 == nullptr)
+  auto rgbItem2 = dynamic_cast<videoHandlerRGB *>(item2);
+  if (!rgbItem2)
     // The given item is not a RGB source. We cannot compare raw RGB values to non raw RGB values.
     // Call the base class comparison function to compare the items using the RGB 888 values.
     return videoHandler::calculateDifference(
