@@ -89,10 +89,7 @@ public:
   unsigned getCachingFrameSize() const override;
 
   // The format is valid if the frame width/height/pixel format are set
-  virtual bool isFormatValid() const override
-  {
-    return (FrameHandler::isFormatValid() && this->srcPixelFormat.canConvertToRGB(frameSize));
-  }
+  virtual bool isFormatValid() const override;
 
   // Certain settings for a YUV source are invalid. In this case we will draw an error message
   // instead of the image.
@@ -135,7 +132,7 @@ public:
                                         int64_t           fileSize = -1) override;
 
   virtual std::optional<std::string> getFormatAsString() const override;
-  virtual bool setFormatFromString(const std::string_view format) override;
+  virtual bool                       setFormatFromString(const std::string_view format) override;
 
   // Create the YUV controls and return a pointer to the layout.
   // yuvFormatFixed: For example a YUV file does not have a fixed format (the user can change this),

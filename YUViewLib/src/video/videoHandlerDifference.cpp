@@ -426,13 +426,15 @@ bool videoHandlerDifference::hierarchicalPosition(int           x,
   return false;
 }
 
-inline int
-getValueFromSource(const unsigned char *src, const int idx, const int bps, const bool bigEndian)
+inline int getValueFromSource(const unsigned char    *src,
+                              const int               idx,
+                              const int               bps,
+                              const video::Endianness endianness)
 {
   if (bps > 8)
     // Read two bytes in the right order
-    return (bigEndian) ? src[idx * 2] << 8 | src[idx * 2 + 1]
-                       : src[idx * 2] | src[idx * 2 + 1] << 8;
+    return (endianness == video::Endianness::Big) ? src[idx * 2] << 8 | src[idx * 2 + 1]
+                                                  : src[idx * 2] | src[idx * 2 + 1] << 8;
   else
     // Just read one byte
     return src[idx];
@@ -460,8 +462,7 @@ bool videoHandlerDifference::hierarchicalPositionYUV(int                        
   const int subH = diffYUVFormat.getSubsamplingHor();
   const int subV = diffYUVFormat.getSubsamplingVer();
 
-  // Get the endianness of the inputs
-  const bool bigEndian = diffYUVFormat.isBigEndian();
+  const auto endianness = diffYUVFormat.getEndianness();
 
   // Get/Set the bit depth of the input
   const int bps_in   = diffYUVFormat.getBitsPerSample();
@@ -504,7 +505,7 @@ bool videoHandlerDifference::hierarchicalPositionYUV(int                        
       for (int subX = x; subX < x + 4; subX++)
       {
 
-        int val1 = getValueFromSource(srcY1, subX, bps_in, bigEndian);
+        int val1 = getValueFromSource(srcY1, subX, bps_in, endianness);
         if (val1 != diffZero)
         {
           firstX = x;
@@ -515,8 +516,8 @@ bool videoHandlerDifference::hierarchicalPositionYUV(int                        
         // is this a position at which we have a chroma sample?
         if (subX % subH == 0 && subY % subV == 0 && subX * subV < w_in)
         {
-          int valU1 = getValueFromSource(srcU1, subX, bps_in, bigEndian);
-          int valV1 = getValueFromSource(srcV1, subX, bps_in, bigEndian);
+          int valU1 = getValueFromSource(srcU1, subX, bps_in, endianness);
+          int valV1 = getValueFromSource(srcV1, subX, bps_in, endianness);
           if (valU1 != diffZero || valV1 != diffZero)
           {
             firstX = x * subV;

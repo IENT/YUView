@@ -195,48 +195,43 @@ class PixelFormatYUV
 {
 public:
   PixelFormatYUV() = default;
-  PixelFormatYUV(const std::string_view name); // Set the pixel format by name. The name should have
-                                               // the format that is returned by getName().
+  PixelFormatYUV(const std::string_view name);
   PixelFormatYUV(Subsampling subsampling,
-                 unsigned    bitsPerSample,
-                 PlaneOrder  planeOrder    = PlaneOrder::YUV,
-                 bool        bigEndian     = false,
-                 Offset      chromaOffset  = {},
-                 bool        uvInterleaved = false);
+                 int         bitsPerSample,
+                 PlaneOrder  planeOrder          = PlaneOrder::YUV,
+                 Endianness  endianness          = Endianness::Little,
+                 Offset      chromaOffset        = {},
+                 bool        uvPlanesInterleaved = false,
+                 bool        bytePacking         = false);
   PixelFormatYUV(Subsampling  subsampling,
-                 unsigned     bitsPerSample,
+                 int          bitsPerSample,
                  PackingOrder packingOrder,
-                 bool         bytePacking  = false,
-                 bool         bigEndian    = false,
-                 Offset       chromaOffset = {});
+                 Endianness   endianness   = Endianness::Little,
+                 Offset       chromaOffset = {},
+                 bool         bytePacking  = false);
   PixelFormatYUV(PredefinedPixelFormat predefinedPixelFormat);
 
   std::optional<PredefinedPixelFormat> getPredefinedFormat() const;
 
   bool        isValid() const;
-  bool        canConvertToRGB(Size frameSize, std::string *whyNot = nullptr) const;
   int64_t     bytesPerFrame(const Size &frameSize) const;
   std::string getName() const;
   unsigned    getNrPlanes() const;
-  void        setDefaultChromaOffset();
 
   Subsampling getSubsampling() const;
   int         getSubsamplingHor(Component component = Component::Chroma) const;
   int         getSubsamplingVer(Component component = Component::Chroma) const;
   bool        isChromaSubsampled() const;
 
-  unsigned getBitsPerSample() const;
-  bool     isBigEndian() const;
-  bool     isPlanar() const;
-  bool     hasAlpha() const;
+  unsigned   getBitsPerSample() const;
+  Endianness getEndianness() const;
+  bool       hasAlpha() const;
+
+  bool                        isPlanar() const;
+  std::optional<PlaneOrder>   getPlaneOrder() const;
+  std::optional<PackingOrder> getPackingOrder() const;
 
   Offset getChromaOffset() const;
-
-  PlaneOrder getPlaneOrder() const { return this->planeOrder; }
-  bool       isUVInterleaved() const { return this->uvInterleaved; }
-
-  PackingOrder getPackingOrder() const { return this->packingOrder; }
-  bool         isBytePacking() const;
 
   bool operator==(const PixelFormatYUV &a) const { return getName() == a.getName(); }
   bool operator!=(const PixelFormatYUV &a) const { return getName() != a.getName(); }
@@ -245,26 +240,30 @@ public:
        operator bool() const { return this->isValid(); }
 
 private:
-  // If this is set, the format is defined according to a specific standard and does not
-  // conform to the definition below (using subsampling/bitDepht/planes/packed)
-  // If this is set, none of the values below matter.
-  std::optional<PredefinedPixelFormat> predefinedPixelFormat;
+  bool isBytePacking() const;
 
-  Subsampling subsampling{Subsampling::YUV_420};
-  unsigned    bitsPerSample{};
-  bool        bigEndian{};
-  bool        planar{};
+  struct PlanarPixelFormat
+  {
+    Subsampling subsampling{Subsampling::YUV_420};
+    int         bitsPerSample{};
+    PlaneOrder  planeOrder{PlaneOrder::YUV};
+    Endianness  endianness{Endianness::Little};
+    Offset      chromaOffset{};
+    bool        uvPlanesInterleaved{};
+    bool        bytePacking{};
+  };
 
-  // The chroma offset in x and y direction. The vales (0...4) define the offsets [0, 1/2, 1, 3/2]
-  // samples towards the right and bottom.
-  Offset chromaOffset;
+  struct PackedPixelFormat
+  {
+    Subsampling  subsampling{Subsampling::YUV_420};
+    int          bitsPerSample{};
+    PackingOrder packingOrder{PackingOrder::YUV};
+    Endianness   endianness{Endianness::Little};
+    Offset       chromaOffset{};
+    bool         bytePacking{};
+  };
 
-  PlaneOrder planeOrder{PlaneOrder::YUV};
-  bool       uvInterleaved{}; //< If set, the UV (and A if present) planes are interleaved
-
-  // if planar is not set
-  PackingOrder packingOrder{PackingOrder::YUV};
-  bool         bytePacking{};
+  std::variant<PlanarPixelFormat, PackedPixelFormat, PredefinedPixelFormat> format{};
 };
 
 } // namespace video::yuv

@@ -134,6 +134,70 @@ bool isFullRange(const ColorConversion colorConversion)
          colorConversion == ColorConversion::BT2020_FullRange;
 }
 
+bool canConvertToRGB(const PixelFormatYUV &pixelFormat, Size imageSize, std::string *whyNot)
+{
+  if (pixelFormat.getPredefinedFormat().has_value())
+    return true;
+  if (!pixelFormat.isValid())
+  {
+    if (whyNot)
+      whyNot->append("Invalid format");
+    return false;
+  }
+
+  // Check the bit depth
+  const int bps        = pixelFormat.getBitsPerSample();
+  bool      canConvert = true;
+  if (bps < 8 || bps > 16)
+  {
+    if (whyNot)
+    {
+      std::stringstream ss;
+      ss << "The currently set bit depth " << bps << " is not supported.\n";
+      whyNot->append(ss.str());
+    }
+    canConvert = false;
+  }
+  if (imageSize.width % pixelFormat.getSubsamplingHor() != 0)
+  {
+    if (whyNot)
+    {
+      std::stringstream ss;
+      ss << "The item width " << imageSize.width
+         << " must be divisible by the horizontal subsampling factor "
+         << pixelFormat.getSubsamplingHor() << ".\n";
+      whyNot->append(ss.str());
+    }
+    canConvert = false;
+  }
+  if (imageSize.height % pixelFormat.getSubsamplingVer() != 0)
+  {
+    if (whyNot)
+    {
+      std::stringstream ss;
+      ss << "The item height " << imageSize.height
+         << " must be divisible by the vertical subsampling factor "
+         << pixelFormat.getSubsamplingVer() << ".\n";
+      whyNot->append(ss.str());
+    }
+    canConvert = false;
+  }
+  if (pixelFormat.getSubsampling() == Subsampling::UNKNOWN)
+  {
+    if (whyNot)
+      whyNot->append("The current yuv subsampling is unknown.\n");
+    canConvert = false;
+  }
+  if (!pixelFormat.isPlanar() && pixelFormat.getSubsampling() != Subsampling::YUV_422 &&
+      pixelFormat.getSubsampling() != Subsampling::YUV_444)
+  {
+    if (whyNot)
+      whyNot->append("Packed YUV formats are onyl supported for 4:2:2 and 4:4:4 subsampling.\n");
+    canConvert = false;
+  }
+  return canConvert;
+}
+
 std::pair<bool, PixelFormatYUV> convertYUVPackedToPlanar(const QByteArray     &sourceBuffer,
                                                          QByteArray           &targetBuffer,
                                                          const Size            curFrameSize,
@@ -2405,6 +2469,11 @@ unsigned videoHandlerYUV::getCachingFrameSize() const
   return this->frameSize.width * this->frameSize.height * bytes;
 }
 
+virtual bool videoHandlerYUV::isFormatValid() const
+{
+  return (FrameHandler::isFormatValid() && canConvertToRGB(this->srcPixelFormat, frameSize));
+}
+
 void videoHandlerYUV::loadValues(Size newFramesize, const QString &)
 {
   this->setFrameSize(newFramesize);
@@ -2416,7 +2485,7 @@ void videoHandlerYUV::drawFrame(QPainter *painter,
                                 bool      drawRawData)
 {
   std::string msg;
-  if (!srcPixelFormat.canConvertToRGB(frameSize, &msg))
+  if (canConvertToRGB(this->srcPixelFormat, frameSize, &msg))
   {
     // The conversion to RGB can not be performed. Draw a text about this
     msg = "With the given settings, the YUV data can not be converted to RGB:\n" + msg;
@@ -3609,7 +3678,7 @@ QImage videoHandlerYUV::calculateDifference(FrameHandler    *item2,
   PixelFormatYUV tmpDiffYUVFormat(srcPixelFormat.getSubsampling(), bps_out, PlaneOrder::YUV, true);
   diffYUVFormat = tmpDiffYUVFormat;
 
-  if (!tmpDiffYUVFormat.canConvertToRGB(Size(w_out, h_out)))
+  if (!canConvertToRGB(tmpDiffYUVFormat, Size(w_out, h_out)))
     return QImage();
 
   // Get subsampling modes (they are identical for both inputs and the output)
