@@ -54,20 +54,23 @@ void slice_header::parse(SubByteReaderLogging                     &reader,
   SubByteReaderLoggingSubLevel subLevel(reader, "slice_header");
 
   this->sh_picture_header_in_slice_header_flag =
-      reader.readFlag("sh_picture_header_in_slice_header_flag");
+    reader.readFlag("sh_picture_header_in_slice_header_flag");
   if (this->sh_picture_header_in_slice_header_flag)
   {
     this->picture_header_structure_instance = std::make_shared<picture_header_structure>();
     this->picture_header_structure_instance->parse(reader, vpsMap, spsMap, ppsMap, sliceLayer);
-    picHeader = this->picture_header_structure_instance;
+  }
+  else
+  {
+    if (!picHeader)
+      throw std::logic_error("sh_picture_header_in_slice_header_flag is false but no "
+                             "picture_header_structure was given for parsing of slice_header.");
+    this->picture_header_structure_instance = picHeader;
   }
 
-  if (!picHeader)
-    throw std::logic_error("No picture_header_structure given for parsing of slice_header.");
-
-  if (ppsMap.count(picHeader->ph_pic_parameter_set_id) == 0)
+  if (ppsMap.count(this->picture_header_structure_instance->ph_pic_parameter_set_id) == 0)
     throw std::logic_error("PPS with given ph_pic_parameter_set_id not found.");
-  auto pps = ppsMap[picHeader->ph_pic_parameter_set_id];
+  auto pps = ppsMap[this->picture_header_structure_instance->ph_pic_parameter_set_id];
 
   if (spsMap.count(pps->pps_seq_parameter_set_id) == 0)
     throw std::logic_error("SPS with given pps_seq_parameter_set_id not found.");
