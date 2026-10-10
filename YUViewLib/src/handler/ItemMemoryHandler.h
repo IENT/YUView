@@ -33,6 +33,7 @@
 #pragma once
 
 #include <QString>
+#include <optional>
 
 namespace itemMemoryHandler
 {
