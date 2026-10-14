@@ -34,6 +34,8 @@
 
 #include <cmath>
 
+#include <parser/common/Functions.h>
+
 #include "seq_parameter_set_rbsp.h"
 
 namespace parser::vvc
@@ -68,8 +70,8 @@ void pic_parameter_set_rbsp::parse(SubByteReaderLogging &reader, SPSMap &spsMap)
   }
 
   // (64) -> (72)
-  this->PicWidthInCtbsY    = std::ceil(this->pps_pic_width_in_luma_samples / sps->CtbSizeY);
-  this->PicHeightInCtbsY   = std::ceil(this->pps_pic_height_in_luma_samples / sps->CtbSizeY);
+  this->PicWidthInCtbsY    = ceilDivision(this->pps_pic_width_in_luma_samples, sps->CtbSizeY);
+  this->PicHeightInCtbsY   = ceilDivision(this->pps_pic_height_in_luma_samples, sps->CtbSizeY);
   this->PicSizeInCtbsY     = this->PicWidthInCtbsY * this->PicHeightInCtbsY;
   this->PicWidthInMinCbsY  = this->pps_pic_width_in_luma_samples / sps->MinCbSizeY;
   this->PicHeightInMinCbsY = this->pps_pic_height_in_luma_samples / sps->MinCbSizeY;
@@ -388,13 +390,13 @@ void pic_parameter_set_rbsp::calculateTileRowsAndColumns()
 {
   {
     // 6.5.1 (14)
-    auto remainingWidthInCtbsY = this->PicWidthInCtbsY;
+    auto remainingWidthInCtbsY = static_cast<int>(this->PicWidthInCtbsY);
     for (unsigned i = 0; i <= this->pps_num_exp_tile_columns_minus1; i++)
     {
       this->ColWidthVal.push_back(this->pps_tile_column_width_minus1.at(i) + 1);
       remainingWidthInCtbsY -= this->ColWidthVal.at(i);
     }
-    auto uniformTileColWidth =
+    const int uniformTileColWidth =
         this->pps_tile_column_width_minus1.at(pps_num_exp_tile_columns_minus1) + 1;
     while (remainingWidthInCtbsY >= uniformTileColWidth)
     {
@@ -407,13 +409,13 @@ void pic_parameter_set_rbsp::calculateTileRowsAndColumns()
   }
   {
     // 6.5.1 (15)
-    auto remainingHeightInCtbsY = PicHeightInCtbsY;
+    auto remainingHeightInCtbsY = static_cast<int>(this->PicHeightInCtbsY);
     for (unsigned j = 0; j <= this->pps_num_exp_tile_rows_minus1; j++)
     {
       this->RowHeightVal.push_back(this->pps_tile_row_height_minus1.at(j) + 1);
       remainingHeightInCtbsY -= RowHeightVal.at(j);
     }
-    auto uniformTileRowHeight =
+    const int uniformTileRowHeight =
         this->pps_tile_row_height_minus1.at(this->pps_num_exp_tile_rows_minus1) + 1;
     while (remainingHeightInCtbsY >= uniformTileRowHeight)
     {

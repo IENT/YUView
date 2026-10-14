@@ -93,7 +93,7 @@ QVariant PacketItemModel::data(const QModelIndex &index, int role) const
   {
     if (item->isError())
       return QVariant(QBrush(QColor(255, 0, 0)));
-    return QVariant(QBrush());
+    return QVariant();
   }
   if (role == Qt::BackgroundRole)
   {

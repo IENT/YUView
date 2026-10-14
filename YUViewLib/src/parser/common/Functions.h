@@ -65,4 +65,10 @@ std::string convertSliceCountsToString(const std::map<std::string, unsigned int>
 std::vector<std::string> splitX26XOptionsString(const std::string str, const std::string seperator);
 size_t                   getStartCodeOffset(const ByteVector &data);
 
+template <typename T> T ceilDivision(T a, T b)
+{
+  static_assert(std::is_integral<T>::value, "ceilDivision only works for integral types.");
+  return (a + b - 1) / b;
+}
+
 } // namespace parser

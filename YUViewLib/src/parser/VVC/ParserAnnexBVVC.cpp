@@ -387,32 +387,8 @@ ParserAnnexBVVC::parseAndAddNALUnit(int                                         
                               this->activeParameterSets.spsMap,
                               this->activeParameterSets.ppsMap,
                               updatedParsingState.currentSlice);
-      auto &pictureHeader = newPictureHeader->picture_header_structure_instance;
-      pictureHeader->calculatePictureOrderCount(
-          reader,
-          nalType,
-          this->activeParameterSets.spsMap,
-          this->activeParameterSets.ppsMap,
-          updatedParsingState.prevTid0Pic[nalVVC->header.nuh_layer_id],
-          updatedParsingState.NoOutputBeforeRecoveryFlag[nalVVC->header.nuh_layer_id]);
 
-      updatedParsingState.NoOutputBeforeRecoveryFlag[nalVVC->header.nuh_layer_id] = false;
-
-      pictureHeader->globalPOC =
-          calculateAndUpdateGlobalPOC(isIRAP(nalType), pictureHeader->PicOrderCntVal);
-
-      updatedParsingState.currentPictureHeaderStructure =
-          newPictureHeader->picture_header_structure_instance;
-      updatedParsingState.currentAU.poc = pictureHeader->globalPOC;
-
-      // 8.3.1
-      auto TemporalId = nalVVC->header.nuh_temporal_id_plus1 - 1;
-      if (TemporalId == 0 && !pictureHeader->ph_non_ref_pic_flag && nalType != NalType::RASL_NUT &&
-          nalType != NalType::RADL_NUT)
-        updatedParsingState.prevTid0Pic[nalVVC->header.nuh_layer_id] = pictureHeader;
-
-      specificDescription << " POC " << pictureHeader->PicOrderCntVal;
-
+      updatedParsingState.currentPictureHeaderStructure = newPictureHeader->picture_header_structure_instance;
       nalVVC->rbsp = newPictureHeader;
     }
     else if (nalVVC->header.isSlice())
