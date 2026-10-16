@@ -38,7 +38,7 @@ namespace video::yuv
 {
 
 videoHandlerYUVCustomFormatDialog::videoHandlerYUVCustomFormatDialog(
-    const PixelFormatYUV &yuvFormat)
+  const PixelFormatYUV &yuvFormat)
 {
   this->ui.setupUi(this);
 
@@ -46,7 +46,7 @@ videoHandlerYUVCustomFormatDialog::videoHandlerYUVCustomFormatDialog(
 
   // Chroma subsampling
   this->ui.comboBoxChromaSubsampling->addItems(
-      functions::toQStringList(SubsamplingMapper.getNames()));
+    functions::toQStringList(SubsamplingMapper.getNames()));
   if (yuvFormat.getSubsampling() != Subsampling::UNKNOWN)
   {
     if (auto index = SubsamplingMapper.indexOf(yuvFormat.getSubsampling()))
@@ -55,7 +55,7 @@ videoHandlerYUVCustomFormatDialog::videoHandlerYUVCustomFormatDialog(
       // The Q_Object auto connection is performed later so call the slot manually.
       // This will fill comboBoxPackingOrder
       this->on_comboBoxChromaSubsampling_currentIndexChanged(
-          this->ui.comboBoxChromaSubsampling->currentIndex());
+        this->ui.comboBoxChromaSubsampling->currentIndex());
     }
   }
 
@@ -70,7 +70,8 @@ videoHandlerYUVCustomFormatDialog::videoHandlerYUVCustomFormatDialog(
   }
 
   // Endianness
-  this->ui.comboBoxEndianness->setCurrentIndex(yuvFormat.isBigEndian() ? 0 : 1);
+  this->ui.comboBoxEndianness->setCurrentIndex(yuvFormat.getEndianness() == Endianness::Big ? 0
+                                                                                            : 1);
 
   // Chroma offsets
   this->ui.comboBoxChromaOffsetX->setCurrentIndex(yuvFormat.getChromaOffset().x);
@@ -79,23 +80,21 @@ videoHandlerYUVCustomFormatDialog::videoHandlerYUVCustomFormatDialog(
   // Plane order
   this->ui.comboBoxPlaneOrder->addItems(functions::toQStringList(PlaneOrderMapper.getNames()));
 
-  if (yuvFormat.isPlanar())
+  if (const auto planarFormat = yuvFormat.getPlanarFormat())
   {
-    // Set the plane order
     this->ui.groupBoxPlanar->setChecked(true);
     this->ui.comboBoxPlaneOrder->setCurrentIndex(
-        int(PlaneOrderMapper.indexOf(yuvFormat.getPlaneOrder())));
+      int(PlaneOrderMapper.indexOf(planarFormat->planeOrder)));
     // Set UV(A) interleaved
-    this->ui.checkBoxUVInterleaved->setChecked(yuvFormat.isUVInterleaved());
+    this->ui.checkBoxUVInterleaved->setChecked(planarFormat->uvPlanesInterleaved);
   }
-  else
+  else if (const auto packedFormat = yuvFormat.getPackedFormat())
   {
-    // Set the packing order
     this->ui.groupBoxPacked->setChecked(true);
-    auto supportedPackingFormats = getSupportedPackingFormats(yuvFormat.getSubsampling());
-    if (const auto idx = vectorIndexOf(supportedPackingFormats, yuvFormat.getPackingOrder()))
+    auto supportedPackingFormats = getSupportedPackingFormats(packedFormat->subsampling);
+    if (const auto idx = vectorIndexOf(supportedPackingFormats, packedFormat->packingOrder))
       this->ui.comboBoxPackingOrder->setCurrentIndex(static_cast<int>(*idx));
-    this->ui.checkBoxBytePacking->setChecked(yuvFormat.isBytePacking());
+    this->ui.checkBoxBytePacking->setChecked(packedFormat->bytePacking);
   }
 }
 
@@ -107,7 +106,7 @@ void videoHandlerYUVCustomFormatDialog::on_comboBoxChromaSubsampling_currentInde
   this->ui.comboBoxPackingOrder->clear();
   for (auto &packing : packingTypes)
     this->ui.comboBoxPackingOrder->addItem(
-        QString::fromStdString(std::string(PackingOrderMapper.getName(packing))));
+      QString::fromStdString(std::string(PackingOrderMapper.getName(packing))));
 
   bool packedSupported = (packingTypes.size() != 0);
   if (!packedSupported)
@@ -175,7 +174,8 @@ PixelFormatYUV videoHandlerYUVCustomFormatDialog::getSelectedYUVFormat() const
     return {};
   const auto bitsPerSample = BitDepthList.at(unsigned(bitDepthIndex));
 
-  const auto bigEndian    = (this->ui.comboBoxEndianness->currentIndex() == 0);
+  const auto endianness =
+    (this->ui.comboBoxEndianness->currentIndex() == 0 ? Endianness::Big : Endianness::Little);
   const auto chromaOffset = Offset({this->ui.comboBoxChromaOffsetX->currentIndex(),
                                     this->ui.comboBoxChromaOffsetY->currentIndex()});
 
@@ -191,8 +191,8 @@ PixelFormatYUV videoHandlerYUVCustomFormatDialog::getSelectedYUVFormat() const
 
     const auto uvInterleaved = this->ui.checkBoxUVInterleaved->isChecked();
 
-    return PixelFormatYUV(
-        *subsampling, bitsPerSample, *planeOrder, bigEndian, chromaOffset, uvInterleaved);
+    return PlanarPixelFormat(
+      {*subsampling, bitsPerSample, *planeOrder, endianness, chromaOffset, uvInterleaved});
   }
   else
   {
@@ -204,8 +204,8 @@ PixelFormatYUV videoHandlerYUVCustomFormatDialog::getSelectedYUVFormat() const
     const auto packingOrder = supportedPackingFormats.at(packingOrderIndex);
     const auto bytePacking  = (this->ui.checkBoxBytePacking->isChecked());
 
-    return PixelFormatYUV(
-        *subsampling, bitsPerSample, packingOrder, bytePacking, bigEndian, chromaOffset);
+    return PackedPixelFormat(
+      {*subsampling, bitsPerSample, packingOrder, endianness, chromaOffset, bytePacking});
   }
 }
 

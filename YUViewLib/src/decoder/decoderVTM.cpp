@@ -83,7 +83,9 @@ namespace decoder
 #endif
 #endif
 
-using Subsampling = video::yuv::Subsampling;
+using video::yuv::PixelFormatYUV;
+using video::yuv::PlanarPixelFormat;
+using video::yuv::Subsampling;
 
 namespace
 {
@@ -130,7 +132,7 @@ QStringList decoderVTM::getLibraryNames() const
   // Since this has been compiled for linux it will fail and not even try to open the .dylib.
   // On windows and linux ommitting the extension works
   QStringList names =
-      is_Q_OS_MAC ? QStringList() << "libVTMDecoder.dylib" : QStringList() << "libVTMDecoder";
+    is_Q_OS_MAC ? QStringList() << "libVTMDecoder.dylib" : QStringList() << "libVTMDecoder";
 
   return names;
 }
@@ -195,7 +197,7 @@ template <typename T> T decoderVTM::resolve(T &fun, const char *symbol, bool opt
   {
     if (!optional)
       setError(QStringLiteral("Error loading the VTM decoder library: Can't find function %1.")
-                   .arg(symbol));
+                 .arg(symbol));
     return nullptr;
   }
 
@@ -259,41 +261,39 @@ bool decoderVTM::getNextFrameFromDecoder()
 {
   DEBUG_DECVTM("decoderVTM::getNextFrameFromDecoder");
 
-  currentVTMPic = this->lib.libVTMDec_get_picture(decoder);
-  if (currentVTMPic == nullptr)
+  this->currentVTMPic = this->lib.libVTMDec_get_picture(decoder);
+  if (this->currentVTMPic == nullptr)
   {
-    decoderState = DecoderState::NeedsMoreData;
+    this->decoderState = DecoderState::NeedsMoreData;
     return false;
   }
 
   // Check the validity of the picture
-  auto picSize = Size(this->lib.libVTMDec_get_picture_width(currentVTMPic, LIBVTMDEC_LUMA),
-                      this->lib.libVTMDec_get_picture_height(currentVTMPic, LIBVTMDEC_LUMA));
+  const auto picSize = Size(this->lib.libVTMDec_get_picture_width(currentVTMPic, LIBVTMDEC_LUMA),
+                            this->lib.libVTMDec_get_picture_height(currentVTMPic, LIBVTMDEC_LUMA));
   if (!picSize.isValid())
     DEBUG_DECVTM("decoderVTM::getNextFrameFromDecoder got invalid size");
-  auto subsampling =
-      convertFromInternalSubsampling(this->lib.libVTMDec_get_chroma_format(currentVTMPic));
+  const auto subsampling =
+    convertFromInternalSubsampling(this->lib.libVTMDec_get_chroma_format(currentVTMPic));
   if (subsampling == Subsampling::UNKNOWN)
     DEBUG_DECVTM("decoderVTM::getNextFrameFromDecoder got invalid chroma format");
-  auto bitDepth = functions::clipToUnsigned(
-      this->lib.libVTMDec_get_internal_bit_depth(currentVTMPic, LIBVTMDEC_LUMA));
+  const auto bitDepth = this->lib.libVTMDec_get_internal_bit_depth(currentVTMPic, LIBVTMDEC_LUMA);
   if (bitDepth < 8 || bitDepth > 16)
     DEBUG_DECVTM("decoderVTM::getNextFrameFromDecoder got invalid bit depth");
 
-  if (!frameSize.isValid() && !formatYUV.isValid())
+  if (!this->frameSize.isValid() && !this->formatYUV.isValid())
   {
-    // Set the values
-    frameSize = picSize;
-    formatYUV = video::yuv::PixelFormatYUV(subsampling, bitDepth);
+    this->frameSize = picSize;
+    this->formatYUV = PixelFormatYUV(PlanarPixelFormat({subsampling, bitDepth}));
   }
   else
   {
     // Check the values against the previously set values
-    if (frameSize != picSize)
+    if (this->frameSize != picSize)
       return setErrorB("Received a frame of different size");
-    if (formatYUV.getSubsampling() != subsampling)
+    if (this->formatYUV.getSubsampling() != subsampling)
       return setErrorB("Received a frame with different subsampling");
-    if (formatYUV.getBitsPerSample() != bitDepth)
+    if (this->formatYUV.getBitsPerSample() != bitDepth)
       return setErrorB("Received a frame with different bit depth");
   }
 
@@ -320,10 +320,10 @@ bool decoderVTM::pushData(QByteArray &data)
   bool checkOutputPictures = false;
   bool bNewPicture         = false;
   auto err                 = this->lib.libVTMDec_push_nal_unit(
-      decoder, data, data.length(), endOfFile, bNewPicture, checkOutputPictures);
+    decoder, data, data.length(), endOfFile, bNewPicture, checkOutputPictures);
   if (err != LIBVTMDEC_OK)
     return setErrorB(QString("Error pushing data to decoder (libVTMDec_push_nal_unit) length %1")
-                         .arg(data.length()));
+                       .arg(data.length()));
   DEBUG_DECVTM("decoderVTM::pushData pushed NAL length %d%s%s",
                data.length(),
                bNewPicture ? " bNewPicture" : "",
@@ -376,16 +376,16 @@ void decoderVTM::copyImgToByteArray(libVTMDec_picture *src, QByteArray &dst)
   bool outputTwoByte = (this->lib.libVTMDec_get_internal_bit_depth(src, LIBVTMDEC_LUMA) > 8);
 
   // How many samples are in each component?
-  int outSizeY = this->lib.libVTMDec_get_picture_width(src, LIBVTMDEC_LUMA) *
-                 this->lib.libVTMDec_get_picture_height(src, LIBVTMDEC_LUMA);
+  int outSizeY  = this->lib.libVTMDec_get_picture_width(src, LIBVTMDEC_LUMA) *
+                  this->lib.libVTMDec_get_picture_height(src, LIBVTMDEC_LUMA);
   int outSizeCb = (nrPlanes == 1)
-                      ? 0
-                      : (this->lib.libVTMDec_get_picture_width(src, LIBVTMDEC_CHROMA_U) *
-                         this->lib.libVTMDec_get_picture_height(src, LIBVTMDEC_CHROMA_U));
+                    ? 0
+                    : (this->lib.libVTMDec_get_picture_width(src, LIBVTMDEC_CHROMA_U) *
+                       this->lib.libVTMDec_get_picture_height(src, LIBVTMDEC_CHROMA_U));
   int outSizeCr = (nrPlanes == 1)
-                      ? 0
-                      : (this->lib.libVTMDec_get_picture_width(src, LIBVTMDEC_CHROMA_V) *
-                         this->lib.libVTMDec_get_picture_height(src, LIBVTMDEC_CHROMA_V));
+                    ? 0
+                    : (this->lib.libVTMDec_get_picture_width(src, LIBVTMDEC_CHROMA_V) *
+                       this->lib.libVTMDec_get_picture_height(src, LIBVTMDEC_CHROMA_V));
   // How many bytes do we need in the output buffer?
   int nrBytesOutput = (outSizeY + outSizeCb + outSizeCr) * (outputTwoByte ? 2 : 1);
   DEBUG_DECVTM("decoderVTM::copyImgToByteArray nrBytesOutput %d", nrBytesOutput);

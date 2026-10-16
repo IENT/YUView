@@ -175,10 +175,10 @@ bool FrameHandler::loadCurrentImageFromFile(const QString &filePath)
     this->setFrameSize(Size(image->size.width, image->size.height));
     auto qFrameSize    = QSize(image->size.width, image->size.height);
     this->currentImage = QImage(qFrameSize, QImage::Format_ARGB32);
-    for (unsigned y = 0; y < image->size.height; y++)
+    for (int y = 0; y < image->size.height; y++)
     {
       auto bits = this->currentImage.scanLine(y);
-      for (unsigned x = 0; x < image->size.width; x++)
+      for (int x = 0; x < image->size.width; x++)
       {
         auto idx = y * image->size.width * 4 + x * 4;
         // Src is RGBA and output it BGRA
@@ -386,9 +386,9 @@ QImage FrameHandler::calculateDifference(FrameHandler *item2,
   // Also calculate the MSE while we're at it (R,G,B)
   int64_t mseAdd[3] = {0, 0, 0};
 
-  for (unsigned y = 0; y < height; y++)
+  for (int y = 0; y < height; y++)
   {
-    for (unsigned x = 0; x < width; x++)
+    for (int x = 0; x < width; x++)
     {
       auto pixel1 = getPixelVal(x, y);
       auto pixel2 = item2->getPixelVal(x, y);

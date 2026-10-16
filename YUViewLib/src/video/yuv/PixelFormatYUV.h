@@ -160,6 +160,12 @@ enum class Subsampling
   UNKNOWN
 };
 
+struct SubsamplingFactors
+{
+  int horizontal{1};
+  int vertical{1};
+};
+
 constexpr EnumMapper<Subsampling, 7> SubsamplingMapper = {
   std::make_pair(Subsampling::YUV_444, "444"),
   std::make_pair(Subsampling::YUV_422, "422"),
@@ -173,6 +179,8 @@ std::string formatSubsamplingWithColons(const Subsampling &subsampling);
 
 int getMaxPossibleChromaOffsetValues(bool horizontal, Subsampling subsampling);
 std::vector<PackingOrder> getSupportedPackingFormats(Subsampling subsampling);
+SubsamplingFactors        getSubsamplingFactors(Subsampling subsampling);
+Size                      getSubsampledSize(Size lumaSize, Subsampling subsampling);
 
 enum class PlaneOrder
 {
@@ -187,51 +195,64 @@ constexpr EnumMapper<PlaneOrder, 4> PlaneOrderMapper = {std::make_pair(PlaneOrde
                                                         std::make_pair(PlaneOrder::YUVA, "YUVA"),
                                                         std::make_pair(PlaneOrder::YVUA, "YVUA")};
 
-const auto BitDepthList = std::vector<unsigned>({8, 9, 10, 12, 14, 16});
+const auto BitDepthList = std::vector<int>({8, 9, 10, 12, 14, 16});
+
+struct PlanarPixelFormat
+{
+  Subsampling subsampling{Subsampling::YUV_420};
+  int         bitsPerSample{8};
+  PlaneOrder  planeOrder{PlaneOrder::YUV};
+  Endianness  endianness{Endianness::Little};
+  Offset      chromaOffset{};
+  bool        uvPlanesInterleaved{};
+  bool        bytePacking{};
+};
+
+struct PackedPixelFormat
+{
+  Subsampling  subsampling{Subsampling::YUV_420};
+  int          bitsPerSample{8};
+  PackingOrder packingOrder{PackingOrder::YUV};
+  Endianness   endianness{Endianness::Little};
+  Offset       chromaOffset{};
+  bool         bytePacking{};
+};
 
 // This class defines a specific YUV format with all properties like pixels per sample, subsampling
 // of chroma components and so on.
 class PixelFormatYUV
 {
 public:
-  PixelFormatYUV() = default;
+  PixelFormatYUV();
   PixelFormatYUV(const std::string_view name);
-  PixelFormatYUV(Subsampling subsampling,
-                 int         bitsPerSample,
-                 PlaneOrder  planeOrder          = PlaneOrder::YUV,
-                 Endianness  endianness          = Endianness::Little,
-                 Offset      chromaOffset        = {},
-                 bool        uvPlanesInterleaved = false,
-                 bool        bytePacking         = false);
-  PixelFormatYUV(Subsampling  subsampling,
-                 int          bitsPerSample,
-                 PackingOrder packingOrder,
-                 Endianness   endianness   = Endianness::Little,
-                 Offset       chromaOffset = {},
-                 bool         bytePacking  = false);
+  PixelFormatYUV(PlanarPixelFormat planarPixelFormat);
+  PixelFormatYUV(PackedPixelFormat packedPixelFormat);
   PixelFormatYUV(PredefinedPixelFormat predefinedPixelFormat);
 
+  std::optional<PlanarPixelFormat>     getPlanarFormat() const;
+  std::optional<PackedPixelFormat>     getPackedFormat() const;
   std::optional<PredefinedPixelFormat> getPredefinedFormat() const;
 
   bool        isValid() const;
   int64_t     bytesPerFrame(const Size &frameSize) const;
   std::string getName() const;
-  unsigned    getNrPlanes() const;
 
   Subsampling getSubsampling() const;
   int         getSubsamplingHor(Component component = Component::Chroma) const;
   int         getSubsamplingVer(Component component = Component::Chroma) const;
   bool        isChromaSubsampled() const;
+  int         getNrPlanes() const;
 
-  unsigned   getBitsPerSample() const;
-  Endianness getEndianness() const;
-  bool       hasAlpha() const;
+  int getBitsPerSample() const;
 
   bool                        isPlanar() const;
   std::optional<PlaneOrder>   getPlaneOrder() const;
   std::optional<PackingOrder> getPackingOrder() const;
+  bool                        hasAlpha() const;
 
-  Offset getChromaOffset() const;
+  Endianness getEndianness() const;
+  Offset     getChromaOffset() const;
+  bool       isBytePacking() const;
 
   bool operator==(const PixelFormatYUV &a) const { return getName() == a.getName(); }
   bool operator!=(const PixelFormatYUV &a) const { return getName() != a.getName(); }
@@ -240,29 +261,6 @@ public:
        operator bool() const { return this->isValid(); }
 
 private:
-  bool isBytePacking() const;
-
-  struct PlanarPixelFormat
-  {
-    Subsampling subsampling{Subsampling::YUV_420};
-    int         bitsPerSample{};
-    PlaneOrder  planeOrder{PlaneOrder::YUV};
-    Endianness  endianness{Endianness::Little};
-    Offset      chromaOffset{};
-    bool        uvPlanesInterleaved{};
-    bool        bytePacking{};
-  };
-
-  struct PackedPixelFormat
-  {
-    Subsampling  subsampling{Subsampling::YUV_420};
-    int          bitsPerSample{};
-    PackingOrder packingOrder{PackingOrder::YUV};
-    Endianness   endianness{Endianness::Little};
-    Offset       chromaOffset{};
-    bool         bytePacking{};
-  };
-
   std::variant<PlanarPixelFormat, PackedPixelFormat, PredefinedPixelFormat> format{};
 };
 

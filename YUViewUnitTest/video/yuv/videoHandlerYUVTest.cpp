@@ -121,7 +121,7 @@ TEST(videoHandlerYUVTest, testLoadFrame_444Planar_shouldReturnExpectedPixelValue
 {
   videoHandlerYUV handler;
   handler.setFrameSize({4, 4});
-  handler.setPixelFormatYUV(PixelFormatYUV(Subsampling::YUV_444, 8, PlaneOrder::YUV));
+  handler.setPixelFormatYUV(PlanarPixelFormat({.subsampling = Subsampling::YUV_444}));
 
   videoHandlerDataLoadingTest dataLoader(&handler);
   dataLoader.addExpectedLoadingRequests({0, TEST_DATA_YUV_444_4x4});
@@ -139,13 +139,13 @@ TEST(videoHandlerYUVTest, testCalculateDifference_444Planar_sameInput_shouldRetu
 {
   videoHandlerYUV handler1;
   handler1.setFrameSize({4, 4});
-  handler1.setPixelFormatYUV(PixelFormatYUV(Subsampling::YUV_444, 8, PlaneOrder::YUV));
+  handler1.setPixelFormatYUV(PlanarPixelFormat({.subsampling = Subsampling::YUV_444}));
   videoHandlerDataLoadingTest dataLoader1(&handler1);
   dataLoader1.addExpectedLoadingRequests({0, TEST_DATA_YUV_444_4x4});
 
   videoHandlerYUV handler2;
   handler2.setFrameSize({4, 4});
-  handler2.setPixelFormatYUV(PixelFormatYUV(Subsampling::YUV_444, 8, PlaneOrder::YUV));
+  handler2.setPixelFormatYUV(PlanarPixelFormat({.subsampling = Subsampling::YUV_444}));
   videoHandlerDataLoadingTest dataLoader2(&handler2);
   dataLoader2.addExpectedLoadingRequests({0, TEST_DATA_YUV_444_4x4});
 

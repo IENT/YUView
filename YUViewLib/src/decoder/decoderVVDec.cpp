@@ -82,7 +82,9 @@
 namespace decoder
 {
 
-using Subsampling = video::yuv::Subsampling;
+using video::yuv::PixelFormatYUV;
+using video::yuv::PlanarPixelFormat;
+using video::yuv::Subsampling;
 
 namespace
 {
@@ -116,18 +118,17 @@ Subsampling convertFromInternalSubsampling(vvdecColorFormat fmt)
   return Subsampling::UNKNOWN;
 }
 
-Size calculateChromaSize(Size lumaSize, vvdecColorFormat fmt)
+Size getVVDecFrameSize(const vvdecFrame *frame)
 {
-  if (fmt == VVDEC_CF_YUV400_PLANAR)
-    return {};
-  if (fmt == VVDEC_CF_YUV420_PLANAR)
-    return {lumaSize.width / 2, lumaSize.height / 2};
-  if (fmt == VVDEC_CF_YUV422_PLANAR)
-    return {lumaSize.width / 2, lumaSize.height};
-  if (fmt == VVDEC_CF_YUV444_PLANAR)
-    return lumaSize;
+  if (frame == nullptr)
+    return Size();
 
-  return {};
+  return Size(static_cast<int>(frame->width), static_cast<int>(frame->height));
+}
+
+Size getPlaneSize(const vvdecPlane &plane)
+{
+  return Size(static_cast<int>(plane.width), static_cast<int>(plane.height));
 }
 
 } // namespace
@@ -238,8 +239,8 @@ template <typename T> T decoderVVDec::resolve(T &fun, const char *symbol, bool o
   if (!ptr)
   {
     if (!optional)
-      this->setError(QStringLiteral("Error loading the libvvDeC library: Can't find function %1.")
-                         .arg(symbol));
+      this->setError(
+        QStringLiteral("Error loading the libvvDeC library: Can't find function %1.").arg(symbol));
     return nullptr;
   }
 
@@ -363,16 +364,16 @@ bool decoderVVDec::getNextFrameFromDecoder()
   }
 
   // Check the validity of the picture
-  const auto lumaSize = Size({this->currentFrame->width, this->currentFrame->height});
+  const auto lumaSize = getVVDecFrameSize(this->currentFrame);
   const auto nrPlanes = (this->currentFrame->colorFormat == VVDEC_CF_YUV400_PLANAR) ? 1u : 3u;
 
   // Check the validity of the picture
   if (!lumaSize.isValid())
     DEBUG_vvdec("decoderVVDec::getNextFrameFromDecoder got invalid size");
-  auto subsampling = convertFromInternalSubsampling(this->currentFrame->colorFormat);
+  const auto subsampling = convertFromInternalSubsampling(this->currentFrame->colorFormat);
   if (subsampling == Subsampling::UNKNOWN)
     DEBUG_vvdec("decoderVVDec::getNextFrameFromDecoder got invalid chroma format");
-  auto bitDepth = this->currentFrame->bitDepth;
+  const auto bitDepth = this->currentFrame->bitDepth;
   if (bitDepth < 8 || bitDepth > 16)
     DEBUG_vvdec("decoderVVDec::getNextFrameFromDecoder got invalid bit depth");
   if (nrPlanes != this->currentFrame->numPlanes)
@@ -380,9 +381,9 @@ bool decoderVVDec::getNextFrameFromDecoder()
 
   for (unsigned i = 1; i < this->currentFrame->numPlanes; i++)
   {
-    const auto &plane        = this->currentFrame->planes[i];
-    auto        expectedSize = calculateChromaSize(lumaSize, this->currentFrame->colorFormat);
-    if (expectedSize.width != plane.width || expectedSize.height != plane.height)
+    const auto expectedChromaSize = getSubsampledSize(lumaSize, subsampling);
+    const auto planeSize          = getPlaneSize(this->currentFrame->planes[i]);
+    if (planeSize != expectedChromaSize)
       DEBUG_vvdec("decoderVVDec::getNextFrameFromDecoder plane has different size then expected");
   }
 
@@ -390,7 +391,7 @@ bool decoderVVDec::getNextFrameFromDecoder()
   {
     // Set the values
     this->frameSize = lumaSize;
-    this->formatYUV = video::yuv::PixelFormatYUV(subsampling, bitDepth);
+    this->formatYUV = PixelFormatYUV(PlanarPixelFormat({subsampling, static_cast<int>(bitDepth)}));
   }
   else
   {
@@ -399,7 +400,7 @@ bool decoderVVDec::getNextFrameFromDecoder()
       return setErrorB("Received a frame of different size");
     if (this->formatYUV.getSubsampling() != subsampling)
       return setErrorB("Received a frame with different subsampling");
-    if (unsigned(this->formatYUV.getBitsPerSample()) != bitDepth)
+    if (this->formatYUV.getBitsPerSample() != static_cast<int>(bitDepth))
       return setErrorB("Received a frame with different bit depth");
   }
 
@@ -445,9 +446,9 @@ bool decoderVVDec::pushData(QByteArray &data)
       auto cErr    = this->lib.vvdec_get_last_error(this->decoder);
       auto cErrAdd = this->lib.vvdec_get_last_additional_error(this->decoder);
       return setErrorB(QString("Error pushing data to decoder length %1 - %2 - %3")
-                           .arg(data.length())
-                           .arg(cErr)
-                           .arg(cErrAdd));
+                         .arg(data.length())
+                         .arg(cErr)
+                         .arg(cErrAdd));
     }
 
     DEBUG_vvdec("decoderVVDec::pushData pushed NAL length %d%s",
@@ -484,19 +485,21 @@ QByteArray decoderVVDec::getRawFrameData()
 
 void decoderVVDec::copyImgToByteArray(QByteArray &dst)
 {
-  auto fmt = this->currentFrame->colorFormat;
-  if (fmt == VVDEC_CF_INVALID)
+  const auto subsampling = convertFromInternalSubsampling(this->currentFrame->colorFormat);
+  if (subsampling == Subsampling::UNKNOWN)
   {
-    DEBUG_vvdec("decoderVVDec::copyImgToByteArray picture format is unknown");
+    DEBUG_vvdec("decoderVVDec::copyImgToByteArray picture subsampling is unknown");
     return;
   }
+
   const auto nrPlanes       = this->currentFrame->numPlanes;
   const auto bytesPerSample = this->currentFrame->bitDepth > 8 ? 2 : 1;
-  const auto lumaSize       = Size({this->currentFrame->width, this->currentFrame->height});
-  const auto chromaSize     = calculateChromaSize(lumaSize, fmt);
+  const auto lumaSize       = getVVDecFrameSize(this->currentFrame);
+  const auto chromaSize     = getSubsampledSize(lumaSize, subsampling);
 
-  auto outSizeLumaBytes   = lumaSize.width * lumaSize.height * bytesPerSample;
-  auto outSizeChromaBytes = chromaSize.width * chromaSize.height * bytesPerSample;
+  auto outSizeLumaBytes   = lumaSize.area() * bytesPerSample;
+  auto outSizeChromaBytes = chromaSize.area() * bytesPerSample;
+
   // How many bytes do we need in the output buffer?
   auto nrBytesOutput = (outSizeLumaBytes + outSizeChromaBytes * 2);
   DEBUG_vvdec("decoderVVDec::copyImgToByteArray nrBytesOutput %d", nrBytesOutput);

@@ -400,7 +400,7 @@ void PlaylistTreeWidget::addOverlayItem()
   for (int i = 0; i < selectedItems().count(); i++)
   {
     if (const auto plItem = dynamic_cast<playlistItem *>(selectedItems()[i]))
-      selection.append(selectedItems()[i]);
+      selection.append(plItem);
   }
 
   // Add all selected items to the overlay

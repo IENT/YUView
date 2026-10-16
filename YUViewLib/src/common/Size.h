@@ -34,9 +34,9 @@
 
 struct Size
 {
-  static constexpr unsigned MAX_DIMENSION = 100000;
+  static constexpr int MAX_DIMENSION = 100000;
 
-  constexpr Size(unsigned width, unsigned height) : width(width), height(height) {}
+  constexpr Size(int width, int height) : width(width), height(height) {}
   constexpr Size() = default;
 
   constexpr bool operator==(const Size &other) const
@@ -47,7 +47,7 @@ struct Size
   {
     return this->width != other.width || this->height != other.height;
   }
-  
+
   explicit       operator bool() const { return this->isValid(); }
   constexpr bool isValid() const
   {
@@ -55,6 +55,8 @@ struct Size
            this->height > 0 && this->height < MAX_DIMENSION;
   }
 
-  unsigned width{};
-  unsigned height{};
+  int area() const { return this->width * this->height; }
+
+  int width{};
+  int height{};
 };

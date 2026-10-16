@@ -189,19 +189,19 @@ void decoderFFmpeg::copyCurImageToBuffer()
     // At first get how many bytes we are going to write
     const auto pixFmt           = this->getPixelFormatYUV();
     const auto nrBytesPerSample = pixFmt.getBitsPerSample() <= 8 ? 1 : 2;
-    const auto nrBytesY         = this->frameSize.width * this->frameSize.height * nrBytesPerSample;
-    const auto nrBytesC         = this->frameSize.width / pixFmt.getSubsamplingHor() *
-                          this->frameSize.height / pixFmt.getSubsamplingVer() * nrBytesPerSample;
+    const auto nrBytesY         = this->frameSize.area() * nrBytesPerSample;
+    const auto nrBytesC =
+      getSubsampledSize(this->frameSize, pixFmt.getSubsampling()).area() * nrBytesPerSample;
     const auto nrBytes = nrBytesY + 2 * nrBytesC;
 
     // Is the output big enough?
-    if (auto c = functions::clipToUnsigned(this->currentOutputBuffer.capacity()); c < nrBytes)
+    if (this->currentOutputBuffer.capacity() < nrBytes)
       this->currentOutputBuffer.resize(nrBytes);
 
     // Copy line by line. The linesize of the source may be larger than the width of the frame.
     // This may be because the frame buffer is (8) byte aligned. Also the internal decoded
     // resolution may be larger than the output frame size.
-    for (unsigned plane = 0; plane < pixFmt.getNrPlanes(); plane++)
+    for (int plane = 0; plane < pixFmt.getNrPlanes(); plane++)
     {
       const auto component =
         (plane == 0) ? video::yuv::Component::Luma : video::yuv::Component::Chroma;
@@ -213,7 +213,7 @@ void decoderFFmpeg::copyCurImageToBuffer()
       const auto dstLinesize =
         this->frameSize.width / pixFmt.getSubsamplingHor(component) * nrBytesPerSample;
       const auto height = this->frameSize.height / pixFmt.getSubsamplingVer(component);
-      for (unsigned y = 0; y < height; y++)
+      for (int y = 0; y < height; y++)
       {
         memcpy(dst, src, dstLinesize);
         dst += dstLinesize;
@@ -230,7 +230,7 @@ void decoderFFmpeg::copyCurImageToBuffer()
     const auto nrBytes = nrBytesPerComponent * pixFmt.getNrChannels();
 
     // Is the output big enough?
-    if (auto c = functions::clipToUnsigned(this->currentOutputBuffer.capacity()); c < nrBytes)
+    if (this->currentOutputBuffer.capacity() < nrBytes)
       this->currentOutputBuffer.resize(nrBytes);
 
     auto       dst  = this->currentOutputBuffer.data();
@@ -245,7 +245,7 @@ void decoderFFmpeg::copyCurImageToBuffer()
       {
         auto       src         = frame.getData(i);
         const auto srcLinesize = frame.getLineSize(i);
-        for (unsigned y = 0; y < hDst; y++)
+        for (int y = 0; y < hDst; y++)
         {
           memcpy(dst, src, wDst);
           // Goto the next line
@@ -260,7 +260,7 @@ void decoderFFmpeg::copyCurImageToBuffer()
       const auto wDst        = this->frameSize.width * nrBytesPerSample * pixFmt.getNrChannels();
       auto       src         = frame.getData(0);
       const auto srcLinesize = frame.getLineSize(0);
-      for (unsigned y = 0; y < hDst; y++)
+      for (int y = 0; y < hDst; y++)
       {
         memcpy(dst, src, wDst);
         dst += wDst;

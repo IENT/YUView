@@ -650,11 +650,9 @@ void videoHandlerRGB::convertRGBToImage(const QByteArray &sourceBuffer, QImage &
 
   // Check the image buffer size before we write to it
 #if QT_VERSION < QT_VERSION_CHECK(5, 10, 0)
-  assert(functions::clipToUnsigned(outputImage.byteCount()) >=
-         frameSize.width * frameSize.height * 4);
+  assert(outputImage.byteCount() >= frameSize.area() * 4);
 #else
-  assert(functions::clipToUnsigned(outputImage.sizeInBytes()) >=
-         frameSize.width * frameSize.height * 4);
+  assert(outputImage.sizeInBytes() >= frameSize.area() * 4);
 #endif
 
   this->convertSourceToRGBA32Bit(sourceBuffer, outputImage.bits(), format);

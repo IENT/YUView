@@ -60,8 +60,16 @@ TEST(PixelFormatYUVTest, testFormatFromToString)
       << "Format " << name << " chroma offset missmatch";
     EXPECT_EQ(fmt.getPlaneOrder(), fmtNew.getPlaneOrder())
       << "Format " << name << " plane order missmatch";
-    EXPECT_EQ(fmt.isUVInterleaved(), fmtNew.isUVInterleaved())
-      << "Format " << name << " uv inteleaved missmatch";
+
+    if (const auto planarFormat = fmt.getPlanarFormat())
+    {
+      const auto planarFormatNew = fmtNew.getPlanarFormat();
+      EXPECT_TRUE(planarFormatNew.has_value())
+        << "Format " << name << " new format has no planar format";
+      EXPECT_EQ(planarFormat->uvPlanesInterleaved, planarFormatNew->uvPlanesInterleaved)
+        << "Format " << name << " uv inteleaved missmatch";
+    }
+
     EXPECT_EQ(fmt.getPackingOrder(), fmtNew.getPackingOrder())
       << "Format " << name << " packing order missmatch";
     EXPECT_EQ(fmt.isBytePacking(), fmtNew.isBytePacking())
@@ -69,7 +77,7 @@ TEST(PixelFormatYUVTest, testFormatFromToString)
 
     if (fmt.getBitsPerSample())
     {
-      EXPECT_EQ(fmt.isBigEndian(), fmtNew.isBigEndian())
+      EXPECT_EQ(fmt.getEndianness(), fmtNew.getEndianness())
         << "Format " << name << " endianness wrong";
     }
   }

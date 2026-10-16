@@ -43,25 +43,32 @@ std::vector<PixelFormatYUV> getAllPixelFormats()
   {
     for (const auto bitsPerSample : BitDepthList)
     {
-      const auto endianList =
-        (bitsPerSample > 8) ? std::vector<bool>({false, true}) : std::vector<bool>({false});
+      const auto endianList = (bitsPerSample > 8)
+                                ? std::vector<Endianness>({Endianness::Little, Endianness::Big})
+                                : std::vector<Endianness>({Endianness::Little});
 
       // Planar
       for (const auto planeOrder : PlaneOrderMapper.getValues())
-        for (const auto bigEndian : endianList)
-          allFormats.push_back(PixelFormatYUV(subsampling, bitsPerSample, planeOrder, bigEndian));
+        for (const auto endianness : endianList)
+          allFormats.push_back(PlanarPixelFormat({.subsampling   = subsampling,
+                                                  .bitsPerSample = bitsPerSample,
+                                                  .planeOrder    = planeOrder,
+                                                  .endianness    = endianness}));
 
       // Packet
       for (const auto packingOrder : getSupportedPackingFormats(subsampling))
         for (const auto bytePacking : {false, true})
-          for (const auto bigEndian : endianList)
-            allFormats.push_back(
-              PixelFormatYUV(subsampling, bitsPerSample, packingOrder, bytePacking, bigEndian));
+          for (const auto endianness : endianList)
+            allFormats.push_back(PackedPixelFormat({.subsampling   = subsampling,
+                                                    .bitsPerSample = bitsPerSample,
+                                                    .packingOrder  = packingOrder,
+                                                    .endianness    = endianness,
+                                                    .bytePacking   = bytePacking}));
     }
   }
 
   for (auto predefinedFormat : PredefinedPixelFormatMapper.getValues())
-    allFormats.push_back(PixelFormatYUV(predefinedFormat));
+    allFormats.push_back(predefinedFormat);
 
   return allFormats;
 }

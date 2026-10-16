@@ -256,8 +256,7 @@ void videoHandlerDifference::reportFirstDifferencePosition(QList<InfoItem> &info
   if (!inputsValid())
     return;
 
-  if (functions::clipToUnsigned(currentImage.width()) != frameSize.width ||
-      functions::clipToUnsigned(currentImage.height()) != frameSize.height)
+  if (currentImage.width() != frameSize.width || currentImage.height() != frameSize.height)
     return;
 
   if (codingOrder == CodingOrder::HEVC)

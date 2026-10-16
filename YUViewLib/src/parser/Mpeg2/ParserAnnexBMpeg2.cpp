@@ -56,9 +56,13 @@ namespace parser
 
 using namespace mpeg2;
 
+using video::yuv::PixelFormatYUV;
+using video::yuv::PlanarPixelFormat;
+using video::yuv::Subsampling;
+
 ParserAnnexB::ParseResult
 ParserAnnexBMpeg2::parseAndAddNALUnit(int                                           nalID,
-                                      const ByteVector &                            data,
+                                      const ByteVector                             &data,
                                       std::optional<BitratePlotModel::BitrateEntry> bitrateEntry,
                                       std::optional<pairUint64> nalStartEndPosFile,
                                       std::shared_ptr<TreeItem> parent)
@@ -171,7 +175,7 @@ ParserAnnexBMpeg2::parseAndAddNALUnit(int                                       
     if (newExtension->extension_type == ExtensionType::EXT_SEQUENCE)
     {
       this->firstSequenceExtension =
-          std::dynamic_pointer_cast<sequence_extension>(newExtension->payload);
+        std::dynamic_pointer_cast<sequence_extension>(newExtension->payload);
     }
 
     nal_mpeg2.rbsp          = newExtension;
@@ -185,8 +189,8 @@ ParserAnnexBMpeg2::parseAndAddNALUnit(int                                       
   }
 
   const bool isStartOfNewAU =
-      (nal_mpeg2.header.nal_unit_type == NalType::SEQUENCE_HEADER ||
-       (nal_mpeg2.header.nal_unit_type == NalType::PICTURE && !lastAUStartBySequenceHeader));
+    (nal_mpeg2.header.nal_unit_type == NalType::SEQUENCE_HEADER ||
+     (nal_mpeg2.header.nal_unit_type == NalType::PICTURE && !lastAUStartBySequenceHeader));
   if (isStartOfNewAU && lastFramePOC >= 0)
   {
     DEBUG_MPEG2("Start of new AU. Adding bitrate " << sizeCurrentAU << " for last AU (#"
@@ -208,7 +212,7 @@ ParserAnnexBMpeg2::parseAndAddNALUnit(int                                       
     entry.bitrate  = sizeCurrentAU;
     entry.keyframe = currentAUAllSlicesIntra;
     entry.frameType =
-        QString::fromStdString(convertSliceCountsToString(this->currentAUSliceCounts));
+      QString::fromStdString(convertSliceCountsToString(this->currentAUSliceCounts));
     parseResult.bitrateEntry = entry;
 
     sizeCurrentAU = 0;
@@ -257,7 +261,7 @@ double ParserAnnexBMpeg2::getFramerate() const
       firstSequenceHeader->frame_rate_code <= 8)
   {
     auto frame_rates =
-        std::vector<double>({0.0, 24000 / 1001, 24, 25, 30000 / 1001, 30, 50, 60000 / 1001, 60});
+      std::vector<double>({0.0, 24000 / 1001, 24, 25, 30000 / 1001, 30, 50, 60000 / 1001, 60});
     frame_rate = frame_rates[firstSequenceHeader->frame_rate_code];
 
     if (firstSequenceExtension)
@@ -286,17 +290,21 @@ Size ParserAnnexBMpeg2::getSequenceSizeSamples() const
   return Size(w, h);
 }
 
-video::yuv::PixelFormatYUV ParserAnnexBMpeg2::getPixelFormat() const
+PixelFormatYUV ParserAnnexBMpeg2::getPixelFormat() const
 {
   if (firstSequenceExtension)
   {
-    int c = firstSequenceExtension->chroma_format;
-    if (c == 1)
-      return video::yuv::PixelFormatYUV(video::yuv::Subsampling::YUV_420, 8);
-    if (c == 2)
-      return video::yuv::PixelFormatYUV(video::yuv::Subsampling::YUV_422, 8);
-    if (c == 3)
-      return video::yuv::PixelFormatYUV(video::yuv::Subsampling::YUV_444, 8);
+    switch (firstSequenceExtension->chroma_format)
+    {
+    case 1:
+      return PixelFormatYUV(PlanarPixelFormat({Subsampling::YUV_420, 8}));
+    case 2:
+      return PixelFormatYUV(PlanarPixelFormat({Subsampling::YUV_422, 8}));
+    case 3:
+      return PixelFormatYUV(PlanarPixelFormat({Subsampling::YUV_444, 8}));
+    default:
+      return {};
+    };
   }
   return {};
 }

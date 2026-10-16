@@ -33,6 +33,7 @@
 #include "AVPixFmtDescriptorWrapper.h"
 
 using video::yuv::PixelFormatYUV;
+using video::yuv::PlanarPixelFormat;
 using video::yuv::PlaneOrder;
 using video::yuv::Subsampling;
 
@@ -291,7 +292,7 @@ PixelFormatYUV AVPixFmtDescriptorWrapper::getPixelFormatYUV() const
 
   const auto endianness =
     this->flags.bigEndian ? video::Endianness::Big : video::Endianness::Little;
-  return PixelFormatYUV(subsampling, bitsPerSample, planeOrder, endianness);
+  return PixelFormatYUV(PlanarPixelFormat({subsampling, bitsPerSample, planeOrder, endianness}));
 }
 
 video::rgb::PixelFormatRGB AVPixFmtDescriptorWrapper::getRGBPixelFormat() const

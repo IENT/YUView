@@ -83,7 +83,9 @@ namespace decoder
 #endif
 #endif
 
-using Subsampling = video::yuv::Subsampling;
+using video::yuv::PixelFormatYUV;
+using video::yuv::PlanarPixelFormat;
+using video::yuv::Subsampling;
 
 namespace
 {
@@ -126,7 +128,7 @@ QStringList decoderHM::getLibraryNames() const
   // Since this has been compiled for linux it will fail and not even try to open the .dylib.
   // On windows and linux ommitting the extension works
   auto names =
-      is_Q_OS_MAC ? QStringList() << "libHMDecoder.dylib" : QStringList() << "libHMDecoder";
+    is_Q_OS_MAC ? QStringList() << "libHMDecoder.dylib" : QStringList() << "libHMDecoder";
 
   return names;
 }
@@ -199,8 +201,8 @@ template <typename T> T decoderHM::resolve(T &fun, const char *symbol, bool opti
   if (!ptr)
   {
     if (!optional)
-      setError(QStringLiteral("Error loading the libde265 library: Can't find function %1.")
-                   .arg(symbol));
+      setError(
+        QStringLiteral("Error loading the libde265 library: Can't find function %1.").arg(symbol));
     return nullptr;
   }
 
@@ -280,11 +282,10 @@ bool decoderHM::getNextFrameFromDecoder()
   if (!picSize.isValid())
     DEBUG_DECHM("decoderHM::getNextFrameFromDecoder got invalid size");
   auto subsampling =
-      convertFromInternalSubsampling(this->lib.libHMDEC_get_chroma_format(currentHMPic));
-  if (subsampling == video::yuv::Subsampling::UNKNOWN)
+    convertFromInternalSubsampling(this->lib.libHMDEC_get_chroma_format(currentHMPic));
+  if (subsampling == Subsampling::UNKNOWN)
     DEBUG_DECHM("decoderHM::getNextFrameFromDecoder got invalid chroma format");
-  auto bitDepth = functions::clipToUnsigned(
-      this->lib.libHMDEC_get_internal_bit_depth(currentHMPic, LIBHMDEC_LUMA));
+  auto bitDepth = this->lib.libHMDEC_get_internal_bit_depth(currentHMPic, LIBHMDEC_LUMA);
   if (bitDepth < 8 || bitDepth > 16)
     DEBUG_DECHM("decoderHM::getNextFrameFromDecoder got invalid bit depth");
 
@@ -292,7 +293,7 @@ bool decoderHM::getNextFrameFromDecoder()
   {
     // Set the values
     frameSize = picSize;
-    formatYUV = video::yuv::PixelFormatYUV(subsampling, bitDepth);
+    formatYUV = PixelFormatYUV(PlanarPixelFormat({subsampling, bitDepth}));
   }
   else
   {
@@ -326,10 +327,10 @@ bool decoderHM::pushData(QByteArray &data)
   bool checkOutputPictures = false;
   bool bNewPicture         = false;
   auto err                 = this->lib.libHMDec_push_nal_unit(
-      decoder, data, data.length(), endOfFile, bNewPicture, checkOutputPictures);
+    decoder, data, data.length(), endOfFile, bNewPicture, checkOutputPictures);
   if (err != LIBHMDEC_OK)
     return setErrorB(QString("Error pushing data to decoder (libHMDec_push_nal_unit) length %1")
-                         .arg(data.length()));
+                       .arg(data.length()));
   DEBUG_DECHM("decoderHM::pushData pushed NAL length %d%s%s",
               data.length(),
               bNewPicture ? " bNewPicture" : "",
@@ -388,8 +389,8 @@ void decoderHM::copyImgToByteArray(libHMDec_picture *src, QByteArray &dst)
   }
 
   // How many samples are in each component?
-  int outSizeY = this->lib.libHMDEC_get_picture_width(src, LIBHMDEC_LUMA) *
-                 this->lib.libHMDEC_get_picture_height(src, LIBHMDEC_LUMA);
+  int outSizeY  = this->lib.libHMDEC_get_picture_width(src, LIBHMDEC_LUMA) *
+                  this->lib.libHMDEC_get_picture_height(src, LIBHMDEC_LUMA);
   int outSizeCb = (nrPlanes == 1) ? 0
                                   : (this->lib.libHMDEC_get_picture_width(src, LIBHMDEC_CHROMA_U) *
                                      this->lib.libHMDEC_get_picture_height(src, LIBHMDEC_CHROMA_U));
@@ -468,10 +469,10 @@ void decoderHM::cacheStatistics(libHMDec_picture *img)
   // Conversion from intra prediction mode to vector.
   // Coordinates are in x,y with the axes going right and down.
   static const int vectorTable[35][2] = {
-      {0, 0},   {0, 0},   {32, -32}, {32, -26}, {32, -21}, {32, -17}, {32, -13}, {32, -9}, {32, -5},
-      {32, -2}, {32, 0},  {32, 2},   {32, 5},   {32, 9},   {32, 13},  {32, 17},  {32, 21}, {32, 26},
-      {32, 32}, {26, 32}, {21, 32},  {17, 32},  {13, 32},  {9, 32},   {5, 32},   {2, 32},  {0, 32},
-      {-2, 32}, {-5, 32}, {-9, 32},  {-13, 32}, {-17, 32}, {-21, 32}, {-26, 32}, {-32, 32}};
+    {0, 0},   {0, 0},   {32, -32}, {32, -26}, {32, -21}, {32, -17}, {32, -13}, {32, -9}, {32, -5},
+    {32, -2}, {32, 0},  {32, 2},   {32, 5},   {32, 9},   {32, 13},  {32, 17},  {32, 21}, {32, 26},
+    {32, 32}, {26, 32}, {21, 32},  {17, 32},  {13, 32},  {9, 32},   {5, 32},   {2, 32},  {0, 32},
+    {-2, 32}, {-5, 32}, {-9, 32},  {-13, 32}, {-17, 32}, {-21, 32}, {-26, 32}, {-32, 32}};
 
   // Get all the statistics
   // TODO: Could we only retrieve the statistics that are active/displayed?
@@ -566,15 +567,15 @@ void decoderHM::fillStatisticList(stats::StatisticsData &statisticsData) const
       // Don't draw the vector values for the intra dir. They don't have actual meaning.
       intraDir.renderVectorDataValues = false;
       intraDir.setMappingValues(
-          {"INTRA_PLANAR",     "INTRA_DC",         "INTRA_ANGULAR_2",  "INTRA_ANGULAR_3",
-           "INTRA_ANGULAR_4",  "INTRA_ANGULAR_5",  "INTRA_ANGULAR_6",  "INTRA_ANGULAR_7",
-           "INTRA_ANGULAR_8",  "INTRA_ANGULAR_9",  "INTRA_ANGULAR_10", "INTRA_ANGULAR_11",
-           "INTRA_ANGULAR_12", "INTRA_ANGULAR_13", "INTRA_ANGULAR_14", "INTRA_ANGULAR_15",
-           "INTRA_ANGULAR_16", "INTRA_ANGULAR_17", "INTRA_ANGULAR_18", "INTRA_ANGULAR_19",
-           "INTRA_ANGULAR_20", "INTRA_ANGULAR_21", "INTRA_ANGULAR_22", "INTRA_ANGULAR_23",
-           "INTRA_ANGULAR_24", "INTRA_ANGULAR_25", "INTRA_ANGULAR_26", "INTRA_ANGULAR_27",
-           "INTRA_ANGULAR_28", "INTRA_ANGULAR_29", "INTRA_ANGULAR_30", "INTRA_ANGULAR_31",
-           "INTRA_ANGULAR_32", "INTRA_ANGULAR_33", "INTRA_ANGULAR_34"});
+        {"INTRA_PLANAR",     "INTRA_DC",         "INTRA_ANGULAR_2",  "INTRA_ANGULAR_3",
+         "INTRA_ANGULAR_4",  "INTRA_ANGULAR_5",  "INTRA_ANGULAR_6",  "INTRA_ANGULAR_7",
+         "INTRA_ANGULAR_8",  "INTRA_ANGULAR_9",  "INTRA_ANGULAR_10", "INTRA_ANGULAR_11",
+         "INTRA_ANGULAR_12", "INTRA_ANGULAR_13", "INTRA_ANGULAR_14", "INTRA_ANGULAR_15",
+         "INTRA_ANGULAR_16", "INTRA_ANGULAR_17", "INTRA_ANGULAR_18", "INTRA_ANGULAR_19",
+         "INTRA_ANGULAR_20", "INTRA_ANGULAR_21", "INTRA_ANGULAR_22", "INTRA_ANGULAR_23",
+         "INTRA_ANGULAR_24", "INTRA_ANGULAR_25", "INTRA_ANGULAR_26", "INTRA_ANGULAR_27",
+         "INTRA_ANGULAR_28", "INTRA_ANGULAR_29", "INTRA_ANGULAR_30", "INTRA_ANGULAR_31",
+         "INTRA_ANGULAR_32", "INTRA_ANGULAR_33", "INTRA_ANGULAR_34"});
       statisticsData.addStatType(intraDir);
     }
   }

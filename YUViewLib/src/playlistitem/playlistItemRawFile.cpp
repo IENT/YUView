@@ -51,6 +51,11 @@
 
 using namespace std::string_view_literals;
 
+using video::yuv::PixelFormatYUV;
+using video::yuv::PlanarPixelFormat;
+using video::yuv::PlaneOrder;
+using video::yuv::Subsampling;
+
 namespace
 {
 
@@ -250,8 +255,7 @@ bool playlistItemRawFile::parseY4MFile()
   int64_t  offset = 9;
   unsigned width  = 0;
   unsigned height = 0;
-  auto     format =
-    video::yuv::PixelFormatYUV(video::yuv::Subsampling::YUV_420, 8, video::yuv::PlaneOrder::YUV);
+  auto     format = PixelFormatYUV(PlanarPixelFormat({Subsampling::YUV_420, 8, PlaneOrder::YUV}));
 
   while (rawData.at(offset++) == ' ')
   {
@@ -329,13 +333,13 @@ bool playlistItemRawFile::parseY4MFile()
       // 'C420' = 4:2:0 with coincident chroma planes
       // 'C420jpeg' = 4:2 : 0 with biaxially - displaced chroma planes
       // 'C420paldv' = 4 : 2 : 0 with vertically - displaced chroma planes
-      auto subsampling = video::yuv::Subsampling::YUV_420;
+      auto subsampling = Subsampling::YUV_420;
       if (formatName == "422")
-        subsampling = video::yuv::Subsampling::YUV_422;
+        subsampling = Subsampling::YUV_422;
       else if (formatName == "444")
-        subsampling = video::yuv::Subsampling::YUV_444;
+        subsampling = Subsampling::YUV_444;
 
-      unsigned bitsPerSample = 8;
+      int bitsPerSample = 8;
 
       if (rawData.at(offset) == 'p')
       {
@@ -366,7 +370,7 @@ bool playlistItemRawFile::parseY4MFile()
         }
       }
 
-      format = video::yuv::PixelFormatYUV(subsampling, bitsPerSample);
+      format = PixelFormatYUV(PlanarPixelFormat({subsampling, bitsPerSample}));
       DEBUG_RAWFILE("playlistItemRawFile::parseY4MFile Read pixel format "
                     << QString::fromStdString(format.getName()));
     }
@@ -397,9 +401,9 @@ bool playlistItemRawFile::parseY4MFile()
 
   // The offset in bytes to the next frame
   auto stride = width * height * 3 / 2;
-  if (format.getSubsampling() == video::yuv::Subsampling::YUV_422)
+  if (format.getSubsampling() == Subsampling::YUV_422)
     stride = width * height * 2;
-  else if (format.getSubsampling() == video::yuv::Subsampling::YUV_444)
+  else if (format.getSubsampling() == Subsampling::YUV_444)
     stride = width * height * 3;
   if (format.getBitsPerSample() > 8)
     stride *= 2;
