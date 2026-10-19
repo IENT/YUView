@@ -148,10 +148,12 @@ static const quint16 kQuadIndices[] = {
   2, 3, 0
 };
 
-// HDR_RhiVideoWindow：Qt QRhi HDR 窗口。
-// 交换链固定为 scRGB 线性 RGBA16F。YUV 与 RGB 都先进入同一待上传队列，
-// render() 再在 GUI 线程发布帧尺寸并上传，避免宽高和像素缓冲被拆开。
-// 色调映射请求小于等于 0 时直通；真正写入着色器的亮度按 PQ / HLG 的范围现算。
+// HDR_RhiVideoWindow draws through a Qt QRhi swap chain fixed to scRGB linear
+// RGBA16F. YUV and RGB both enter one pending-upload queue. render() publishes
+// the frame size on the GUI thread and uploads that snapshot, so the byte
+// buffer is never interpreted with another frame's dimensions. A tone-map
+// request of 0 (or any non-positive value) is pass-through; the luminance
+// written to the shader is clamped for PQ or HLG at draw time.
 HDR_RhiVideoWindow::HDR_RhiVideoWindow(QWindow* parent)
     : QWindow(parent)
       , m_renderMode(Mode_BT2020_PQ_10bit)
@@ -207,17 +209,13 @@ void HDR_RhiVideoWindow::releaseRhiResources()
 }
 
 /*
- * 详尽中文注释：
- * 函数名称：HDR_RhiVideoWindow::releaseRhiResources
- * 功能描述：显式释放该窗口关联的所有 Qt RHI (Rendering Hardware Interface) 图形渲染资源与实例。
- * 算法原理与生命周期管理：
- * 1. 在图形渲染 API (如 Vulkan, Metal, Direct3D, OpenGL) 中，所有由 RHI 实例分配的子资源 (如 Buffer, Texture, Sampler, Pipeline, SwapChain 等)
- *    其生命周期都严格绑定并依赖于底层的 QRhi 实例。如果在 QRhi 实例销毁后依然尝试析构或访问子资源，将导致极其严重的悬空指针访问 (Dangling Pointer) 或驱动级别的内存破坏。
- * 2. 因此，本函数严格遵循“逆序销毁”原则：优先销毁顶层的渲染管线 (Pipeline)、着色器资源绑定 (SRB)，再销毁具体的数据缓冲区 (Buffer) 与图像纹理 (Texture)，
- *    其次销毁渲染通道描述符 (RenderPassDesc) 与交换链 (SwapChain)。
- * 3. 针对 OpenGL (GLES2) 回退路径，RHI 的释放需要在一个有效的绘图表面 (Surface) 上将 OpenGL 上下文设置为当前 (Make Current) 才能安全销毁底层的 OpenGL 资源。
- *    为此，必须首先显式重置并销毁 QRhi 实例 (m_rhi.reset())，在此期间 RHI 会利用 fallbackSurface 完成最后一次上下文清理；在这之后，
- *    才能安全地销毁并释放回退表面实例 (m_fallbackSurface.reset())。若将其顺序颠倒，会导致 RHI 析构时无法找到有效表面来绑定 OpenGL 上下文，进而导致 GPU 内存泄漏或程序崩溃。
+ * releaseRhiResources() drops every QRhi object owned by this window.
+ * Buffers, textures, samplers, pipelines, and the swap chain are created by
+ * the QRhi instance, so they must be destroyed before m_rhi. Pipelines and
+ * shader-resource bindings go first because they reference those objects.
+ * On the OpenGL fallback, QRhi still needs m_fallbackSurface to make the
+ * context current during its own destructor, which is why the surface is
+ * reset only after m_rhi.
  */
 
 bool HDR_RhiVideoWindow::initializeRhi()
@@ -498,8 +496,8 @@ bool HDR_RhiVideoWindow::initializeYUVPipeline()
 
 bool HDR_RhiVideoWindow::tryInitialize()
 {
-  // 窗口尚未暴露或已经失败时直接返回。这两条在进入临界区之前判断，
-  // 避免把“还不能初始化”和“正在初始化”混成同一种失败。
+  // Return before taking the init flag. "Not exposed" and "already failed"
+  // are different from "initialization is already running".
   if (m_initialized)
     return true;
   if (m_initializationFailed)
@@ -516,9 +514,10 @@ bool HDR_RhiVideoWindow::tryInitialize()
 
   m_loggedNotExposedState = false;
 
-  // compare_exchange 已经是非阻塞门闩：同一时刻只有一个调用能进入初始化。
-  // 第二个调用（含同线程重入）在这里返回。门闩后面再加互斥锁没有第二个进入者，
-  // 属于死代码，因此初始化只保留这个原子标志。失败时尚未完成，必须返回 false。
+  // The compare-exchange is the only gate. A second call, including
+  // re-entry on this thread, returns here. A mutex after this point would
+  // never see a second contender, so initialization keeps just the atomic
+  // flag. The in-progress call has not finished, so this one returns false.
   bool expected = false;
   if (!m_initializationInProgress.compare_exchange_strong(expected, true))
   {
@@ -526,7 +525,7 @@ bool HDR_RhiVideoWindow::tryInitialize()
     return false;
   }
 
-  // 无论成功、失败还是异常，离开函数时都要放下门闩，否则窗口会永久无法再初始化。
+  // Clear the flag on every exit. Leaving it set would block initialization forever.
   struct InitializationGuard
   {
     std::atomic<bool>& inProgress;
@@ -547,8 +546,8 @@ bool HDR_RhiVideoWindow::tryInitialize()
 
   m_initialized = true;
 
-  // 顶点缓冲只上传一次。此时门闩仍为 true，信号回调里再次进入 tryInitialize()
-  // 会先看到 m_initialized 并返回，不会重入这段上传。
+  // The vertex buffer is uploaded once. The flag is still set, so a slot
+  // that re-enters tryInitialize() sees m_initialized and returns.
   if (m_rhi && m_vertexBuffer && m_indexBuffer)
   {
     QRhiCommandBuffer* cb = nullptr;
@@ -608,15 +607,17 @@ bool HDR_RhiVideoWindow::event(QEvent* event)
 
 HDR_RhiVideoWindow::PendingUpload HDR_RhiVideoWindow::takePendingUpload()
 {
-  // 在锁内把“这一帧的字节、格式、宽高、色彩矩阵”一次取走。
-  // 上传阶段不再读 m_frameSize，避免生产者已经写下新分辨率时，旧缓冲按新尺寸解释。
+  // Take bytes, format, size, and color conversion under one lock.
+  // The upload must not read m_frameSize: a newer frame may already have
+  // published a different resolution.
   PendingUpload upload;
   QMutexLocker pendingLock(&m_pendingYUVMutex);
   const bool pendingYUVUsable = m_yuvDataPending && !m_pendingYUVData.isEmpty() &&
                                 m_pendingYUVWidth > 0 && m_pendingYUVHeight > 0;
   if (m_yuvDataPending && !pendingYUVUsable)
   {
-    // 宽高和字节必须成套。不成套的记录直接丢掉，避免后面把 0 尺寸发布成投影矩阵。
+    // Drop a record whose size does not belong with its bytes. A zero size
+    // would otherwise be published into the projection matrix.
     m_yuvDataPending = false;
     m_pendingYUVData.clear();
     m_pendingYUVWidth = 0;
@@ -648,8 +649,9 @@ HDR_RhiVideoWindow::PendingUpload HDR_RhiVideoWindow::takePendingUpload()
 
 void HDR_RhiVideoWindow::restorePendingUpload(PendingUpload& pendingUpload)
 {
-  // 只有世代号仍相等、且队列里没有更新的帧时才放回。
-  // 生产者在上传期间递交的新帧会先递增世代号，这里不会把它盖掉。
+  // Put the frame back only when its sequence still matches and the queue
+  // is empty. A frame submitted during the upload increments the sequence
+  // and must not be overwritten.
   if (!pendingUpload.hasYUV && !pendingUpload.hasRGB)
     return;
 
@@ -683,8 +685,9 @@ void HDR_RhiVideoWindow::publishPresentedFrame(const QSize& frameSize,
                                               bool useYUV,
                                               const QImage& rgbFrame)
 {
-  // 呈现状态只在 GUI 线程的 render() 里发布。生产者只写待上传队列，
-  // 因此叠加层读取 m_frameSize / m_currentFrame 时没有数据竞争。
+  // Presentation state is published on the GUI thread inside render().
+  // Producers only write the pending queue, so overlay reads of m_frameSize
+  // and m_currentFrame do not race with them.
   if (useYUV)
   {
     if (!m_currentFrame.isNull())
@@ -704,8 +707,9 @@ void HDR_RhiVideoWindow::publishPresentedFrame(const QSize& frameSize,
 
 float HDR_RhiVideoWindow::effectiveToneMapNits() const
 {
-  // 0、负数和 NaN 都表示直通。正数再按当前传递函数钳位：
-  // PQ 使用 BT.2390 的 500–10000 nits，HLG 使用 350–1000 nits，Linear 不曝光。
+  // Zero, negative values, and NaN mean pass-through. A positive request is
+  // clamped for the active transfer: PQ uses the BT.2390 range 500-10000 nits,
+  // HLG uses 350-1000 nits, and Linear does not apply exposure.
   const float requested = m_toneMapRequestNits;
   if (!(requested > 0.0f))
     return 0.0f;
@@ -737,7 +741,8 @@ void HDR_RhiVideoWindow::render()
   if (!m_swapChain->currentPixelSize().isValid())
     return;
 
-  // 先取走待上传帧再画叠加层，放大镜和标尺使用的是即将显示的分辨率。
+  // Take the pending frame before painting overlays, so the zoom box and
+  // rulers use the resolution that is about to be shown.
   PendingUpload pendingUpload = takePendingUpload();
   if (pendingUpload.hasYUV)
     publishPresentedFrame(QSize(pendingUpload.yuvWidth, pendingUpload.yuvHeight), true, QImage());
@@ -779,8 +784,9 @@ void HDR_RhiVideoWindow::render()
 
 void HDR_RhiVideoWindow::renderFrame(QRhiCommandBuffer* cb, PendingUpload& pendingUpload)
 {
-  // 待上传数据由 render() 在画叠加层之前取走。这里只消费这份快照，
-  // 不再二次加锁读取队列，避免和 publishPresentedFrame 看到的不是同一帧。
+  // render() already took this snapshot before painting overlays. Consume
+  // that snapshot only; locking the queue again could observe a newer frame
+  // than the one publishPresentedFrame() just announced.
   if (!m_initialized)
   {
     restorePendingUpload(pendingUpload);
@@ -806,7 +812,7 @@ void HDR_RhiVideoWindow::renderFrame(QRhiCommandBuffer* cb, PendingUpload& pendi
 
   if (needsYUVUpload)
   {
-    // 使用入队时的宽高，而不是当前 m_frameSize。后者可能已经是下一帧的尺寸。
+    // Use the size stored with this frame. m_frameSize may already belong to a newer one.
     if (uploadYUVTextureData(pendingUpload.yuvData,
                              pendingUpload.yuvWidth,
                              pendingUpload.yuvHeight,
@@ -816,8 +822,9 @@ void HDR_RhiVideoWindow::renderFrame(QRhiCommandBuffer* cb, PendingUpload& pendi
       m_lastUploadedYUVSequence = pendingUpload.sequence;
       m_currentColorConversion = pendingUpload.colorConversion;
       hasUploadedYUVFrame = true;
-      // pendingUpload.yuvData 必须活到下面的 resourceUpdate()：
-      // 小端平面格式直接引用这块内存，P010/大端格式引用 m_repackBuffer*。
+      // pendingUpload.yuvData must outlive resourceUpdate() below. Little-endian
+      // planar uploads reference it directly; P010 and big-endian uploads
+      // reference m_repackBuffer*.
     }
     else
     {
@@ -844,7 +851,8 @@ void HDR_RhiVideoWindow::renderFrame(QRhiCommandBuffer* cb, PendingUpload& pendi
 
   if (m_useYUVMode && hasUploadedYUVFrame)
   {
-    // YUV 路径在片元着色器里完成 BT.2020 矩阵和 PQ/HLG/Linear，输出 scRGB 线性光。
+    // The YUV path applies the BT.2020 matrix and PQ, HLG, or Linear in the
+    // fragment shader and outputs scRGB linear light.
     YUVUniformData uniformData;
     std::memcpy(uniformData.projectionMatrix, m_projectionMatrix.constData(), 16 * sizeof(float));
     std::memcpy(uniformData.textureMatrix, m_textureMatrix.constData(), 16 * sizeof(float));
@@ -853,10 +861,10 @@ void HDR_RhiVideoWindow::renderFrame(QRhiCommandBuffer* cb, PendingUpload& pendi
     std::memcpy(uniformData.colorMatrix, m_cachedColorMatrix, 16 * sizeof(float));
     std::memcpy(uniformData.offsetVec, m_cachedOffsetVec, 4 * sizeof(float));
 
-    // hdrParams.x = 按当前模式钳位后的目标亮度，0 表示关闭映射
-    // hdrParams.y = 显示器峰值亮度，Linear 路径不拿它做缩放
-    // hdrParams.z = 渲染模式（1=PQ，2=HLG，3=Linear）
-    // hdrParams.w = 映射开关（0 关闭，1 开启）
+    // hdrParams.x = target luminance after the active-mode clamp; 0 disables mapping
+    // hdrParams.y = display peak luminance; the Linear path does not scale by it
+    // hdrParams.z = render mode (1 = PQ, 2 = HLG, 3 = Linear)
+    // hdrParams.w = mapping enable (0 = off, 1 = on)
     const float appliedToneMapNits = effectiveToneMapNits();
     const bool exposureEnabled = appliedToneMapNits > 0.0f;
     uniformData.hdrParams[0] = appliedToneMapNits;
@@ -866,7 +874,8 @@ void HDR_RhiVideoWindow::renderFrame(QRhiCommandBuffer* cb, PendingUpload& pendi
 
     batch->updateDynamicBuffer(m_yuvUniformBuffer.get(), 0, sizeof(YUVUniformData), &uniformData);
     cb->resourceUpdate(batch);
-    // resourceUpdate 已经读取完裸指针，这里才能释放快照，并禁止失败路径把空缓冲放回队列。
+    // resourceUpdate() has consumed the raw pointers. Release the snapshot now
+    // so a later failure path cannot put an empty buffer back on the queue.
     pendingUpload.yuvData.clear();
     pendingUpload.hasYUV = false;
 
@@ -963,8 +972,10 @@ bool HDR_RhiVideoWindow::ensureYUVTextures(int width, int height, int uvWidth, i
 
 void HDR_RhiVideoWindow::updateProjectionMatrix()
 {
-  // 窗口刚创建或帧尺寸尚未发布时，宽高可能为 0。必须用逻辑或判断，
-  // 位或做不到“任意一个 <= 0”：0 | 1920 仍然大于 0，随后 1/0 会把矩阵写成 Inf。
+  // Width or height can be zero before the window is shown or before a frame
+  // size is published. This must be a logical OR. A bitwise OR does not mean
+  // "any value is <= 0": 0 | 1920 is still positive, and the following
+  // reciprocal would write infinities into the matrix.
   const int widgetWidth = width();
   const int widgetHeight = height();
   const int frameWidth = m_frameSize.width();
@@ -991,8 +1002,9 @@ void HDR_RhiVideoWindow::updateProjectionMatrix()
 
 void HDR_RhiVideoWindow::setRenderMode(RenderMode mode)
 {
-  // 这里不改写亮度请求。下一帧 effectiveToneMapNits() 会按新的传递函数重新钳位，
-  // 所以从 PQ 的 4000 nits 切到 HLG 时着色器得到 1000，再切回 PQ 时请求仍是 4000。
+  // Do not rewrite the requested luminance. The next frame's
+  // effectiveToneMapNits() clamps it for the new transfer. A PQ request of
+  // 4000 nits becomes 1000 in HLG, and switching back to PQ still sees 4000.
   if (m_renderMode == mode)
     return;
   m_renderMode = mode;
@@ -1002,9 +1014,10 @@ void HDR_RhiVideoWindow::setRenderMode(RenderMode mode)
 
 void HDR_RhiVideoWindow::setToneMapTargetNits(float nits)
 {
-  // 接口约定：0 表示关闭映射。这里只记录请求，不按当前模式钳位。
-  // 钳位放到 effectiveToneMapNits()，这样 PQ 下的 4000 nits 切到 HLG 再切回来仍然是 4000，
-  // 而 HLG 着色器当帧拿到的是钳位后的 1000。qFuzzyCompare 不能直接比较 0，所以平移 1。
+  // The contract is that 0 disables mapping. Store the request and leave
+  // clamping to effectiveToneMapNits(), so a PQ value of 4000 nits survives a
+  // round trip through HLG. The HLG shader still receives the clamped 1000.
+  // qFuzzyCompare() is not valid for zero, so compare the values shifted by 1.
   const float requested = (nits > 0.0f) ? nits : 0.0f;
   if (qFuzzyCompare(m_toneMapRequestNits + 1.0f, requested + 1.0f))
     return;
@@ -1022,8 +1035,9 @@ void HDR_RhiVideoWindow::setHDRCapabilities(const HDRDetection::HDRCapabilities&
 
 void HDR_RhiVideoWindow::emitFrameUpdated()
 {
-  // requestUpdate() 本身可以跨线程调用。frameUpdated 的槽可能直接连在界面对象上，
-  // 后台解码线程如果直接 emit，就会在错误的线程进入这些对象。
+  // requestUpdate() may be called from any thread. Slots connected to
+  // frameUpdated may touch GUI objects, so a decoder thread must not emit
+  // the signal directly.
   if (QThread::currentThread() == thread())
   {
     emit frameUpdated();
@@ -1035,8 +1049,9 @@ void HDR_RhiVideoWindow::emitFrameUpdated()
 
 void HDR_RhiVideoWindow::updateFrame(const QImage& newFrame)
 {
-  // RGB 与 YUV 共用同一条延迟上传队列，不再在这里 beginOffscreenFrame。
-  // 同步离屏提交会在 D3D12/Vulkan 上额外排队并等待 GPU，和下一帧 render() 重复。
+  // RGB uses the same deferred upload queue as YUV. beginOffscreenFrame()
+  // here would submit an extra command batch on D3D12/Vulkan and then wait,
+  // duplicating the upload performed by the next render().
   if (newFrame.isNull())
     return;
 
@@ -1060,8 +1075,9 @@ void HDR_RhiVideoWindow::queuePendingYUV(QByteArray&& yuvData,
                                          const video::yuv::PixelFormatYUV& format,
                                          video::yuv::ColorConversion colorConversion)
 {
-  // 宽高、格式和字节必须在同一把锁里发布。锁外写 m_frameSize 会和 render() 数据竞争，
-  // 也会让上一帧的缓冲套用下一帧的分辨率。呈现用的 m_frameSize 改由 render() 发布。
+  // Publish size, format, and bytes under the same lock. Writing m_frameSize
+  // outside the lock races with render() and can apply a new resolution to
+  // the previous buffer. render() publishes the presented size.
   if (yuvData.isEmpty() || width <= 0 || height <= 0)
     return;
 
@@ -1163,8 +1179,9 @@ bool HDR_RhiVideoWindow::uploadYUVTextureData(const QByteArray& yuvData,
   const int subH = format.getSubsamplingHor();
   const int subV = format.getSubsamplingVer();
   const int yPlaneSize = width * height;
-  // 色度平面用向下取整，与 PixelFormatYUV::bytesPerFrame 的 width/2、width/4 一致。
-  // 向上取整会和缓存里实际打包的字节数错位。subH/subV 只可能是 1、2、4。
+  // Truncate chroma dimensions the same way PixelFormatYUV::bytesPerFrame
+  // does (width/2, width/4). Rounding up would disagree with the packed
+  // buffer. subH and subV are only 1, 2, or 4.
   const int uvWidth = (subH > 1) ? (width / subH) : width;
   const int uvHeight = (subV > 1) ? (height / subV) : height;
   const int uvPlaneSize = uvWidth * uvHeight;
@@ -1252,7 +1269,7 @@ bool HDR_RhiVideoWindow::uploadYUVTextureData(const QByteArray& yuvData,
 
 void HDR_RhiVideoWindow::clearFrame()
 {
-  // 递增世代号，使正在上传、准备放回队列的那一帧失效，避免 clear 之后被放回。
+  // Bump the sequence so an in-flight upload cannot put its frame back after clear.
   {
     QMutexLocker pendingLock(&m_pendingYUVMutex);
     ++m_pendingUploadSequence;

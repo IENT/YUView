@@ -251,7 +251,8 @@ void VideoCache::updateSettings()
 
 void VideoCache::flushAndWaitInteractiveLoaders()
 {
-  // 丢弃排队任务并汇合交互加载线程，避免停播重绘与 loadRawYUVData 竞态。
+  // Drop queued work and join the interactive loader threads so a stop/redraw
+  // cannot race with loadRawYUVData().
   interactiveItemQueued[0]     = nullptr;
   interactiveItemQueued_Idx[0] = -1;
   interactiveItemQueued[1]     = nullptr;

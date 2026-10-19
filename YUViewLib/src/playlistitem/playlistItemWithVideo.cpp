@@ -96,7 +96,8 @@ void playlistItemWithVideo::loadFrame(int  frameIdx,
                                       bool loadRawData,
                                       bool emitSignals)
 {
-  // 加载当前帧；播放中预取下一帧。HDR Raw 路径用 cacheFrame 预取并通知 Stall 恢复。
+  // Load the current frame and prefetch the next one during playback.
+  // The HDR raw path prefetches through cacheFrame and signals stall recovery.
   auto state = video->needsLoading(frameIdx, loadRawData);
 
   if (state == ItemLoadingState::LoadingNeeded)
@@ -154,7 +155,8 @@ void playlistItemWithVideo::loadFrame(int  frameIdx,
 
 ItemLoadingState playlistItemWithVideo::needsLoading(int frameIdx, bool loadRawValues)
 {
-  // HDR Raw：当前就绪但下一帧缺失时返回 DoubleBuffer，触发播放预取。
+  // HDR raw: return DoubleBuffer when the current frame is ready but the next
+  // one is missing, so playback prefetches it.
   auto range = this->properties().startEndRange;
   if (frameIdx < range.first || frameIdx > range.second)
     return ItemLoadingState::LoadingNotNeeded;

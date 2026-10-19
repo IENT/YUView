@@ -586,19 +586,23 @@ private:
 };
 
 /*
- * 详尽中文注释：
- * 类名称：HDR_RhiVideoWindow
- * 功能描述：用 Qt QRhi 把 10-bit HDR 画到 scRGB 线性交换链（RGBA16F，1.0 = 80 nits），
- *           并在同一遍渲染里叠加上分析用的标尺、网格和放大镜。
- * 生命周期：
- * 1. 图形对象全部放在 unique_ptr 里。m_fallbackSurface 必须声明在 m_rhi 之前，
- *    这样 OpenGL 后端析构 QRhi 时回退表面还在，才能把上下文设为当前。
- * 2. 管线和着色器资源绑定声明在它们引用的缓冲、纹理之后，析构时先拆引用再释放实体。
- * 3. 待上传帧是一份完整快照（字节、宽高、像素格式、色彩转换）。生产者只在
- *    m_pendingYUVMutex 里替换这份快照；窗口线程在 render() 里取出后再发布
- *    m_frameSize 和投影矩阵。上传用的是快照里的宽高，不是稍后可能被改写的 m_frameSize。
- * 4. 色调映射保存的是调用方请求。0 表示直通；PQ/HLG 的钳位在绘制时按当前模式计算，
- *    切换模式不会把上一次请求永久夹进另一个模式的区间。
+ * HDR_RhiVideoWindow presents 10-bit HDR on an scRGB linear swap chain
+ * (RGBA16F, 1.0 = 80 nits) and composites analysis overlays in the same pass.
+ *
+ * RHI objects live in unique_ptr members. m_fallbackSurface is declared
+ * before m_rhi so the OpenGL backend can still make a context current while
+ * QRhi is destroyed. Pipelines and shader-resource bindings are declared
+ * after the buffers and textures they reference, so those references die first.
+ *
+ * A pending frame is one snapshot: bytes, size, pixel format, and color
+ * conversion. Producers replace that snapshot under m_pendingYUVMutex. The
+ * window thread takes it in render(), then publishes m_frameSize and the
+ * projection matrix. The upload uses the snapshot size, not a later write
+ * to m_frameSize.
+ *
+ * Tone mapping stores the caller's request. Zero is pass-through. PQ and HLG
+ * clamps are applied at draw time for the active mode, so changing mode does
+ * not permanently squeeze the previous request into the other mode's range.
  */
 
 #endif // HDR_RHIVIDEOWINDOW_H

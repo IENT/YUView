@@ -1354,10 +1354,11 @@ bool videoHandlerYUV::canUseGPUYUVHDRPath() const
 }
 
 /**
- * @brief 解析 HDR 用原始 YUV：借用缓存（COW）→ 当前缓冲快照 → 从源加载。
- * @param frameIndex 帧索引
- * @param out 输出载荷
- * @return 成功得到非空 yuvData 时为 true
+ * @brief Resolve raw YUV for HDR: borrow the cache (COW), then the current
+ *        buffer snapshot, then load from the source.
+ * @param frameIndex Frame index.
+ * @param out Output payload.
+ * @return True when out.yuvData is non-empty.
  */
 bool videoHandlerYUV::resolveRawYUVForHDR(int frameIndex, ResolvedHDRYUVFrame &out)
 {
@@ -1381,9 +1382,9 @@ bool videoHandlerYUV::resolveRawYUVForHDR(int frameIndex, ResolvedHDRYUVFrame &o
 }
 
 /**
- * @brief 将指定帧推入 HDR GPU 渲染管线（共享缓冲上传）。
- * @param frameIndex 帧索引
- * @return HDR 渲染器接受载荷时为 true
+ * @brief Push one frame into the HDR GPU path (shared-buffer upload).
+ * @param frameIndex Frame index.
+ * @return True when the HDR renderer accepts the payload.
  */
 bool videoHandlerYUV::pushFrameToHDR(int frameIndex)
 {
