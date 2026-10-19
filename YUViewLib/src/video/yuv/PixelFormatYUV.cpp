@@ -219,7 +219,9 @@ PixelFormatYUV::PixelFormatYUV(const std::string_view name)
   const auto endianess =
     (bitsPerSample > 8 && sm.str(4) == "BE") ? Endianness::Big : Endianness::Little;
 
-  const auto chromaOffset = parseChromaOffsetText(sm.str(6), sm.str(7));
+  auto chromaOffset = parseChromaOffsetText(sm.str(6), sm.str(7));
+  if (subsampling == Subsampling::YUV_420 && chromaOffset == Offset{0, 0})
+    chromaOffset = Offset{0, 1};
 
   const auto packingIndicator = sm.str(5);
   const auto isPlanar         = packingIndicator.empty();

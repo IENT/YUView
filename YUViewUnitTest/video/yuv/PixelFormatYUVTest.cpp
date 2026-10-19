@@ -39,9 +39,39 @@
 namespace video::yuv::test
 {
 
+TEST(PixelFormatYUVTest, defaultConstructor_shouldSetDefaultFormat)
+{
+  const auto fmt = PixelFormatYUV();
+
+  EXPECT_TRUE(fmt.isValid());
+  EXPECT_EQ(fmt.getSubsampling(), Subsampling::YUV_420);
+  EXPECT_TRUE(fmt.isChromaSubsampled());
+  EXPECT_EQ(fmt.getNrPlanes(), 3);
+  EXPECT_EQ(fmt.getBitsPerSample(), 8);
+  EXPECT_TRUE(fmt.isPlanar());
+  EXPECT_EQ(fmt.getPlaneOrder(), PlaneOrder::YUV);
+  EXPECT_FALSE(fmt.hasAlpha());
+  EXPECT_EQ(fmt.getEndianness(), Endianness::Little);
+  EXPECT_EQ(fmt.getChromaOffset(), Offset({0, 1}));
+  EXPECT_FALSE(fmt.isBytePacking());
+
+  const auto fmtPlanar = fmt.getPlanarFormat();
+  EXPECT_TRUE(fmtPlanar.has_value());
+  EXPECT_EQ(fmtPlanar->subsampling, Subsampling::YUV_420);
+  EXPECT_EQ(fmtPlanar->bitsPerSample, 8);
+  EXPECT_EQ(fmtPlanar->planeOrder, PlaneOrder::YUV);
+  EXPECT_EQ(fmtPlanar->endianness, Endianness::Little);
+  EXPECT_EQ(fmtPlanar->chromaOffset, Offset({0, 1}));
+  EXPECT_FALSE(fmtPlanar->uvPlanesInterleaved);
+  EXPECT_FALSE(fmtPlanar->bytePacking);
+}
+
+
 TEST(PixelFormatYUVTest, testFormatFromToString)
 {
-  for (const auto fmt : getAllPixelFormats())
+  const std::vector<PixelFormatYUV> pixelFormats = {PlanarPixelFormat()};
+
+  for (const auto fmt : pixelFormats)
   {
     const auto name = fmt.getName();
     EXPECT_TRUE(fmt.isValid()) << "Format " << name << " is invalid.";

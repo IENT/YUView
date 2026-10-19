@@ -111,10 +111,11 @@ bool doesPixelFormatMatchFileSize(const PixelFormatYUV         &pixelFormat,
   return isFileSizeAMultipleOfFrameSize;
 }
 
-PixelFormatYUV testFormatFromSizeAndNamePlanar(const std::string            &name,
-                                               const GuessedFrameFormat      guessedFrameFormat,
-                                               const Subsampling             detectedSubsampling,
-                                               const std::optional<int64_t> &fileSize)
+std::optional<PixelFormatYUV>
+testFormatFromSizeAndNamePlanar(const std::string            &name,
+                                const GuessedFrameFormat      guessedFrameFormat,
+                                const Subsampling             detectedSubsampling,
+                                const std::optional<int64_t> &fileSize)
 {
   const auto planarYUVToTest = std::map<std::string, PlaneOrder>({{"yuv", PlaneOrder::YUV},
                                                                   {"yuvj", PlaneOrder::YUV},
@@ -173,10 +174,11 @@ PixelFormatYUV testFormatFromSizeAndNamePlanar(const std::string            &nam
   return {};
 }
 
-PixelFormatYUV testFormatFromSizeAndNamePacked(const std::string            &name,
-                                               const GuessedFrameFormat      guessedFrameFormat,
-                                               const Subsampling             detectedSubsampling,
-                                               const std::optional<int64_t> &fileSize)
+std::optional<PixelFormatYUV>
+testFormatFromSizeAndNamePacked(const std::string            &name,
+                                const GuessedFrameFormat      guessedFrameFormat,
+                                const Subsampling             detectedSubsampling,
+                                const std::optional<int64_t> &fileSize)
 {
   // Check V210
   std::regex  strExpr("(?:_|\\.|-)(v210|V210)(?:_|\\.|-)");
@@ -405,33 +407,34 @@ std::optional<PixelFormatYUV> ignoreNameAndJustCheckIfSomeBasicFormatsMatchTheFi
 
 } // namespace
 
-PixelFormatYUV guessPixelFormatFromSizeAndName(const GuessedFrameFormat &guessedFrameFormat,
-                                               const FileInfoForGuess   &fileInfo)
+std::optional<PixelFormatYUV>
+guessPixelFormatFromSizeAndName(const GuessedFrameFormat &guessedFrameFormat,
+                                const FileInfoForGuess   &fileInfo)
 {
   if (fileInfo.filename.empty())
     return {};
 
   if (const auto pixelFormat = checkSpecificFileExtensions(guessedFrameFormat, fileInfo))
-    return *pixelFormat;
+    return pixelFormat;
 
   for (const auto &name :
        {functions::toLower(fileInfo.filename), functions::toLower(fileInfo.parentFolderName)})
   {
     if (const auto pixelFormat =
           checForNVIndicator(name, guessedFrameFormat.frameSize, fileInfo.fileSize))
-      return *pixelFormat;
+      return pixelFormat;
 
     if (const auto pixelFormat = checkFFmpegPixelFormatNames(name, guessedFrameFormat, fileInfo))
-      return *pixelFormat;
+      return pixelFormat;
 
     if (const auto pixelFormat =
           checkForSubsamplingIndiatorInName(name, guessedFrameFormat, fileInfo))
-      return *pixelFormat;
+      return pixelFormat;
   }
 
   if (const auto pixelFormat =
         ignoreNameAndJustCheckIfSomeBasicFormatsMatchTheFileSize(guessedFrameFormat, fileInfo))
-    return *pixelFormat;
+    return pixelFormat;
 
   return {};
 }

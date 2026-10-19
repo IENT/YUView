@@ -77,9 +77,10 @@ TEST_P(GuessYUVFormatFromFilenameFrameSizeFileSizeDataLayoutAndBitDepth, TestGue
   const auto guessedFormat =
     video::yuv::guessPixelFormatFromSizeAndName(guessedFrameFormat, parameters.fileInfoForGuess);
 
-  EXPECT_TRUE(guessedFormat.isValid());
-  EXPECT_EQ(guessedFormat, parameters.expectedPixelFormat)
-    << "Guessed format '" << guessedFormat.getName() << "' expected format '"
+  EXPECT_TRUE(guessedFormat.has_value());
+  EXPECT_TRUE(guessedFormat->isValid());
+  EXPECT_EQ(*guessedFormat, parameters.expectedPixelFormat)
+    << "Guessed format '" << guessedFormat->getName() << "' expected format '"
     << parameters.expectedPixelFormat.getName() << "' for filename '"
     << parameters.fileInfoForGuess.filename << "' parentFolderName '"
     << parameters.fileInfoForGuess.parentFolderName << "' size "
@@ -190,7 +191,7 @@ INSTANTIATE_TEST_SUITE_P(
        PlanarPixelFormat({.uvPlanesInterleaved = true})}),
     TestParameters(
       {FileInfoForGuess({"sample_noResolution_nv21_something.yuv", "", BYTES_IRRELEVANT}),
-       PlanarPixelFormat({.uvPlanesInterleaved = true})})
+       PlanarPixelFormat({.planeOrder = PlaneOrder::YVU, .uvPlanesInterleaved = true})})
 
     // More tests please :)
 
