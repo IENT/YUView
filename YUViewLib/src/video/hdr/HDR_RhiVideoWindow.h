@@ -11,28 +11,27 @@
 #ifndef HDR_RHIVIDEOWINDOW_H
 #define HDR_RHIVIDEOWINDOW_H
 
-#include <QWindow>
-#include <QMatrix4x4>
-#include <QImage>
-#include <QColor>
-#include <QPointF>
-#include <QPoint>
-#include <QString>
-#include <QPixmap>
-#include <QFont>
 #include <QByteArray>
-#include <QOffscreenSurface>
+#include <QColor>
+#include <QFont>
+#include <QImage>
+#include <QMatrix4x4>
 #include <QMutex>
+#include <QOffscreenSurface>
+#include <QPixmap>
+#include <QPoint>
+#include <QPointF>
 #include <QRect>
-#include <memory>
+#include <QString>
+#include <QWindow>
 #include <atomic>
 #include <cstdint>
 #include <functional>
+#include <memory>
 
 // Include HDR module headers for modular architecture
-#include "HDRTypes.h"
 #include "HDRColorConversion.h"
-
+#include "HDRTypes.h"
 
 // Qt RHI API (requires Qt 6.6+ for public rhi module, or 6.4+ with private API)
 // Qt 6.6+ provides public <rhi/qrhi.h>, earlier versions need QtGui private headers
@@ -68,24 +67,24 @@
 #warning "QRhi HDR support requires Qt 6.4 or later"
 #endif
 
-#include "HDRDetection.h"
-#include <common/Typedef.h>
 #include "../yuv/PixelFormatYUV.h"
 #include "../yuv/YUVConversionTypes.h"
+#include "HDRDetection.h"
+#include <common/Typedef.h>
 
 class QPainter;
 
 /**
  * @brief HDR Video Window using Qt RHI (Rendering Hardware Interface) with D3D12 backend
- * 
+ *
  * This class implements native HDR rendering with Qt QRhi.
  * The renderer uses an extended-linear HDR swapchain and RGBA16F textures as the unified path.
- * 
+ *
  * The fragment shader performs:
  * - YUV->RGB conversion in BT.2020
  * - PQ / HLG / Linear transfer processing in realtime
  * - Conversion to scRGB linear output for HDR presentation
- * 
+ *
  * Key features:
  * - Unified RGBA16F rendering path for all HDR modes
  * - GPU YUV conversion and transfer processing in a single fragment shader
@@ -99,23 +98,25 @@ class HDR_RhiVideoWindow : public QWindow
 public:
   /**
    * @brief Render mode enumeration (HDR only)
-   * 
+   *
    * Mode_BT2020_PQ_10bit: HDR10 with PQ transfer function (SMPTE ST.2084)
    * Mode_BT2020_HLG_10bit: HDR with HLG transfer function, processed in shader
    * Mode_BT2020_Linear_16bit: Linear BT.2020 light pass-through to scRGB
    *                           (1.0 = 80 nits). Gamut convert only; no peak scaling.
    */
-  enum RenderMode {
-    Mode_BT2020_PQ_10bit = 1,     // HDR10 BT.2020 PQ 10-bit rendering (SMPTE ST.2084)
-    Mode_BT2020_HLG_10bit = 2,    // HLG rendering with realtime shader math
+  enum RenderMode
+  {
+    Mode_BT2020_PQ_10bit     = 1, // HDR10 BT.2020 PQ 10-bit rendering (SMPTE ST.2084)
+    Mode_BT2020_HLG_10bit    = 2, // HLG rendering with realtime shader math
     Mode_BT2020_Linear_16bit = 3  // Linear pass-through (scRGB, 1.0 = 80 nits)
   };
 
   /**
    * @brief Overlay split mode for comparison views
    */
-  enum OverlaySplitMode {
-    OverlaySplitDisabled = 0,
+  enum OverlaySplitMode
+  {
+    OverlaySplitDisabled   = 0,
     OverlaySplitSideBySide = 1,
     OverlaySplitComparison = 2
   };
@@ -132,7 +133,7 @@ public:
    * Returning a null QImage is allowed and signals "no patch available"
    * (the overlay will then fall back to leaving the preview empty).
    */
-  using OverlayPatchProvider = std::function<QImage(const QRect&)>;
+  using OverlayPatchProvider = std::function<QImage(const QRect &)>;
 
   /**
    * @brief Lazy YUV pixel sampler for overlay features (zoom info, raw values).
@@ -140,15 +141,14 @@ public:
    * Invoked from the GUI thread during overlay painting. Returns false when the
    * handler cannot supply a sample for the requested pixel.
    */
-  using OverlayYuvPixelProvider =
-      std::function<bool(const QPoint&, video::yuv::yuv_t&)>;
+  using OverlayYuvPixelProvider = std::function<bool(const QPoint &, video::yuv::yuv_t &)>;
 
   /**
    * @brief Constructor
    * @param parent Parent window (optional)
    */
-  explicit HDR_RhiVideoWindow(QWindow* parent = nullptr);
-  
+  explicit HDR_RhiVideoWindow(QWindow *parent = nullptr);
+
   /**
    * @brief Destructor - releases RHI resources
    */
@@ -192,7 +192,7 @@ public:
    * @brief Apply display HDR capabilities (currently syncs peak luminance).
    * @param capabilities Detected display HDR capabilities
    */
-  void setHDRCapabilities(const HDRDetection::HDRCapabilities& capabilities);
+  void setHDRCapabilities(const HDRDetection::HDRCapabilities &capabilities);
 
   /**
    * @brief Submit a YUV frame with move semantics (zero-copy ownership transfer).
@@ -200,10 +200,11 @@ public:
    * Not a Qt slot because MOC does not support rvalue-reference parameters.
    * The caller must not use yuvData after this call.
    */
-  void updateFrameYUVMove(QByteArray&& yuvData,
-                          int width, int height,
-                          const video::yuv::PixelFormatYUV& format,
-                          video::yuv::ColorConversion colorConversion);
+  void updateFrameYUVMove(QByteArray                      &&yuvData,
+                          int                               width,
+                          int                               height,
+                          const video::yuv::PixelFormatYUV &format,
+                          video::yuv::ColorConversion       colorConversion);
 
   /**
    * @brief Register or clear the overlay lazy RGB patch provider.
@@ -232,17 +233,18 @@ public slots:
    * Queued and uploaded in the next render pass, same as the YUV path.
    * @param newFrame Converted image; prefer updateFrameYUV* for HDR playback
    */
-  void updateFrame(const QImage& newFrame);
+  void updateFrame(const QImage &newFrame);
 
   /**
    * @brief Update frame from raw YUV (primary GPU path for 10-bit HDR).
    *
    * The const-ref overload copies the buffer; use updateFrameYUVMove when exclusive.
    */
-  void updateFrameYUV(const QByteArray& yuvData,
-                      int width, int height,
-                      const video::yuv::PixelFormatYUV& format,
-                      video::yuv::ColorConversion colorConversion);
+  void updateFrameYUV(const QByteArray                 &yuvData,
+                      int                               width,
+                      int                               height,
+                      const video::yuv::PixelFormatYUV &format,
+                      video::yuv::ColorConversion       colorConversion);
 
   /** @brief Clear the current frame, pending YUV, and overlay samplers. */
   void clearFrame();
@@ -253,10 +255,10 @@ public slots:
    * @param offset Pan offset
    * @param displayZoom UI display zoom; if &lt; 0, equals renderZoom
    */
-  void updateTransform(double renderZoom, const QPointF& offset, double displayZoom = -1.0);
+  void updateTransform(double renderZoom, const QPointF &offset, double displayZoom = -1.0);
 
   /** @brief Set clear / background color and request a redraw. */
-  void setBackgroundColor(const QColor& color)
+  void setBackgroundColor(const QColor &color)
   {
     m_backgroundColor = color;
     requestUpdate();
@@ -273,37 +275,37 @@ public slots:
 
   void setSplitting(OverlaySplitMode mode, double splitPoint)
   {
-    m_overlaySplitMode = mode;
+    m_overlaySplitMode  = mode;
     m_overlaySplitPoint = qBound(0.0, splitPoint, 1.0);
     requestUpdate();
   }
 
-  void setGridParams(int gridSize, const QColor& gridColor)
+  void setGridParams(int gridSize, const QColor &gridColor)
   {
-    m_gridSize = gridSize;
+    m_gridSize  = gridSize;
     m_gridColor = gridColor;
     requestUpdate();
   }
 
-  void setZoomBoxState(bool enabled, const QPoint& pixelPosLeft, const QPoint& pixelPosRight)
+  void setZoomBoxState(bool enabled, const QPoint &pixelPosLeft, const QPoint &pixelPosRight)
   {
-    m_zoomBoxEnabled = enabled;
+    m_zoomBoxEnabled     = enabled;
     m_zoomBoxPixelPos[0] = pixelPosLeft;
     m_zoomBoxPixelPos[1] = pixelPosRight;
     requestUpdate();
   }
 
-  void setDrawItemPathAndName(bool enabled, const QString& left, const QString& right)
+  void setDrawItemPathAndName(bool enabled, const QString &left, const QString &right)
   {
     m_drawPathAndName = enabled;
-    m_itemPathLeft = left;
-    m_itemPathRight = right;
+    m_itemPathLeft    = left;
+    m_itemPathRight   = right;
     requestUpdate();
   }
 
   void setLoadingFlags(bool leftLoading, bool rightLoading)
   {
-    m_loadingLeft = leftLoading;
+    m_loadingLeft  = leftLoading;
     m_loadingRight = rightLoading;
     requestUpdate();
   }
@@ -312,24 +314,24 @@ public slots:
 
   void setPlayingState(bool isPlaying, bool waitingForCaching)
   {
-    m_playing = isPlaying;
+    m_playing           = isPlaying;
     m_waitingForCaching = waitingForCaching;
     requestUpdate();
   }
 
-  void setCachingIndicatorPixmap(const QPixmap& pixmap) { m_cachingPixmap = pixmap; }
+  void setCachingIndicatorPixmap(const QPixmap &pixmap) { m_cachingPixmap = pixmap; }
 
 signals:
   void widgetInitialized();
-  void hdrNotSupported(const QString& reason);
+  void hdrNotSupported(const QString &reason);
   void frameUpdated();
-  void rhiError(const QString& error);
+  void rhiError(const QString &error);
 
 protected:
   // QWindow event handlers
-  void exposeEvent(QExposeEvent* event) override;
-  void resizeEvent(QResizeEvent* event) override;
-  bool event(QEvent* event) override;
+  void exposeEvent(QExposeEvent *event) override;
+  void resizeEvent(QResizeEvent *event) override;
+  bool event(QEvent *event) override;
 
 private:
   // RHI initialization
@@ -338,58 +340,79 @@ private:
   bool initializePipeline();
   bool initializeYUVPipeline();
   void releaseRhiResources();
-  
+
   // One deferred GPU upload. Width and height travel with the bytes so a
   // newer frame cannot change the size used to interpret this buffer.
   struct PendingUpload
   {
-    QByteArray yuvData;
-    video::yuv::PixelFormatYUV yuvFormat;
+    QByteArray                  yuvData;
+    video::yuv::PixelFormatYUV  yuvFormat;
     video::yuv::ColorConversion colorConversion{video::yuv::ColorConversion::BT2020_LimitedRange};
-    int yuvWidth{0};
-    int yuvHeight{0};
-    uint64_t sequence{0};
-    bool hasYUV{false};
-    QImage rgbFrame;
-    bool hasRGB{false};
+    int                         yuvWidth{0};
+    int                         yuvHeight{0};
+    uint64_t                    sequence{0};
+    bool                        hasYUV{false};
+    QImage                      rgbFrame;
+    bool                        hasRGB{false};
   };
 
   // Rendering
-  void render();
-  void renderFrame(QRhiCommandBuffer* cb, PendingUpload& pendingUpload);
-  void updateProjectionMatrix();
+  void          render();
+  void          renderFrame(QRhiCommandBuffer *cb, PendingUpload &pendingUpload);
+  void          updateProjectionMatrix();
   PendingUpload takePendingUpload();
-  void restorePendingUpload(PendingUpload& pendingUpload);
-  void publishPresentedFrame(const QSize& frameSize, bool useYUV, const QImage& rgbFrame);
-  float effectiveToneMapNits() const;
-  
+  void          restorePendingUpload(PendingUpload &pendingUpload);
+  void          publishPresentedFrame(const QSize &frameSize, bool useYUV, const QImage &rgbFrame);
+  float         effectiveToneMapNits() const;
+
   // Resource management
-  bool uploadTextureData(const QImage& image, QRhiResourceUpdateBatch* batch);
-  bool uploadYUVTextureData(const QByteArray& yuvData, int width, int height,
-                            const video::yuv::PixelFormatYUV& format,
-                            QRhiResourceUpdateBatch* batch);
-  
+  bool uploadTextureData(const QImage &image, QRhiResourceUpdateBatch *batch);
+  bool uploadYUVTextureData(const QByteArray                 &yuvData,
+                            int                               width,
+                            int                               height,
+                            const video::yuv::PixelFormatYUV &format,
+                            QRhiResourceUpdateBatch          *batch);
+
   // Overlay rendering (QPainter to QImage, then upload to RHI texture)
   void paintOverlays();
-  void paintGrid(QPainter& painter, const QPoint& center, const QPointF& offset, int xMinClip, int xMaxClip);
-  void paintPixelRulersX(QPainter& painter, const QPoint& center, const QPointF& offset, int xPixMin, int xPixMax, double zoom);
-  void paintPixelRulersY(QPainter& painter, const QPoint& center, const QPointF& offset, int yPixMax, int xPos, double zoom);
-  void paintZoomBox(QPainter& painter, int viewIndex, const QPoint& center, const QPoint& drawAreaBotR, int xSplit, int frameIndex);
+  void paintGrid(
+    QPainter &painter, const QPoint &center, const QPointF &offset, int xMinClip, int xMaxClip);
+  void paintPixelRulersX(QPainter      &painter,
+                         const QPoint  &center,
+                         const QPointF &offset,
+                         int            xPixMin,
+                         int            xPixMax,
+                         double         zoom);
+  void paintPixelRulersY(QPainter      &painter,
+                         const QPoint  &center,
+                         const QPointF &offset,
+                         int            yPixMax,
+                         int            xPos,
+                         double         zoom);
+  void paintZoomBox(QPainter     &painter,
+                    int           viewIndex,
+                    const QPoint &center,
+                    const QPoint &drawAreaBotR,
+                    int           xSplit,
+                    int           frameIndex);
   /**
    * @brief Draw raw YUV values on top of pixels in HDR mode for high zoom levels.
    */
-  void paintRawPixelValues(QPainter& painter,
-                           const QPoint& center,
-                           const QPointF& offset,
-                           int xPixMin,
-                           int xPixMax,
-                           double zoom);
-  void drawItemPathAndName(QPainter& painter, int posX, int width, const QString& path);
-  void drawLoadingMessage(QPainter& painter, const QPoint& pos);
-  bool isPixelDarkAt(const QPoint& pixel) const;
-  bool getYuvPixelValue(const QPoint& pixelPos, video::yuv::yuv_t& value) const;
-  
-  template <typename T> static T clipValue(T v, T lo, T hi) { return v < lo ? lo : (v > hi ? hi : v); }
+  void paintRawPixelValues(QPainter      &painter,
+                           const QPoint  &center,
+                           const QPointF &offset,
+                           int            xPixMin,
+                           int            xPixMax,
+                           double         zoom);
+  void drawItemPathAndName(QPainter &painter, int posX, int width, const QString &path);
+  void drawLoadingMessage(QPainter &painter, const QPoint &pos);
+  bool isPixelDarkAt(const QPoint &pixel) const;
+  bool getYuvPixelValue(const QPoint &pixelPos, video::yuv::yuv_t &value) const;
+
+  template <typename T> static T clipValue(T v, T lo, T hi)
+  {
+    return v < lo ? lo : (v > hi ? hi : v);
+  }
 
   /**
    * @brief Queue a pending YUV frame for deferred GPU upload.
@@ -399,10 +422,11 @@ private:
    * m_pendingYUVMutex. Frame geometry used by overlays is published later
    * on the GUI thread, inside render().
    */
-  void queuePendingYUV(QByteArray&& yuvData,
-                       int width, int height,
-                       const video::yuv::PixelFormatYUV& format,
-                       video::yuv::ColorConversion colorConversion);
+  void queuePendingYUV(QByteArray                      &&yuvData,
+                       int                               width,
+                       int                               height,
+                       const video::yuv::PixelFormatYUV &format,
+                       video::yuv::ColorConversion       colorConversion);
 
   /**
    * @brief Emit frameUpdated on this window's thread.
@@ -420,7 +444,7 @@ private:
     if (m_colorMatrixCacheValid && m_cachedColorConversion == colorConversion)
       return;
     video::hdr::HDRColorConversion::buildColorMatrix(
-        colorConversion, m_cachedColorMatrix, m_cachedOffsetVec);
+      colorConversion, m_cachedColorMatrix, m_cachedOffsetVec);
     m_cachedColorConversion = colorConversion;
     m_colorMatrixCacheValid = true;
   }
@@ -441,43 +465,44 @@ private:
   // Caller request. 0 disables tone mapping. Mode clamps are applied in
   // effectiveToneMapNits() so a PQ value stays valid when the mode changes.
   float m_toneMapRequestNits{0.0f};
-  bool m_initialized{false};
-  bool m_initializationFailed{false};
+  bool  m_initialized{false};
+  bool  m_initializationFailed{false};
   // Non-blocking re-entry guard. A second tryInitialize() while the first is
   // still inside initializeRhi() returns immediately. A mutex cannot be reached
   // by two callers at once, so it is not used here.
   std::atomic<bool> m_initializationInProgress{false};
-  bool m_loggedNotExposedState{false};
+  bool              m_loggedNotExposedState{false};
 
-         // Qt RHI resources
-  std::unique_ptr<QOffscreenSurface> m_fallbackSurface;  // For OpenGL fallback
-  std::unique_ptr<QRhi> m_rhi;
-  std::unique_ptr<QRhiSwapChain> m_swapChain;
+  // Qt RHI resources
+  std::unique_ptr<QOffscreenSurface>        m_fallbackSurface; // For OpenGL fallback
+  std::unique_ptr<QRhi>                     m_rhi;
+  std::unique_ptr<QRhiSwapChain>            m_swapChain;
   std::unique_ptr<QRhiRenderPassDescriptor> m_renderPassDesc;
-  
+
   // RGB pipeline resources
-  std::unique_ptr<QRhiBuffer> m_vertexBuffer;
-  std::unique_ptr<QRhiBuffer> m_indexBuffer;
-  std::unique_ptr<QRhiBuffer> m_uniformBuffer;
-  std::unique_ptr<QRhiTexture> m_videoTexture;
-  std::unique_ptr<QRhiSampler> m_sampler;
+  std::unique_ptr<QRhiBuffer>                 m_vertexBuffer;
+  std::unique_ptr<QRhiBuffer>                 m_indexBuffer;
+  std::unique_ptr<QRhiBuffer>                 m_uniformBuffer;
+  std::unique_ptr<QRhiTexture>                m_videoTexture;
+  std::unique_ptr<QRhiSampler>                m_sampler;
   std::unique_ptr<QRhiShaderResourceBindings> m_srb;
-  std::unique_ptr<QRhiGraphicsPipeline> m_pipeline;
-  
+  std::unique_ptr<QRhiGraphicsPipeline>       m_pipeline;
+
   // YUV pipeline resources (GPU-based YUV->RGB conversion)
-  std::unique_ptr<QRhiTexture> m_texY;
-  std::unique_ptr<QRhiTexture> m_texU;
-  std::unique_ptr<QRhiTexture> m_texV;
-  std::unique_ptr<QRhiBuffer> m_yuvUniformBuffer;
+  std::unique_ptr<QRhiTexture>                m_texY;
+  std::unique_ptr<QRhiTexture>                m_texU;
+  std::unique_ptr<QRhiTexture>                m_texV;
+  std::unique_ptr<QRhiBuffer>                 m_yuvUniformBuffer;
   std::unique_ptr<QRhiShaderResourceBindings> m_yuvSrb;
-  std::unique_ptr<QRhiGraphicsPipeline> m_yuvPipeline;
-  
+  std::unique_ptr<QRhiGraphicsPipeline>       m_yuvPipeline;
+
   // Uniform data structure for RGB shaders
-  struct UniformData {
+  struct UniformData
+  {
     float projectionMatrix[16];
     float textureMatrix[16];
   };
-  
+
   // Uniform data structure for YUV shaders
   // Note: For HDR10, the colorMatrix performs BT.2020 YUV->RGB conversion only
   // The output is RGBA16F linear light for scRGB HDR presentation
@@ -487,57 +512,61 @@ private:
   //   mat4 colorMatrix      (16 floats) - 3x3 matrix in columns 0-2, column 3 unused
   //   vec4 offsetVec        (4 floats)
   //   vec4 hdrParams        (4 floats) - HDR processing parameters
-  struct YUVUniformData {
+  struct YUVUniformData
+  {
     float projectionMatrix[16];
     float textureMatrix[16];
-    float colorMatrix[16];  // mat4 in std140 layout (must be 16 floats to match shader)
-    float offsetVec[4];     // vec4 in std140 layout
-    float hdrParams[4];     // x=contentMaxNits, y=displayMaxNits, z=renderMode, w=reserved
+    float colorMatrix[16]; // mat4 in std140 layout (must be 16 floats to match shader)
+    float offsetVec[4];    // vec4 in std140 layout
+    float hdrParams[4];    // x=contentMaxNits, y=displayMaxNits, z=renderMode, w=reserved
   };
 
-         // Cached matrices
+  // Cached matrices
   QMatrix4x4 m_textureMatrix;
   QMatrix4x4 m_projectionMatrix;
-  double m_parentZoom{1.0};
-  double m_displayZoom{1.0};
-  QPointF m_parentOffset;
+  double     m_parentZoom{1.0};
+  double     m_displayZoom{1.0};
+  QPointF    m_parentOffset;
 
-         // Frame data
+  // Frame data
   QImage m_currentFrame;
   // Lazy patch provider used by overlay (e.g. ZoomBox) to fetch small RGB
   // regions of the current frame without triggering a full-frame CPU
   // YUV->RGB conversion. Set by SplitViewWidget; may be empty.
   OverlayPatchProvider m_overlayPatchProvider;
   // Lazy YUV pixel provider for zoom info / raw-value overlays.
-  OverlayYuvPixelProvider m_overlayYuvPixelProvider;
-  QSize m_frameSize;
-  bool m_useYUVMode{false};
-  int m_yuvWidth{0};
-  int m_yuvHeight{0};
-  int m_uvWidth{0};   // Track UV plane dimensions for format change detection
-  int m_uvHeight{0};  // YUV420 vs YUV422 have different UV heights
-  video::yuv::ColorConversion m_currentColorConversion{video::yuv::ColorConversion::BT2020_LimitedRange};
+  OverlayYuvPixelProvider     m_overlayYuvPixelProvider;
+  QSize                       m_frameSize;
+  bool                        m_useYUVMode{false};
+  int                         m_yuvWidth{0};
+  int                         m_yuvHeight{0};
+  int                         m_uvWidth{0}; // Track UV plane dimensions for format change detection
+  int                         m_uvHeight{0}; // YUV420 vs YUV422 have different UV heights
+  video::yuv::ColorConversion m_currentColorConversion{
+    video::yuv::ColorConversion::BT2020_LimitedRange};
 
   // Cached YUV->RGB matrix/offset; rebuilt only when color conversion changes.
-  bool m_colorMatrixCacheValid{false};
-  video::yuv::ColorConversion m_cachedColorConversion{video::yuv::ColorConversion::BT2020_LimitedRange};
+  bool                        m_colorMatrixCacheValid{false};
+  video::yuv::ColorConversion m_cachedColorConversion{
+    video::yuv::ColorConversion::BT2020_LimitedRange};
   float m_cachedColorMatrix[16]{};
   float m_cachedOffsetVec[4]{};
-  
+
   // Pending GPU uploads. The YUV record and the RGB record below are both
   // guarded by m_pendingYUVMutex, including width, height and the RGB image.
   // m_frameSize is published later, on the GUI thread, inside render().
-  mutable QMutex m_pendingYUVMutex;
-  QByteArray m_pendingYUVData;
-  video::yuv::PixelFormatYUV m_pendingYUVFormat;
-  video::yuv::ColorConversion m_pendingColorConversion{video::yuv::ColorConversion::BT2020_LimitedRange};
-  int m_pendingYUVWidth{0};
-  int m_pendingYUVHeight{0};
-  QImage m_pendingRGBFrame;
-  bool m_rgbFramePending{false};
+  mutable QMutex              m_pendingYUVMutex;
+  QByteArray                  m_pendingYUVData;
+  video::yuv::PixelFormatYUV  m_pendingYUVFormat;
+  video::yuv::ColorConversion m_pendingColorConversion{
+    video::yuv::ColorConversion::BT2020_LimitedRange};
+  int      m_pendingYUVWidth{0};
+  int      m_pendingYUVHeight{0};
+  QImage   m_pendingRGBFrame;
+  bool     m_rgbFramePending{false};
   uint64_t m_pendingUploadSequence{0};
   uint64_t m_lastUploadedYUVSequence{0};
-  bool m_yuvDataPending{false};
+  bool     m_yuvDataPending{false};
 
   // Staging buffers for endian/semi-planar repacking. Must outlive the
   // QRhiResourceUpdateBatch until renderFrame() submits resourceUpdate().
@@ -548,40 +577,40 @@ private:
   QByteArray m_repackBufferV;
 
   QColor m_backgroundColor{Qt::black};
-  
+
   // Peak display luminance from EDID / swap-chain query (used by overlays)
   float m_displayMaxLuminance{1000.0f};
 
-         // Overlay state
-  bool m_overlayEnabled{false};
+  // Overlay state
+  bool             m_overlayEnabled{false};
   OverlaySplitMode m_overlaySplitMode{OverlaySplitDisabled};
-  double m_overlaySplitPoint{0.5};
-  int m_gridSize{0};
-  QColor m_gridColor{Qt::white};
-  bool m_zoomBoxEnabled{false};
-  QPoint m_zoomBoxPixelPos[2]{QPoint(-1,-1), QPoint(-1,-1)};
-  bool m_drawPathAndName{false};
-  QString m_itemPathLeft;
-  QString m_itemPathRight;
-  bool m_loadingLeft{false};
-  bool m_loadingRight{false};
-  bool m_drawRawValues{false};
-  bool m_playing{false};
-  bool m_waitingForCaching{false};
-  QPixmap m_cachingPixmap;
-  QFont m_zoomFactorFont{QStringLiteral("helvetica"), 24};
+  double           m_overlaySplitPoint{0.5};
+  int              m_gridSize{0};
+  QColor           m_gridColor{Qt::white};
+  bool             m_zoomBoxEnabled{false};
+  QPoint           m_zoomBoxPixelPos[2]{QPoint(-1, -1), QPoint(-1, -1)};
+  bool             m_drawPathAndName{false};
+  QString          m_itemPathLeft;
+  QString          m_itemPathRight;
+  bool             m_loadingLeft{false};
+  bool             m_loadingRight{false};
+  bool             m_drawRawValues{false};
+  bool             m_playing{false};
+  bool             m_waitingForCaching{false};
+  QPixmap          m_cachingPixmap;
+  QFont            m_zoomFactorFont{QStringLiteral("helvetica"), 24};
 
-         // Overlay rendering resources
-  QImage m_overlayImage;
-  std::unique_ptr<QRhiBuffer> m_overlayUniformBuffer;
-  std::unique_ptr<QRhiTexture> m_overlayTexture;
-  std::unique_ptr<QRhiSampler> m_overlaySampler;
+  // Overlay rendering resources
+  QImage                                      m_overlayImage;
+  std::unique_ptr<QRhiBuffer>                 m_overlayUniformBuffer;
+  std::unique_ptr<QRhiTexture>                m_overlayTexture;
+  std::unique_ptr<QRhiSampler>                m_overlaySampler;
   std::unique_ptr<QRhiShaderResourceBindings> m_overlaySrb;
-  std::unique_ptr<QRhiGraphicsPipeline> m_overlayPipeline;
-  bool m_overlayResourcesInitialized{false};
-  
+  std::unique_ptr<QRhiGraphicsPipeline>       m_overlayPipeline;
+  bool                                        m_overlayResourcesInitialized{false};
+
   // Overlay rendering helper
-  void renderOverlayInPass(QRhiCommandBuffer* cb);
+  void renderOverlayInPass(QRhiCommandBuffer *cb);
   bool initializeOverlayPipeline();
 };
 

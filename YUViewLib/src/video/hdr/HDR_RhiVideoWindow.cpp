@@ -16,13 +16,13 @@
 #include "HDRYUVRepack.h"
 
 #include <QCoreApplication>
-#include <QDir>
 #include <QDebug>
-#include <QThread>
+#include <QDir>
 #include <QFile>
 #include <QFileInfo>
-#include <cstring>
+#include <QThread>
 #include <algorithm>
+#include <cstring>
 
 #ifndef DEBUG_HDR_WINDOW
 #define DEBUG_HDR_WINDOW 0
@@ -56,7 +56,7 @@
 
 // Helper function to compile shader from GLSL source at runtime
 // This is used when pre-compiled .qsb files are not available
-static QShader compileShaderFromSource(const QByteArray& source, QShader::Stage stage)
+static QShader compileShaderFromSource(const QByteArray &source, QShader::Stage stage)
 {
 #ifdef HAVE_SHADER_BAKER
   QShaderBaker baker;
@@ -76,7 +76,8 @@ static QShader compileShaderFromSource(const QByteArray& source, QShader::Stage 
   baker.setGeneratedShaders(targets);
 
   QShader shader = baker.bake();
-  if (!shader.isValid()) {
+  if (!shader.isValid())
+  {
     qWarning() << "[HDR-RHI] Shader compilation failed:" << baker.errorMessage();
   }
   return shader;
@@ -90,41 +91,47 @@ static QShader compileShaderFromSource(const QByteArray& source, QShader::Stage 
 
 // Load shader from .qsb file, or compile from source as fallback
 // Non-static to allow use from HDR_RhiVideoWindow_Overlays.cpp
-QShader loadOrCompileShader(const QString& qsbPath, const QString& sourcePath, QShader::Stage stage)
+QShader loadOrCompileShader(const QString &qsbPath, const QString &sourcePath, QShader::Stage stage)
 {
-    // Prefer loading pre-compiled .qsb from Qt resources first.
-  // If the resource is missing (common when shaders.qrc is not registered or .qsb files are not embedded),
-  // also try loading .qsb from disk next to the executable: <appDir>/shaders/<fileName>.qsb.
-  // This provides a stable path for deployments where QtShaderTools is not available at runtime.
+  // Prefer loading pre-compiled .qsb from Qt resources first.
+  // If the resource is missing (common when shaders.qrc is not registered or .qsb files are not
+  // embedded), also try loading .qsb from disk next to the executable:
+  // <appDir>/shaders/<fileName>.qsb. This provides a stable path for deployments where
+  // QtShaderTools is not available at runtime.
 
-         // First try to load pre-compiled .qsb file
+  // First try to load pre-compiled .qsb file
   QFile qsbFile(qsbPath);
-  if (qsbFile.open(QIODevice::ReadOnly)) {
+  if (qsbFile.open(QIODevice::ReadOnly))
+  {
     QShader shader = QShader::fromSerialized(qsbFile.readAll());
-    if (shader.isValid()) {
+    if (shader.isValid())
+    {
       return shader;
     }
   }
 
-         // Try to load the .qsb from disk (next to the executable) as a deployment fallback.
-         // Example path on Windows: <YUView.exe dir>\shaders\hdr_rhi_vertex.vert.qsb
+  // Try to load the .qsb from disk (next to the executable) as a deployment fallback.
+  // Example path on Windows: <YUView.exe dir>\shaders\hdr_rhi_vertex.vert.qsb
   const QString qsbFileName = QFileInfo(qsbPath).fileName();
-  if (!qsbFileName.isEmpty()) {
-    const QString qsbDiskPath = QCoreApplication::applicationDirPath() + QDir::separator()
-    + QStringLiteral("shaders") + QDir::separator()
-      + qsbFileName;
+  if (!qsbFileName.isEmpty())
+  {
+    const QString qsbDiskPath = QCoreApplication::applicationDirPath() + QDir::separator() +
+                                QStringLiteral("shaders") + QDir::separator() + qsbFileName;
     QFile qsbDiskFile(qsbDiskPath);
-    if (qsbDiskFile.open(QIODevice::ReadOnly)) {
+    if (qsbDiskFile.open(QIODevice::ReadOnly))
+    {
       QShader shader = QShader::fromSerialized(qsbDiskFile.readAll());
-      if (shader.isValid()) {
+      if (shader.isValid())
+      {
         return shader;
       }
     }
   }
 
-         // Fall back to runtime compilation from source
+  // Fall back to runtime compilation from source
   QFile sourceFile(sourcePath);
-  if (sourceFile.open(QIODevice::ReadOnly)) {
+  if (sourceFile.open(QIODevice::ReadOnly))
+  {
     QByteArray source = sourceFile.readAll();
     return compileShaderFromSource(source, stage);
   }
@@ -134,19 +141,18 @@ QShader loadOrCompileShader(const QString& qsbPath, const QString& sourcePath, Q
   return QShader();
 }
 // Vertex data for fullscreen quad: positions (x,y) and texture coords (u,v)
+// clang-format off
 static const float kQuadVertices[] = {
   // Positions   // TexCoords
   -1.0f, -1.0f,  0.0f, 0.0f,
-  1.0f, -1.0f,  1.0f, 0.0f,
-  1.0f,  1.0f,  1.0f, 1.0f,
+   1.0f, -1.0f,  1.0f, 0.0f,
+   1.0f,  1.0f,  1.0f, 1.0f,
   -1.0f,  1.0f,  0.0f, 1.0f
 };
+// clang-format on
 
 // Index buffer for two triangles forming a quad
-static const quint16 kQuadIndices[] = {
-  0, 1, 2,
-  2, 3, 0
-};
+static const quint16 kQuadIndices[] = {0, 1, 2, 2, 3, 0};
 
 // HDR_RhiVideoWindow draws through a Qt QRhi swap chain fixed to scRGB linear
 // RGBA16F. YUV and RGB both enter one pending-upload queue. render() publishes
@@ -154,9 +160,8 @@ static const quint16 kQuadIndices[] = {
 // buffer is never interpreted with another frame's dimensions. A tone-map
 // request of 0 (or any non-positive value) is pass-through; the luminance
 // written to the shader is clamped for PQ or HLG at draw time.
-HDR_RhiVideoWindow::HDR_RhiVideoWindow(QWindow* parent)
-    : QWindow(parent)
-      , m_renderMode(Mode_BT2020_PQ_10bit)
+HDR_RhiVideoWindow::HDR_RhiVideoWindow(QWindow *parent)
+    : QWindow(parent), m_renderMode(Mode_BT2020_PQ_10bit)
 {
   // Set surface type for RHI compatibility
   // On Windows with D3D12, this will be ignored but needed for OpenGL fallback
@@ -183,7 +188,7 @@ void HDR_RhiVideoWindow::releaseRhiResources()
   m_texU.reset();
   m_texY.reset();
 
-         // RGB pipeline resources
+  // RGB pipeline resources
   m_pipeline.reset();
   m_srb.reset();
   m_sampler.reset();
@@ -228,7 +233,8 @@ bool HDR_RhiVideoWindow::initializeRhi()
   m_rhi.reset(QRhi::create(QRhi::D3D12, &d3d12Params));
 #endif
 
-  if (!m_rhi) {
+  if (!m_rhi)
+  {
     QRhiD3D11InitParams d3d11Params;
     m_rhi.reset(QRhi::create(QRhi::D3D11, &d3d11Params));
   }
@@ -247,14 +253,16 @@ bool HDR_RhiVideoWindow::initializeRhi()
 #endif
 
   // Fallback to OpenGL if platform-specific backend fails / is unavailable
-  if (!m_rhi) {
+  if (!m_rhi)
+  {
     QRhiGles2InitParams glParams;
     m_fallbackSurface.reset(QRhiGles2InitParams::newFallbackSurface());
     glParams.fallbackSurface = m_fallbackSurface.get();
     m_rhi.reset(QRhi::create(QRhi::OpenGLES2, &glParams));
   }
 
-  if (!m_rhi) {
+  if (!m_rhi)
+  {
     qCritical() << "[HDR-RHI] Failed to create QRhi instance!";
     emit hdrNotSupported("Failed to initialize rendering backend");
     return false;
@@ -266,7 +274,8 @@ bool HDR_RhiVideoWindow::initializeRhi()
 bool HDR_RhiVideoWindow::initializeSwapChain()
 {
   m_swapChain.reset(m_rhi->newSwapChain());
-  if (!m_swapChain) {
+  if (!m_swapChain)
+  {
     qCritical() << "[HDR-RHI] Failed to create swap chain!";
     return false;
   }
@@ -283,29 +292,33 @@ bool HDR_RhiVideoWindow::initializeSwapChain()
   m_swapChain->setFormat(QRhiSwapChain::HDRExtendedSrgbLinear);
 
   m_renderPassDesc.reset(m_swapChain->newCompatibleRenderPassDescriptor());
-  if (!m_renderPassDesc) {
+  if (!m_renderPassDesc)
+  {
     qCritical() << "[HDR-RHI] Failed to create render pass descriptor!";
     return false;
   }
 
   m_swapChain->setRenderPassDescriptor(m_renderPassDesc.get());
 
-  if (!m_swapChain->createOrResize()) {
+  if (!m_swapChain->createOrResize())
+  {
     qCritical() << "[HDR-RHI] Failed to create/resize swap chain!";
     return false;
   }
 
   // Query peak luminance from the display (used by overlays)
   QRhiSwapChainHdrInfo hdrInfo = m_swapChain->hdrInfo();
-  m_displayMaxLuminance = 1000.0f;
-  if (hdrInfo.limitsType == QRhiSwapChainHdrInfo::LuminanceInNits) {
+  m_displayMaxLuminance        = 1000.0f;
+  if (hdrInfo.limitsType == QRhiSwapChainHdrInfo::LuminanceInNits)
+  {
     m_displayMaxLuminance = hdrInfo.limits.luminanceInNits.maxLuminance;
-  } else if (hdrInfo.limitsType == QRhiSwapChainHdrInfo::ColorComponentValue) {
+  }
+  else if (hdrInfo.limitsType == QRhiSwapChainHdrInfo::ColorComponentValue)
+  {
     // scRGB: 1.0 = 80 nits (SDR reference white)
     m_displayMaxLuminance = hdrInfo.limits.colorComponentValue.maxColorComponentValue * 80.0f;
   }
   m_displayMaxLuminance = std::clamp(m_displayMaxLuminance, 100.0f, 10000.0f);
-
 
   return true;
 }
@@ -313,35 +326,36 @@ bool HDR_RhiVideoWindow::initializeSwapChain()
 bool HDR_RhiVideoWindow::initializePipeline()
 {
   // Create vertex buffer for quad
-  m_vertexBuffer.reset(m_rhi->newBuffer(QRhiBuffer::Immutable,
-                                        QRhiBuffer::VertexBuffer,
-                                        sizeof(kQuadVertices)));
-  if (!m_vertexBuffer->create()) {
+  m_vertexBuffer.reset(
+    m_rhi->newBuffer(QRhiBuffer::Immutable, QRhiBuffer::VertexBuffer, sizeof(kQuadVertices)));
+  if (!m_vertexBuffer->create())
+  {
     qCritical() << "[HDR-RHI] Failed to create vertex buffer!";
     return false;
   }
 
-         // Create index buffer
-  m_indexBuffer.reset(m_rhi->newBuffer(QRhiBuffer::Immutable,
-                                       QRhiBuffer::IndexBuffer,
-                                       sizeof(kQuadIndices)));
-  if (!m_indexBuffer->create()) {
+  // Create index buffer
+  m_indexBuffer.reset(
+    m_rhi->newBuffer(QRhiBuffer::Immutable, QRhiBuffer::IndexBuffer, sizeof(kQuadIndices)));
+  if (!m_indexBuffer->create())
+  {
     qCritical() << "[HDR-RHI] Failed to create index buffer!";
     return false;
   }
 
-         // Create uniform buffer
-  m_uniformBuffer.reset(m_rhi->newBuffer(QRhiBuffer::Dynamic,
-                                         QRhiBuffer::UniformBuffer,
-                                         sizeof(UniformData)));
-  if (!m_uniformBuffer->create()) {
+  // Create uniform buffer
+  m_uniformBuffer.reset(
+    m_rhi->newBuffer(QRhiBuffer::Dynamic, QRhiBuffer::UniformBuffer, sizeof(UniformData)));
+  if (!m_uniformBuffer->create())
+  {
     qCritical() << "[HDR-RHI] Failed to create uniform buffer!";
     return false;
   }
 
-         // Create placeholder texture (RGBA16F for HDR linear light output)
+  // Create placeholder texture (RGBA16F for HDR linear light output)
   m_videoTexture.reset(m_rhi->newTexture(QRhiTexture::RGBA16F, QSize(64, 64)));
-  if (!m_videoTexture->create()) {
+  if (!m_videoTexture->create())
+  {
     qCritical() << "[HDR-RHI] Failed to create video texture!";
     return false;
   }
@@ -350,63 +364,69 @@ bool HDR_RhiVideoWindow::initializePipeline()
   // CRITICAL: Use Nearest filtering to preserve sharp pixel boundaries
   // Linear filtering causes "pixel smoothing" which hides compression artifacts
   // (mosquito noise, ringing effects) that video analysts need to see
-  m_sampler.reset(m_rhi->newSampler(QRhiSampler::Nearest, QRhiSampler::Nearest,
+  m_sampler.reset(m_rhi->newSampler(QRhiSampler::Nearest,
+                                    QRhiSampler::Nearest,
                                     QRhiSampler::None,
-                                    QRhiSampler::ClampToEdge, QRhiSampler::ClampToEdge));
-  if (!m_sampler->create()) {
+                                    QRhiSampler::ClampToEdge,
+                                    QRhiSampler::ClampToEdge));
+  if (!m_sampler->create())
+  {
     qCritical() << "[HDR-RHI] Failed to create sampler!";
     return false;
   }
 
-         // Create shader resource bindings
+  // Create shader resource bindings
   m_srb.reset(m_rhi->newShaderResourceBindings());
-  m_srb->setBindings({
-    QRhiShaderResourceBinding::uniformBuffer(0, QRhiShaderResourceBinding::VertexStage | QRhiShaderResourceBinding::FragmentStage, m_uniformBuffer.get()),
-    QRhiShaderResourceBinding::sampledTexture(1, QRhiShaderResourceBinding::FragmentStage, m_videoTexture.get(), m_sampler.get())
-  });
-  if (!m_srb->create()) {
+  m_srb->setBindings(
+    {QRhiShaderResourceBinding::uniformBuffer(0,
+                                              QRhiShaderResourceBinding::VertexStage |
+                                                QRhiShaderResourceBinding::FragmentStage,
+                                              m_uniformBuffer.get()),
+     QRhiShaderResourceBinding::sampledTexture(
+       1, QRhiShaderResourceBinding::FragmentStage, m_videoTexture.get(), m_sampler.get())});
+  if (!m_srb->create())
+  {
     qCritical() << "[HDR-RHI] Failed to create shader resource bindings!";
     return false;
   }
 
-         // Load shaders - try pre-compiled .qsb first, fall back to runtime compilation
-  QShader vertexShader = loadOrCompileShader(
-    QStringLiteral(":/shaders/hdr_rhi_vertex.vert.qsb"),
-    QStringLiteral(":/shaders/hdr_rhi_vertex.vert"),
-    QShader::VertexStage);
+  // Load shaders - try pre-compiled .qsb first, fall back to runtime compilation
+  QShader vertexShader = loadOrCompileShader(QStringLiteral(":/shaders/hdr_rhi_vertex.vert.qsb"),
+                                             QStringLiteral(":/shaders/hdr_rhi_vertex.vert"),
+                                             QShader::VertexStage);
 
-  QShader fragmentShader = loadOrCompileShader(
-    QStringLiteral(":/shaders/hdr_rhi_fragment.frag.qsb"),
-    QStringLiteral(":/shaders/hdr_rhi_fragment.frag"),
-    QShader::FragmentStage);
+  QShader fragmentShader =
+    loadOrCompileShader(QStringLiteral(":/shaders/hdr_rhi_fragment.frag.qsb"),
+                        QStringLiteral(":/shaders/hdr_rhi_fragment.frag"),
+                        QShader::FragmentStage);
 
-  if (!vertexShader.isValid() || !fragmentShader.isValid()) {
+  if (!vertexShader.isValid() || !fragmentShader.isValid())
+  {
     qCritical() << "[HDR-RHI] Failed to load RGB shaders!";
     qCritical() << "[HDR-RHI] Vertex shader valid:" << vertexShader.isValid();
     qCritical() << "[HDR-RHI] Fragment shader valid:" << fragmentShader.isValid();
     return false;
   }
 
-         // Create graphics pipeline
+  // Create graphics pipeline
   m_pipeline.reset(m_rhi->newGraphicsPipeline());
-  m_pipeline->setShaderStages({
-    { QRhiShaderStage::Vertex, vertexShader },
-    { QRhiShaderStage::Fragment, fragmentShader }
-  });
+  m_pipeline->setShaderStages(
+    {{QRhiShaderStage::Vertex, vertexShader}, {QRhiShaderStage::Fragment, fragmentShader}});
 
   QRhiVertexInputLayout inputLayout;
   inputLayout.setBindings({
-    { 4 * sizeof(float) }  // stride: 2 floats pos + 2 floats texcoord
+    {4 * sizeof(float)} // stride: 2 floats pos + 2 floats texcoord
   });
   inputLayout.setAttributes({
-    { 0, 0, QRhiVertexInputAttribute::Float2, 0 },                    // position
-    { 0, 1, QRhiVertexInputAttribute::Float2, 2 * sizeof(float) }     // texcoord
+    {0, 0, QRhiVertexInputAttribute::Float2, 0},                // position
+    {0, 1, QRhiVertexInputAttribute::Float2, 2 * sizeof(float)} // texcoord
   });
   m_pipeline->setVertexInputLayout(inputLayout);
   m_pipeline->setShaderResourceBindings(m_srb.get());
   m_pipeline->setRenderPassDescriptor(m_renderPassDesc.get());
 
-  if (!m_pipeline->create()) {
+  if (!m_pipeline->create())
+  {
     qCritical() << "[HDR-RHI] Failed to create graphics pipeline!";
     return false;
   }
@@ -418,75 +438,78 @@ bool HDR_RhiVideoWindow::initializeYUVPipeline()
 {
 
   // Create YUV uniform buffer (larger to hold color matrix)
-  m_yuvUniformBuffer.reset(m_rhi->newBuffer(QRhiBuffer::Dynamic,
-                                            QRhiBuffer::UniformBuffer,
-                                            sizeof(YUVUniformData)));
-  if (!m_yuvUniformBuffer->create()) {
+  m_yuvUniformBuffer.reset(
+    m_rhi->newBuffer(QRhiBuffer::Dynamic, QRhiBuffer::UniformBuffer, sizeof(YUVUniformData)));
+  if (!m_yuvUniformBuffer->create())
+  {
     qCritical() << "[HDR-RHI] Failed to create YUV uniform buffer!";
     return false;
   }
 
-         // Create Y, U, V textures (R16 format for 10-bit data)
+  // Create Y, U, V textures (R16 format for 10-bit data)
   m_texY.reset(m_rhi->newTexture(QRhiTexture::R16, QSize(64, 64)));
   m_texU.reset(m_rhi->newTexture(QRhiTexture::R16, QSize(32, 32)));
   m_texV.reset(m_rhi->newTexture(QRhiTexture::R16, QSize(32, 32)));
 
-  if (!m_texY->create() || !m_texU->create() || !m_texV->create()) {
+  if (!m_texY->create() || !m_texU->create() || !m_texV->create())
+  {
     qCritical() << "[HDR-RHI] Failed to create YUV textures!";
     return false;
   }
 
-         // Create shader resource bindings for YUV pipeline
+  // Create shader resource bindings for YUV pipeline
   m_yuvSrb.reset(m_rhi->newShaderResourceBindings());
-  m_yuvSrb->setBindings({
-    QRhiShaderResourceBinding::uniformBuffer(0, QRhiShaderResourceBinding::VertexStage | QRhiShaderResourceBinding::FragmentStage, m_yuvUniformBuffer.get()),
-    QRhiShaderResourceBinding::sampledTexture(1, QRhiShaderResourceBinding::FragmentStage, m_texY.get(), m_sampler.get()),
-    QRhiShaderResourceBinding::sampledTexture(2, QRhiShaderResourceBinding::FragmentStage, m_texU.get(), m_sampler.get()),
-    QRhiShaderResourceBinding::sampledTexture(3, QRhiShaderResourceBinding::FragmentStage, m_texV.get(), m_sampler.get())
-  });
-  if (!m_yuvSrb->create()) {
+  m_yuvSrb->setBindings(
+    {QRhiShaderResourceBinding::uniformBuffer(0,
+                                              QRhiShaderResourceBinding::VertexStage |
+                                                QRhiShaderResourceBinding::FragmentStage,
+                                              m_yuvUniformBuffer.get()),
+     QRhiShaderResourceBinding::sampledTexture(
+       1, QRhiShaderResourceBinding::FragmentStage, m_texY.get(), m_sampler.get()),
+     QRhiShaderResourceBinding::sampledTexture(
+       2, QRhiShaderResourceBinding::FragmentStage, m_texU.get(), m_sampler.get()),
+     QRhiShaderResourceBinding::sampledTexture(
+       3, QRhiShaderResourceBinding::FragmentStage, m_texV.get(), m_sampler.get())});
+  if (!m_yuvSrb->create())
+  {
     qCritical() << "[HDR-RHI] Failed to create YUV shader resource bindings!";
     return false;
   }
 
-         // Load YUV shaders - try pre-compiled .qsb first, fall back to runtime compilation
-  QShader yuvVertexShader = loadOrCompileShader(
-    QStringLiteral(":/shaders/hdr_rhi_yuv_vertex.vert.qsb"),
-    QStringLiteral(":/shaders/hdr_rhi_yuv_vertex.vert"),
-    QShader::VertexStage);
+  // Load YUV shaders - try pre-compiled .qsb first, fall back to runtime compilation
+  QShader yuvVertexShader =
+    loadOrCompileShader(QStringLiteral(":/shaders/hdr_rhi_yuv_vertex.vert.qsb"),
+                        QStringLiteral(":/shaders/hdr_rhi_yuv_vertex.vert"),
+                        QShader::VertexStage);
 
-  QShader yuvFragmentShader = loadOrCompileShader(
-    QStringLiteral(":/shaders/hdr_rhi_yuv_fragment.frag.qsb"),
-    QStringLiteral(":/shaders/hdr_rhi_yuv_fragment.frag"),
-    QShader::FragmentStage);
+  QShader yuvFragmentShader =
+    loadOrCompileShader(QStringLiteral(":/shaders/hdr_rhi_yuv_fragment.frag.qsb"),
+                        QStringLiteral(":/shaders/hdr_rhi_yuv_fragment.frag"),
+                        QShader::FragmentStage);
 
-  if (!yuvVertexShader.isValid() || !yuvFragmentShader.isValid()) {
+  if (!yuvVertexShader.isValid() || !yuvFragmentShader.isValid())
+  {
     qCritical() << "[HDR-RHI] Failed to load YUV shaders!";
     qCritical() << "[HDR-RHI] YUV vertex shader valid:" << yuvVertexShader.isValid();
     qCritical() << "[HDR-RHI] YUV fragment shader valid:" << yuvFragmentShader.isValid();
     return false;
   }
 
-         // Create YUV graphics pipeline
+  // Create YUV graphics pipeline
   m_yuvPipeline.reset(m_rhi->newGraphicsPipeline());
-  m_yuvPipeline->setShaderStages({
-    { QRhiShaderStage::Vertex, yuvVertexShader },
-    { QRhiShaderStage::Fragment, yuvFragmentShader }
-  });
+  m_yuvPipeline->setShaderStages(
+    {{QRhiShaderStage::Vertex, yuvVertexShader}, {QRhiShaderStage::Fragment, yuvFragmentShader}});
 
   QRhiVertexInputLayout inputLayout;
-  inputLayout.setBindings({
-    { 4 * sizeof(float) }
-  });
-  inputLayout.setAttributes({
-    { 0, 0, QRhiVertexInputAttribute::Float2, 0 },
-    { 0, 1, QRhiVertexInputAttribute::Float2, 2 * sizeof(float) }
-  });
+  inputLayout.setBindings({{4 * sizeof(float)}});
+  inputLayout.setAttributes({{0, 0, QRhiVertexInputAttribute::Float2, 0},
+                             {0, 1, QRhiVertexInputAttribute::Float2, 2 * sizeof(float)}});
   m_yuvPipeline->setVertexInputLayout(inputLayout);
   m_yuvPipeline->setShaderResourceBindings(m_yuvSrb.get());
   m_yuvPipeline->setRenderPassDescriptor(m_renderPassDesc.get());
 
-  if (!m_yuvPipeline->create()) {
+  if (!m_yuvPipeline->create())
+  {
     qCritical() << "[HDR-RHI] Failed to create YUV graphics pipeline!";
     return false;
   }
@@ -528,14 +551,14 @@ bool HDR_RhiVideoWindow::tryInitialize()
   // Clear the flag on every exit. Leaving it set would block initialization forever.
   struct InitializationGuard
   {
-    std::atomic<bool>& inProgress;
+    std::atomic<bool> &inProgress;
     ~InitializationGuard() { inProgress.store(false, std::memory_order_release); }
   } guard{m_initializationInProgress};
 
   DEBUG_HDR_WINDOW_LOG("[HDR-INIT] tryInitialize(): starting RHI initialization");
 
-  const bool success = initializeRhi() && initializeSwapChain() &&
-                       initializePipeline() && initializeYUVPipeline();
+  const bool success =
+    initializeRhi() && initializeSwapChain() && initializePipeline() && initializeYUVPipeline();
   if (!success)
   {
     DEBUG_HDR_WINDOW_LOG("[HDR-INIT] tryInitialize(): failed");
@@ -550,10 +573,10 @@ bool HDR_RhiVideoWindow::tryInitialize()
   // that re-enters tryInitialize() sees m_initialized and returns.
   if (m_rhi && m_vertexBuffer && m_indexBuffer)
   {
-    QRhiCommandBuffer* cb = nullptr;
+    QRhiCommandBuffer *cb = nullptr;
     if (m_rhi->beginOffscreenFrame(&cb) == QRhi::FrameOpSuccess)
     {
-      QRhiResourceUpdateBatch* batch = m_rhi->nextResourceUpdateBatch();
+      QRhiResourceUpdateBatch *batch = m_rhi->nextResourceUpdateBatch();
       if (batch)
       {
         batch->uploadStaticBuffer(m_vertexBuffer.get(), kQuadVertices);
@@ -569,34 +592,38 @@ bool HDR_RhiVideoWindow::tryInitialize()
   return true;
 }
 
-void HDR_RhiVideoWindow::exposeEvent(QExposeEvent* event)
+void HDR_RhiVideoWindow::exposeEvent(QExposeEvent *event)
 {
   Q_UNUSED(event);
 
-  if (isExposed()) {
+  if (isExposed())
+  {
     // Keep exposeEvent lightweight and delegate initialization
     // to a single shared implementation (also used by explicit tryInitialize()).
     (void)tryInitialize();
 
-    if (m_initialized) {
+    if (m_initialized)
+    {
       render();
     }
   }
 }
 
-void HDR_RhiVideoWindow::resizeEvent(QResizeEvent* event)
+void HDR_RhiVideoWindow::resizeEvent(QResizeEvent *event)
 {
   Q_UNUSED(event);
 
-  if (m_swapChain && m_initialized) {
+  if (m_swapChain && m_initialized)
+  {
     m_swapChain->createOrResize();
     updateProjectionMatrix();
   }
 }
 
-bool HDR_RhiVideoWindow::event(QEvent* event)
+bool HDR_RhiVideoWindow::event(QEvent *event)
 {
-  switch (event->type()) {
+  switch (event->type())
+  {
   case QEvent::UpdateRequest:
     render();
     return true;
@@ -611,8 +638,8 @@ HDR_RhiVideoWindow::PendingUpload HDR_RhiVideoWindow::takePendingUpload()
   // The upload must not read m_frameSize: a newer frame may already have
   // published a different resolution.
   PendingUpload upload;
-  QMutexLocker pendingLock(&m_pendingYUVMutex);
-  const bool pendingYUVUsable = m_yuvDataPending && !m_pendingYUVData.isEmpty() &&
+  QMutexLocker  pendingLock(&m_pendingYUVMutex);
+  const bool    pendingYUVUsable = m_yuvDataPending && !m_pendingYUVData.isEmpty() &&
                                 m_pendingYUVWidth > 0 && m_pendingYUVHeight > 0;
   if (m_yuvDataPending && !pendingYUVUsable)
   {
@@ -620,34 +647,34 @@ HDR_RhiVideoWindow::PendingUpload HDR_RhiVideoWindow::takePendingUpload()
     // would otherwise be published into the projection matrix.
     m_yuvDataPending = false;
     m_pendingYUVData.clear();
-    m_pendingYUVWidth = 0;
+    m_pendingYUVWidth  = 0;
     m_pendingYUVHeight = 0;
   }
 
   if (pendingYUVUsable)
   {
-    upload.hasYUV = true;
+    upload.hasYUV  = true;
     upload.yuvData = std::move(m_pendingYUVData);
     m_pendingYUVData.clear();
-    upload.yuvFormat = m_pendingYUVFormat;
+    upload.yuvFormat       = m_pendingYUVFormat;
     upload.colorConversion = m_pendingColorConversion;
-    upload.yuvWidth = m_pendingYUVWidth;
-    upload.yuvHeight = m_pendingYUVHeight;
-    upload.sequence = m_pendingUploadSequence;
-    m_yuvDataPending = false;
+    upload.yuvWidth        = m_pendingYUVWidth;
+    upload.yuvHeight       = m_pendingYUVHeight;
+    upload.sequence        = m_pendingUploadSequence;
+    m_yuvDataPending       = false;
   }
   else if (m_rgbFramePending && !m_pendingRGBFrame.isNull())
   {
-    upload.hasRGB = true;
-    upload.rgbFrame = std::move(m_pendingRGBFrame);
+    upload.hasRGB     = true;
+    upload.rgbFrame   = std::move(m_pendingRGBFrame);
     m_pendingRGBFrame = QImage();
-    upload.sequence = m_pendingUploadSequence;
+    upload.sequence   = m_pendingUploadSequence;
     m_rgbFramePending = false;
   }
   return upload;
 }
 
-void HDR_RhiVideoWindow::restorePendingUpload(PendingUpload& pendingUpload)
+void HDR_RhiVideoWindow::restorePendingUpload(PendingUpload &pendingUpload)
 {
   // Put the frame back only when its sequence still matches and the queue
   // is empty. A frame submitted during the upload increments the sequence
@@ -665,12 +692,12 @@ void HDR_RhiVideoWindow::restorePendingUpload(PendingUpload& pendingUpload)
 
   if (pendingUpload.hasYUV && !m_yuvDataPending && m_pendingYUVData.isEmpty())
   {
-    m_pendingYUVData = std::move(pendingUpload.yuvData);
-    m_pendingYUVFormat = pendingUpload.yuvFormat;
+    m_pendingYUVData         = std::move(pendingUpload.yuvData);
+    m_pendingYUVFormat       = pendingUpload.yuvFormat;
     m_pendingColorConversion = pendingUpload.colorConversion;
-    m_pendingYUVWidth = pendingUpload.yuvWidth;
-    m_pendingYUVHeight = pendingUpload.yuvHeight;
-    m_yuvDataPending = true;
+    m_pendingYUVWidth        = pendingUpload.yuvWidth;
+    m_pendingYUVHeight       = pendingUpload.yuvHeight;
+    m_yuvDataPending         = true;
   }
   if (pendingUpload.hasRGB && !m_rgbFramePending && m_pendingRGBFrame.isNull())
   {
@@ -681,9 +708,9 @@ void HDR_RhiVideoWindow::restorePendingUpload(PendingUpload& pendingUpload)
   pendingUpload.hasRGB = false;
 }
 
-void HDR_RhiVideoWindow::publishPresentedFrame(const QSize& frameSize,
-                                              bool useYUV,
-                                              const QImage& rgbFrame)
+void HDR_RhiVideoWindow::publishPresentedFrame(const QSize  &frameSize,
+                                               bool          useYUV,
+                                               const QImage &rgbFrame)
 {
   // Presentation state is published on the GUI thread inside render().
   // Producers only write the pending queue, so overlay reads of m_frameSize
@@ -699,8 +726,8 @@ void HDR_RhiVideoWindow::publishPresentedFrame(const QSize& frameSize,
   }
 
   const bool sizeChanged = (m_frameSize != frameSize);
-  m_frameSize = frameSize;
-  m_useYUVMode = useYUV;
+  m_frameSize            = frameSize;
+  m_useYUVMode           = useYUV;
   if (sizeChanged)
     updateProjectionMatrix();
 }
@@ -761,8 +788,8 @@ void HDR_RhiVideoWindow::render()
     return;
   }
 
-  QRhiCommandBuffer* cb = m_swapChain->currentFrameCommandBuffer();
-  QRhiRenderTarget* rt = m_swapChain->currentFrameRenderTarget();
+  QRhiCommandBuffer *cb = m_swapChain->currentFrameCommandBuffer();
+  QRhiRenderTarget  *rt = m_swapChain->currentFrameRenderTarget();
   if (!cb || !rt)
   {
     qWarning() << "[HDR-RHI] Command buffer or render target is null";
@@ -771,7 +798,7 @@ void HDR_RhiVideoWindow::render()
     return;
   }
 
-  QRhiResourceUpdateBatch* batch = m_rhi->nextResourceUpdateBatch();
+  QRhiResourceUpdateBatch *batch = m_rhi->nextResourceUpdateBatch();
   cb->beginPass(rt, m_backgroundColor, {1.0f, 0}, batch);
   renderFrame(cb, pendingUpload);
 
@@ -782,7 +809,7 @@ void HDR_RhiVideoWindow::render()
   m_rhi->endFrame(m_swapChain.get());
 }
 
-void HDR_RhiVideoWindow::renderFrame(QRhiCommandBuffer* cb, PendingUpload& pendingUpload)
+void HDR_RhiVideoWindow::renderFrame(QRhiCommandBuffer *cb, PendingUpload &pendingUpload)
 {
   // render() already took this snapshot before painting overlays. Consume
   // that snapshot only; locking the queue again could observe a newer frame
@@ -796,14 +823,14 @@ void HDR_RhiVideoWindow::renderFrame(QRhiCommandBuffer* cb, PendingUpload& pendi
   const bool needsYUVUpload = pendingUpload.hasYUV && !pendingUpload.yuvData.isEmpty() &&
                               pendingUpload.sequence >= m_lastUploadedYUVSequence;
   const bool needsRGBUpload = pendingUpload.hasRGB && !pendingUpload.rgbFrame.isNull();
-  bool hasUploadedYUVFrame =
-      m_useYUVMode && m_lastUploadedYUVSequence != 0 && m_yuvWidth > 0 && m_yuvHeight > 0;
+  bool       hasUploadedYUVFrame =
+    m_useYUVMode && m_lastUploadedYUVSequence != 0 && m_yuvWidth > 0 && m_yuvHeight > 0;
 
   if (!needsYUVUpload && !needsRGBUpload && !hasUploadedYUVFrame &&
       !(m_videoTexture && !m_currentFrame.isNull()))
     return;
 
-  QRhiResourceUpdateBatch* batch = m_rhi->nextResourceUpdateBatch();
+  QRhiResourceUpdateBatch *batch = m_rhi->nextResourceUpdateBatch();
   if (!batch)
   {
     restorePendingUpload(pendingUpload);
@@ -820,8 +847,8 @@ void HDR_RhiVideoWindow::renderFrame(QRhiCommandBuffer* cb, PendingUpload& pendi
                              batch))
     {
       m_lastUploadedYUVSequence = pendingUpload.sequence;
-      m_currentColorConversion = pendingUpload.colorConversion;
-      hasUploadedYUVFrame = true;
+      m_currentColorConversion  = pendingUpload.colorConversion;
+      hasUploadedYUVFrame       = true;
       // pendingUpload.yuvData must outlive resourceUpdate() below. Little-endian
       // planar uploads reference it directly; P010 and big-endian uploads
       // reference m_repackBuffer*.
@@ -866,11 +893,11 @@ void HDR_RhiVideoWindow::renderFrame(QRhiCommandBuffer* cb, PendingUpload& pendi
     // hdrParams.z = render mode (1 = PQ, 2 = HLG, 3 = Linear)
     // hdrParams.w = mapping enable (0 = off, 1 = on)
     const float appliedToneMapNits = effectiveToneMapNits();
-    const bool exposureEnabled = appliedToneMapNits > 0.0f;
-    uniformData.hdrParams[0] = appliedToneMapNits;
-    uniformData.hdrParams[1] = m_displayMaxLuminance;
-    uniformData.hdrParams[2] = static_cast<float>(m_renderMode);
-    uniformData.hdrParams[3] = exposureEnabled ? 1.0f : 0.0f;
+    const bool  exposureEnabled    = appliedToneMapNits > 0.0f;
+    uniformData.hdrParams[0]       = appliedToneMapNits;
+    uniformData.hdrParams[1]       = m_displayMaxLuminance;
+    uniformData.hdrParams[2]       = static_cast<float>(m_renderMode);
+    uniformData.hdrParams[3]       = exposureEnabled ? 1.0f : 0.0f;
 
     batch->updateDynamicBuffer(m_yuvUniformBuffer.get(), 0, sizeof(YUVUniformData), &uniformData);
     cb->resourceUpdate(batch);
@@ -890,7 +917,7 @@ void HDR_RhiVideoWindow::renderFrame(QRhiCommandBuffer* cb, PendingUpload& pendi
     batch->updateDynamicBuffer(m_uniformBuffer.get(), 0, sizeof(UniformData), &uniformData);
     cb->resourceUpdate(batch);
     pendingUpload.rgbFrame = QImage();
-    pendingUpload.hasRGB = false;
+    pendingUpload.hasRGB   = false;
 
     cb->setGraphicsPipeline(m_pipeline.get());
     cb->setShaderResources(m_srb.get());
@@ -902,16 +929,12 @@ void HDR_RhiVideoWindow::renderFrame(QRhiCommandBuffer* cb, PendingUpload& pendi
   }
 
   const QSize outputSize = m_swapChain->currentPixelSize();
-  cb->setViewport({ 0, 0, float(outputSize.width()), float(outputSize.height()) });
+  cb->setViewport({0, 0, float(outputSize.width()), float(outputSize.height())});
 
-  const QRhiCommandBuffer::VertexInput vbufBindings[] = {
-    { m_vertexBuffer.get(), 0 }
-  };
+  const QRhiCommandBuffer::VertexInput vbufBindings[] = {{m_vertexBuffer.get(), 0}};
   cb->setVertexInput(0, 1, vbufBindings, m_indexBuffer.get(), 0, QRhiCommandBuffer::IndexUInt16);
-  cb->drawIndexed(6);  // 6 indices for 2 triangles
+  cb->drawIndexed(6); // 6 indices for 2 triangles
 }
-
-
 
 bool HDR_RhiVideoWindow::ensureYUVTextures(int width, int height, int uvWidth, int uvHeight)
 {
@@ -920,8 +943,8 @@ bool HDR_RhiVideoWindow::ensureYUVTextures(int width, int height, int uvWidth, i
     return false;
   }
 
-  const bool sizeChanged = (m_yuvWidth != width || m_yuvHeight != height);
-  const bool uvSizeChanged = (m_uvWidth != uvWidth || m_uvHeight != uvHeight);
+  const bool sizeChanged     = (m_yuvWidth != width || m_yuvHeight != height);
+  const bool uvSizeChanged   = (m_uvWidth != uvWidth || m_uvHeight != uvHeight);
   const bool missingTextures = !m_texY || !m_texU || !m_texV;
 
   if (!sizeChanged && !uvSizeChanged && !missingTextures)
@@ -939,34 +962,34 @@ bool HDR_RhiVideoWindow::ensureYUVTextures(int width, int height, int uvWidth, i
     m_texY.reset();
     m_texU.reset();
     m_texV.reset();
-    m_yuvWidth = 0;
+    m_yuvWidth  = 0;
     m_yuvHeight = 0;
-    m_uvWidth = 0;
-    m_uvHeight = 0;
+    m_uvWidth   = 0;
+    m_uvHeight  = 0;
     return false;
   }
 
-  m_yuvSrb->setBindings({
-      QRhiShaderResourceBinding::uniformBuffer(
-          0,
-          QRhiShaderResourceBinding::VertexStage | QRhiShaderResourceBinding::FragmentStage,
-          m_yuvUniformBuffer.get()),
-      QRhiShaderResourceBinding::sampledTexture(
-          1, QRhiShaderResourceBinding::FragmentStage, m_texY.get(), m_sampler.get()),
-      QRhiShaderResourceBinding::sampledTexture(
-          2, QRhiShaderResourceBinding::FragmentStage, m_texU.get(), m_sampler.get()),
-      QRhiShaderResourceBinding::sampledTexture(
-          3, QRhiShaderResourceBinding::FragmentStage, m_texV.get(), m_sampler.get())});
+  m_yuvSrb->setBindings(
+    {QRhiShaderResourceBinding::uniformBuffer(0,
+                                              QRhiShaderResourceBinding::VertexStage |
+                                                QRhiShaderResourceBinding::FragmentStage,
+                                              m_yuvUniformBuffer.get()),
+     QRhiShaderResourceBinding::sampledTexture(
+       1, QRhiShaderResourceBinding::FragmentStage, m_texY.get(), m_sampler.get()),
+     QRhiShaderResourceBinding::sampledTexture(
+       2, QRhiShaderResourceBinding::FragmentStage, m_texU.get(), m_sampler.get()),
+     QRhiShaderResourceBinding::sampledTexture(
+       3, QRhiShaderResourceBinding::FragmentStage, m_texV.get(), m_sampler.get())});
   if (!m_yuvSrb->create())
   {
     qWarning() << "[HDR-RHI] Failed to recreate YUV shader resource bindings!";
     return false;
   }
 
-  m_yuvWidth = width;
+  m_yuvWidth  = width;
   m_yuvHeight = height;
-  m_uvWidth = uvWidth;
-  m_uvHeight = uvHeight;
+  m_uvWidth   = uvWidth;
+  m_uvHeight  = uvHeight;
   return true;
 }
 
@@ -976,24 +999,24 @@ void HDR_RhiVideoWindow::updateProjectionMatrix()
   // size is published. This must be a logical OR. A bitwise OR does not mean
   // "any value is <= 0": 0 | 1920 is still positive, and the following
   // reciprocal would write infinities into the matrix.
-  const int widgetWidth = width();
+  const int widgetWidth  = width();
   const int widgetHeight = height();
-  const int frameWidth = m_frameSize.width();
-  const int frameHeight = m_frameSize.height();
+  const int frameWidth   = m_frameSize.width();
+  const int frameHeight  = m_frameSize.height();
   if (widgetWidth <= 0 || widgetHeight <= 0 || frameWidth <= 0 || frameHeight <= 0)
   {
     m_projectionMatrix.setToIdentity();
     return;
   }
 
-  const float invWidgetWidth = 1.0f / static_cast<float>(widgetWidth);
-  const float invWidgetHeight = 1.0f / static_cast<float>(widgetHeight);
-  const float zoomFactor = static_cast<float>(m_parentZoom > 0.0 ? m_parentZoom : 1.0);
-  const QPointF& offset = m_parentOffset;
-  const float scaleX = static_cast<float>(frameWidth) * zoomFactor * invWidgetWidth;
-  const float scaleY = static_cast<float>(frameHeight) * zoomFactor * invWidgetHeight;
-  const float offsetX = static_cast<float>(offset.x()) * 2.0f * invWidgetWidth;
-  const float offsetY = -static_cast<float>(offset.y()) * 2.0f * invWidgetHeight;
+  const float    invWidgetWidth  = 1.0f / static_cast<float>(widgetWidth);
+  const float    invWidgetHeight = 1.0f / static_cast<float>(widgetHeight);
+  const float    zoomFactor      = static_cast<float>(m_parentZoom > 0.0 ? m_parentZoom : 1.0);
+  const QPointF &offset          = m_parentOffset;
+  const float    scaleX          = static_cast<float>(frameWidth) * zoomFactor * invWidgetWidth;
+  const float    scaleY          = static_cast<float>(frameHeight) * zoomFactor * invWidgetHeight;
+  const float    offsetX         = static_cast<float>(offset.x()) * 2.0f * invWidgetWidth;
+  const float    offsetY         = -static_cast<float>(offset.y()) * 2.0f * invWidgetHeight;
 
   m_projectionMatrix.setToIdentity();
   m_projectionMatrix.translate(offsetX, offsetY, 0.0f);
@@ -1027,7 +1050,7 @@ void HDR_RhiVideoWindow::setToneMapTargetNits(float nits)
     requestUpdate();
 }
 
-void HDR_RhiVideoWindow::setHDRCapabilities(const HDRDetection::HDRCapabilities& capabilities)
+void HDR_RhiVideoWindow::setHDRCapabilities(const HDRDetection::HDRCapabilities &capabilities)
 {
   if (capabilities.maxLuminance > 0)
     m_displayMaxLuminance = capabilities.maxLuminance;
@@ -1047,7 +1070,7 @@ void HDR_RhiVideoWindow::emitFrameUpdated()
   QMetaObject::invokeMethod(this, [this]() { emit frameUpdated(); }, Qt::QueuedConnection);
 }
 
-void HDR_RhiVideoWindow::updateFrame(const QImage& newFrame)
+void HDR_RhiVideoWindow::updateFrame(const QImage &newFrame)
 {
   // RGB uses the same deferred upload queue as YUV. beginOffscreenFrame()
   // here would submit an extra command batch on D3D12/Vulkan and then wait,
@@ -1060,9 +1083,9 @@ void HDR_RhiVideoWindow::updateFrame(const QImage& newFrame)
     ++m_pendingUploadSequence;
     m_pendingRGBFrame = newFrame;
     m_rgbFramePending = true;
-    m_yuvDataPending = false;
+    m_yuvDataPending  = false;
     m_pendingYUVData.clear();
-    m_pendingYUVWidth = 0;
+    m_pendingYUVWidth  = 0;
     m_pendingYUVHeight = 0;
   }
 
@@ -1070,10 +1093,11 @@ void HDR_RhiVideoWindow::updateFrame(const QImage& newFrame)
   emitFrameUpdated();
 }
 
-void HDR_RhiVideoWindow::queuePendingYUV(QByteArray&& yuvData,
-                                         int width, int height,
-                                         const video::yuv::PixelFormatYUV& format,
-                                         video::yuv::ColorConversion colorConversion)
+void HDR_RhiVideoWindow::queuePendingYUV(QByteArray                      &&yuvData,
+                                         int                               width,
+                                         int                               height,
+                                         const video::yuv::PixelFormatYUV &format,
+                                         video::yuv::ColorConversion       colorConversion)
 {
   // Publish size, format, and bytes under the same lock. Writing m_frameSize
   // outside the lock races with render() and can apply a new resolution to
@@ -1084,43 +1108,45 @@ void HDR_RhiVideoWindow::queuePendingYUV(QByteArray&& yuvData,
   {
     QMutexLocker pendingLock(&m_pendingYUVMutex);
     ++m_pendingUploadSequence;
-    m_pendingYUVData = std::move(yuvData);
-    m_pendingYUVFormat = format;
+    m_pendingYUVData         = std::move(yuvData);
+    m_pendingYUVFormat       = format;
     m_pendingColorConversion = colorConversion;
-    m_pendingYUVWidth = width;
-    m_pendingYUVHeight = height;
-    m_yuvDataPending = true;
-    m_rgbFramePending = false;
-    m_pendingRGBFrame = QImage();
+    m_pendingYUVWidth        = width;
+    m_pendingYUVHeight       = height;
+    m_yuvDataPending         = true;
+    m_rgbFramePending        = false;
+    m_pendingRGBFrame        = QImage();
   }
 
   requestUpdate();
   emitFrameUpdated();
 }
 
-void HDR_RhiVideoWindow::updateFrameYUV(const QByteArray& yuvData,
-                                        int width, int height,
-                                        const video::yuv::PixelFormatYUV& format,
-                                        video::yuv::ColorConversion colorConversion)
+void HDR_RhiVideoWindow::updateFrameYUV(const QByteArray                 &yuvData,
+                                        int                               width,
+                                        int                               height,
+                                        const video::yuv::PixelFormatYUV &format,
+                                        video::yuv::ColorConversion       colorConversion)
 {
   // Copy path for callers that still need their buffer after this call.
   queuePendingYUV(QByteArray(yuvData), width, height, format, colorConversion);
 }
 
-void HDR_RhiVideoWindow::updateFrameYUVMove(QByteArray&& yuvData,
-                                            int width, int height,
-                                            const video::yuv::PixelFormatYUV& format,
-                                            video::yuv::ColorConversion colorConversion)
+void HDR_RhiVideoWindow::updateFrameYUVMove(QByteArray                      &&yuvData,
+                                            int                               width,
+                                            int                               height,
+                                            const video::yuv::PixelFormatYUV &format,
+                                            video::yuv::ColorConversion       colorConversion)
 {
   queuePendingYUV(std::move(yuvData), width, height, format, colorConversion);
 }
 
-bool HDR_RhiVideoWindow::uploadTextureData(const QImage& image, QRhiResourceUpdateBatch* batch)
+bool HDR_RhiVideoWindow::uploadTextureData(const QImage &image, QRhiResourceUpdateBatch *batch)
 {
   if (!m_rhi || image.isNull())
     return false;
 
-    // For RGBA16F textures, we need to convert QImage to RGBA16FPx4 format.
+  // For RGBA16F textures, we need to convert QImage to RGBA16FPx4 format.
   // Qt 6 provides Format_RGBA16FPx4 for 16-bit float per channel images.
   // If the source image is 8-bit RGBA, we convert it to float format.
   // SDR values (0-255) are mapped to linear light range (0.0-1.0).
@@ -1138,59 +1164,68 @@ bool HDR_RhiVideoWindow::uploadTextureData(const QImage& image, QRhiResourceUpda
 
   const QSize newSize = uploadImage.size();
 
-         // Recreate texture if size changed
-         // Use RGBA16F for HDR linear light output (16-bit float per channel)
-  if (!m_videoTexture || m_videoTexture->pixelSize() != newSize) {
+  // Recreate texture if size changed
+  // Use RGBA16F for HDR linear light output (16-bit float per channel)
+  if (!m_videoTexture || m_videoTexture->pixelSize() != newSize)
+  {
     m_videoTexture.reset(m_rhi->newTexture(QRhiTexture::RGBA16F, newSize));
-    if (!m_videoTexture->create()) {
+    if (!m_videoTexture->create())
+    {
       qWarning() << "[HDR-RHI] Failed to create video texture!";
       return false;
     }
 
-           // Update shader resource bindings
-    m_srb->setBindings({
-      QRhiShaderResourceBinding::uniformBuffer(0, QRhiShaderResourceBinding::VertexStage | QRhiShaderResourceBinding::FragmentStage, m_uniformBuffer.get()),
-      QRhiShaderResourceBinding::sampledTexture(1, QRhiShaderResourceBinding::FragmentStage, m_videoTexture.get(), m_sampler.get())
-    });
+    // Update shader resource bindings
+    m_srb->setBindings(
+      {QRhiShaderResourceBinding::uniformBuffer(0,
+                                                QRhiShaderResourceBinding::VertexStage |
+                                                  QRhiShaderResourceBinding::FragmentStage,
+                                                m_uniformBuffer.get()),
+       QRhiShaderResourceBinding::sampledTexture(
+         1, QRhiShaderResourceBinding::FragmentStage, m_videoTexture.get(), m_sampler.get())});
     m_srb->create();
   }
 
-         // Upload texture data (RGBA16FPx4 or RGBX8888 with auto conversion)
+  // Upload texture data (RGBA16FPx4 or RGBX8888 with auto conversion)
   batch->uploadTexture(m_videoTexture.get(), uploadImage);
 
   return true;
 }
 
-bool HDR_RhiVideoWindow::uploadYUVTextureData(const QByteArray& yuvData,
-                                              int width, int height,
-                                              const video::yuv::PixelFormatYUV& format,
-                                              QRhiResourceUpdateBatch* batch)
+bool HDR_RhiVideoWindow::uploadYUVTextureData(const QByteArray                 &yuvData,
+                                              int                               width,
+                                              int                               height,
+                                              const video::yuv::PixelFormatYUV &format,
+                                              QRhiResourceUpdateBatch          *batch)
 {
   if (!m_rhi || !batch)
     return false;
 
   // Only support 10-bit planar or semi-planar YUV for the GPU HDR path.
   // Semi-planar P010-style input is deinterleaved to the existing U/V shader layout.
-  if (format.getBitsPerSample() != 10 || !format.isPlanar()) {
-    qWarning() << "[HDR-RHI] YUV GPU path only supports 10-bit planar or semi-planar formats for HDR10";
+  if (format.getBitsPerSample() != 10 || !format.isPlanar())
+  {
+    qWarning()
+      << "[HDR-RHI] YUV GPU path only supports 10-bit planar or semi-planar formats for HDR10";
     return false;
   }
 
-  const int subH = format.getSubsamplingHor();
-  const int subV = format.getSubsamplingVer();
+  const int subH       = format.getSubsamplingHor();
+  const int subV       = format.getSubsamplingVer();
   const int yPlaneSize = width * height;
   // Truncate chroma dimensions the same way PixelFormatYUV::bytesPerFrame
   // does (width/2, width/4). Rounding up would disagree with the packed
   // buffer. subH and subV are only 1, 2, or 4.
-  const int uvWidth = (subH > 1) ? (width / subH) : width;
-  const int uvHeight = (subV > 1) ? (height / subV) : height;
+  const int uvWidth     = (subH > 1) ? (width / subH) : width;
+  const int uvHeight    = (subV > 1) ? (height / subV) : height;
   const int uvPlaneSize = uvWidth * uvHeight;
 
-  const int yPlaneBytes = yPlaneSize << 1;
+  const int yPlaneBytes  = yPlaneSize << 1;
   const int uvPlaneBytes = uvPlaneSize << 1;
-  const int totalBytes = yPlaneBytes + (uvPlaneBytes << 1);
+  const int totalBytes   = yPlaneBytes + (uvPlaneBytes << 1);
 
-  if (yuvData.size() < totalBytes) {
+  if (yuvData.size() < totalBytes)
+  {
     qWarning() << "[HDR-RHI] YUV data buffer too small";
     return false;
   }
@@ -1198,19 +1233,20 @@ bool HDR_RhiVideoWindow::uploadYUVTextureData(const QByteArray& yuvData,
   if (!ensureYUVTextures(width, height, uvWidth, uvHeight))
     return false;
 
-  const auto* rawWords = reinterpret_cast<const uint16_t*>(yuvData.constData());
-  const bool uvInterleaved = format.isUVInterleaved();
-  const bool uFirst = (format.getPlaneOrder() == video::yuv::PlaneOrder::YUV ||
+  const auto *rawWords       = reinterpret_cast<const uint16_t *>(yuvData.constData());
+  const bool  uvInterleaved  = format.isUVInterleaved();
+  const bool  uFirst         = (format.getPlaneOrder() == video::yuv::PlaneOrder::YUV ||
                        format.getPlaneOrder() == video::yuv::PlaneOrder::YUVA);
-  const bool normalizeP010 = uvInterleaved && format.getBitsPerSample() == 10;
-  const bool bigEndian = format.isBigEndian();
-  const bool needsRepacking = bigEndian || uvInterleaved;
+  const bool  normalizeP010  = uvInterleaved && format.getBitsPerSample() == 10;
+  const bool  bigEndian      = format.isBigEndian();
+  const bool  needsRepacking = bigEndian || uvInterleaved;
 
-  const uint16_t* HDR_RESTRICT srcY = rawWords;
-  const uint16_t* HDR_RESTRICT srcU = nullptr;
-  const uint16_t* HDR_RESTRICT srcV = nullptr;
+  const uint16_t *HDR_RESTRICT srcY = rawWords;
+  const uint16_t *HDR_RESTRICT srcU = nullptr;
+  const uint16_t *HDR_RESTRICT srcV = nullptr;
 
-  if (needsRepacking) {
+  if (needsRepacking)
+  {
     // Retain capacity across frames to avoid per-frame heap churn.
     if (m_repackBufferY.size() < yPlaneBytes)
       m_repackBufferY.resize(yPlaneBytes);
@@ -1219,40 +1255,40 @@ bool HDR_RhiVideoWindow::uploadYUVTextureData(const QByteArray& yuvData,
     if (m_repackBufferV.size() < uvPlaneBytes)
       m_repackBufferV.resize(uvPlaneBytes);
 
-    auto* repackY = reinterpret_cast<uint16_t*>(m_repackBufferY.data());
-    auto* repackU = reinterpret_cast<uint16_t*>(m_repackBufferU.data());
-    auto* repackV = reinterpret_cast<uint16_t*>(m_repackBufferV.data());
+    auto *repackY = reinterpret_cast<uint16_t *>(m_repackBufferY.data());
+    auto *repackU = reinterpret_cast<uint16_t *>(m_repackBufferU.data());
+    auto *repackV = reinterpret_cast<uint16_t *>(m_repackBufferV.data());
 
     // Y plane: BE swap and/or P010 >>6 via SSE2 when available.
     video::hdr::HDRYUVRepack::convertPlane16(
-        rawWords, repackY, yPlaneSize, bigEndian, normalizeP010);
+      rawWords, repackY, yPlaneSize, bigEndian, normalizeP010);
 
-    if (uvInterleaved) {
-      video::hdr::HDRYUVRepack::deinterleaveUV(rawWords + yPlaneSize,
-                                               repackU,
-                                               repackV,
-                                               uvPlaneSize,
-                                               bigEndian,
-                                               normalizeP010,
-                                               uFirst);
-    } else {
-      const uint16_t* firstPlane = rawWords + yPlaneSize;
-      const uint16_t* secondPlane = firstPlane + uvPlaneSize;
+    if (uvInterleaved)
+    {
+      video::hdr::HDRYUVRepack::deinterleaveUV(
+        rawWords + yPlaneSize, repackU, repackV, uvPlaneSize, bigEndian, normalizeP010, uFirst);
+    }
+    else
+    {
+      const uint16_t *firstPlane  = rawWords + yPlaneSize;
+      const uint16_t *secondPlane = firstPlane + uvPlaneSize;
       video::hdr::HDRYUVRepack::convertPlane16(
-          firstPlane, uFirst ? repackU : repackV, uvPlaneSize, bigEndian, false);
+        firstPlane, uFirst ? repackU : repackV, uvPlaneSize, bigEndian, false);
       video::hdr::HDRYUVRepack::convertPlane16(
-          secondPlane, uFirst ? repackV : repackU, uvPlaneSize, bigEndian, false);
+        secondPlane, uFirst ? repackV : repackU, uvPlaneSize, bigEndian, false);
     }
 
     srcY = repackY;
     srcU = repackU;
     srcV = repackV;
-  } else {
+  }
+  else
+  {
     // Keep staging capacity for the next format that needs it, but do not clear
     // every LE planar frame (would thrash the allocator on format toggles).
-    const uint16_t* planeAfterY = srcY + yPlaneSize;
-    srcU = uFirst ? planeAfterY : (planeAfterY + uvPlaneSize);
-    srcV = uFirst ? (planeAfterY + uvPlaneSize) : planeAfterY;
+    const uint16_t *planeAfterY = srcY + yPlaneSize;
+    srcU                        = uFirst ? planeAfterY : (planeAfterY + uvPlaneSize);
+    srcV                        = uFirst ? (planeAfterY + uvPlaneSize) : planeAfterY;
   }
 
   QRhiTextureSubresourceUploadDescription yDesc(srcY, yPlaneBytes);
@@ -1275,36 +1311,38 @@ void HDR_RhiVideoWindow::clearFrame()
     ++m_pendingUploadSequence;
     m_yuvDataPending = false;
     m_pendingYUVData.clear();
-    m_pendingYUVWidth = 0;
+    m_pendingYUVWidth  = 0;
     m_pendingYUVHeight = 0;
-    m_rgbFramePending = false;
-    m_pendingRGBFrame = QImage();
+    m_rgbFramePending  = false;
+    m_pendingRGBFrame  = QImage();
     m_repackBufferY.clear();
     m_repackBufferU.clear();
     m_repackBufferV.clear();
   }
-  m_currentFrame = QImage();
-  m_overlayPatchProvider = nullptr;
+  m_currentFrame            = QImage();
+  m_overlayPatchProvider    = nullptr;
   m_overlayYuvPixelProvider = nullptr;
-  m_frameSize = QSize();
-  m_useYUVMode = false;
-  m_colorMatrixCacheValid = false;
+  m_frameSize               = QSize();
+  m_useYUVMode              = false;
+  m_colorMatrixCacheValid   = false;
   updateProjectionMatrix();
   requestUpdate();
 }
 
-void HDR_RhiVideoWindow::updateTransform(double renderZoom, const QPointF& offset, double displayZoom)
+void HDR_RhiVideoWindow::updateTransform(double         renderZoom,
+                                         const QPointF &offset,
+                                         double         displayZoom)
 {
   const double actualDisplayZoom = (displayZoom < 0.0) ? renderZoom : displayZoom;
 
-  if (m_parentZoom != renderZoom || m_parentOffset != offset || m_displayZoom != actualDisplayZoom) {
-    m_parentZoom = renderZoom;
-    m_displayZoom = actualDisplayZoom;
+  if (m_parentZoom != renderZoom || m_parentOffset != offset || m_displayZoom != actualDisplayZoom)
+  {
+    m_parentZoom   = renderZoom;
+    m_displayZoom  = actualDisplayZoom;
     m_parentOffset = offset;
     updateProjectionMatrix();
     requestUpdate();
   }
 }
-
 
 // Overlay painting implementation is in HDR_RhiVideoWindow_Overlays.cpp
