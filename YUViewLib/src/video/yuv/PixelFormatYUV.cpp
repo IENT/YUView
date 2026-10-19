@@ -574,13 +574,6 @@ int PixelFormatYUV::getBitsPerSample() const
     this->format);
 }
 
-std::optional<PackingOrder> PixelFormatYUV::getPackingOrder() const
-{
-  if (const auto packedFormat = std::get_if<PackedPixelFormat>(&this->format))
-    return packedFormat->packingOrder;
-  return {};
-}
-
 bool PixelFormatYUV::hasAlpha() const
 {
   return std::visit(

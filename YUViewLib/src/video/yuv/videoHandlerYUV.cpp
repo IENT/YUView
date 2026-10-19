@@ -195,21 +195,21 @@ bool canConvertToRGB(const PixelFormatYUV &pixelFormat,
   return canConvert;
 }
 
-std::pair<bool, PixelFormatYUV> convertYUVPackedToPlanar(const QByteArray     &sourceBuffer,
-                                                         QByteArray           &targetBuffer,
-                                                         const Size            curFrameSize,
-                                                         const PixelFormatYUV &format)
+std::pair<bool, PixelFormatYUV> convertYUVPackedToPlanar(const QByteArray        &sourceBuffer,
+                                                         QByteArray              &targetBuffer,
+                                                         const Size               curFrameSize,
+                                                         const PackedPixelFormat &format)
 {
-  const auto packing = format.getPackingOrder();
+  const auto packing = format.packingOrder;
 
   // Make sure that the target buffer is big enough. It should be as big as the input buffer.
   if (targetBuffer.size() != sourceBuffer.size())
     targetBuffer.resize(sourceBuffer.size());
 
   // Bytes per sample
-  const auto bps = (format.getBitsPerSample() > 8) ? 2u : 1u;
+  const auto bps = (format.bitsPerSample > 8) ? 2u : 1u;
 
-  if (format.getSubsampling() == Subsampling::YUV_422)
+  if (format.subsampling == Subsampling::YUV_422)
   {
     // The data is arranged in blocks of 4 samples. How many of these are there?
     const auto nr4Samples = curFrameSize.area() / 2;
@@ -225,7 +225,7 @@ std::pair<bool, PixelFormatYUV> convertYUVPackedToPlanar(const QByteArray     &s
                    : (packing == PackingOrder::UYVY) ? 2
                                                      : 3;
 
-    if (format.getBitsPerSample() == 10 && format.isBytePacking())
+    if (format.bitsPerSample == 10 && format.bytePacking)
     {
       // Byte packing in 422 with 10 bit. So for each 2 pixels we have 4 10 bit values which
       // are exactly 5 bytes (40 bits).
@@ -295,7 +295,7 @@ std::pair<bool, PixelFormatYUV> convertYUVPackedToPlanar(const QByteArray     &s
       }
     }
   }
-  else if (format.getSubsampling() == Subsampling::YUV_444)
+  else if (format.subsampling == Subsampling::YUV_444)
   {
     // What are the offsets withing the 3 or 4 bytes per sample?
     const int oY = (packing == PackingOrder::AYUV) ? 1 : (packing == PackingOrder::VUYA) ? 2 : 0;
@@ -348,11 +348,11 @@ std::pair<bool, PixelFormatYUV> convertYUVPackedToPlanar(const QByteArray     &s
     return {};
 
   // The output buffer is planar with the same subsampling as before
-  auto newFormat = PixelFormatYUV(PlanarPixelFormat(format.getSubsampling(),
-                                                    format.getBitsPerSample(),
+  auto newFormat = PixelFormatYUV(PlanarPixelFormat(format.subsampling,
+                                                    format.bitsPerSample,
                                                     PlaneOrder::YUV,
-                                                    format.getEndianness(),
-                                                    format.getChromaOffset()));
+                                                    format.endianness,
+                                                    format.chromaOffset));
 
   return {true, newFormat};
 }
@@ -2413,9 +2413,9 @@ void convertYUVToImage(const QByteArray         &sourceBuffer,
       else
         convOK = false;
     }
-    else
+    else if (const auto packedFormat = yuvFormat.getPackedFormat())
       std::tie(convOK, newPixelFormat) =
-        convertYUVPackedToPlanar(sourceBuffer, tmpPlanarYUVSource, curFrameSize, yuvFormat);
+        convertYUVPackedToPlanar(sourceBuffer, tmpPlanarYUVSource, curFrameSize, *packedFormat);
 
     if (convOK)
       convOK &= convertYUVPlanarToRGB(

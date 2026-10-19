@@ -111,8 +111,6 @@ TEST(PixelFormatYUVTest, testFormatFromToString)
       FAIL() << "Format " << name << " has no planar, packed or predefined format";
     }
 
-    EXPECT_EQ(fmt.getPackingOrder(), fmtNew.getPackingOrder())
-      << "Format " << name << " packing order missmatch";
     EXPECT_EQ(fmt.isBytePacking(), fmtNew.isBytePacking())
       << "Format " << name << " byte packing missmatch";
 
