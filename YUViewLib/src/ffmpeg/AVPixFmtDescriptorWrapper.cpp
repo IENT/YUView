@@ -357,7 +357,7 @@ bool AVPixFmtDescriptorWrapper::setValuesFromPixelFormatYUV(const PixelFormatYUV
   this->nb_components = (subsampling == Subsampling::YUV_400 ? 1 : 3);
 
   this->flags.bigEndian     = (pixelFormat.getEndianness() == video::Endianness::Big);
-  this->flags.planar        = pixelFormat.isPlanar();
+  this->flags.planar        = pixelFormat.getPlanarFormat().has_value();
   this->flags.hasAlphaPlane = (planeOrder == PlaneOrder::YUVA);
 
   for (int i = 0; i < this->nb_components; i++)

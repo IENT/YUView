@@ -1,5 +1,9 @@
 QT += core gui widgets opengl xml concurrent network
 
+macx {
+    QMAKE_MACOSX_DEPLOYMENT_TARGET = 13.3
+}
+
 TEMPLATE = lib
 CONFIG += staticlib
 CONFIG += c++20

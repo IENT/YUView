@@ -48,7 +48,7 @@ TEST(PixelFormatYUVTest, defaultConstructor_shouldSetDefaultFormat)
   EXPECT_TRUE(fmt.isChromaSubsampled());
   EXPECT_EQ(fmt.getNrPlanes(), 3);
   EXPECT_EQ(fmt.getBitsPerSample(), 8);
-  EXPECT_TRUE(fmt.isPlanar());
+  EXPECT_TRUE(fmt.getPlanarFormat().has_value());
   EXPECT_EQ(fmt.getPlaneOrder(), PlaneOrder::YUV);
   EXPECT_FALSE(fmt.hasAlpha());
   EXPECT_EQ(fmt.getEndianness(), Endianness::Little);
@@ -66,12 +66,9 @@ TEST(PixelFormatYUVTest, defaultConstructor_shouldSetDefaultFormat)
   EXPECT_FALSE(fmtPlanar->bytePacking);
 }
 
-
 TEST(PixelFormatYUVTest, testFormatFromToString)
 {
-  const std::vector<PixelFormatYUV> pixelFormats = {PlanarPixelFormat()};
-
-  for (const auto fmt : pixelFormats)
+  for (const auto fmt : getAllPixelFormats())
   {
     const auto name = fmt.getName();
     EXPECT_TRUE(fmt.isValid()) << "Format " << name << " is invalid.";
@@ -85,7 +82,6 @@ TEST(PixelFormatYUVTest, testFormatFromToString)
       << "Format " << name << " subsampling missmatch";
     EXPECT_EQ(fmt.getBitsPerSample(), fmtNew.getBitsPerSample())
       << "Format " << name << " bits per sample missmatch";
-    EXPECT_EQ(fmt.isPlanar(), fmtNew.isPlanar()) << "Format " << name << " planar missmatch";
     EXPECT_EQ(fmt.getChromaOffset(), fmtNew.getChromaOffset())
       << "Format " << name << " chroma offset missmatch";
     EXPECT_EQ(fmt.getPlaneOrder(), fmtNew.getPlaneOrder())
@@ -96,8 +92,26 @@ TEST(PixelFormatYUVTest, testFormatFromToString)
       const auto planarFormatNew = fmtNew.getPlanarFormat();
       EXPECT_TRUE(planarFormatNew.has_value())
         << "Format " << name << " new format has no planar format";
-      EXPECT_EQ(planarFormat->uvPlanesInterleaved, planarFormatNew->uvPlanesInterleaved)
-        << "Format " << name << " uv inteleaved missmatch";
+      EXPECT_EQ(*planarFormat, *planarFormatNew) << "Format " << name << " planar format missmatch";
+    }
+    else if (const auto packedFormat = fmt.getPackedFormat())
+    {
+      const auto packedFormatNew = fmtNew.getPackedFormat();
+      EXPECT_TRUE(packedFormatNew.has_value())
+        << "Format " << name << " new format has no packed format";
+      EXPECT_EQ(*packedFormat, *packedFormatNew) << "Format " << name << " packed format missmatch";
+    }
+    else if (const auto predefinedFormat = fmt.getPredefinedFormat())
+    {
+      const auto predefinedFormatNew = fmtNew.getPredefinedFormat();
+      EXPECT_TRUE(predefinedFormatNew.has_value())
+        << "Format " << name << " new format has no predefined format";
+      EXPECT_EQ(*predefinedFormat, *predefinedFormatNew)
+        << "Format " << name << " predefined format missmatch";
+    }
+    else
+    {
+      FAIL() << "Format " << name << " has no planar, packed or predefined format";
     }
 
     EXPECT_EQ(fmt.getPackingOrder(), fmtNew.getPackingOrder())

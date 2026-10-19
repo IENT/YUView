@@ -35,6 +35,7 @@
 #include <algorithm>
 #include <cmath>
 #include <cstdio>
+#include <format>
 #include <iomanip>
 #include <sstream>
 #include <string_view>
@@ -121,10 +122,7 @@ std::string formatMSEandPSNR(const double mse, const int bps_out)
   const auto maxSquared = ((1 << bps_out) - 1) * ((1 << bps_out) - 1);
   const auto psnr       = 10 * std::log10(maxSquared / mse);
 
-  std::ostringstream stream;
-  stream << std::setw(1) << mse << " (" << std::setw(2) << psnr << ")";
-
-  return stream.str();
+  return std::format("{:1f} ({:2f})", mse, psnr);
 }
 
 bool isFullRange(const ColorConversion colorConversion)
@@ -148,40 +146,33 @@ bool canConvertToRGB(const PixelFormatYUV &pixelFormat,
   }
 
   // Check the bit depth
-  const int bps        = pixelFormat.getBitsPerSample();
-  bool      canConvert = true;
+  const auto bps        = pixelFormat.getBitsPerSample();
+  bool       canConvert = true;
   if (bps < 8 || bps > 16)
   {
     if (whyNot)
-    {
-      std::stringstream ss;
-      ss << "The currently set bit depth " << bps << " is not supported.\n";
-      whyNot->append(ss.str());
-    }
+      whyNot->append(std::format("The currently set bit depth {} is not supported. Supported range "
+                                 "is 8 to 16 bits per sample.\n",
+                                 bps));
+
     canConvert = false;
   }
   if (imageSize.width % pixelFormat.getSubsamplingHor() != 0)
   {
     if (whyNot)
-    {
-      std::stringstream ss;
-      ss << "The item width " << imageSize.width
-         << " must be divisible by the horizontal subsampling factor "
-         << pixelFormat.getSubsamplingHor() << ".\n";
-      whyNot->append(ss.str());
-    }
+      whyNot->append(std::format(
+        "The item width {} must be divisible by the horizontal subsampling factor {}.\n",
+        imageSize.width,
+        pixelFormat.getSubsamplingHor()));
     canConvert = false;
   }
   if (imageSize.height % pixelFormat.getSubsamplingVer() != 0)
   {
     if (whyNot)
-    {
-      std::stringstream ss;
-      ss << "The item height " << imageSize.height
-         << " must be divisible by the vertical subsampling factor "
-         << pixelFormat.getSubsamplingVer() << ".\n";
-      whyNot->append(ss.str());
-    }
+      whyNot->append(
+        std::format("The item height {} must be divisible by the vertical subsampling factor {}.\n",
+                    imageSize.height,
+                    pixelFormat.getSubsamplingVer()));
     canConvert = false;
   }
   if (pixelFormat.getSubsampling() == Subsampling::UNKNOWN)
@@ -190,13 +181,17 @@ bool canConvertToRGB(const PixelFormatYUV &pixelFormat,
       whyNot->append("The current yuv subsampling is unknown.\n");
     canConvert = false;
   }
-  if (!pixelFormat.isPlanar() && pixelFormat.getSubsampling() != Subsampling::YUV_422 &&
-      pixelFormat.getSubsampling() != Subsampling::YUV_444)
+  if (const auto packedFormat = pixelFormat.getPackedFormat())
   {
-    if (whyNot)
-      whyNot->append("Packed YUV formats are onyl supported for 4:2:2 and 4:4:4 subsampling.\n");
-    canConvert = false;
+    if (packedFormat->subsampling != Subsampling::YUV_422 &&
+        packedFormat->subsampling != Subsampling::YUV_444)
+    {
+      if (whyNot)
+        whyNot->append("Packed YUV formats are onyl supported for 4:2:2 and 4:4:4 subsampling.\n");
+      canConvert = false;
+    }
   }
+
   return canConvert;
 }
 

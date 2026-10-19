@@ -574,11 +574,6 @@ int PixelFormatYUV::getBitsPerSample() const
     this->format);
 }
 
-bool PixelFormatYUV::isPlanar() const
-{
-  return std::holds_alternative<PlanarPixelFormat>(this->format);
-}
-
 std::optional<PlaneOrder> PixelFormatYUV::getPlaneOrder() const
 {
   if (const auto planarFormat = std::get_if<PlanarPixelFormat>(&this->format))

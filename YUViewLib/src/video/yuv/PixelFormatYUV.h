@@ -206,6 +206,8 @@ struct PlanarPixelFormat
   Offset      chromaOffset{};
   bool        uvPlanesInterleaved{};
   bool        bytePacking{};
+
+  bool operator==(const PlanarPixelFormat&) const = default;
 };
 
 struct PackedPixelFormat
@@ -216,6 +218,8 @@ struct PackedPixelFormat
   Endianness   endianness{Endianness::Little};
   Offset       chromaOffset{};
   bool         bytePacking{};
+
+  bool operator==(const PackedPixelFormat&) const = default;
 };
 
 // This class defines a specific YUV format with all properties like pixels per sample, subsampling
@@ -245,7 +249,6 @@ public:
 
   int getBitsPerSample() const;
 
-  bool                        isPlanar() const;
   std::optional<PlaneOrder>   getPlaneOrder() const;
   std::optional<PackingOrder> getPackingOrder() const;
   bool                        hasAlpha() const;
