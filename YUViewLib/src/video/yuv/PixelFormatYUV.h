@@ -222,6 +222,12 @@ struct PackedPixelFormat
   bool operator==(const PackedPixelFormat &) const = default;
 };
 
+struct SubsamplingRatios
+{
+  int horizontal{1};
+  int vertical{1};
+};
+
 // This class defines a specific YUV format with all properties like pixels per sample, subsampling
 // of chroma components and so on.
 class PixelFormatYUV
@@ -241,11 +247,9 @@ public:
   int64_t     bytesPerFrame(const Size &frameSize) const;
   std::string getName() const;
 
-  Subsampling getSubsampling() const;
-  int         getSubsamplingHor(Component component = Component::Chroma) const;
-  int         getSubsamplingVer(Component component = Component::Chroma) const;
-  bool        isChromaSubsampled() const;
-  int         getNrPlanes() const;
+  Subsampling       getSubsampling() const;
+  SubsamplingRatios getSubsamplingRatios() const;
+  int               getNrPlanes() const;
 
   int  getBitsPerSample() const;
   bool hasAlpha() const;

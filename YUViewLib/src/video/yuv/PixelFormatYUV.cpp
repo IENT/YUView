@@ -509,36 +509,27 @@ Subsampling PixelFormatYUV::getSubsampling() const
     this->format);
 }
 
-int PixelFormatYUV::getSubsamplingHor(Component component) const
+SubsamplingRatios PixelFormatYUV::getSubsamplingRatios() const
 {
-  auto subsampling = this->getSubsampling();
-
-  if (component == Component::Luma)
-    return 1;
-  if (subsampling == Subsampling::YUV_410 || subsampling == Subsampling::YUV_411)
-    return 4;
-  if (subsampling == Subsampling::YUV_422 || subsampling == Subsampling::YUV_420)
-    return 2;
-  return 1;
-}
-
-int PixelFormatYUV::getSubsamplingVer(Component component) const
-{
-  auto subsampling = this->getSubsampling();
-
-  if (component == Component::Luma)
-    return 1;
-  if (subsampling == Subsampling::YUV_410)
-    return 4;
-  if (subsampling == Subsampling::YUV_420 || subsampling == Subsampling::YUV_440)
-    return 2;
-  return 1;
-}
-
-bool PixelFormatYUV::isChromaSubsampled() const
-{
-  auto subsampling = this->getSubsampling();
-  return subsampling != Subsampling::YUV_444;
+  switch (this->getSubsampling())
+  {
+  case Subsampling::YUV_444:
+    return {1, 1};
+  case Subsampling::YUV_422:
+    return {2, 1};
+  case Subsampling::YUV_440:
+    return {1, 2};
+  case Subsampling::YUV_420:
+    return {2, 2};
+  case Subsampling::YUV_411:
+    return {4, 1};
+  case Subsampling::YUV_410:
+    return {4, 4};
+  case Subsampling::YUV_400:
+    return {1, 1};
+  default:
+    return {1, 1};
+  }
 }
 
 int PixelFormatYUV::getNrPlanes() const

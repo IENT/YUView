@@ -45,7 +45,6 @@ TEST(PixelFormatYUVTest, defaultConstructor_shouldSetDefaultFormat)
 
   EXPECT_TRUE(fmt.isValid());
   EXPECT_EQ(fmt.getSubsampling(), Subsampling::YUV_420);
-  EXPECT_TRUE(fmt.isChromaSubsampled());
   EXPECT_EQ(fmt.getNrPlanes(), 3);
   EXPECT_EQ(fmt.getBitsPerSample(), 8);
   EXPECT_TRUE(fmt.getPlanarFormat().has_value());

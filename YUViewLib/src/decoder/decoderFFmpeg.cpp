@@ -210,9 +210,10 @@ void decoderFFmpeg::copyCurImageToBuffer()
       auto       dst         = this->currentOutputBuffer.data();
       if (plane > 0)
         dst += (nrBytesY + (plane - 1) * nrBytesC);
-      const auto dstLinesize =
-        this->frameSize.width / pixFmt.getSubsamplingHor(component) * nrBytesPerSample;
-      const auto height = this->frameSize.height / pixFmt.getSubsamplingVer(component);
+
+      const auto subsamplingRatios = pixFmt.getSubsamplingRatios();
+      const auto dstLinesize       = this->frameSize.width / subsamplingRatios.horizontal;
+      const auto height            = this->frameSize.height / subsamplingRatios.vertical;
       for (int y = 0; y < height; y++)
       {
         memcpy(dst, src, dstLinesize);

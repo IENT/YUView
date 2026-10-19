@@ -157,22 +157,24 @@ bool canConvertToRGB(const PixelFormatYUV &pixelFormat,
 
     canConvert = false;
   }
-  if (imageSize.width % pixelFormat.getSubsamplingHor() != 0)
+
+  const auto subsamplingRatios = pixelFormat.getSubsamplingRatios();
+  if (imageSize.width % subsamplingRatios.horizontal != 0)
   {
     if (whyNot)
       whyNot->append(std::format(
         "The item width {} must be divisible by the horizontal subsampling factor {}.\n",
         imageSize.width,
-        pixelFormat.getSubsamplingHor()));
+        subsamplingRatios.horizontal));
     canConvert = false;
   }
-  if (imageSize.height % pixelFormat.getSubsamplingVer() != 0)
+  if (imageSize.height % subsamplingRatios.vertical != 0)
   {
     if (whyNot)
       whyNot->append(
         std::format("The item height {} must be divisible by the vertical subsampling factor {}.\n",
                     imageSize.height,
-                    pixelFormat.getSubsamplingVer()));
+                    subsamplingRatios.vertical));
     canConvert = false;
   }
   if (pixelFormat.getSubsampling() == Subsampling::UNKNOWN)
@@ -2542,7 +2544,9 @@ QLayout *videoHandlerYUV::createVideoHandlerControls(bool isSizeAndFormatFixed)
     ui.yuvFormatComboBox->setCurrentIndex(static_cast<int>(*presetIndex));
 
   // Set all the values of the properties widget to the values of this class
-  const auto hasChroma = (srcPixelFormat.getSubsampling() != Subsampling::YUV_400);
+  const auto hasChroma         = (srcPixelFormat.getSubsampling() != Subsampling::YUV_400);
+  const auto isChromaSubsample = (srcPixelFormat.getSubsampling() != Subsampling::YUV_444);
+
   ui.colorComponentsComboBox->addItems(
     functions::toQStringList(ComponentDisplayModeMapper.getNames()));
   ui.colorComponentsComboBox->setCurrentIndex(
@@ -2552,7 +2556,7 @@ QLayout *videoHandlerYUV::createVideoHandlerControls(bool isSizeAndFormatFixed)
     functions::toQStringList(ChromaInterpolationMapper.getNames()));
   ui.chromaInterpolationComboBox->setCurrentIndex(
     int(ChromaInterpolationMapper.indexOf(this->conversionSettings.chromaInterpolation)));
-  ui.chromaInterpolationComboBox->setEnabled(hasChroma && srcPixelFormat.isChromaSubsampled());
+  ui.chromaInterpolationComboBox->setEnabled(hasChroma && isChromaSubsample);
   ui.colorConversionComboBox->addItems(functions::toQStringList(ColorConversionMapper.getNames()));
   ui.colorConversionComboBox->setCurrentIndex(
     int(ColorConversionMapper.indexOf(this->conversionSettings.colorConversion)));
@@ -2669,14 +2673,16 @@ void videoHandlerYUV::setSrcPixelFormat(PixelFormatYUV format, bool emitSignal)
   if (ui.created())
   {
     // Every time the pixel format changed, see if the interpolation combo box is enabled/disabled
-    const auto     hasChroma = (srcPixelFormat.getSubsampling() != Subsampling::YUV_400);
+    const auto hasChroma          = (srcPixelFormat.getSubsampling() != Subsampling::YUV_400);
+    const auto isChromaSubsamples = (srcPixelFormat.getSubsampling() != Subsampling::YUV_444);
+
     QSignalBlocker blocker1(ui.colorComponentsComboBox);
     QSignalBlocker blocker2(ui.chromaInterpolationComboBox);
     QSignalBlocker blocker3(ui.colorConversionComboBox);
     QSignalBlocker blocker4(ui.lumaOffsetSpinBox);
     QSignalBlocker blocker5(ui.chromaOffsetSpinBox);
     ui.colorComponentsComboBox->setEnabled(hasChroma);
-    ui.chromaInterpolationComboBox->setEnabled(hasChroma && format.isChromaSubsampled());
+    ui.chromaInterpolationComboBox->setEnabled(hasChroma && isChromaSubsamples);
     ui.colorConversionComboBox->setEnabled(hasChroma);
     ui.lumaOffsetSpinBox->setValue(this->conversionSettings.mathParameters[Component::Luma].offset);
     ui.chromaOffsetSpinBox->setValue(
@@ -2963,9 +2969,7 @@ void videoHandlerYUV::drawPixelValues(QPainter     *painter,
   // Is the chroma offset by another half luma pixel?
   const bool chromaOffsetHalfX = (srcPixelFormat.getChromaOffset().x % 2 != 0);
   const bool chromaOffsetHalfY = (srcPixelFormat.getChromaOffset().y % 2 != 0);
-  // By what factor is X and Y subsampled?
-  const int subsamplingX = srcPixelFormat.getSubsamplingHor();
-  const int subsamplingY = srcPixelFormat.getSubsamplingVer();
+  const auto subsamplingRatios = srcPixelFormat.getSubsamplingRatios();
 
   // If 'showPixelValuesAsDiff' is set, this is the zero value
   const int differenceZeroValue = 1 << (srcPixelFormat.getBitsPerSample() - 1);
@@ -3039,8 +3043,8 @@ void videoHandlerYUV::drawPixelValues(QPainter     *painter,
 
       painter->setPen(drawWhite ? Qt::white : Qt::black);
 
-      if (chromaPresent && (x - chromaOffsetFullX) % subsamplingX == 0 &&
-          (y - chromaOffsetFullY) % subsamplingY == 0)
+      if (chromaPresent && (x - chromaOffsetFullX) % subsamplingRatios.horizontal == 0 &&
+          (y - chromaOffsetFullY) % subsamplingRatios.vertical == 0)
       {
         QString valText;
         if (chromaOffsetHalfX || chromaOffsetHalfY)
@@ -3511,9 +3515,11 @@ bool videoHandlerYUV::markDifferencesYUVPlanarToRGB(const QByteArray     &source
   const auto bps   = format.getBitsPerSample();
   const auto cZero = 128 << (bps - 8);
 
+  const auto subsamplingRatios = format.getSubsamplingRatios();
+
   // Other bit depths not (yet) supported. w and h must be divisible by the subsampling.
-  assert(bps >= 8 && bps <= 16 && (curFrameSize.width % format.getSubsamplingHor()) == 0 &&
-         (curFrameSize.height % format.getSubsamplingVer()) == 0);
+  assert(bps >= 8 && bps <= 16 && (curFrameSize.width % subsamplingRatios.horizontal) == 0 &&
+         (curFrameSize.height % subsamplingRatios.vertical) == 0);
 
   // The luma component has full resolution. The size of each chroma components depends on the
   // subsampling.
@@ -3536,21 +3542,19 @@ bool videoHandlerYUV::markDifferencesYUVPlanarToRGB(const QByteArray     &source
   const unsigned char *restrict srcV =
     isYUVFormat ? srcY + nrBytesLumaPlane + nrBytesChromaPlane : srcY + nrBytesLumaPlane;
 
-  const int sampleBlocksX = format.getSubsamplingHor();
-  const int sampleBlocksY = format.getSubsamplingVer();
-
-  const int strideC = curFrameSize.width / sampleBlocksX; // How many samples to the next y line?
-  for (int y = 0; y < curFrameSize.height; y += sampleBlocksY)
-    for (int x = 0; x < curFrameSize.width; x += sampleBlocksX)
+  const int strideC =
+    curFrameSize.width / subsamplingRatios.horizontal; // How many samples to the next y line?
+  for (int y = 0; y < curFrameSize.height; y += subsamplingRatios.vertical)
+    for (int x = 0; x < curFrameSize.width; x += subsamplingRatios.horizontal)
     {
       // Get the U/V difference value. For all values within the sub-block this is constant.
-      int uvIndex = (y / sampleBlocksY) * strideC + x / sampleBlocksX;
+      int uvIndex = (y / subsamplingRatios.vertical) * strideC + x / subsamplingRatios.horizontal;
       int valU    = getValueFromSource(srcU, uvIndex, bps, format.getEndianness());
       int valV    = getValueFromSource(srcV, uvIndex, bps, format.getEndianness());
 
-      for (int yInBlock = 0; yInBlock < sampleBlocksY; yInBlock++)
+      for (int yInBlock = 0; yInBlock < subsamplingRatios.vertical; yInBlock++)
       {
-        for (int xInBlock = 0; xInBlock < sampleBlocksX; xInBlock++)
+        for (int xInBlock = 0; xInBlock < subsamplingRatios.horizontal; xInBlock++)
         {
           // Get the Y difference value
           int valY = getValueFromSource(
@@ -3668,9 +3672,7 @@ QImage videoHandlerYUV::calculateDifference(FrameHandler    *item2,
   if (!canConvertToRGB(tmpDiffYUVFormat, Size(w_out, h_out)))
     return QImage();
 
-  // Get subsampling modes (they are identical for both inputs and the output)
-  const auto subH = srcPixelFormat.getSubsamplingHor();
-  const auto subV = srcPixelFormat.getSubsamplingVer();
+  const auto [subH, subV] = srcPixelFormat.getSubsamplingRatios();
 
   // Get the endianness of the inputs
   const Endianness endianness[2] = {srcPixelFormat.getEndianness(),

@@ -454,12 +454,8 @@ bool videoHandlerDifference::hierarchicalPositionYUV(int                        
 
   // The items can be of different size (we then calculate the difference of the top left aligned
   // part)
-  const int w_in = frameSize.width;
-  const int h_in = frameSize.height;
-
-  // Get subsampling modes (they are identical for both inputs and the output)
-  const int subH = diffYUVFormat.getSubsamplingHor();
-  const int subV = diffYUVFormat.getSubsamplingVer();
+  const auto [w_in, h_in] = frameSize;
+  const auto [subH, subV] = diffYUVFormat.getSubsamplingRatios();
 
   const auto endianness = diffYUVFormat.getEndianness();
 
