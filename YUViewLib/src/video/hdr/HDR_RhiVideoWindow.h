@@ -163,11 +163,17 @@ public:
    * @brief Set tone-map / exposure target luminance in nits.
    *
    * PQ uses ITU-R BT.2390 EETF; HLG uses a limited exposure range.
-   * Pass 0 to disable mapping (pass-through).
+   * Pass 0 (or any non-positive value) to disable mapping (pass-through).
+   * The request is stored as given. The shader applies a mode-specific clamp,
+   * so switching between PQ and HLG does not drop or widen the request.
    */
   void setToneMapTargetNits(float nits);
-  /** @brief Current exposure / tone-map target luminance in nits. */
-  float getToneMapTargetNits() const { return m_toneMapTargetNits; }
+  /**
+   * @brief Requested exposure / tone-map target in nits.
+   * 0 means pass-through. This is the value last requested, not the
+   * mode-clamped value currently uploaded to the shader.
+   */
+  float getToneMapTargetNits() const { return m_toneMapRequestNits; }
 
   /** @brief Whether the RHI pipeline has finished initialization. */
   bool isInitialized() const { return m_initialized; }
@@ -222,6 +228,8 @@ public:
 public slots:
   /**
    * @brief Update frame from a QImage (RGB fallback path).
+   *
+   * Queued and uploaded in the next render pass, same as the YUV path.
    * @param newFrame Converted image; prefer updateFrameYUV* for HDR playback
    */
   void updateFrame(const QImage& newFrame);
@@ -331,10 +339,29 @@ private:
   bool initializeYUVPipeline();
   void releaseRhiResources();
   
+  // One deferred GPU upload. Width and height travel with the bytes so a
+  // newer frame cannot change the size used to interpret this buffer.
+  struct PendingUpload
+  {
+    QByteArray yuvData;
+    video::yuv::PixelFormatYUV yuvFormat;
+    video::yuv::ColorConversion colorConversion{video::yuv::ColorConversion::BT2020_LimitedRange};
+    int yuvWidth{0};
+    int yuvHeight{0};
+    uint64_t sequence{0};
+    bool hasYUV{false};
+    QImage rgbFrame;
+    bool hasRGB{false};
+  };
+
   // Rendering
   void render();
-  void renderFrame(QRhiCommandBuffer* cb);
+  void renderFrame(QRhiCommandBuffer* cb, PendingUpload& pendingUpload);
   void updateProjectionMatrix();
+  PendingUpload takePendingUpload();
+  void restorePendingUpload(PendingUpload& pendingUpload);
+  void publishPresentedFrame(const QSize& frameSize, bool useYUV, const QImage& rgbFrame);
+  float effectiveToneMapNits() const;
   
   // Resource management
   bool uploadTextureData(const QImage& image, QRhiResourceUpdateBatch* batch);
@@ -366,12 +393,24 @@ private:
 
   /**
    * @brief Queue a pending YUV frame for deferred GPU upload.
+   *
    * Shared by updateFrameYUV (copy) and updateFrameYUVMove (move).
+   * Bytes, size, format and color conversion are stored together under
+   * m_pendingYUVMutex. Frame geometry used by overlays is published later
+   * on the GUI thread, inside render().
    */
   void queuePendingYUV(QByteArray&& yuvData,
                        int width, int height,
                        const video::yuv::PixelFormatYUV& format,
                        video::yuv::ColorConversion colorConversion);
+
+  /**
+   * @brief Emit frameUpdated on this window's thread.
+   *
+   * requestUpdate() is thread-safe; a direct emit is not, because a slot may
+   * touch GUI objects. Decoder threads queue the signal instead.
+   */
+  void emitFrameUpdated();
 
   /**
    * @brief Refresh the cached YUV->RGB matrix/offset when conversion mode changes.
@@ -399,11 +438,14 @@ private:
 private:
   // Render mode
   RenderMode m_renderMode;
-  float m_toneMapTargetNits{0.0f};
+  // Caller request. 0 disables tone mapping. Mode clamps are applied in
+  // effectiveToneMapNits() so a PQ value stays valid when the mode changes.
+  float m_toneMapRequestNits{0.0f};
   bool m_initialized{false};
   bool m_initializationFailed{false};
-  // Guards one-time initialization against re-entrant expose/update sequences.
-  mutable QMutex m_initMutex;
+  // Non-blocking re-entry guard. A second tryInitialize() while the first is
+  // still inside initializeRhi() returns immediately. A mutex cannot be reached
+  // by two callers at once, so it is not used here.
   std::atomic<bool> m_initializationInProgress{false};
   bool m_loggedNotExposedState{false};
 
@@ -482,13 +524,18 @@ private:
   float m_cachedColorMatrix[16]{};
   float m_cachedOffsetVec[4]{};
   
-  // Pending YUV data for deferred upload.
-  // Protected by m_pendingYUVMutex to keep producer/consumer state consistent.
+  // Pending GPU uploads. The YUV record and the RGB record below are both
+  // guarded by m_pendingYUVMutex, including width, height and the RGB image.
+  // m_frameSize is published later, on the GUI thread, inside render().
   mutable QMutex m_pendingYUVMutex;
   QByteArray m_pendingYUVData;
   video::yuv::PixelFormatYUV m_pendingYUVFormat;
   video::yuv::ColorConversion m_pendingColorConversion{video::yuv::ColorConversion::BT2020_LimitedRange};
-  uint64_t m_pendingYUVSequence{0};
+  int m_pendingYUVWidth{0};
+  int m_pendingYUVHeight{0};
+  QImage m_pendingRGBFrame;
+  bool m_rgbFramePending{false};
+  uint64_t m_pendingUploadSequence{0};
   uint64_t m_lastUploadedYUVSequence{0};
   bool m_yuvDataPending{false};
 
@@ -541,17 +588,17 @@ private:
 /*
  * 详尽中文注释：
  * 类名称：HDR_RhiVideoWindow
- * 功能描述：基于 Qt RHI (Rendering Hardware Interface) 实现的高性能 HDR 视频渲染窗口。
- * 算法原理与生命周期管理机制：
- * 1. 资源独占所有权：全部底层 RHI 图形资源 (如 Buffer, Texture, Sampler, Pipeline, SwapChain, RenderPassDesc)
- *    均采用 std::unique_ptr 智能指针封装。此举在避免显式内存管理和防止意外拷贝的同时，保障了对象发生异常或提早返回时的图形内存安全性。
- * 2. 自动逆序析构（成员变量生命周期设计）：根据 C++ 标准，类成员变量的销毁顺序与声明顺序严格相反。为了保障图形底层的生命周期依赖：
- *    - 必须将 m_fallbackSurface (OpenGL 回退离屏表面) 声明在 m_rhi (QRhi 实例) 之前。这是由于在 OpenGL (GLES2) 后端执行销毁时，
- *      QRhi 需要确保 fallbackSurface 依然存活，以便能将 OpenGL 上下文设置为当前 (Make Current) 进而执行底层 GPU 资源的释构。
- *    - 必须将底层实体资源 (m_vertexBuffer, m_videoTexture, m_overlayUniformBuffer 等) 声明在对应的绑定资源 (m_srb, m_overlaySrb) 
- *      和图形管线 (m_pipeline, m_overlayPipeline) 之前。这使得析构时首先销毁引用了这些实体的管线和绑定，最后才析构实体本身。
- * 3. 交换链依赖设计：m_swapChain 声明在 m_rhi 之后、而其兼容的渲染通道描述符 m_renderPassDesc 声明在 m_swapChain 之后，
- *    以确保析构时首先清理 RenderPassDesc，再清理 SwapChain，最后清理 QRhi 实例。
+ * 功能描述：用 Qt QRhi 把 10-bit HDR 画到 scRGB 线性交换链（RGBA16F，1.0 = 80 nits），
+ *           并在同一遍渲染里叠加上分析用的标尺、网格和放大镜。
+ * 生命周期：
+ * 1. 图形对象全部放在 unique_ptr 里。m_fallbackSurface 必须声明在 m_rhi 之前，
+ *    这样 OpenGL 后端析构 QRhi 时回退表面还在，才能把上下文设为当前。
+ * 2. 管线和着色器资源绑定声明在它们引用的缓冲、纹理之后，析构时先拆引用再释放实体。
+ * 3. 待上传帧是一份完整快照（字节、宽高、像素格式、色彩转换）。生产者只在
+ *    m_pendingYUVMutex 里替换这份快照；窗口线程在 render() 里取出后再发布
+ *    m_frameSize 和投影矩阵。上传用的是快照里的宽高，不是稍后可能被改写的 m_frameSize。
+ * 4. 色调映射保存的是调用方请求。0 表示直通；PQ/HLG 的钳位在绘制时按当前模式计算，
+ *    切换模式不会把上一次请求永久夹进另一个模式的区间。
  */
 
 #endif // HDR_RHIVIDEOWINDOW_H

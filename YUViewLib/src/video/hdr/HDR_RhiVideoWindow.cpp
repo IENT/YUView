@@ -18,6 +18,7 @@
 #include <QCoreApplication>
 #include <QDir>
 #include <QDebug>
+#include <QThread>
 #include <QFile>
 #include <QFileInfo>
 #include <cstring>
@@ -147,6 +148,10 @@ static const quint16 kQuadIndices[] = {
   2, 3, 0
 };
 
+// HDR_RhiVideoWindow：Qt QRhi HDR 窗口。
+// 交换链固定为 scRGB 线性 RGBA16F。YUV 与 RGB 都先进入同一待上传队列，
+// render() 再在 GUI 线程发布帧尺寸并上传，避免宽高和像素缓冲被拆开。
+// 色调映射请求小于等于 0 时直通；真正写入着色器的亮度按 PQ / HLG 的范围现算。
 HDR_RhiVideoWindow::HDR_RhiVideoWindow(QWindow* parent)
     : QWindow(parent)
       , m_renderMode(Mode_BT2020_PQ_10bit)
@@ -493,14 +498,16 @@ bool HDR_RhiVideoWindow::initializeYUVPipeline()
 
 bool HDR_RhiVideoWindow::tryInitialize()
 {
-  if (m_initialized) {
+  // 窗口尚未暴露或已经失败时直接返回。这两条在进入临界区之前判断，
+  // 避免把“还不能初始化”和“正在初始化”混成同一种失败。
+  if (m_initialized)
     return true;
-  }
-  if (m_initializationFailed) {
+  if (m_initializationFailed)
     return false;
-  }
-  if (!isExposed()) {
-    if (!m_loggedNotExposedState) {
+  if (!isExposed())
+  {
+    if (!m_loggedNotExposedState)
+    {
       DEBUG_HDR_WINDOW_LOG("[HDR-INIT] tryInitialize(): window not exposed yet");
       m_loggedNotExposedState = true;
     }
@@ -509,58 +516,58 @@ bool HDR_RhiVideoWindow::tryInitialize()
 
   m_loggedNotExposedState = false;
 
-  // Ensure only one caller performs initialization work at a time.
+  // compare_exchange 已经是非阻塞门闩：同一时刻只有一个调用能进入初始化。
+  // 第二个调用（含同线程重入）在这里返回。门闩后面再加互斥锁没有第二个进入者，
+  // 属于死代码，因此初始化只保留这个原子标志。失败时尚未完成，必须返回 false。
   bool expected = false;
-  if (!m_initializationInProgress.compare_exchange_strong(expected, true)) {
+  if (!m_initializationInProgress.compare_exchange_strong(expected, true))
+  {
     DEBUG_HDR_WINDOW_LOG("[HDR-INIT] tryInitialize(): initialization already in progress");
-    return m_initialized;
-  }
-
-  QMutexLocker initLock(&m_initMutex);
-
-  if (m_initialized) {
-    m_initializationInProgress.store(false);
-    return true;
-  }
-  if (m_initializationFailed) {
-    m_initializationInProgress.store(false);
     return false;
   }
 
+  // 无论成功、失败还是异常，离开函数时都要放下门闩，否则窗口会永久无法再初始化。
+  struct InitializationGuard
+  {
+    std::atomic<bool>& inProgress;
+    ~InitializationGuard() { inProgress.store(false, std::memory_order_release); }
+  } guard{m_initializationInProgress};
+
   DEBUG_HDR_WINDOW_LOG("[HDR-INIT] tryInitialize(): starting RHI initialization");
 
-  // Initialize RHI, swap chain, and pipelines.
   const bool success = initializeRhi() && initializeSwapChain() &&
                        initializePipeline() && initializeYUVPipeline();
-
-  if (success) {
-    m_initialized = true;
-
-    // Upload initial vertex and index data.
-    if (m_rhi && m_vertexBuffer && m_indexBuffer) {
-      QRhiCommandBuffer* cb = nullptr;
-      if (m_rhi->beginOffscreenFrame(&cb) == QRhi::FrameOpSuccess) {
-        QRhiResourceUpdateBatch* batch = m_rhi->nextResourceUpdateBatch();
-        if (batch) {
-          batch->uploadStaticBuffer(m_vertexBuffer.get(), kQuadVertices);
-          batch->uploadStaticBuffer(m_indexBuffer.get(), kQuadIndices);
-          cb->resourceUpdate(batch);
-        }
-        m_rhi->endOffscreenFrame();
-      }
-    }
-
-    DEBUG_HDR_WINDOW_LOG("[HDR-INIT] tryInitialize(): success");
-    m_initializationInProgress.store(false);
-    emit widgetInitialized();
-    return true;
+  if (!success)
+  {
+    DEBUG_HDR_WINDOW_LOG("[HDR-INIT] tryInitialize(): failed");
+    m_initializationFailed = true;
+    emit hdrNotSupported("HDR rendering initialization failed");
+    return false;
   }
 
-  DEBUG_HDR_WINDOW_LOG("[HDR-INIT] tryInitialize(): failed");
-  m_initializationFailed = true;
-  m_initializationInProgress.store(false);
-  emit hdrNotSupported("HDR rendering initialization failed");
-  return false;
+  m_initialized = true;
+
+  // 顶点缓冲只上传一次。此时门闩仍为 true，信号回调里再次进入 tryInitialize()
+  // 会先看到 m_initialized 并返回，不会重入这段上传。
+  if (m_rhi && m_vertexBuffer && m_indexBuffer)
+  {
+    QRhiCommandBuffer* cb = nullptr;
+    if (m_rhi->beginOffscreenFrame(&cb) == QRhi::FrameOpSuccess)
+    {
+      QRhiResourceUpdateBatch* batch = m_rhi->nextResourceUpdateBatch();
+      if (batch)
+      {
+        batch->uploadStaticBuffer(m_vertexBuffer.get(), kQuadVertices);
+        batch->uploadStaticBuffer(m_indexBuffer.get(), kQuadIndices);
+        cb->resourceUpdate(batch);
+      }
+      m_rhi->endOffscreenFrame();
+    }
+  }
+
+  DEBUG_HDR_WINDOW_LOG("[HDR-INIT] tryInitialize(): success");
+  emit widgetInitialized();
+  return true;
 }
 
 void HDR_RhiVideoWindow::exposeEvent(QExposeEvent* event)
@@ -599,13 +606,130 @@ bool HDR_RhiVideoWindow::event(QEvent* event)
   }
 }
 
+HDR_RhiVideoWindow::PendingUpload HDR_RhiVideoWindow::takePendingUpload()
+{
+  // 在锁内把“这一帧的字节、格式、宽高、色彩矩阵”一次取走。
+  // 上传阶段不再读 m_frameSize，避免生产者已经写下新分辨率时，旧缓冲按新尺寸解释。
+  PendingUpload upload;
+  QMutexLocker pendingLock(&m_pendingYUVMutex);
+  const bool pendingYUVUsable = m_yuvDataPending && !m_pendingYUVData.isEmpty() &&
+                                m_pendingYUVWidth > 0 && m_pendingYUVHeight > 0;
+  if (m_yuvDataPending && !pendingYUVUsable)
+  {
+    // 宽高和字节必须成套。不成套的记录直接丢掉，避免后面把 0 尺寸发布成投影矩阵。
+    m_yuvDataPending = false;
+    m_pendingYUVData.clear();
+    m_pendingYUVWidth = 0;
+    m_pendingYUVHeight = 0;
+  }
+
+  if (pendingYUVUsable)
+  {
+    upload.hasYUV = true;
+    upload.yuvData = std::move(m_pendingYUVData);
+    m_pendingYUVData.clear();
+    upload.yuvFormat = m_pendingYUVFormat;
+    upload.colorConversion = m_pendingColorConversion;
+    upload.yuvWidth = m_pendingYUVWidth;
+    upload.yuvHeight = m_pendingYUVHeight;
+    upload.sequence = m_pendingUploadSequence;
+    m_yuvDataPending = false;
+  }
+  else if (m_rgbFramePending && !m_pendingRGBFrame.isNull())
+  {
+    upload.hasRGB = true;
+    upload.rgbFrame = std::move(m_pendingRGBFrame);
+    m_pendingRGBFrame = QImage();
+    upload.sequence = m_pendingUploadSequence;
+    m_rgbFramePending = false;
+  }
+  return upload;
+}
+
+void HDR_RhiVideoWindow::restorePendingUpload(PendingUpload& pendingUpload)
+{
+  // 只有世代号仍相等、且队列里没有更新的帧时才放回。
+  // 生产者在上传期间递交的新帧会先递增世代号，这里不会把它盖掉。
+  if (!pendingUpload.hasYUV && !pendingUpload.hasRGB)
+    return;
+
+  QMutexLocker pendingLock(&m_pendingYUVMutex);
+  if (m_pendingUploadSequence != pendingUpload.sequence)
+  {
+    pendingUpload.hasYUV = false;
+    pendingUpload.hasRGB = false;
+    return;
+  }
+
+  if (pendingUpload.hasYUV && !m_yuvDataPending && m_pendingYUVData.isEmpty())
+  {
+    m_pendingYUVData = std::move(pendingUpload.yuvData);
+    m_pendingYUVFormat = pendingUpload.yuvFormat;
+    m_pendingColorConversion = pendingUpload.colorConversion;
+    m_pendingYUVWidth = pendingUpload.yuvWidth;
+    m_pendingYUVHeight = pendingUpload.yuvHeight;
+    m_yuvDataPending = true;
+  }
+  if (pendingUpload.hasRGB && !m_rgbFramePending && m_pendingRGBFrame.isNull())
+  {
+    m_pendingRGBFrame = std::move(pendingUpload.rgbFrame);
+    m_rgbFramePending = true;
+  }
+  pendingUpload.hasYUV = false;
+  pendingUpload.hasRGB = false;
+}
+
+void HDR_RhiVideoWindow::publishPresentedFrame(const QSize& frameSize,
+                                              bool useYUV,
+                                              const QImage& rgbFrame)
+{
+  // 呈现状态只在 GUI 线程的 render() 里发布。生产者只写待上传队列，
+  // 因此叠加层读取 m_frameSize / m_currentFrame 时没有数据竞争。
+  if (useYUV)
+  {
+    if (!m_currentFrame.isNull())
+      m_currentFrame = QImage();
+  }
+  else
+  {
+    m_currentFrame = rgbFrame;
+  }
+
+  const bool sizeChanged = (m_frameSize != frameSize);
+  m_frameSize = frameSize;
+  m_useYUVMode = useYUV;
+  if (sizeChanged)
+    updateProjectionMatrix();
+}
+
+float HDR_RhiVideoWindow::effectiveToneMapNits() const
+{
+  // 0、负数和 NaN 都表示直通。正数再按当前传递函数钳位：
+  // PQ 使用 BT.2390 的 500–10000 nits，HLG 使用 350–1000 nits，Linear 不曝光。
+  const float requested = m_toneMapRequestNits;
+  if (!(requested > 0.0f))
+    return 0.0f;
+
+  if (m_renderMode == Mode_BT2020_PQ_10bit)
+  {
+    return qBound(video::hdr::ToneMapping::MIN_TARGET_NITS,
+                  requested,
+                  video::hdr::ToneMapping::MAX_TARGET_NITS);
+  }
+  if (m_renderMode == Mode_BT2020_HLG_10bit)
+  {
+    return qBound(video::hdr::constants::DISPLAY_MAX_NITS, requested, 1000.0f);
+  }
+  return 0.0f;
+}
+
 void HDR_RhiVideoWindow::render()
 {
   if (!m_initialized || !isExposed())
     return;
 
-         // Safety checks for required resources
-  if (!m_rhi || !m_swapChain) {
+  if (!m_rhi || !m_swapChain)
+  {
     qWarning() << "[HDR-RHI] render() called but RHI or swap chain is null";
     return;
   }
@@ -613,126 +737,114 @@ void HDR_RhiVideoWindow::render()
   if (!m_swapChain->currentPixelSize().isValid())
     return;
 
-         // Prepare overlay image before starting frame (uses QPainter)
-  if (m_overlayEnabled) {
-    paintOverlays();
-  }
+  // 先取走待上传帧再画叠加层，放大镜和标尺使用的是即将显示的分辨率。
+  PendingUpload pendingUpload = takePendingUpload();
+  if (pendingUpload.hasYUV)
+    publishPresentedFrame(QSize(pendingUpload.yuvWidth, pendingUpload.yuvHeight), true, QImage());
+  else if (pendingUpload.hasRGB)
+    publishPresentedFrame(pendingUpload.rgbFrame.size(), false, pendingUpload.rgbFrame);
 
-  QRhi::FrameOpResult result = m_rhi->beginFrame(m_swapChain.get());
-  if (result == QRhi::FrameOpSwapChainOutOfDate) {
-    if (!m_swapChain->createOrResize()) {
+  if (m_overlayEnabled)
+    paintOverlays();
+
+  const QRhi::FrameOpResult result = m_rhi->beginFrame(m_swapChain.get());
+  if (result != QRhi::FrameOpSuccess)
+  {
+    restorePendingUpload(pendingUpload);
+    if (result == QRhi::FrameOpSwapChainOutOfDate && !m_swapChain->createOrResize())
       qWarning() << "[HDR-RHI] Failed to resize swap chain";
-    }
-    return;
-  }
-  if (result != QRhi::FrameOpSuccess) {
     return;
   }
 
   QRhiCommandBuffer* cb = m_swapChain->currentFrameCommandBuffer();
   QRhiRenderTarget* rt = m_swapChain->currentFrameRenderTarget();
-
-  if (!cb || !rt) {
+  if (!cb || !rt)
+  {
     qWarning() << "[HDR-RHI] Command buffer or render target is null";
+    restorePendingUpload(pendingUpload);
     m_rhi->endFrame(m_swapChain.get());
     return;
   }
 
   QRhiResourceUpdateBatch* batch = m_rhi->nextResourceUpdateBatch();
+  cb->beginPass(rt, m_backgroundColor, {1.0f, 0}, batch);
+  renderFrame(cb, pendingUpload);
 
-         // Clear color for the HDR pass (linear-scRGB output path)
-  const QColor clearColor = m_backgroundColor;
-
-  cb->beginPass(rt, clearColor, {1.0f, 0}, batch);
-
-         // Render video frame if available
-  renderFrame(cb);
-
-         // Render overlay in the same pass (alpha-blended on top of video)
-  if (m_overlayEnabled && !m_overlayImage.isNull()) {
+  if (m_overlayEnabled && !m_overlayImage.isNull())
     renderOverlayInPass(cb);
-  }
 
   cb->endPass();
-
   m_rhi->endFrame(m_swapChain.get());
 }
 
-void HDR_RhiVideoWindow::renderFrame(QRhiCommandBuffer* cb)
+void HDR_RhiVideoWindow::renderFrame(QRhiCommandBuffer* cb, PendingUpload& pendingUpload)
 {
+  // 待上传数据由 render() 在画叠加层之前取走。这里只消费这份快照，
+  // 不再二次加锁读取队列，避免和 publishPresentedFrame 看到的不是同一帧。
   if (!m_initialized)
-    return;
-
-  // Take ownership of pending YUV via swap/move — no full-frame memcpy.
-  // A newer producer frame that arrives while we upload keeps its own sequence
-  // and remains pending for the next render tick.
-  QByteArray pendingYUVDataLocal;
-  video::yuv::PixelFormatYUV pendingYUVFormatLocal;
-  video::yuv::ColorConversion pendingColorConversionLocal = m_currentColorConversion;
-  uint64_t pendingSequenceLocal = 0;
-  bool tookPendingFrame = false;
   {
-    QMutexLocker pendingLock(&m_pendingYUVMutex);
-    if (m_useYUVMode && m_yuvDataPending && !m_pendingYUVData.isEmpty()) {
-      pendingYUVDataLocal = std::move(m_pendingYUVData);
-      m_pendingYUVData.clear();
-      pendingYUVFormatLocal = m_pendingYUVFormat;
-      pendingColorConversionLocal = m_pendingColorConversion;
-      pendingSequenceLocal = m_pendingYUVSequence;
-      m_yuvDataPending = false;
-      tookPendingFrame = true;
-    }
+    restorePendingUpload(pendingUpload);
+    return;
   }
 
-  const bool needsYUVUpload =
-      tookPendingFrame && !pendingYUVDataLocal.isEmpty() &&
-      pendingSequenceLocal >= m_lastUploadedYUVSequence;
+  const bool needsYUVUpload = pendingUpload.hasYUV && !pendingUpload.yuvData.isEmpty() &&
+                              pendingUpload.sequence >= m_lastUploadedYUVSequence;
+  const bool needsRGBUpload = pendingUpload.hasRGB && !pendingUpload.rgbFrame.isNull();
   bool hasUploadedYUVFrame =
       m_useYUVMode && m_lastUploadedYUVSequence != 0 && m_yuvWidth > 0 && m_yuvHeight > 0;
-  const bool canRenderRGB = m_videoTexture && !m_currentFrame.isNull();
 
-  if (!needsYUVUpload && !hasUploadedYUVFrame && !canRenderRGB)
+  if (!needsYUVUpload && !needsRGBUpload && !hasUploadedYUVFrame &&
+      !(m_videoTexture && !m_currentFrame.isNull()))
     return;
 
   QRhiResourceUpdateBatch* batch = m_rhi->nextResourceUpdateBatch();
   if (!batch)
+  {
+    restorePendingUpload(pendingUpload);
     return;
+  }
 
-  if (needsYUVUpload) {
-    if (uploadYUVTextureData(pendingYUVDataLocal,
-                             m_frameSize.width(),
-                             m_frameSize.height(),
-                             pendingYUVFormatLocal,
-                             batch)) {
-      m_lastUploadedYUVSequence = pendingSequenceLocal;
-      m_currentColorConversion = pendingColorConversionLocal;
+  if (needsYUVUpload)
+  {
+    // 使用入队时的宽高，而不是当前 m_frameSize。后者可能已经是下一帧的尺寸。
+    if (uploadYUVTextureData(pendingUpload.yuvData,
+                             pendingUpload.yuvWidth,
+                             pendingUpload.yuvHeight,
+                             pendingUpload.yuvFormat,
+                             batch))
+    {
+      m_lastUploadedYUVSequence = pendingUpload.sequence;
+      m_currentColorConversion = pendingUpload.colorConversion;
       hasUploadedYUVFrame = true;
-      // Keep pendingYUVDataLocal alive until cb->resourceUpdate(batch) below:
-      // LE planar uploads reference this buffer directly; P010/BE uses m_repackBuffer*.
-    } else {
-      // Upload failed: put the frame back if no newer pending frame arrived.
+      // pendingUpload.yuvData 必须活到下面的 resourceUpdate()：
+      // 小端平面格式直接引用这块内存，P010/大端格式引用 m_repackBuffer*。
+    }
+    else
+    {
+      restorePendingUpload(pendingUpload);
+      if (!hasUploadedYUVFrame)
       {
-        QMutexLocker pendingLock(&m_pendingYUVMutex);
-        if (m_pendingYUVSequence == pendingSequenceLocal && m_pendingYUVData.isEmpty()) {
-          m_pendingYUVData = std::move(pendingYUVDataLocal);
-          m_pendingYUVFormat = pendingYUVFormatLocal;
-          m_pendingColorConversion = pendingColorConversionLocal;
-          m_yuvDataPending = true;
-        }
+        cb->resourceUpdate(batch);
+        return;
       }
-      if (!hasUploadedYUVFrame) {
+    }
+  }
+  else if (needsRGBUpload)
+  {
+    if (!uploadTextureData(pendingUpload.rgbFrame, batch))
+    {
+      restorePendingUpload(pendingUpload);
+      if (!(m_videoTexture && !m_currentFrame.isNull()))
+      {
         cb->resourceUpdate(batch);
         return;
       }
     }
   }
 
-         // Choose pipeline based on mode
-  if (m_useYUVMode && hasUploadedYUVFrame) {
-    // YUV rendering path - GPU-based BT.2020 YUV->RGB conversion
-    // Output is RGBA16F linear-scRGB from unified HDR shader path
-
-           // Update uniform buffer with matrices and color conversion
+  if (m_useYUVMode && hasUploadedYUVFrame)
+  {
+    // YUV 路径在片元着色器里完成 BT.2020 矩阵和 PQ/HLG/Linear，输出 scRGB 线性光。
     YUVUniformData uniformData;
     std::memcpy(uniformData.projectionMatrix, m_projectionMatrix.constData(), 16 * sizeof(float));
     std::memcpy(uniformData.textureMatrix, m_textureMatrix.constData(), 16 * sizeof(float));
@@ -741,50 +853,41 @@ void HDR_RhiVideoWindow::renderFrame(QRhiCommandBuffer* cb)
     std::memcpy(uniformData.colorMatrix, m_cachedColorMatrix, 16 * sizeof(float));
     std::memcpy(uniformData.offsetVec, m_cachedOffsetVec, 4 * sizeof(float));
 
-           // hdrParams.x = target exposure luminance in nits (PQ/HLG)
-           // hdrParams.y = display max luminance (nits); kept for UI/metadata,
-           //               Linear shader path does not scale by this value
-           // hdrParams.z = render mode (1=PQ, 2=HLG, 3=Linear)
-           // hdrParams.w = exposure enabled flag (0=disabled, 1=enabled)
-    const auto renderMode = static_cast<video::hdr::RenderMode>(m_renderMode);
-    // Keep exposure activation aligned with the shader contract:
-    // PQ uses the BT.2390 tone-mapping range, HLG uses the 350-1000 nit exposure range,
-    // and Linear is a pass-through (1.0 linear = 80 nits scRGB) with gamut convert only.
-    const bool isPQExposureActive =
-        renderMode == video::hdr::RenderMode::PQ &&
-        m_toneMapTargetNits >= video::hdr::ToneMapping::MIN_TARGET_NITS &&
-        m_toneMapTargetNits <= video::hdr::ToneMapping::MAX_TARGET_NITS;
-    const bool isHLGExposureActive =
-        renderMode == video::hdr::RenderMode::HLG &&
-        m_toneMapTargetNits >= video::hdr::constants::DISPLAY_MAX_NITS &&
-        m_toneMapTargetNits <= 1000.0f;
-    const bool exposureEnabled = isPQExposureActive || isHLGExposureActive;
-
-    uniformData.hdrParams[0] = exposureEnabled ? m_toneMapTargetNits : 0.0f;
-    // Display peak nits (overlay / future use). Linear pass-through ignores this.
+    // hdrParams.x = 按当前模式钳位后的目标亮度，0 表示关闭映射
+    // hdrParams.y = 显示器峰值亮度，Linear 路径不拿它做缩放
+    // hdrParams.z = 渲染模式（1=PQ，2=HLG，3=Linear）
+    // hdrParams.w = 映射开关（0 关闭，1 开启）
+    const float appliedToneMapNits = effectiveToneMapNits();
+    const bool exposureEnabled = appliedToneMapNits > 0.0f;
+    uniformData.hdrParams[0] = appliedToneMapNits;
     uniformData.hdrParams[1] = m_displayMaxLuminance;
     uniformData.hdrParams[2] = static_cast<float>(m_renderMode);
     uniformData.hdrParams[3] = exposureEnabled ? 1.0f : 0.0f;
 
     batch->updateDynamicBuffer(m_yuvUniformBuffer.get(), 0, sizeof(YUVUniformData), &uniformData);
     cb->resourceUpdate(batch);
-    // Staging pointers were consumed by resourceUpdate; release the moved frame early.
-    pendingYUVDataLocal.clear();
+    // resourceUpdate 已经读取完裸指针，这里才能释放快照，并禁止失败路径把空缓冲放回队列。
+    pendingUpload.yuvData.clear();
+    pendingUpload.hasYUV = false;
 
     cb->setGraphicsPipeline(m_yuvPipeline.get());
     cb->setShaderResources(m_yuvSrb.get());
-
-  } else if (canRenderRGB) {
-    // RGB rendering path
+  }
+  else if (m_videoTexture && !m_currentFrame.isNull())
+  {
     UniformData uniformData;
     std::memcpy(uniformData.projectionMatrix, m_projectionMatrix.constData(), 16 * sizeof(float));
     std::memcpy(uniformData.textureMatrix, m_textureMatrix.constData(), 16 * sizeof(float));
     batch->updateDynamicBuffer(m_uniformBuffer.get(), 0, sizeof(UniformData), &uniformData);
     cb->resourceUpdate(batch);
+    pendingUpload.rgbFrame = QImage();
+    pendingUpload.hasRGB = false;
 
     cb->setGraphicsPipeline(m_pipeline.get());
     cb->setShaderResources(m_srb.get());
-  } else {
+  }
+  else
+  {
     cb->resourceUpdate(batch);
     return;
   }
@@ -860,32 +963,24 @@ bool HDR_RhiVideoWindow::ensureYUVTextures(int width, int height, int uvWidth, i
 
 void HDR_RhiVideoWindow::updateProjectionMatrix()
 {
+  // 窗口刚创建或帧尺寸尚未发布时，宽高可能为 0。必须用逻辑或判断，
+  // 位或做不到“任意一个 <= 0”：0 | 1920 仍然大于 0，随后 1/0 会把矩阵写成 Inf。
   const int widgetWidth = width();
   const int widgetHeight = height();
   const int frameWidth = m_frameSize.width();
   const int frameHeight = m_frameSize.height();
-
-         // Early exit with single branch - likely to be predicted correctly
-  if ((widgetWidth | widgetHeight | frameWidth | frameHeight) <= 0) {
+  if (widgetWidth <= 0 || widgetHeight <= 0 || frameWidth <= 0 || frameHeight <= 0)
+  {
     m_projectionMatrix.setToIdentity();
     return;
   }
 
-         // Use reciprocals to convert divisions to multiplications
-         // Division is typically 10-20x slower than multiplication on modern CPUs
   const float invWidgetWidth = 1.0f / static_cast<float>(widgetWidth);
   const float invWidgetHeight = 1.0f / static_cast<float>(widgetHeight);
-
-         // Branchless zoom factor with max() pattern
   const float zoomFactor = static_cast<float>(m_parentZoom > 0.0 ? m_parentZoom : 1.0);
   const QPointF& offset = m_parentOffset;
-
-         // Combined scaling computation using pre-computed reciprocals
   const float scaleX = static_cast<float>(frameWidth) * zoomFactor * invWidgetWidth;
   const float scaleY = static_cast<float>(frameHeight) * zoomFactor * invWidgetHeight;
-
-  // Offset computation using multiplication instead of division
-  // Factor of 2.0 is constant and can be folded with reciprocal
   const float offsetX = static_cast<float>(offset.x()) * 2.0f * invWidgetWidth;
   const float offsetY = -static_cast<float>(offset.y()) * 2.0f * invWidgetHeight;
 
@@ -896,6 +991,8 @@ void HDR_RhiVideoWindow::updateProjectionMatrix()
 
 void HDR_RhiVideoWindow::setRenderMode(RenderMode mode)
 {
+  // 这里不改写亮度请求。下一帧 effectiveToneMapNits() 会按新的传递函数重新钳位，
+  // 所以从 PQ 的 4000 nits 切到 HLG 时着色器得到 1000，再切回 PQ 时请求仍是 4000。
   if (m_renderMode == mode)
     return;
   m_renderMode = mode;
@@ -905,26 +1002,16 @@ void HDR_RhiVideoWindow::setRenderMode(RenderMode mode)
 
 void HDR_RhiVideoWindow::setToneMapTargetNits(float nits)
 {
-  constexpr float kMinHLGExposureNits = video::hdr::constants::DISPLAY_MAX_NITS;
-  constexpr float kMaxHLGExposureNits = 1000.0f;
+  // 接口约定：0 表示关闭映射。这里只记录请求，不按当前模式钳位。
+  // 钳位放到 effectiveToneMapNits()，这样 PQ 下的 4000 nits 切到 HLG 再切回来仍然是 4000，
+  // 而 HLG 着色器当帧拿到的是钳位后的 1000。qFuzzyCompare 不能直接比较 0，所以平移 1。
+  const float requested = (nits > 0.0f) ? nits : 0.0f;
+  if (qFuzzyCompare(m_toneMapRequestNits + 1.0f, requested + 1.0f))
+    return;
 
-  float clampedNits = nits;
-  if (m_renderMode == Mode_BT2020_PQ_10bit) {
-    clampedNits = qBound(video::hdr::ToneMapping::MIN_TARGET_NITS,
-                         nits,
-                         video::hdr::ToneMapping::MAX_TARGET_NITS);
-  } else if (m_renderMode == Mode_BT2020_HLG_10bit) {
-    clampedNits = qBound(kMinHLGExposureNits,
-                         nits,
-                         kMaxHLGExposureNits);
-  }
-
-  if (qFuzzyCompare(m_toneMapTargetNits, clampedNits)) return;
-  m_toneMapTargetNits = clampedNits;
-
-  if (m_initialized) {
+  m_toneMapRequestNits = requested;
+  if (m_initialized)
     requestUpdate();
-  }
 }
 
 void HDR_RhiVideoWindow::setHDRCapabilities(const HDRDetection::HDRCapabilities& capabilities)
@@ -933,34 +1020,39 @@ void HDR_RhiVideoWindow::setHDRCapabilities(const HDRDetection::HDRCapabilities&
     m_displayMaxLuminance = capabilities.maxLuminance;
 }
 
-void HDR_RhiVideoWindow::updateFrame(const QImage& newFrame)
+void HDR_RhiVideoWindow::emitFrameUpdated()
 {
-  if (newFrame.isNull()) return;
-
-  m_currentFrame = newFrame;
-  const QSize newSize = newFrame.size();
-  const bool sizeChanged = (m_frameSize != newSize);
-  m_frameSize = newSize;
-  m_useYUVMode = false;
-
-  if (sizeChanged) {
-    updateProjectionMatrix();
+  // requestUpdate() 本身可以跨线程调用。frameUpdated 的槽可能直接连在界面对象上，
+  // 后台解码线程如果直接 emit，就会在错误的线程进入这些对象。
+  if (QThread::currentThread() == thread())
+  {
+    emit frameUpdated();
+    return;
   }
 
-  if (m_initialized && isExposed() && m_rhi) {
-           // Submit the upload only after the offscreen frame is available.
-    QRhiCommandBuffer* cb = nullptr;
-    if (m_rhi->beginOffscreenFrame(&cb) == QRhi::FrameOpSuccess) {
-      QRhiResourceUpdateBatch* batch = m_rhi->nextResourceUpdateBatch();
-      if (batch && uploadTextureData(newFrame, batch)) {
-        cb->resourceUpdate(batch);
-      }
-      m_rhi->endOffscreenFrame();
-    }
+  QMetaObject::invokeMethod(this, [this]() { emit frameUpdated(); }, Qt::QueuedConnection);
+}
+
+void HDR_RhiVideoWindow::updateFrame(const QImage& newFrame)
+{
+  // RGB 与 YUV 共用同一条延迟上传队列，不再在这里 beginOffscreenFrame。
+  // 同步离屏提交会在 D3D12/Vulkan 上额外排队并等待 GPU，和下一帧 render() 重复。
+  if (newFrame.isNull())
+    return;
+
+  {
+    QMutexLocker pendingLock(&m_pendingYUVMutex);
+    ++m_pendingUploadSequence;
+    m_pendingRGBFrame = newFrame;
+    m_rgbFramePending = true;
+    m_yuvDataPending = false;
+    m_pendingYUVData.clear();
+    m_pendingYUVWidth = 0;
+    m_pendingYUVHeight = 0;
   }
 
   requestUpdate();
-  emit frameUpdated();
+  emitFrameUpdated();
 }
 
 void HDR_RhiVideoWindow::queuePendingYUV(QByteArray&& yuvData,
@@ -968,26 +1060,26 @@ void HDR_RhiVideoWindow::queuePendingYUV(QByteArray&& yuvData,
                                          const video::yuv::PixelFormatYUV& format,
                                          video::yuv::ColorConversion colorConversion)
 {
+  // 宽高、格式和字节必须在同一把锁里发布。锁外写 m_frameSize 会和 render() 数据竞争，
+  // 也会让上一帧的缓冲套用下一帧的分辨率。呈现用的 m_frameSize 改由 render() 发布。
   if (yuvData.isEmpty() || width <= 0 || height <= 0)
     return;
 
-  m_frameSize = QSize(width, height);
-  m_useYUVMode = true;
-  m_currentColorConversion = colorConversion;
-  updateProjectionMatrix();
-
-  // Deferred upload in renderFrame() avoids beginOffscreenFrame stalls.
   {
     QMutexLocker pendingLock(&m_pendingYUVMutex);
-    ++m_pendingYUVSequence;
+    ++m_pendingUploadSequence;
     m_pendingYUVData = std::move(yuvData);
     m_pendingYUVFormat = format;
     m_pendingColorConversion = colorConversion;
+    m_pendingYUVWidth = width;
+    m_pendingYUVHeight = height;
     m_yuvDataPending = true;
+    m_rgbFramePending = false;
+    m_pendingRGBFrame = QImage();
   }
 
   requestUpdate();
-  emit frameUpdated();
+  emitFrameUpdated();
 }
 
 void HDR_RhiVideoWindow::updateFrameYUV(const QByteArray& yuvData,
@@ -1071,8 +1163,10 @@ bool HDR_RhiVideoWindow::uploadYUVTextureData(const QByteArray& yuvData,
   const int subH = format.getSubsamplingHor();
   const int subV = format.getSubsamplingVer();
   const int yPlaneSize = width * height;
-  const int uvWidth = (subH == 2) ? (width >> 1) : ((subH == 4) ? (width >> 2) : width);
-  const int uvHeight = (subV == 2) ? (height >> 1) : ((subV == 4) ? (height >> 2) : height);
+  // 色度平面用向下取整，与 PixelFormatYUV::bytesPerFrame 的 width/2、width/4 一致。
+  // 向上取整会和缓存里实际打包的字节数错位。subH/subV 只可能是 1、2、4。
+  const int uvWidth = (subH > 1) ? (width / subH) : width;
+  const int uvHeight = (subV > 1) ? (height / subV) : height;
   const int uvPlaneSize = uvWidth * uvHeight;
 
   const int yPlaneBytes = yPlaneSize << 1;
@@ -1158,20 +1252,27 @@ bool HDR_RhiVideoWindow::uploadYUVTextureData(const QByteArray& yuvData,
 
 void HDR_RhiVideoWindow::clearFrame()
 {
+  // 递增世代号，使正在上传、准备放回队列的那一帧失效，避免 clear 之后被放回。
+  {
+    QMutexLocker pendingLock(&m_pendingYUVMutex);
+    ++m_pendingUploadSequence;
+    m_yuvDataPending = false;
+    m_pendingYUVData.clear();
+    m_pendingYUVWidth = 0;
+    m_pendingYUVHeight = 0;
+    m_rgbFramePending = false;
+    m_pendingRGBFrame = QImage();
+    m_repackBufferY.clear();
+    m_repackBufferU.clear();
+    m_repackBufferV.clear();
+  }
   m_currentFrame = QImage();
   m_overlayPatchProvider = nullptr;
   m_overlayYuvPixelProvider = nullptr;
   m_frameSize = QSize();
   m_useYUVMode = false;
   m_colorMatrixCacheValid = false;
-  {
-    QMutexLocker pendingLock(&m_pendingYUVMutex);
-    m_yuvDataPending = false;
-    m_pendingYUVData.clear();
-    m_repackBufferY.clear();
-    m_repackBufferU.clear();
-    m_repackBufferV.clear();
-  }
+  updateProjectionMatrix();
   requestUpdate();
 }
 

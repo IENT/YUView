@@ -17,6 +17,14 @@
 *.user
 *.VC.opendb
 *.VC.db
+*.pdb
+*.ilk
+*.exp
+*.idb
+*.ipch
+*.iobj
+*.ipdb
+*.tlog
 
 # Build directories
 build/

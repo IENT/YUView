@@ -65,7 +65,7 @@ public:
   void setRenderMode(RenderMode mode) { m_renderMode = mode; }
   RenderMode getRenderMode() const { return m_renderMode; }
 
-  void setToneMapTargetNits(float nits) { m_toneMapTargetNits = nits; }
+  void setToneMapTargetNits(float nits) { m_toneMapTargetNits = (nits > 0.0f) ? nits : 0.0f; }
   float getToneMapTargetNits() const { return m_toneMapTargetNits; }
 
   bool isInitialized() const { return false; }
