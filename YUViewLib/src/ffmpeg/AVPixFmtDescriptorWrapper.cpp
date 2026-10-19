@@ -323,9 +323,9 @@ video::rgb::PixelFormatRGB AVPixFmtDescriptorWrapper::getRGBPixelFormat() const
 
 bool AVPixFmtDescriptorWrapper::setValuesFromPixelFormatYUV(const PixelFormatYUV &pixelFormat)
 {
-  const auto planeOrder = pixelFormat.getPlaneOrder();
-  if (planeOrder == PlaneOrder::YVU || planeOrder == PlaneOrder::YVUA)
-    return false;
+  if (const auto planarFormat = pixelFormat.getPlanarFormat())
+    if (planarFormat->planeOrder == PlaneOrder::YVU || planarFormat->planeOrder == PlaneOrder::YVUA)
+      return false;
 
   const auto subsampling = pixelFormat.getSubsampling();
   switch (subsampling)
@@ -358,7 +358,7 @@ bool AVPixFmtDescriptorWrapper::setValuesFromPixelFormatYUV(const PixelFormatYUV
 
   this->flags.bigEndian     = (pixelFormat.getEndianness() == video::Endianness::Big);
   this->flags.planar        = pixelFormat.getPlanarFormat().has_value();
-  this->flags.hasAlphaPlane = (planeOrder == PlaneOrder::YUVA);
+  this->flags.hasAlphaPlane = pixelFormat.hasAlpha();
 
   for (int i = 0; i < this->nb_components; i++)
   {

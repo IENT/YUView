@@ -574,13 +574,6 @@ int PixelFormatYUV::getBitsPerSample() const
     this->format);
 }
 
-std::optional<PlaneOrder> PixelFormatYUV::getPlaneOrder() const
-{
-  if (const auto planarFormat = std::get_if<PlanarPixelFormat>(&this->format))
-    return planarFormat->planeOrder;
-  return {};
-}
-
 std::optional<PackingOrder> PixelFormatYUV::getPackingOrder() const
 {
   if (const auto packedFormat = std::get_if<PackedPixelFormat>(&this->format))

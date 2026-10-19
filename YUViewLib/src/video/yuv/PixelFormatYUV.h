@@ -249,7 +249,6 @@ public:
 
   int getBitsPerSample() const;
 
-  std::optional<PlaneOrder>   getPlaneOrder() const;
   std::optional<PackingOrder> getPackingOrder() const;
   bool                        hasAlpha() const;
 

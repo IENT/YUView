@@ -49,7 +49,6 @@ TEST(PixelFormatYUVTest, defaultConstructor_shouldSetDefaultFormat)
   EXPECT_EQ(fmt.getNrPlanes(), 3);
   EXPECT_EQ(fmt.getBitsPerSample(), 8);
   EXPECT_TRUE(fmt.getPlanarFormat().has_value());
-  EXPECT_EQ(fmt.getPlaneOrder(), PlaneOrder::YUV);
   EXPECT_FALSE(fmt.hasAlpha());
   EXPECT_EQ(fmt.getEndianness(), Endianness::Little);
   EXPECT_EQ(fmt.getChromaOffset(), Offset({0, 1}));
@@ -84,8 +83,6 @@ TEST(PixelFormatYUVTest, testFormatFromToString)
       << "Format " << name << " bits per sample missmatch";
     EXPECT_EQ(fmt.getChromaOffset(), fmtNew.getChromaOffset())
       << "Format " << name << " chroma offset missmatch";
-    EXPECT_EQ(fmt.getPlaneOrder(), fmtNew.getPlaneOrder())
-      << "Format " << name << " plane order missmatch";
 
     if (const auto planarFormat = fmt.getPlanarFormat())
     {

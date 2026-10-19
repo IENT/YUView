@@ -526,14 +526,13 @@ bool convertYUV420ToRGB(const QByteArray         &sourceBuffer,
   getColorConversionCoefficients(conversionSettings.colorConversion, RGBConv);
 
   // Get pointers to the source and the output array
-  const bool uPplaneFirst =
-    (format.getPlaneOrder() == PlaneOrder::YUV ||
-     format.getPlaneOrder() == PlaneOrder::YUVA); // Is the U plane the first or the second?
+  const bool isUPlaneFirst  = (format.getPlanarFormat()->planeOrder == PlaneOrder::YUV ||
+                               format.getPlanarFormat()->planeOrder == PlaneOrder::YUVA);
   const auto *restrict srcY = InValueType(sourceBuffer.data());
   const auto *restrict srcU =
-    uPplaneFirst ? srcY + componentLenghtY : srcY + componentLenghtY + componentLengthUV;
+    isUPlaneFirst ? srcY + componentLenghtY : srcY + componentLenghtY + componentLengthUV;
   const auto *restrict srcV =
-    uPplaneFirst ? srcY + componentLenghtY + componentLengthUV : srcY + componentLenghtY;
+    isUPlaneFirst ? srcY + componentLenghtY + componentLengthUV : srcY + componentLenghtY;
 
   for (int yh = 0; yh < frameHeight / 2; yh++)
   {
@@ -3529,15 +3528,13 @@ bool videoHandlerYUV::markDifferencesYUVPlanarToRGB(const QByteArray     &source
   unsigned char *restrict dst = targetBuffer;
 
   // Get the pointers to the source planes (8 bit per sample)
+  const auto isYUVFormat             = (format.getPlanarFormat()->planeOrder == PlaneOrder::YUV ||
+                                        format.getPlanarFormat()->planeOrder == PlaneOrder::YUVA);
   const unsigned char *restrict srcY = (unsigned char *)sourceBuffer.data();
   const unsigned char *restrict srcU =
-    (format.getPlaneOrder() == PlaneOrder::YUV || format.getPlaneOrder() == PlaneOrder::YUVA)
-      ? srcY + nrBytesLumaPlane
-      : srcY + nrBytesLumaPlane + nrBytesChromaPlane;
+    isYUVFormat ? srcY + nrBytesLumaPlane : srcY + nrBytesLumaPlane + nrBytesChromaPlane;
   const unsigned char *restrict srcV =
-    (format.getPlaneOrder() == PlaneOrder::YUV || format.getPlaneOrder() == PlaneOrder::YUVA)
-      ? srcY + nrBytesLumaPlane + nrBytesChromaPlane
-      : srcY + nrBytesLumaPlane;
+    isYUVFormat ? srcY + nrBytesLumaPlane + nrBytesChromaPlane : srcY + nrBytesLumaPlane;
 
   const int sampleBlocksX = format.getSubsamplingHor();
   const int sampleBlocksY = format.getSubsamplingVer();
@@ -3690,29 +3687,26 @@ QImage videoHandlerYUV::calculateDifference(FrameHandler    *item2,
     bps_in[0] > 8 ? 2 * componentSizeChroma_In[0] : componentSizeChroma_In[0],
     bps_in[1] > 8 ? 2 * componentSizeChroma_In[1] : componentSizeChroma_In[1]};
   // Current item
+  const auto isSrcYUVFormat = (srcPixelFormat.getPlanarFormat()->planeOrder == PlaneOrder::YUV ||
+                               srcPixelFormat.getPlanarFormat()->planeOrder == PlaneOrder::YUVA);
   const unsigned char *restrict srcY1 = (unsigned char *)currentFrameRawData.data();
   const unsigned char *restrict srcU1 =
-    (srcPixelFormat.getPlaneOrder() == PlaneOrder::YUV ||
-     srcPixelFormat.getPlaneOrder() == PlaneOrder::YUVA)
-      ? srcY1 + nrBytesLumaPlane_In[0]
-      : srcY1 + nrBytesLumaPlane_In[0] + nrBytesChromaPlane_In[0];
+    isSrcYUVFormat ? srcY1 + nrBytesLumaPlane_In[0]
+                   : srcY1 + nrBytesLumaPlane_In[0] + nrBytesChromaPlane_In[0];
   const unsigned char *restrict srcV1 =
-    (srcPixelFormat.getPlaneOrder() == PlaneOrder::YUV ||
-     srcPixelFormat.getPlaneOrder() == PlaneOrder::YUVA)
-      ? srcY1 + nrBytesLumaPlane_In[0] + nrBytesChromaPlane_In[0]
-      : srcY1 + nrBytesLumaPlane_In[0];
+    isSrcYUVFormat ? srcY1 + nrBytesLumaPlane_In[0] + nrBytesChromaPlane_In[0]
+                   : srcY1 + nrBytesLumaPlane_In[0];
   // The other item
+  const auto isItem2YUVFormat =
+    (yuvItem2->srcPixelFormat.getPlanarFormat()->planeOrder == PlaneOrder::YUV ||
+     yuvItem2->srcPixelFormat.getPlanarFormat()->planeOrder == PlaneOrder::YUVA);
   const unsigned char *restrict srcY2 = (unsigned char *)yuvItem2->currentFrameRawData.data();
   const unsigned char *restrict srcU2 =
-    (yuvItem2->srcPixelFormat.getPlaneOrder() == PlaneOrder::YUV ||
-     yuvItem2->srcPixelFormat.getPlaneOrder() == PlaneOrder::YUVA)
-      ? srcY2 + nrBytesLumaPlane_In[1]
-      : srcY2 + nrBytesLumaPlane_In[1] + nrBytesChromaPlane_In[1];
+    isItem2YUVFormat ? srcY2 + nrBytesLumaPlane_In[1]
+                     : srcY2 + nrBytesLumaPlane_In[1] + nrBytesChromaPlane_In[1];
   const unsigned char *restrict srcV2 =
-    (yuvItem2->srcPixelFormat.getPlaneOrder() == PlaneOrder::YUV ||
-     yuvItem2->srcPixelFormat.getPlaneOrder() == PlaneOrder::YUVA)
-      ? srcY2 + nrBytesLumaPlane_In[1] + nrBytesChromaPlane_In[1]
-      : srcY2 + nrBytesLumaPlane_In[1];
+    isItem2YUVFormat ? srcY2 + nrBytesLumaPlane_In[1] + nrBytesChromaPlane_In[1]
+                     : srcY2 + nrBytesLumaPlane_In[1];
 
   // Get pointers to the output
   const int componentSizeLuma_out   = w_out * h_out * (bps_out > 8 ? 2 : 1); // Size in bytes
