@@ -32,6 +32,9 @@
 
 #include <common/Testing.h>
 
+#include <array>
+#include <utility>
+
 #include <video/yuv/PixelFormatYUV.h>
 
 #include "PixelFormatYUVHelper.h"
@@ -62,6 +65,57 @@ TEST(PixelFormatYUVTest, defaultConstructor_shouldSetDefaultFormat)
   EXPECT_EQ(fmtPlanar->chromaOffset, Offset({0, 1}));
   EXPECT_FALSE(fmtPlanar->uvPlanesInterleaved);
   EXPECT_FALSE(fmtPlanar->bytePacking);
+}
+
+TEST(PixelFormatYUVTest, getSubsamplingRatios_shouldReturnCorrectRatio)
+{
+  const auto testCases = std::array{
+    std::pair{Subsampling::YUV_444, SubsamplingRatios{1, 1}},
+    std::pair{Subsampling::YUV_422, SubsamplingRatios{2, 1}},
+    std::pair{Subsampling::YUV_420, SubsamplingRatios{2, 2}},
+    std::pair{Subsampling::YUV_440, SubsamplingRatios{1, 2}},
+    std::pair{Subsampling::YUV_410, SubsamplingRatios{4, 4}},
+    std::pair{Subsampling::YUV_411, SubsamplingRatios{4, 1}},
+    std::pair{Subsampling::YUV_400, SubsamplingRatios{1, 1}},
+    std::pair{Subsampling::UNKNOWN, SubsamplingRatios{1, 1}},
+  };
+
+  for (const auto &[subsampling, expectedRatios] : testCases)
+  {
+    const auto format = PixelFormatYUV(PlanarPixelFormat({subsampling}));
+    const auto ratios = format.getSubsamplingRatios();
+
+    EXPECT_EQ(ratios.horizontal, expectedRatios.horizontal)
+      << "Horizontal ratio for planar format and subsampling "
+      << SubsamplingMapper.getName(subsampling);
+    EXPECT_EQ(ratios.vertical, expectedRatios.vertical)
+      << "Vertical ratio for planar format and subsampling "
+      << SubsamplingMapper.getName(subsampling);
+  }
+
+  for (const auto &[subsampling, expectedRatios] : testCases)
+  {
+    const auto format = PixelFormatYUV(PackedPixelFormat({subsampling}));
+    const auto ratios = format.getSubsamplingRatios();
+
+    EXPECT_EQ(ratios.horizontal, expectedRatios.horizontal)
+      << "Horizontal ratio for packed format and subsampling "
+      << SubsamplingMapper.getName(subsampling);
+    EXPECT_EQ(ratios.vertical, expectedRatios.vertical)
+      << "Vertical ratio for packed format and subsampling "
+      << SubsamplingMapper.getName(subsampling);
+  }
+
+  for (const auto predefinedFormat : PredefinedPixelFormatMapper.getValues())
+  {
+    const auto format = PixelFormatYUV(predefinedFormat);
+    const auto ratios = format.getSubsamplingRatios();
+
+    EXPECT_EQ(ratios.horizontal, 2) << "Horizontal ratio for predefined format and subsampling "
+                                    << PredefinedPixelFormatMapper.getName(predefinedFormat);
+    EXPECT_EQ(ratios.vertical, 1) << "Vertical ratio for predefined format and subsampling "
+                                  << PredefinedPixelFormatMapper.getName(predefinedFormat);
+  }
 }
 
 TEST(PixelFormatYUVTest, testFormatFromToString)
