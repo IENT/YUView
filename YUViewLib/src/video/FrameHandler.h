@@ -64,8 +64,11 @@ public:
   FrameHandler();
 
   // Get the size/bit depth of the (current) frame
-  Size getFrameSize() const { return frameSize; }
-  int  getImageBitDepth() const { return currentImage.depth(); }
+  Size   getFrameSize() const { return frameSize; }
+  int    getImageBitDepth() const { return currentImage.depth(); }
+  void   setBitDepth(int depth) { m_bitDepth = depth; }
+  int    getBitDepth() const { return m_bitDepth; }
+  QImage getCurrentFrameAsImage() const { return currentImage; }
 
   // Draw the (current) frame with the given zoom factor
   void drawFrame(QPainter *painter, double zoomFactor, bool drawRawValues);
@@ -138,6 +141,7 @@ signals:
 protected:
   QImage currentImage;
   Size   frameSize;
+  int    m_bitDepth{16};
 
   // Get the pixel value from currentImage. Make sure that currentImage is the correct image.
   QRgb         getPixelVal(const QPoint &pos) const { return getPixelVal(pos.x(), pos.y()); }
