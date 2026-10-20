@@ -205,7 +205,7 @@ struct PlanarPixelFormat
   Endianness  endianness{Endianness::Little};
   Offset      chromaOffset{};
   bool        uvPlanesInterleaved{};
-  bool        bytePacking{};
+  bool        bytePacking{}; // PYUV
 
   bool operator==(const PlanarPixelFormat &) const = default;
 };
@@ -256,7 +256,6 @@ public:
 
   Endianness getEndianness() const;
   Offset     getChromaOffset() const;
-  bool       isBytePacking() const;
 
   bool operator==(const PixelFormatYUV &a) const { return getName() == a.getName(); }
   bool operator!=(const PixelFormatYUV &a) const { return getName() != a.getName(); }

@@ -59,7 +59,7 @@ using video::yuv::Subsampling;
 namespace
 {
 
-constexpr auto YUV_EXTENSIONS  = {"yuv", "nv12", "y4m"};
+constexpr auto YUV_EXTENSIONS  = {"yuv", "nv12", "y4m", "pyuv"};
 constexpr auto RGB_EXTENSIONS  = {"rgb", "gbr", "bgr", "brg"};
 constexpr auto RGBA_EXTENSIONS = {"rgba", "gbra", "bgra", "brga", "argb", "agbr", "abgr", "abrg"};
 constexpr auto RAW_BAYER_EXTENSIONS = {"raw"};
@@ -589,7 +589,7 @@ void playlistItemRawFile::getSupportedFileExtensions(QStringList &allExtensions,
     for (const auto &extension : extensionsList)
       allExtensions.append(QString(extension));
 
-  filters.append("Raw YUV File (*.yuv *.nv21)");
+  filters.append("Raw YUV File (*.yuv *.nv21, *.pyuv)");
   filters.append("Raw RGB File (*.rgb *.rbg *.grb *.gbr *.brg *.bgr)");
   filters.append("Raw RGBA File (*.rgba *.rbga *.grba *.gbra *.brga *.bgra *.argb *.arbg *.agrb "
                  "*.agbr *.abrg *.abgr)");

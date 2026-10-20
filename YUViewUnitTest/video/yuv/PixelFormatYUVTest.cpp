@@ -54,7 +54,6 @@ TEST(PixelFormatYUVTest, defaultConstructor_shouldSetDefaultFormat)
   EXPECT_FALSE(fmt.hasAlpha());
   EXPECT_EQ(fmt.getEndianness(), Endianness::Little);
   EXPECT_EQ(fmt.getChromaOffset(), Offset({0, 1}));
-  EXPECT_FALSE(fmt.isBytePacking());
 
   const auto fmtPlanar = fmt.getPlanarFormat();
   EXPECT_TRUE(fmtPlanar.has_value());
@@ -163,9 +162,6 @@ TEST(PixelFormatYUVTest, testFormatFromToString)
     {
       FAIL() << "Format " << name << " has no planar, packed or predefined format";
     }
-
-    EXPECT_EQ(fmt.isBytePacking(), fmtNew.isBytePacking())
-      << "Format " << name << " byte packing missmatch";
 
     if (fmt.getBitsPerSample())
     {

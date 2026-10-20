@@ -85,6 +85,25 @@ Offset parseChromaOffsetText(const std::string &offsetXStr, const std::string &o
   return offset;
 }
 
+bool isBytePacking(
+  const std::variant<PlanarPixelFormat, PackedPixelFormat, PredefinedPixelFormat> &formatVariant)
+{
+  return std::visit(
+    [](const auto &format) -> bool
+    {
+      using T = std::decay_t<decltype(format)>;
+      if constexpr (std::is_same_v<T, PredefinedPixelFormat>)
+      {
+        if (format == PredefinedPixelFormat::V210)
+          return true;
+        return false;
+      }
+      else
+        return format.bytePacking;
+    },
+    formatVariant);
+}
+
 } // namespace
 
 std::string formatSubsamplingWithColons(const Subsampling &subsampling)
@@ -369,7 +388,7 @@ int64_t PixelFormatYUV::bytesPerFrame(const Size &frameSize) const
     return 0;
   }
 
-  if (!this->isBytePacking())
+  if (!isBytePacking(this->format))
   {
     // Add the bytes of the 3 (or 4) planes.
     // The numbers are the same for planar and packed formats as long as no byte packing is used.
@@ -621,24 +640,6 @@ Offset PixelFormatYUV::getChromaOffset() const
       }
       else
         return format.chromaOffset;
-    },
-    this->format);
-}
-
-bool PixelFormatYUV::isBytePacking() const
-{
-  return std::visit(
-    [](const auto &format) -> bool
-    {
-      using T = std::decay_t<decltype(format)>;
-      if constexpr (std::is_same_v<T, PredefinedPixelFormat>)
-      {
-        if (format == PredefinedPixelFormat::V210)
-          return true;
-        return false;
-      }
-      else
-        return format.bytePacking;
     },
     this->format);
 }
