@@ -90,6 +90,52 @@ const QString SPLITVIEWWIDGET_LOADING_TEXT = "Loading...";
 #define DEBUG_LOAD_DRAW(fmt) ((void)0)
 #endif
 
+namespace
+{
+constexpr double kReferenceDpi = 96.0;
+}
+
+double splitViewWidget::devicePixelRatioForCurrentScreen() const
+{
+  if (auto *handle = windowHandle())
+  {
+    const qreal ratio = handle->devicePixelRatio();
+    if (ratio > 0.0)
+      return ratio;
+  }
+
+  if (auto *currentScreen = screen())
+  {
+    const qreal ratio = currentScreen->devicePixelRatio();
+    if (ratio > 0.0)
+      return ratio;
+  }
+
+  if (auto *primary = QGuiApplication::primaryScreen())
+  {
+    const qreal ratio = primary->devicePixelRatio();
+    if (ratio > 0.0)
+      return ratio;
+  }
+
+  const qreal logicalDpi = logicalDpiX();
+  if (logicalDpi > 0.0)
+    return std::max(qreal(1.0), logicalDpi / kReferenceDpi);
+
+  return 1.0;
+}
+
+double splitViewWidget::effectiveZoomFactor() const
+{
+  return effectiveZoomFactor(this->zoomFactor);
+}
+
+double splitViewWidget::effectiveZoomFactor(double rawZoom) const
+{
+  const double ratio = std::max(0.01, static_cast<double>(devicePixelRatioForCurrentScreen()));
+  return rawZoom / ratio;
+}
+
 splitViewWidget::splitViewWidget(QWidget *parent) : MoveAndZoomableView(parent)
 {
   paletteBackgroundColorSettingsTag = "View/BackgroundColor";
@@ -209,9 +255,10 @@ void splitViewWidget::paintEvent(QPaintEvent *)
   // The x position of the split (if splitting)
   const int xSplit = int(drawArea_botR.x() * splittingPoint);
 
-  // Calculate the zoom to use
-  const double zoom   = this->zoomFactor;
-  const auto   offset = this->moveOffset;
+  // Calculate the zoom to use (compensate for device pixel ratio so that zoom 1.0 stays 1:1)
+  const double rawZoom = this->zoomFactor;
+  const auto   offset  = this->moveOffset;
+  const double zoom    = effectiveZoomFactor(rawZoom);
 
   const bool drawRawValues = showRawData() && !playing;
 
@@ -568,10 +615,12 @@ void splitViewWidget::updatePixelPositions()
     const auto itemCenterMousePos = (mouseInLeftOrRightView) ? centerPoints[1] + this->moveOffset
                                                              : centerPoints[0] + this->moveOffset;
 
+    const double zoom = effectiveZoomFactor();
+
     // The difference in the item under the mouse (normalized by zoom factor)
     double diffInItem[2] = {
-      (double)(itemCenterMousePos.x() - this->zoomBoxMousePosition.x()) / this->zoomFactor + 0.5,
-      (double)(itemCenterMousePos.y() - this->zoomBoxMousePosition.y()) / this->zoomFactor + 0.5};
+      (double)(itemCenterMousePos.x() - this->zoomBoxMousePosition.x()) / zoom + 0.5,
+      (double)(itemCenterMousePos.y() - this->zoomBoxMousePosition.y()) / zoom + 0.5};
 
     // We now have the pixel difference value for the item under the cursor.
     // We now draw one zoom box per view
@@ -779,13 +828,14 @@ void splitViewWidget::paintRegularGrid(QPainter *painter, playlistItem *item)
   if (this->regularGridSize == 0)
     return;
 
-  auto itemSize = item->getSize() * this->zoomFactor;
+  const double zoom = effectiveZoomFactor();
+  auto itemSize     = item->getSize() * zoom;
   painter->setPen(regularGridColor);
 
   // Draw horizontal lines
   const auto xMin     = -itemSize.width() / 2;
   const auto xMax     = itemSize.width() / 2;
-  const auto gridZoom = this->regularGridSize * this->zoomFactor;
+  const auto gridZoom = this->regularGridSize * zoom;
   for (int y = 1; y <= (itemSize.height() - 1) / gridZoom; y++)
   {
     int yPos = (-itemSize.height() / 2) + y * gridZoom;
@@ -1254,6 +1304,12 @@ void splitViewWidget::zoomToFitInternal()
     // We cannot zoom to anything
     return;
 
+  const double deviceRatio   = std::max(0.01, static_cast<double>(devicePixelRatioForCurrentScreen()));
+  const double widgetWidth   = static_cast<double>(size().width());
+  const double widgetHeight  = static_cast<double>(size().height());
+  const double physicalWidth = widgetWidth * deviceRatio;
+  const double physicalHeight = widgetHeight * deviceRatio;
+
   double fracZoom = 1.0;
   if (!isSplitting())
   {
@@ -1262,8 +1318,8 @@ void splitViewWidget::zoomToFitInternal()
     if (item0Size.width() <= 0 || item0Size.height() <= 0)
       return;
 
-    double zoomH = (double)size().width() / item0Size.width();
-    double zoomV = (double)size().height() / item0Size.height();
+    double zoomH = physicalWidth / item0Size.width();
+    double zoomV = physicalHeight / item0Size.height();
 
     fracZoom = std::min(zoomH, zoomV);
   }
@@ -1282,8 +1338,8 @@ void splitViewWidget::zoomToFitInternal()
         virtualItemSize.setHeight(item1Size.height());
     }
 
-    double zoomH = (double)size().width() / virtualItemSize.width();
-    double zoomV = (double)size().height() / virtualItemSize.height();
+    double zoomH = physicalWidth / virtualItemSize.width();
+    double zoomV = physicalHeight / virtualItemSize.height();
 
     fracZoom = std::min(zoomH, zoomV);
   }
@@ -1291,14 +1347,16 @@ void splitViewWidget::zoomToFitInternal()
   {
     // We have to know the size of the split parts and calculate a zoom factor for each part
     int xSplit = int(size().width() * splittingPoint);
+    const double leftWidthPhysical  = static_cast<double>(xSplit) * deviceRatio;
+    const double rightWidthPhysical = (widgetWidth - xSplit) * deviceRatio;
 
     // Left item
     QSize item0Size = item[0]->getSize();
     if (item0Size.width() <= 0 || item0Size.height() <= 0)
       return;
 
-    double zoomH = (double)xSplit / item0Size.width();
-    double zoomV = (double)size().height() / item0Size.height();
+    double zoomH = leftWidthPhysical / item0Size.width();
+    double zoomV = physicalHeight / item0Size.height();
     fracZoom     = std::min(zoomH, zoomV);
 
     // Right item
@@ -1307,8 +1365,8 @@ void splitViewWidget::zoomToFitInternal()
       QSize item1Size = item[1]->getSize();
       if (item1Size.width() > 0 && item1Size.height() > 0)
       {
-        double zoomH2        = (double)(size().width() - xSplit) / item1Size.width();
-        double zoomV2        = (double)size().height() / item1Size.height();
+        double zoomH2        = rightWidthPhysical / item1Size.width();
+        double zoomV2        = physicalHeight / item1Size.height();
         double item2FracZoom = std::min(zoomH2, zoomV2);
 
         // If we need to zoom out more for item 2, then do so.

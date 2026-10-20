@@ -300,6 +300,10 @@ protected:
                          QPoint        centerPoints,
                          QPointF       offset);
 
+  double devicePixelRatioForCurrentScreen() const;
+  double effectiveZoomFactor() const;
+  double effectiveZoomFactor(double rawZoom) const;
+
   // Class to save the current view statue (center point and zoom, splitting settings) so that we
   // can quickly switch between them using the keyboard.
   class splitViewWidgetState
