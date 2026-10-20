@@ -67,6 +67,10 @@ std::vector<PixelFormatYUV> getAllPixelFormats()
     }
   }
 
+  // All valid planar PYUV formats
+  for (const auto bitsPerSample : {10, 12, 14})
+    allFormats.push_back(PlanarPixelFormat({.bitsPerSample = bitsPerSample, .bytePacking = true}));
+
   for (auto predefinedFormat : PredefinedPixelFormatMapper.getValues())
     allFormats.push_back(predefinedFormat);
 

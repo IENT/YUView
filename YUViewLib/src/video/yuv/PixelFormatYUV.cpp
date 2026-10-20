@@ -104,6 +104,34 @@ bool isBytePacking(
     formatVariant);
 }
 
+struct PlaneOrderParsingResult
+{
+  PlaneOrder planeOrder{};
+  bool       uvInterleaved;
+  bool       bytePacking{};
+};
+
+std::optional<PlaneOrderParsingResult> parsePlanarPlaneOrderString(std::string_view text)
+{
+  PlaneOrderParsingResult result;
+
+  result.bytePacking = (text.at(0) == 'P');
+  if (result.bytePacking)
+    text.remove_prefix(1);
+
+  result.uvInterleaved = text.size() >= 4 && text.substr(text.size() - 4, 4) == "(IL)";
+  if (result.uvInterleaved)
+    text.remove_suffix(4);
+
+  if (const auto planeOrder = PlaneOrderMapper.getValue(text))
+  {
+    result.planeOrder = *planeOrder;
+    return result;
+  }
+
+  return {};
+}
+
 } // namespace
 
 std::string formatSubsamplingWithColons(const Subsampling &subsampling)
@@ -194,20 +222,6 @@ Size getSubsampledSize(Size frameSize, Subsampling subsampling)
   return {frameSize.width / factors.horizontal, frameSize.height / factors.vertical};
 }
 
-std::optional<std::pair<PlaneOrder, bool>>
-parsePlaneOrderAndUVInterleavedText(std::string_view text)
-{
-  const auto uvInterleaved = text.size() >= 4 && text.substr(text.size() - 4, 4) == "(IL)";
-
-  if (uvInterleaved)
-    text.remove_suffix(4);
-
-  if (const auto planeOder = PlaneOrderMapper.getValue(text))
-    return std::make_pair(*planeOder, uvInterleaved);
-
-  return {};
-}
-
 PixelFormatYUV::PixelFormatYUV()
 {
   std::get<PlanarPixelFormat>(this->format).chromaOffset = Offset{0, 1};
@@ -219,7 +233,7 @@ PixelFormatYUV::PixelFormatYUV(const std::string_view name)
     this->format = *predefinedFormat;
 
   std::regex strExpr(
-    "([YUVA]{3,6}(?:\\(IL\\))?) (4:[4210]{1}:[4210]{1}) ([0-9]{1,2})-bit[ ]?([BL]{1}E)?[ "
+    "(P?[YUVA]{3,6}(?:\\(IL\\))?) (4:[4210]{1}:[4210]{1}) ([0-9]{1,2})-bit[ ]?([BL]{1}E)?[ "
     "]?(packed-B|packed)?[ ]?(Cx[0-9]+)?[ ]?(Cy[0-9]+)?");
 
   std::smatch sm;
@@ -249,17 +263,18 @@ PixelFormatYUV::PixelFormatYUV(const std::string_view name)
 
   if (isPlanar)
   {
-    const auto planeOrderAndUVInterleaved = parsePlaneOrderAndUVInterleavedText(sm.str(1));
-    if (!planeOrderAndUVInterleaved)
+    if (const auto result = parsePlanarPlaneOrderString(sm.str(1)))
+    {
+      this->format = PlanarPixelFormat{*subsampling,
+                                       *bitsPerSample,
+                                       result->planeOrder,
+                                       endianess,
+                                       chromaOffset,
+                                       result->uvInterleaved,
+                                       result->bytePacking};
+    }
+    else
       return;
-
-    this->format = PlanarPixelFormat{*subsampling,
-                                     *bitsPerSample,
-                                     planeOrderAndUVInterleaved->first,
-                                     endianess,
-                                     chromaOffset,
-                                     planeOrderAndUVInterleaved->second,
-                                     bytePacking};
   }
   else
   {
@@ -321,34 +336,33 @@ bool PixelFormatYUV::isValid() const
   if (std::holds_alternative<PredefinedPixelFormat>(this->format))
     return true;
 
-  if (std::holds_alternative<PackedPixelFormat>(this->format))
+  if (const auto packedFormat = this->getPackedFormat())
   {
-    const auto &packedPixelFormat = std::get<PackedPixelFormat>(this->format);
     // Check the packing mode
-    if ((packedPixelFormat.packingOrder == PackingOrder::YUV ||
-         packedPixelFormat.packingOrder == PackingOrder::YVU ||
-         packedPixelFormat.packingOrder == PackingOrder::AYUV ||
-         packedPixelFormat.packingOrder == PackingOrder::YUVA ||
-         packedPixelFormat.packingOrder == PackingOrder::VUYA) &&
-        packedPixelFormat.subsampling != Subsampling::YUV_444)
+    if ((packedFormat->packingOrder == PackingOrder::YUV ||
+         packedFormat->packingOrder == PackingOrder::YVU ||
+         packedFormat->packingOrder == PackingOrder::AYUV ||
+         packedFormat->packingOrder == PackingOrder::YUVA ||
+         packedFormat->packingOrder == PackingOrder::VUYA) &&
+        packedFormat->subsampling != Subsampling::YUV_444)
       return false;
-    if ((packedPixelFormat.packingOrder == PackingOrder::UYVY ||
-         packedPixelFormat.packingOrder == PackingOrder::VYUY ||
-         packedPixelFormat.packingOrder == PackingOrder::YUYV ||
-         packedPixelFormat.packingOrder == PackingOrder::YVYU) &&
-        packedPixelFormat.subsampling != Subsampling::YUV_422)
+    if ((packedFormat->packingOrder == PackingOrder::UYVY ||
+         packedFormat->packingOrder == PackingOrder::VYUY ||
+         packedFormat->packingOrder == PackingOrder::YUYV ||
+         packedFormat->packingOrder == PackingOrder::YVYU) &&
+        packedFormat->subsampling != Subsampling::YUV_422)
       return false;
-    if (packedPixelFormat.packingOrder == PackingOrder::UNKNOWN)
+    if (packedFormat->packingOrder == PackingOrder::UNKNOWN)
       return false;
-    /*if ((packedPixelFormat.packingOrder == Packing_YYYYUV || packedPixelFormat.packingOrder ==
-      Packing_YYUYYV || packedPixelFormat.packingOrder == Packing_UYYVYY ||
-      packedPixelFormat.packingOrder == Packing_VYYUYY) && packedPixelFormat.subsampling ==
+    /*if ((packedFormat->packingOrder == Packing_YYYYUV || packedFormat->packingOrder ==
+      Packing_YYUYYV || packedFormat->packingOrder == Packing_UYYVYY ||
+      packedFormat->packingOrder == Packing_VYYUYY) && packedFormat->subsampling ==
       Subsampling::YUV_420) return false;*/
-    if (packedPixelFormat.subsampling == Subsampling::YUV_420 ||
-        packedPixelFormat.subsampling == Subsampling::YUV_440 ||
-        packedPixelFormat.subsampling == Subsampling::YUV_410 ||
-        packedPixelFormat.subsampling == Subsampling::YUV_411 ||
-        packedPixelFormat.subsampling == Subsampling::YUV_400)
+    if (packedFormat->subsampling == Subsampling::YUV_420 ||
+        packedFormat->subsampling == Subsampling::YUV_440 ||
+        packedFormat->subsampling == Subsampling::YUV_410 ||
+        packedFormat->subsampling == Subsampling::YUV_411 ||
+        packedFormat->subsampling == Subsampling::YUV_400)
       // No support for packed formats with this subsampling (yet)
       return false;
   }
@@ -367,6 +381,24 @@ bool PixelFormatYUV::isValid() const
 
   if (this->getBitsPerSample() < 7)
     return false;
+
+  if (const auto planarFormat = this->getPlanarFormat())
+  {
+    if (planarFormat->bytePacking)
+    {
+      if (planarFormat->subsampling != Subsampling::YUV_420)
+        return false;
+      if (planarFormat->bitsPerSample != 10 && planarFormat->bitsPerSample != 12 &&
+          planarFormat->bitsPerSample != 14)
+        return false;
+      if (planarFormat->planeOrder != PlaneOrder::YUV)
+        return false;
+      if (planarFormat->endianness != Endianness::Little)
+        return false;
+      if (planarFormat->uvPlanesInterleaved)
+        return false;
+    }
+  }
 
   return true;
 }
@@ -484,6 +516,8 @@ std::string PixelFormatYUV::getName() const
 
   if (const auto planarFormat = this->getPlanarFormat())
   {
+    if (planarFormat->bytePacking)
+      ss << "P";
     ss << PlaneOrderMapper.getName(planarFormat->planeOrder);
     if (planarFormat->uvPlanesInterleaved)
       ss << "(IL)";

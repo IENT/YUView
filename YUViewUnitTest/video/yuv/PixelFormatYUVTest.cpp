@@ -171,4 +171,41 @@ TEST(PixelFormatYUVTest, testFormatFromToString)
   }
 }
 
+TEST(PixelFormatYUVTest, testPYUVFormat)
+{
+  // PYUV is only defined for 4:2:2 with 10, 12 or 14 bits, litte endian, PlaneOrder YUV
+  for (const auto subsampling : SubsamplingMapper.getValues())
+  {
+    for (const auto bitsPerSample : BitDepthList)
+    {
+      const auto endianList = (bitsPerSample > 8)
+                                ? std::vector<Endianness>({Endianness::Little, Endianness::Big})
+                                : std::vector<Endianness>({Endianness::Little});
+
+      for (const auto planeOrder : PlaneOrderMapper.getValues())
+        for (const auto endianness : endianList)
+          for (const auto uvPlanesInterleaved : {true, false})
+          {
+            const auto format =
+              PixelFormatYUV(PlanarPixelFormat({.subsampling         = subsampling,
+                                                .bitsPerSample       = bitsPerSample,
+                                                .planeOrder          = planeOrder,
+                                                .endianness          = endianness,
+                                                .uvPlanesInterleaved = uvPlanesInterleaved,
+                                                .bytePacking         = true}));
+
+            const auto shouldBeValid =
+              (subsampling == Subsampling::YUV_420 &&
+               (bitsPerSample == 10 || bitsPerSample == 12 || bitsPerSample == 14) &&
+               planeOrder == PlaneOrder::YUV && endianness == Endianness::Little &&
+               !uvPlanesInterleaved);
+
+            EXPECT_EQ(format.isValid(), shouldBeValid);
+          }
+    }
+  }
+
+  // Test other things ...
+}
+
 } // namespace video::yuv::test
