@@ -32,6 +32,7 @@
 
 #include "Mainwindow.h"
 
+#include <QApplication>
 #include <QByteArray>
 #include <QFileDialog>
 #include <QImageWriter>
@@ -295,6 +296,27 @@ void MainWindow::createMenusAndActions()
   // On Mac, the key to delete an item is backspace. We will add this for all platforms
   auto backSpaceDelete = new QShortcut(QKeySequence(Qt::Key_Backspace), this);
   QObject::connect(backSpaceDelete, &QShortcut::activated, this, &MainWindow::deleteSelectedItems);
+
+  auto editMenu = menuBar()->addMenu(tr("&Edit"));
+  auto addEditAction = [this, editMenu](const QString &name, const QKeySequence &shortcut, const char *memberFunc) {
+    auto action = new QAction(name, editMenu);
+    action->setShortcut(shortcut);
+    QObject::connect(action, &QAction::triggered, this, [memberFunc]() {
+      QWidget *w = QApplication::focusWidget();
+      if (!w)
+        return;
+      QMetaObject::invokeMethod(w, memberFunc, Qt::DirectConnection);
+    });
+    editMenu->addAction(action);
+  };
+
+  addEditAction(tr("&Undo"), QKeySequence::Undo, "undo");
+  addEditAction(tr("&Redo"), QKeySequence::Redo, "redo");
+  editMenu->addSeparator();
+  addEditAction(tr("Cu&t"), QKeySequence::Cut, "cut");
+  addEditAction(tr("&Copy"), QKeySequence::Copy, "copy");
+  addEditAction(tr("&Paste"), QKeySequence::Paste, "paste");
+  addEditAction(tr("Select &All"), QKeySequence::SelectAll, "selectAll");
 
   auto viewMenu = menuBar()->addMenu(tr("&View"));
   // Sub menu save/load state
