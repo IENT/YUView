@@ -39,6 +39,10 @@
 
 #include <common/Functions.h>
 #include <common/Typedef.h>
+#include <statistics/StatisticsTypeBuilder.h>
+
+using stats::StatisticsType;
+using stats::StatisticsTypeBuilder;
 
 namespace decoder
 {
@@ -517,66 +521,64 @@ void decoderHM::fillStatisticList(stats::StatisticsData &statisticsData) const
   using namespace stats::color;
 
   // Ask the decoder how many internals types there are
-  unsigned int nrTypes = this->lib.libHMDEC_get_internal_type_number();
+  const auto nrTypes = this->lib.libHMDEC_get_internal_type_number();
 
   for (unsigned int i = 0; i < nrTypes; i++)
   {
-    auto name        = QString(this->lib.libHMDEC_get_internal_type_name(i));
-    auto description = QString(this->lib.libHMDEC_get_internal_type_description(i));
-    auto statType    = this->lib.libHMDEC_get_internal_type(i);
-    int  max         = 0;
+    const auto name        = std::string(this->lib.libHMDEC_get_internal_type_name(i));
+    const auto description = std::string(this->lib.libHMDEC_get_internal_type_description(i));
+    const auto statType    = this->lib.libHMDEC_get_internal_type(i);
+    int        max         = 0;
     if (statType == LIBHMDEC_TYPE_RANGE || statType == LIBHMDEC_TYPE_RANGE_ZEROCENTER)
     {
       unsigned int uMax = this->lib.libHMDEC_get_internal_type_max(i);
       max               = (uMax > INT_MAX) ? INT_MAX : uMax;
     }
 
+    auto typeBuilder = StatisticsTypeBuilder(i, name).withDescription(description);
+
     if (statType == LIBHMDEC_TYPE_FLAG)
     {
-      stats::StatisticsType flag(i, name, ColorMapper({0, 1}, PredefinedType::Jet));
-      flag.description = description;
-      statisticsData.addStatType(flag);
+      typeBuilder = typeBuilder.withValueDataOptions(StatisticsType::ValueDataOptions(
+          {.colorMapper = ColorMapper({0, 1}, PredefinedType::Jet)}));
     }
     else if (statType == LIBHMDEC_TYPE_RANGE)
     {
-      stats::StatisticsType range(i, name, ColorMapper({0, max}, PredefinedType::Jet));
-      range.description = description;
-      statisticsData.addStatType(range);
+      typeBuilder = typeBuilder.withValueDataOptions(StatisticsType::ValueDataOptions(
+          {.colorMapper = ColorMapper({0, max}, PredefinedType::Jet)}));
     }
     else if (statType == LIBHMDEC_TYPE_RANGE_ZEROCENTER)
     {
-      stats::StatisticsType rangeZero(i, name, ColorMapper({-max, max}, PredefinedType::Col3_bblg));
-      rangeZero.description = description;
-      statisticsData.addStatType(rangeZero);
+      typeBuilder = typeBuilder.withValueDataOptions(StatisticsType::ValueDataOptions(
+          {.colorMapper = ColorMapper({-max, max}, PredefinedType::Col3_bblg)}));
     }
     else if (statType == LIBHMDEC_TYPE_VECTOR)
     {
-      auto                  scale = this->lib.libHMDEC_get_internal_type_vector_scaling(i);
-      stats::StatisticsType vec(i, name, scale);
-      vec.description = description;
-      statisticsData.addStatType(vec);
+      const auto scale = static_cast<int>(this->lib.libHMDEC_get_internal_type_vector_scaling(i));
+      typeBuilder =
+          typeBuilder.withVectorDataOptions(StatisticsType::VectorDataOptions({.scale = scale}));
     }
     else if (statType == LIBHMDEC_TYPE_INTRA_DIR)
     {
-      stats::StatisticsType intraDir(i, name, ColorMapper({0, 34}, PredefinedType::Jet));
-      intraDir.description      = description;
-      intraDir.hasVectorData    = true;
-      intraDir.renderVectorData = true;
-      intraDir.vectorScale      = 32;
-      // Don't draw the vector values for the intra dir. They don't have actual meaning.
-      intraDir.renderVectorDataValues = false;
-      intraDir.setMappingValues(
-          {"INTRA_PLANAR",     "INTRA_DC",         "INTRA_ANGULAR_2",  "INTRA_ANGULAR_3",
-           "INTRA_ANGULAR_4",  "INTRA_ANGULAR_5",  "INTRA_ANGULAR_6",  "INTRA_ANGULAR_7",
-           "INTRA_ANGULAR_8",  "INTRA_ANGULAR_9",  "INTRA_ANGULAR_10", "INTRA_ANGULAR_11",
-           "INTRA_ANGULAR_12", "INTRA_ANGULAR_13", "INTRA_ANGULAR_14", "INTRA_ANGULAR_15",
-           "INTRA_ANGULAR_16", "INTRA_ANGULAR_17", "INTRA_ANGULAR_18", "INTRA_ANGULAR_19",
-           "INTRA_ANGULAR_20", "INTRA_ANGULAR_21", "INTRA_ANGULAR_22", "INTRA_ANGULAR_23",
-           "INTRA_ANGULAR_24", "INTRA_ANGULAR_25", "INTRA_ANGULAR_26", "INTRA_ANGULAR_27",
-           "INTRA_ANGULAR_28", "INTRA_ANGULAR_29", "INTRA_ANGULAR_30", "INTRA_ANGULAR_31",
-           "INTRA_ANGULAR_32", "INTRA_ANGULAR_33", "INTRA_ANGULAR_34"});
-      statisticsData.addStatType(intraDir);
+      typeBuilder =
+          typeBuilder
+              .withValueDataOptions(StatisticsType::ValueDataOptions(
+                  {.colorMapper = ColorMapper({0, 34}, PredefinedType::Jet)}))
+              .withVectorDataOptions(
+                  StatisticsType::VectorDataOptions({.renderDataValues = true, .scale = 32}))
+              .withMappingValues(
+                  {"INTRA_PLANAR",     "INTRA_DC",         "INTRA_ANGULAR_2",  "INTRA_ANGULAR_3",
+                   "INTRA_ANGULAR_4",  "INTRA_ANGULAR_5",  "INTRA_ANGULAR_6",  "INTRA_ANGULAR_7",
+                   "INTRA_ANGULAR_8",  "INTRA_ANGULAR_9",  "INTRA_ANGULAR_10", "INTRA_ANGULAR_11",
+                   "INTRA_ANGULAR_12", "INTRA_ANGULAR_13", "INTRA_ANGULAR_14", "INTRA_ANGULAR_15",
+                   "INTRA_ANGULAR_16", "INTRA_ANGULAR_17", "INTRA_ANGULAR_18", "INTRA_ANGULAR_19",
+                   "INTRA_ANGULAR_20", "INTRA_ANGULAR_21", "INTRA_ANGULAR_22", "INTRA_ANGULAR_23",
+                   "INTRA_ANGULAR_24", "INTRA_ANGULAR_25", "INTRA_ANGULAR_26", "INTRA_ANGULAR_27",
+                   "INTRA_ANGULAR_28", "INTRA_ANGULAR_29", "INTRA_ANGULAR_30", "INTRA_ANGULAR_31",
+                   "INTRA_ANGULAR_32", "INTRA_ANGULAR_33", "INTRA_ANGULAR_34"});
     }
+
+    statisticsData.addStatType(typeBuilder.build());
   }
 }
 

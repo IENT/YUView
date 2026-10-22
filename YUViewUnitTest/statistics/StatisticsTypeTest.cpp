@@ -1,0 +1,232 @@
+/*  This file is part of YUView - The YUV player with advanced analytics toolset
+ *   <https://github.com/IENT/YUView>
+ *   Copyright (C) 2015  Institut für Nachrichtentechnik, RWTH Aachen University, GERMANY
+ *
+ *   This program is free software; you can redistribute it and/or modify
+ *   it under the terms of the GNU General Public License as published by
+ *   the Free Software Foundation; either version 3 of the License, or
+ *   (at your option) any later version.
+ *
+ *   In addition, as a special exception, the copyright holders give
+ *   permission to link the code of portions of this program with the
+ *   OpenSSL library under certain conditions as described in each
+ *   individual source file, and distribute linked combinations including
+ *   the two.
+ *
+ *   You must obey the GNU General Public License in all respects for all
+ *   of the code used other than OpenSSL. If you modify file(s) with this
+ *   exception, you may extend this exception to your version of the
+ *   file(s), but you are not obligated to do so. If you do not wish to do
+ *   so, delete this exception statement from your version. If you delete
+ *   this exception statement from all source files in the program, then
+ *   also delete it here.
+ *
+ *   This program is distributed in the hope that it will be useful,
+ *   but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ *   GNU General Public License for more details.
+ *
+ *   You should have received a copy of the GNU General Public License
+ *   along with this program. If not, see <http://www.gnu.org/licenses/>.
+ */
+
+#include <common/Testing.h>
+
+#include <statistics/StatisticsTypeBuilder.h>
+
+namespace stats::test
+{
+
+TEST(StatisticsTypeTest, DefaultConstructorValues)
+{
+  const auto statisticsType = StatisticsTypeBuilder(0, "").build();
+
+  EXPECT_EQ(statisticsType.getTypeID(), 0);
+  EXPECT_TRUE(statisticsType.getTypeName().empty());
+  EXPECT_TRUE(statisticsType.getDescription().empty());
+  EXPECT_FALSE(statisticsType.render);
+  EXPECT_EQ(statisticsType.alphaFactor, 50);
+  EXPECT_FALSE(statisticsType.valueDataOptions);
+  EXPECT_FALSE(statisticsType.vectorDataOptions);
+  EXPECT_FALSE(statisticsType.gridOptions.render);
+  EXPECT_EQ(statisticsType.gridOptions.style, LineDrawStyle());
+  EXPECT_FALSE(statisticsType.gridOptions.scaleToZoom);
+
+  StatisticsType::ValueDataOptions valueDataOptions;
+  EXPECT_TRUE(valueDataOptions.render);
+  EXPECT_FALSE(valueDataOptions.scaleToBlockSize);
+  EXPECT_EQ(valueDataOptions.colorMapper, color::ColorMapper());
+
+  StatisticsType::VectorDataOptions vectorDataOptions;
+  EXPECT_TRUE(vectorDataOptions.render);
+  EXPECT_TRUE(vectorDataOptions.renderDataValues);
+  EXPECT_FALSE(vectorDataOptions.scaleToZoom);
+  EXPECT_EQ(vectorDataOptions.style, LineDrawStyle());
+  EXPECT_EQ(vectorDataOptions.scale, 0);
+  EXPECT_FALSE(vectorDataOptions.mapToColor);
+  EXPECT_EQ(vectorDataOptions.arrowHead, ArrowHead::arrow);
+
+  LineDrawStyle lineDrawStyle;
+  EXPECT_EQ(lineDrawStyle.color, Color());
+  EXPECT_EQ(lineDrawStyle.width, 0.25);
+  EXPECT_EQ(lineDrawStyle.pattern, Pattern::Solid);
+}
+
+TEST(StatisticsTypeTest, GetValueText)
+{
+  const auto statisticsType =
+      StatisticsTypeBuilder(0, "").withMappingValues({"First", "Second", "Third"}).build();
+
+  EXPECT_EQ(statisticsType.getValueText(0), "First (0)");
+  EXPECT_EQ(statisticsType.getValueText(1), "Second (1)");
+  EXPECT_EQ(statisticsType.getValueText(2), "Third (2)");
+  EXPECT_EQ(statisticsType.getValueText(3), "3");
+  EXPECT_EQ(statisticsType.getValueText(99), "99");
+  EXPECT_EQ(statisticsType.getValueText(1256), "1256");
+  EXPECT_EQ(statisticsType.getValueText(-1), "-1");
+}
+
+TEST(StatisticsTypeTest, TestValueDataEqualityOperator)
+{
+  const StatisticsType::ValueDataOptions options = {
+      .render = true, .scaleToBlockSize = false, .colorMapper = color::ColorMapper()};
+
+  const StatisticsType::ValueDataOptions identicalOptions = {
+      .render = true, .scaleToBlockSize = false, .colorMapper = color::ColorMapper()};
+
+  const StatisticsType::ValueDataOptions optionsWithDifferentRenderFlag = {
+      .render = false, .scaleToBlockSize = false, .colorMapper = color::ColorMapper()};
+
+  const StatisticsType::ValueDataOptions optionsWithDifferentScaleToBlockSize = {
+      .render = true, .scaleToBlockSize = true, .colorMapper = color::ColorMapper()};
+
+  const StatisticsType::ValueDataOptions optionsWithDifferentColorMapper = {
+      .render           = false,
+      .scaleToBlockSize = false,
+      .colorMapper      = color::ColorMapper({0, 255}, Color(0, 0, 0), Color(0, 0, 255))};
+
+  EXPECT_TRUE(options == identicalOptions);
+  EXPECT_FALSE(options == optionsWithDifferentRenderFlag);
+  EXPECT_FALSE(options == optionsWithDifferentScaleToBlockSize);
+  EXPECT_FALSE(options == optionsWithDifferentColorMapper);
+}
+
+TEST(StatisticsTypeTest, TestVectorDataEqualityOperator)
+{
+  const StatisticsType::VectorDataOptions options = {.render           = true,
+                                                     .renderDataValues = false,
+                                                     .scaleToZoom      = true,
+                                                     .style            = LineDrawStyle(),
+                                                     .scale            = 3,
+                                                     .mapToColor       = true,
+                                                     .arrowHead =
+                                                         ArrowHead::circle};
+
+  const StatisticsType::VectorDataOptions identicalOptions = {
+      .render           = true,
+      .renderDataValues = false,
+      .scaleToZoom      = true,
+      .style            = LineDrawStyle(),
+      .scale            = 3,
+      .mapToColor       = true,
+      .arrowHead        = ArrowHead::circle};
+
+  const StatisticsType::VectorDataOptions optionsWithDifferentRenderFlag = {
+      .render           = false,
+      .renderDataValues = false,
+      .scaleToZoom      = true,
+      .style            = LineDrawStyle(),
+      .scale            = 3,
+      .mapToColor       = true,
+      .arrowHead        = ArrowHead::circle};
+
+  const StatisticsType::VectorDataOptions optionsWithDifferentRenderDataValuesFlag = {
+      .render           = true,
+      .renderDataValues = true,
+      .scaleToZoom      = true,
+      .style            = LineDrawStyle(),
+      .scale            = 3,
+      .mapToColor       = true,
+      .arrowHead        = ArrowHead::circle};
+
+  const StatisticsType::VectorDataOptions optionsWithDifferentScaleToZoomFlag = {
+      .render           = true,
+      .renderDataValues = false,
+      .scaleToZoom      = false,
+      .style            = LineDrawStyle(),
+      .scale            = 3,
+      .mapToColor       = true,
+      .arrowHead        = ArrowHead::circle};
+
+  const StatisticsType::VectorDataOptions optionsWithDifferentStyle = {
+      .render           = true,
+      .renderDataValues = false,
+      .scaleToZoom      = true,
+      .style            = LineDrawStyle({Color(255, 0, 0), 2, Pattern::DashDot}),
+      .scale            = 3,
+      .mapToColor       = true,
+      .arrowHead        = ArrowHead::circle};
+
+  const StatisticsType::VectorDataOptions optionsWithDifferentScale = {
+      .render           = true,
+      .renderDataValues = false,
+      .scaleToZoom      = true,
+      .style            = LineDrawStyle(),
+      .scale            = 4,
+      .mapToColor       = true,
+      .arrowHead        = ArrowHead::circle};
+
+  const StatisticsType::VectorDataOptions optionsWithDifferentMapToColorFlag = {
+      .render           = true,
+      .renderDataValues = false,
+      .scaleToZoom      = true,
+      .style            = LineDrawStyle(),
+      .scale            = 3,
+      .mapToColor       = false,
+      .arrowHead        = ArrowHead::circle};
+
+  const StatisticsType::VectorDataOptions optionsWithDifferentArrowHead = {
+      .render           = true,
+      .renderDataValues = false,
+      .scaleToZoom      = true,
+      .style            = LineDrawStyle(),
+      .scale            = 3,
+      .mapToColor       = true,
+      .arrowHead        = ArrowHead::arrow};
+
+  EXPECT_TRUE(options == identicalOptions);
+  EXPECT_FALSE(options == optionsWithDifferentRenderFlag);
+  EXPECT_FALSE(options == optionsWithDifferentRenderDataValuesFlag);
+  EXPECT_FALSE(options == optionsWithDifferentScaleToZoomFlag);
+  EXPECT_FALSE(options == optionsWithDifferentStyle);
+  EXPECT_FALSE(options == optionsWithDifferentScale);
+  EXPECT_FALSE(options == optionsWithDifferentMapToColorFlag);
+  EXPECT_FALSE(options == optionsWithDifferentArrowHead);
+}
+
+TEST(StatisticsTypeTest, TestGridOptionsEqualityOperator)
+{
+  const StatisticsType::GridOptions options = {
+      .render = true, .style = LineDrawStyle(), .scaleToZoom = true};
+
+  const StatisticsType::GridOptions identicalOptions = {
+      .render = true, .style = LineDrawStyle(), .scaleToZoom = true};
+
+  const StatisticsType::GridOptions optionsWithDifferentRenderFlag = {
+      .render = false, .style = LineDrawStyle(), .scaleToZoom = true};
+
+  const StatisticsType::GridOptions optionsWithDifferentStyle = {
+      .render      = true,
+      .style       = LineDrawStyle({Color(255, 0, 0), 2, Pattern::DashDot}),
+      .scaleToZoom = true};
+
+  const StatisticsType::GridOptions optionsWithDifferentScaleToZoomFlag = {
+      .render = true, .style = LineDrawStyle(), .scaleToZoom = false};
+
+  EXPECT_TRUE(options == identicalOptions);
+  EXPECT_FALSE(options == optionsWithDifferentRenderFlag);
+  EXPECT_FALSE(options == optionsWithDifferentStyle);
+  EXPECT_FALSE(options == optionsWithDifferentScaleToZoomFlag);
+}
+
+} // namespace stats::test

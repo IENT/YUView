@@ -32,8 +32,8 @@
 
 #pragma once
 
+#include <common/Modified.h>
 #include <common/Typedef.h>
-#include <common/YUViewDomElement.h>
 
 #include "ColorMapper.h"
 
@@ -49,8 +49,26 @@ enum class Pattern
   DashDotDot
 };
 
+constexpr EnumMapper<Pattern, 5> PatternMapper = {
+    std::make_pair(Pattern::Solid, "Solid"),
+    std::make_pair(Pattern::Dash, "Dash"),
+    std::make_pair(Pattern::Dot, "Dot"),
+    std::make_pair(Pattern::DashDot, "DashDot"),
+    std::make_pair(Pattern::DashDotDot, "DashDotDot")};
+
 const std::vector<Pattern> AllPatterns = {
     Pattern::Solid, Pattern::Dash, Pattern::Dot, Pattern::DashDot, Pattern::DashDotDot};
+
+enum class ArrowHead
+{
+  arrow,
+  circle,
+  none
+};
+
+constexpr EnumMapper<ArrowHead, 5> ArrowHeadMapper = {std::make_pair(ArrowHead::arrow, "arrow"),
+                                                      std::make_pair(ArrowHead::circle, "circle"),
+                                                      std::make_pair(ArrowHead::none, "none")};
 
 struct LineDrawStyle
 {
@@ -58,10 +76,7 @@ struct LineDrawStyle
   double  width{0.25};
   Pattern pattern{Pattern::Solid};
 
-  bool operator!=(const LineDrawStyle &other) const
-  {
-    return color != other.color || width != other.width || pattern != other.pattern;
-  }
+  bool operator==(const LineDrawStyle &other) const;
 };
 
 /* This class defines a type of statistic to render. Each statistics type entry defines the name and
@@ -70,98 +85,70 @@ struct LineDrawStyle
  */
 class StatisticsType
 {
+  friend class StatisticsTypeBuilder;
+  friend class StatisticsTypePlaylistHandler;
+
 public:
-  StatisticsType(int typeID = INT_INVALID, const QString &typeName = "?");
-  StatisticsType(int typeID, const QString &typeName, int vectorScaling);
-  StatisticsType(int                       typeID,
-                 const QString &           typeName,
-                 const color::ColorMapper &colorMapper,
-                 bool                      hasAndRenderVectorData = false);
+  int         getTypeID() const { return this->typeID; }
+  std::string getTypeName() const { return this->typeName; }
+  std::string getDescription() const { return this->description; }
 
-  // Save all the values that the user could change. When saving to playlist we can save only the
-  // changed values to playlist.
-  void setInitialState();
+  std::string getValueText(const int val) const;
 
-  // Load/Save status of statistics from playlist file
-  void savePlaylist(YUViewDomElement &root) const;
-  void loadPlaylist(const YUViewDomElement &root);
-
-  // Every statistics type has an ID, a name and possibly a description
-  int     typeID{};
-  QString typeName{};
-  QString description{};
-
-  // Get the value text (from the value map (if there is an entry))
-  QString getValueTxt(int val) const;
-
-  void    setMappingValues(std::vector<QString> values);
-  QString getMappedValue(int typeID) const;
-
-  // Is this statistics type rendered and what is the alpha value?
   // These are corresponding to the controls in the properties panel
-  bool render{};
-  int  alphaFactor{50};
+  modified<bool> render{};
+  modified<int>  alphaFactor{50};
 
-  // Value data (a certain value, that is set for a block)
-  bool               hasValueData{};          // Does this type have value data?
-  bool               renderValueData{};       // Do we render the value data?
-  bool               scaleValueToBlockSize{}; // Scale the values according to the size of the block
-  color::ColorMapper colorMapper;             // How do we map values to color?
-
-  // Vector data (a vector that is set for a block)
-  bool hasVectorData{}; // Does this type have any vector data?
-  bool hasAffineTFData{};
-  bool renderVectorData{};       // Do we draw the vector data?
-  bool renderVectorDataValues{}; // Do we draw the values of the vector next to the vector (by
-                                 // default true).
-  bool          scaleVectorToZoom{};
-  LineDrawStyle vectorStyle; // How do we draw the vectors
-  int vectorScale{1}; // Every vector value (x,y) has to be divided by this value before displaying
-                      // it (e.g. 1/4 th pixel accuracy)
-  bool mapVectorToColor{}; // Color the vectors depending on their direction
-  enum class ArrowHead
+  struct ValueDataOptions
   {
-    arrow,
-    circle,
-    none
+    modified<bool>               render{true};
+    modified<bool>               scaleToBlockSize{};
+    modified<color::ColorMapper> colorMapper{};
+
+    bool operator==(const ValueDataOptions &rhs) const;
   };
-  ArrowHead arrowHead{
-      ArrowHead::arrow}; // Do we draw an arrow, a circle or nothing at the end of the arrow?
 
-  // Do we (and if yes how) draw a grid around each block (vector or value)
-  bool          renderGrid{true};
-  LineDrawStyle gridStyle;
-  bool          scaleGridToZoom{};
+  std::optional<ValueDataOptions> valueDataOptions;
 
-  // is statistic drawn as a block or as a polygon?
-  bool isPolygon{};
+  struct VectorDataOptions
+  {
+    modified<bool>          render{true};
+    modified<bool>          renderDataValues{true};
+    modified<bool>          scaleToZoom{};
+    modified<LineDrawStyle> style{};
+    modified<int>           scale{};
+    modified<bool>          mapToColor{};
+    modified<ArrowHead>     arrowHead{ArrowHead::arrow};
+
+    bool operator==(const VectorDataOptions &rhs) const;
+  };
+
+  std::optional<VectorDataOptions> vectorDataOptions;
+
+  struct GridOptions
+  {
+    modified<bool>          render{};
+    modified<LineDrawStyle> style{};
+    modified<bool>          scaleToZoom{};
+
+    bool operator==(const GridOptions &rhs) const;
+  };
+
+  GridOptions gridOptions;
+
+  bool operator==(const StatisticsType &rhs) const;
 
 private:
-  // If set, this map is used to map values to text
-  std::map<int, QString> valMap;
+  StatisticsType() = delete;
+  StatisticsType(int typeId, std::string typeName);
 
-  // Backup values for setDefaultState()
-  struct initialState
-  {
-    bool render;
-    int  alphaFactor;
+  int         typeID{};
+  std::string typeName{};
+  std::string description{};
 
-    bool               renderValueData;
-    bool               scaleValueToBlockSize;
-    color::ColorMapper colorMapper;
+  std::map<int, std::string> valuesToText;
 
-    bool          renderVectorData;
-    bool          scaleVectorToZoom;
-    LineDrawStyle vectorStyle;
-    int           vectorScale;
-    bool          mapVectorToColor;
-    ArrowHead     arrowHead;
-
-    bool          renderGrid;
-    LineDrawStyle gridStyle;
-    bool          scaleGridToZoom;
-  };
-  initialState init;
+  void saveInitialState();
 };
 
 } // namespace stats

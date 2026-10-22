@@ -44,7 +44,7 @@ class AVPixFmtDescriptorWrapper
 {
 public:
   AVPixFmtDescriptorWrapper() = default;
-  AVPixFmtDescriptorWrapper(AVPixFmtDescriptor *sideData, LibraryVersion libVer);
+  explicit AVPixFmtDescriptorWrapper(AVPixFmtDescriptor *sideData, LibraryVersion libVer);
 
   video::RawFormat           getRawFormat() const;
   video::yuv::PixelFormatYUV getPixelFormatYUV() const;

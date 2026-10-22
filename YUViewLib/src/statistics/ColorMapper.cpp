@@ -111,6 +111,12 @@ ColorMapper::ColorMapper(const ColorMap &colorMap, Color other)
   this->colorMapOther = other;
 }
 
+ColorMapper::ColorMapper(const ColorMap &colorMap)
+{
+  this->mappingType = MappingType::Map;
+  this->colorMap    = colorMap;
+}
+
 ColorMapper::ColorMapper(Range<int> valueRange, PredefinedType predefinedType)
 {
   this->mappingType    = MappingType::Predefined;
@@ -449,19 +455,25 @@ void ColorMapper::loadPlaylist(const QStringPairList &attributes)
   }
 }
 
-bool ColorMapper::operator!=(const ColorMapper &other) const
+bool ColorMapper::operator==(const ColorMapper &other) const
 {
   if (this->mappingType != other.mappingType)
-    return true;
+    return false;
   if (this->mappingType == MappingType::Gradient)
-    return this->valueRange != other.valueRange ||
-           this->gradientColorStart != other.gradientColorStart ||
-           this->gradientColorEnd != other.gradientColorEnd;
+    return this->valueRange == other.valueRange &&
+           this->gradientColorStart == other.gradientColorStart &&
+           this->gradientColorEnd == other.gradientColorEnd;
   if (this->mappingType == MappingType::Map)
-    return this->colorMap != other.colorMap;
+    return this->colorMap == other.colorMap;
   if (this->mappingType == MappingType::Predefined)
-    return this->valueRange != other.valueRange || this->predefinedType != other.predefinedType;
+    return this->valueRange == other.valueRange && //
+           this->predefinedType == other.predefinedType;
   return false;
+}
+
+bool ColorMapper::operator!=(const ColorMapper &other) const
+{
+  return !(*this == other);
 }
 
 } // namespace stats::color

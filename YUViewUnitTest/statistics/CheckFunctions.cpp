@@ -70,6 +70,22 @@ void checkValueList(const std::vector<stats::StatsItemValue> &values,
   }
 }
 
+void checkValueListStartsWith(const std::vector<stats::StatsItemValue> &values,
+                              const std::vector<CheckStatsItem>        &checkItems)
+{
+  EXPECT_GE(values.size(), checkItems.size());
+  for (unsigned i = 0; i < checkItems.size(); i++)
+  {
+    const auto val = values[i];
+    const auto chk = checkItems[i];
+    EXPECT_EQ(unsigned(val.pos[0]), chk.x);
+    EXPECT_EQ(unsigned(val.pos[1]), chk.y);
+    EXPECT_EQ(unsigned(val.size[0]), chk.w);
+    EXPECT_EQ(unsigned(val.size[1]), chk.h);
+    EXPECT_EQ(val.value, chk.v0);
+  }
+}
+
 void checkAffineTFVectorList(const std::vector<stats::StatsItemAffineTF> &affineTFvectors,
                              const std::vector<CheckAffineTFItem>        &checkItems)
 {

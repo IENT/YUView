@@ -119,6 +119,7 @@ public:
   ColorMapper() = default;
   ColorMapper(Range<int> valueRange, Color gradientColorStart, Color gradientColorEnd);
   ColorMapper(const ColorMap &colorMap, Color other);
+  ColorMapper(const ColorMap &colorMap);
   ColorMapper(Range<int> valueRange, PredefinedType predefinedType);
   ColorMapper(Range<int> valueRange, std::string predefinedTypeName);
 
@@ -130,6 +131,7 @@ public:
 
   // Two colorMappers are identical if they will return the same color when asked for any value.
   // When changing the type of one of the mappers, this might not be true anymore.
+  bool operator==(const ColorMapper &other) const;
   bool operator!=(const ColorMapper &other) const;
 
   MappingType mappingType{MappingType::Predefined};
@@ -137,7 +139,7 @@ public:
   Range<int>     valueRange{};
   Color          gradientColorStart{0, 0, 0};
   Color          gradientColorEnd{0, 0, 255};
-  ColorMap       colorMap;
+  ColorMap       colorMap{};
   Color          colorMapOther{};
   PredefinedType predefinedType{PredefinedType::Jet};
 };

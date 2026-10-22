@@ -47,8 +47,8 @@ class StatisticsFileBase : public QObject
   Q_OBJECT
 
 public:
-  StatisticsFileBase(const QString &filename);
-  virtual ~StatisticsFileBase();
+  StatisticsFileBase(const std::string &filename);
+  virtual ~StatisticsFileBase() = default;
 
   // Parse the whole file and get the positions where a new POC/type starts and save them. Later we
   // can then seek to these positions to load data. Usually this is called in a seperate thread.
@@ -57,17 +57,38 @@ public:
   // Load the statistics for "poc/type" from file and put it into the handlers cache.
   virtual void loadStatisticData(StatisticsData &statisticsData, int poc, int typeID) = 0;
 
-  operator bool() const { return !this->error; };
+  operator bool() const { return !this->parsingInfo.errorMessage.has_value(); };
 
   // -1 if it could not be parser from the file
   virtual double getFramerate() const { return -1; }
 
-  int getMaxPoc() const { return this->maxPOC; }
+  int getMaxPoc() const { return this->parsingInfo.maxPocEncountered; }
 
   bool isFileChanged() { return this->file.getAndResetFileChangedFlag(); }
   void updateSettings() { this->file.updateFileWatchSetting(); }
 
   InfoData getInfo() const;
+
+  struct ParsingInfo
+  {
+    enum class FileSorting
+    {
+      Unknown,
+      SortedByPOC,
+      SortedByType
+    };
+
+    FileSorting fileSorting{FileSorting::Unknown};
+
+    int                maxPocEncountered{};
+    std::optional<int> pocWithDataOutsideOfFrame{};
+
+    std::optional<std::string> errorMessage{};
+
+    double parsingProgress{};
+  };
+
+  ParsingInfo getParsingInfo() const { return this->parsingInfo; };
 
 signals:
   // When readFrameAndTypePositionsFromFile is running it will emit whenever new data for this POC
@@ -79,20 +100,7 @@ signals:
 protected:
   FileSource file;
 
-  // Set if the file is sorted by POC and the types are 'random' within this POC (true)
-  // or if the file is sorted by typeID and the POC is 'random'
-  bool fileSortedByPOC{};
-  // The maximum POC number in the file (as far as we know)
-  int maxPOC{};
-  // The POC in which the parser noticed a block that was outside of the "frame" or -1 if none was
-  // found.
-  int blockOutsideOfFramePOC{-1};
-
-  bool    error{false};
-  QString errorMessage{};
-
-  double parsingProgress{};
-  bool   abortParsingDestroy{};
+  ParsingInfo parsingInfo{};
 };
 
 } // namespace stats

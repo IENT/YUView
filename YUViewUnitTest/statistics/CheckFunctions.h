@@ -65,6 +65,9 @@ struct CheckPolygonVectorItem
 void checkValueList(const std::vector<stats::StatsItemValue> &values,
                     const std::vector<CheckStatsItem>        &checkItems);
 
+void checkValueListStartsWith(const std::vector<stats::StatsItemValue> &values,
+                              const std::vector<CheckStatsItem>        &checkItems);
+
 void checkVectorList(const std::vector<stats::StatsItemVector> &vectors,
                      const std::vector<CheckStatsItem>         &checkItems);
 
