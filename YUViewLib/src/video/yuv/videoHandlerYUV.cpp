@@ -383,6 +383,123 @@ std::pair<bool, PixelFormatYUV> convertV210PackedToPlanar(const QByteArray &sour
   return {true, newFormat};
 }
 
+// Get the 10 bit sample with the given index from a line of NV15/NV20/NV30 data.
+// 4 x 10 bit samples are packed into 5 bytes: A 40 bit little endian word
+// containing the samples like [39:0] Y3:Y2:Y1:Y0 (the first sample is in the lowest 10 bits).
+// The packing restarts at the beginning of every line. The chroma plane is interleaved
+// (Cr1:Cb1:Cr0:Cb0 per group, so in sample order: Cb0, Cr0, Cb1, Cr1).
+inline unsigned short getNV10bitLineSample(const unsigned char *restrict line, unsigned sampleIdx)
+{
+  line += (sampleIdx / 4) * 5;
+  switch (sampleIdx % 4)
+  {
+  case 0:
+    return line[0] + ((line[1] & 0x03) << 8);
+  case 1:
+    return ((line[1] >> 2) & 0x3f) + ((line[2] & 0x0f) << 6);
+  case 2:
+    return (line[2] >> 4) + ((line[3] & 0x3f) << 4);
+  default:
+    return ((line[3] >> 6) & 0x03) + (line[4] << 2);
+  }
+}
+
+
+inline unsigned getNV10bitBytesPerLine(unsigned nrSamples)
+{
+  // 4 samples per 5 bytes, rounded up per line
+  return ((nrSamples + 3) / 4) * 5;
+}
+
+// Convert the semi planar packed NV15 (420), NV20 (422) or NV30 (444) format to a planar format
+// with 2 bytes per sample so that the normal planar conversion functions can be used.
+// The NV formats consist of a Y plane followed by an interleaved Cb/Cr plane. 4 10 bit samples
+// are packed into 5 bytes (per line, see getNV10bitLineSample).
+std::pair<bool, PixelFormatYUV> convertNV10bitSemiPlanarPackedToPlanar(const QByteArray           &sourceBuffer,
+                                                                       QByteArray                 &targetBuffer,
+                                                                       const Size                  curFrameSize,
+                                                                       const PredefinedPixelFormat nvFormat)
+{
+  Subsampling subsampling;
+  if (nvFormat == PredefinedPixelFormat::NV15)
+    subsampling = Subsampling::YUV_420;
+  else if (nvFormat == PredefinedPixelFormat::NV20)
+    subsampling = Subsampling::YUV_422;
+  else
+    subsampling = Subsampling::YUV_444;
+
+  const auto w = curFrameSize.width;
+  const auto h = curFrameSize.height;
+
+  // The output format is planar 10 bit with the same subsampling
+  auto       newFormat        = PixelFormatYUV(subsampling, 10, PlaneOrder::YUV);
+  const auto bytesPerOutFrame = newFormat.bytesPerFrame(curFrameSize);
+  if (targetBuffer.size() < bytesPerOutFrame)
+    targetBuffer.resize(bytesPerOutFrame);
+
+  // The interleaved chroma plane contains one U and one V sample per chroma position.
+  const auto chromaWidth  = (subsampling == Subsampling::YUV_444) ? w : w / 2;
+  const auto chromaHeight = (subsampling == Subsampling::YUV_420) ? h / 2 : h;
+  const auto strideY      = getNV10bitBytesPerLine(w);
+  const auto strideC      = getNV10bitBytesPerLine(chromaWidth * 2);
+
+  const unsigned char *restrict srcY   = (unsigned char *)sourceBuffer.data();
+  const unsigned char *restrict srcC   = srcY + strideY * h;
+  unsigned short *restrict      dstY   = (unsigned short *)targetBuffer.data();
+  unsigned short *restrict      dstU   = dstY + w * h;
+  unsigned short *restrict      dstV   = dstU + chromaWidth * chromaHeight;
+
+  for (unsigned y = 0; y < h; y++)
+  {
+    const unsigned char *restrict lineY = srcY + y * strideY;
+    unsigned short *restrict      outY  = dstY + y * w;
+    for (unsigned x = 0; x < w; x++)
+      outY[x] = getNV10bitLineSample(lineY, x);
+  }
+
+  for (unsigned y = 0; y < chromaHeight; y++)
+  {
+    const unsigned char *restrict lineC = srcC + y * strideC;
+    unsigned short *restrict      outU  = dstU + y * chromaWidth;
+    unsigned short *restrict      outV  = dstV + y * chromaWidth;
+    for (unsigned x = 0; x < chromaWidth; x++)
+    {
+      outU[x] = getNV10bitLineSample(lineC, x * 2);
+      outV[x] = getNV10bitLineSample(lineC, x * 2 + 1);
+    }
+  }
+
+  return {true, newFormat};
+}
+
+yuv_t getPixelValueNV10bit(const QByteArray           &sourceBuffer,
+                           const Size                 &curFrameSize,
+                           const QPoint               &pixelPos,
+                           const PredefinedPixelFormat nvFormat)
+{
+  const auto w = curFrameSize.width;
+  const auto h = curFrameSize.height;
+
+  const auto chromaWidth = (nvFormat == PredefinedPixelFormat::NV30) ? w : w / 2;
+  const auto subHor      = (nvFormat == PredefinedPixelFormat::NV30) ? 1u : 2u;
+  const auto subVer      = (nvFormat == PredefinedPixelFormat::NV15) ? 2u : 1u;
+  const auto strideY      = getNV10bitBytesPerLine(w);
+  const auto strideC      = getNV10bitBytesPerLine(chromaWidth * 2);
+
+  const unsigned char *restrict srcY = (unsigned char *)sourceBuffer.data();
+  const unsigned char *restrict srcC = srcY + strideY * h;
+
+  yuv_t ret;
+  ret.Y = getNV10bitLineSample(srcY + pixelPos.y() * strideY, pixelPos.x());
+
+  const auto     chromaLine  = srcC + (pixelPos.y() / subVer) * strideC;
+  const unsigned chromaIndex = (unsigned(pixelPos.x()) / subHor) * 2;
+  ret.U = getNV10bitLineSample(chromaLine, chromaIndex);
+  ret.V = getNV10bitLineSample(chromaLine, chromaIndex + 1);
+
+  return ret;
+}
+
 yuv_t getPixelValueV210(const QByteArray &sourceBuffer,
                         const Size       &curFrameSize,
                         const QPoint     &pixelPos)
@@ -2346,6 +2463,11 @@ void convertYUVToImage(const QByteArray         &sourceBuffer,
       if (*predefinedFormat == PredefinedPixelFormat::V210)
         std::tie(convOK, newPixelFormat) =
           convertV210PackedToPlanar(sourceBuffer, tmpPlanarYUVSource, curFrameSize);
+      else if (*predefinedFormat == PredefinedPixelFormat::NV15 ||
+               *predefinedFormat == PredefinedPixelFormat::NV20 ||
+               *predefinedFormat == PredefinedPixelFormat::NV30)
+        std::tie(convOK, newPixelFormat) = convertNV10bitSemiPlanarPackedToPlanar(
+          sourceBuffer, tmpPlanarYUVSource, curFrameSize, *predefinedFormat);
       else
         convOK = false;
     }
@@ -2380,7 +2502,10 @@ std::vector<PixelFormatYUV> videoHandlerYUV::formatPresetList = {
   PixelFormatYUV(Subsampling::YUV_420, 10, PlaneOrder::YUV),
   PixelFormatYUV(Subsampling::YUV_422, 8, PlaneOrder::YUV),
   PixelFormatYUV(Subsampling::YUV_444, 8, PlaneOrder::YUV),
-  PixelFormatYUV(PredefinedPixelFormat::V210)};
+  PixelFormatYUV(PredefinedPixelFormat::V210),
+  PixelFormatYUV(PredefinedPixelFormat::NV15),
+  PixelFormatYUV(PredefinedPixelFormat::NV20),
+  PixelFormatYUV(PredefinedPixelFormat::NV30)};
 
 videoHandlerYUV::videoHandlerYUV() : videoHandler()
 {
@@ -3288,6 +3413,10 @@ yuv_t videoHandlerYUV::getPixelValue(const QPoint &pixelPos) const
   {
     if (predefinedFormat == PredefinedPixelFormat::V210)
       value = getPixelValueV210(currentFrameRawData, frameSize, pixelPos);
+    else if (*predefinedFormat == PredefinedPixelFormat::NV15 ||
+             *predefinedFormat == PredefinedPixelFormat::NV20 ||
+             *predefinedFormat == PredefinedPixelFormat::NV30)
+      value = getPixelValueNV10bit(currentFrameRawData, frameSize, pixelPos, *predefinedFormat);
   }
   else if (format.isPlanar())
   {

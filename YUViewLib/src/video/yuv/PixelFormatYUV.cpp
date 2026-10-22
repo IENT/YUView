@@ -123,10 +123,7 @@ std::string formatSubsamplingWithColons(const Subsampling &subsampling)
 PixelFormatYUV::PixelFormatYUV(const std::string_view name)
 {
   if (auto predefinedFormat = PredefinedPixelFormatMapper.getValue(name))
-  {
-    if (*predefinedFormat == PredefinedPixelFormat::V210)
-      this->predefinedPixelFormat = predefinedFormat;
-  }
+    this->predefinedPixelFormat = predefinedFormat;
 
   std::regex strExpr(
     "([YUVA]{3,6}(?:\\(IL\\))?) (4:[4210]{1}:[4210]{1}) ([0-9]{1,2})-bit[ ]?([BL]{1}E)?[ "
@@ -307,7 +304,26 @@ bool PixelFormatYUV::isValid() const
 bool PixelFormatYUV::canConvertToRGB(Size imageSize, std::string *whyNot) const
 {
   if (this->predefinedPixelFormat.has_value())
+  {
+    if (*this->predefinedPixelFormat == PredefinedPixelFormat::NV15 ||
+        *this->predefinedPixelFormat == PredefinedPixelFormat::NV20)
+    {
+      if (imageSize.width % 2 != 0)
+      {
+        if (whyNot)
+          whyNot->append("The item width must be divisible by 2 for this format.\n");
+        return false;
+      }
+      if (*this->predefinedPixelFormat == PredefinedPixelFormat::NV15 &&
+          imageSize.height % 2 != 0)
+      {
+        if (whyNot)
+          whyNot->append("The item height must be divisible by 2 for this format.\n");
+        return false;
+      }
+    }
     return true;
+  }
   if (!this->isValid())
   {
     if (whyNot)
@@ -378,6 +394,33 @@ int64_t PixelFormatYUV::bytesPerFrame(const Size &frameSize) const
       // Although there is a weird expception to this in the standard.
       auto roundedUpWidth = (((frameSize.width + 48 - 1) / 48) * 48);
       return frameSize.height * roundedUpWidth * 16 / 6;
+    }
+
+    // The semi planar NV15/NV20/NV30 formats:
+    // A Y plane followed by an interleaved Cb/Cr plane.
+    // 4 x 10 bit samples are packed into 5 bytes (little endian 40 bit word,
+    // the first sample in the lowest bits). The packing restarts at every line.
+    if (*this->predefinedPixelFormat == PredefinedPixelFormat::NV15 ||
+        *this->predefinedPixelFormat == PredefinedPixelFormat::NV20 ||
+        *this->predefinedPixelFormat == PredefinedPixelFormat::NV30)
+    {
+      const auto bytesPerLine = [](unsigned nrSamples) {
+        // 4 samples per 5 bytes, rounded up per line
+        return ((nrSamples + 3) / 4) * 5;
+      };
+      const auto w = frameSize.width;
+      const auto h = frameSize.height;
+
+      int64_t bytes = int64_t(h) * bytesPerLine(w); // The Y plane
+      if (*this->predefinedPixelFormat == PredefinedPixelFormat::NV15)
+        // Chroma: w/2 U and w/2 V samples per line, h/2 lines
+        bytes += int64_t(h / 2) * bytesPerLine(w);
+      else if (*this->predefinedPixelFormat == PredefinedPixelFormat::NV20)
+        // Chroma: w/2 U and w/2 V samples per line, h lines
+        bytes += int64_t(h) * bytesPerLine(w);
+      else // NV30: Chroma: w U and w V samples per line, h lines
+        bytes += int64_t(h) * bytesPerLine(2 * w);
+      return bytes;
     }
     return -1;
   }
@@ -502,6 +545,11 @@ unsigned PixelFormatYUV::getNrPlanes() const
   {
     if (*this->predefinedPixelFormat == PredefinedPixelFormat::V210)
       return 3;
+    // The semi planar NV 10bit formats have a Y plane and an interleaved UV plane
+    if (*this->predefinedPixelFormat == PredefinedPixelFormat::NV15 ||
+        *this->predefinedPixelFormat == PredefinedPixelFormat::NV20 ||
+        *this->predefinedPixelFormat == PredefinedPixelFormat::NV30)
+      return 2;
     return 0;
   }
 
@@ -519,6 +567,12 @@ Subsampling PixelFormatYUV::getSubsampling() const
   {
     if (*this->predefinedPixelFormat == PredefinedPixelFormat::V210)
       return Subsampling::YUV_422;
+    if (*this->predefinedPixelFormat == PredefinedPixelFormat::NV15)
+      return Subsampling::YUV_420;
+    if (*this->predefinedPixelFormat == PredefinedPixelFormat::NV20)
+      return Subsampling::YUV_422;
+    if (*this->predefinedPixelFormat == PredefinedPixelFormat::NV30)
+      return Subsampling::YUV_444;
     return Subsampling::UNKNOWN;
   }
 
@@ -569,6 +623,10 @@ unsigned PixelFormatYUV::getBitsPerSample() const
   if (this->predefinedPixelFormat)
   {
     if (*this->predefinedPixelFormat == PredefinedPixelFormat::V210)
+      return 10;
+    if (*this->predefinedPixelFormat == PredefinedPixelFormat::NV15 ||
+        *this->predefinedPixelFormat == PredefinedPixelFormat::NV20 ||
+        *this->predefinedPixelFormat == PredefinedPixelFormat::NV30)
       return 10;
     return 0;
   }
@@ -622,6 +680,8 @@ Offset PixelFormatYUV::getChromaOffset() const
   {
     if (*this->predefinedPixelFormat == PredefinedPixelFormat::V210)
       return Offset({0, 0});
+    else if (*this->predefinedPixelFormat == PredefinedPixelFormat::NV15)
+      return Offset({0, 1}); // 420
     return Offset({0, 0});
   }
 
@@ -633,6 +693,11 @@ bool PixelFormatYUV::isBytePacking() const
   if (this->predefinedPixelFormat)
   {
     if (*this->predefinedPixelFormat == PredefinedPixelFormat::V210)
+      return true;
+    // The NV 10bit formats pack 4 x 10 bit samples into 5 bytes
+    if (*this->predefinedPixelFormat == PredefinedPixelFormat::NV15 ||
+        *this->predefinedPixelFormat == PredefinedPixelFormat::NV20 ||
+        *this->predefinedPixelFormat == PredefinedPixelFormat::NV30)
       return true;
     return false;
   }
