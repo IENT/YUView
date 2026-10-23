@@ -68,7 +68,6 @@ public:
   int    getImageBitDepth() const { return currentImage.depth(); }
   void   setBitDepth(int depth) { m_bitDepth = depth; }
   int    getBitDepth() const { return m_bitDepth; }
-  QImage getCurrentFrameAsImage() const { return currentImage; }
 
   // Draw the (current) frame with the given zoom factor
   void drawFrame(QPainter *painter, double zoomFactor, bool drawRawValues);
