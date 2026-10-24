@@ -85,8 +85,11 @@ videoHandlerYUVCustomFormatDialog::videoHandlerYUVCustomFormatDialog(
     this->ui.groupBoxPlanar->setChecked(true);
     this->ui.comboBoxPlaneOrder->setCurrentIndex(
       int(PlaneOrderMapper.indexOf(planarFormat->planeOrder)));
-    // Set UV(A) interleaved
+
     this->ui.checkBoxUVInterleaved->setChecked(planarFormat->uvPlanesInterleaved);
+    this->ui.checkBoxBytePackingPYUV->setChecked(planarFormat->bytePacking);
+
+    this->enablePossibleInterleavedAndPackingModeCheckboxes();
   }
   else if (const auto packedFormat = yuvFormat.getPackedFormat())
   {
@@ -110,7 +113,6 @@ void videoHandlerYUVCustomFormatDialog::on_comboBoxChromaSubsampling_currentInde
 
   bool packedSupported = (packingTypes.size() != 0);
   if (!packedSupported)
-    // No packing supported for this subsampling. Select planar.
     this->ui.groupBoxPlanar->setChecked(true);
   else
     this->ui.comboBoxPackingOrder->setCurrentIndex(0);
@@ -149,6 +151,8 @@ void videoHandlerYUVCustomFormatDialog::on_comboBoxChromaSubsampling_currentInde
   this->ui.groupBoxPlanar->setEnabled(chromaPresent);
   this->ui.comboBoxChromaOffsetX->setEnabled(chromaPresent);
   this->ui.comboBoxChromaOffsetY->setEnabled(chromaPresent);
+
+  this->enablePossibleInterleavedAndPackingModeCheckboxes();
 }
 
 void videoHandlerYUVCustomFormatDialog::on_groupBoxPlanar_toggled(bool checked)
@@ -158,6 +162,14 @@ void videoHandlerYUVCustomFormatDialog::on_groupBoxPlanar_toggled(bool checked)
     this->ui.groupBoxPlanar->setChecked(true);
   else
     this->ui.groupBoxPacked->setChecked(!checked);
+
+  this->enablePossibleInterleavedAndPackingModeCheckboxes();
+}
+
+void videoHandlerYUVCustomFormatDialog::on_groupBoxPacked_toggled(bool checked)
+{
+  this->ui.groupBoxPlanar->setChecked(!checked);
+  this->enablePossibleInterleavedAndPackingModeCheckboxes();
 }
 
 PixelFormatYUV videoHandlerYUVCustomFormatDialog::getSelectedYUVFormat() const
@@ -190,9 +202,15 @@ PixelFormatYUV videoHandlerYUVCustomFormatDialog::getSelectedYUVFormat() const
       return {};
 
     const auto uvInterleaved = this->ui.checkBoxUVInterleaved->isChecked();
+    const auto bytePacking   = this->ui.checkBoxBytePackingPYUV->isChecked();
 
-    return PlanarPixelFormat(
-      {*subsampling, bitsPerSample, *planeOrder, endianness, chromaOffset, uvInterleaved});
+    return PlanarPixelFormat({*subsampling,
+                              bitsPerSample,
+                              *planeOrder,
+                              endianness,
+                              chromaOffset,
+                              uvInterleaved,
+                              bytePacking});
   }
   else
   {
@@ -214,6 +232,51 @@ void videoHandlerYUVCustomFormatDialog::on_comboBoxBitDepth_currentIndexChanged(
   // Endianness only makes sense when the bit depth is > 8bit.
   const bool bitDepth8 = (idx == 0);
   this->ui.comboBoxEndianness->setEnabled(!bitDepth8);
+
+  this->enablePossibleInterleavedAndPackingModeCheckboxes();
+}
+
+void videoHandlerYUVCustomFormatDialog::on_comboBoxEndianness_currentIndexChanged(int)
+{
+  this->enablePossibleInterleavedAndPackingModeCheckboxes();
+}
+
+void videoHandlerYUVCustomFormatDialog::on_comboBoxPlaneOrder_currentIndexChanged(int)
+{
+  this->enablePossibleInterleavedAndPackingModeCheckboxes();
+}
+
+void videoHandlerYUVCustomFormatDialog::on_checkBoxUVInterleaved_checkStateChanged(Qt::CheckState)
+{
+  this->enablePossibleInterleavedAndPackingModeCheckboxes();
+}
+
+void videoHandlerYUVCustomFormatDialog::on_checkBoxBytePackingPYUV_checkStateChanged(Qt::CheckState)
+{
+  this->enablePossibleInterleavedAndPackingModeCheckboxes();
+}
+
+void videoHandlerYUVCustomFormatDialog::enablePossibleInterleavedAndPackingModeCheckboxes()
+{
+  auto currentPixelFormat = this->getSelectedYUVFormat().getPlanarFormat();
+  if (!currentPixelFormat)
+    return;
+
+  if (!this->ui.checkBoxUVInterleaved->isChecked())
+  {
+    auto currentFormatWithUVInterleaved                = *currentPixelFormat;
+    currentFormatWithUVInterleaved.uvPlanesInterleaved = true;
+    const auto canBeActivated = PixelFormatYUV(currentFormatWithUVInterleaved).isValid();
+    this->ui.checkBoxUVInterleaved->setEnabled(canBeActivated);
+  }
+
+  if (!this->ui.checkBoxBytePackingPYUV->isChecked())
+  {
+    auto currentFormatWithBytePacking        = *currentPixelFormat;
+    currentFormatWithBytePacking.bytePacking = true;
+    const auto canBeActivated = PixelFormatYUV(currentFormatWithBytePacking).isValid();
+    this->ui.checkBoxBytePackingPYUV->setEnabled(canBeActivated);
+  }
 }
 
 } // namespace video::yuv
