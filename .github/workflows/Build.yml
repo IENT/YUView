@@ -84,8 +84,13 @@ jobs:
     - name: Install Linuxdeployqt
       if: runner.os == 'Linux'
       run: |
-        curl -L https://github.com/probonopd/linuxdeployqt/releases/download/continuous/linuxdeployqt-continuous-x86_64.AppImage -o linuxdeployqt-6-x86_64.AppImage
-        chmod a+x linuxdeployqt-6-x86_64.AppImage
+        if [ "${{ runner.arch }}" = "ARM64" ]; then
+          asset_arch=aarch64
+        else
+          asset_arch=x86_64
+        fi
+        curl -L "https://github.com/probonopd/linuxdeployqt/releases/download/continuous/linuxdeployqt-continuous-${asset_arch}.AppImage" -o linuxdeployqt.AppImage
+        chmod a+x linuxdeployqt.AppImage
     - name: Install Linux packages
       if: runner.os == 'Linux'
       run: |
@@ -127,7 +132,7 @@ jobs:
       run: |
         cd build
         make INSTALL_ROOT=appdir install
-        $GITHUB_WORKSPACE/linuxdeployqt-6-x86_64.AppImage YUViewApp/appdir/usr/local/share/applications/de.rwth_aachen.ient.YUView.desktop -appimage -bundle-non-qt-libs -verbose=2
+        $GITHUB_WORKSPACE/linuxdeployqt.AppImage YUViewApp/appdir/usr/local/share/applications/de.rwth_aachen.ient.YUView.desktop -appimage -bundle-non-qt-libs -verbose=2
         mv YUView-*.AppImage YUView.AppImage
         mkdir $GITHUB_WORKSPACE/artifacts
         cp YUView.AppImage $GITHUB_WORKSPACE/artifacts/
