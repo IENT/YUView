@@ -34,6 +34,8 @@
 
 #include <QString>
 
+#include <optional>
+
 namespace itemMemoryHandler
 {
 
