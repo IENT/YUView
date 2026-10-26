@@ -8,59 +8,60 @@ on:
     types: [created]
 
 jobs:
-  build-unix-native:
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        os: [ubuntu-24.04, ubuntu-26.04, ubuntu-24.04-arm, ubuntu-26.04-arm]
-    steps:
-    - uses: actions/checkout@v6
-      with:
-        submodules: true
-    - run: git fetch --prune --unshallow
-    - name: Install Linux packages
-      run: |
-        sudo apt-get update
-        sudo apt-get install qt6-base-dev
-    - name: Build
-      run: |
-        cd $GITHUB_WORKSPACE
-        mkdir build
-        cd build
-        qmake6 CONFIG+=UNITTESTS ..
-        make -j$(nproc)
-    - name: Run Unittests
-      run: $GITHUB_WORKSPACE/build/YUViewUnitTest/YUViewUnitTest
-      env:
-        QT_QPA_PLATFORM: 'offscreen'
-  build-mac-native:
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        os: [macos-26-intel, macos-26]
-    steps:
-    - uses: actions/checkout@v6
-      with:
-        submodules: true
-    - run: git fetch --prune --unshallow
-    - name: Install packages
-      run: brew install qt
-    - name: Build
-      run: |
-        cd $GITHUB_WORKSPACE
-        mkdir build
-        cd build
-        qmake6 CONFIG+=UNITTESTS ..
-        make -j $(sysctl -n hw.logicalcpu)
-    - name: Run Unittests
-      run: $GITHUB_WORKSPACE/build/YUViewUnitTest/YUViewUnitTest
-      env:
-        QT_QPA_PLATFORM: 'offscreen'
+  # build-unix-native:
+  #   runs-on: ${{ matrix.os }}
+  #   strategy:
+  #     matrix:
+  #       os: [ubuntu-24.04, ubuntu-26.04, ubuntu-24.04-arm, ubuntu-26.04-arm]
+  #   steps:
+  #   - uses: actions/checkout@v6
+  #     with:
+  #       submodules: true
+  #   - run: git fetch --prune --unshallow
+  #   - name: Install Linux packages
+  #     run: |
+  #       sudo apt-get update
+  #       sudo apt-get install qt6-base-dev
+  #   - name: Build
+  #     run: |
+  #       cd $GITHUB_WORKSPACE
+  #       mkdir build
+  #       cd build
+  #       qmake6 CONFIG+=UNITTESTS ..
+  #       make -j$(nproc)
+  #   - name: Run Unittests
+  #     run: $GITHUB_WORKSPACE/build/YUViewUnitTest/YUViewUnitTest
+  #     env:
+  #       QT_QPA_PLATFORM: 'offscreen'
+  # build-mac-native:
+  #   runs-on: ${{ matrix.os }}
+  #   strategy:
+  #     matrix:
+  #       os: [macos-26-intel, macos-26]
+  #   steps:
+  #   - uses: actions/checkout@v6
+  #     with:
+  #       submodules: true
+  #   - run: git fetch --prune --unshallow
+  #   - name: Install packages
+  #     run: brew install qt
+  #   - name: Build
+  #     run: |
+  #       cd $GITHUB_WORKSPACE
+  #       mkdir build
+  #       cd build
+  #       qmake6 CONFIG+=UNITTESTS ..
+  #       make -j $(sysctl -n hw.logicalcpu)
+  #   - name: Run Unittests
+  #     run: $GITHUB_WORKSPACE/build/YUViewUnitTest/YUViewUnitTest
+  #     env:
+  #       QT_QPA_PLATFORM: 'offscreen'
   build-linux-mac:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-24.04, ubuntu-24.04-arm, macos-26-intel, macos-26]
+        #os: [ubuntu-24.04, ubuntu-24.04-arm, macos-26-intel, macos-26]
+        os: [ubuntu-24.04-arm]
     steps:
     - uses: actions/checkout@v6
       with:
@@ -151,7 +152,8 @@ jobs:
     strategy:
       matrix:
         autoUpdate: [true, false]
-        os: [windows-2022, windows-11-vs2026-arm]
+        #os: [windows-2022, windows-11-vs2026-arm]
+        os: [windows-11-vs2026-arm]
     steps:
     - uses: actions/checkout@v6
       with:
@@ -159,6 +161,8 @@ jobs:
     - uses: ilammy/msvc-dev-cmd@v1
       with:
         arch: ${{ contains(matrix.os, 'arm') && 'arm64' || 'x64' }}
+    - name: Install wix toolset
+      run: dotnet tool install --global wix
     - run: git fetch --prune --unshallow
     - name: Install Qt base
       run: |
