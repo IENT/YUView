@@ -157,6 +157,8 @@ jobs:
       with:
         submodules: true
     - uses: ilammy/msvc-dev-cmd@v1
+      with:
+        arch: ${{ contains(matrix.os, 'arm') && 'arm64' || 'x64' }}
     - run: git fetch --prune --unshallow
     - name: Install Qt base
       run: |
