@@ -24,7 +24,7 @@ jobs:
         sudo apt-get install qt6-base-dev
     - name: Build
       run: |
-        cmake -S . -B build -DYUVIEW_BUILD_TESTS=ON -DCMAKE_PREFIX_PATH="$(brew --prefix qt)"
+        cmake -S . -B build -DYUVIEW_BUILD_TESTS=ON
         cmake --build build --parallel
     - name: Run Unittests
       run: ctest --test-dir build --output-on-failure

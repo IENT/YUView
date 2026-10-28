@@ -31,6 +31,7 @@ add_subdirectory(YUViewLib)
 add_subdirectory(YUViewApp)
 
 if(YUVIEW_BUILD_TESTS)
+  message(STATUS "Enabled building of tests")
   enable_testing()
   add_subdirectory(YUViewUnitTest)
 endif()

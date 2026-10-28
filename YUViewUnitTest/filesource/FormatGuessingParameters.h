@@ -32,7 +32,7 @@
 
 #pragma once
 
-#include <common/Testing.h>
+#include <Testing.h>
 #include <filesource/FrameFormatGuess.h>
 
 namespace filesource::frameFormatGuess::test

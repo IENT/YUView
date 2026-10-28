@@ -9,7 +9,9 @@ add_library(YUViewLib STATIC
 )
 set_target_properties(YUViewLib PROPERTIES
   AUTOUIC_SEARCH_PATHS "${CMAKE_CURRENT_SOURCE_DIR}/ui")
-target_include_directories(YUViewLib PUBLIC src)
+target_include_directories(YUViewLib PUBLIC
+  src
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/YUViewLib_autogen/include>)
 target_link_libraries(YUViewLib PUBLIC
   Qt${QT_VERSION_MAJOR}::Core
   Qt${QT_VERSION_MAJOR}::Gui

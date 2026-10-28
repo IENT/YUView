@@ -30,7 +30,7 @@
  *   along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <common/Testing.h>
+#include <Testing.h>
 
 #include <common/Formatting.h>
 
