@@ -24,13 +24,10 @@ jobs:
         sudo apt-get install qt6-base-dev
     - name: Build
       run: |
-        cd $GITHUB_WORKSPACE
-        mkdir build
-        cd build
-        qmake6 CONFIG+=UNITTESTS ..
-        make -j$(nproc)
+        cmake -S . -B build -DYUVIEW_BUILD_TESTS=ON -DCMAKE_PREFIX_PATH="$(brew --prefix qt)"
+        cmake --build build --parallel
     - name: Run Unittests
-      run: $GITHUB_WORKSPACE/build/YUViewUnitTest/YUViewUnitTest
+      run: ctest --test-dir build --output-on-failure
       env:
         QT_QPA_PLATFORM: 'offscreen'
   build-mac-native:
@@ -47,13 +44,10 @@ jobs:
       run: brew install qt
     - name: Build
       run: |
-        cd $GITHUB_WORKSPACE
-        mkdir build
-        cd build
-        qmake6 CONFIG+=UNITTESTS ..
-        make -j $(sysctl -n hw.logicalcpu)
+        cmake -S . -B build -DYUVIEW_BUILD_TESTS=ON
+        cmake --build build --parallel
     - name: Run Unittests
-      run: $GITHUB_WORKSPACE/build/YUViewUnitTest/YUViewUnitTest
+      run: ctest --test-dir build --output-on-failure
       env:
         QT_QPA_PLATFORM: 'offscreen'
   build-linux-mac:
@@ -100,16 +94,13 @@ jobs:
     - name: Download libde265 license file
       run: curl -L https://raw.githubusercontent.com/ChristianFeldmann/libde265/master/COPYING -o libde265License.txt
       shell: bash
-    - name: Build (Qmake + Make)
+    - name: Build (CMake)
       run: |
-        cd $GITHUB_WORKSPACE
         export PATH=$GITHUB_WORKSPACE/../../YUViewQt/YUViewQt/Qt/bin:$PATH
-        mkdir build
-        cd build
-        qmake CONFIG+=UNITTESTS ..
-        make -j 4
+        cmake -S . -B build -DYUVIEW_BUILD_TESTS=ON -DCMAKE_PREFIX_PATH="$GITHUB_WORKSPACE/../../YUViewQt/YUViewQt/Qt"
+        cmake --build build --parallel 4
     - name: Run Unittests
-      run: $GITHUB_WORKSPACE/build/YUViewUnitTest/YUViewUnitTest
+      run: ctest --test-dir build --output-on-failure
       env:
         QT_QPA_PLATFORM: 'offscreen'
     - name: Build App (Mac)
@@ -126,7 +117,7 @@ jobs:
       if: runner.os == 'Linux'
       run: |
         cd build
-        make INSTALL_ROOT=appdir install
+        DESTDIR="$PWD/appdir" cmake --install . --prefix /usr/local
         $GITHUB_WORKSPACE/linuxdeployqt-6-x86_64.AppImage YUViewApp/appdir/usr/local/share/applications/de.rwth_aachen.ient.YUView.desktop -appimage -bundle-non-qt-libs -verbose=2
         mv YUView-*.AppImage YUView.AppImage
         mkdir $GITHUB_WORKSPACE/artifacts
@@ -166,9 +157,6 @@ jobs:
       run: |
         curl -L https://github.com/ChristianFeldmann/libde265/releases/download/v1.1/libde265.dll -o libde265.dll
         curl -L https://raw.githubusercontent.com/ChristianFeldmann/libde265/master/COPYING -o libde265License.txt
-    - name: Install jom
-      run: |
-        choco install jom
     - name: Install openSSL
       run: |
         mkdir openSSL
@@ -180,17 +168,12 @@ jobs:
       if: matrix.autoUpdate == true
       run: sed -i -- "s/#define UPDATE_FEATURE_ENABLE 0/#define UPDATE_FEATURE_ENABLE 1/g" YUViewLib/src/common/Typedef.h
       shell: bash
-    - name: Build
+    - name: Build (CMake)
       run: |
-        echo "Creating Build dir and entering it"
-        mkdir build
-        cd build
-        echo "Executing qmake..."
-        qmake CONFIG+=UNITTESTS ..
-        echo "Executing jom:"
-        jom
+        cmake -S . -B build -G "NMake Makefiles" -DYUVIEW_BUILD_TESTS=ON -DCMAKE_PREFIX_PATH="${{ github.workspace }}\..\..\YUViewQt\YUViewQt\Qt"
+        cmake --build build
     - name: Run Unittests
-      run: ${{ github.workspace }}\build\YUViewUnitTest\YUViewUnitTest
+      run: ctest --test-dir build --output-on-failure
       env:
         QT_QPA_PLATFORM: 'offscreen'
     - name: WindeployQT
