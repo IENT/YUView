@@ -21,7 +21,7 @@ jobs:
     - name: Install Linux packages
       run: |
         sudo apt-get update
-        sudo apt-get install qt6-base-dev
+        sudo apt-get install qt6-base-dev libgl-dev libgl1-mesa-dev
     - name: Build
       run: |
         cmake -S . -B build -DYUVIEW_BUILD_TESTS=ON
@@ -75,11 +75,11 @@ jobs:
         unzip -qa Qt.zip
         echo "$GITHUB_WORKSPACE/../../YUViewQt/YUViewQt/Qt/bin" >> $GITHUB_PATH
       shell: bash
-    - name: Install Linuxdeployqt
+    - name: Install Linuxdeploy
       if: runner.os == 'Linux'
       run: |
-        curl -L https://github.com/probonopd/linuxdeployqt/releases/download/continuous/linuxdeployqt-continuous-x86_64.AppImage -o linuxdeployqt-6-x86_64.AppImage
-        chmod a+x linuxdeployqt-6-x86_64.AppImage
+        curl -L https://github.com/linuxdeploy/linuxdeploy/releases/download/continuous/linuxdeploy-x86_64.AppImage -o linuxdeploy.AppImage
+        chmod a+x linuxdeploy.AppImage
     - name: Install Linux packages
       if: runner.os == 'Linux'
       run: |
@@ -96,8 +96,7 @@ jobs:
       shell: bash
     - name: Build (CMake)
       run: |
-        export PATH=$GITHUB_WORKSPACE/../../YUViewQt/YUViewQt/Qt/bin:$PATH
-        cmake -S . -B build -DYUVIEW_BUILD_TESTS=ON -DCMAKE_PREFIX_PATH="$GITHUB_WORKSPACE/../../YUViewQt/YUViewQt/Qt"
+        cmake -S . -B build -DYUVIEW_BUILD_TESTS=ON -DCMAKE_PREFIX_PATH="$GITHUB_WORKSPACE/../../YUViewQt/YUViewQt/Qt" -DCMAKE_INSTALL_PREFIX=/usr
         cmake --build build --parallel 4
     - name: Run Unittests
       run: ctest --test-dir build --output-on-failure
@@ -117,8 +116,8 @@ jobs:
       if: runner.os == 'Linux'
       run: |
         cd build
-        DESTDIR="$PWD/appdir" cmake --install . --prefix /usr/local
-        $GITHUB_WORKSPACE/linuxdeployqt-6-x86_64.AppImage YUViewApp/appdir/usr/local/share/applications/de.rwth_aachen.ient.YUView.desktop -appimage -bundle-non-qt-libs -verbose=2
+        DESTDIR="$PWD/appdir" cmake --install .
+        $GITHUB_WORKSPACE/linuxdeployqt.AppImage --appdir=appdir --output=appimage
         mv YUView-*.AppImage YUView.AppImage
         mkdir $GITHUB_WORKSPACE/artifacts
         cp YUView.AppImage $GITHUB_WORKSPACE/artifacts/
