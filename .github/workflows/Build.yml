@@ -60,7 +60,8 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-24.04, ubuntu-24.04-arm, macos-26-intel, macos-26]
+        #os: [ubuntu-24.04, ubuntu-24.04-arm, macos-26-intel, macos-26]
+        os: [macos-26]
     steps:
     - uses: actions/checkout@v6
       with:
@@ -112,7 +113,7 @@ jobs:
     - name: Build App (Mac)
       if: runner.os	== 'macOS'
       run: |
-        macdeployqt build/YUViewApp/YUView.app -always-overwrite -verbose=2
+        $GITHUB_WORKSPACE/../../YUViewQt/YUViewQt/Qt/bin/macdeployqt build/YUViewApp/YUView.app -always-overwrite -verbose=2
         cp libde265-internals.dylib build/YUViewApp/YUView.app/Contents/MacOS/.
         cd build/YUViewApp
         zip -r ${{steps.artifacts.outputs.outputZip}} YUView.app/
