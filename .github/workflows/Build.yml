@@ -73,7 +73,6 @@ jobs:
         cd YUViewQt/YUViewQt
         curl -L https://github.com/ChristianFeldmann/YUViewQt/releases/download/QtBase-6.9.0/${{steps.artifacts.outputs.qt}}.zip -o Qt.zip
         unzip -qa Qt.zip
-        echo "$GITHUB_WORKSPACE/../../YUViewQt/YUViewQt/Qt/bin" >> $GITHUB_PATH
       shell: bash
     - name: Install Linuxdeploy
       if: runner.os == 'Linux'
@@ -117,7 +116,8 @@ jobs:
       run: |
         cd build
         DESTDIR="$PWD/appdir" cmake --install .
-        $GITHUB_WORKSPACE/linuxdeploy.AppImage --appdir=appdir --output=appimage
+        QMAKE="$GITHUB_WORKSPACE/../../YUViewQt/YUViewQt/Qt/bin/qmake" LD_LIBRARY_PATH="$GITHUB_WORKSPACE/../../YUViewQt/YUViewQt/Qt/lib" /home/linuxdeploy.AppImage --appdir=appdir --output=appimage --plugin qt
+         $GITHUB_WORKSPACE/linuxdeploy.AppImage --appdir=appdir --output=appimage
         mv YUView-*.AppImage YUView.AppImage
         mkdir $GITHUB_WORKSPACE/artifacts
         cp YUView.AppImage $GITHUB_WORKSPACE/artifacts/
