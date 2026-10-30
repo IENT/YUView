@@ -8,52 +8,30 @@ on:
     types: [created]
 
 jobs:
-  build-unix-native:
+  build-native:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-24.04, ubuntu-26.04, ubuntu-24.04-arm, ubuntu-26.04-arm]
+        os: [ubuntu-24.04, ubuntu-26.04, ubuntu-24.04-arm, ubuntu-26.04-arm, macos-26-intel, macos-26]
     steps:
     - uses: actions/checkout@v6
       with:
         submodules: true
     - run: git fetch --prune --unshallow
     - name: Install Linux packages
+      if: runner.os == 'Linux'
       run: |
         sudo apt-get update
         sudo apt-get install qt6-base-dev
-    - name: Build
-      run: |
-        cd $GITHUB_WORKSPACE
-        mkdir build
-        cd build
-        qmake6 CONFIG+=UNITTESTS ..
-        make -j$(nproc)
-    - name: Run Unittests
-      run: $GITHUB_WORKSPACE/build/YUViewUnitTest/YUViewUnitTest
-      env:
-        QT_QPA_PLATFORM: 'offscreen'
-  build-mac-native:
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        os: [macos-26-intel, macos-26]
-    steps:
-    - uses: actions/checkout@v6
-      with:
-        submodules: true
-    - run: git fetch --prune --unshallow
-    - name: Install packages
+    - name: Install Maocos packages
+      if: runner.os	== 'macOS'
       run: brew install qt
     - name: Build
       run: |
-        cd $GITHUB_WORKSPACE
-        mkdir build
-        cd build
-        qmake6 CONFIG+=UNITTESTS ..
-        make -j $(sysctl -n hw.logicalcpu)
+        cmake -S . -B build -DYUVIEW_BUILD_TESTS=ON
+        cmake --build build --parallel 4
     - name: Run Unittests
-      run: $GITHUB_WORKSPACE/build/YUViewUnitTest/YUViewUnitTest
+      run: ctest --test-dir build --output-on-failure
       env:
         QT_QPA_PLATFORM: 'offscreen'
   # build-linux-mac:
