@@ -83,29 +83,24 @@ jobs:
       shell: bash
     - name: Install Linuxdeploy
       if: runner.os == 'Linux'
+      env:
+        ASSET_ARCH: ${{ case(runner.arch == 'ARM64', 'aarch64', 'x86_64') }}
       run: |
-        if [ "${{ runner.arch }}" = "ARM64" ]; then
-          asset_arch=aarch64
-        else
-          asset_arch=x86_64
-        fi
-        curl -L "https://github.com/probonopd/linuxdeployqt/releases/download/continuous/linuxdeployqt-continuous-${asset_arch}.AppImage" -o linuxdeployqt.AppImage
+        curl -L "https://github.com/probonopd/linuxdeployqt/releases/download/continuous/linuxdeployqt-continuous-$ASSET_ARCH.AppImage" -o linuxdeploy.AppImage
         chmod a+x linuxdeployqt.AppImage
     - name: Install Linux packages
       if: runner.os == 'Linux'
       run: |
         sudo apt-get update
         sudo apt-get install libgl1-mesa-dev libxkbcommon-x11-0 libpcre2-16-0 '^libxcb.*-dev' libx11-xcb-dev libglu1-mesa-dev libxi-dev libxkbcommon-dev libxkbcommon-x11-dev libatspi2.0-dev libfuse2
-    - name: Download libde265 (Linux)
-      if: runner.os == 'Linux'
-      run: curl -L https://github.com/ChristianFeldmann/libde265/releases/download/v1.1/libde265.so -o libde265-internals.so
-    - name: Download libde265 (Mac)
-      if: runner.os == 'macOS'
-      run: curl -L https://github.com/ChristianFeldmann/libde265/releases/download/v1.1/libde265.dylib -o libde265-internals.dylib
-    - name: Download libde265 license file
-      run: curl -L https://raw.githubusercontent.com/ChristianFeldmann/libde265/master/COPYING -o libde265License.txt
-      shell: bash
-    - name: Build (CMake)
+    - name: Download libde265 and license
+      if: runner.os != 'Windows'
+      env:
+        LIB_EXTENSION: ${{ case(runner.os == 'Linux', 'so', 'dylib') }}
+      run: | 
+        curl -L https://github.com/ChristianFeldmann/libde265/releases/download/v1.1/libde265.$LIB_EXTENSION -o libde265-internals.LIB_EXTENSION
+        curl -L https://raw.githubusercontent.com/ChristianFeldmann/libde265/master/COPYING -o libde265License.txt
+    - name: Build
       run: |
         cmake -S . -B build -DYUVIEW_BUILD_TESTS=ON -DCMAKE_PREFIX_PATH="$GITHUB_WORKSPACE/../../YUViewQt/YUViewQt/Qt" -DCMAKE_INSTALL_PREFIX=/usr
         cmake --build build --parallel 4
@@ -128,7 +123,7 @@ jobs:
       run: |
         cd build
         DESTDIR="$PWD/appdir" cmake --install .
-        QMAKE="$GITHUB_WORKSPACE/../../YUViewQt/YUViewQt/Qt/bin/qmake" LD_LIBRARY_PATH="$GITHUB_WORKSPACE/../../YUViewQt/YUViewQt/Qt/lib" /home/linuxdeploy.AppImage --appdir=appdir --output=appimage --plugin qt
+        QMAKE="$GITHUB_WORKSPACE/../../YUViewQt/YUViewQt/Qt/bin/qmake" LD_LIBRARY_PATH="$GITHUB_WORKSPACE/../../YUViewQt/YUViewQt/Qt/lib" $GITHUB_WORKSPACE/linuxdeploy.AppImage --appdir=appdir --output=appimage --plugin qt
          $GITHUB_WORKSPACE/linuxdeploy.AppImage --appdir=appdir --output=appimage
         mv YUView-*.AppImage YUView.AppImage
         mkdir $GITHUB_WORKSPACE/artifacts
