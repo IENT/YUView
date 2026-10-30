@@ -87,7 +87,9 @@ jobs:
         ASSET_ARCH: ${{ case(runner.arch == 'ARM64', 'aarch64', 'x86_64') }}
       run: |
         curl -L "https://github.com/linuxdeploy/linuxdeploy/releases/download/1-alpha-20251107-1/linuxdeploy-$ASSET_ARCH.AppImage" -o linuxdeploy.AppImage
+        curl -L "https://github.com/linuxdeploy/linuxdeploy-plugin-qt/releases/download/1-alpha-20250213-1/linuxdeploy-plugin-qt-$ASSET_ARCH.AppImage" -o linuxdeploy-plugin-qt.AppImage
         chmod a+x linuxdeploy.AppImage
+        chmod a+x linuxdeploy-plugin-qt.AppImage
     - name: Install Linux packages
       if: runner.os == 'Linux'
       run: |
