@@ -32,7 +32,7 @@
 
 #include "Functions.h"
 
-#ifdef Q_OS_MAC
+#ifdef Q_OS_MACOS
 #include <sys/sysctl.h>
 #include <sys/types.h>
 #elif defined(Q_OS_UNIX)
@@ -69,7 +69,7 @@ unsigned int systemMemorySizeInMB()
     // Fetch size of main memory - assume 2 GB first.
     // Unfortunately there is no Qt API for doing this so this is platform dependent.
     memorySizeInMB = 2 << 10;
-#ifdef Q_OS_MAC
+#ifdef Q_OS_MACOS
     int      mib[2]  = {CTL_HW, HW_MEMSIZE};
     u_int    namelen = sizeof(mib) / sizeof(mib[0]);
     uint64_t size;

@@ -572,7 +572,7 @@ QStringList decoderDav1d::getLibraryNames() const
   // the libdav1d.so file first. Since this has been compiled for linux
   // it will fail and not even try to open the libdav1d.dylib.
   // On windows and linux ommitting the extension works
-  if (is_Q_OS_MAC)
+  if (is_Q_OS_MACOS)
     return QStringList() << "libdav1d-internals.dylib"
                          << "libdav1d.dylib";
   if (is_Q_OS_WIN)

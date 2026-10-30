@@ -184,20 +184,19 @@ void decoderLibde265::resolveLibraryFunctionPointers()
   // Get pointers to the internals/statistics functions (if present)
   // If not, disable the statistics extraction. Normal decoding of the video will still work.
 
-  if (!resolve(this->lib.de265_internals_get_CTB_Info_Layout,
-               "de265_internals_get_CTB_Info_Layout",
-               true))
+  if (!resolve(
+        this->lib.de265_internals_get_CTB_Info_Layout, "de265_internals_get_CTB_Info_Layout", true))
     return;
   if (!resolve(
-          this->lib.de265_internals_get_CTB_sliceIdx, "de265_internals_get_CTB_sliceIdx", true))
+        this->lib.de265_internals_get_CTB_sliceIdx, "de265_internals_get_CTB_sliceIdx", true))
     return;
   if (!resolve(
-          this->lib.de265_internals_get_CB_Info_Layout, "de265_internals_get_CB_Info_Layout", true))
+        this->lib.de265_internals_get_CB_Info_Layout, "de265_internals_get_CB_Info_Layout", true))
     return;
   if (!resolve(this->lib.de265_internals_get_CB_info, "de265_internals_get_CB_info", true))
     return;
   if (!resolve(
-          this->lib.de265_internals_get_PB_Info_layout, "de265_internals_get_PB_Info_layout", true))
+        this->lib.de265_internals_get_PB_Info_layout, "de265_internals_get_PB_Info_layout", true))
     return;
   if (!resolve(this->lib.de265_internals_get_PB_info, "de265_internals_get_PB_info", true))
     return;
@@ -206,7 +205,7 @@ void decoderLibde265::resolveLibraryFunctionPointers()
                true))
     return;
   if (!resolve(
-          this->lib.de265_internals_get_intraDir_info, "de265_internals_get_intraDir_info", true))
+        this->lib.de265_internals_get_intraDir_info, "de265_internals_get_intraDir_info", true))
     return;
   if (!resolve(this->lib.de265_internals_get_TUInfo_Info_layout,
                "de265_internals_get_TUInfo_Info_layout",
@@ -222,12 +221,12 @@ void decoderLibde265::resolveLibraryFunctionPointers()
   if (!resolve(this->lib.de265_internals_get_image_plane, "de265_internals_get_image_plane", true))
     return;
   if (!resolve(
-          this->lib.de265_internals_set_parameter_bool, "de265_internals_set_parameter_bool", true))
+        this->lib.de265_internals_set_parameter_bool, "de265_internals_set_parameter_bool", true))
     return;
   // The prediction and residual signal can be obtained
   nrSignals = 4;
   DEBUG_LIBDE265(
-      "decoderLibde265::resolveLibraryFunctionPointers - prediction/residual internals found");
+    "decoderLibde265::resolveLibraryFunctionPointers - prediction/residual internals found");
 }
 
 template <typename T> T decoderLibde265::resolve(T &fun, const char *symbol, bool optional)
@@ -236,8 +235,8 @@ template <typename T> T decoderLibde265::resolve(T &fun, const char *symbol, boo
   if (!ptr)
   {
     if (!optional)
-      setError(QStringLiteral("Error loading the libde265 library: Can't find function %1.")
-                   .arg(symbol));
+      setError(
+        QStringLiteral("Error loading the libde265 library: Can't find function %1.").arg(symbol));
     return nullptr;
   }
 
@@ -265,7 +264,7 @@ void decoderLibde265::allocateNewDecoder()
   // Set some decoder parameters
   this->lib.de265_set_parameter_bool(this->decoder, DE265_DECODER_PARAM_BOOL_SEI_CHECK_HASH, false);
   this->lib.de265_set_parameter_bool(
-      this->decoder, DE265_DECODER_PARAM_SUPPRESS_FAULTY_PICTURES, false);
+    this->decoder, DE265_DECODER_PARAM_SUPPRESS_FAULTY_PICTURES, false);
 
   this->lib.de265_set_parameter_bool(this->decoder, DE265_DECODER_PARAM_DISABLE_DEBLOCKING, false);
   this->lib.de265_set_parameter_bool(this->decoder, DE265_DECODER_PARAM_DISABLE_SAO, false);
@@ -275,13 +274,13 @@ void decoderLibde265::allocateNewDecoder()
   {
     if (this->decodeSignal == 1)
       this->lib.de265_internals_set_parameter_bool(
-          this->decoder, DE265_INTERNALS_DECODER_PARAM_SAVE_PREDICTION, true);
+        this->decoder, DE265_INTERNALS_DECODER_PARAM_SAVE_PREDICTION, true);
     else if (decodeSignal == 2)
       this->lib.de265_internals_set_parameter_bool(
-          this->decoder, DE265_INTERNALS_DECODER_PARAM_SAVE_RESIDUAL, true);
+        this->decoder, DE265_INTERNALS_DECODER_PARAM_SAVE_RESIDUAL, true);
     else if (decodeSignal == 3)
       this->lib.de265_internals_set_parameter_bool(
-          this->decoder, DE265_INTERNALS_DECODER_PARAM_SAVE_TR_COEFF, true);
+        this->decoder, DE265_INTERNALS_DECODER_PARAM_SAVE_TR_COEFF, true);
   }
 
   // You could disable SSE acceleration ... not really recommended
@@ -438,7 +437,7 @@ bool decoderLibde265::pushData(QByteArray &data)
     }
     // de265_push_NAL will return either DE265_OK or DE265_ERROR_OUT_OF_MEMORY
     auto err = this->lib.de265_push_NAL(
-        this->decoder, data.data() + offset, data.size() - offset, 0, nullptr);
+      this->decoder, data.data() + offset, data.size() - offset, 0, nullptr);
     DEBUG_LIBDE265("decoderLibde265::pushData push data %d bytes%s%s",
                    data.size(),
                    err != DE265_OK ? " - err " : "",
@@ -503,13 +502,13 @@ void decoderLibde265::copyImgToByteArray(const de265_image *src, QByteArray &dst
       img_c = this->lib.de265_get_image_plane(src, c, &stride);
     else if (decodeSignal == 1)
       img_c = this->lib.de265_internals_get_image_plane(
-          src, DE265_INTERNALS_DECODER_PARAM_SAVE_PREDICTION, c, &stride);
+        src, DE265_INTERNALS_DECODER_PARAM_SAVE_PREDICTION, c, &stride);
     else if (decodeSignal == 2)
       img_c = this->lib.de265_internals_get_image_plane(
-          src, DE265_INTERNALS_DECODER_PARAM_SAVE_RESIDUAL, c, &stride);
+        src, DE265_INTERNALS_DECODER_PARAM_SAVE_RESIDUAL, c, &stride);
     else if (decodeSignal == 3)
       img_c = this->lib.de265_internals_get_image_plane(
-          src, DE265_INTERNALS_DECODER_PARAM_SAVE_TR_COEFF, c, &stride);
+        src, DE265_INTERNALS_DECODER_PARAM_SAVE_TR_COEFF, c, &stride);
 
     if (img_c == nullptr)
       return;
@@ -544,7 +543,7 @@ void decoderLibde265::cacheStatistics(const de265_image *img)
       {
         uint16_t val = tmpArr[y * widthInCTB + x];
         this->statisticsData->at(0).addBlockValue(
-            x * ctb_size, y * ctb_size, ctb_size, ctb_size, (int)val);
+          x * ctb_size, y * ctb_size, ctb_size, ctb_size, (int)val);
       }
   }
 
@@ -584,7 +583,7 @@ void decoderLibde265::cacheStatistics(const de265_image *img)
   // Get intra prediction mode (intra direction) layout from image
   int widthInIntraDirUnits, heightInIntraDirUnits, log2IntraDirUnitsSize;
   this->lib.de265_internals_get_IntraDir_Info_layout(
-      img, &widthInIntraDirUnits, &heightInIntraDirUnits, &log2IntraDirUnitsSize);
+    img, &widthInIntraDirUnits, &heightInIntraDirUnits, &log2IntraDirUnitsSize);
   int intraDir_infoUnit_size = 1 << log2IntraDirUnitsSize;
 
   // Get intra prediction mode (intra direction) from image
@@ -595,7 +594,7 @@ void decoderLibde265::cacheStatistics(const de265_image *img)
   // Get TU info array layout
   int widthInTUInfoUnits, heightInTUInfoUnits, log2TUInfoUnitSize;
   this->lib.de265_internals_get_TUInfo_Info_layout(
-      img, &widthInTUInfoUnits, &heightInTUInfoUnits, &log2TUInfoUnitSize);
+    img, &widthInTUInfoUnits, &heightInTUInfoUnits, &log2TUInfoUnitSize);
   int tuInfo_unit_size = 1 << log2TUInfoUnitSize;
 
   // Get TU info
@@ -664,12 +663,12 @@ void decoderLibde265::cacheStatistics(const de265_image *img)
             // Add motion vector 0 (ID 7)
             if (ref0 != -1)
               this->statisticsData->at(7).addBlockVector(
-                  pbX, pbY, pbW, pbH, vec0_x[pbIdx], vec0_y[pbIdx]);
+                pbX, pbY, pbW, pbH, vec0_x[pbIdx], vec0_y[pbIdx]);
 
             // Add motion vector 1 (ID 8)
             if (ref1 != -1)
               this->statisticsData->at(8).addBlockVector(
-                  pbX, pbY, pbW, pbH, vec1_x[pbIdx], vec1_y[pbIdx]);
+                pbX, pbY, pbW, pbH, vec1_x[pbIdx], vec1_y[pbIdx]);
           }
         }
 
@@ -693,7 +692,7 @@ void decoderLibde265::cacheStatistics(const de265_image *img)
 }
 
 void decoderLibde265::getPBSubPosition(
-    int partMode, int cbSizePix, int pbIdx, int *pbX, int *pbY, int *pbW, int *pbH) const
+  int partMode, int cbSizePix, int pbIdx, int *pbX, int *pbY, int *pbW, int *pbH) const
 {
   // Get the position/width/height of the PB
   if (partMode == 0) // PART_2Nx2N
@@ -846,15 +845,15 @@ void decoderLibde265::cacheStatistics_TUTree_recursive(uint8_t *const tuInfo,
       // Conversion from intra prediction mode to vector.
       // Coordinates are in x,y with the axes going right and down.
       static const int vectorTable[35][2] = {
-          {0, 0},   {0, 0},   {32, -32}, {32, -26}, {32, -21}, {32, -17}, {32, -13},
-          {32, -9}, {32, -5}, {32, -2},  {32, 0},   {32, 2},   {32, 5},   {32, 9},
-          {32, 13}, {32, 17}, {32, 21},  {32, 26},  {32, 32},  {26, 32},  {21, 32},
-          {17, 32}, {13, 32}, {9, 32},   {5, 32},   {2, 32},   {0, 32},   {-2, 32},
-          {-5, 32}, {-9, 32}, {-13, 32}, {-17, 32}, {-21, 32}, {-26, 32}, {-32, 32}};
+        {0, 0},   {0, 0},   {32, -32}, {32, -26}, {32, -21}, {32, -17}, {32, -13},
+        {32, -9}, {32, -5}, {32, -2},  {32, 0},   {32, 2},   {32, 5},   {32, 9},
+        {32, 13}, {32, 17}, {32, 21},  {32, 26},  {32, 32},  {26, 32},  {21, 32},
+        {17, 32}, {13, 32}, {9, 32},   {5, 32},   {2, 32},   {0, 32},   {-2, 32},
+        {-5, 32}, {-9, 32}, {-13, 32}, {-17, 32}, {-21, 32}, {-26, 32}, {-32, 32}};
 
       // Get index for this xy position in the intraDir array
       int intraDirIdx =
-          (posY / intraDir_infoUnit_size) * widthInIntraDirUnits + (posX / intraDir_infoUnit_size);
+        (posY / intraDir_infoUnit_size) * widthInIntraDirUnits + (posX / intraDir_infoUnit_size);
 
       // Set Intra prediction direction Luma (ID 9)
       int intraDirLuma = intraDirY[intraDirIdx];
@@ -894,7 +893,7 @@ void decoderLibde265::fillStatisticList(stats::StatisticsData &statisticsData) c
   using namespace stats::color;
 
   stats::StatisticsType sliceIdx(
-      0, "Slice Index", ColorMapper({0, 10}, Color(0, 0, 0), Color(255, 0, 0)));
+    0, "Slice Index", ColorMapper({0, 10}, Color(0, 0, 0), Color(255, 0, 0)));
   sliceIdx.description = "The slice index reported per CTU";
   statisticsData.addStatType(sliceIdx);
 
@@ -916,12 +915,12 @@ void decoderLibde265::fillStatisticList(stats::StatisticsData &statisticsData) c
   statisticsData.addStatType(predMode);
 
   stats::StatisticsType pcmFlag(
-      3, "PCM flag", ColorMapper({0, 1}, Color(0, 0, 0), Color(255, 0, 0)));
+    3, "PCM flag", ColorMapper({0, 1}, Color(0, 0, 0), Color(255, 0, 0)));
   pcmFlag.description = "The PCM flag per CU";
   statisticsData.addStatType(pcmFlag);
 
   stats::StatisticsType transQuantBypass(
-      4, "Transquant Bypass Flag", ColorMapper({0, 1}, Color(0, 0, 0), Color(255, 0, 0)));
+    4, "Transquant Bypass Flag", ColorMapper({0, 1}, Color(0, 0, 0), Color(255, 0, 0)));
   transQuantBypass.description = "The transquant bypass flag per CU";
   statisticsData.addStatType(transQuantBypass);
 
@@ -943,26 +942,26 @@ void decoderLibde265::fillStatisticList(stats::StatisticsData &statisticsData) c
 
   stats::StatisticsType intraDirY(9, "Intra Dir Luma", ColorMapper({0, 34}, PredefinedType::Jet));
   intraDirY.description =
-      "The intra mode for the luma component per TU (intra prediction is performed on a TU level)";
+    "The intra mode for the luma component per TU (intra prediction is performed on a TU level)";
   intraDirY.hasVectorData    = true;
   intraDirY.renderVectorData = true;
   intraDirY.vectorScale      = 32;
   // Don't draw the vector values for the intra dir. They don't have actual meaning.
   intraDirY.renderVectorDataValues = false;
   intraDirY.setMappingValues(
-      {"INTRA_PLANAR",     "INTRA_DC",         "INTRA_ANGULAR_2",  "INTRA_ANGULAR_3",
-       "INTRA_ANGULAR_4",  "INTRA_ANGULAR_5",  "INTRA_ANGULAR_6",  "INTRA_ANGULAR_7",
-       "INTRA_ANGULAR_8",  "INTRA_ANGULAR_9",  "INTRA_ANGULAR_10", "INTRA_ANGULAR_11",
-       "INTRA_ANGULAR_12", "INTRA_ANGULAR_13", "INTRA_ANGULAR_14", "INTRA_ANGULAR_15",
-       "INTRA_ANGULAR_16", "INTRA_ANGULAR_17", "INTRA_ANGULAR_18", "INTRA_ANGULAR_19",
-       "INTRA_ANGULAR_20", "INTRA_ANGULAR_21", "INTRA_ANGULAR_22", "INTRA_ANGULAR_23",
-       "INTRA_ANGULAR_24", "INTRA_ANGULAR_25", "INTRA_ANGULAR_26", "INTRA_ANGULAR_27",
-       "INTRA_ANGULAR_28", "INTRA_ANGULAR_29", "INTRA_ANGULAR_30", "INTRA_ANGULAR_31",
-       "INTRA_ANGULAR_32", "INTRA_ANGULAR_33", "INTRA_ANGULAR_34"});
+    {"INTRA_PLANAR",     "INTRA_DC",         "INTRA_ANGULAR_2",  "INTRA_ANGULAR_3",
+     "INTRA_ANGULAR_4",  "INTRA_ANGULAR_5",  "INTRA_ANGULAR_6",  "INTRA_ANGULAR_7",
+     "INTRA_ANGULAR_8",  "INTRA_ANGULAR_9",  "INTRA_ANGULAR_10", "INTRA_ANGULAR_11",
+     "INTRA_ANGULAR_12", "INTRA_ANGULAR_13", "INTRA_ANGULAR_14", "INTRA_ANGULAR_15",
+     "INTRA_ANGULAR_16", "INTRA_ANGULAR_17", "INTRA_ANGULAR_18", "INTRA_ANGULAR_19",
+     "INTRA_ANGULAR_20", "INTRA_ANGULAR_21", "INTRA_ANGULAR_22", "INTRA_ANGULAR_23",
+     "INTRA_ANGULAR_24", "INTRA_ANGULAR_25", "INTRA_ANGULAR_26", "INTRA_ANGULAR_27",
+     "INTRA_ANGULAR_28", "INTRA_ANGULAR_29", "INTRA_ANGULAR_30", "INTRA_ANGULAR_31",
+     "INTRA_ANGULAR_32", "INTRA_ANGULAR_33", "INTRA_ANGULAR_34"});
   statisticsData.addStatType(intraDirY);
 
   stats::StatisticsType intraDirC(
-      10, "Intra Dir Chroma", ColorMapper({0, 34}, PredefinedType::Jet));
+    10, "Intra Dir Chroma", ColorMapper({0, 34}, PredefinedType::Jet));
   intraDirC.description   = "The intra mode for the chroma component per TU (intra prediction is "
                             "performed on a TU level)";
   intraDirC.hasVectorData = true;
@@ -970,19 +969,19 @@ void decoderLibde265::fillStatisticList(stats::StatisticsData &statisticsData) c
   intraDirC.renderVectorDataValues = false;
   intraDirC.vectorScale            = 32;
   intraDirC.setMappingValues(
-      {"INTRA_PLANAR",     "INTRA_DC",         "INTRA_ANGULAR_2",  "INTRA_ANGULAR_3",
-       "INTRA_ANGULAR_4",  "INTRA_ANGULAR_5",  "INTRA_ANGULAR_6",  "INTRA_ANGULAR_7",
-       "INTRA_ANGULAR_8",  "INTRA_ANGULAR_9",  "INTRA_ANGULAR_10", "INTRA_ANGULAR_11",
-       "INTRA_ANGULAR_12", "INTRA_ANGULAR_13", "INTRA_ANGULAR_14", "INTRA_ANGULAR_15",
-       "INTRA_ANGULAR_16", "INTRA_ANGULAR_17", "INTRA_ANGULAR_18", "INTRA_ANGULAR_19",
-       "INTRA_ANGULAR_20", "INTRA_ANGULAR_21", "INTRA_ANGULAR_22", "INTRA_ANGULAR_23",
-       "INTRA_ANGULAR_24", "INTRA_ANGULAR_25", "INTRA_ANGULAR_26", "INTRA_ANGULAR_27",
-       "INTRA_ANGULAR_28", "INTRA_ANGULAR_29", "INTRA_ANGULAR_30", "INTRA_ANGULAR_31",
-       "INTRA_ANGULAR_32", "INTRA_ANGULAR_33", "INTRA_ANGULAR_34"});
+    {"INTRA_PLANAR",     "INTRA_DC",         "INTRA_ANGULAR_2",  "INTRA_ANGULAR_3",
+     "INTRA_ANGULAR_4",  "INTRA_ANGULAR_5",  "INTRA_ANGULAR_6",  "INTRA_ANGULAR_7",
+     "INTRA_ANGULAR_8",  "INTRA_ANGULAR_9",  "INTRA_ANGULAR_10", "INTRA_ANGULAR_11",
+     "INTRA_ANGULAR_12", "INTRA_ANGULAR_13", "INTRA_ANGULAR_14", "INTRA_ANGULAR_15",
+     "INTRA_ANGULAR_16", "INTRA_ANGULAR_17", "INTRA_ANGULAR_18", "INTRA_ANGULAR_19",
+     "INTRA_ANGULAR_20", "INTRA_ANGULAR_21", "INTRA_ANGULAR_22", "INTRA_ANGULAR_23",
+     "INTRA_ANGULAR_24", "INTRA_ANGULAR_25", "INTRA_ANGULAR_26", "INTRA_ANGULAR_27",
+     "INTRA_ANGULAR_28", "INTRA_ANGULAR_29", "INTRA_ANGULAR_30", "INTRA_ANGULAR_31",
+     "INTRA_ANGULAR_32", "INTRA_ANGULAR_33", "INTRA_ANGULAR_34"});
   statisticsData.addStatType(intraDirC);
 
   stats::StatisticsType transformDepth(
-      11, "Transform Depth", ColorMapper({0, 3}, Color(0, 0, 0), Color(0, 255, 0)));
+    11, "Transform Depth", ColorMapper({0, 3}, Color(0, 0, 0), Color(0, 255, 0)));
   transformDepth.description = "The transform depth within the transform tree per TU";
   statisticsData.addStatType(transformDepth);
 }
@@ -1012,10 +1011,10 @@ QStringList decoderLibde265::getLibraryNames() const
   // the libde265.so file first. Since this has been compiled for linux
   // it will fail and not even try to open the libde265.dylib.
   // On windows and linux ommitting the extension works
-  QStringList libNames = is_Q_OS_MAC ? QStringList() << "libde265-internals.dylib"
-                                                     << "libde265.dylib"
-                                     : QStringList() << "libde265-internals"
-                                                     << "libde265";
+  QStringList libNames = is_Q_OS_MACOS ? QStringList() << "libde265-internals.dylib"
+                                                       << "libde265.dylib"
+                                       : QStringList() << "libde265-internals"
+                                                       << "libde265";
 
   return libNames;
 }

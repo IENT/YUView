@@ -2289,7 +2289,7 @@ void convertYUVToImage(const QByteArray         &sourceBuffer,
   // be multiple of 4)
   auto qFrameSize          = QSize(int(curFrameSize.width), int(curFrameSize.height));
   auto platformImageFormat = functionsGui::platformImageFormat(yuvFormat.hasAlpha());
-  if (is_Q_OS_WIN || is_Q_OS_MAC)
+  if (is_Q_OS_WIN || is_Q_OS_MACOS)
     outputImage = QImage(qFrameSize, platformImageFormat);
   else if (is_Q_OS_LINUX)
   {
@@ -3752,7 +3752,7 @@ QImage videoHandlerYUV::calculateDifference(FrameHandler    *item2,
   QImage outputImage;
   if (is_Q_OS_WIN)
     outputImage = QImage(QSize(w_out, h_out), QImage::Format_ARGB32_Premultiplied);
-  else if (is_Q_OS_MAC)
+  else if (is_Q_OS_MACOS)
     outputImage = QImage(QSize(w_out, h_out), QImage::Format_RGB32);
   else if (is_Q_OS_LINUX)
   {
