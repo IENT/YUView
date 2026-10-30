@@ -1,4 +1,11 @@
-add_executable(YUView WIN32 src/yuviewapp.cpp)
+if(WIN32)
+  add_executable(YUView WIN32 src/yuviewapp.cpp)
+elseif(APPLE)
+  add_executable(YUView MACOSX_BUNDLE src/yuviewapp.cpp)
+else()
+  add_executable(YUView src/yuviewapp.cpp)
+endif()
+
 set_target_properties(YUView PROPERTIES
   RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/YUViewApp"
   LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/YUViewApp"
@@ -10,7 +17,10 @@ if(WIN32)
   target_include_directories(YUView PRIVATE images)
 elseif(APPLE)
   set_target_properties(YUView PROPERTIES
-    MACOSX_BUNDLE TRUE
+    BUNDLE TRUE
+    MACOSX_BUNDLE_GUI_IDENTIFIER "de.ient.yuview"
+    MACOSX_BUNDLE_BUNDLE_NAME "YUView"
+    MACOSX_BUNDLE_BUNDLE_VERSION "${YUVIEW_VERSION}"
     MACOSX_BUNDLE_ICON_FILE YUView.icns
   )
   set_source_files_properties(images/YUView.icns PROPERTIES
