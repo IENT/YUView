@@ -100,7 +100,7 @@ jobs:
       env:
         LIB_EXTENSION: ${{ case(runner.os == 'Linux', 'so', 'dylib') }}
       run: | 
-        curl -L https://github.com/ChristianFeldmann/libde265/releases/download/v1.1/libde265.$LIB_EXTENSION -o libde265-internals.LIB_EXTENSION
+        curl -L https://github.com/ChristianFeldmann/libde265/releases/download/v1.1/libde265.$LIB_EXTENSION -o libde265-internals.$LIB_EXTENSION
         curl -L https://raw.githubusercontent.com/ChristianFeldmann/libde265/master/COPYING -o libde265License.txt
     - name: Build
       run: |
