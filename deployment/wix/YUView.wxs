@@ -1,52 +1,67 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
-  <Product Id="*" Name="YUView" Language="1033" Version="2.14" Manufacturer="IENT RWTH Aachen University" UpgradeCode="07fd1dd5-9b1e-453d-974b-4ff7919a49c7">
-    <Package InstallerVersion="301" Compressed="yes" Platform="x64" InstallScope="perMachine" />
-
+<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs"
+     xmlns:ui="http://wixtoolset.org/schemas/v4/wxs/ui">
+  <Package Name="YUView"
+           Manufacturer="IENT RWTH Aachen University"
+           Version="$(ProductVersion)"
+           UpgradeCode="07fd1dd5-9b1e-453d-974b-4ff7919a49c7"
+           Language="1033"
+           InstallerVersion="500"
+           Scope="perMachine"
+           Compressed="yes">
     <MajorUpgrade DowngradeErrorMessage="A newer version of [ProductName] is already installed." />
     <MediaTemplate EmbedCab="yes" />
-  
-    <Directory Id="TARGETDIR" Name="SourceDir">
-      <Directory Id="ProgramFiles64Folder">
-        <Directory Id="APPLICATIONFOLDER" Name="YUView">
-        </Directory>
-      </Directory>
-      <Directory Id="ProgramMenuFolder">
-        <Directory Id="ApplicationProgramsFolder" Name="YUView"/>
-      </Directory>
-    </Directory>
+
+    <StandardDirectory Id="ProgramFiles64Folder">
+      <Directory Id="APPLICATIONFOLDER" Name="YUView" />
+    </StandardDirectory>
+    <StandardDirectory Id="ProgramMenuFolder">
+      <Directory Id="ApplicationProgramsFolder" Name="YUView" />
+    </StandardDirectory>
 
     <DirectoryRef Id="ApplicationProgramsFolder">
-      <Component Id="ApplicationShortcut" Guid="{6B14ED57-BCD5-45CB-84C3-E822D9F5950B}">
+      <Component Id="ApplicationShortcut" Guid="6B14ED57-BCD5-45CB-84C3-E822D9F5950B">
         <Shortcut Id="ApplicationStartMenuShortcut"
                   Name="YUView"
                   Description="YUV Viewer and Analysis Tool"
-                  Target="[#fil3E83ED7F7D6B84D78789778753FB9420]"
-                  WorkingDirectory="APPLICATIONFOLDER"/>
-        <RemoveFolder Id="CleanUpShortCut" Directory="ApplicationProgramsFolder" On="uninstall"/>
-        <RegistryValue Root="HKCU" Key="Software\IENT\YUView" Name="installed" Type="integer" Value="1" KeyPath="yes"/>
+                  Target="[APPLICATIONFOLDER]YUView.exe"
+                  WorkingDirectory="APPLICATIONFOLDER" />
+        <RemoveFolder Id="CleanUpShortCut"
+                Directory="ApplicationProgramsFolder"
+                On="uninstall" />
+        <RegistryValue Root="HKCU"
+                       Key="Software\IENT\YUView"
+                       Name="installed"
+                       Type="integer"
+                       Value="1"
+                       KeyPath="yes" />
       </Component>
     </DirectoryRef>
-    <DirectoryRef Id="TARGETDIR">
-      <Merge Id="VCRedist" SourceFile="Microsoft_VC143_CRT_x64.msm" DiskId="1" Language="0"/>
-    </DirectoryRef>
 
-    <Feature Id='ProductFeature' Title='YUView' Level='1'>
-      <ComponentGroupRef Id="YUViewComponents" />
+    <Feature Id="ProductFeature" Title="YUView" Level="1">
+      <ComponentGroupRef Id="FilesComponentGroup" />
       <ComponentRef Id="ApplicationShortcut" />
+      <MergeRef Id="VCRedist" />
     </Feature>
-    <Feature Id="VCRedist" Title="Visual C++ 14.0 Runtime" AllowAdvertise="no" Display="hidden" Level="1">
-      <MergeRef Id="VCRedist"/>
-    </Feature>
-    
+
     <WixVariable Id="WixUILicenseRtf" Value="YUViewLicense.rtf" />
     <WixVariable Id="WixUIDialogBmp" Value="YUViewBanner.bmp" />
     <WixVariable Id="WixUIBannerBmp" Value="YUViewBannerTop.bmp" />
     <WixVariable Id="WixUINewIco" Value="YUViewIco.bmp" />
-    <UIRef Id="WixUI_Minimal" />
+    <ui:WixUI Id="WixUI_Minimal" />
 
-    <Icon Id="YUView.ico" SourceFile="..\..\YUViewApp\images\YUView.ico"/>
+    <Icon Id="YUView.ico" SourceFile="../../YUViewApp/images/YUView.ico" />
     <Property Id="ARPPRODUCTICON" Value="YUView.ico" />
+  </Package>
 
-  </Product>
+  <Fragment>
+    <ComponentGroup Id="FilesComponentGroup">
+      <Files Include="!(bindpath.Payload)\**" Directory="APPLICATIONFOLDER" />
+    </ComponentGroup>
+    <DirectoryRef Id="TARGETDIR">
+      <Merge Id="VCRedist"
+             SourceFile="Microsoft_VC143_CRT_x64.msm"
+             Language="0" />
+    </DirectoryRef>
+  </Fragment>
 </Wix>
