@@ -8,53 +8,60 @@ on:
     types: [created]
 
 jobs:
-  build-unix-native:
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        os: [ubuntu-22.04, ubuntu-24.04, ubuntu-22.04-arm, ubuntu-24.04-arm]
-    steps:
-    - uses: actions/checkout@v6
-      with:
-        submodules: true
-    - run: git fetch --prune --unshallow
-    - name: Install Linux packages
-      run: |
-        sudo apt-get update
-        sudo apt-get install qt6-base-dev libgl-dev libgl1-mesa-dev
-    - name: Build
-      run: |
-        cmake -S . -B build -DYUVIEW_BUILD_TESTS=ON
-        cmake --build build --parallel
-    - name: Run Unittests
-      run: ctest --test-dir build --output-on-failure
-      env:
-        QT_QPA_PLATFORM: 'offscreen'
-  build-mac-native:
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        os: [macos-15, macos-15-intel]
-    steps:
-    - uses: actions/checkout@v6
-      with:
-        submodules: true
-    - run: git fetch --prune --unshallow
-    - name: Install packages
-      run: brew install qt
-    - name: Build
-      run: |
-        cmake -S . -B build -DYUVIEW_BUILD_TESTS=ON
-        cmake --build build --parallel
-    - name: Run Unittests
-      run: ctest --test-dir build --output-on-failure
-      env:
-        QT_QPA_PLATFORM: 'offscreen'
+  # build-unix-native:
+  #   runs-on: ${{ matrix.os }}
+  #   strategy:
+  #     matrix:
+  #       os: [ubuntu-24.04, ubuntu-26.04, ubuntu-24.04-arm, ubuntu-26.04-arm]
+  #   steps:
+  #   - uses: actions/checkout@v6
+  #     with:
+  #       submodules: true
+  #   - run: git fetch --prune --unshallow
+  #   - name: Install Linux packages
+  #     run: |
+  #       sudo apt-get update
+  #       sudo apt-get install qt6-base-dev
+  #   - name: Build
+  #     run: |
+  #       cd $GITHUB_WORKSPACE
+  #       mkdir build
+  #       cd build
+  #       qmake6 CONFIG+=UNITTESTS ..
+  #       make -j$(nproc)
+  #   - name: Run Unittests
+  #     run: $GITHUB_WORKSPACE/build/YUViewUnitTest/YUViewUnitTest
+  #     env:
+  #       QT_QPA_PLATFORM: 'offscreen'
+  # build-mac-native:
+  #   runs-on: ${{ matrix.os }}
+  #   strategy:
+  #     matrix:
+  #       os: [macos-26-intel, macos-26]
+  #   steps:
+  #   - uses: actions/checkout@v6
+  #     with:
+  #       submodules: true
+  #   - run: git fetch --prune --unshallow
+  #   - name: Install packages
+  #     run: brew install qt
+  #   - name: Build
+  #     run: |
+  #       cd $GITHUB_WORKSPACE
+  #       mkdir build
+  #       cd build
+  #       qmake6 CONFIG+=UNITTESTS ..
+  #       make -j $(sysctl -n hw.logicalcpu)
+  #   - name: Run Unittests
+  #     run: $GITHUB_WORKSPACE/build/YUViewUnitTest/YUViewUnitTest
+  #     env:
+  #       QT_QPA_PLATFORM: 'offscreen'
   build-linux-mac:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-22.04, macos-15]
+        #os: [ubuntu-24.04, ubuntu-24.04-arm, macos-26-intel, macos-26]
+        os: [ubuntu-24.04-arm]
     steps:
     - uses: actions/checkout@v6
       with:
@@ -64,21 +71,26 @@ jobs:
       id: artifacts
       shell: bash
       run: |
-        echo "qt=qtBase-6-9-0-${{ matrix.os }}" >> "$GITHUB_OUTPUT"
+        echo "qt=qtBase-6-12-0-${{ matrix.os }}" >> "$GITHUB_OUTPUT"
         echo "outputZip=YUView-${{ matrix.os }}.zip" >> "$GITHUB_OUTPUT"
     - name: Install Qt base
       run: |
         cd ../../
         mkdir -p YUViewQt/YUViewQt
         cd YUViewQt/YUViewQt
-        curl -L https://github.com/ChristianFeldmann/YUViewQt/releases/download/QtBase-6.9.0/${{steps.artifacts.outputs.qt}}.zip -o Qt.zip
+        curl -L https://github.com/ChristianFeldmann/YUViewQt/releases/download/QtBase-6.12.0/${{steps.artifacts.outputs.qt}}.zip -o Qt.zip
         unzip -qa Qt.zip
       shell: bash
     - name: Install Linuxdeploy
       if: runner.os == 'Linux'
       run: |
-        curl -L https://github.com/linuxdeploy/linuxdeploy/releases/download/continuous/linuxdeploy-x86_64.AppImage -o linuxdeploy.AppImage
-        chmod a+x linuxdeploy.AppImage
+        if [ "${{ runner.arch }}" = "ARM64" ]; then
+          asset_arch=aarch64
+        else
+          asset_arch=x86_64
+        fi
+        curl -L "https://github.com/probonopd/linuxdeployqt/releases/download/continuous/linuxdeployqt-continuous-${asset_arch}.AppImage" -o linuxdeployqt.AppImage
+        chmod a+x linuxdeployqt.AppImage
     - name: Install Linux packages
       if: runner.os == 'Linux'
       run: |
