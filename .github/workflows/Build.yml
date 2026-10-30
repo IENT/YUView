@@ -87,7 +87,7 @@ jobs:
         ASSET_ARCH: ${{ case(runner.arch == 'ARM64', 'aarch64', 'x86_64') }}
       run: |
         curl -L "https://github.com/probonopd/linuxdeployqt/releases/download/continuous/linuxdeployqt-continuous-$ASSET_ARCH.AppImage" -o linuxdeploy.AppImage
-        chmod a+x linuxdeployqt.AppImage
+        chmod a+x linuxdeploy.AppImage
     - name: Install Linux packages
       if: runner.os == 'Linux'
       run: |
@@ -124,7 +124,6 @@ jobs:
         cd build
         DESTDIR="$PWD/appdir" cmake --install .
         QMAKE="$GITHUB_WORKSPACE/../../YUViewQt/YUViewQt/Qt/bin/qmake" LD_LIBRARY_PATH="$GITHUB_WORKSPACE/../../YUViewQt/YUViewQt/Qt/lib" $GITHUB_WORKSPACE/linuxdeploy.AppImage --appdir=appdir --output=appimage --plugin qt
-         $GITHUB_WORKSPACE/linuxdeploy.AppImage --appdir=appdir --output=appimage
         mv YUView-*.AppImage YUView.AppImage
         mkdir $GITHUB_WORKSPACE/artifacts
         cp YUView.AppImage $GITHUB_WORKSPACE/artifacts/
