@@ -41,7 +41,6 @@
     <Feature Id="ProductFeature" Title="YUView" Level="1">
       <ComponentGroupRef Id="FilesComponentGroup" />
       <ComponentRef Id="ApplicationShortcut" />
-      <MergeRef Id="VCRedist" />
     </Feature>
 
     <WixVariable Id="WixUILicenseRtf" Value="YUViewLicense.rtf" />
@@ -58,10 +57,5 @@
     <ComponentGroup Id="FilesComponentGroup">
       <Files Include="!(bindpath.Payload)\**" Directory="APPLICATIONFOLDER" />
     </ComponentGroup>
-    <DirectoryRef Id="TARGETDIR">
-      <Merge Id="VCRedist"
-             SourceFile="Microsoft_VC143_CRT_x64.msm"
-             Language="0" />
-    </DirectoryRef>
   </Fragment>
 </Wix>

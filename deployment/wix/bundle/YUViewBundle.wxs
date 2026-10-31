@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs"
+     xmlns:bal="http://wixtoolset.org/schemas/v4/wxs/bal"
+     xmlns:util="http://wixtoolset.org/schemas/v4/wxs/util">
+  <Bundle Name="YUView"
+          Manufacturer="IENT RWTH Aachen University"
+          Version="$(ProductVersion)"
+          UpgradeCode="E2957280-CDE5-4D20-A1C3-DEB086A1666B"
+          Compressed="yes">
+    <util:RegistrySearch Id="VCRedistVersionSearch"
+                         Variable="VCRedistVersion"
+                         Root="HKLM"
+                         Key="SOFTWARE\Microsoft\VisualStudio\14.0\VC\Runtimes\x64"
+                         Value="Version"
+                         Result="value"
+                         Bitness="always64" />
+
+    <BootstrapperApplication>
+      <bal:WixStandardBootstrapperApplication
+          Theme="rtfLicense"
+          LicenseFile="../YUViewLicense.rtf" />
+    </BootstrapperApplication>
+
+    <Chain>
+      <ExePackage Id="VCRedist"
+                  SourceFile="../redist/vc_redist.x64.exe"
+                  PerMachine="yes"
+                  Permanent="yes"
+                  Vital="yes"
+                  InstallArguments="/install /quiet /norestart"
+                  DetectCondition="VCRedistVersion &gt;= v14.30.30704.0" />
+      <MsiPackage Id="YUViewMsi"
+                  SourceFile="../bin/$(BuildConfiguration)/YUViewSetup.msi"
+                  Vital="yes" />
+    </Chain>
+  </Bundle>
+</Wix>

@@ -1,0 +1,15 @@
+<Project Sdk="WixToolset.Sdk/7.0.1">
+  <PropertyGroup>
+    <OutputName>YUViewSetup</OutputName>
+    <OutputPath>$(MSBuildProjectDirectory)\..\bin\Bundle\$(Configuration)\</OutputPath>
+    <InstallerPlatform>x64</InstallerPlatform>
+    <Cultures>en-US</Cultures>
+    <ProductVersion Condition="'$(ProductVersion)' == ''">2.14.1</ProductVersion>
+    <DefineConstants>ProductVersion=$(ProductVersion);BuildConfiguration=$(Configuration)</DefineConstants>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="WixToolset.Bal.wixext" Version="7.0.1" />
+    <PackageReference Include="WixToolset.Util.wixext" Version="7.0.1" />
+  </ItemGroup>
+</Project>
