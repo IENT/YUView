@@ -17,8 +17,9 @@
 
     <BootstrapperApplication>
       <bal:WixStandardBootstrapperApplication
-          Theme="rtfLicense"
-          LicenseFile="../YUViewLicense.rtf" />
+          Theme="rtfLargeLicense"
+          LicenseFile="../YUViewLicense.rtf"
+          ShowVersion="yes" />
     </BootstrapperApplication>
 
     <Chain>

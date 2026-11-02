@@ -9,7 +9,7 @@
            InstallerVersion="500"
            Scope="perMachine"
            Compressed="yes">
-    <MajorUpgrade DowngradeErrorMessage="A newer version of [ProductName] is already installed." />
+    <MajorUpgrade DowngradeErrorMessage="A newer version of YUView is already installed." />
     <MediaTemplate EmbedCab="yes" />
 
     <StandardDirectory Id="ProgramFiles64Folder">

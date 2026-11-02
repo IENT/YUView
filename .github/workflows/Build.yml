@@ -177,6 +177,12 @@ jobs:
     - name: Build WiX 7 installer
       if: matrix.autoUpdate == true
       run: |
+        dotnet tool install --global wix --version 7.0.1
+        cd deployment/wix
+        dotnet add package WixToolset.Util.wixext --version 7.0.1
+        dotnet add package WixToolset.BootstrapperApplications.wixext --version 7.0.1
+        cd ..
+        cd ..
         New-Item -ItemType Directory -Force deployment/wix/redist | Out-Null
         Invoke-WebRequest -Uri https://aka.ms/vs/17/release/vc_redist.x64.exe -OutFile deployment/wix/redist/vc_redist.x64.exe
         dotnet build deployment/wix/YUView.wixproj --configuration Release -p:PayloadDir="${{ github.workspace }}\deploy" -p:ProductVersion=2.14.1
