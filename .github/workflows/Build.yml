@@ -116,7 +116,8 @@ jobs:
   #     with:
   #       files: artifacts/${{steps.artifacts.outputs.outputZip}}
   build-windows:
-    runs-on: windows-2022
+    #runs-on: [windows-2022, windows-11-vs2026-arm]
+    runs-on: windows-11-vs2026-arm
     strategy:
       matrix:
         #autoUpdate: [true, false]
