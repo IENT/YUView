@@ -30,7 +30,7 @@
                   InstallArguments="/install /quiet /norestart"
                   DetectCondition="VCRedistVersion &gt;= v14.30.30704.0" />
       <MsiPackage Id="YUViewMsi"
-                  SourceFile="../bin/$(BuildConfiguration)/YUViewSetup.msi"
+                  SourceFile="../bin/Release/YUViewSetup.msi"
                   Vital="yes" />
     </Chain>
   </Bundle>

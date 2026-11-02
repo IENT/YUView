@@ -10,7 +10,9 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="WixToolset.BootstrapperApplications.wixext" Version="7.0.1" />
     <PackageReference Include="WixToolset.UI.wixext" Version="7.0.1" />
     <BindPath Include="$(PayloadDir)" BindName="Payload" />
+    <PackageReference Include="WixToolset.Util.wixext" Version="7.0.1" />
   </ItemGroup>
 </Project>
