@@ -1,5 +1,6 @@
 <Project Sdk="WixToolset.Sdk/7.0.1">
   <PropertyGroup>
+    <OutputType>Bundle</OutputType>
     <OutputName>YUViewSetup</OutputName>
     <OutputPath>$(MSBuildProjectDirectory)\..\bin\Bundle\$(Configuration)\</OutputPath>
     <InstallerPlatform>x64</InstallerPlatform>

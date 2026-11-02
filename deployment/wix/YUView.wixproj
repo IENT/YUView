@@ -10,6 +10,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Remove="bundle\**\*.wxs" />
     <PackageReference Include="WixToolset.BootstrapperApplications.wixext" Version="7.0.1" />
     <PackageReference Include="WixToolset.UI.wixext" Version="7.0.1" />
     <BindPath Include="$(PayloadDir)" BindName="Payload" />
