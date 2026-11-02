@@ -154,10 +154,11 @@ jobs:
       shell: bash
     - name: Build (CMake)
       run: |
-        cmake -S . -B build -G "NMake Makefiles" -DYUVIEW_BUILD_TESTS=ON -DCMAKE_PREFIX_PATH="${{ github.workspace }}\..\..\YUViewQt\YUViewQt\Qt"
-        cmake --build build 
+        ninja --version
+        cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DYUVIEW_BUILD_TESTS=ON -DCMAKE_PREFIX_PATH="${{ github.workspace }}\..\..\YUViewQt\YUViewQt\Qt"
+        cmake --build build --parallel
     - name: Run Unittests
-      run: ctest --test-dir build --output-on-failure
+      run: ctest --test-dir build --output-on-failure -V
       env:
         QT_QPA_PLATFORM: 'offscreen'
     - name: WindeployQT
