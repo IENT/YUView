@@ -173,7 +173,7 @@ QStringList decoderVVDec::getLibraryNames() const
   QStringList names;
   if (is_Q_OS_LINUX)
     names << "libvvdecLib";
-  if (is_Q_OS_MAC)
+  if (is_Q_OS_MACOS)
     names << "libvvdecLib.dylib";
   if (is_Q_OS_WIN)
     names << "vvdecLib";
@@ -238,8 +238,8 @@ template <typename T> T decoderVVDec::resolve(T &fun, const char *symbol, bool o
   if (!ptr)
   {
     if (!optional)
-      this->setError(QStringLiteral("Error loading the libvvDeC library: Can't find function %1.")
-                         .arg(symbol));
+      this->setError(
+        QStringLiteral("Error loading the libvvDeC library: Can't find function %1.").arg(symbol));
     return nullptr;
   }
 
@@ -445,9 +445,9 @@ bool decoderVVDec::pushData(QByteArray &data)
       auto cErr    = this->lib.vvdec_get_last_error(this->decoder);
       auto cErrAdd = this->lib.vvdec_get_last_additional_error(this->decoder);
       return setErrorB(QString("Error pushing data to decoder length %1 - %2 - %3")
-                           .arg(data.length())
-                           .arg(cErr)
-                           .arg(cErrAdd));
+                         .arg(data.length())
+                         .arg(cErr)
+                         .arg(cErrAdd));
     }
 
     DEBUG_vvdec("decoderVVDec::pushData pushed NAL length %d%s",

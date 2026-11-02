@@ -47,4 +47,20 @@ If none of these apply to you, you can easily [build YUView yourself](https://gi
 
 ## Building
 
-Compiling YUView from source is easy! We use qmake for the project so on all supported platforms you just have to install qt and run `qmake` and `make` to build YUView. There are no further dependent libraries. Alternatively, you can use the QTCreator if you prefer a GUI. More help on building YUView can be found in the [wiki](https://github.com/IENT/YUView/wiki/Compile-YUView).
+Compiling YUView from source requires Qt 6 and CMake. Configure and build the application with:
+
+```sh
+cmake -S . -B build
+cmake --build build --parallel
+```
+
+To also build the unit tests, initialize the GoogleTest submodule and enable the test option:
+
+```sh
+git submodule update --init --recursive
+cmake -S . -B build -DYUVIEW_BUILD_TESTS=ON
+cmake --build build --parallel
+ctest --test-dir build --output-on-failure
+```
+
+More help on building YUView can be found in the [wiki](https://github.com/IENT/YUView/wiki/Compile-YUView).

@@ -220,7 +220,7 @@ bool FFmpegLibraryFunctions::loadFFmpegLibraryInPath(QString path, LibraryVersio
       constructLibName = "lib%1-ffmpeg.so.%2";
     if (is_Q_OS_LINUX && i == 1)
       constructLibName = "lib%1.so.%2";
-    if (is_Q_OS_MAC)
+    if (is_Q_OS_MACOS)
       constructLibName = "lib%1.%2.dylib";
 
     auto loadLibrary =
