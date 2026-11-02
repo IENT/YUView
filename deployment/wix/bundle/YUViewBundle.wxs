@@ -24,7 +24,7 @@
 
     <Chain>
       <ExePackage Id="VCRedist"
-                  SourceFile="../redist/vc_redist.x64.exe"
+                  SourceFile="../redist/vc_redist.exe"
                   PerMachine="yes"
                   Permanent="yes"
                   Vital="yes"

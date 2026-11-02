@@ -2,7 +2,6 @@
   <PropertyGroup>
     <OutputName>YUViewSetup</OutputName>
     <OutputPath>$(MSBuildProjectDirectory)\bin\$(Configuration)\</OutputPath>
-    <InstallerPlatform>x64</InstallerPlatform>
     <Cultures>en-US</Cultures>
     <ProductVersion Condition="'$(ProductVersion)' == ''">2.14.1</ProductVersion>
     <PayloadDir Condition="'$(PayloadDir)' == ''">$(MSBuildProjectDirectory)\..\..\deploy</PayloadDir>
