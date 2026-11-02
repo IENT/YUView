@@ -119,7 +119,8 @@ jobs:
     runs-on: windows-2022
     strategy:
       matrix:
-        autoUpdate: [true, false]
+        #autoUpdate: [true, false]
+        autoUpdate: [true]
     steps:
     - uses: actions/checkout@v6
       with:
@@ -154,7 +155,7 @@ jobs:
     - name: Build (CMake)
       run: |
         cmake -S . -B build -G "NMake Makefiles" -DYUVIEW_BUILD_TESTS=ON -DCMAKE_PREFIX_PATH="${{ github.workspace }}\..\..\YUViewQt\YUViewQt\Qt"
-        cmake --build build
+        cmake --build build 
     - name: Run Unittests
       run: ctest --test-dir build --output-on-failure
       env:
@@ -178,6 +179,7 @@ jobs:
       if: matrix.autoUpdate == true
       run: |
         dotnet tool install --global wix --version 7.0.1
+        wix eula accept wix7
         cd deployment/wix
         dotnet add package WixToolset.Util.wixext --version 7.0.1
         dotnet add package WixToolset.BootstrapperApplications.wixext --version 7.0.1
