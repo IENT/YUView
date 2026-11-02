@@ -153,17 +153,17 @@ jobs:
       shell: bash
     - name: Build (CMake)
       run: |
-        cmake -S . -B build -G "NMake Makefiles" -DYUVIEW_BUILD_TESTS=ON -DCMAKE_PREFIX_PATH="${{ github.workspace }}\..\..\YUViewQt\YUViewQt\Qt"
-        cmake --build build
+        cmake -S . -B build -G "Visual Studio 17 2022" -A x64 -DYUVIEW_BUILD_TESTS=ON -DCMAKE_PREFIX_PATH="${{ github.workspace }}\..\..\YUViewQt\YUViewQt\Qt"
+        cmake --build build --config Release --parallel
     - name: Run Unittests
-      run: ctest --test-dir build --output-on-failure
+      run: ctest --test-dir build -C Release --output-on-failure -V
       env:
         QT_QPA_PLATFORM: 'offscreen'
     - name: WindeployQT
       run: |
         mkdir deploy
         cd deploy
-        cp ../build/YUViewApp/YUView.exe .
+        cp ../build/YUViewApp/Release/YUView.exe .
         windeployqt --release --no-compiler-runtime YUView.exe
         cp ../openSSL/*.dll .
         mkdir decoder
