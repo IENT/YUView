@@ -120,10 +120,8 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        #autoUpdate: [true, false]
-        autoUpdate: [true]
-        #os: [windows-2022, windows-11-vs2026-arm]
-        os: [windows-11-vs2026-arm]
+        autoUpdate: [true, false]
+        os: [windows-2022, windows-11-vs2026-arm]
     steps:
     - uses: actions/checkout@v6
       with:
@@ -180,7 +178,7 @@ jobs:
         cd ..
         python deployment/versioning.py -d deploy -o deploy/versioninfo.txt
         mkdir artifacts
-        7z a artifacts/YUView-Win.zip ./deploy/*
+        7z a artifacts/YUView-${{ matrix.os }}.zip ./deploy/*
     - name: Build WiX 7 installer
       if: matrix.autoUpdate == true
       env:
@@ -197,35 +195,35 @@ jobs:
         Invoke-WebRequest -Uri https://aka.ms/vs/17/release/vc_redist.$REDIST_PLATFORM.exe -OutFile deployment/wix/redist/vc_redist.exe
         dotnet build deployment/wix/YUView.wixproj --configuration Release -p:PayloadDir="${{ github.workspace }}\deploy" -p:ProductVersion=2.14.1
         dotnet build deployment/wix/bundle/YUViewBundle.wixproj --configuration Release -p:ProductVersion=2.14.1
-        Copy-Item deployment/wix/bin/Bundle/Release/YUViewSetup.exe ./YUViewSetup.exe
+        Copy-Item deployment/wix/bin/Bundle/Release/YUViewSetup.exe ./YUViewSetup-${{ matrix.os }}.exe
     - name: Upload Artifact (Autoupdate)
       if: matrix.autoUpdate == true
       uses: actions/upload-artifact@v7
       with:
-        name: YUView-windows-2022-autoupdate.zip
+        name: YUView-${{ matrix.os }}-autoupdate.zip
         path: artifacts
     - name: Upload Artifact (Autoupdate disabled)
       if: matrix.autoUpdate == false
       uses: actions/upload-artifact@v7
       with:
-        name: YUView-windows-2022.zip
+        name: YUView-${{ matrix.os }}.zip
         path: artifacts
     - name: Upload Windows installer Artifact
       if: matrix.autoUpdate == true
       uses: actions/upload-artifact@v7
       with:
-        name: YUView-windows-2022-setup.exe
-        path: ./YUViewSetup.exe
+        name: YUView-${{ matrix.os }}-setup.exe
+        path: ./YUViewSetup-${{ matrix.os }}.exe
     - name: Release Zip
-      uses: softprops/action-gh-release@v1
+      uses: softprops/action-gh-release@v3
       if: startsWith(github.ref, 'refs/tags/')
       with:
-        files: artifacts/YUView-Win.zip
+        files: artifacts/YUView-${{ matrix.os }}.zip
     - name: Release Installer
-      uses: softprops/action-gh-release@v1
+      uses: softprops/action-gh-release@v3
       if: startsWith(github.ref, 'refs/tags/') && matrix.autoUpdate == true
       with:
-        files: YUViewSetup.exe
+        files: YUViewSetup-${{ matrix.os }}.exe
     
   # How to upload files to the release:
   # https://github.com/Blacksmoke16/oq/pull/47/files#diff-082c28d748ad2e3eecc5508d740d9417R9-R29
