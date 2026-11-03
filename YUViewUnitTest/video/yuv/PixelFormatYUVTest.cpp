@@ -173,7 +173,7 @@ TEST(PixelFormatYUVTest, testFormatFromToString)
 
 TEST(PixelFormatYUVTest, testPYUVFormat)
 {
-  // PYUV is only defined for 4:2:2 with 10, 12 or 14 bits, litte endian, PlaneOrder YUV
+  // PYUV is only defined for 4:2:0 with 10, 12 or 14 bits, litte endian, PlaneOrder YUV
   for (const auto subsampling : SubsamplingMapper.getValues())
   {
     for (const auto bitsPerSample : BitDepthList)
@@ -201,11 +201,31 @@ TEST(PixelFormatYUVTest, testPYUVFormat)
                !uvPlanesInterleaved);
 
             EXPECT_EQ(format.isValid(), shouldBeValid);
+            if (format.isValid())
+            {
+              for (const auto frameSizeLuma :
+                   {Size({1920, 1080}), Size({1280, 720}), Size({12, 10}), Size({10, 10})})
+              {
+                const auto nrSamplesChroma = frameSizeLuma.width / 2 * frameSizeLuma.height / 2;
+                const auto frameSizeValid =
+                  (((bitsPerSample == 10 || bitsPerSample == 14) && (nrSamplesChroma % 4 == 0)) ||
+                   (bitsPerSample == 12 && (nrSamplesChroma % 2 == 0)));
+
+                const auto nrBytesPerFrame = format.bytesPerFrame(frameSizeLuma);
+                if (frameSizeValid)
+                  EXPECT_GT(nrBytesPerFrame, 0)
+                    << "Format " << format.getName() << " returned 0 bytes per frame for size "
+                    << frameSizeLuma.width << "x" << frameSizeLuma.height;
+                else
+                  EXPECT_EQ(nrBytesPerFrame, 0)
+                    << "Format " << format.getName()
+                    << " returned non-zero bytes per frame for invalid size " << frameSizeLuma.width
+                    << "x" << frameSizeLuma.height;
+              }
+            }
           }
     }
   }
-
-  // Test other things ...
 }
 
 } // namespace video::yuv::test

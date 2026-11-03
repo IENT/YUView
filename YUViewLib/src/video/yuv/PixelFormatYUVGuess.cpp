@@ -243,7 +243,8 @@ std::optional<PixelFormatYUV>
 checkSpecificFileExtensions(const GuessedFrameFormat &guessedFrameFormat,
                             const FileInfoForGuess   &fileInfo)
 {
-  const auto fileExtension = std::filesystem::path(fileInfo.filename).extension();
+  const auto fileExtension =
+    functions::toLower(std::filesystem::path(fileInfo.filename).extension().string());
 
   if (fileExtension == ".raw")
   {
@@ -254,11 +255,28 @@ checkSpecificFileExtensions(const GuessedFrameFormat &guessedFrameFormat,
       return rawBayerFormat;
   }
 
-  if (fileExtension == ".v210" || fileExtension == ".V210")
+  if (fileExtension == ".v210")
   {
     const auto v210Format = PixelFormatYUV(PredefinedPixelFormat::V210);
     if (doesPixelFormatMatchFileSize(v210Format, guessedFrameFormat.frameSize, fileInfo.fileSize))
       return v210Format;
+  }
+
+  if (fileExtension == ".pyuv")
+  {
+    auto bps = 10;
+    if (guessedFrameFormat.bitDepth)
+    {
+      if (*guessedFrameFormat.bitDepth != 10 && *guessedFrameFormat.bitDepth != 12 &&
+          *guessedFrameFormat.bitDepth != 14)
+        return {};
+      bps = *guessedFrameFormat.bitDepth;
+    }
+    const auto pyuvFormat =
+      PixelFormatYUV(PlanarPixelFormat({.bitsPerSample = bps, .bytePacking = true}));
+
+    if (doesPixelFormatMatchFileSize(pyuvFormat, guessedFrameFormat.frameSize, fileInfo.fileSize))
+      return pyuvFormat;
   }
 
   return {};

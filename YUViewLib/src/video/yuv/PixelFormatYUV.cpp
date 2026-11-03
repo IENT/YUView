@@ -132,6 +132,12 @@ std::optional<PlaneOrderParsingResult> parsePlanarPlaneOrderString(std::string_v
   return {};
 }
 
+bool doesSizeMatchSubsampling(Size lumaSize, Subsampling subsampling)
+{
+  const auto factors = getSubsamplingFactors(subsampling);
+  return (lumaSize.width % factors.horizontal == 0) && (lumaSize.height % factors.vertical == 0);
+}
+
 } // namespace
 
 std::string formatSubsamplingWithColons(const Subsampling &subsampling)
@@ -408,6 +414,9 @@ int64_t PixelFormatYUV::bytesPerFrame(const Size &frameSize) const
   if (!frameSize.isValid())
     return 0;
 
+  if (!doesSizeMatchSubsampling(frameSize, this->getSubsampling()))
+    return 0;
+
   if (const auto predefinedFormat = std::get_if<PredefinedPixelFormat>(&this->format))
   {
     if (*predefinedFormat == PredefinedPixelFormat::V210)
@@ -494,7 +503,29 @@ int64_t PixelFormatYUV::bytesPerFrame(const Size &frameSize) const
 
   if (const auto planarFormat = std::get_if<PlanarPixelFormat>(&this->format))
   {
-    // PYUV ... to be implemented
+    assert(planarFormat->bytePacking);
+
+    if (planarFormat->subsampling == Subsampling::YUV_420 &&
+        planarFormat->planeOrder == PlaneOrder::YUV &&
+        planarFormat->endianness == Endianness::Little)
+    {
+      const auto nrSamplesChroma = frameSize.width / 2 * frameSize.height / 2;
+      if ((planarFormat->bitsPerSample == 10 || planarFormat->bitsPerSample == 14) &&
+          (nrSamplesChroma % 4 != 0))
+        return 0;
+      if (planarFormat->bitsPerSample == 12 && (nrSamplesChroma % 2 != 0))
+        return 0;
+
+      const auto nrSamplesLuma = frameSize.width * frameSize.height;
+
+      if (planarFormat->bitsPerSample == 10)
+        return nrSamplesLuma / 4 * 5 + 2 * nrSamplesChroma / 4 * 5;
+      if (planarFormat->bitsPerSample == 12)
+        return nrSamplesLuma / 2 * 3 + 2 * nrSamplesChroma / 2 * 3;
+      if (planarFormat->bitsPerSample == 14)
+        return nrSamplesLuma / 4 * 7 + 2 * nrSamplesChroma / 4 * 7;
+    }
+    return 0;
   }
 
   return 0;
