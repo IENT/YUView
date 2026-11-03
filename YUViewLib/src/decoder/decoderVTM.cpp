@@ -277,8 +277,7 @@ bool decoderVTM::getNextFrameFromDecoder()
     convertFromInternalSubsampling(this->lib.libVTMDec_get_chroma_format(currentVTMPic));
   if (subsampling == Subsampling::UNKNOWN)
     DEBUG_DECVTM("decoderVTM::getNextFrameFromDecoder got invalid chroma format");
-  auto bitDepth = functions::clipToUnsigned(
-    this->lib.libVTMDec_get_internal_bit_depth(currentVTMPic, LIBVTMDEC_LUMA));
+  auto bitDepth = this->lib.libVTMDec_get_internal_bit_depth(currentVTMPic, LIBVTMDEC_LUMA);
   if (bitDepth < 8 || bitDepth > 16)
     DEBUG_DECVTM("decoderVTM::getNextFrameFromDecoder got invalid bit depth");
 

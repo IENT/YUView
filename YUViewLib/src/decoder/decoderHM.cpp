@@ -285,8 +285,7 @@ bool decoderHM::getNextFrameFromDecoder()
     convertFromInternalSubsampling(this->lib.libHMDEC_get_chroma_format(currentHMPic));
   if (subsampling == video::yuv::Subsampling::UNKNOWN)
     DEBUG_DECHM("decoderHM::getNextFrameFromDecoder got invalid chroma format");
-  auto bitDepth = functions::clipToUnsigned(
-    this->lib.libHMDEC_get_internal_bit_depth(currentHMPic, LIBHMDEC_LUMA));
+  auto bitDepth = this->lib.libHMDEC_get_internal_bit_depth(currentHMPic, LIBHMDEC_LUMA);
   if (bitDepth < 8 || bitDepth > 16)
     DEBUG_DECHM("decoderHM::getNextFrameFromDecoder got invalid bit depth");
 
