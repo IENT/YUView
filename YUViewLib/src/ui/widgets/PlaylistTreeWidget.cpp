@@ -906,16 +906,14 @@ bool PlaylistTreeWidget::loadPlaylistFromByteArray(QByteArray data, QString file
 {
   // Try to open the DOM document
   QDomDocument doc;
-  QString      errorMessage;
-  int          errorLine;
-  int          errorColumn;
-  bool         success = doc.setContent(data, false, &errorMessage, &errorLine, &errorColumn);
-  if (!success)
+  const auto result = doc.setContent(data);
+  if (!result)
   {
-    QMessageBox::critical(this,
-                          "Error loading playlist.",
-                          errorMessage +
-                            QString(" in line/column %1/%2").arg(errorLine).arg(errorColumn));
+    QMessageBox::critical(
+      this,
+      "Error loading playlist.",
+      result.errorMessage +
+        QString(" in line/column %1/%2").arg(result.errorLine).arg(result.errorColumn));
     return false;
   }
 
