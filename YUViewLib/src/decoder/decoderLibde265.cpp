@@ -1013,10 +1013,10 @@ QStringList decoderLibde265::getLibraryNames() const
   // the libde265.so file first. Since this has been compiled for linux
   // it will fail and not even try to open the libde265.dylib.
   // On windows and linux ommitting the extension works
-  QStringList libNames = is_Q_OS_MAC ? QStringList() << "libde265-internals.dylib"
-                                                     << "libde265.dylib"
-                                     : QStringList() << "libde265-internals"
-                                                     << "libde265";
+  QStringList libNames = is_Q_OS_MACOS ? QStringList() << "libde265-internals.dylib"
+                                                       << "libde265.dylib"
+                                       : QStringList() << "libde265-internals"
+                                                       << "libde265";
 
   return libNames;
 }

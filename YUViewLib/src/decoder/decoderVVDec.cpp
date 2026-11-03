@@ -174,7 +174,7 @@ QStringList decoderVVDec::getLibraryNames() const
   QStringList names;
   if (is_Q_OS_LINUX)
     names << "libvvdecLib";
-  if (is_Q_OS_MAC)
+  if (is_Q_OS_MACOS)
     names << "libvvdecLib.dylib";
   if (is_Q_OS_WIN)
     names << "vvdecLib";

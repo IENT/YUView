@@ -257,7 +257,7 @@ QStringList SettingsDialog::getLibraryPath(QString currentFile, QString caption,
   fileDialog.setFileMode(multipleFiles ? QFileDialog::ExistingFiles : QFileDialog::ExistingFile);
   if (is_Q_OS_LINUX)
     fileDialog.setNameFilter("Library files (*.so.* *.so)");
-  if (is_Q_OS_MAC)
+  if (is_Q_OS_MACOS)
     fileDialog.setNameFilter("Library files (*.dylib)");
   if (is_Q_OS_WIN)
     fileDialog.setNameFilter("Library files (*.dll)");

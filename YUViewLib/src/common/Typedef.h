@@ -60,11 +60,11 @@
 #endif
 
 // Convenience macro definitions which can be used in if clauses:
-// if (is_Q_OS_MAC) ...
-#ifdef Q_OS_MAC
-constexpr bool is_Q_OS_MAC = true;
+// if (is_Q_OS_MACOS) ...
+#ifdef Q_OS_MACOS
+constexpr bool is_Q_OS_MACOS = true;
 #else
-constexpr bool is_Q_OS_MAC = false;
+constexpr bool is_Q_OS_MACOS = false;
 #endif
 
 #ifdef Q_OS_WIN

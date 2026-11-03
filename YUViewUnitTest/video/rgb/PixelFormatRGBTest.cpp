@@ -31,7 +31,7 @@
  */
 
 #include "video/PixelFormat.h"
-#include <common/Testing.h>
+#include <Testing.h>
 
 #include <video/rgb/PixelFormatRGB.h>
 

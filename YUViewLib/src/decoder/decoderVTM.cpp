@@ -132,7 +132,7 @@ QStringList decoderVTM::getLibraryNames() const
   // Since this has been compiled for linux it will fail and not even try to open the .dylib.
   // On windows and linux ommitting the extension works
   QStringList names =
-    is_Q_OS_MAC ? QStringList() << "libVTMDecoder.dylib" : QStringList() << "libVTMDecoder";
+    is_Q_OS_MACOS ? QStringList() << "libVTMDecoder.dylib" : QStringList() << "libVTMDecoder";
 
   return names;
 }
@@ -273,11 +273,12 @@ bool decoderVTM::getNextFrameFromDecoder()
                             this->lib.libVTMDec_get_picture_height(currentVTMPic, LIBVTMDEC_LUMA));
   if (!picSize.isValid())
     DEBUG_DECVTM("decoderVTM::getNextFrameFromDecoder got invalid size");
-  const auto subsampling =
+  auto subsampling =
     convertFromInternalSubsampling(this->lib.libVTMDec_get_chroma_format(currentVTMPic));
   if (subsampling == Subsampling::UNKNOWN)
     DEBUG_DECVTM("decoderVTM::getNextFrameFromDecoder got invalid chroma format");
-  const auto bitDepth = this->lib.libVTMDec_get_internal_bit_depth(currentVTMPic, LIBVTMDEC_LUMA);
+  auto bitDepth = functions::clipToUnsigned(
+    this->lib.libVTMDec_get_internal_bit_depth(currentVTMPic, LIBVTMDEC_LUMA));
   if (bitDepth < 8 || bitDepth > 16)
     DEBUG_DECVTM("decoderVTM::getNextFrameFromDecoder got invalid bit depth");
 

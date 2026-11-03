@@ -128,7 +128,7 @@ QStringList decoderHM::getLibraryNames() const
   // Since this has been compiled for linux it will fail and not even try to open the .dylib.
   // On windows and linux ommitting the extension works
   auto names =
-    is_Q_OS_MAC ? QStringList() << "libHMDecoder.dylib" : QStringList() << "libHMDecoder";
+    is_Q_OS_MACOS ? QStringList() << "libHMDecoder.dylib" : QStringList() << "libHMDecoder";
 
   return names;
 }
@@ -283,9 +283,10 @@ bool decoderHM::getNextFrameFromDecoder()
     DEBUG_DECHM("decoderHM::getNextFrameFromDecoder got invalid size");
   auto subsampling =
     convertFromInternalSubsampling(this->lib.libHMDEC_get_chroma_format(currentHMPic));
-  if (subsampling == Subsampling::UNKNOWN)
+  if (subsampling == video::yuv::Subsampling::UNKNOWN)
     DEBUG_DECHM("decoderHM::getNextFrameFromDecoder got invalid chroma format");
-  auto bitDepth = this->lib.libHMDEC_get_internal_bit_depth(currentHMPic, LIBHMDEC_LUMA);
+  auto bitDepth = functions::clipToUnsigned(
+    this->lib.libHMDEC_get_internal_bit_depth(currentHMPic, LIBHMDEC_LUMA));
   if (bitDepth < 8 || bitDepth > 16)
     DEBUG_DECHM("decoderHM::getNextFrameFromDecoder got invalid bit depth");
 
