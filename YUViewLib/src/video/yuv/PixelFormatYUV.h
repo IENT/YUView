@@ -243,13 +243,22 @@ public:
   std::optional<PackedPixelFormat>     getPackedFormat() const;
   std::optional<PredefinedPixelFormat> getPredefinedFormat() const;
 
-  bool        isValid() const;
-  int64_t     bytesPerFrame(const Size &frameSize) const;
-  std::string getName() const;
+  bool isValid() const;
 
-  Subsampling       getSubsampling() const;
-  SubsamplingRatios getSubsamplingRatios() const;
-  int               getNrPlanes() const;
+  int64_t bytesPerFrame(const Size &frameSize) const;
+  struct BytesPerComponent
+  {
+    int64_t luma{};
+    int64_t chroma{};
+    int64_t alpha{};
+  };
+  std::optional<BytesPerComponent> bytesPerFramePerComponent(const Size &frameSize) const;
+
+  std::string         getName() const;
+  Subsampling         getSubsampling() const;
+  SubsamplingRatios   getSubsamplingRatios() const;
+  std::optional<Size> getChromaSize(const Size &lumaSize) const;
+  int                 getNrPlanes() const;
 
   int  getBitsPerSample() const;
   bool hasAlpha() const;

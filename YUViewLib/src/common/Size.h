@@ -32,6 +32,8 @@
 
 #pragma once
 
+#include <algorithm>
+
 struct Size
 {
   static constexpr int MAX_DIMENSION = 100000;
@@ -60,3 +62,8 @@ struct Size
   int width{};
   int height{};
 };
+
+static Size getMinSize(const Size &size1, const Size &size2)
+{
+  return Size(std::min(size1.width, size2.width), std::min(size1.height, size2.height));
+}

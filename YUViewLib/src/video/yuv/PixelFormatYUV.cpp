@@ -429,46 +429,14 @@ int64_t PixelFormatYUV::bytesPerFrame(const Size &frameSize) const
     return 0;
   }
 
-  if (!isBytePacking(this->format))
-  {
-    // Add the bytes of the 3 (or 4) planes.
-    // The numbers are the same for planar and packed formats as long as no byte packing is used.
-    // The only difference is the order of the bytes in memory.
-
-    const auto    bytesPerSample = (this->getBitsPerSample() + 7) / 8;
-    const int64_t bytesLuma      = frameSize.width * frameSize.height * bytesPerSample;
-
-    int64_t bytesChroma = 0;
-    switch (this->getSubsampling())
-    {
-    case Subsampling::YUV_444:
-      bytesChroma = 2 * bytesLuma;
-      break;
-    case Subsampling::YUV_422:
-    case Subsampling::YUV_440:
-      bytesChroma = bytesLuma;
-      break;
-    case Subsampling::YUV_420:
-    case Subsampling::YUV_411:
-      bytesChroma = bytesLuma / 2;
-      break;
-    case Subsampling::YUV_410:
-      bytesChroma = bytesLuma / 8;
-      break;
-    case Subsampling::YUV_400:
-      bytesChroma = 0;
-      break;
-    default:
-      return 0;
-    }
-
-    const auto bytesAlpha = (this->hasAlpha()) ? bytesLuma : 0;
-
-    return bytesLuma + bytesChroma + bytesAlpha;
-  }
+  if (const auto bytesPerComponent = this->bytesPerFramePerComponent(frameSize))
+    return bytesPerComponent->luma + 2 * bytesPerComponent->chroma + bytesPerComponent->alpha;
 
   if (const auto packedFormat = std::get_if<PackedPixelFormat>(&this->format))
   {
+    if (!packedFormat->bytePacking)
+      return 0;
+
     if (packedFormat->subsampling == Subsampling::YUV_422)
     {
       // All packing orders have 4 values per packed value (which has 2 Y samples)
@@ -501,6 +469,49 @@ int64_t PixelFormatYUV::bytesPerFrame(const Size &frameSize) const
     //  return -1;  // Unknown subsampling
   }
 
+  return 0;
+}
+
+std::optional<PixelFormatYUV::BytesPerComponent>
+PixelFormatYUV::bytesPerFramePerComponent(const Size &frameSize) const
+{
+  PixelFormatYUV::BytesPerComponent bytes;
+
+  if (!isBytePacking(this->format))
+  {
+    // The numbers are the same for planar and packed formats as long as no byte packing is used.
+    // The only difference is the order of the bytes in memory.
+
+    const auto bytesPerSample = (this->getBitsPerSample() + 7) / 8;
+    bytes.luma                = frameSize.area() * bytesPerSample;
+
+    switch (this->getSubsampling())
+    {
+    case Subsampling::YUV_444:
+      bytes.chroma = 2 * bytes.luma;
+      break;
+    case Subsampling::YUV_422:
+    case Subsampling::YUV_440:
+      bytes.chroma = bytes.luma / 2;
+      break;
+    case Subsampling::YUV_420:
+    case Subsampling::YUV_411:
+      bytes.chroma = bytes.luma / 4;
+      break;
+    case Subsampling::YUV_410:
+      bytes.chroma = bytes.luma / 16;
+      break;
+    case Subsampling::YUV_400:
+      bytes.chroma = 0;
+      break;
+    default:
+      return {};
+    }
+
+    bytes.alpha = (this->hasAlpha()) ? bytes.luma : 0;
+    return bytes;
+  }
+
   if (const auto planarFormat = std::get_if<PlanarPixelFormat>(&this->format))
   {
     assert(planarFormat->bytePacking);
@@ -509,26 +520,34 @@ int64_t PixelFormatYUV::bytesPerFrame(const Size &frameSize) const
         planarFormat->planeOrder == PlaneOrder::YUV &&
         planarFormat->endianness == Endianness::Little)
     {
-      const auto nrSamplesChroma = frameSize.width / 2 * frameSize.height / 2;
+      const auto nrSamplesLuma   = frameSize.area();
+      const auto nrSamplesChroma = nrSamplesLuma / 4;
       if ((planarFormat->bitsPerSample == 10 || planarFormat->bitsPerSample == 14) &&
           (nrSamplesChroma % 4 != 0))
-        return 0;
+        return {};
       if (planarFormat->bitsPerSample == 12 && (nrSamplesChroma % 2 != 0))
-        return 0;
-
-      const auto nrSamplesLuma = frameSize.width * frameSize.height;
+        return {};
 
       if (planarFormat->bitsPerSample == 10)
-        return nrSamplesLuma / 4 * 5 + 2 * nrSamplesChroma / 4 * 5;
-      if (planarFormat->bitsPerSample == 12)
-        return nrSamplesLuma / 2 * 3 + 2 * nrSamplesChroma / 2 * 3;
-      if (planarFormat->bitsPerSample == 14)
-        return nrSamplesLuma / 4 * 7 + 2 * nrSamplesChroma / 4 * 7;
+      {
+        bytes.luma   = nrSamplesLuma / 4 * 5;
+        bytes.chroma = nrSamplesChroma / 4 * 5;
+      }
+      else if (planarFormat->bitsPerSample == 12)
+      {
+        bytes.luma   = nrSamplesLuma / 2 * 3;
+        bytes.chroma = nrSamplesChroma / 2 * 3;
+      }
+      else if (planarFormat->bitsPerSample == 14)
+      {
+        bytes.luma   = nrSamplesLuma / 4 * 7;
+        bytes.chroma = nrSamplesChroma / 4 * 7;
+      }
+      return bytes;
     }
-    return 0;
   }
 
-  return 0;
+  return std::nullopt;
 }
 
 // Generate a unique name for the YUV format
@@ -614,6 +633,16 @@ SubsamplingRatios PixelFormatYUV::getSubsamplingRatios() const
   default:
     return {1, 1};
   }
+}
+
+std::optional<Size> PixelFormatYUV::getChromaSize(const Size &lumaSize) const
+{
+  const auto subsampling = this->getSubsampling();
+  if (subsampling == Subsampling::YUV_400)
+    return std::nullopt;
+
+  const auto factors = getSubsamplingRatios();
+  return Size({lumaSize.width / factors.horizontal, lumaSize.height / factors.vertical});
 }
 
 int PixelFormatYUV::getNrPlanes() const
