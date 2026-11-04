@@ -906,6 +906,8 @@ bool PlaylistTreeWidget::loadPlaylistFromByteArray(QByteArray data, QString file
 {
   // Try to open the DOM document
   QDomDocument doc;
+
+#if QT_VERSION >= QT_VERSION_CHECK(6, 5, 0)
   const auto result = doc.setContent(data);
   if (!result)
   {
@@ -916,6 +918,20 @@ bool PlaylistTreeWidget::loadPlaylistFromByteArray(QByteArray data, QString file
         QString(" in line/column %1/%2").arg(result.errorLine).arg(result.errorColumn));
     return false;
   }
+#else
+  QString errorMessage;
+  int     errorLine{};
+  int     errorColumn{};
+  bool    success = doc.setContent(data, false, &errorMessage, &errorLine, &errorColumn);
+  if (!success)
+  {
+    QMessageBox::critical(this,
+                          "Error loading playlist.",
+                          errorMessage +
+                            QString(" in line/column %1/%2").arg(errorLine).arg(errorColumn));
+    return false;
+  }
+#endif
 
   // Get the root and parser the header
   auto root = doc.documentElement();
