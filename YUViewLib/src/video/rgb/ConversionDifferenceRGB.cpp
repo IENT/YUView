@@ -106,7 +106,7 @@ calculateDifferencePredefinedPixelFormat(const InputFrameParameters &frame1,
   auto rawData1 = reinterpret_cast<const unsigned char *>(frame1.rawDataItem.data());
   auto rawData2 = reinterpret_cast<const unsigned char *>(frame2.rawDataItem.data());
 
-  for (unsigned i = 0; i < frameSize.width * frameSize.height; ++i)
+  for (int i = 0; i < frameSize.area(); ++i)
   {
     const auto rgb1 = extractRGB565Value(rawData1, endianness);
     const auto rgb2 = extractRGB565Value(rawData2, endianness);
@@ -184,7 +184,7 @@ std::pair<QImage, MSE> calculateDifferenceAndMSE(const InputFrameParameters &fra
   const auto offsetToNextValue =
     (pixelFormat.getDataLayout() == DataLayout::Planar ? 1 : pixelFormat.getNrChannels());
 
-  for (unsigned i = 0; i < frameSize.width * frameSize.height; ++i)
+  for (int i = 0; i < frameSize.area(); ++i)
   {
     const auto rgb1 = getRGBAndConvertEndianness(dataPointers1, pixelFormat);
     const auto rgb2 = getRGBAndConvertEndianness(dataPointers2, pixelFormat);

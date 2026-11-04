@@ -67,7 +67,9 @@ namespace decoder
 #define DEBUG_LIBDE265(fmt, ...) ((void)0)
 #endif
 
-using Subsampling = video::yuv::Subsampling;
+using video::yuv::PixelFormatYUV;
+using video::yuv::PlanarPixelFormat;
+using video::yuv::Subsampling;
 
 namespace
 {
@@ -357,9 +359,9 @@ bool decoderLibde265::decodeFrame()
     if (!s.isValid())
       DEBUG_LIBDE265("decoderLibde265::decodeFrame got invalid frame size");
     auto subsampling = convertFromInternalSubsampling(this->lib.de265_get_chroma_format(curImage));
-    if (subsampling == video::yuv::Subsampling::UNKNOWN)
+    if (subsampling == Subsampling::UNKNOWN)
       DEBUG_LIBDE265("decoderLibde265::decodeFrame got invalid subsampling");
-    auto bitDepth = functions::clipToUnsigned(this->lib.de265_get_bits_per_pixel(curImage, 0));
+    auto bitDepth = this->lib.de265_get_bits_per_pixel(curImage, 0);
     if (bitDepth < 8 || bitDepth > 16)
       DEBUG_LIBDE265("decoderLibde265::decodeFrame got invalid bit depth");
 
@@ -367,7 +369,7 @@ bool decoderLibde265::decodeFrame()
     {
       // Set the values
       this->frameSize = s;
-      this->formatYUV = video::yuv::PixelFormatYUV(subsampling, bitDepth);
+      this->formatYUV = PixelFormatYUV(PlanarPixelFormat({subsampling, bitDepth}));
     }
     else
     {

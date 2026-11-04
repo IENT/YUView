@@ -83,7 +83,9 @@ namespace decoder
 #endif
 #endif
 
-using Subsampling = video::yuv::Subsampling;
+using video::yuv::PixelFormatYUV;
+using video::yuv::PlanarPixelFormat;
+using video::yuv::Subsampling;
 
 namespace
 {
@@ -259,41 +261,39 @@ bool decoderVTM::getNextFrameFromDecoder()
 {
   DEBUG_DECVTM("decoderVTM::getNextFrameFromDecoder");
 
-  currentVTMPic = this->lib.libVTMDec_get_picture(decoder);
-  if (currentVTMPic == nullptr)
+  this->currentVTMPic = this->lib.libVTMDec_get_picture(decoder);
+  if (this->currentVTMPic == nullptr)
   {
-    decoderState = DecoderState::NeedsMoreData;
+    this->decoderState = DecoderState::NeedsMoreData;
     return false;
   }
 
   // Check the validity of the picture
-  auto picSize = Size(this->lib.libVTMDec_get_picture_width(currentVTMPic, LIBVTMDEC_LUMA),
-                      this->lib.libVTMDec_get_picture_height(currentVTMPic, LIBVTMDEC_LUMA));
+  const auto picSize = Size(this->lib.libVTMDec_get_picture_width(currentVTMPic, LIBVTMDEC_LUMA),
+                            this->lib.libVTMDec_get_picture_height(currentVTMPic, LIBVTMDEC_LUMA));
   if (!picSize.isValid())
     DEBUG_DECVTM("decoderVTM::getNextFrameFromDecoder got invalid size");
   auto subsampling =
     convertFromInternalSubsampling(this->lib.libVTMDec_get_chroma_format(currentVTMPic));
   if (subsampling == Subsampling::UNKNOWN)
     DEBUG_DECVTM("decoderVTM::getNextFrameFromDecoder got invalid chroma format");
-  auto bitDepth = functions::clipToUnsigned(
-    this->lib.libVTMDec_get_internal_bit_depth(currentVTMPic, LIBVTMDEC_LUMA));
+  auto bitDepth = this->lib.libVTMDec_get_internal_bit_depth(currentVTMPic, LIBVTMDEC_LUMA);
   if (bitDepth < 8 || bitDepth > 16)
     DEBUG_DECVTM("decoderVTM::getNextFrameFromDecoder got invalid bit depth");
 
-  if (!frameSize.isValid() && !formatYUV.isValid())
+  if (!this->frameSize.isValid() && !this->formatYUV.isValid())
   {
-    // Set the values
-    frameSize = picSize;
-    formatYUV = video::yuv::PixelFormatYUV(subsampling, bitDepth);
+    this->frameSize = picSize;
+    this->formatYUV = PixelFormatYUV(PlanarPixelFormat({subsampling, bitDepth}));
   }
   else
   {
     // Check the values against the previously set values
-    if (frameSize != picSize)
+    if (this->frameSize != picSize)
       return setErrorB("Received a frame of different size");
-    if (formatYUV.getSubsampling() != subsampling)
+    if (this->formatYUV.getSubsampling() != subsampling)
       return setErrorB("Received a frame with different subsampling");
-    if (formatYUV.getBitsPerSample() != bitDepth)
+    if (this->formatYUV.getBitsPerSample() != bitDepth)
       return setErrorB("Received a frame with different bit depth");
   }
 

@@ -400,8 +400,7 @@ void SettingsDialog::on_pushButtonFFMpegSelectFile_clicked()
       const auto filePath =
           QFileDialog::getSaveFileName(this, "Select a destination for the log file.");
       QFile logFile(filePath);
-      logFile.open(QIODevice::WriteOnly);
-      if (logFile.isOpen())
+      if (logFile.open(QIODevice::WriteOnly))
       {
         QTextStream outputStream(&logFile);
         for (auto l : logList)

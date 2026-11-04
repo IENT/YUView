@@ -44,7 +44,9 @@
 namespace decoder
 {
 
-using Subsampling = video::yuv::Subsampling;
+using video::yuv::PixelFormatYUV;
+using video::yuv::PlanarPixelFormat;
+using video::yuv::Subsampling;
 
 // Debug the decoder (0:off 1:interactive decoder only 2:caching decoder only 3:both)
 #define DECODERDAV1D_DEBUG_OUTPUT 0
@@ -93,7 +95,7 @@ Size Dav1dPictureWrapper::getFrameSize() const
 {
   if (this->curPicture.p.w < 0 || this->curPicture.p.h < 0)
     return {};
-  return Size({static_cast<unsigned>(curPicture.p.w), static_cast<unsigned>(curPicture.p.h)});
+  return Size({curPicture.p.w, curPicture.p.h});
 }
 
 Subsampling Dav1dPictureWrapper::getSubsampling() const
@@ -140,7 +142,7 @@ decoderDav1d::~decoderDav1d()
     this->lib.dav1d_close(&decoder);
     if (decoder != nullptr)
       DEBUG_DAV1D(
-          "Error closing the decoder. The close function should set the decoder pointer to NULL");
+        "Error closing the decoder. The close function should set the decoder pointer to NULL");
   }
 }
 
@@ -152,7 +154,7 @@ void decoderDav1d::resetDecoder()
   this->lib.dav1d_close(&decoder);
   if (decoder != nullptr)
     DEBUG_DAV1D(
-        "Error closing the decoder. The close function should set the decoder pointer to NULL");
+      "Error closing the decoder. The close function should set the decoder pointer to NULL");
   decoderBase::resetDecoder();
   decoder = nullptr;
 
@@ -224,8 +226,8 @@ template <typename T> T decoderDav1d::resolve(T &fun, const char *symbol, bool o
   if (!ptr)
   {
     if (!optional)
-      setError(QStringLiteral("Error loading the libdav1d library: Can't find function %1.")
-                   .arg(symbol));
+      setError(
+        QStringLiteral("Error loading the libdav1d library: Can't find function %1.").arg(symbol));
     return nullptr;
   }
 
@@ -270,7 +272,7 @@ void decoderDav1d::allocateNewDecoder()
       {
         analyzerSettings.export_prefilter = 1;
         DEBUG_DAV1D(
-            "decoderDav1d::allocateNewDecoder - Activated export of reconstruction pre-filtering");
+          "decoderDav1d::allocateNewDecoder - Activated export of reconstruction pre-filtering");
       }
     }
     if (this->statisticsEnabled())
@@ -316,26 +318,25 @@ bool decoderDav1d::decodeFrame()
   {
     // We did get a picture
     // Get the resolution / yuv format from the frame
-    auto s = curPicture.getFrameSize();
-    if (!s.isValid())
+    if (!curPicture.getFrameSize().isValid())
       DEBUG_DAV1D("decoderDav1d::decodeFrame got invalid frame size");
-    auto subsampling = curPicture.getSubsampling();
+    const auto subsampling = curPicture.getSubsampling();
     if (subsampling == Subsampling::UNKNOWN)
       DEBUG_DAV1D("decoderDav1d::decodeFrame got invalid subsampling");
-    auto bitDepth = functions::clipToUnsigned(curPicture.getBitDepth());
+    const auto bitDepth = curPicture.getBitDepth();
     if (bitDepth < 8 || bitDepth > 16)
       DEBUG_DAV1D("decoderDav1d::decodeFrame got invalid bit depth");
 
     if (!frameSize.isValid() && !formatYUV.isValid())
     {
       // Set the values
-      frameSize = s;
-      formatYUV = video::yuv::PixelFormatYUV(subsampling, bitDepth);
+      frameSize = curPicture.getFrameSize();
+      formatYUV = PixelFormatYUV(PlanarPixelFormat{subsampling, bitDepth});
     }
     else
     {
       // Check the values against the previously set values
-      if (frameSize != s)
+      if (frameSize != curPicture.getFrameSize())
         return setErrorB("Received a frame of different size");
       if (formatYUV.getSubsampling() != subsampling)
         return setErrorB("Received a frame with different subsampling");
@@ -359,8 +360,7 @@ bool decoderDav1d::decodeFrame()
 
 QByteArray decoderDav1d::getRawFrameData()
 {
-  auto s = curPicture.getFrameSize();
-  if (s.width <= 0 || s.height <= 0)
+  if (curPicture.getFrameSize().width <= 0 || curPicture.getFrameSize().height <= 0)
   {
     DEBUG_DAV1D("decoderDav1d::getRawFrameData: Current picture has invalid size.");
     return QByteArray();
@@ -405,13 +405,13 @@ bool decoderDav1d::pushData(QByteArray &data)
     if (data.size() == 0)
     {
       DEBUG_DAV1D(
-          "decoderDav1d::pushData Error: Sequence header not pushed yet and the data is empty");
+        "decoderDav1d::pushData Error: Sequence header not pushed yet and the data is empty");
       return setErrorB("Error: Sequence header not pushed yet and the data is empty.");
     }
 
     Dav1dSequenceHeader seq;
     int                 err =
-        this->lib.dav1d_parse_sequence_header(&seq, (const uint8_t *)data.data(), data.size());
+      this->lib.dav1d_parse_sequence_header(&seq, (const uint8_t *)data.data(), data.size());
     if (err == 0)
     {
       sequenceHeaderPushed = true;
@@ -428,7 +428,7 @@ bool decoderDav1d::pushData(QByteArray &data)
       subBlockSize = (seq.sb128 >= 1) ? 128 : 64;
 
       this->frameSize = s;
-      this->formatYUV = video::yuv::PixelFormatYUV(subsampling, bitDepth);
+      this->formatYUV = PixelFormatYUV(PlanarPixelFormat{subsampling, bitDepth});
     }
     else
     {
@@ -527,7 +527,7 @@ void decoderDav1d::copyImgToByteArray(const Dav1dPictureWrapper &src, QByteArray
       return;
 
     const int stride = (c == 0) ? curPicture.getStride(0) : curPicture.getStride(1);
-    for (size_t y = 0; y < height; y++)
+    for (int y = 0; y < height; y++)
     {
       memcpy(dst_c, img_c, widthInBytes);
       img_c += stride;
@@ -596,7 +596,7 @@ void decoderDav1d::fillStatisticList(stats::StatisticsData &statisticsData) cons
   // 255 is the maximum maximum.
   stats::StatisticsType segmentID(1, "Segment ID", ColorMapper({0, 255}, PredefinedType::Jet));
   segmentID.description =
-      "Specifies which segment is associated with the current intra block being decoded";
+    "Specifies which segment is associated with the current intra block being decoded";
   statisticsData.addStatType(segmentID);
 
   stats::StatisticsType skip(2, "skip", ColorMapper({0, 1}, Color(0, 0, 0), Color(255, 0, 0)));
@@ -605,14 +605,14 @@ void decoderDav1d::fillStatisticList(stats::StatisticsData &statisticsData) cons
   statisticsData.addStatType(skip);
 
   stats::StatisticsType skip_mode(
-      3, "skip_mode", ColorMapper({0, 1}, Color(0, 0, 0), Color(0, 255, 0)));
+    3, "skip_mode", ColorMapper({0, 1}, Color(0, 0, 0), Color(0, 255, 0)));
   skip_mode.description = "Equal to 1 indicates that signaling of most of the mode info is skipped";
   statisticsData.addStatType(skip_mode);
 
   // Intra specific values
 
   stats::StatisticsType intraPredModeLuma(
-      4, "intra pred mode (Y)", ColorMapper({0, 13}, PredefinedType::Jet));
+    4, "intra pred mode (Y)", ColorMapper({0, 13}, PredefinedType::Jet));
   intraPredModeLuma.description = "Intra prediction mode Luma (Y)";
   intraPredModeLuma.setMappingValues({"DC_PRED",
                                       "VERT_PRED",
@@ -631,7 +631,7 @@ void decoderDav1d::fillStatisticList(stats::StatisticsData &statisticsData) cons
   statisticsData.addStatType(intraPredModeLuma);
 
   stats::StatisticsType intraPredModeChroma(
-      5, "intra pred mode (UV)", ColorMapper({0, 12}, PredefinedType::Jet));
+    5, "intra pred mode (UV)", ColorMapper({0, 12}, PredefinedType::Jet));
   intraPredModeChroma.description = "Intra prediction mode Chroma (UV)";
   intraPredModeChroma.setMappingValues({"DC_PRED",
                                         "VERT_PRED",
@@ -650,23 +650,23 @@ void decoderDav1d::fillStatisticList(stats::StatisticsData &statisticsData) cons
   statisticsData.addStatType(intraPredModeChroma);
 
   stats::StatisticsType paletteSizeLuma(
-      6, "palette size (Y)", ColorMapper({0, 255}, Color(0, 0, 0), Color(0, 0, 255)));
+    6, "palette size (Y)", ColorMapper({0, 255}, Color(0, 0, 0), Color(0, 0, 255)));
   statisticsData.addStatType(paletteSizeLuma);
 
   stats::StatisticsType paletteSizeChroma(
-      7, "palette size (U)", ColorMapper({0, 255}, Color(0, 0, 0), Color(0, 0, 255)));
+    7, "palette size (U)", ColorMapper({0, 255}, Color(0, 0, 0), Color(0, 0, 255)));
   statisticsData.addStatType(paletteSizeChroma);
 
   stats::StatisticsType intraAngleDeltaLuma(
-      8, "intra angle delta (Y)", ColorMapper({-3, 4}, PredefinedType::Col3_bblg));
+    8, "intra angle delta (Y)", ColorMapper({-3, 4}, PredefinedType::Col3_bblg));
   intraAngleDeltaLuma.description =
-      "Offset to be applied to the intra prediction angle specified by the prediction mode";
+    "Offset to be applied to the intra prediction angle specified by the prediction mode";
   statisticsData.addStatType(intraAngleDeltaLuma);
 
   stats::StatisticsType intraAngleDeltaChroma(
-      9, "intra angle delta (UV)", ColorMapper({-3, 4}, PredefinedType::Col3_bblg));
+    9, "intra angle delta (UV)", ColorMapper({-3, 4}, PredefinedType::Col3_bblg));
   intraAngleDeltaChroma.description =
-      "Offset to be applied to the intra prediction angle specified by the prediction mode";
+    "Offset to be applied to the intra prediction angle specified by the prediction mode";
   statisticsData.addStatType(intraAngleDeltaChroma);
 
   stats::StatisticsType intraDirLuma(10, "Intra direction luma", 4);
@@ -678,29 +678,29 @@ void decoderDav1d::fillStatisticList(stats::StatisticsData &statisticsData) cons
   statisticsData.addStatType(intraDirChroma);
 
   stats::StatisticsType chromaFromLumaAlphaU(
-      12, "chroma from luma alpha (U)", ColorMapper({-128, 128}, PredefinedType::Col3_bblg));
+    12, "chroma from luma alpha (U)", ColorMapper({-128, 128}, PredefinedType::Col3_bblg));
   chromaFromLumaAlphaU.description =
-      "CflAlphaU: contains the signed value of the alpha component for the U component";
+    "CflAlphaU: contains the signed value of the alpha component for the U component";
   statisticsData.addStatType(chromaFromLumaAlphaU);
 
   stats::StatisticsType chromaFromLumaAlphaV(
-      13, "chroma from luma alpha (V)", ColorMapper({-128, 128}, PredefinedType::Col3_bblg));
+    13, "chroma from luma alpha (V)", ColorMapper({-128, 128}, PredefinedType::Col3_bblg));
   chromaFromLumaAlphaV.description =
-      "CflAlphaU: contains the signed value of the alpha component for the U component";
+    "CflAlphaU: contains the signed value of the alpha component for the U component";
   statisticsData.addStatType(chromaFromLumaAlphaV);
 
   // Inter specific values
 
   stats::StatisticsType refFrames0(
-      14, "ref frame index 0", ColorMapper({0, 7}, PredefinedType::Jet));
+    14, "ref frame index 0", ColorMapper({0, 7}, PredefinedType::Jet));
   statisticsData.addStatType(refFrames0);
 
   stats::StatisticsType refFrames1(
-      15, "ref frame index 1", ColorMapper({0, 7}, PredefinedType::Jet));
+    15, "ref frame index 1", ColorMapper({0, 7}, PredefinedType::Jet));
   statisticsData.addStatType(refFrames1);
 
   stats::StatisticsType compoundPredType(
-      16, "compound prediction type", ColorMapper({0, 4}, PredefinedType::Jet));
+    16, "compound prediction type", ColorMapper({0, 4}, PredefinedType::Jet));
   compoundPredType.setMappingValues({"COMP_INTER_NONE",
                                      "COMP_INTER_WEIGHTED_AVG",
                                      "COMP_INTER_AVG",
@@ -712,7 +712,7 @@ void decoderDav1d::fillStatisticList(stats::StatisticsData &statisticsData) cons
   statisticsData.addStatType(wedgeIndex);
 
   stats::StatisticsType maskSign(
-      18, "mask sign", ColorMapper({0, 1}, Color(0, 0, 0), Color(0, 255, 255)));
+    18, "mask sign", ColorMapper({0, 1}, Color(0, 0, 0), Color(0, 255, 255)));
   statisticsData.addStatType(maskSign);
 
   stats::StatisticsType interMode(19, "inter mode", ColorMapper({0, 7}, PredefinedType::Jet));
@@ -727,18 +727,18 @@ void decoderDav1d::fillStatisticList(stats::StatisticsData &statisticsData) cons
   statisticsData.addStatType(interMode);
 
   stats::StatisticsType drlIndex(
-      20, "dynamic reference list index", ColorMapper({0, 16}, Color(0, 0, 0), Color(0, 255, 255)));
+    20, "dynamic reference list index", ColorMapper({0, 16}, Color(0, 0, 0), Color(0, 255, 255)));
   statisticsData.addStatType(drlIndex);
 
   stats::StatisticsType interintraType(
-      21, "inter-intra type", ColorMapper({0, 2}, PredefinedType::Jet));
+    21, "inter-intra type", ColorMapper({0, 2}, PredefinedType::Jet));
   interintraType.setMappingValues({"INTER_INTRA_NONE", "INTER_INTRA_BLEND", "INTER_INTRA_WEDGE"});
   statisticsData.addStatType(interintraType);
 
   stats::StatisticsType interintraMode(
-      22, "inter-intra mode", ColorMapper({0, 4}, PredefinedType::Jet));
+    22, "inter-intra mode", ColorMapper({0, 4}, PredefinedType::Jet));
   interintraMode.setMappingValues(
-      {"II_DC_PRED", "II_VERT_PRED", "II_HOR_PRED", "II_SMOOTH_PRED", "N_INTER_INTRA_PRED_MODES"});
+    {"II_DC_PRED", "II_VERT_PRED", "II_HOR_PRED", "II_SMOOTH_PRED", "N_INTER_INTRA_PRED_MODES"});
   statisticsData.addStatType(interintraMode);
 
   stats::StatisticsType motionMode(23, "motion mode", ColorMapper({0, 2}, PredefinedType::Jet));
@@ -754,7 +754,7 @@ void decoderDav1d::fillStatisticList(stats::StatisticsData &statisticsData) cons
   statisticsData.addStatType(motionVec1);
 
   stats::StatisticsType transformDepth(
-      26, "Transform Size", ColorMapper({0, 19}, PredefinedType::Jet));
+    26, "Transform Size", ColorMapper({0, 19}, PredefinedType::Jet));
   transformDepth.description = "The transform size";
   transformDepth.setMappingValues({"TX_4X4",
                                    "TX_8X8",
@@ -795,13 +795,13 @@ void decoderDav1d::cacheStatistics(const Dav1dPictureWrapper &img)
 
   const int sb_step = subBlockSize >> 2;
 
-  for (unsigned y = 0; y < frameInfo.frameSizeAligned.height; y += sb_step)
-    for (unsigned x = 0; x < frameInfo.frameSizeAligned.width; x += sb_step)
+  for (int y = 0; y < frameInfo.frameSizeAligned.height; y += sb_step)
+    for (int x = 0; x < frameInfo.frameSizeAligned.width; x += sb_step)
       parseBlockRecursive(blockData, x, y, BL_128X128, frameInfo);
 }
 
 void decoderDav1d::parseBlockRecursive(
-    Av1Block *blockData, unsigned x, unsigned y, BlockLevel level, dav1dFrameInfo &frameInfo)
+  Av1Block *blockData, int x, int y, BlockLevel level, dav1dFrameInfo &frameInfo)
 {
   if (y >= frameInfo.sizeInBlocks.height)
     return;
@@ -900,12 +900,8 @@ void decoderDav1d::parseBlockRecursive(
   }
 }
 
-void decoderDav1d::parseBlockPartition(Av1Block       *blockData,
-                                       unsigned        x,
-                                       unsigned        y,
-                                       unsigned        blockWidth4,
-                                       unsigned        blockHeight4,
-                                       dav1dFrameInfo &frameInfo)
+void decoderDav1d::parseBlockPartition(
+  Av1Block *blockData, int x, int y, int blockWidth4, int blockHeight4, dav1dFrameInfo &frameInfo)
 {
   if (y >= frameInfo.sizeInBlocks.height || x >= frameInfo.sizeInBlocks.width)
     return;
@@ -922,8 +918,8 @@ void decoderDav1d::parseBlockPartition(Av1Block       *blockData,
   const int  predMode = isIntra ? 0 : 1;
   this->statisticsData->at(0).addBlockValue(cbPosX, cbPosY, cbWidth, cbHeight, predMode);
 
-  bool FrameIsIntra = (frameInfo.frameType == DAV1D_FRAME_TYPE_KEY ||
-                       frameInfo.frameType == DAV1D_FRAME_TYPE_INTRA);
+  bool FrameIsIntra =
+    (frameInfo.frameType == DAV1D_FRAME_TYPE_KEY || frameInfo.frameType == DAV1D_FRAME_TYPE_INTRA);
   if (FrameIsIntra)
   {
     // Set the segment ID (ID 1)
@@ -964,7 +960,7 @@ void decoderDav1d::parseBlockPartition(Av1Block       *blockData,
       int vecY       = (float)vec.second * blockScale / 4;
 
       this->statisticsData->at(10 + yc).addBlockVector(
-          cbPosX, cbPosY, cbWidth, cbHeight, vecX, vecY);
+        cbPosX, cbPosY, cbWidth, cbHeight, vecX, vecY);
     }
 
     if (b.y_mode == CFL_PRED)
@@ -1006,10 +1002,10 @@ void decoderDav1d::parseBlockPartition(Av1Block       *blockData,
     {
       // Set inter intra type (ID 21)
       this->statisticsData->at(21).addBlockValue(
-          cbPosX, cbPosY, cbWidth, cbHeight, b.interintra_type);
+        cbPosX, cbPosY, cbWidth, cbHeight, b.interintra_type);
       // Set inter intra mode (ID 22)
       this->statisticsData->at(22).addBlockValue(
-          cbPosX, cbPosY, cbWidth, cbHeight, b.interintra_mode);
+        cbPosX, cbPosY, cbWidth, cbHeight, b.interintra_mode);
     }
 
     // Set motion mode (ID 23)
@@ -1017,27 +1013,28 @@ void decoderDav1d::parseBlockPartition(Av1Block       *blockData,
 
     // Set motion vector 0/1 (ID 24, 25)
     this->statisticsData->at(24).addBlockVector(
-        cbPosX, cbPosY, cbWidth, cbHeight, b.mv[0].x, b.mv[0].y);
+      cbPosX, cbPosY, cbWidth, cbHeight, b.mv[0].x, b.mv[0].y);
     if (isCompound)
       this->statisticsData->at(25).addBlockVector(
-          cbPosX, cbPosY, cbWidth, cbHeight, b.mv[1].x, b.mv[1].y);
+        cbPosX, cbPosY, cbWidth, cbHeight, b.mv[1].x, b.mv[1].y);
   }
 
-  const TxfmSize        tx_val               = TxfmSize(isIntra ? b.tx : b.max_ytx);
-  static const unsigned TxfmSizeWidthTable[] = {
-      4, 8, 16, 32, 64, 4, 8, 8, 16, 16, 32, 32, 64, 4, 16, 8, 32, 16, 64};
-  static const unsigned TxfmSizeHeightTable[] = {
-      4, 8, 16, 32, 64, 8, 4, 16, 8, 32, 16, 64, 32, 16, 4, 32, 8, 64, 16};
-  const unsigned tx_w = TxfmSizeWidthTable[tx_val];
-  const unsigned tx_h = TxfmSizeHeightTable[tx_val];
+  constexpr std::array<int, 19> TxfmSizeWidthTable = {
+    4, 8, 16, 32, 64, 4, 8, 8, 16, 16, 32, 32, 64, 4, 16, 8, 32, 16, 64};
+  constexpr std::array<int, 19> TxfmSizeHeightTable = {
+    4, 8, 16, 32, 64, 8, 4, 16, 8, 32, 16, 64, 32, 16, 4, 32, 8, 64, 16};
+
+  const auto tx_val = TxfmSize(isIntra ? b.tx : b.max_ytx);
+  const auto tx_w   = TxfmSizeWidthTable.at(static_cast<size_t>(tx_val));
+  const auto tx_h   = TxfmSizeHeightTable.at(static_cast<size_t>(tx_val));
 
   if (tx_w > cbWidth || tx_h > cbHeight)
     // Transform can not be bigger then the coding block
     return;
 
-  for (unsigned x = 0; x < cbWidth; x += tx_w)
+  for (int x = 0; x < cbWidth; x += tx_w)
   {
-    for (unsigned y = 0; y < cbHeight; y += tx_h)
+    for (int y = 0; y < cbHeight; y += tx_h)
     {
       // Set the transform size (ID 26)
       const int x_abs = cbPosX + x;
@@ -1079,14 +1076,14 @@ IntPair decoderDav1d::calculateIntraPredDirection(IntraPredMode predMode, int an
   */
 
   static const int vectorTable[8][8][2] = {
-      {{-7, 31}, {-5, 32}, {-3, 32}, {-2, 32}, {0, 32}, {2, 32}, {3, 32}, {5, 32}},
-      {{31, 7}, {32, 5}, {32, 3}, {32, 2}, {32, 0}, {32, -2}, {32, -3}, {32, -5}},
-      {{-27, 17}, {-26, 19}, {-25, 20}, {-24, 21}, {-23, 23}, {-21, 24}, {-20, 25}, {-19, 26}},
-      {{17, 27}, {19, 26}, {20, 25}, {21, 24}, {23, 23}, {24, 21}, {25, 20}, {26, 19}},
-      {{6, 31}, {8, 31}, {9, 31}, {11, 30}, {13, 29}, {14, 29}, {16, 28}, {17, 27}},
-      {{26, 18}, {27, 17}, {28, 16}, {29, 14}, {29, 13}, {30, 11}, {31, 9}, {31, 8}},
-      {{31, -6}, {31, -8}, {31, -9}, {30, -11}, {29, -13}, {29, -14}, {28, -16}, {27, -17}},
-      {{-18, 26}, {-17, 27}, {-16, 28}, {-14, 29}, {-13, 29}, {-11, 30}, {-9, 31}, {-8, 31}}};
+    {{-7, 31}, {-5, 32}, {-3, 32}, {-2, 32}, {0, 32}, {2, 32}, {3, 32}, {5, 32}},
+    {{31, 7}, {32, 5}, {32, 3}, {32, 2}, {32, 0}, {32, -2}, {32, -3}, {32, -5}},
+    {{-27, 17}, {-26, 19}, {-25, 20}, {-24, 21}, {-23, 23}, {-21, 24}, {-20, 25}, {-19, 26}},
+    {{17, 27}, {19, 26}, {20, 25}, {21, 24}, {23, 23}, {24, 21}, {25, 20}, {26, 19}},
+    {{6, 31}, {8, 31}, {9, 31}, {11, 30}, {13, 29}, {14, 29}, {16, 28}, {17, 27}},
+    {{26, 18}, {27, 17}, {28, 16}, {29, 14}, {29, 13}, {30, 11}, {31, 9}, {31, 8}},
+    {{31, -6}, {31, -8}, {31, -9}, {30, -11}, {29, -13}, {29, -14}, {28, -16}, {27, -17}},
+    {{-18, 26}, {-17, 27}, {-16, 28}, {-14, 29}, {-13, 29}, {-11, 30}, {-9, 31}, {-8, 31}}};
 
   return {vectorTable[modeIndex][deltaIndex][0], vectorTable[modeIndex][deltaIndex][1]};
 }

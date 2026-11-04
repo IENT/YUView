@@ -52,7 +52,7 @@ struct GuessedFrameFormat
 {
   std::optional<Size>              frameSize;
   std::optional<int>               frameRate{};
-  std::optional<unsigned>          bitDepth{};
+  std::optional<int>               bitDepth{};
   std::optional<video::DataLayout> dataLayout{};
 
   bool operator==(const GuessedFrameFormat &rhs) const;

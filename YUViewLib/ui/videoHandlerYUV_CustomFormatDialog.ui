@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>236</width>
-    <height>335</height>
+    <width>284</width>
+    <height>472</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -194,6 +194,32 @@ How is the chroma component subsampled? Various subsamplings are supported:&lt;b
       <bool>true</bool>
      </property>
      <layout class="QGridLayout" name="gridLayout_3">
+      <item row="1" column="0">
+       <widget class="QLabel" name="labelUVInterleaved">
+        <property name="toolTip">
+         <string>Are only the UV (and A if present) planes interleaved?</string>
+        </property>
+        <property name="whatsThis">
+         <string>Are only the UV (and A if present) planes interleaved?</string>
+        </property>
+        <property name="text">
+         <string>UV(A) Interleaved</string>
+        </property>
+       </widget>
+      </item>
+      <item row="1" column="1">
+       <widget class="QCheckBox" name="checkBoxUVInterleaved">
+        <property name="toolTip">
+         <string>Are only the UV (and A if present) planes interleaved?</string>
+        </property>
+        <property name="whatsThis">
+         <string>Are only the UV (and A if present) planes interleaved?</string>
+        </property>
+        <property name="text">
+         <string/>
+        </property>
+       </widget>
+      </item>
       <item row="0" column="1">
        <widget class="QComboBox" name="comboBoxPlaneOrder">
         <property name="toolTip">
@@ -217,29 +243,29 @@ How is the chroma component subsampled? Various subsamplings are supported:&lt;b
         </property>
        </widget>
       </item>
-      <item row="1" column="1">
-       <widget class="QCheckBox" name="checkBoxUVInterleaved">
+      <item row="2" column="0">
+       <widget class="QLabel" name="labelBytePackingPYUV">
         <property name="toolTip">
-         <string>Are only the UV (and A if present) planes interleaved?</string>
+         <string>Pack bytes per plane according to the PYUV specification.</string>
         </property>
         <property name="whatsThis">
-         <string>Are only the UV (and A if present) planes interleaved?</string>
+         <string>Pack bytes per plane according to the PYUV specification.</string>
         </property>
         <property name="text">
-         <string/>
+         <string>Byte packing (PYUV)</string>
         </property>
        </widget>
       </item>
-      <item row="1" column="0">
-       <widget class="QLabel" name="labelUVInterleaved">
+      <item row="2" column="1">
+       <widget class="QCheckBox" name="checkBoxBytePackingPYUV">
         <property name="toolTip">
-         <string>Are only the UV (and A if present) planes interleaved?</string>
+         <string>Pack bytes per plane according to the PYUV specification.</string>
         </property>
         <property name="whatsThis">
-         <string>Are only the UV (and A if present) planes interleaved?</string>
+         <string>Pack bytes per plane according to the PYUV specification.</string>
         </property>
         <property name="text">
-         <string>UV(A) Interleaved</string>
+         <string/>
         </property>
        </widget>
       </item>
@@ -319,7 +345,7 @@ How is the chroma component subsampled? Various subsamplings are supported:&lt;b
    <item>
     <spacer name="verticalSpacer">
      <property name="orientation">
-      <enum>Qt::Vertical</enum>
+      <enum>Qt::Orientation::Vertical</enum>
      </property>
      <property name="sizeHint" stdset="0">
       <size>
@@ -332,7 +358,7 @@ How is the chroma component subsampled? Various subsamplings are supported:&lt;b
    <item>
     <widget class="QDialogButtonBox" name="buttonBox">
      <property name="standardButtons">
-      <set>QDialogButtonBox::Cancel|QDialogButtonBox::Ok</set>
+      <set>QDialogButtonBox::StandardButton::Cancel|QDialogButtonBox::StandardButton::Ok</set>
      </property>
     </widget>
    </item>

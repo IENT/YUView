@@ -50,7 +50,7 @@ public:
   video::yuv::PixelFormatYUV getPixelFormatYUV() const;
   video::rgb::PixelFormatRGB getRGBPixelFormat() const;
 
-  bool setValuesFromPixelFormatYUV(video::yuv::PixelFormatYUV fmt);
+  bool setValuesFromPixelFormatYUV(const video::yuv::PixelFormatYUV &fmt);
 
   // AVPixFmtDescriptor
   QString name;

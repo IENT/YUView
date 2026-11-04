@@ -60,6 +60,10 @@ namespace parser
 
 using namespace avc;
 
+using video::yuv::PixelFormatYUV;
+using video::yuv::PlanarPixelFormat;
+using video::yuv::Subsampling;
+
 namespace
 {
 
@@ -136,10 +140,8 @@ Size ParserAnnexBAVC::getSequenceSizeSamples() const
   return {};
 }
 
-video::yuv::PixelFormatYUV ParserAnnexBAVC::getPixelFormat() const
+PixelFormatYUV ParserAnnexBAVC::getPixelFormat() const
 {
-  using Subsampling = video::yuv::Subsampling;
-
   // Get the subsampling and bit-depth from the sps
   int  bitDepthY   = -1;
   int  bitDepthC   = -1;
@@ -170,7 +172,7 @@ video::yuv::PixelFormatYUV ParserAnnexBAVC::getPixelFormat() const
         // Different luma and chroma bit depths currently not supported
         return {};
       }
-      return video::yuv::PixelFormatYUV(subsampling, bitDepthY);
+      return PixelFormatYUV(PlanarPixelFormat({subsampling, bitDepthY}));
     }
   }
 

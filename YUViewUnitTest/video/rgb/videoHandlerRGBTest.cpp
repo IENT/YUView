@@ -167,9 +167,9 @@ void expectThatGetPixelValuesAre(const std::array<rgba_t, 16> &expectedValues,
   ASSERT_EQ(frameSize, Size(4, 4));
   ASSERT_NE(handler, nullptr);
 
-  for (unsigned y = 0; y < frameSize.height; y++)
+  for (int y = 0; y < frameSize.height; y++)
   {
-    for (unsigned x = 0; x < frameSize.width; x++)
+    for (int x = 0; x < frameSize.width; x++)
     {
       const auto pixelValues = handler->getPixelValues(QPoint(x, y), 0, handlerForDifference);
       const auto expectedPixelValue = expectedValues[y * frameSize.width + x];

@@ -52,11 +52,18 @@ public:
 
 private slots:
   void on_groupBoxPlanar_toggled(bool checked);
-  void on_groupBoxPacked_toggled(bool checked) { this->ui.groupBoxPlanar->setChecked(!checked); }
+  void on_groupBoxPacked_toggled(bool checked);
   void on_comboBoxChromaSubsampling_currentIndexChanged(int idx);
   void on_comboBoxBitDepth_currentIndexChanged(int idx);
+  void on_comboBoxEndianness_currentIndexChanged(int idx);
+  void on_comboBoxPlaneOrder_currentIndexChanged(int idx);
+
+  void on_checkBoxUVInterleaved_checkStateChanged(Qt::CheckState state);
+  void on_checkBoxBytePackingPYUV_checkStateChanged(Qt::CheckState state);
 
 private:
+  void enablePossibleInterleavedAndPackingModeCheckboxes();
+
   Ui::CustomYUVFormatDialog ui;
 };
 

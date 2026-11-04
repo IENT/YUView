@@ -211,15 +211,15 @@ void StatisticsFileVTMBMS::loadStatisticData(StatisticsData &statisticsData, int
     // prepare regex for selected type
     auto &statTypes = statisticsData.getStatisticsTypes();
     auto  statIt    = std::find_if(statTypes.begin(),
-                               statTypes.end(),
-                               [typeID](StatisticsType &t) { return t.typeID == typeID; });
+                                   statTypes.end(),
+                                   [typeID](StatisticsType &t) { return t.typeID == typeID; });
     Q_ASSERT_X(statIt != statTypes.end(), Q_FUNC_INFO, "Stat type not found.");
     QRegularExpression typeRegex(" " + statIt->typeName + "="); // for catching lines of the type
 
     // for extracting scalar value statistics, need to match:
     // BlockStat: POC 1 @( 112,  88) [ 8x 8] PredMode=0
     QRegularExpression scalarRegex(
-        "POC ([0-9]+) @\\( *([0-9]+), *([0-9]+)\\) *\\[ *([0-9]+)x *([0-9]+)\\] *\\w+=([0-9\\-]+)");
+      "POC ([0-9]+) @\\( *([0-9]+), *([0-9]+)\\) *\\[ *([0-9]+)x *([0-9]+)\\] *\\w+=([0-9\\-]+)");
     // for extracting vector value statistics, need to match:
     // BlockStat: POC 1 @( 120,  80) [ 8x 8] MVL0={ -24,  -2}
     QRegularExpression vectorRegex("POC ([0-9]+) @\\( *([0-9]+), *([0-9]+)\\) *\\[ *([0-9]+)x "
@@ -227,23 +227,23 @@ void StatisticsFileVTMBMS::loadStatisticData(StatisticsData &statisticsData, int
     // for extracting affine transform value statistics, need to match:
     // BlockStat: POC 2 @( 192,  96) [64x32] AffineMVL0={-324,-116,-276,-116,-324, -92}
     QRegularExpression affineTFRegex(
-        "POC ([0-9]+) @\\( *([0-9]+), *([0-9]+)\\) *\\[ *([0-9]+)x *([0-9]+)\\] *\\w+={ "
-        "*([0-9\\-]+), *([0-9\\-]+), *([0-9\\-]+), *([0-9\\-]+), *([0-9\\-]+), *([0-9\\-]+)}");
+      "POC ([0-9]+) @\\( *([0-9]+), *([0-9]+)\\) *\\[ *([0-9]+)x *([0-9]+)\\] *\\w+={ "
+      "*([0-9\\-]+), *([0-9\\-]+), *([0-9\\-]+), *([0-9\\-]+), *([0-9\\-]+), *([0-9\\-]+)}");
     // for extracting scalar polygon  statistics, need to match:
     // BlockStat: POC 2 @[(505, 384)--(511, 384)--(511, 415)--] GeoPUInterIntraFlag=0
     // BlockStat: POC 2 @[(416, 448)--(447, 448)--(447, 478)--(416, 463)--] GeoPUInterIntraFlag=0
     // will capture 3-5 points. other polygons are not supported
     QRegularExpression scalarPolygonRegex(
-        "POC ([0-9]+) @\\[((?:\\( *[0-9]+, *[0-9]+\\)--){3,5})\\] *\\w+=([0-9\\-]+)");
+      "POC ([0-9]+) @\\[((?:\\( *[0-9]+, *[0-9]+\\)--){3,5})\\] *\\w+=([0-9\\-]+)");
     // for extracting vector polygon statistics:
     QRegularExpression vectorPolygonRegex(
-        "POC ([0-9]+) @\\[((?:\\( *[0-9]+, *[0-9]+\\)--){3,5})\\] *\\w+={ *([0-9\\-]+), "
-        "*([0-9\\-]+)}");
+      "POC ([0-9]+) @\\[((?:\\( *[0-9]+, *[0-9]+\\)--){3,5})\\] *\\w+={ *([0-9\\-]+), "
+      "*([0-9\\-]+)}");
     // for extracting the partitioning line, we extract
     // BlockStat: POC 2 @( 192,  96) [64x32] Line={0,0,31,31}
     QRegularExpression lineRegex(
-        "POC ([0-9]+) @\\( *([0-9]+), *([0-9]+)\\) *\\[ *([0-9]+)x *([0-9]+)\\] *\\w+={ "
-        "*([0-9\\-]+), *([0-9\\-]+), *([0-9\\-]+), *([0-9\\-]+)}");
+      "POC ([0-9]+) @\\( *([0-9]+), *([0-9]+)\\) *\\[ *([0-9]+)x *([0-9]+)\\] *\\w+={ "
+      "*([0-9\\-]+), *([0-9\\-]+), *([0-9\\-]+), *([0-9\\-]+)}");
 
     while (!in.atEnd())
     {
@@ -261,8 +261,8 @@ void StatisticsFileVTMBMS::loadStatisticData(StatisticsData &statisticsData, int
         auto typeMatch = typeRegex.match(aLine);
         if (typeMatch.hasMatch())
         {
-          int      posX, posY, scalar, vecX, vecY;
-          unsigned width, height;
+          int posX{}, posY{}, scalar{}, vecX{}, vecY{};
+          int width{}, height{};
 
           QRegularExpressionMatch statisitcMatch;
           // extract statistics info
@@ -298,8 +298,8 @@ void StatisticsFileVTMBMS::loadStatisticData(StatisticsData &statisticsData, int
           //        QStringList all_captured = statisitcMatch.capturedTexts();
 
           pocRow = statisitcMatch.captured(1).toInt();
-          width  = statisitcMatch.captured(4).toUInt();
-          height = statisitcMatch.captured(5).toUInt();
+          width  = statisitcMatch.captured(4).toInt();
+          height = statisitcMatch.captured(5).toInt();
           // if there is a new POC, we are done here!
           if (poc != pocRow)
             break;
@@ -341,7 +341,7 @@ void StatisticsFileVTMBMS::loadStatisticData(StatisticsData &statisticsData, int
               auto vecX2 = statisitcMatch.captured(10).toInt();
               auto vecY2 = statisitcMatch.captured(11).toInt();
               statisticsData[typeID].addBlockAffineTF(
-                  posX, posY, width, height, vecX0, vecY0, vecX1, vecY1, vecX2, vecY2);
+                posX, posY, width, height, vecX0, vecY0, vecX1, vecY1, vecX2, vecY2);
             }
             else
             {
@@ -441,14 +441,14 @@ void StatisticsFileVTMBMS::readHeaderFromFile(StatisticsData &statisticsData)
       // match:
       // # Block Statistic Type: MergeFlag; Flag
       QRegularExpression availableStatisticsRegex(
-          "# Block Statistic Type: *([0-9a-zA-Z_]+); *([0-9a-zA-Z]+); *(.*)");
+        "# Block Statistic Type: *([0-9a-zA-Z_]+); *([0-9a-zA-Z]+); *(.*)");
 
       // get sequence size
       auto sequenceSizeMatch = sequenceSizeRegex.match(aLine);
       if (sequenceSizeMatch.hasMatch())
       {
         statisticsData.setFrameSize(
-            Size(sequenceSizeMatch.captured(1).toInt(), sequenceSizeMatch.captured(2).toInt()));
+          Size(sequenceSizeMatch.captured(1).toInt(), sequenceSizeMatch.captured(2).toInt()));
       }
 
       // get available statistics
@@ -468,7 +468,7 @@ void StatisticsFileVTMBMS::readHeaderFromFile(StatisticsData &statisticsData)
         // check if scalar or vector
         auto statType = availableStatisticsMatch.captured(2);
         if (statType.contains(
-                "AffineTFVectors")) // "Vector" is contained in this, need to check it first
+              "AffineTFVectors")) // "Vector" is contained in this, need to check it first
         {
           auto               scaleInfo = availableStatisticsMatch.captured(3);
           QRegularExpression scaleInfoRegex("Scale: *([0-9]+)");

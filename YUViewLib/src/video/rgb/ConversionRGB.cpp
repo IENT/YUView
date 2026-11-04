@@ -69,7 +69,7 @@ void convertRGB565ToARGB(const QByteArray     &sourceBuffer,
   auto       rawData    = reinterpret_cast<const unsigned char *>(sourceBuffer.data());
   const auto endianness = srcPixelFormat.getEndianness();
 
-  for (unsigned i = 0; i < frameSize.width * frameSize.height; i++)
+  for (int i = 0; i < frameSize.area(); i++)
   {
     auto [r, g, b, a] = extractRGB565Value(rawData, endianness);
 
@@ -138,12 +138,12 @@ void convertRGBToARGB(const QByteArray     &sourceBuffer,
   {
     auto offsetA = srcPixelFormat.getChannelPosition(Channel::Alpha);
     if (srcPixelFormat.getDataLayout() == DataLayout::Planar)
-      offsetA *= frameSize.width * frameSize.height;
+      offsetA *= frameSize.area();
     srcA = ((InValueType)sourceBuffer.data()) + offsetA;
   }
 
   const auto isBigEndian = bitDepth > 8 && srcPixelFormat.getEndianness() == Endianness::Big;
-  for (unsigned i = 0; i < frameSize.width * frameSize.height; i++)
+  for (int i = 0; i < frameSize.area(); i++)
   {
     auto convertValue =
       [&isBigEndian, &rightShift](const InValueType sourceData, const int scale, const bool invert)
@@ -208,7 +208,7 @@ void convertPredefinedPixelFormatRGBPlaneToARGB(const QByteArray     &sourceBuff
 {
   auto rawData = reinterpret_cast<const unsigned char *>(sourceBuffer.data());
 
-  for (unsigned i = 0; i < frameSize.width * frameSize.height; i++)
+  for (int i = 0; i < frameSize.area(); i++)
   {
     const auto value = extractRGB565Value(rawData, srcPixelFormat.getEndianness());
 
@@ -257,11 +257,11 @@ void convertRGBPlaneToARGB(const QByteArray     &sourceBuffer,
   auto       src                    = (InValueType)sourceBuffer.data();
   const auto displayComponentOffset = srcPixelFormat.getChannelPosition(displayChannel);
   if (srcPixelFormat.getDataLayout() == DataLayout::Planar)
-    src += displayComponentOffset * frameSize.width * frameSize.height;
+    src += displayComponentOffset * frameSize.area();
   else
     src += displayComponentOffset;
 
-  for (size_t i = 0; i < frameSize.width * frameSize.height; i++)
+  for (int i = 0; i < frameSize.area(); i++)
   {
     auto val = static_cast<int64_t>(src[0]);
     if (bitDepth > 8 && srcPixelFormat.getEndianness() == Endianness::Big)

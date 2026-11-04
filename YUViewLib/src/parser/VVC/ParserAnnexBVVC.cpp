@@ -65,6 +65,10 @@ namespace parser
 
 using namespace parser::vvc;
 
+using video::yuv::PixelFormatYUV;
+using video::yuv::PlanarPixelFormat;
+using video::yuv::Subsampling;
+
 namespace
 {
 
@@ -112,10 +116,8 @@ Size ParserAnnexBVVC::getSequenceSizeSamples() const
   return {};
 }
 
-video::yuv::PixelFormatYUV ParserAnnexBVVC::getPixelFormat() const
+PixelFormatYUV ParserAnnexBVVC::getPixelFormat() const
 {
-  using Subsampling = video::yuv::Subsampling;
-
   // Get the subsampling and bit-depth from the sps
   int  bitDepthY   = -1;
   int  bitDepthC   = -1;
@@ -145,7 +147,7 @@ video::yuv::PixelFormatYUV ParserAnnexBVVC::getPixelFormat() const
         // Different luma and chroma bit depths currently not supported
         return {};
       }
-      return video::yuv::PixelFormatYUV(subsampling, bitDepthY);
+      return PixelFormatYUV(PlanarPixelFormat({subsampling, bitDepthY}));
     }
   }
 
@@ -388,7 +390,8 @@ ParserAnnexBVVC::parseAndAddNALUnit(int                                         
                               this->activeParameterSets.ppsMap,
                               updatedParsingState.currentSlice);
 
-      updatedParsingState.currentPictureHeaderStructure = newPictureHeader->picture_header_structure_instance;
+      updatedParsingState.currentPictureHeaderStructure =
+        newPictureHeader->picture_header_structure_instance;
       nalVVC->rbsp = newPictureHeader;
     }
     else if (nalVVC->header.isSlice())
@@ -406,56 +409,56 @@ ParserAnnexBVVC::parseAndAddNALUnit(int                                         
       if (newSliceLayer->slice_header_instance.picture_header_structure_instance)
       {
         newSliceLayer->slice_header_instance.picture_header_structure_instance
-            ->calculatePictureOrderCount(
-                reader,
-                nalType,
-                this->activeParameterSets.spsMap,
-                this->activeParameterSets.ppsMap,
-                updatedParsingState.prevTid0Pic[nalVVC->header.nuh_layer_id],
-                updatedParsingState.NoOutputBeforeRecoveryFlag[nalVVC->header.nuh_layer_id]);
+          ->calculatePictureOrderCount(
+            reader,
+            nalType,
+            this->activeParameterSets.spsMap,
+            this->activeParameterSets.ppsMap,
+            updatedParsingState.prevTid0Pic[nalVVC->header.nuh_layer_id],
+            updatedParsingState.NoOutputBeforeRecoveryFlag[nalVVC->header.nuh_layer_id]);
 
         updatedParsingState.NoOutputBeforeRecoveryFlag[nalVVC->header.nuh_layer_id] = false;
 
         newSliceLayer->slice_header_instance.picture_header_structure_instance->globalPOC =
-            calculateAndUpdateGlobalPOC(isIRAP(nalType),
-                                        newSliceLayer->slice_header_instance
-                                            .picture_header_structure_instance->PicOrderCntVal);
+          calculateAndUpdateGlobalPOC(
+            isIRAP(nalType),
+            newSliceLayer->slice_header_instance.picture_header_structure_instance->PicOrderCntVal);
 
         updatedParsingState.currentPictureHeaderStructure =
-            newSliceLayer->slice_header_instance.picture_header_structure_instance;
+          newSliceLayer->slice_header_instance.picture_header_structure_instance;
         updatedParsingState.currentAU.poc =
-            updatedParsingState.currentPictureHeaderStructure->globalPOC;
+          updatedParsingState.currentPictureHeaderStructure->globalPOC;
 
         // 8.3.1
         auto TemporalId = nalVVC->header.nuh_temporal_id_plus1 - 1;
         if (TemporalId == 0 &&
             !newSliceLayer->slice_header_instance.picture_header_structure_instance
-                 ->ph_non_ref_pic_flag &&
+               ->ph_non_ref_pic_flag &&
             nalType != NalType::RASL_NUT && nalType != NalType::RADL_NUT)
           updatedParsingState.prevTid0Pic[nalVVC->header.nuh_layer_id] =
-              newSliceLayer->slice_header_instance.picture_header_structure_instance;
+            newSliceLayer->slice_header_instance.picture_header_structure_instance;
       }
       else
       {
         if (!updatedParsingState.currentPictureHeaderStructure)
           throw std::logic_error("Slice must have a valid picture header");
         newSliceLayer->slice_header_instance.picture_header_structure_instance =
-            updatedParsingState.currentPictureHeaderStructure;
+          updatedParsingState.currentPictureHeaderStructure;
       }
 
       specificDescription << " POC "
                           << updatedParsingState.currentPictureHeaderStructure->globalPOC;
       specificDescription << " "
                           << SliceTypeMapper.getName(
-                                 newSliceLayer->slice_header_instance.sh_slice_type)
+                               newSliceLayer->slice_header_instance.sh_slice_type)
                           << "-Slice";
 
       nalVVC->rbsp = newSliceLayer;
 
       updatedParsingState.currentAU.layerID = nalVVC->header.nuh_layer_id;
       updatedParsingState.currentAU.isKeyframe =
-          (nalType == NalType::IDR_W_RADL || nalType == NalType::IDR_N_LP ||
-           nalType == NalType::CRA_NUT);
+        (nalType == NalType::IDR_W_RADL || nalType == NalType::IDR_N_LP ||
+         nalType == NalType::CRA_NUT);
       if (updatedParsingState.currentAU.isKeyframe)
       {
         nalVVC->rawData = data;
@@ -507,7 +510,7 @@ ParserAnnexBVVC::parseAndAddNALUnit(int                                         
       if (newSEI->payloadType == 0)
       {
         updatedParsingState.lastBufferingPeriod =
-            std::dynamic_pointer_cast<buffering_period>(newSEI->sei_payload_instance);
+          std::dynamic_pointer_cast<buffering_period>(newSEI->sei_payload_instance);
         specificDescription << " Buffering Period SEI";
       }
 
@@ -601,7 +604,7 @@ bool ParserAnnexBVVC::handleNewAU(ParsingState &parsingState)
 
 // 7.4.2.4.3
 bool ParserAnnexBVVC::auDelimiterDetector_t::isStartOfNewAU(
-    std::shared_ptr<vvc::NalUnitVVC> nal, std::shared_ptr<vvc::picture_header_structure> ph)
+  std::shared_ptr<vvc::NalUnitVVC> nal, std::shared_ptr<vvc::picture_header_structure> ph)
 {
   if (!nal || !ph)
     return false;

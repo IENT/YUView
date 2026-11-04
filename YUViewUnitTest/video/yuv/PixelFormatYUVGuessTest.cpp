@@ -77,9 +77,10 @@ TEST_P(GuessYUVFormatFromFilenameFrameSizeFileSizeDataLayoutAndBitDepth, TestGue
   const auto guessedFormat =
     video::yuv::guessPixelFormatFromSizeAndName(guessedFrameFormat, parameters.fileInfoForGuess);
 
-  EXPECT_TRUE(guessedFormat.isValid());
-  EXPECT_EQ(guessedFormat, parameters.expectedPixelFormat)
-    << "Guessed format '" << guessedFormat.getName() << "' expected format '"
+  EXPECT_TRUE(guessedFormat.has_value());
+  EXPECT_TRUE(guessedFormat->isValid());
+  EXPECT_EQ(*guessedFormat, parameters.expectedPixelFormat)
+    << "Guessed format '" << guessedFormat->getName() << "' expected format '"
     << parameters.expectedPixelFormat.getName() << "' for filename '"
     << parameters.fileInfoForGuess.filename << "' parentFolderName '"
     << parameters.fileInfoForGuess.parentFolderName << "' size "
@@ -87,127 +88,131 @@ TEST_P(GuessYUVFormatFromFilenameFrameSizeFileSizeDataLayoutAndBitDepth, TestGue
 }
 
 constexpr auto BYTES_IRRELEVANT      = 123;
-constexpr auto BYTES_1080P           = 1920 * 1080 * 3 * 6;      // 12 frames 420
-constexpr auto BYTES_720P            = 1280 * 720 * 3 * 6;       // 6 frames 444
-constexpr auto BYTES_720P_V210       = 1296u * 720 / 6 * 16 * 3; // 3 frames
-constexpr auto BYTES_1808P_400       = 1920u * 1080 * 2;         // 2 frames 400
-constexpr auto BYTES_2160p_10bit_420 = 3840u * 2160 * 3 * 6;     // 6 frames 420 10 bit
+constexpr auto BYTES_1080P           = 1920 * 1080 * 3 * 6;       // 12 frames 420
+constexpr auto BYTES_720P            = 1280 * 720 * 3 * 6;        // 6 frames 444
+constexpr auto BYTES_720P_V210       = 1296u * 720 / 6 * 16 * 3;  // 3 frames
+constexpr auto BYTES_1808P_400       = 1920u * 1080 * 2;          // 2 frames 400
+constexpr auto BYTES_2160p_10bit_420 = 3840u * 2160 * 3 * 6;      // 6 frames 420 10 bit
+constexpr auto BYTES_1808P_PYUV_10   = 1920u * 1080 * 4 * 15 / 8; // 4 frames 420 10 bit PYUV
+constexpr auto BYTES_1808P_PYUV_12   = 1920u * 1080 * 4 * 9 / 4;  // 4 frames 420 12 bit PYUV
+constexpr auto BYTES_1808P_PYUV_14   = 1920u * 1080 * 4 * 21 / 8; // 4 frames 420 14 bit PYUV
 
 INSTANTIATE_TEST_SUITE_P(
   VideoYUVTest,
   GuessYUVFormatFromFilenameFrameSizeFileSizeDataLayoutAndBitDepth,
   Values(
     TestParameters({FileInfoForGuess({"something_1920x1080_25_8.yuv", "", BYTES_1080P}),
-                    PixelFormatYUV(Subsampling::YUV_420, 8)}),
+                    PlanarPixelFormat()}),
     TestParameters({FileInfoForGuess({"something_1920x1080_25_10.yuv", "", BYTES_1080P}),
-                    PixelFormatYUV(Subsampling::YUV_420, 10)}),
+                    PlanarPixelFormat({.bitsPerSample = 10})}),
     TestParameters({FileInfoForGuess({"something_1920x1080_25_12.yuv", "", BYTES_1080P}),
-                    PixelFormatYUV(Subsampling::YUV_420, 12)}),
+                    PlanarPixelFormat({.bitsPerSample = 12})}),
+    TestParameters({FileInfoForGuess({"something_1920x1080_25_14.yuv", "", BYTES_1080P}),
+                    PlanarPixelFormat({.bitsPerSample = 14})}),
     TestParameters({FileInfoForGuess({"something_1920x1080_25_16b.yuv", "", BYTES_1080P}),
-                    PixelFormatYUV(Subsampling::YUV_420, 16)}),
+                    PlanarPixelFormat({.bitsPerSample = 16})}),
     TestParameters({FileInfoForGuess({"something_1920x1080_25_10b_something.yuv", "", BYTES_1080P}),
-                    PixelFormatYUV(Subsampling::YUV_420, 10)}),
+                    PlanarPixelFormat({.bitsPerSample = 10})}),
 
     // Issue 211
     TestParameters(
       {FileInfoForGuess({"sample_1280x720_16bit_444_packed_20200109_114812.yuv", "", BYTES_720P}),
-       PixelFormatYUV(Subsampling::YUV_444, 16, PackingOrder::YUV)}),
+       PackedPixelFormat({Subsampling::YUV_444, 16})}),
     TestParameters({FileInfoForGuess({"sample_1280x720_16b_yuv44416le_packed_20200109_114812.yuv",
                                       "",
                                       BYTES_720P}),
-                    PixelFormatYUV(Subsampling::YUV_444, 16, PackingOrder::YUV)}),
+                    PackedPixelFormat({Subsampling::YUV_444, 16})}),
     TestParameters({FileInfoForGuess({"sample_1280x720_16b_yuv16le_packed_444_20200109_114812.yuv",
                                       "",
                                       BYTES_720P}),
-                    PixelFormatYUV(Subsampling::YUV_444, 16, PackingOrder::YUV)}),
+                    PackedPixelFormat({Subsampling::YUV_444, 16})}),
 
     // Issue 221
     TestParameters({FileInfoForGuess({"sample_1280x720_yuv420pUVI_114812.yuv", "", BYTES_720P}),
-                    PixelFormatYUV(Subsampling::YUV_420,
-                                   8,
-                                   PlaneOrder::YUV,
-                                   BigEndian(false),
-                                   ChromaOffset(0, 0),
-                                   UVInterleaved(true))}),
+                    PlanarPixelFormat({.uvPlanesInterleaved = true})}),
     TestParameters(
       {FileInfoForGuess({"sample_1280x720_yuv420pinterlaced_114812.yuv", "", BYTES_720P}),
-       PixelFormatYUV(Subsampling::YUV_420,
-                      8,
-                      PlaneOrder::YUV,
-                      BigEndian(false),
-                      ChromaOffset(0, 0),
-                      UVInterleaved(true))}),
+       PlanarPixelFormat({.uvPlanesInterleaved = true})}),
     TestParameters({FileInfoForGuess({"sample_1280x720_yuv444p16leUVI_114812.yuv", "", BYTES_720P}),
-                    PixelFormatYUV(Subsampling::YUV_444,
-                                   16,
-                                   PlaneOrder::YUV,
-                                   BigEndian(false),
-                                   ChromaOffset(0, 0),
-                                   UVInterleaved(true))}),
+                    PlanarPixelFormat({.subsampling         = Subsampling::YUV_444,
+                                       .bitsPerSample       = 16,
+                                       .uvPlanesInterleaved = true})}),
     TestParameters(
       {FileInfoForGuess({"sample_1280x720_yuv444p16leinterlaced_114812.yuv", "", BYTES_720P}),
-       PixelFormatYUV(Subsampling::YUV_444,
-                      16,
-                      PlaneOrder::YUV,
-                      BigEndian(false),
-                      ChromaOffset(0, 0),
-                      UVInterleaved(true))}),
+       PlanarPixelFormat(
+         {.subsampling = Subsampling::YUV_444, .bitsPerSample = 16, .uvPlanesInterleaved = true})}),
 
     // Invalid interlaced indicators
     TestParameters({FileInfoForGuess({"sample_1280x720_yuv420pUVVI_114812.yuv", "", BYTES_720P}),
-                    PixelFormatYUV(Subsampling::YUV_420, 8)}),
+                    PlanarPixelFormat({})}),
     TestParameters(
       {FileInfoForGuess({"sample_1280x720_yuv420pinnterlaced_114812.yuv", "", BYTES_720P}),
-       PixelFormatYUV(Subsampling::YUV_420, 8)}),
+       PlanarPixelFormat({})}),
     TestParameters(
       {FileInfoForGuess({"sample_1280x720_yuv444p16leUVVI_114812.yuv", "", BYTES_720P}),
-       PixelFormatYUV(Subsampling::YUV_444, 16)}),
+       PlanarPixelFormat({.subsampling = Subsampling::YUV_444, .bitsPerSample = 16})}),
     TestParameters(
       {FileInfoForGuess({"sample_1280x720_yuv444p16leinnterlaced_114812.yuv", "", BYTES_720P}),
-       PixelFormatYUV(Subsampling::YUV_444, 16)}),
+       PlanarPixelFormat({.subsampling = Subsampling::YUV_444, .bitsPerSample = 16})}),
 
     // V210 format (w must be multiple of 48)
     TestParameters({FileInfoForGuess({"sample_1280x720_v210.yuv", "", BYTES_720P_V210}),
-                    PixelFormatYUV(PredefinedPixelFormat::V210)}),
+                    PredefinedPixelFormat::V210}),
     TestParameters({FileInfoForGuess({"something_1280x720_V210_som.yuv", "", BYTES_720P_V210}),
-                    PixelFormatYUV(PredefinedPixelFormat::V210)}),
+                    PredefinedPixelFormat::V210}),
     TestParameters({FileInfoForGuess({"sample_1280x720.v210", "", BYTES_720P_V210}),
-                    PixelFormatYUV(PredefinedPixelFormat::V210)}),
+                    PredefinedPixelFormat::V210}),
     TestParameters({FileInfoForGuess({"sample_1280x720.V210", "", BYTES_720P_V210}),
-                    PixelFormatYUV(PredefinedPixelFormat::V210)}),
+                    PredefinedPixelFormat::V210}),
 
     // 4:0:0 formats
     TestParameters({FileInfoForGuess({"sample_1920x1080_YUV400p16LE.yuv", "", BYTES_1808P_400}),
-                    PixelFormatYUV(Subsampling::YUV_400, 16)}),
+                    PlanarPixelFormat({.subsampling = Subsampling::YUV_400, .bitsPerSample = 16})}),
     TestParameters({FileInfoForGuess({"sample_1920x1080_gray8le.yuv", "", BYTES_1808P_400}),
-                    PixelFormatYUV(Subsampling::YUV_400, 8)}),
+                    PlanarPixelFormat({.subsampling = Subsampling::YUV_400})}),
     TestParameters({FileInfoForGuess({"sample_1920x1080_gray10le.yuv", "", BYTES_1808P_400}),
-                    PixelFormatYUV(Subsampling::YUV_400, 10)}),
+                    PlanarPixelFormat({.subsampling = Subsampling::YUV_400, .bitsPerSample = 10})}),
+    TestParameters({FileInfoForGuess({"sample_1920x1080_gray14le.yuv", "", BYTES_1808P_400}),
+                    PlanarPixelFormat({.subsampling = Subsampling::YUV_400, .bitsPerSample = 14})}),
     TestParameters({FileInfoForGuess({"sample_1920x1080_gray16le.yuv", "", BYTES_1808P_400}),
-                    PixelFormatYUV(Subsampling::YUV_400, 16)}),
+                    PlanarPixelFormat({.subsampling = Subsampling::YUV_400, .bitsPerSample = 16})}),
 
     // Raw bayer file
     TestParameters({FileInfoForGuess({"sample_1920x1080_something.raw", "", BYTES_1808P_400}),
-                    PixelFormatYUV(Subsampling::YUV_400, 8)}),
+                    PlanarPixelFormat({.subsampling = Subsampling::YUV_400})}),
 
     TestParameters({FileInfoForGuess({"VisualAcuityLandolt_3840x2160_60fps_10bit_420p_BT709.yuv",
                                       "",
                                       BYTES_2160p_10bit_420}),
-                    PixelFormatYUV(Subsampling::YUV_420, 10)}),
+                    PlanarPixelFormat({.bitsPerSample = 10})}),
 
     // Files that do not indicate a frame size. Issue 663.
     TestParameters({FileInfoForGuess({"sample_noResolution_something.raw", "", BYTES_IRRELEVANT}),
-                    PixelFormatYUV(Subsampling::YUV_400, 8)}),
+                    PlanarPixelFormat({.subsampling = Subsampling::YUV_400})}),
     TestParameters({FileInfoForGuess({"sample_noResolution_something.v210", "", BYTES_IRRELEVANT}),
-                    PixelFormatYUV(PredefinedPixelFormat::V210)}),
+                    PredefinedPixelFormat::V210}),
     TestParameters({FileInfoForGuess({"sample_noResolution_something.V210", "", BYTES_IRRELEVANT}),
-                    PixelFormatYUV(PredefinedPixelFormat::V210)}),
+                    PredefinedPixelFormat::V210}),
+
+    // NV12 and NV21 formats. These are 8 bit YUV 4:2:0 with interleaved UV planes.
     TestParameters(
       {FileInfoForGuess({"sample_noResolution_nv12_something.yuv", "", BYTES_IRRELEVANT}),
-       PixelFormatYUV(Subsampling::YUV_420, 8, PlaneOrder::YUV, false, {}, true)}),
+       PlanarPixelFormat({.uvPlanesInterleaved = true})}),
     TestParameters(
       {FileInfoForGuess({"sample_noResolution_nv21_something.yuv", "", BYTES_IRRELEVANT}),
-       PixelFormatYUV(Subsampling::YUV_420, 8, PlaneOrder::YVU, false, {}, true)})
+       PlanarPixelFormat({.planeOrder = PlaneOrder::YVU, .uvPlanesInterleaved = true})}),
+
+    // PYUV format.
+    TestParameters({FileInfoForGuess({"sample_noResolution_something.pyuv", "", BYTES_IRRELEVANT}),
+                    PlanarPixelFormat({.bitsPerSample = 10, .bytePacking = true})}),
+    TestParameters({FileInfoForGuess({"sample_1920x1080_something.pyuv", "", BYTES_1808P_PYUV_10}),
+                    PlanarPixelFormat({.bitsPerSample = 10, .bytePacking = true})}),
+    TestParameters(
+      {FileInfoForGuess({"sample_1920x1080_12b_something.pyuv", "", BYTES_1808P_PYUV_12}),
+       PlanarPixelFormat({.bitsPerSample = 12, .bytePacking = true})}),
+    TestParameters(
+      {FileInfoForGuess({"sample_1920x1080_14b_something.pyuv", "", BYTES_1808P_PYUV_14}),
+       PlanarPixelFormat({.bitsPerSample = 14, .bytePacking = true})})
 
     // More tests please :)
 

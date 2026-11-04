@@ -102,7 +102,7 @@ QVariant PacketItemModel::data(const QModelIndex &index, int role) const
     const int idx = item->getStreamIndex();
     if (idx >= 0)
       return QVariant(
-          QBrush(functionsGui::toQColor(streamIndexColors.at(idx % streamIndexColors.size()))));
+        QBrush(functionsGui::toQColor(streamIndexColors.at(idx % streamIndexColors.size()))));
     return QVariant(QBrush());
   }
   else if (role == Qt::DisplayRole || role == Qt::ToolTipRole)
@@ -125,7 +125,7 @@ QModelIndex PacketItemModel::index(int row, int column, const QModelIndex &paren
     parentItem = static_cast<TreeItem *>(parent.internalPointer());
 
   Q_ASSERT_X(
-      parentItem != nullptr, Q_FUNC_INFO, "pointer to parent is null. This must never happen");
+    parentItem != nullptr, Q_FUNC_INFO, "pointer to parent is null. This must never happen");
 
   auto childItem = parentItem->getChild(row);
   if (childItem)
@@ -213,8 +213,14 @@ void PacketItemModel::setShowVideoStreamOnly(bool videoOnly)
 
 void FilterByStreamIndexProxyModel::setFilterStreamIndex(int idx)
 {
+#if QT_VERSION >= QT_VERSION_CHECK(6, 9, 0)
+  beginFilterChange();
+  this->streamIndex = idx;
+  endFilterChange();
+#else
   this->streamIndex = idx;
   invalidateFilter();
+#endif
 }
 
 bool FilterByStreamIndexProxyModel::filterAcceptsRow(int row, const QModelIndex &sourceParent) const
@@ -241,7 +247,7 @@ bool FilterByStreamIndexProxyModel::filterAcceptsRow(int row, const QModelIndex 
   else
     parentItem = static_cast<TreeItem *>(sourceParent.internalPointer());
   Q_ASSERT_X(
-      parentItem != nullptr, Q_FUNC_INFO, "pointer to parent is null. This must never happen");
+    parentItem != nullptr, Q_FUNC_INFO, "pointer to parent is null. This must never happen");
 
   auto childItem = parentItem->getChild(row);
   if (childItem != nullptr)

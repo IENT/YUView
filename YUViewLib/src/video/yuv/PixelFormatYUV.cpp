@@ -34,8 +34,120 @@
 
 #include <regex>
 
+#include <iostream>
+
 namespace video::yuv
 {
+
+namespace
+{
+
+bool isDefaultChromaOffsetInXDirection(const Offset &offset)
+{
+  return offset.x == 0;
+}
+
+bool isDefaultChromaOffsetInYDirection(const Offset &offset, const Subsampling subsampling)
+{
+  if (subsampling == Subsampling::YUV_420)
+    return offset.y == 1;
+  return offset.y == 0;
+}
+
+std::optional<Subsampling> parseSubsamplingText(const std::string_view text)
+{
+  if (text.size() != 5)
+    return {};
+  if (text.at(1) != ':' || text.at(3) != ':')
+    return {};
+
+  const std::string subsamplingName = {text.at(0), text.at(2), text.at(4)};
+  return SubsamplingMapper.getValue(subsamplingName);
+}
+
+std::optional<int> parseBitDepthText(const std::string &bitdepthStr)
+{
+  const auto bitDepth = functions::toInt(bitdepthStr);
+  if (bitDepth && *bitDepth >= 8 && *bitDepth <= 16)
+    return *bitDepth;
+  return {};
+}
+
+Offset parseChromaOffsetText(const std::string &offsetXStr, const std::string &offsetYStr)
+{
+  Offset offset{};
+
+  if (offsetXStr.substr(0, 2) == "Cx")
+    offset.x = functions::toInt(offsetXStr.substr(2)).value_or(0);
+  if (offsetYStr.substr(0, 2) == "Cy")
+    offset.y = functions::toInt(offsetYStr.substr(2)).value_or(0);
+
+  return offset;
+}
+
+bool isBytePacking(
+  const std::variant<PlanarPixelFormat, PackedPixelFormat, PredefinedPixelFormat> &formatVariant)
+{
+  return std::visit(
+    [](const auto &format) -> bool
+    {
+      using T = std::decay_t<decltype(format)>;
+      if constexpr (std::is_same_v<T, PredefinedPixelFormat>)
+      {
+        if (format == PredefinedPixelFormat::V210)
+          return true;
+        return false;
+      }
+      else
+        return format.bytePacking;
+    },
+    formatVariant);
+}
+
+struct PlaneOrderParsingResult
+{
+  PlaneOrder planeOrder{};
+  bool       uvInterleaved;
+  bool       bytePacking{};
+};
+
+std::optional<PlaneOrderParsingResult> parsePlanarPlaneOrderString(std::string_view text)
+{
+  PlaneOrderParsingResult result;
+
+  result.bytePacking = (text.at(0) == 'P');
+  if (result.bytePacking)
+    text.remove_prefix(1);
+
+  result.uvInterleaved = text.size() >= 4 && text.substr(text.size() - 4, 4) == "(IL)";
+  if (result.uvInterleaved)
+    text.remove_suffix(4);
+
+  if (const auto planeOrder = PlaneOrderMapper.getValue(text))
+  {
+    result.planeOrder = *planeOrder;
+    return result;
+  }
+
+  return {};
+}
+
+bool doesSizeMatchSubsampling(Size lumaSize, Subsampling subsampling)
+{
+  const auto factors = getSubsamplingFactors(subsampling);
+  return (lumaSize.width % factors.horizontal == 0) && (lumaSize.height % factors.vertical == 0);
+}
+
+} // namespace
+
+std::string formatSubsamplingWithColons(const Subsampling &subsampling)
+{
+  const auto name = SubsamplingMapper.getName(subsampling);
+
+  std::stringstream s;
+  s << name.at(0) << ":" << name.at(1) << ":" << name.at(2);
+  return s.str();
+}
 
 void getColorConversionCoefficients(ColorConversion colorConversion, int RGBConv[5])
 {
@@ -74,7 +186,7 @@ int getMaxPossibleChromaOffsetValues(bool horizontal, Subsampling subsampling)
 }
 
 // Return a list with all the packing formats that are supported with this subsampling
-std::vector<PackingOrder> getSupportedPackingFormats(Subsampling subsampling)
+std::vector<PackingOrder> getSupportedPackingFormats(const Subsampling subsampling)
 {
   if (subsampling == Subsampling::YUV_422)
     return std::vector<PackingOrder>(
@@ -89,47 +201,45 @@ std::vector<PackingOrder> getSupportedPackingFormats(Subsampling subsampling)
   return {};
 }
 
-// Is this the default chroma offset for the subsampling type?
-bool isDefaultChromaFormat(int chromaOffset, bool offsetX, Subsampling subsampling)
+SubsamplingFactors getSubsamplingFactors(const Subsampling subsampling)
 {
-  if (subsampling == Subsampling::YUV_420 && !offsetX)
-    // The default subsampling for YUV 420 has a Y offset of 1/2
-    return chromaOffset == 1;
-  else if (subsampling == Subsampling::YUV_400)
-    return true;
-  return chromaOffset == 0;
+  switch (subsampling)
+  {
+  case Subsampling::YUV_444:
+    return {};
+  case Subsampling::YUV_422:
+    return {1, 2};
+  case Subsampling::YUV_420:
+    return {2, 2};
+  case Subsampling::YUV_440:
+    return {1, 2};
+  case Subsampling::YUV_410:
+    return {4, 4};
+  case Subsampling::YUV_411:
+    return {4, 1};
+  default:
+    return {};
+  }
 }
 
-std::optional<Subsampling> parseSubsamplingText(const std::string_view text)
+Size getSubsampledSize(Size frameSize, Subsampling subsampling)
 {
-  if (text.size() != 5)
-    return {};
-  if (text.at(1) != ':' || text.at(3) != ':')
-    return {};
-
-  const std::string subsamplingName = {text.at(0), text.at(2), text.at(4)};
-  return SubsamplingMapper.getValue(subsamplingName);
+  const auto factors = getSubsamplingFactors(subsampling);
+  return {frameSize.width / factors.horizontal, frameSize.height / factors.vertical};
 }
 
-std::string formatSubsamplingWithColons(const Subsampling &subsampling)
+PixelFormatYUV::PixelFormatYUV()
 {
-  const auto name = SubsamplingMapper.getName(subsampling);
-
-  std::stringstream s;
-  s << name.at(0) << ":" << name.at(1) << ":" << name.at(2);
-  return s.str();
+  std::get<PlanarPixelFormat>(this->format).chromaOffset = Offset{0, 1};
 }
 
 PixelFormatYUV::PixelFormatYUV(const std::string_view name)
 {
-  if (auto predefinedFormat = PredefinedPixelFormatMapper.getValue(name))
-  {
-    if (*predefinedFormat == PredefinedPixelFormat::V210)
-      this->predefinedPixelFormat = predefinedFormat;
-  }
+  if (const auto predefinedFormat = PredefinedPixelFormatMapper.getValue(name))
+    this->format = *predefinedFormat;
 
   std::regex strExpr(
-    "([YUVA]{3,6}(?:\\(IL\\))?) (4:[4210]{1}:[4210]{1}) ([0-9]{1,2})-bit[ ]?([BL]{1}E)?[ "
+    "(P?[YUVA]{3,6}(?:\\(IL\\))?) (4:[4210]{1}:[4210]{1}) ([0-9]{1,2})-bit[ ]?([BL]{1}E)?[ "
     "]?(packed-B|packed)?[ ]?(Cx[0-9]+)?[ ]?(Cy[0-9]+)?");
 
   std::smatch sm;
@@ -137,306 +247,213 @@ PixelFormatYUV::PixelFormatYUV(const std::string_view name)
   if (!std::regex_match(nameAsString, sm, strExpr))
     return;
 
-  try
+  const auto subsampling = parseSubsamplingText(sm.str(2));
+  if (!subsampling)
+    return;
+
+  const auto bitsPerSample = parseBitDepthText(sm.str(3));
+  if (!bitsPerSample)
+    return;
+
+  const auto endianess =
+    (bitsPerSample > 8 && sm.str(4) == "BE") ? Endianness::Big : Endianness::Little;
+
+  auto chromaOffset = parseChromaOffsetText(sm.str(6), sm.str(7));
+  if (subsampling == Subsampling::YUV_420 && chromaOffset == Offset{0, 0})
+    chromaOffset = Offset{0, 1};
+
+  const auto packingIndicator = sm.str(5);
+  const auto isPlanar         = packingIndicator.empty();
+
+  const auto bytePacking = !isPlanar && packingIndicator == "packed-B";
+
+  if (isPlanar)
   {
-    PixelFormatYUV newFormat;
-
-    // Is this a packed format or not?
-    auto packed      = sm.str(5);
-    newFormat.planar = packed.empty();
-    if (!newFormat.planar)
-      newFormat.bytePacking = (packed == "packed-B");
-
-    // Parse the YUV order (planar or packed)
-    if (newFormat.planar)
+    if (const auto result = parsePlanarPlaneOrderString(sm.str(1)))
     {
-      auto yuvName = sm.str(1);
-      if (yuvName.size() >= 4 && yuvName.substr(yuvName.size() - 4, 4) == "(IL)")
-      {
-        newFormat.uvInterleaved = true;
-        yuvName.erase(yuvName.size() - 4, 4);
-      }
-
-      if (auto po = PlaneOrderMapper.getValue(yuvName))
-        newFormat.planeOrder = *po;
+      this->format = PlanarPixelFormat{*subsampling,
+                                       *bitsPerSample,
+                                       result->planeOrder,
+                                       endianess,
+                                       chromaOffset,
+                                       result->uvInterleaved,
+                                       result->bytePacking};
     }
     else
-    {
-      auto packingName = sm.str(1);
-      if (auto po = PackingOrderMapper.getValue(packingName))
-        newFormat.packingOrder = *po;
-    }
-
-    if (auto subsampling = parseSubsamplingText(sm.str(2)))
-      newFormat.subsampling = *subsampling;
-
-    // Get the bit depth
-    {
-      auto   bitdepthStr = sm.str(3);
-      size_t sz;
-      int    bitDepth = std::stoi(bitdepthStr, &sz);
-      if (sz > 0 && bitDepth >= 8 && bitDepth <= 16)
-        newFormat.bitsPerSample = bitDepth;
-    }
-
-    // Get the endianness. If not in the name, assume LE
-    newFormat.bigEndian = (sm.str(4) == "BE");
-
-    // Get the chroma offsets
-    newFormat.setDefaultChromaOffset();
-    auto chromaOffsetXStr = sm.str(6);
-    if (chromaOffsetXStr.substr(0, 2) == "Cx")
-    {
-      size_t sz;
-      auto   offsetX = std::stoi(chromaOffsetXStr.substr(2), &sz);
-      if (sz > 0 && offsetX >= 0)
-        newFormat.chromaOffset.x = offsetX;
-    }
-
-    auto chromaOffsetYStr = sm.str(7);
-    if (chromaOffsetYStr.substr(0, 2) == "Cy")
-    {
-      size_t sz;
-      auto   offsetY = std::stoi(chromaOffsetYStr.substr(2), &sz);
-      if (sz > 0 && offsetY >= 0)
-        newFormat.chromaOffset.y = offsetY;
-    }
-
-    // Check if the format is valid.
-    if (newFormat.isValid())
-    {
-      // Set all the values from the new format
-      this->subsampling   = newFormat.subsampling;
-      this->bitsPerSample = newFormat.bitsPerSample;
-      this->bigEndian     = newFormat.bigEndian;
-      this->planar        = newFormat.planar;
-      this->planeOrder    = newFormat.planeOrder;
-      this->uvInterleaved = newFormat.uvInterleaved;
-      this->packingOrder  = newFormat.packingOrder;
-      this->bytePacking   = newFormat.bytePacking;
-      this->chromaOffset  = newFormat.chromaOffset;
-    }
+      return;
   }
-  catch (const std::exception &)
+  else
   {
+    const auto packingOrder = PackingOrderMapper.getValue(sm.str(1));
+    if (!packingOrder)
+      return;
+
+    this->format = PackedPixelFormat{
+      *subsampling, *bitsPerSample, *packingOrder, endianess, chromaOffset, bytePacking};
   }
 }
 
-PixelFormatYUV::PixelFormatYUV(Subsampling subsampling,
-                               unsigned    bitsPerSample,
-                               PlaneOrder  planeOrder,
-                               bool        bigEndian,
-                               Offset      chromaOffset,
-                               bool        uvInterleaved)
-    : subsampling(subsampling), bitsPerSample(bitsPerSample), bigEndian(bigEndian), planar(true),
-      chromaOffset(chromaOffset), planeOrder(planeOrder), uvInterleaved(uvInterleaved)
+PixelFormatYUV::PixelFormatYUV(PlanarPixelFormat planarPixelFormat) : format(planarPixelFormat)
 {
-  this->setDefaultChromaOffset();
+  if (planarPixelFormat.subsampling == Subsampling::YUV_420 &&
+      planarPixelFormat.chromaOffset == Offset{0, 0})
+    planarPixelFormat.chromaOffset = Offset{0, 1};
+
+  this->format = planarPixelFormat;
 }
 
-PixelFormatYUV::PixelFormatYUV(Subsampling  subsampling,
-                               unsigned     bitsPerSample,
-                               PackingOrder packingOrder,
-                               bool         bytePacking,
-                               bool         bigEndian,
-                               Offset       chromaOffset)
-    : subsampling(subsampling), bitsPerSample(bitsPerSample), bigEndian(bigEndian), planar(false),
-      chromaOffset(chromaOffset), uvInterleaved(false), packingOrder(packingOrder),
-      bytePacking(bytePacking)
+PixelFormatYUV::PixelFormatYUV(PackedPixelFormat packedPixelFormat) : format(packedPixelFormat)
 {
-  this->setDefaultChromaOffset();
+  if (packedPixelFormat.subsampling == Subsampling::YUV_420 &&
+      packedPixelFormat.chromaOffset == Offset{0, 0})
+    packedPixelFormat.chromaOffset = Offset{0, 1};
+
+  this->format = packedPixelFormat;
 }
 
 PixelFormatYUV::PixelFormatYUV(PredefinedPixelFormat predefinedPixelFormat)
-    : predefinedPixelFormat(predefinedPixelFormat)
+    : format(predefinedPixelFormat)
 {
+}
+
+std::optional<PlanarPixelFormat> PixelFormatYUV::getPlanarFormat() const
+{
+  if (std::holds_alternative<PlanarPixelFormat>(this->format))
+    return std::get<PlanarPixelFormat>(this->format);
+  return {};
+}
+
+std::optional<PackedPixelFormat> PixelFormatYUV::getPackedFormat() const
+{
+  if (std::holds_alternative<PackedPixelFormat>(this->format))
+    return std::get<PackedPixelFormat>(this->format);
+  return {};
 }
 
 std::optional<PredefinedPixelFormat> PixelFormatYUV::getPredefinedFormat() const
 {
-  return this->predefinedPixelFormat;
+  if (std::holds_alternative<PredefinedPixelFormat>(this->format))
+    return std::get<PredefinedPixelFormat>(this->format);
+  return {};
 }
 
 bool PixelFormatYUV::isValid() const
 {
-  if (this->predefinedPixelFormat.has_value())
+  if (std::holds_alternative<PredefinedPixelFormat>(this->format))
     return true;
 
-  if (!planar)
+  if (this->getSubsampling() == Subsampling::UNKNOWN)
+    return false;
+
+  if (const auto packedFormat = this->getPackedFormat())
   {
     // Check the packing mode
-    if ((this->packingOrder == PackingOrder::YUV || this->packingOrder == PackingOrder::YVU ||
-         this->packingOrder == PackingOrder::AYUV || this->packingOrder == PackingOrder::YUVA ||
-         this->packingOrder == PackingOrder::VUYA) &&
-        subsampling != Subsampling::YUV_444)
+    if ((packedFormat->packingOrder == PackingOrder::YUV ||
+         packedFormat->packingOrder == PackingOrder::YVU ||
+         packedFormat->packingOrder == PackingOrder::AYUV ||
+         packedFormat->packingOrder == PackingOrder::YUVA ||
+         packedFormat->packingOrder == PackingOrder::VUYA) &&
+        packedFormat->subsampling != Subsampling::YUV_444)
       return false;
-    if ((this->packingOrder == PackingOrder::UYVY || this->packingOrder == PackingOrder::VYUY ||
-         this->packingOrder == PackingOrder::YUYV || this->packingOrder == PackingOrder::YVYU) &&
-        subsampling != Subsampling::YUV_422)
+    if ((packedFormat->packingOrder == PackingOrder::UYVY ||
+         packedFormat->packingOrder == PackingOrder::VYUY ||
+         packedFormat->packingOrder == PackingOrder::YUYV ||
+         packedFormat->packingOrder == PackingOrder::YVYU) &&
+        packedFormat->subsampling != Subsampling::YUV_422)
       return false;
-    if (this->packingOrder == PackingOrder::UNKNOWN)
+    if (packedFormat->packingOrder == PackingOrder::UNKNOWN)
       return false;
-    /*if ((packingOrder == Packing_YYYYUV || packingOrder == Packing_YYUYYV || packingOrder ==
-      Packing_UYYVYY || packingOrder == Packing_VYYUYY) && subsampling == Subsampling::YUV_420)
-      return false;*/
-    if (this->subsampling == Subsampling::YUV_420 || this->subsampling == Subsampling::YUV_440 ||
-        this->subsampling == Subsampling::YUV_410 || this->subsampling == Subsampling::YUV_411 ||
-        this->subsampling == Subsampling::YUV_400)
+    /*if ((packedFormat->packingOrder == Packing_YYYYUV || packedFormat->packingOrder ==
+      Packing_YYUYYV || packedFormat->packingOrder == Packing_UYYVYY ||
+      packedFormat->packingOrder == Packing_VYYUYY) && packedFormat->subsampling ==
+      Subsampling::YUV_420) return false;*/
+    if (packedFormat->subsampling == Subsampling::YUV_420 ||
+        packedFormat->subsampling == Subsampling::YUV_440 ||
+        packedFormat->subsampling == Subsampling::YUV_410 ||
+        packedFormat->subsampling == Subsampling::YUV_411 ||
+        packedFormat->subsampling == Subsampling::YUV_400)
       // No support for packed formats with this subsampling (yet)
       return false;
-    if (this->uvInterleaved)
-      // This can only be set for planar formats
-      return false;
   }
-  if (this->subsampling != Subsampling::YUV_400)
+
+  const auto hasChromaComponents = this->getSubsampling() != Subsampling::YUV_400;
+  if (hasChromaComponents)
   {
-    // There are chroma components. Check the chroma offsets.
-    if (this->chromaOffset.x < 0 ||
-        this->chromaOffset.x > getMaxPossibleChromaOffsetValues(true, this->subsampling))
+    const auto chromaOffset = this->getChromaOffset();
+    if (chromaOffset.x < 0 ||
+        chromaOffset.x > getMaxPossibleChromaOffsetValues(true, this->getSubsampling()))
       return false;
-    if (this->chromaOffset.y < 0 ||
-        this->chromaOffset.y > getMaxPossibleChromaOffsetValues(false, this->subsampling))
+    if (chromaOffset.y < 0 ||
+        chromaOffset.y > getMaxPossibleChromaOffsetValues(false, this->getSubsampling()))
       return false;
   }
-  // Check the bit depth
-  if (this->bitsPerSample < 7)
+
+  if (this->getBitsPerSample() < 7)
     return false;
+
+  if (const auto planarFormat = this->getPlanarFormat())
+  {
+    if (planarFormat->bytePacking)
+    {
+      if (planarFormat->subsampling != Subsampling::YUV_420)
+        return false;
+      if (planarFormat->bitsPerSample != 10 && planarFormat->bitsPerSample != 12 &&
+          planarFormat->bitsPerSample != 14)
+        return false;
+      if (planarFormat->planeOrder != PlaneOrder::YUV)
+        return false;
+      if (planarFormat->endianness != Endianness::Little)
+        return false;
+      if (planarFormat->uvPlanesInterleaved)
+        return false;
+    }
+  }
+
   return true;
-}
-
-bool PixelFormatYUV::canConvertToRGB(Size imageSize, std::string *whyNot) const
-{
-  if (this->predefinedPixelFormat.has_value())
-    return true;
-  if (!this->isValid())
-  {
-    if (whyNot)
-      whyNot->append("Invalid format");
-    return false;
-  }
-
-  // Check the bit depth
-  const int bps        = this->bitsPerSample;
-  bool      canConvert = true;
-  if (bps < 8 || bps > 16)
-  {
-    if (whyNot)
-    {
-      std::stringstream ss;
-      ss << "The currently set bit depth " << bps << " is not supported.\n";
-      whyNot->append(ss.str());
-    }
-    canConvert = false;
-  }
-  if (imageSize.width % this->getSubsamplingHor() != 0)
-  {
-    if (whyNot)
-    {
-      std::stringstream ss;
-      ss << "The item width " << imageSize.width
-         << " must be divisible by the horizontal subsampling factor " << this->getSubsamplingHor()
-         << ".\n";
-      whyNot->append(ss.str());
-    }
-    canConvert = false;
-  }
-  if (imageSize.height % this->getSubsamplingVer() != 0)
-  {
-    if (whyNot)
-    {
-      std::stringstream ss;
-      ss << "The item height " << imageSize.height
-         << " must be divisible by the vertical subsampling factor " << this->getSubsamplingVer()
-         << ".\n";
-      whyNot->append(ss.str());
-    }
-    canConvert = false;
-  }
-  if (this->subsampling == Subsampling::UNKNOWN)
-  {
-    if (whyNot)
-      whyNot->append("The current yuv subsampling is unknown.\n");
-    canConvert = false;
-  }
-  if (!this->planar && this->subsampling != Subsampling::YUV_422 &&
-      this->subsampling != Subsampling::YUV_444)
-  {
-    if (whyNot)
-      whyNot->append("Packed YUV formats are onyl supported for 4:2:2 and 4:4:4 subsampling.\n");
-    canConvert = false;
-  }
-  return canConvert;
 }
 
 int64_t PixelFormatYUV::bytesPerFrame(const Size &frameSize) const
 {
-  if (this->predefinedPixelFormat)
+  if (!frameSize.isValid() || !this->isValid())
+    return 0;
+
+  if (!doesSizeMatchSubsampling(frameSize, this->getSubsampling()))
+    return 0;
+
+  if (const auto predefinedFormat = std::get_if<PredefinedPixelFormat>(&this->format))
   {
-    if (*this->predefinedPixelFormat == PredefinedPixelFormat::V210)
+    if (*predefinedFormat == PredefinedPixelFormat::V210)
     {
       // 422 10 bit with 6 Y values per 16 bytes. Width is rounded up to a multiple of 48.
       // Although there is a weird expception to this in the standard.
       auto roundedUpWidth = (((frameSize.width + 48 - 1) / 48) * 48);
       return frameSize.height * roundedUpWidth * 16 / 6;
     }
-    return -1;
+    return 0;
   }
 
-  int64_t bytes = 0;
+  if (const auto bytesPerComponent = this->bytesPerFramePerComponent(frameSize))
+    return bytesPerComponent->luma + 2 * bytesPerComponent->chroma + bytesPerComponent->alpha;
 
-  if (this->planar || !this->bytePacking)
+  if (const auto packedFormat = std::get_if<PackedPixelFormat>(&this->format))
   {
-    // Add the bytes of the 3 (or 4) planes.
-    // This also works for packed formats without byte packing. For these formats the number of
-    // bytes are identical to the not packed formats, the bytes are just sorted in another way.
+    if (!packedFormat->bytePacking)
+      return 0;
 
-    const auto bytesPerSample = (this->bitsPerSample + 7) / 8;    // Round to bytes
-    bytes += frameSize.width * frameSize.height * bytesPerSample; // Luma plane
-    if (this->subsampling == Subsampling::YUV_444)
-      bytes += frameSize.width * frameSize.height * bytesPerSample * 2; // U/V planes
-    else if (this->subsampling == Subsampling::YUV_422 || this->subsampling == Subsampling::YUV_440)
-      bytes +=
-        (frameSize.width / 2) * frameSize.height * bytesPerSample * 2; // U/V planes, half the width
-    else if (this->subsampling == Subsampling::YUV_420)
-      bytes += (frameSize.width / 2) * (frameSize.height / 2) * bytesPerSample *
-               2; // U/V planes, half the width and height
-    else if (this->subsampling == Subsampling::YUV_410)
-      bytes += (frameSize.width / 4) * (frameSize.height / 4) * bytesPerSample *
-               2; // U/V planes, half the width and height
-    else if (this->subsampling == Subsampling::YUV_411)
-      bytes += (frameSize.width / 4) * frameSize.height * bytesPerSample *
-               2; // U/V planes, quarter the width
-    else if (this->subsampling == Subsampling::YUV_400)
-      bytes += 0; // No chroma components
-    else
-      return -1; // Unknown subsampling
-
-    if (this->planar &&
-        (this->planeOrder == PlaneOrder::YUVA || this->planeOrder == PlaneOrder::YVUA))
-      // There is an additional alpha plane. The alpha plane is not subsampled
-      bytes += frameSize.width * frameSize.height * bytesPerSample; // Alpha plane
-    if (!this->planar && this->subsampling == Subsampling::YUV_444 &&
-        (this->packingOrder == PackingOrder::AYUV || this->packingOrder == PackingOrder::YUVA ||
-         this->packingOrder == PackingOrder::VUYA))
-      // There is an additional alpha plane. The alpha plane is not subsampled
-      bytes += frameSize.width * frameSize.height * bytesPerSample; // Alpha plane
-  }
-  else
-  {
-    // This is a packed format with byte packing
-    if (this->subsampling == Subsampling::YUV_422)
+    if (packedFormat->subsampling == Subsampling::YUV_422)
     {
       // All packing orders have 4 values per packed value (which has 2 Y samples)
-      const auto bitsPerPixel = this->bitsPerSample * 4;
+      const auto bitsPerPixel = packedFormat->bitsPerSample * 4;
       return ((bitsPerPixel + 7) / 8) * (frameSize.width / 2) * frameSize.height;
     }
     // This is a packed format. The added number of bytes might be lower because of the packing.
-    if (this->subsampling == Subsampling::YUV_444)
+    if (packedFormat->subsampling == Subsampling::YUV_444)
     {
-      auto bitsPerPixel = this->bitsPerSample * 3;
-      if (this->packingOrder == PackingOrder::AYUV || this->packingOrder == PackingOrder::YUVA ||
-          this->packingOrder == PackingOrder::VUYA)
-        bitsPerPixel += this->bitsPerSample;
+      auto bitsPerPixel = packedFormat->bitsPerSample * 3;
+      if (packedFormat->packingOrder == PackingOrder::AYUV ||
+          packedFormat->packingOrder == PackingOrder::YUVA ||
+          packedFormat->packingOrder == PackingOrder::VUYA)
+        bitsPerPixel += packedFormat->bitsPerSample;
       return ((bitsPerPixel + 7) / 8) * frameSize.width * frameSize.height;
     }
     // else if (subsampling == Subsampling::YUV_422 || subsampling == Subsampling::YUV_440)
@@ -454,7 +471,86 @@ int64_t PixelFormatYUV::bytesPerFrame(const Size &frameSize) const
     // else
     //  return -1;  // Unknown subsampling
   }
-  return bytes;
+
+  return 0;
+}
+
+std::optional<PixelFormatYUV::BytesPerComponent>
+PixelFormatYUV::bytesPerFramePerComponent(const Size &frameSize) const
+{
+  PixelFormatYUV::BytesPerComponent bytes;
+
+  if (!isBytePacking(this->format))
+  {
+    // The numbers are the same for planar and packed formats as long as no byte packing is used.
+    // The only difference is the order of the bytes in memory.
+
+    const auto bytesPerSample = (this->getBitsPerSample() + 7) / 8;
+    bytes.luma                = frameSize.area() * bytesPerSample;
+
+    switch (this->getSubsampling())
+    {
+    case Subsampling::YUV_444:
+      bytes.chroma = bytes.luma;
+      break;
+    case Subsampling::YUV_422:
+    case Subsampling::YUV_440:
+      bytes.chroma = bytes.luma / 2;
+      break;
+    case Subsampling::YUV_420:
+    case Subsampling::YUV_411:
+      bytes.chroma = bytes.luma / 4;
+      break;
+    case Subsampling::YUV_410:
+      bytes.chroma = bytes.luma / 16;
+      break;
+    case Subsampling::YUV_400:
+      bytes.chroma = 0;
+      break;
+    default:
+      return {};
+    }
+
+    bytes.alpha = (this->hasAlpha()) ? bytes.luma : 0;
+    return bytes;
+  }
+
+  if (const auto planarFormat = std::get_if<PlanarPixelFormat>(&this->format))
+  {
+    assert(planarFormat->bytePacking);
+
+    if (planarFormat->subsampling == Subsampling::YUV_420 &&
+        planarFormat->planeOrder == PlaneOrder::YUV &&
+        planarFormat->endianness == Endianness::Little)
+    {
+      const auto nrSamplesLuma   = frameSize.area();
+      const auto nrSamplesChroma = nrSamplesLuma / 4;
+      if ((planarFormat->bitsPerSample == 10 || planarFormat->bitsPerSample == 14) &&
+          (nrSamplesChroma % 4 != 0))
+        return {};
+      if (planarFormat->bitsPerSample == 12 && (nrSamplesChroma % 2 != 0))
+        return {};
+
+      if (planarFormat->bitsPerSample == 10)
+      {
+        bytes.luma   = nrSamplesLuma / 4 * 5;
+        bytes.chroma = nrSamplesChroma / 4 * 5;
+      }
+      else if (planarFormat->bitsPerSample == 12)
+      {
+        bytes.luma   = nrSamplesLuma / 2 * 3;
+        bytes.chroma = nrSamplesChroma / 2 * 3;
+      }
+      else if (planarFormat->bitsPerSample == 14)
+      {
+        bytes.luma   = nrSamplesLuma / 4 * 7;
+        bytes.chroma = nrSamplesChroma / 4 * 7;
+      }
+      return bytes;
+    }
+  }
+
+  return std::nullopt;
 }
 
 // Generate a unique name for the YUV format
@@ -462,182 +558,187 @@ std::string PixelFormatYUV::getName() const
 {
   if (!this->isValid())
     return "Invalid";
-  if (this->predefinedPixelFormat)
-    return std::string(PredefinedPixelFormatMapper.getName(*this->predefinedPixelFormat));
 
   std::stringstream ss;
 
-  if (this->planar)
+  if (const auto predefinedFormat = this->getPredefinedFormat())
   {
-    ss << PlaneOrderMapper.getName(this->planeOrder);
+    ss << PredefinedPixelFormatMapper.getName(*predefinedFormat);
+    return ss.str();
+  }
 
-    if (this->uvInterleaved)
+  if (const auto planarFormat = this->getPlanarFormat())
+  {
+    if (planarFormat->bytePacking)
+      ss << "P";
+    ss << PlaneOrderMapper.getName(planarFormat->planeOrder);
+    if (planarFormat->uvPlanesInterleaved)
       ss << "(IL)";
   }
-  else
-    ss << PackingOrderMapper.getName(this->packingOrder);
+  if (const auto packedFormat = this->getPackedFormat())
+    ss << PackingOrderMapper.getName(packedFormat->packingOrder);
 
-  ss << " " << formatSubsamplingWithColons(this->subsampling) << " " << this->bitsPerSample
-     << "-bit";
+  ss << " " << formatSubsamplingWithColons(this->getSubsampling());
+  ss << " " << this->getBitsPerSample() << "-bit";
 
-  // Add the endianness (if the bit depth is greater 8)
-  if (this->bitsPerSample > 8)
-    ss << ((this->bigEndian) ? " BE" : " LE");
+  if (this->getBitsPerSample() > 8)
+    ss << ((this->getEndianness() == Endianness::Big) ? " BE" : " LE");
 
-  if (!this->planar && this->subsampling != Subsampling::YUV_400)
-    ss << (this->bytePacking ? " packed-B" : " packed");
+  if (const auto packedFormat = this->getPackedFormat())
+    if (packedFormat->subsampling != Subsampling::YUV_400)
+      ss << (packedFormat->bytePacking ? " packed-B" : " packed");
 
-  // Add the Chroma offsets (if it is not the default offset)
-  if (!isDefaultChromaFormat(this->chromaOffset.x, true, this->subsampling))
-    ss << " Cx" << this->chromaOffset.x;
-  if (!isDefaultChromaFormat(this->chromaOffset.y, false, this->subsampling))
-    ss << " Cy" << this->chromaOffset.y;
+  const auto offset = this->getChromaOffset();
+  if (!isDefaultChromaOffsetInXDirection(offset))
+    ss << " Cx" << offset.x;
+  if (!isDefaultChromaOffsetInYDirection(offset, this->getSubsampling()))
+    ss << " Cy" << offset.y;
 
   return ss.str();
 }
 
-unsigned PixelFormatYUV::getNrPlanes() const
+Subsampling PixelFormatYUV::getSubsampling() const
 {
-  if (this->predefinedPixelFormat)
+  return std::visit(
+    [](const auto &format) -> Subsampling
+    {
+      using T = std::decay_t<decltype(format)>;
+      if constexpr (std::is_same_v<T, PredefinedPixelFormat>)
+      {
+        if (format == PredefinedPixelFormat::V210)
+          return Subsampling::YUV_422;
+        return Subsampling::UNKNOWN;
+      }
+      else
+        return format.subsampling;
+    },
+    this->format);
+}
+
+SubsamplingRatios PixelFormatYUV::getSubsamplingRatios() const
+{
+  switch (this->getSubsampling())
   {
-    if (*this->predefinedPixelFormat == PredefinedPixelFormat::V210)
+  case Subsampling::YUV_444:
+    return {1, 1};
+  case Subsampling::YUV_422:
+    return {2, 1};
+  case Subsampling::YUV_440:
+    return {1, 2};
+  case Subsampling::YUV_420:
+    return {2, 2};
+  case Subsampling::YUV_411:
+    return {4, 1};
+  case Subsampling::YUV_410:
+    return {4, 4};
+  case Subsampling::YUV_400:
+    return {1, 1};
+  default:
+    return {1, 1};
+  }
+}
+
+std::optional<Size> PixelFormatYUV::getChromaSize(const Size &lumaSize) const
+{
+  const auto subsampling = this->getSubsampling();
+  if (subsampling == Subsampling::YUV_400)
+    return std::nullopt;
+
+  const auto factors = getSubsamplingRatios();
+  return Size({lumaSize.width / factors.horizontal, lumaSize.height / factors.vertical});
+}
+
+int PixelFormatYUV::getNrPlanes() const
+{
+  if (const auto predefinedFormat = std::get_if<PredefinedPixelFormat>(&this->format))
+  {
+    if (*predefinedFormat == PredefinedPixelFormat::V210)
       return 3;
     return 0;
   }
 
-  if (this->subsampling == Subsampling::YUV_400)
+  if (this->getSubsampling() == Subsampling::YUV_400)
     return 1;
-  if (this->packingOrder == PackingOrder::AYUV || this->packingOrder == PackingOrder::YUVA ||
-      this->packingOrder == PackingOrder::VUYA)
-    return 4;
-  return 3;
+
+  return this->hasAlpha() ? 4 : 3;
 }
 
-Subsampling PixelFormatYUV::getSubsampling() const
+int PixelFormatYUV::getBitsPerSample() const
 {
-  if (this->predefinedPixelFormat)
-  {
-    if (*this->predefinedPixelFormat == PredefinedPixelFormat::V210)
-      return Subsampling::YUV_422;
-    return Subsampling::UNKNOWN;
-  }
-
-  return this->subsampling;
-}
-
-int PixelFormatYUV::getSubsamplingHor(Component component) const
-{
-  auto sub = this->getSubsampling();
-
-  if (component == Component::Luma)
-    return 1;
-  if (sub == Subsampling::YUV_410 || sub == Subsampling::YUV_411)
-    return 4;
-  if (sub == Subsampling::YUV_422 || sub == Subsampling::YUV_420)
-    return 2;
-  return 1;
-}
-
-int PixelFormatYUV::getSubsamplingVer(Component component) const
-{
-  auto sub = this->getSubsampling();
-
-  if (component == Component::Luma)
-    return 1;
-  if (sub == Subsampling::YUV_410)
-    return 4;
-  if (sub == Subsampling::YUV_420 || sub == Subsampling::YUV_440)
-    return 2;
-  return 1;
-}
-
-void PixelFormatYUV::setDefaultChromaOffset()
-{
-  this->chromaOffset = Offset({0, 0});
-  if (this->getSubsampling() == Subsampling::YUV_420)
-    this->chromaOffset.y = 1;
-}
-
-bool PixelFormatYUV::isChromaSubsampled() const
-{
-  auto sub = this->getSubsampling();
-  return sub != Subsampling::YUV_444;
-}
-
-unsigned PixelFormatYUV::getBitsPerSample() const
-{
-  if (this->predefinedPixelFormat)
-  {
-    if (*this->predefinedPixelFormat == PredefinedPixelFormat::V210)
-      return 10;
-    return 0;
-  }
-
-  return this->bitsPerSample;
-}
-
-bool PixelFormatYUV::isBigEndian() const
-{
-  if (this->predefinedPixelFormat)
-  {
-    if (*this->predefinedPixelFormat == PredefinedPixelFormat::V210)
-      return false;
-    return false;
-  }
-
-  return this->bigEndian;
-}
-
-bool PixelFormatYUV::isPlanar() const
-{
-  if (this->predefinedPixelFormat)
-  {
-    if (*this->predefinedPixelFormat == PredefinedPixelFormat::V210)
-      return false;
-    return false;
-  }
-
-  return this->planar;
+  return std::visit(
+    [](const auto &format) -> int
+    {
+      using T = std::decay_t<decltype(format)>;
+      if constexpr (std::is_same_v<T, PredefinedPixelFormat>)
+      {
+        if (format == PredefinedPixelFormat::V210)
+          return 10;
+        return 0;
+      }
+      else
+        return format.bitsPerSample;
+    },
+    this->format);
 }
 
 bool PixelFormatYUV::hasAlpha() const
 {
-  if (this->predefinedPixelFormat)
-  {
-    if (*this->predefinedPixelFormat == PredefinedPixelFormat::V210)
-      return false;
-    return false;
-  }
+  return std::visit(
+    [](const auto &format) -> bool
+    {
+      using T = std::decay_t<decltype(format)>;
+      if constexpr (std::is_same_v<T, PredefinedPixelFormat>)
+      {
+        if (format == PredefinedPixelFormat::V210)
+          return false;
+        return false;
+      }
+      else if constexpr (std::is_same_v<T, PlanarPixelFormat>)
+        return format.planeOrder == PlaneOrder::YUVA || format.planeOrder == PlaneOrder::YVUA;
+      else if constexpr (std::is_same_v<T, PackedPixelFormat>)
+        return format.packingOrder == PackingOrder::AYUV ||
+               format.packingOrder == PackingOrder::YUVA ||
+               format.packingOrder == PackingOrder::VUYA;
+      else
+        return false;
+    },
+    this->format);
+}
 
-  if (this->planar)
-    return this->planeOrder == PlaneOrder::YUVA || this->planeOrder == PlaneOrder::YVUA;
-  else
-    return this->packingOrder == PackingOrder::AYUV || this->packingOrder == PackingOrder::YUVA ||
-           this->packingOrder == PackingOrder::VUYA;
+Endianness PixelFormatYUV::getEndianness() const
+{
+  return std::visit(
+    [](const auto &format) -> Endianness
+    {
+      using T = std::decay_t<decltype(format)>;
+      if constexpr (std::is_same_v<T, PredefinedPixelFormat>)
+      {
+        if (format == PredefinedPixelFormat::V210)
+          return Endianness::Little;
+        return Endianness::Little;
+      }
+      else
+        return format.endianness;
+    },
+    this->format);
 }
 
 Offset PixelFormatYUV::getChromaOffset() const
 {
-  if (this->predefinedPixelFormat)
-  {
-    if (*this->predefinedPixelFormat == PredefinedPixelFormat::V210)
-      return Offset({0, 0});
-    return Offset({0, 0});
-  }
-
-  return this->chromaOffset;
-}
-
-bool PixelFormatYUV::isBytePacking() const
-{
-  if (this->predefinedPixelFormat)
-  {
-    if (*this->predefinedPixelFormat == PredefinedPixelFormat::V210)
-      return true;
-    return false;
-  }
-
-  return this->bytePacking;
+  return std::visit(
+    [](const auto &format) -> Offset
+    {
+      using T = std::decay_t<decltype(format)>;
+      if constexpr (std::is_same_v<T, PredefinedPixelFormat>)
+      {
+        if (format == PredefinedPixelFormat::V210)
+          return Offset({0, 0});
+        return Offset({0, 0});
+      }
+      else
+        return format.chromaOffset;
+    },
+    this->format);
 }
 
 } // namespace video::yuv
