@@ -342,6 +342,9 @@ bool PixelFormatYUV::isValid() const
   if (std::holds_alternative<PredefinedPixelFormat>(this->format))
     return true;
 
+  if (this->getSubsampling() == Subsampling::UNKNOWN)
+    return false;
+
   if (const auto packedFormat = this->getPackedFormat())
   {
     // Check the packing mode
@@ -411,7 +414,7 @@ bool PixelFormatYUV::isValid() const
 
 int64_t PixelFormatYUV::bytesPerFrame(const Size &frameSize) const
 {
-  if (!frameSize.isValid())
+  if (!frameSize.isValid() || !this->isValid())
     return 0;
 
   if (!doesSizeMatchSubsampling(frameSize, this->getSubsampling()))
@@ -488,7 +491,7 @@ PixelFormatYUV::bytesPerFramePerComponent(const Size &frameSize) const
     switch (this->getSubsampling())
     {
     case Subsampling::YUV_444:
-      bytes.chroma = 2 * bytes.luma;
+      bytes.chroma = bytes.luma;
       break;
     case Subsampling::YUV_422:
     case Subsampling::YUV_440:

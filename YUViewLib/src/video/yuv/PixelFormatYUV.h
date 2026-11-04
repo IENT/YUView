@@ -249,7 +249,7 @@ public:
   struct BytesPerComponent
   {
     int64_t luma{};
-    int64_t chroma{};
+    int64_t chroma{}; // Per chroma component (U or V)
     int64_t alpha{};
   };
   std::optional<BytesPerComponent> bytesPerFramePerComponent(const Size &frameSize) const;
