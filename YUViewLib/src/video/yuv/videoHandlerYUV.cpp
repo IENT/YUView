@@ -2627,7 +2627,7 @@ QLayout *videoHandlerYUV::createVideoHandlerControls(bool isSizeAndFormatFixed)
     ui.yuvFormatComboBox->addItem(QString::fromStdString(format.getName()));
 
   const auto currentFormatInPresetList =
-    vectorContains(videoHandlerYUV::formatPresetList, this->srcPixelFormat);
+    contains(videoHandlerYUV::formatPresetList, this->srcPixelFormat);
   if (!currentFormatInPresetList && this->srcPixelFormat.isValid())
   {
     videoHandlerYUV::formatPresetList.push_back(this->srcPixelFormat);
@@ -2726,7 +2726,7 @@ void videoHandlerYUV::slotYUVFormatControlChanged(int selectionIndex)
     if (dialog.exec() == QDialog::Accepted && dialog.getSelectedYUVFormat().isValid())
       newFormat = dialog.getSelectedYUVFormat();
 
-    const auto isInPresetList = vectorContains(videoHandlerYUV::formatPresetList, newFormat);
+    const auto isInPresetList = contains(videoHandlerYUV::formatPresetList, newFormat);
     if (!isInPresetList)
     {
       videoHandlerYUV::formatPresetList.push_back(newFormat);
@@ -3947,7 +3947,7 @@ void videoHandlerYUV::setPixelFormatYUV(const PixelFormatYUV &newFormat, bool em
   {
     if (this->ui.created())
     {
-      const auto isInPresetList = vectorContains(videoHandlerYUV::formatPresetList, newFormat);
+      const auto isInPresetList = contains(videoHandlerYUV::formatPresetList, newFormat);
       if (!isInPresetList)
       {
         videoHandlerYUV::formatPresetList.push_back(newFormat);

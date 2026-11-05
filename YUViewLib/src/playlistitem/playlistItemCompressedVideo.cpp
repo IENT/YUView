@@ -301,7 +301,7 @@ playlistItemCompressedVideo::playlistItemCompressedVideo(const QString &compress
   else
     this->possibleDecoders = {DecoderEngine::FFMpeg};
 
-  if (decoder != DecoderEngine::Invalid && vectorContains(possibleDecoders, decoder))
+  if (decoder != DecoderEngine::Invalid && contains(possibleDecoders, decoder))
   {
     this->decoderEngine = decoder;
   }
@@ -325,16 +325,16 @@ playlistItemCompressedVideo::playlistItemCompressedVideo(const QString &compress
       auto defaultDecoder = DecoderEngineMapper.getValue(
         settings.value(defaultDecSetting, -1).toString().toStdString());
       if (!defaultDecSetting.isEmpty() && defaultDecoder &&
-          vectorContains(possibleDecoders, *defaultDecoder))
+          contains(possibleDecoders, *defaultDecoder))
       {
         this->decoderEngine = *defaultDecoder;
       }
       else
       {
         // Prefer libde265 over FFmpeg over others
-        if (vectorContains(possibleDecoders, DecoderEngine::Libde265))
+        if (contains(possibleDecoders, DecoderEngine::Libde265))
           this->decoderEngine = DecoderEngine::Libde265;
-        else if (vectorContains(possibleDecoders, DecoderEngine::FFMpeg))
+        else if (contains(possibleDecoders, DecoderEngine::FFMpeg))
           this->decoderEngine = DecoderEngine::FFMpeg;
         else
           this->decoderEngine = possibleDecoders[0];

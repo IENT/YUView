@@ -348,31 +348,35 @@ bool PixelFormatYUV::isValid() const
   if (const auto packedFormat = this->getPackedFormat())
   {
     // Check the packing mode
-    if ((packedFormat->packingOrder == PackingOrder::YUV ||
-         packedFormat->packingOrder == PackingOrder::YVU ||
-         packedFormat->packingOrder == PackingOrder::AYUV ||
-         packedFormat->packingOrder == PackingOrder::YUVA ||
-         packedFormat->packingOrder == PackingOrder::VUYA) &&
-        packedFormat->subsampling != Subsampling::YUV_444)
-      return false;
-    if ((packedFormat->packingOrder == PackingOrder::UYVY ||
-         packedFormat->packingOrder == PackingOrder::VYUY ||
-         packedFormat->packingOrder == PackingOrder::YUYV ||
-         packedFormat->packingOrder == PackingOrder::YVYU) &&
-        packedFormat->subsampling != Subsampling::YUV_422)
-      return false;
     if (packedFormat->packingOrder == PackingOrder::UNKNOWN)
       return false;
+
+    const auto packingsSupported444 = {PackingOrder::YUV,
+                                       PackingOrder::YVU,
+                                       PackingOrder::AYUV,
+                                       PackingOrder::YUVA,
+                                       PackingOrder::VUYA};
+    if (contains(packingsSupported444, packedFormat->packingOrder) &&
+        packedFormat->subsampling != Subsampling::YUV_444)
+      return false;
+
+    const auto packingsSupported422 = {
+      PackingOrder::UYVY, PackingOrder::VYUY, PackingOrder::YUYV, PackingOrder::YVYU};
+    if (contains(packingsSupported422, packedFormat->packingOrder) &&
+        packedFormat->subsampling != Subsampling::YUV_422)
+      return false;
+
     /*if ((packedFormat->packingOrder == Packing_YYYYUV || packedFormat->packingOrder ==
       Packing_YYUYYV || packedFormat->packingOrder == Packing_UYYVYY ||
       packedFormat->packingOrder == Packing_VYYUYY) && packedFormat->subsampling ==
       Subsampling::YUV_420) return false;*/
-    if (packedFormat->subsampling == Subsampling::YUV_420 ||
-        packedFormat->subsampling == Subsampling::YUV_440 ||
-        packedFormat->subsampling == Subsampling::YUV_410 ||
-        packedFormat->subsampling == Subsampling::YUV_411 ||
-        packedFormat->subsampling == Subsampling::YUV_400)
-      // No support for packed formats with this subsampling (yet)
+
+    const auto notSupportedSubsamplings = {Subsampling::YUV_420,
+                                           Subsampling::YUV_440,
+                                           Subsampling::YUV_410,
+                                           Subsampling::YUV_411,
+                                           Subsampling::YUV_400};
+    if (contains(notSupportedSubsamplings, packedFormat->subsampling))
       return false;
   }
 
