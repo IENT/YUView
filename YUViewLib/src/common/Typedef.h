@@ -157,10 +157,9 @@ std::optional<std::size_t> vectorIndexOf(const std::vector<T> &vec, const T &ite
   return static_cast<std::size_t>(std::distance(vec.begin(), it));
 }
 
-template <typename T> int vectorContains(const std::vector<T> &vec, const T &item)
+template <class Container, class T> inline bool contains(Container container, const T &value)
 {
-  auto it = std::find(vec.begin(), vec.end(), item);
-  return it != vec.end();
+  return std::find(container.begin(), container.end(), value) != container.end();
 }
 
 typedef std::vector<unsigned char> ByteVector;

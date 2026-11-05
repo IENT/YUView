@@ -228,211 +228,184 @@ TEST(PixelFormatYUVTest, testPYUVFormat)
   }
 }
 
-TEST(PixelFormatYUVTest, testBytesPerFrame_validPixelFormat_shouldReturnCorrectNumberOfBytes)
+void checkValidBytesPerFrame(const PixelFormatYUV                    &format,
+                             const Size                              &frameSize,
+                             const PixelFormatYUV::BytesPerComponent &expectedBytes)
+{
+  EXPECT_TRUE(format.isValid());
+  EXPECT_TRUE(frameSize.isValid());
+
+  const auto bytesPerFrame = format.bytesPerFramePerComponent(frameSize);
+  EXPECT_TRUE(bytesPerFrame.has_value());
+  EXPECT_EQ(bytesPerFrame->luma, expectedBytes.luma);
+  EXPECT_EQ(bytesPerFrame->chroma, expectedBytes.chroma);
+  EXPECT_EQ(bytesPerFrame->alpha, expectedBytes.alpha);
+
+  const auto totalBytes = format.bytesPerFrame(frameSize);
+  EXPECT_EQ(totalBytes, expectedBytes.luma + 2 * expectedBytes.chroma + expectedBytes.alpha);
+}
+
+void checkValidBytesPerFrameWithoutValuesPerComponent(const PixelFormatYUV &format,
+                                                      const Size           &frameSize,
+                                                      const int            &expectedBytesPerFrame)
+{
+  EXPECT_TRUE(format.isValid());
+  EXPECT_TRUE(frameSize.isValid());
+
+  EXPECT_FALSE(format.bytesPerFramePerComponent(frameSize).has_value())
+    << "Format " << format.getName() << " returned bytes per component for size " << frameSize.width
+    << "x" << frameSize.height;
+  EXPECT_EQ(format.bytesPerFrame(frameSize), expectedBytesPerFrame)
+    << "Format " << format.getName() << " returned wrong bytes per frame for size "
+    << frameSize.width << "x" << frameSize.height;
+}
+
+void checkInvalidBytesPerFrame(const PixelFormatYUV &format, const Size &frameSize)
+{
+  EXPECT_FALSE(format.bytesPerFramePerComponent(frameSize).has_value())
+    << "Format " << format.getName() << " returned bytes per component for size " << frameSize.width
+    << "x" << frameSize.height;
+  EXPECT_EQ(format.bytesPerFrame(frameSize), 0)
+    << "Format " << format.getName() << " returned wrong bytes per frame for size "
+    << frameSize.width << "x" << frameSize.height;
+}
+
+TEST(PixelFormatYUVTest, testBytesPerFrame_validPlanarPixelFormat_shouldReturnCorrectNumberOfBytes)
 {
   const Size size{16, 16};
 
-  auto getBytes = [&size](const Subsampling &subsampling,
-                          const int          bitsPerSample,
-                          const PlaneOrder   planeOrder = PlaneOrder::YUV)
-  {
-    return PixelFormatYUV(PlanarPixelFormat({.subsampling   = subsampling,
-                                             .bitsPerSample = bitsPerSample,
-                                             .planeOrder    = planeOrder}))
-      .bytesPerFrame(size);
-  };
+  for (const auto subsampling : SubsamplingMapper.getValues())
+    for (const auto planeOrder : PlaneOrderMapper.getValues())
+      for (auto bps = 8; bps <= 16; bps++)
+      {
+        const auto pixelFormat = PixelFormatYUV(PlanarPixelFormat(
+          {.subsampling = subsampling, .bitsPerSample = bps, .planeOrder = planeOrder}));
 
-  EXPECT_EQ(getBytes(Subsampling::YUV_444, 8), 768);
-  EXPECT_EQ(getBytes(Subsampling::YUV_444, 9), 1536);
-  EXPECT_EQ(getBytes(Subsampling::YUV_444, 10), 1536);
-  EXPECT_EQ(getBytes(Subsampling::YUV_444, 12), 1536);
-  EXPECT_EQ(getBytes(Subsampling::YUV_444, 14), 1536);
-  EXPECT_EQ(getBytes(Subsampling::YUV_444, 16), 1536);
-  EXPECT_EQ(getBytes(Subsampling::YUV_444, 8, PlaneOrder::YUVA), 1024);
-  EXPECT_EQ(getBytes(Subsampling::YUV_444, 9, PlaneOrder::YUVA), 2048);
-  EXPECT_EQ(getBytes(Subsampling::YUV_444, 10, PlaneOrder::YUVA), 2048);
-  EXPECT_EQ(getBytes(Subsampling::YUV_444, 12, PlaneOrder::YUVA), 2048);
-  EXPECT_EQ(getBytes(Subsampling::YUV_444, 14, PlaneOrder::YUVA), 2048);
-  EXPECT_EQ(getBytes(Subsampling::YUV_444, 16, PlaneOrder::YUVA), 2048);
+        const auto nrBytesPerSample = (bps > 8) ? 2 : 1;
 
-  EXPECT_EQ(getBytes(Subsampling::YUV_422, 8), 512);
-  EXPECT_EQ(getBytes(Subsampling::YUV_422, 9), 1024);
-  EXPECT_EQ(getBytes(Subsampling::YUV_422, 10), 1024);
-  EXPECT_EQ(getBytes(Subsampling::YUV_422, 12), 1024);
-  EXPECT_EQ(getBytes(Subsampling::YUV_422, 14), 1024);
-  EXPECT_EQ(getBytes(Subsampling::YUV_422, 16), 1024);
-  EXPECT_EQ(getBytes(Subsampling::YUV_422, 8, PlaneOrder::YUVA), 768);
-  EXPECT_EQ(getBytes(Subsampling::YUV_422, 9, PlaneOrder::YUVA), 1536);
-  EXPECT_EQ(getBytes(Subsampling::YUV_422, 10, PlaneOrder::YUVA), 1536);
-  EXPECT_EQ(getBytes(Subsampling::YUV_422, 12, PlaneOrder::YUVA), 1536);
-  EXPECT_EQ(getBytes(Subsampling::YUV_422, 14, PlaneOrder::YUVA), 1536);
-  EXPECT_EQ(getBytes(Subsampling::YUV_422, 16, PlaneOrder::YUVA), 1536);
+        PixelFormatYUV::BytesPerComponent expectedBytes;
+        expectedBytes.luma = size.area() * nrBytesPerSample;
+        if (subsampling != Subsampling::YUV_400)
+          expectedBytes.chroma = pixelFormat.getChromaSize(size)->area() * nrBytesPerSample;
+        if (pixelFormat.hasAlpha())
+          expectedBytes.alpha = size.area() * nrBytesPerSample;
 
-  EXPECT_EQ(getBytes(Subsampling::YUV_420, 8), 384);
-  EXPECT_EQ(getBytes(Subsampling::YUV_420, 9), 768);
-  EXPECT_EQ(getBytes(Subsampling::YUV_420, 10), 768);
-  EXPECT_EQ(getBytes(Subsampling::YUV_420, 12), 768);
-  EXPECT_EQ(getBytes(Subsampling::YUV_420, 14), 768);
-  EXPECT_EQ(getBytes(Subsampling::YUV_420, 16), 768);
-  EXPECT_EQ(getBytes(Subsampling::YUV_420, 8, PlaneOrder::YUVA), 640);
-  EXPECT_EQ(getBytes(Subsampling::YUV_420, 9, PlaneOrder::YUVA), 1280);
-  EXPECT_EQ(getBytes(Subsampling::YUV_420, 10, PlaneOrder::YUVA), 1280);
-  EXPECT_EQ(getBytes(Subsampling::YUV_420, 12, PlaneOrder::YUVA), 1280);
-  EXPECT_EQ(getBytes(Subsampling::YUV_420, 14, PlaneOrder::YUVA), 1280);
-  EXPECT_EQ(getBytes(Subsampling::YUV_420, 16, PlaneOrder::YUVA), 1280);
+        checkValidBytesPerFrame(pixelFormat, size, expectedBytes);
+      }
+}
 
-  EXPECT_EQ(getBytes(Subsampling::YUV_440, 8), 512);
-  EXPECT_EQ(getBytes(Subsampling::YUV_440, 9), 1024);
-  EXPECT_EQ(getBytes(Subsampling::YUV_440, 10), 1024);
-  EXPECT_EQ(getBytes(Subsampling::YUV_440, 12), 1024);
-  EXPECT_EQ(getBytes(Subsampling::YUV_440, 14), 1024);
-  EXPECT_EQ(getBytes(Subsampling::YUV_440, 16), 1024);
-  EXPECT_EQ(getBytes(Subsampling::YUV_440, 8, PlaneOrder::YUVA), 768);
-  EXPECT_EQ(getBytes(Subsampling::YUV_440, 9, PlaneOrder::YUVA), 1536);
-  EXPECT_EQ(getBytes(Subsampling::YUV_440, 10, PlaneOrder::YUVA), 1536);
-  EXPECT_EQ(getBytes(Subsampling::YUV_440, 12, PlaneOrder::YUVA), 1536);
-  EXPECT_EQ(getBytes(Subsampling::YUV_440, 14, PlaneOrder::YUVA), 1536);
-  EXPECT_EQ(getBytes(Subsampling::YUV_440, 16, PlaneOrder::YUVA), 1536);
+TEST(PixelFormatYUVTest, testBytesPerFrame_validPackedPixelFormat_shouldReturnCorrectNumberOfBytes)
+{
+  const Size size{16, 16};
 
-  EXPECT_EQ(getBytes(Subsampling::YUV_410, 8), 288);
-  EXPECT_EQ(getBytes(Subsampling::YUV_410, 9), 576);
-  EXPECT_EQ(getBytes(Subsampling::YUV_410, 10), 576);
-  EXPECT_EQ(getBytes(Subsampling::YUV_410, 12), 576);
-  EXPECT_EQ(getBytes(Subsampling::YUV_410, 14), 576);
-  EXPECT_EQ(getBytes(Subsampling::YUV_410, 16), 576);
-  EXPECT_EQ(getBytes(Subsampling::YUV_410, 8, PlaneOrder::YUVA), 544);
-  EXPECT_EQ(getBytes(Subsampling::YUV_410, 9, PlaneOrder::YUVA), 1088);
-  EXPECT_EQ(getBytes(Subsampling::YUV_410, 10, PlaneOrder::YUVA), 1088);
-  EXPECT_EQ(getBytes(Subsampling::YUV_410, 12, PlaneOrder::YUVA), 1088);
-  EXPECT_EQ(getBytes(Subsampling::YUV_410, 14, PlaneOrder::YUVA), 1088);
-  EXPECT_EQ(getBytes(Subsampling::YUV_410, 16, PlaneOrder::YUVA), 1088);
+  for (const auto subsampling : SubsamplingMapper.getValues())
+    for (const auto packingOrder : PackingOrderMapper.getValues())
+      for (auto bps = 8; bps <= 16; bps++)
+      {
+        const auto pixelFormat = PixelFormatYUV(PackedPixelFormat(
+          {.subsampling = subsampling, .bitsPerSample = bps, .packingOrder = packingOrder}));
 
-  EXPECT_EQ(getBytes(Subsampling::YUV_411, 8), 384);
-  EXPECT_EQ(getBytes(Subsampling::YUV_411, 9), 768);
-  EXPECT_EQ(getBytes(Subsampling::YUV_411, 10), 768);
-  EXPECT_EQ(getBytes(Subsampling::YUV_411, 12), 768);
-  EXPECT_EQ(getBytes(Subsampling::YUV_411, 14), 768);
-  EXPECT_EQ(getBytes(Subsampling::YUV_411, 16), 768);
-  EXPECT_EQ(getBytes(Subsampling::YUV_411, 8, PlaneOrder::YUVA), 640);
-  EXPECT_EQ(getBytes(Subsampling::YUV_411, 9, PlaneOrder::YUVA), 1280);
-  EXPECT_EQ(getBytes(Subsampling::YUV_411, 10, PlaneOrder::YUVA), 1280);
-  EXPECT_EQ(getBytes(Subsampling::YUV_411, 12, PlaneOrder::YUVA), 1280);
-  EXPECT_EQ(getBytes(Subsampling::YUV_411, 14, PlaneOrder::YUVA), 1280);
-  EXPECT_EQ(getBytes(Subsampling::YUV_411, 16, PlaneOrder::YUVA), 1280);
+        const auto nrBytesPerSample = (bps > 8) ? 2 : 1;
 
-  EXPECT_EQ(getBytes(Subsampling::YUV_400, 8), 256);
-  EXPECT_EQ(getBytes(Subsampling::YUV_400, 9), 512);
-  EXPECT_EQ(getBytes(Subsampling::YUV_400, 10), 512);
-  EXPECT_EQ(getBytes(Subsampling::YUV_400, 12), 512);
-  EXPECT_EQ(getBytes(Subsampling::YUV_400, 14), 512);
-  EXPECT_EQ(getBytes(Subsampling::YUV_400, 16), 512);
-  EXPECT_EQ(getBytes(Subsampling::YUV_400, 8, PlaneOrder::YUVA), 512);
-  EXPECT_EQ(getBytes(Subsampling::YUV_400, 9, PlaneOrder::YUVA), 1024);
-  EXPECT_EQ(getBytes(Subsampling::YUV_400, 10, PlaneOrder::YUVA), 1024);
-  EXPECT_EQ(getBytes(Subsampling::YUV_400, 12, PlaneOrder::YUVA), 1024);
-  EXPECT_EQ(getBytes(Subsampling::YUV_400, 14, PlaneOrder::YUVA), 1024);
-  EXPECT_EQ(getBytes(Subsampling::YUV_400, 16, PlaneOrder::YUVA), 1024);
+        if (!pixelFormat.isValid())
+          checkInvalidBytesPerFrame(pixelFormat, size);
+        else
+        {
+          PixelFormatYUV::BytesPerComponent expectedBytes;
+          expectedBytes.luma = size.area() * nrBytesPerSample;
+          if (subsampling != Subsampling::YUV_400)
+            expectedBytes.chroma = pixelFormat.getChromaSize(size)->area() * nrBytesPerSample;
+          if (pixelFormat.hasAlpha())
+            expectedBytes.alpha = size.area() * nrBytesPerSample;
 
-  auto getBytesBytePacking =
-    [](const Subsampling &subsampling, const int bitsPerSample, const Size &frameSize)
-  {
-    return PixelFormatYUV(
-             PlanarPixelFormat(
-               {.subsampling = subsampling, .bitsPerSample = bitsPerSample, .bytePacking = true}))
-      .bytesPerFrame(frameSize);
-  };
+          checkValidBytesPerFrame(pixelFormat, size, expectedBytes);
+        }
+      }
+}
 
-  EXPECT_EQ(getBytesBytePacking(Subsampling::YUV_420, 10, size), 480);
-  EXPECT_EQ(getBytesBytePacking(Subsampling::YUV_420, 12, size), 576);
-  EXPECT_EQ(getBytesBytePacking(Subsampling::YUV_420, 14, size), 672);
+TEST(PixelFormatYUVTest, testBytesPerFrame_validPYUVPixelFormat_shouldReturnCorrectNumberOfBytes)
+{
   for (const auto bitDepth : {10, 12, 14})
     for (int width = 16; width < 32; width++)
       for (int height = 16; height < 32; height++)
       {
         // The condition is, that the number of samples (wxh) per plane should be a multiple
         // of the 4/8 for YUV 4:2:0.
-        const auto nrSamples              = width * height;
+        const Size lumaSize(width, height);
         const auto isSizeOkForSubsampling = (width % 2 == 0 && height % 2 == 0);
         const auto doesSizeWorkForPYUV =
-          ((bitDepth == 10 || bitDepth == 14) && nrSamples % 16 == 0) ||
-          (bitDepth == 12 && nrSamples % 8 == 0);
+          ((bitDepth == 10 || bitDepth == 14) && lumaSize.area() % 16 == 0) ||
+          (bitDepth == 12 && lumaSize.area() % 8 == 0);
+
+        const auto pixelFormat =
+          PixelFormatYUV(PlanarPixelFormat({.bitsPerSample = bitDepth, .bytePacking = true}));
+
         if (isSizeOkForSubsampling && doesSizeWorkForPYUV)
-          EXPECT_NE(getBytesBytePacking(Subsampling::YUV_420, bitDepth, Size{width, height}), 0)
-            << "Should be valid for width: " << width << " height: " << height
-            << " bitDepth: " << bitDepth;
+        {
+          PixelFormatYUV::BytesPerComponent expectedBytes;
+          expectedBytes.luma   = ((bitDepth == 10) ? lumaSize.area() * 5 / 4
+                                                   : ((bitDepth == 12) ? lumaSize.area() * 3 / 2
+                                                                       : lumaSize.area() * 7 / 4));
+          expectedBytes.chroma = expectedBytes.luma / 4;
+
+          checkValidBytesPerFrame(pixelFormat, lumaSize, expectedBytes);
+        }
         else
-          EXPECT_EQ(getBytesBytePacking(Subsampling::YUV_420, bitDepth, Size{width, height}), 0)
-            << "Should be invalid for width: " << width << " height: " << height
-            << " bitDepth: " << bitDepth;
+          checkInvalidBytesPerFrame(pixelFormat, lumaSize);
       }
+}
 
-  auto getBytesPacked = [&size](const Subsampling &subsampling,
-                                const int          bitsPerSample,
-                                const PackingOrder packingOrder)
+TEST(
+  PixelFormatYUVTest,
+  testBytesPerFrame_predefinedPixelFormatV210_shouldReturnCorrectNumberOfBytesButNoValuesPerComponent)
+{
+  for (int width = 48; width < 100; width++)
   {
-    return PixelFormatYUV(PackedPixelFormat({.subsampling   = subsampling,
-                                             .bitsPerSample = bitsPerSample,
-                                             .packingOrder  = packingOrder}))
-      .bytesPerFrame(size);
-  };
+    int nrExpectedBytesPerFrame = 256;
+    if (width > 48)
+      nrExpectedBytesPerFrame = 512;
+    if (width > 96)
+      nrExpectedBytesPerFrame = 768;
 
-  EXPECT_EQ(getBytesPacked(Subsampling::YUV_444, 8, PackingOrder::YUV), 768);
-  EXPECT_EQ(getBytesPacked(Subsampling::YUV_444, 9, PackingOrder::YUV), 1536);
-  EXPECT_EQ(getBytesPacked(Subsampling::YUV_444, 10, PackingOrder::YUV), 1536);
-  EXPECT_EQ(getBytesPacked(Subsampling::YUV_444, 12, PackingOrder::YUV), 1536);
-  EXPECT_EQ(getBytesPacked(Subsampling::YUV_444, 14, PackingOrder::YUV), 1536);
-  EXPECT_EQ(getBytesPacked(Subsampling::YUV_444, 16, PackingOrder::YUV), 1536);
-  EXPECT_EQ(getBytesPacked(Subsampling::YUV_444, 8, PackingOrder::YUVA), 1024);
-  EXPECT_EQ(getBytesPacked(Subsampling::YUV_444, 9, PackingOrder::YUVA), 2048);
-  EXPECT_EQ(getBytesPacked(Subsampling::YUV_444, 10, PackingOrder::YUVA), 2048);
-  EXPECT_EQ(getBytesPacked(Subsampling::YUV_444, 12, PackingOrder::YUVA), 2048);
-  EXPECT_EQ(getBytesPacked(Subsampling::YUV_444, 14, PackingOrder::YUVA), 2048);
-  EXPECT_EQ(getBytesPacked(Subsampling::YUV_444, 16, PackingOrder::YUVA), 2048);
+    checkValidBytesPerFrameWithoutValuesPerComponent(
+      PredefinedPixelFormat::V210, Size{width, 2}, nrExpectedBytesPerFrame);
+  }
+}
 
-  EXPECT_EQ(getBytesPacked(Subsampling::YUV_422, 8, PackingOrder::UYVY), 512);
-  EXPECT_EQ(getBytesPacked(Subsampling::YUV_422, 9, PackingOrder::UYVY), 1024);
-  EXPECT_EQ(getBytesPacked(Subsampling::YUV_422, 10, PackingOrder::UYVY), 1024);
-  EXPECT_EQ(getBytesPacked(Subsampling::YUV_422, 12, PackingOrder::UYVY), 1024);
-  EXPECT_EQ(getBytesPacked(Subsampling::YUV_422, 14, PackingOrder::UYVY), 1024);
-  EXPECT_EQ(getBytesPacked(Subsampling::YUV_422, 16, PackingOrder::UYVY), 1024);
-
-  EXPECT_EQ(PixelFormatYUV(PredefinedPixelFormat::V210).bytesPerFrame(Size{48, 2}), 256);
-  EXPECT_EQ(PixelFormatYUV(PredefinedPixelFormat::V210).bytesPerFrame(Size{49, 2}), 512);
-  EXPECT_EQ(PixelFormatYUV(PredefinedPixelFormat::V210).bytesPerFrame(Size{1, 1}), 0);
-
-  EXPECT_EQ(PixelFormatYUV(PlanarPixelFormat{}).bytesPerFrame(Size{}), 0);
-  EXPECT_EQ(PixelFormatYUV(PlanarPixelFormat{}).bytesPerFrame(Size{Size::MAX_DIMENSION, 1}), 0);
-  EXPECT_EQ(
-    PixelFormatYUV(PackedPixelFormat({.subsampling = Subsampling::YUV_420})).bytesPerFrame(size),
-    0);
-  EXPECT_EQ(
-    PixelFormatYUV(PlanarPixelFormat({.subsampling = Subsampling::UNKNOWN})).bytesPerFrame(size),
-    0);
+TEST(PixelFormatYUVTest, testBytesPerFrame_predefinedPixelFormatV210InvalidSize_shouldReturnNothing)
+{
+  checkInvalidBytesPerFrame(PredefinedPixelFormat::V210, Size{1, 1});
 }
 
 TEST(PixelFormatYUVTest, testBytesPerFrame_invalidPixelFormat_shouldReturnZero)
 {
   const Size size{16, 16};
 
+  const Size invalidSize;
+  checkInvalidBytesPerFrame(PlanarPixelFormat(), invalidSize);
+
   const auto unknownSubsampling =
     PixelFormatYUV(PlanarPixelFormat({.subsampling = Subsampling::UNKNOWN}));
   EXPECT_FALSE(unknownSubsampling.isValid());
-  EXPECT_EQ(unknownSubsampling.bytesPerFrame(size), 0);
+  checkInvalidBytesPerFrame(unknownSubsampling, size);
 
   const auto bytePackedUnknownSubsampling = PixelFormatYUV(PlanarPixelFormat(
     {.subsampling = Subsampling::UNKNOWN, .bitsPerSample = 10, .bytePacking = true}));
   EXPECT_FALSE(bytePackedUnknownSubsampling.isValid());
-  EXPECT_EQ(bytePackedUnknownSubsampling.bytesPerFrame(size), 0);
+  checkInvalidBytesPerFrame(bytePackedUnknownSubsampling, size);
+
+  const auto packed420YUV = PixelFormatYUV(PackedPixelFormat());
+  checkInvalidBytesPerFrame(packed420YUV, Size{16, 16});
 
   const auto bytePacked444 = PixelFormatYUV(PlanarPixelFormat(
     {.subsampling = Subsampling::YUV_444, .bitsPerSample = 10, .bytePacking = true}));
   EXPECT_FALSE(bytePacked444.isValid());
-  EXPECT_EQ(bytePacked444.bytesPerFrame(size), 0);
+  checkInvalidBytesPerFrame(bytePacked444, size);
 
   const auto bytePackedUnsupportedBitDepth = PixelFormatYUV(PlanarPixelFormat(
     {.subsampling = Subsampling::YUV_420, .bitsPerSample = 8, .bytePacking = true}));
   EXPECT_FALSE(bytePackedUnsupportedBitDepth.isValid());
-  EXPECT_EQ(bytePackedUnsupportedBitDepth.bytesPerFrame(size), 0);
+  checkInvalidBytesPerFrame(bytePackedUnsupportedBitDepth, size);
 
   const auto bytePackedWrongPlaneOrder =
     PixelFormatYUV(PlanarPixelFormat({.subsampling   = Subsampling::YUV_420,
@@ -440,7 +413,7 @@ TEST(PixelFormatYUVTest, testBytesPerFrame_invalidPixelFormat_shouldReturnZero)
                                       .planeOrder    = PlaneOrder::YVU,
                                       .bytePacking   = true}));
   EXPECT_FALSE(bytePackedWrongPlaneOrder.isValid());
-  EXPECT_EQ(bytePackedWrongPlaneOrder.bytesPerFrame(size), 0);
+  checkInvalidBytesPerFrame(bytePackedWrongPlaneOrder, size);
 
   const auto bytePackedBigEndian =
     PixelFormatYUV(PlanarPixelFormat({.subsampling   = Subsampling::YUV_420,
@@ -448,7 +421,7 @@ TEST(PixelFormatYUVTest, testBytesPerFrame_invalidPixelFormat_shouldReturnZero)
                                       .endianness    = Endianness::Big,
                                       .bytePacking   = true}));
   EXPECT_FALSE(bytePackedBigEndian.isValid());
-  EXPECT_EQ(bytePackedBigEndian.bytesPerFrame(size), 0);
+  checkInvalidBytesPerFrame(bytePackedBigEndian, size);
 
   const auto bytePackedInterleaved =
     PixelFormatYUV(PlanarPixelFormat({.subsampling         = Subsampling::YUV_420,
@@ -456,22 +429,22 @@ TEST(PixelFormatYUVTest, testBytesPerFrame_invalidPixelFormat_shouldReturnZero)
                                       .uvPlanesInterleaved = true,
                                       .bytePacking         = true}));
   EXPECT_FALSE(bytePackedInterleaved.isValid());
-  EXPECT_EQ(bytePackedInterleaved.bytesPerFrame(size), 0);
+  checkInvalidBytesPerFrame(bytePackedInterleaved, size);
 
   const auto bytePackedInvalidWidth = PixelFormatYUV(PlanarPixelFormat(
     {.subsampling = Subsampling::YUV_420, .bitsPerSample = 10, .bytePacking = true}));
   EXPECT_TRUE(bytePackedInvalidWidth.isValid());
-  EXPECT_EQ(bytePackedInvalidWidth.bytesPerFrame(Size{15, 16}), 0);
+  checkInvalidBytesPerFrame(bytePackedInvalidWidth, Size{15, 16});
 
   const auto bytePackedInvalidHeight = PixelFormatYUV(PlanarPixelFormat(
     {.subsampling = Subsampling::YUV_420, .bitsPerSample = 10, .bytePacking = true}));
   EXPECT_TRUE(bytePackedInvalidHeight.isValid());
-  EXPECT_EQ(bytePackedInvalidHeight.bytesPerFrame(Size{16, 15}), 0);
+  checkInvalidBytesPerFrame(bytePackedInvalidHeight, Size{16, 15});
 
   const auto packedByteFormat =
     PixelFormatYUV(PackedPixelFormat({.subsampling = Subsampling::YUV_420, .bytePacking = true}));
   EXPECT_FALSE(packedByteFormat.isValid());
-  EXPECT_EQ(packedByteFormat.bytesPerFrame(size), 0);
+  checkInvalidBytesPerFrame(packedByteFormat, size);
 }
 
 } // namespace video::yuv::test

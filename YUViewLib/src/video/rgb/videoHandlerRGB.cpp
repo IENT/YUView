@@ -274,7 +274,7 @@ QLayout *videoHandlerRGB::createVideoHandlerControls(bool isSizeFixed)
       ui.rgbFormatComboBox->addItem(QString::fromStdString(*name));
 
   const auto currentFormatInPresetList =
-    vectorContains(videoHandlerRGB::formatPresetList, this->srcPixelFormat);
+    contains(videoHandlerRGB::formatPresetList, this->srcPixelFormat);
   if (!currentFormatInPresetList && this->srcPixelFormat.isValid())
   {
     videoHandlerRGB::formatPresetList.push_back(this->srcPixelFormat);
@@ -427,7 +427,7 @@ void videoHandlerRGB::slotRGBFormatControlChanged(int selectionIndex)
       this->srcPixelFormat = dialog.getSelectedRGBFormat();
 
     const auto isInPresetList =
-      vectorContains(videoHandlerRGB::formatPresetList, this->srcPixelFormat);
+      contains(videoHandlerRGB::formatPresetList, this->srcPixelFormat);
     if (!isInPresetList && this->srcPixelFormat.isValid())
     {
       videoHandlerRGB::formatPresetList.push_back(this->srcPixelFormat);
