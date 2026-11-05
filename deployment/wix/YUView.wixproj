@@ -3,7 +3,7 @@
     <OutputName>YUViewSetup</OutputName>
     <OutputPath>$(MSBuildProjectDirectory)\bin\$(Configuration)\</OutputPath>
     <Cultures>en-US</Cultures>
-    <ProductVersion Condition="'$(ProductVersion)' == ''">2.14.1</ProductVersion>
+    <ProductVersion Condition="'$(ProductVersion)' == ''">2.15</ProductVersion>
     <PayloadDir Condition="'$(PayloadDir)' == ''">$(MSBuildProjectDirectory)\..\..\deploy</PayloadDir>
     <DefineConstants>ProductVersion=$(ProductVersion)</DefineConstants>
   </PropertyGroup>
