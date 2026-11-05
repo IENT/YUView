@@ -19,13 +19,16 @@ on:
 jobs:
   flatpak-builder:
     name: "Flatpak"
-    runs-on: ${{ matrix.os }}
     container:
       image: ghcr.io/flathub-infra/flatpak-github-actions:kde-6.11
       options: --privileged
     strategy:
       matrix:
-        os: ["ubuntu-26.04", "ubuntu-26.04-arm"]
+        variant:
+          - arch: x86_64
+            runner: "ubuntu-26.04"
+          - arch: aarch64
+            runner: "ubuntu-26.04-arm"
       fail-fast: false
     steps:
     - uses: actions/checkout@v6
@@ -34,6 +37,7 @@ jobs:
         bundle: "YUView.flatpak"
         manifest-path: "de.rwth_aachen.ient.YUView.yaml"
         verbose: true
+        arch: ${{ matrix.variant.arch }}
     - name: Upload Release
       uses: actions/upload-release-asset@v1.0.2
       env:
