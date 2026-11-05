@@ -30,6 +30,7 @@ jobs:
           - arch: aarch64
             runner: "ubuntu-26.04-arm"
       fail-fast: false
+    runs-on: ${{ matrix.variant.runner }}
     steps:
     - uses: actions/checkout@v6
     - uses: flatpak/flatpak-github-actions/flatpak-builder@v6
