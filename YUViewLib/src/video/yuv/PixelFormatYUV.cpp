@@ -418,10 +418,8 @@ bool PixelFormatYUV::isValid() const
 
 int64_t PixelFormatYUV::bytesPerFrame(const Size &frameSize) const
 {
-  if (!frameSize.isValid() || !this->isValid())
-    return 0;
-
-  if (!doesSizeMatchSubsampling(frameSize, this->getSubsampling()))
+  if (!frameSize.isValid() || !this->isValid() ||
+      !doesSizeMatchSubsampling(frameSize, this->getSubsampling()))
     return 0;
 
   if (const auto predefinedFormat = std::get_if<PredefinedPixelFormat>(&this->format))
@@ -482,6 +480,10 @@ int64_t PixelFormatYUV::bytesPerFrame(const Size &frameSize) const
 std::optional<PixelFormatYUV::BytesPerComponent>
 PixelFormatYUV::bytesPerFramePerComponent(const Size &frameSize) const
 {
+  if (!frameSize.isValid() || !this->isValid() ||
+      !doesSizeMatchSubsampling(frameSize, this->getSubsampling()))
+    return {};
+
   PixelFormatYUV::BytesPerComponent bytes;
 
   if (!isBytePacking(this->format))
