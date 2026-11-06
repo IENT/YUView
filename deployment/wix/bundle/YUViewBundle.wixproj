@@ -4,7 +4,7 @@
     <OutputName>YUViewSetup</OutputName>
     <OutputPath>$(MSBuildProjectDirectory)\..\bin\Bundle\$(Configuration)\</OutputPath>
     <Cultures>en-US</Cultures>
-    <ProductVersion Condition="'$(ProductVersion)' == ''">2.14.1</ProductVersion>
+    <ProductVersion Condition="'$(ProductVersion)' == ''">2.15</ProductVersion>
     <DefineConstants>ProductVersion=$(ProductVersion);BuildConfiguration=$(Configuration)</DefineConstants>
   </PropertyGroup>
 

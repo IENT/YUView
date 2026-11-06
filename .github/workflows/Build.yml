@@ -191,8 +191,8 @@ jobs:
         cd ../../
         New-Item -ItemType Directory -Force deployment/wix/redist | Out-Null
         Invoke-WebRequest -Uri https://aka.ms/vs/17/release/vc_redist.$REDIST_PLATFORM.exe -OutFile deployment/wix/redist/vc_redist.exe
-        dotnet build deployment/wix/YUView.wixproj --configuration Release -p:PayloadDir="${{ github.workspace }}\deploy" -p:ProductVersion=2.14.1
-        dotnet build deployment/wix/bundle/YUViewBundle.wixproj --configuration Release -p:ProductVersion=2.14.1
+        dotnet build deployment/wix/YUView.wixproj --configuration Release -p:PayloadDir="${{ github.workspace }}\deploy" -p:ProductVersion=2.15
+        dotnet build deployment/wix/bundle/YUViewBundle.wixproj --configuration Release -p:ProductVersion=2.15
         Copy-Item deployment/wix/bin/Bundle/Release/YUViewSetup.exe ./YUViewSetup-${{ matrix.os }}.exe
     - name: Upload Artifact (Autoupdate)
       if: matrix.autoUpdate == true
