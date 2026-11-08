@@ -163,6 +163,8 @@ private:
   QPointF viewDraggingMousePosStart;
   QPointF viewDraggingStartOffset;
 
+  int wheelAngleAccumulator{0};
+
   double  pinchStartZoomFactor{1.0};
   QPointF pinchStartMoveOffset;
   QPointF pinchStartCenterPoint;

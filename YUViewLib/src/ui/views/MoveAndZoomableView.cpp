@@ -245,15 +245,25 @@ void MoveAndZoomableView::wheelEvent(QWheelEvent *event)
 
   DEBUG_VIEW("MoveAndZoomableView::wheelEvent delta " << event->angleDelta().y() << " pos " << p);
 
-  auto deltaAbs      = std::abs(event->angleDelta().y());
-  auto deltaPositive = event->angleDelta().y() > 0;
-  auto noAction      = (this->viewAction == ViewAction::NONE);
-  if (noAction && deltaAbs > 0)
+  const auto stepDelta  = event->angleDelta().y();
+  const auto noAction   = (this->viewAction == ViewAction::NONE);
+  constexpr int stepInc = 120;
+
+  if (noAction && stepDelta != 0)
   {
-    auto deltaScaled   = (double(deltaAbs) / 120);
-    auto deltaFactor   = (deltaPositive) ? 1.0 + deltaScaled : 1.0 - deltaScaled / 2;
-    auto newZoomFactor = this->zoomFactor * deltaFactor;
-    this->zoom(ZoomMode::TO_VALUE, p, newZoomFactor);
+    wheelAngleAccumulator += stepDelta;
+
+    while (wheelAngleAccumulator >= stepInc)
+    {
+      this->zoom(ZoomMode::IN, p);
+      wheelAngleAccumulator -= stepInc;
+    }
+
+    while (wheelAngleAccumulator <= -stepInc)
+    {
+      this->zoom(ZoomMode::OUT, p);
+      wheelAngleAccumulator += stepInc;
+    }
   }
 
   event->accept();
