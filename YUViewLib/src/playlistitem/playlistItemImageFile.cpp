@@ -36,6 +36,11 @@
 #include <QPainter>
 #include <QSettings>
 #include <QUrl>
+#include <QVBoxLayout>
+#include <QHBoxLayout>
+#include <QLabel>
+#include <QComboBox>
+#include <QFrame>
 
 #include <common/Formatting.h>
 #include <common/Functions.h>
@@ -56,6 +61,8 @@ playlistItemImageFile::playlistItemImageFile(const QString &filePath)
 
   this->prop.isFileSource          = true;
   this->prop.propertiesWidgetTitle = "Image Properties";
+
+  this->frame.setBitDepth(this->m_bitDepth);
 
   QFileInfo fileInfo(filePath);
   if (!fileInfo.exists() || !fileInfo.isFile())
@@ -97,6 +104,7 @@ void playlistItemImageFile::savePlaylist(QDomElement &root, const QDir &playlist
   // Append all the properties of the raw file (the path to the file. Relative and absolute)
   d.appendProperiteChild("absolutePath", fileURL.toString());
   d.appendProperiteChild("relativePath", relativePath);
+  d.appendProperiteChild("bitDepth", QString::number(this->m_bitDepth));
 
   root.appendChild(d);
 }
@@ -121,6 +129,8 @@ playlistItemImageFile::newplaylistItemImageFile(const YUViewDomElement &root,
 
   // Load the propertied of the playlistItemIndexed
   playlistItem::loadPropertiesFromPlaylist(root, newImage);
+
+  newImage->setBitDepth(root.findChildValueInt("bitDepth", 10));
 
   return newImage;
 }
@@ -230,4 +240,58 @@ void playlistItemImageFile::fileSystemWatcherFileChanged(const QString &)
   this->needToLoadImage = true;
   emit SignalItemChanged(true, RECACHE_CLEAR);
   this->updateSettings();
+}
+
+void playlistItemImageFile::setBitDepth(int depth)
+{
+  if (this->m_bitDepth != depth)
+  {
+    this->m_bitDepth = depth;
+    this->frame.setBitDepth(depth);
+    emit SignalItemChanged(true, RECACHE_CLEAR);
+  }
+}
+
+void playlistItemImageFile::createPropertiesWidget()
+{
+  Q_ASSERT_X(!this->propertiesWidget, "createPropertiesWidget", "Properties widget already exists");
+
+  this->preparePropertiesWidget(QStringLiteral("playlistItemImageFile"));
+
+  auto vAllLayout = new QVBoxLayout(this->propertiesWidget.get());
+
+  // First add the parent's controls (duration)
+  vAllLayout->addLayout(createPlaylistItemControls());
+
+  // Add a line separator
+  auto line = new QFrame;
+  line->setObjectName(QStringLiteral("line"));
+  line->setFrameShape(QFrame::HLine);
+  line->setFrameShadow(QFrame::Sunken);
+  vAllLayout->addWidget(line);
+
+  // Add the custom controls for bit depth
+  auto bitDepthLayout = new QHBoxLayout();
+  auto bitDepthLabel = new QLabel(QStringLiteral("Bit depth:"));
+  auto bitDepthComboBox = new QComboBox();
+  bitDepthComboBox->addItem(QStringLiteral("16-bit"), 16);
+  bitDepthComboBox->addItem(QStringLiteral("10-bit"), 10);
+
+  // Set the current value based on m_bitDepth
+  int currentIndex = bitDepthComboBox->findData(this->m_bitDepth);
+  if (currentIndex != -1) {
+    bitDepthComboBox->setCurrentIndex(currentIndex);
+  }
+
+  bitDepthLayout->addWidget(bitDepthLabel);
+  bitDepthLayout->addWidget(bitDepthComboBox);
+  vAllLayout->addLayout(bitDepthLayout);
+
+  // Connect the combobox signal
+  connect(bitDepthComboBox, QOverload<int>::of(&QComboBox::currentIndexChanged), [this, bitDepthComboBox](int index) {
+    int depth = bitDepthComboBox->itemData(index).toInt();
+    this->setBitDepth(depth);
+  });
+
+  vAllLayout->insertStretch(-1, 1); // Push controls up
 }
