@@ -184,14 +184,20 @@ void decoderFFmpeg::copyCurImageToBuffer()
   // AVDictionaryWrapper dict = this->ff.get_metadata(frame);
   // QStringPairList values = this->ff.getDictionary_entries(dict, "", 0);
 
-  if (this->rawFormat == video::RawFormat::YUV)
+  if (!this->bitstreamFormat)
+    return;
+
+  const auto rawFormat = this->getRawFormat().value();
+  const auto frameSize = this->bitstreamFormat->frameSize;
+
+  if (rawFormat == video::RawFormat::YUV)
   {
     // At first get how many bytes we are going to write
-    const auto pixFmt           = this->getPixelFormatYUV();
+    const auto pixFmt           = *this->getPixelFormatYUV();
     const auto nrBytesPerSample = pixFmt.getBitsPerSample() <= 8 ? 1 : 2;
-    const auto nrBytesY         = this->frameSize.area() * nrBytesPerSample;
+    const auto nrBytesY         = frameSize.area() * nrBytesPerSample;
     const auto nrBytesC =
-      getSubsampledSize(this->frameSize, pixFmt.getSubsampling()).area() * nrBytesPerSample;
+      getSubsampledSize(frameSize, pixFmt.getSubsampling()).area() * nrBytesPerSample;
     const auto nrBytes = nrBytesY + 2 * nrBytesC;
 
     // Is the output big enough?
@@ -212,8 +218,8 @@ void decoderFFmpeg::copyCurImageToBuffer()
         dst += (nrBytesY + (plane - 1) * nrBytesC);
 
       const auto subsamplingRatios = pixFmt.getSubsamplingRatios();
-      const auto dstLinesize       = this->frameSize.width / subsamplingRatios.horizontal;
-      const auto height            = this->frameSize.height / subsamplingRatios.vertical;
+      const auto dstLinesize       = frameSize.width / subsamplingRatios.horizontal;
+      const auto height            = frameSize.height / subsamplingRatios.vertical;
       for (int y = 0; y < height; y++)
       {
         memcpy(dst, src, dstLinesize);
@@ -222,26 +228,25 @@ void decoderFFmpeg::copyCurImageToBuffer()
       }
     }
   }
-  else if (this->rawFormat == video::RawFormat::RGB)
+  else if (rawFormat == video::RawFormat::RGB)
   {
-    const auto pixFmt           = this->getRGBPixelFormat();
-    const auto nrBytesPerSample = pixFmt.getBitsPerComponent() <= 8 ? 1 : 2;
-    const auto nrBytesPerComponent =
-      this->frameSize.width * this->frameSize.height * nrBytesPerSample;
-    const auto nrBytes = nrBytesPerComponent * pixFmt.getNrChannels();
+    const auto pixFmt              = *this->getRGBPixelFormat();
+    const auto nrBytesPerSample    = pixFmt.getBitsPerComponent() <= 8 ? 1 : 2;
+    const auto nrBytesPerComponent = frameSize.area() * nrBytesPerSample;
+    const auto nrBytes             = nrBytesPerComponent * pixFmt.getNrChannels();
 
     // Is the output big enough?
     if (this->currentOutputBuffer.capacity() < nrBytes)
       this->currentOutputBuffer.resize(nrBytes);
 
     auto       dst  = this->currentOutputBuffer.data();
-    const auto hDst = this->frameSize.height;
+    const auto hDst = frameSize.height;
     if (pixFmt.getDataLayout() == video::DataLayout::Planar)
     {
       // Copy line by line. The linesize of the source may be larger than the width of the frame.
       // This may be because the frame buffer is (8) byte aligned. Also the internal decoded
       // resolution may be larger than the output frame size.
-      const auto wDst = this->frameSize.width * nrBytesPerSample;
+      const auto wDst = frameSize.width * nrBytesPerSample;
       for (int i = 0; i < 3; i++)
       {
         auto       src         = frame.getData(i);
@@ -258,7 +263,7 @@ void decoderFFmpeg::copyCurImageToBuffer()
     else
     {
       // We only need to iterate over the image once and copy all values per line at once (RGB(A))
-      const auto wDst        = this->frameSize.width * nrBytesPerSample * pixFmt.getNrChannels();
+      const auto wDst        = frameSize.width * nrBytesPerSample * pixFmt.getNrChannels();
       auto       src         = frame.getData(0);
       const auto srcLinesize = frame.getLineSize(0);
       for (int y = 0; y < hDst; y++)
@@ -390,6 +395,9 @@ bool decoderFFmpeg::pushAVPacket(FFmpeg::AVPacketWrapper &pkt)
 
 bool decoderFFmpeg::decodeFrame()
 {
+  if (!this->bitstreamFormat)
+    return false;
+
   // Try to retrive a next frame from the decoder (don't copy it yet).
   auto retRecieve = this->ff.getFrameFromDecoder(decCtx, this->frame);
   if (retRecieve == 0)
@@ -400,7 +408,7 @@ bool decoderFFmpeg::decodeFrame()
                  << this->frame.getPTS() << "type" << this->frame.getPictType()
                  << (this->frame.getKeyFrame() ? "key frame" : ""));
     // Checkt the size of the retrieved image
-    if (this->frameSize != this->frame.getSize())
+    if (this->bitstreamFormat->frameSize != this->frame.getSize())
       return this->setErrorB("Received a frame of different size");
     this->currentOutputBuffer.clear();
     return true;
@@ -461,14 +469,15 @@ bool decoderFFmpeg::createDecoder(FFmpeg::AVCodecIDWrapper         codecID,
     return this->setErrorB(QStringLiteral("Unable to configure decoder from codecpar"));
 
   // Get some parameters from the decoder context
-  this->frameSize = decCtx.getSize();
+  const auto frameSize = decCtx.getSize();
 
   auto ffmpegPixFormat = this->ff.getAvPixFmtDescriptionFromAvPixelFormat(decCtx.getPixelFormat());
-  this->rawFormat      = ffmpegPixFormat.getRawFormat();
-  if (this->rawFormat == video::RawFormat::YUV)
-    this->formatYUV = ffmpegPixFormat.getPixelFormatYUV();
-  else if (this->rawFormat == video::RawFormat::RGB)
-    this->formatRGB = ffmpegPixFormat.getRGBPixelFormat();
+  if (ffmpegPixFormat.getRawFormat() == video::RawFormat::YUV)
+    this->bitstreamFormat = {frameSize, ffmpegPixFormat.getPixelFormatYUV()};
+  else if (ffmpegPixFormat.getRawFormat() == video::RawFormat::RGB)
+    this->bitstreamFormat = {frameSize, ffmpegPixFormat.getRGBPixelFormat()};
+  else
+    return this->setErrorB(QStringLiteral("Invalid raw format"));
 
   // Ask the decoder to provide motion vectors (if possible)
   FFmpeg::AVDictionaryWrapper opts;

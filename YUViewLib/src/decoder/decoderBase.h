@@ -43,6 +43,10 @@
 namespace decoder
 {
 
+using video::RawFormat;
+using video::rgb::PixelFormatRGB;
+using video::yuv::PixelFormatYUV;
+
 // Each decoder is in one of these states
 enum class DecoderState
 {
@@ -65,16 +69,16 @@ enum class DecoderEngine
 };
 
 constexpr EnumMapper<DecoderEngine, 7> DecoderEngineMapper = {
-    std::make_pair(DecoderEngine::Invalid, "Invalid"),
-    std::make_pair(DecoderEngine::Libde265, "Libde265"),
-    std::make_pair(DecoderEngine::HM, "HM"),
-    std::make_pair(DecoderEngine::VTM, "VTM"),
-    std::make_pair(DecoderEngine::VVDec, "VVDec"),
-    std::make_pair(DecoderEngine::Dav1d, "Dav1d"),
-    std::make_pair(DecoderEngine::FFMpeg, "FFMpeg")};
+  std::make_pair(DecoderEngine::Invalid, "Invalid"),
+  std::make_pair(DecoderEngine::Libde265, "Libde265"),
+  std::make_pair(DecoderEngine::HM, "HM"),
+  std::make_pair(DecoderEngine::VTM, "VTM"),
+  std::make_pair(DecoderEngine::VVDec, "VVDec"),
+  std::make_pair(DecoderEngine::Dav1d, "Dav1d"),
+  std::make_pair(DecoderEngine::FFMpeg, "FFMpeg")};
 
 const auto DecodersHEVC =
-    std::vector<DecoderEngine>({DecoderEngine::Libde265, DecoderEngine::HM, DecoderEngine::FFMpeg});
+  std::vector<DecoderEngine>({DecoderEngine::Libde265, DecoderEngine::HM, DecoderEngine::FFMpeg});
 const auto DecodersVVC = std::vector<DecoderEngine>({DecoderEngine::VVDec, DecoderEngine::VTM});
 const auto DecodersAV1 = std::vector<DecoderEngine>({DecoderEngine::FFMpeg, DecoderEngine::Dav1d});
 
@@ -110,12 +114,12 @@ public:
   // If the current frame is valid, the current frame can be retrieved using getRawFrameData.
   // Call decodeNextFrame to advance to the next frame. When the function returns false, more data
   // is probably needed.
-  virtual bool               decodeNextFrame() = 0;
-  virtual QByteArray         getRawFrameData() = 0;
-  video::RawFormat           getRawFormat() const { return this->rawFormat; }
-  video::yuv::PixelFormatYUV getPixelFormatYUV() const { return this->formatYUV; }
-  video::rgb::PixelFormatRGB getRGBPixelFormat() const { return this->formatRGB; }
-  Size                       getFrameSize() const { return this->frameSize; }
+  virtual bool                  decodeNextFrame() = 0;
+  virtual QByteArray            getRawFrameData() = 0;
+  std::optional<RawFormat>      getRawFormat() const;
+  std::optional<PixelFormatYUV> getPixelFormatYUV() const;
+  std::optional<PixelFormatRGB> getRGBPixelFormat() const;
+  std::optional<Size>           getFrameSize() const;
   // Push data to the decoder (until no more data is needed)
   // In order to make the interface generic, the pushData function accepts data only without start
   // codes
@@ -151,12 +155,15 @@ protected:
   bool isCachingDecoder; ///< Is this the caching or the interactive decoder?
 
   bool internalsSupported{false}; ///< Enable in the constructor if you support statistics
-  Size frameSize{};
 
-  // Some decoders are able to handel both YUV and RGB output
-  video::RawFormat           rawFormat{};
-  video::yuv::PixelFormatYUV formatYUV{};
-  video::rgb::PixelFormatRGB formatRGB{};
+  struct BitstreamFormat
+  {
+    Size                                         frameSize{};
+    std::variant<PixelFormatYUV, PixelFormatRGB> pixelFormat;
+  };
+  std::optional<BitstreamFormat> bitstreamFormat;
+
+  bool checkOrSetBitstreamFormat(const Size &frameSize, const PixelFormatYUV &pixelFormatYUV);
 
   // Error handling
   void setError(const QString &reason)

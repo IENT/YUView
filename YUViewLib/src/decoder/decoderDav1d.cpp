@@ -121,9 +121,6 @@ decoderDav1d::decoderDav1d(int signalID, bool cachingDecoder) : decoderBaseSingl
 {
   currentOutputBuffer.clear();
 
-  // libdav1d can only decode the YUV format
-  this->rawFormat = video::RawFormat::YUV;
-
   QSettings settings;
   settings.beginGroup("Decoders");
   loadDecoderLibrary(settings.value("libDav1dFile", "").toString());
@@ -317,8 +314,8 @@ bool decoderDav1d::decodeFrame()
   if (res >= 0)
   {
     // We did get a picture
-    // Get the resolution / yuv format from the frame
-    if (!curPicture.getFrameSize().isValid())
+    const auto frameSize = curPicture.getFrameSize();
+    if (!frameSize.isValid())
       DEBUG_DAV1D("decoderDav1d::decodeFrame got invalid frame size");
     const auto subsampling = curPicture.getSubsampling();
     if (subsampling == Subsampling::UNKNOWN)
@@ -327,22 +324,9 @@ bool decoderDav1d::decodeFrame()
     if (bitDepth < 8 || bitDepth > 16)
       DEBUG_DAV1D("decoderDav1d::decodeFrame got invalid bit depth");
 
-    if (!frameSize.isValid() && !formatYUV.isValid())
-    {
-      // Set the values
-      frameSize = curPicture.getFrameSize();
-      formatYUV = PixelFormatYUV(PlanarPixelFormat{subsampling, bitDepth});
-    }
-    else
-    {
-      // Check the values against the previously set values
-      if (frameSize != curPicture.getFrameSize())
-        return setErrorB("Received a frame of different size");
-      if (formatYUV.getSubsampling() != subsampling)
-        return setErrorB("Received a frame with different subsampling");
-      if (formatYUV.getBitsPerSample() != bitDepth)
-        return setErrorB("Received a frame with different bit depth");
-    }
+    if (!this->checkOrSetBitstreamFormat(frameSize, PlanarPixelFormat{subsampling, bitDepth}))
+      return false;
+
     DEBUG_DAV1D("decoderDav1d::decodeFrame Picture decoded - switching to retrieve frame mode");
 
     decoderState = DecoderState::RetrieveFrames;
@@ -416,8 +400,8 @@ bool decoderDav1d::pushData(QByteArray &data)
     {
       sequenceHeaderPushed = true;
 
-      auto s = Size(seq.max_width, seq.max_height);
-      if (!s.isValid())
+      auto frameSize = Size(seq.max_width, seq.max_height);
+      if (!frameSize.isValid())
         DEBUG_DAV1D("decoderDav1d::pushData got invalid frame size");
       auto subsampling = convertFromInternalSubsampling(seq.layout);
       if (subsampling == Subsampling::UNKNOWN)
@@ -427,8 +411,7 @@ bool decoderDav1d::pushData(QByteArray &data)
         DEBUG_DAV1D("decoderDav1d::pushData got invalid bit depth");
       subBlockSize = (seq.sb128 >= 1) ? 128 : 64;
 
-      this->frameSize = s;
-      this->formatYUV = PixelFormatYUV(PlanarPixelFormat{subsampling, bitDepth});
+      this->bitstreamFormat = {frameSize, PlanarPixelFormat{subsampling, bitDepth}};
     }
     else
     {
@@ -483,15 +466,15 @@ void decoderDav1d::copyImgToByteArray(const Dav1dPictureWrapper &src, QByteArray
 
   // At first get how many bytes we are going to write
   const auto nrBytesPerSample = (src.getBitDepth() > 8) ? 2 : 1;
-  const auto framSize         = src.getFrameSize();
-  auto       nrBytes          = frameSize.width * frameSize.height * nrBytesPerSample;
+  const auto frameSize        = src.getFrameSize();
+  auto       nrBytes          = frameSize.area() * nrBytesPerSample;
   auto       layout           = src.getSubsampling();
   if (layout == Subsampling::YUV_420)
     nrBytes += (frameSize.width / 2) * (frameSize.height / 2) * 2 * nrBytesPerSample;
   else if (layout == Subsampling::YUV_422)
     nrBytes += (frameSize.width / 2) * frameSize.height * 2 * nrBytesPerSample;
   else if (layout == Subsampling::YUV_444)
-    nrBytes += frameSize.width * frameSize.height * 2 * nrBytesPerSample;
+    nrBytes += frameSize.area() * 2 * nrBytesPerSample;
 
   DEBUG_DAV1D("decoderDav1d::copyImgToByteArray nrBytes %d", nrBytes);
 
@@ -504,8 +487,8 @@ void decoderDav1d::copyImgToByteArray(const Dav1dPictureWrapper &src, QByteArray
   // We can now copy from src to dst
   for (int c = 0; c < nrPlanes; c++)
   {
-    auto width  = framSize.width;
-    auto height = framSize.height;
+    auto width  = frameSize.width;
+    auto height = frameSize.height;
     if (c != 0)
     {
       if (layout == Subsampling::YUV_420 || layout == Subsampling::YUV_422)
