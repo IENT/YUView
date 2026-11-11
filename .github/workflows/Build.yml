@@ -30,6 +30,13 @@ jobs:
       run: |
         cmake -S . -B build -DYUVIEW_BUILD_TESTS=ON
         cmake --build build --parallel 4
+    - name: Download/extract test files
+      run: |
+        cd build/YUViewUnitTest
+        curl -L "${{ secrets.AZURE_BLOB_UNITTEST_PATH }}decoders/${{ matrix.os }}.zip?${{ secrets.AZURE_BLOB_TOKEN }}" -o decoders.zip
+        unzip -qa decoders.zip
+        curl -L "${{ secrets.AZURE_BLOB_UNITTEST_PATH }}/bitstreams.zip?${{ secrets.AZURE_BLOB_TOKEN }}" -o bitstreams.zip
+        unzip -qa bitstreams.zip
     - name: Run Unittests
       run: ctest --test-dir build --output-on-failure
       env:
@@ -73,7 +80,6 @@ jobs:
         sudo apt-get update
         sudo apt-get install libgl1-mesa-dev libxkbcommon-x11-0 libpcre2-16-0 '^libxcb.*-dev' libx11-xcb-dev libglu1-mesa-dev libxi-dev libxkbcommon-dev libxkbcommon-x11-dev libatspi2.0-dev libfuse2
     - name: Download libde265 and license
-      if: runner.os != 'Windows'
       env:
         LIB_EXTENSION: ${{ case(runner.os == 'Linux', 'so', 'dylib') }}
       run: | 
@@ -83,6 +89,13 @@ jobs:
       run: |
         cmake -S . -B build -DYUVIEW_BUILD_TESTS=ON -DCMAKE_PREFIX_PATH="$GITHUB_WORKSPACE/../../YUViewQt/YUViewQt/Qt" -DCMAKE_INSTALL_PREFIX=/usr
         cmake --build build --parallel 4
+    - name: Download/extract test files
+      run: |
+        cd build/YUViewUnitTest
+        curl -L "${{ secrets.AZURE_BLOB_UNITTEST_PATH }}decoders/${{ matrix.os }}.zip?${{ secrets.AZURE_BLOB_TOKEN }}" -o decoders.zip
+        unzip -qa decoders.zip
+        curl -L "${{ secrets.AZURE_BLOB_UNITTEST_PATH }}/bitstreams.zip?${{ secrets.AZURE_BLOB_TOKEN }}" -o bitstreams.zip
+        unzip -qa bitstreams.zip
     - name: Run Unittests
       run: ctest --test-dir build --output-on-failure
       env:
@@ -159,6 +172,13 @@ jobs:
         ninja --version
         cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DYUVIEW_BUILD_TESTS=ON -DCMAKE_PREFIX_PATH="${{ github.workspace }}\..\..\YUViewQt\YUViewQt\Qt"
         cmake --build build --parallel
+    - name: Download/extract test files
+      run: |
+        cd build/YUViewUnitTest
+        curl -L "${{ secrets.AZURE_BLOB_UNITTEST_PATH }}decoders/${{ matrix.os }}.zip?${{ secrets.AZURE_BLOB_TOKEN }}" -o decoders.zip
+        7z x decoders.zip
+        curl -L "${{ secrets.AZURE_BLOB_UNITTEST_PATH }}/bitstreams.zip?${{ secrets.AZURE_BLOB_TOKEN }}" -o bitstreams.zip
+        7z x bitstreams.zip
     - name: Run Unittests
       run: ctest --test-dir build --output-on-failure -V
       env:
