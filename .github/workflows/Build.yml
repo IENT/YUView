@@ -35,7 +35,7 @@ jobs:
         cd build/YUViewUnitTest
         curl -L "${{ secrets.AZURE_BLOB_UNITTEST_PATH }}decoders/${{ matrix.os }}.zip?${{ secrets.AZURE_BLOB_TOKEN }}" -o decoders.zip
         unzip -qa decoders.zip
-        curl -L "${{ secrets.AZURE_BLOB_UNITTEST_PATH }}/bitstreams.zip?${{ secrets.AZURE_BLOB_TOKEN }}" -o bitstreams.zip
+        curl -L "${{ secrets.AZURE_BLOB_UNITTEST_PATH }}bitstreams.zip?${{ secrets.AZURE_BLOB_TOKEN }}" -o bitstreams.zip
         unzip -qa bitstreams.zip
     - name: Run Unittests
       run: ctest --test-dir build --output-on-failure
@@ -94,7 +94,7 @@ jobs:
         cd build/YUViewUnitTest
         curl -L "${{ secrets.AZURE_BLOB_UNITTEST_PATH }}decoders/${{ matrix.os }}.zip?${{ secrets.AZURE_BLOB_TOKEN }}" -o decoders.zip
         unzip -qa decoders.zip
-        curl -L "${{ secrets.AZURE_BLOB_UNITTEST_PATH }}/bitstreams.zip?${{ secrets.AZURE_BLOB_TOKEN }}" -o bitstreams.zip
+        curl -L "${{ secrets.AZURE_BLOB_UNITTEST_PATH }}bitstreams.zip?${{ secrets.AZURE_BLOB_TOKEN }}" -o bitstreams.zip
         unzip -qa bitstreams.zip
     - name: Run Unittests
       run: ctest --test-dir build --output-on-failure
@@ -177,7 +177,7 @@ jobs:
         cd build/YUViewUnitTest
         curl -L "${{ secrets.AZURE_BLOB_UNITTEST_PATH }}decoders/${{ matrix.os }}.zip?${{ secrets.AZURE_BLOB_TOKEN }}" -o decoders.zip
         7z x decoders.zip
-        curl -L "${{ secrets.AZURE_BLOB_UNITTEST_PATH }}/bitstreams.zip?${{ secrets.AZURE_BLOB_TOKEN }}" -o bitstreams.zip
+        curl -L "${{ secrets.AZURE_BLOB_UNITTEST_PATH }}bitstreams.zip?${{ secrets.AZURE_BLOB_TOKEN }}" -o bitstreams.zip
         7z x bitstreams.zip
     - name: Run Unittests
       run: ctest --test-dir build --output-on-failure -V
