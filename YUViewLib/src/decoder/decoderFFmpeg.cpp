@@ -187,17 +187,15 @@ void decoderFFmpeg::copyCurImageToBuffer()
   if (!this->bitstreamFormat)
     return;
 
-  const auto rawFormat = this->getRawFormat().value();
   const auto frameSize = this->bitstreamFormat->frameSize;
 
-  if (rawFormat == video::RawFormat::YUV)
+  if (const auto pixFmt = this->getPixelFormatYUV())
   {
     // At first get how many bytes we are going to write
-    const auto pixFmt           = *this->getPixelFormatYUV();
-    const auto nrBytesPerSample = pixFmt.getBitsPerSample() <= 8 ? 1 : 2;
+    const auto nrBytesPerSample = pixFmt->getBitsPerSample() <= 8 ? 1 : 2;
     const auto nrBytesY         = frameSize.area() * nrBytesPerSample;
     const auto nrBytesC =
-      getSubsampledSize(frameSize, pixFmt.getSubsampling()).area() * nrBytesPerSample;
+      getSubsampledSize(frameSize, pixFmt->getSubsampling()).area() * nrBytesPerSample;
     const auto nrBytes = nrBytesY + 2 * nrBytesC;
 
     // Is the output big enough?
@@ -207,7 +205,7 @@ void decoderFFmpeg::copyCurImageToBuffer()
     // Copy line by line. The linesize of the source may be larger than the width of the frame.
     // This may be because the frame buffer is (8) byte aligned. Also the internal decoded
     // resolution may be larger than the output frame size.
-    for (int plane = 0; plane < pixFmt.getNrPlanes(); plane++)
+    for (int plane = 0; plane < pixFmt->getNrPlanes(); plane++)
     {
       const auto component =
         (plane == 0) ? video::yuv::Component::Luma : video::yuv::Component::Chroma;
@@ -217,7 +215,7 @@ void decoderFFmpeg::copyCurImageToBuffer()
       if (plane > 0)
         dst += (nrBytesY + (plane - 1) * nrBytesC);
 
-      const auto subsamplingRatios = pixFmt.getSubsamplingRatios();
+      const auto subsamplingRatios = pixFmt->getSubsamplingRatios();
       const auto dstLinesize       = frameSize.width / subsamplingRatios.horizontal;
       const auto height            = frameSize.height / subsamplingRatios.vertical;
       for (int y = 0; y < height; y++)
@@ -228,12 +226,11 @@ void decoderFFmpeg::copyCurImageToBuffer()
       }
     }
   }
-  else if (rawFormat == video::RawFormat::RGB)
+  else if (const auto pixFmt = this->getRGBPixelFormat())
   {
-    const auto pixFmt              = *this->getRGBPixelFormat();
-    const auto nrBytesPerSample    = pixFmt.getBitsPerComponent() <= 8 ? 1 : 2;
+    const auto nrBytesPerSample    = pixFmt->getBitsPerComponent() <= 8 ? 1 : 2;
     const auto nrBytesPerComponent = frameSize.area() * nrBytesPerSample;
-    const auto nrBytes             = nrBytesPerComponent * pixFmt.getNrChannels();
+    const auto nrBytes             = nrBytesPerComponent * pixFmt->getNrChannels();
 
     // Is the output big enough?
     if (this->currentOutputBuffer.capacity() < nrBytes)
@@ -241,7 +238,7 @@ void decoderFFmpeg::copyCurImageToBuffer()
 
     auto       dst  = this->currentOutputBuffer.data();
     const auto hDst = frameSize.height;
-    if (pixFmt.getDataLayout() == video::DataLayout::Planar)
+    if (pixFmt->getDataLayout() == video::DataLayout::Planar)
     {
       // Copy line by line. The linesize of the source may be larger than the width of the frame.
       // This may be because the frame buffer is (8) byte aligned. Also the internal decoded
@@ -263,7 +260,7 @@ void decoderFFmpeg::copyCurImageToBuffer()
     else
     {
       // We only need to iterate over the image once and copy all values per line at once (RGB(A))
-      const auto wDst        = frameSize.width * nrBytesPerSample * pixFmt.getNrChannels();
+      const auto wDst        = frameSize.width * nrBytesPerSample * pixFmt->getNrChannels();
       auto       src         = frame.getData(0);
       const auto srcLinesize = frame.getLineSize(0);
       for (int y = 0; y < hDst; y++)

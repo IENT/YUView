@@ -82,15 +82,6 @@ bool decoderBase::isSignalDifference(int signalID) const
   return false;
 }
 
-std::optional<RawFormat> decoderBase::getRawFormat() const
-{
-  if (this->bitstreamFormat)
-    return std::holds_alternative<PixelFormatYUV>(this->bitstreamFormat->pixelFormat)
-             ? RawFormat::YUV
-             : RawFormat::RGB;
-  return {};
-}
-
 std::optional<PixelFormatYUV> decoderBase::getPixelFormatYUV() const
 {
   if (this->bitstreamFormat &&
@@ -104,13 +95,6 @@ std::optional<PixelFormatRGB> decoderBase::getRGBPixelFormat() const
   if (this->bitstreamFormat &&
       std::holds_alternative<PixelFormatRGB>(this->bitstreamFormat->pixelFormat))
     return std::get<PixelFormatRGB>(this->bitstreamFormat->pixelFormat);
-  return {};
-}
-
-std::optional<Size> decoderBase::getFrameSize() const
-{
-  if (this->bitstreamFormat)
-    return this->bitstreamFormat->frameSize;
   return {};
 }
 

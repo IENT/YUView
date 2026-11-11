@@ -277,8 +277,8 @@ bool decoderHM::getNextFrameFromDecoder()
   }
 
   // Check the validity of the picture
-  auto frameSize = Size(this->lib.libHMDEC_get_picture_width(currentHMPic, LIBHMDEC_LUMA),
-                        this->lib.libHMDEC_get_picture_height(currentHMPic, LIBHMDEC_LUMA));
+  const auto frameSize = Size(this->lib.libHMDEC_get_picture_width(currentHMPic, LIBHMDEC_LUMA),
+                              this->lib.libHMDEC_get_picture_height(currentHMPic, LIBHMDEC_LUMA));
   if (!frameSize.isValid())
     DEBUG_DECHM("decoderHM::getNextFrameFromDecoder got invalid size");
   auto subsampling =

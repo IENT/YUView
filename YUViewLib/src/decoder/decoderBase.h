@@ -43,7 +43,6 @@
 namespace decoder
 {
 
-using video::RawFormat;
 using video::rgb::PixelFormatRGB;
 using video::yuv::PixelFormatYUV;
 
@@ -114,12 +113,8 @@ public:
   // If the current frame is valid, the current frame can be retrieved using getRawFrameData.
   // Call decodeNextFrame to advance to the next frame. When the function returns false, more data
   // is probably needed.
-  virtual bool                  decodeNextFrame() = 0;
-  virtual QByteArray            getRawFrameData() = 0;
-  std::optional<RawFormat>      getRawFormat() const;
-  std::optional<PixelFormatYUV> getPixelFormatYUV() const;
-  std::optional<PixelFormatRGB> getRGBPixelFormat() const;
-  std::optional<Size>           getFrameSize() const;
+  virtual bool       decodeNextFrame() = 0;
+  virtual QByteArray getRawFrameData() = 0;
   // Push data to the decoder (until no more data is needed)
   // In order to make the interface generic, the pushData function accepts data only without start
   // codes
@@ -149,6 +144,9 @@ public:
   virtual QString getCodecName() const   = 0;
 
 protected:
+  std::optional<PixelFormatYUV> getPixelFormatYUV() const;
+  std::optional<PixelFormatRGB> getRGBPixelFormat() const;
+
   DecoderState decoderState{DecoderState::NeedsMoreData};
 
   int  decodeSignal{0};  ///< Which signal should be decoded?

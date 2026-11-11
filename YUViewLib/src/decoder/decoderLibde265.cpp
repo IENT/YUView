@@ -351,8 +351,8 @@ bool decoderLibde265::decodeFrame()
   if (curImage != nullptr)
   {
     // Get the resolution / yuv format from the frame
-    auto frameSize = Size(this->lib.de265_get_image_width(curImage, 0),
-                          this->lib.de265_get_image_height(curImage, 0));
+    const auto frameSize = Size(this->lib.de265_get_image_width(curImage, 0),
+                                this->lib.de265_get_image_height(curImage, 0));
     if (!frameSize.isValid())
       DEBUG_LIBDE265("decoderLibde265::decodeFrame got invalid frame size");
     auto subsampling = convertFromInternalSubsampling(this->lib.de265_get_chroma_format(curImage));
@@ -370,6 +370,7 @@ bool decoderLibde265::decodeFrame()
 
     this->decoderState = DecoderState::RetrieveFrames;
     this->currentOutputBuffer.clear();
+    
     return true;
   }
   return false;
