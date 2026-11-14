@@ -97,6 +97,50 @@ enum class Codec
   Other
 };
 
+std::pair<std::vector<DecoderEngine>, DecoderEngine>
+getPossibleDecodersAndDecoderEngineToUse(const Codec codec, const DecoderEngine requestedDecoder)
+{
+  std::vector<DecoderEngine> possibleDecoders;
+  if (codec == Codec::HEVC)
+    possibleDecoders = DecodersHEVC;
+  else if (codec == Codec::VVC)
+    possibleDecoders = DecodersVVC;
+  else if (codec == Codec::AV1)
+    possibleDecoders = DecodersAV1;
+  else
+    possibleDecoders = {DecoderEngine::FFMpeg};
+
+  if (requestedDecoder != DecoderEngine::Invalid && contains(possibleDecoders, requestedDecoder))
+    return {possibleDecoders, requestedDecoder};
+
+  if (possibleDecoders.size() == 1)
+    return {possibleDecoders, possibleDecoders[0]};
+
+  // Is a default decoder set in the settings?
+  QSettings settings;
+  settings.beginGroup("Decoders");
+  QString defaultDecSetting;
+  if (codec == Codec::HEVC)
+    defaultDecSetting = "DefaultDecoderHEVC";
+  if (codec == Codec::VVC)
+    defaultDecSetting = "DefaultDecoderVVC";
+  if (codec == Codec::AV1)
+    defaultDecSetting = "DefaultDecoderAV1";
+
+  const auto defaultDecoder =
+    DecoderEngineMapper.getValue(settings.value(defaultDecSetting, -1).toString().toStdString());
+  if (!defaultDecSetting.isEmpty() && defaultDecoder && contains(possibleDecoders, *defaultDecoder))
+    return {possibleDecoders, *defaultDecoder};
+
+  // Prefer libde265 over FFmpeg over others
+  if (contains(possibleDecoders, DecoderEngine::Libde265))
+    return {possibleDecoders, DecoderEngine::Libde265};
+  else if (contains(possibleDecoders, DecoderEngine::FFMpeg))
+    return {possibleDecoders, DecoderEngine::FFMpeg};
+
+  return {possibleDecoders, possibleDecoders[0]};
+}
+
 } // namespace
 
 // When decoding, it can make sense to seek forward to another random access point.
@@ -288,55 +332,8 @@ playlistItemCompressedVideo::playlistItemCompressedVideo(const QString      &com
   playlistItemWithVideo::connectVideo();
   this->statisticsData.setFrameSize(this->video->getFrameSize());
 
-  if (codec == Codec::HEVC)
-    this->possibleDecoders = DecodersHEVC;
-  else if (codec == Codec::VVC)
-    this->possibleDecoders = DecodersVVC;
-  else if (codec == Codec::AV1)
-    this->possibleDecoders = DecodersAV1;
-  else
-    this->possibleDecoders = {DecoderEngine::FFMpeg};
-
-  if (decoder != DecoderEngine::Invalid && contains(possibleDecoders, decoder))
-  {
-    this->decoderEngine = decoder;
-  }
-  else
-  {
-    if (this->possibleDecoders.size() == 1)
-      this->decoderEngine = this->possibleDecoders[0];
-    else if (this->possibleDecoders.size() > 1)
-    {
-      // Is a default decoder set in the settings?
-      QSettings settings;
-      settings.beginGroup("Decoders");
-      QString defaultDecSetting;
-      if (codec == Codec::HEVC)
-        defaultDecSetting = "DefaultDecoderHEVC";
-      if (codec == Codec::VVC)
-        defaultDecSetting = "DefaultDecoderVVC";
-      if (codec == Codec::AV1)
-        defaultDecSetting = "DefaultDecoderAV1";
-
-      auto defaultDecoder = DecoderEngineMapper.getValue(
-        settings.value(defaultDecSetting, -1).toString().toStdString());
-      if (!defaultDecSetting.isEmpty() && defaultDecoder &&
-          contains(possibleDecoders, *defaultDecoder))
-      {
-        this->decoderEngine = *defaultDecoder;
-      }
-      else
-      {
-        // Prefer libde265 over FFmpeg over others
-        if (contains(possibleDecoders, DecoderEngine::Libde265))
-          this->decoderEngine = DecoderEngine::Libde265;
-        else if (contains(possibleDecoders, DecoderEngine::FFMpeg))
-          this->decoderEngine = DecoderEngine::FFMpeg;
-        else
-          this->decoderEngine = possibleDecoders[0];
-      }
-    }
-  }
+  std::tie(this->possibleDecoders, this->decoderEngine) =
+    getPossibleDecodersAndDecoderEngineToUse(codec, decoder);
 
   this->statisticsUIHandler.setStatisticsData(&this->statisticsData);
 
