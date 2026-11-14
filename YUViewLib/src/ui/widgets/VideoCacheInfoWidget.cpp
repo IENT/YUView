@@ -175,7 +175,7 @@ void VideoCacheInfoWidget::onUpdateCacheStatus()
   if (!isVisible())
     return;
 
-  update();
+  playlist->updateCachingStatus();
 
   DEBUG_CACHINGINFO("VideoCacheInfoWidget::updateCacheStatus");
   statusWidget->updateStatus(playlist, cacheRateInBytesPerMs);

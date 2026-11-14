@@ -43,15 +43,15 @@ namespace decoder
 #if DECODERBASE_DEBUG_OUTPUT && !NDEBUG
 #include <QDebug>
 #if DECODERBASE_DEBUG_OUTPUT == 1
-#define DEBUG_HEVCDECODERBASE                                                                      \
+#define DEBUG_DECODERBASE                                                                          \
   if (!isCachingDecoder)                                                                           \
   qDebug
 #elif DECODERBASE_DEBUG_OUTPUT == 2
-#define DEBUG_HEVCDECODERBASE                                                                      \
+#define DEBUG_DECODERBASE                                                                          \
   if (isCachingDecoder)                                                                            \
   qDebug
 #elif DECODERBASE_DEBUG_OUTPUT == 3
-#define DEBUG_HEVCDECODERBASE                                                                      \
+#define DEBUG_DECODERBASE                                                                          \
   if (isCachingDecoder)                                                                            \
     qDebug("c:");                                                                                  \
   else                                                                                             \

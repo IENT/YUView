@@ -86,6 +86,8 @@ public:
   // playlist items.
   void updateSettings();
 
+  void updateCachingStatus() { this->update(); };
+
   bool isAutosaveAvailable();
   void loadAutosavedPlaylist();
   void dropAutosavedPlaylist();
