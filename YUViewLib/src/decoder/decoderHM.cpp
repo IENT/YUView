@@ -277,9 +277,9 @@ bool decoderHM::getNextFrameFromDecoder()
   }
 
   // Check the validity of the picture
-  auto picSize = Size(this->lib.libHMDEC_get_picture_width(currentHMPic, LIBHMDEC_LUMA),
-                      this->lib.libHMDEC_get_picture_height(currentHMPic, LIBHMDEC_LUMA));
-  if (!picSize.isValid())
+  const auto frameSize = Size(this->lib.libHMDEC_get_picture_width(currentHMPic, LIBHMDEC_LUMA),
+                              this->lib.libHMDEC_get_picture_height(currentHMPic, LIBHMDEC_LUMA));
+  if (!frameSize.isValid())
     DEBUG_DECHM("decoderHM::getNextFrameFromDecoder got invalid size");
   auto subsampling =
     convertFromInternalSubsampling(this->lib.libHMDEC_get_chroma_format(currentHMPic));
@@ -289,22 +289,8 @@ bool decoderHM::getNextFrameFromDecoder()
   if (bitDepth < 8 || bitDepth > 16)
     DEBUG_DECHM("decoderHM::getNextFrameFromDecoder got invalid bit depth");
 
-  if (!frameSize.isValid() && !formatYUV.isValid())
-  {
-    // Set the values
-    frameSize = picSize;
-    formatYUV = PixelFormatYUV(PlanarPixelFormat({subsampling, bitDepth}));
-  }
-  else
-  {
-    // Check the values against the previously set values
-    if (frameSize != picSize)
-      return setErrorB("Received a frame of different size");
-    if (formatYUV.getSubsampling() != subsampling)
-      return setErrorB("Received a frame with different subsampling");
-    if (formatYUV.getBitsPerSample() != bitDepth)
-      return setErrorB("Received a frame with different bit depth");
-  }
+  if (!checkOrSetBitstreamFormat(frameSize, PlanarPixelFormat({subsampling, bitDepth})))
+    return false;
 
   DEBUG_DECHM("decoderHM::getNextFrameFromDecoder got a valid frame");
   return true;
@@ -331,7 +317,7 @@ bool decoderHM::pushData(QByteArray &data)
   if (err != LIBHMDEC_OK)
     return setErrorB(QString("Error pushing data to decoder (libHMDec_push_nal_unit) length %1")
                        .arg(data.length()));
-  DEBUG_DECHM("decoderHM::pushData pushed NAL length %d%s%s",
+  DEBUG_DECHM("decoderHM::pushData pushed NAL length %lld%s%s",
               data.length(),
               bNewPicture ? " bNewPicture" : "",
               checkOutputPictures ? " checkOutputPictures" : "");

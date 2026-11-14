@@ -58,10 +58,11 @@ public:
    * will then call addPropertiesWidget to add the custom properties panel. 'displayComponent'
    * initializes the component to display (reconstruction/prediction/residual/trCoeff).
    */
-  playlistItemCompressedVideo(const QString &        fileName,
-                              int                    displayComponent = 0,
-                              InputFormat            input            = InputFormat::Invalid,
-                              decoder::DecoderEngine decoder = decoder::DecoderEngine::Invalid);
+  playlistItemCompressedVideo(
+    const QString               &fileName,
+    const int                    displayComponent = 0,
+    const InputFormat            input            = InputFormat::Invalid,
+    const decoder::DecoderEngine decoder          = decoder::DecoderEngine::Invalid);
 
   // Save the compressed file element to the given XML structure.
   virtual void savePlaylist(QDomElement &root, const QDir &playlistDir) const override;
@@ -87,14 +88,10 @@ public:
   static void getSupportedFileExtensions(QStringList &allExtensions, QStringList &filters);
 
   // ----- Detection of source/file change events -----
-  virtual bool isSourceChanged() override
-  { /* TODO */
-    return false;
-  }
+  virtual bool isSourceChanged() override { /* TODO */ return false; }
   virtual void reloadItemSource() override;
   virtual void updateSettings() override
-  { /* TODO loadingDecoder->updateFileWatchSetting(); statSource.updateSettings(); */
-  }
+  { /* TODO loadingDecoder->updateFileWatchSetting(); statSource.updateSettings(); */ }
 
   // Do we need to load the given frame first?
   virtual ItemLoadingState needsLoading(int frameIdx, bool loadRawData) override;
@@ -130,8 +127,13 @@ protected:
   std::vector<decoder::DecoderEngine> possibleDecoders;
   // The actual type of the decoder
   decoder::DecoderEngine decoderEngine{decoder::DecoderEngine::Invalid};
-  // Delete existing decoders and allocate decoders for the type "decoderEngineType"
-  bool allocateDecoder(int displayComponent = 0);
+  int                    displayComponent{0};
+
+  void allocateAndInitializeDecoders(const int displayComponent = 0);
+  void updateDecoderAndStatisticsUI();
+
+  QMetaObject::Connection connectionRequestRawData{};
+  QMetaObject::Connection connectionUpdateStistics{};
 
   // In order to parse raw annexB files, we need a file reader (that can read NAL units)
   // and a parser that can understand what the NAL units mean. We open the file source twice (once
