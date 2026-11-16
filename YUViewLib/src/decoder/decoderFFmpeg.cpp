@@ -34,10 +34,15 @@
 
 #include <common/Functions.h>
 
-#define DECODERFFMPEG_DEBUG_OUTPUT 0
+#define DECODERFFMPEG_DEBUG_OUTPUT 1
 #if DECODERFFMPEG_DEBUG_OUTPUT && !NDEBUG
 #include <QDebug>
-#define DEBUG_FFMPEG(f) qDebug() << f
+#include <source_location>
+#define DEBUG_FFMPEG(f)                                                                            \
+  do                                                                                               \
+  {                                                                                                \
+    qDebug() << std::source_location::current().function_name() << " " << f;                       \
+  } while (0)
 #else
 #define DEBUG_FFMPEG(f) ((void)0)
 #endif
@@ -93,8 +98,8 @@ decoderFFmpeg::decoderFFmpeg(FFmpeg::AVCodecIDWrapper   codecID,
   for (int i = 0; i < AV_INPUT_BUFFER_PADDING_SIZE; i++)
     this->avPacketPaddingData.append((char)0);
 
-  DEBUG_FFMPEG("decoderFFmpeg::decoderFFmpeg Created new FFmpeg decoder - codec "
-               << this->getCodecName() << (cachingDecoder ? " - caching" : ""));
+  DEBUG_FFMPEG("Created new FFmpeg decoder - codec " << this->getCodecName()
+                                                     << (cachingDecoder ? " - caching" : ""));
 }
 
 decoderFFmpeg::decoderFFmpeg(FFmpeg::AVCodecParametersWrapper codecpar, bool cachingDecoder)
@@ -117,8 +122,8 @@ decoderFFmpeg::decoderFFmpeg(FFmpeg::AVCodecParametersWrapper codecpar, bool cac
   this->flushing           = false;
   this->internalsSupported = true;
 
-  DEBUG_FFMPEG("decoderFFmpeg::decoderFFmpeg Created new FFmpeg decoder - codec "
-               << this->getCodecName() << (cachingDecoder ? " - caching" : ""));
+  DEBUG_FFMPEG("Created new FFmpeg decoder - codec " << this->getCodecName()
+                                                     << (cachingDecoder ? " - caching" : ""));
 }
 
 decoderFFmpeg::~decoderFFmpeg()
@@ -134,7 +139,7 @@ void decoderFFmpeg::resetDecoder()
   if (this->decoderState == DecoderState::Error)
     return;
 
-  DEBUG_FFMPEG("decoderFFmpeg::resetDecoder");
+  DEBUG_FFMPEG("");
   this->ff.flush_buffers(this->decCtx);
   this->flushing = false;
   decoderBase::resetDecoder();
@@ -144,7 +149,7 @@ bool decoderFFmpeg::decodeNextFrame()
 {
   if (this->decoderState != DecoderState::RetrieveFrames)
   {
-    DEBUG_FFMPEG("decoderFFmpeg::decodeNextFrame: Wrong decoder state.");
+    DEBUG_FFMPEG("Wrong decoder state.");
     return false;
   }
 
@@ -156,15 +161,15 @@ QByteArray decoderFFmpeg::getRawFrameData()
 {
   if (this->decoderState != DecoderState::RetrieveFrames)
   {
-    DEBUG_FFMPEG("decoderFFmpeg::getYUVFrameData: Wrong decoder state.");
+    DEBUG_FFMPEG("Wrong decoder state.");
     return QByteArray();
   }
 
-  DEBUG_FFMPEG("decoderFFmpeg::getYUVFrameData Copy frame");
+  DEBUG_FFMPEG("Copy frame");
 
   if (this->currentOutputBuffer.isEmpty())
   {
-    DEBUG_FFMPEG("decoderFFmpeg::decodeNextFrame: Copy frame data to buffer");
+    DEBUG_FFMPEG("Copy frame data to buffer");
     this->copyCurImageToBuffer();
 
     if (this->statisticsEnabled())
@@ -276,7 +281,7 @@ void decoderFFmpeg::copyCurImageToBuffer()
 void decoderFFmpeg::cacheCurStatistics()
 {
   // Copy the statistics of the current frame to the buffer
-  DEBUG_FFMPEG("decoderFFmpeg::cacheCurStatistics");
+  DEBUG_FFMPEG("");
 
   // Try to get the motion information
   auto sideData = this->ff.getSideData(frame, FFmpeg::AV_FRAME_DATA_MOTION_VECTORS);
@@ -308,12 +313,12 @@ bool decoderFFmpeg::pushData(QByteArray &data)
   if (data.length() == 0)
   {
     // Push an empty packet to indicate that the file has ended
-    DEBUG_FFMPEG("decoderFFmpeg::pushData: Pushing an empty packet");
+    DEBUG_FFMPEG("Pushing an empty packet");
     FFmpeg::AVPacketWrapper emptyPacket;
     return this->pushAVPacket(emptyPacket);
   }
   else
-    DEBUG_FFMPEG("decoderFFmpeg::pushData: Pushing data length " << data.length());
+    DEBUG_FFMPEG("Pushing data length " << data.length());
 
   // Add some padding
   data.append(this->avPacketPaddingData);
@@ -329,20 +334,19 @@ bool decoderFFmpeg::pushAVPacket(FFmpeg::AVPacketWrapper &pkt)
 {
   if (this->decoderState != DecoderState::NeedsMoreData)
   {
-    DEBUG_FFMPEG("decoderFFmpeg::pushAVPacket: Wrong decoder state.");
+    DEBUG_FFMPEG("Wrong decoder state.");
     return false;
   }
   if (!pkt)
   {
-    DEBUG_FFMPEG("decoderFFmpeg::pushAVPacket: Received empty packet. Swithing to flushing.");
+    DEBUG_FFMPEG("Received empty packet. Swithing to flushing.");
     this->flushing     = true;
     this->decoderState = DecoderState::RetrieveFrames;
     return false;
   }
   if (this->flushing)
   {
-    DEBUG_FFMPEG(
-      "decoderFFmpeg::pushAVPacket: Error no new packets should be pushed in flushing mode.");
+    DEBUG_FFMPEG("Error no new packets should be pushed in flushing mode.");
     return false;
   }
 
@@ -353,8 +357,7 @@ bool decoderFFmpeg::pushAVPacket(FFmpeg::AVPacketWrapper &pkt)
   {
 #if DECODERFFMPEG_DEBUG_OUTPUT
     {
-      QString meaning =
-        QString("decoderFFmpeg::pushAVPacket: Error sending packet - err %1").arg(retPush);
+      QString meaning = QString("Error sending packet - err %1").arg(retPush);
       if (retPush == -1094995529)
         meaning += " INDA";
       // Log the first bytes
@@ -374,15 +377,13 @@ bool decoderFFmpeg::pushAVPacket(FFmpeg::AVPacketWrapper &pkt)
     return false;
   }
   else
-    DEBUG_FFMPEG("decoderFFmpeg::pushAVPacket: Send packet PTS " << pkt.getPTS() << " duration "
-                                                                 << pkt.getDuration() << " flags "
-                                                                 << pkt.getFlags());
+    DEBUG_FFMPEG("Send packet PTS " << pkt.getPTS() << " duration " << pkt.getDuration()
+                                    << " flags " << pkt.getFlags());
 
   if (retPush == AVERROR(EAGAIN))
   {
     // Enough data pushed. Decode and retrieve frames now.
-    DEBUG_FFMPEG(
-      "decoderFFmpeg::pushAVPacket: Enough data pushed. Decode and retrieve frames now.");
+    DEBUG_FFMPEG("Enough data pushed. Decode and retrieve frames now.");
     this->decoderState = DecoderState::RetrieveFrames;
     return false;
   }
@@ -400,10 +401,10 @@ bool decoderFFmpeg::decodeFrame()
   if (retRecieve == 0)
   {
     // We recieved a frame.
-    DEBUG_FFMPEG("decoderFFmpeg::decodeFrame: Received frame Size("
-                 << this->frame.getWidth() << "x" << this->frame.getHeight() << ") PTS"
-                 << this->frame.getPTS() << "type" << this->frame.getPictType()
-                 << (this->frame.getKeyFrame() ? "key frame" : ""));
+    DEBUG_FFMPEG("Received frame Size(" << this->frame.getWidth() << "x" << this->frame.getHeight()
+                                        << ") PTS" << this->frame.getPTS() << "type"
+                                        << this->frame.getPictType()
+                                        << (this->frame.getKeyFrame() ? "key frame" : ""));
     // Checkt the size of the retrieved image
     if (this->bitstreamFormat->frameSize != this->frame.getSize())
       return this->setErrorB("Received a frame of different size");
@@ -413,7 +414,7 @@ bool decoderFFmpeg::decodeFrame()
   else if (retRecieve < 0 && retRecieve != AVERROR(EAGAIN) && retRecieve != -35)
   {
     // An error occurred
-    DEBUG_FFMPEG("decoderFFmpeg::decodeFrame Error reading frame.");
+    DEBUG_FFMPEG("Error reading frame.");
     return this->setErrorB(QStringLiteral("Error recieving frame (avcodec_receive_frame)"));
   }
   else if (retRecieve == AVERROR(EAGAIN))
@@ -422,12 +423,12 @@ bool decoderFFmpeg::decodeFrame()
     {
       // There is no more data
       this->decoderState = DecoderState::EndOfBitstream;
-      DEBUG_FFMPEG("decoderFFmpeg::decodeFrame End of bitstream.");
+      DEBUG_FFMPEG("End of bitstream.");
     }
     else
     {
       this->decoderState = DecoderState::NeedsMoreData;
-      DEBUG_FFMPEG("decoderFFmpeg::decodeFrame Need more data.");
+      DEBUG_FFMPEG("Need more data.");
     }
   }
   return false;
