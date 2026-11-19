@@ -37,11 +37,16 @@
 #include <QRegularExpression>
 
 #define VERSIONCOMPARE_DEBUG_OUTPUT 0
-#if UPDATER_DEBUG_OUTPUT && !NDEBUG
+#if VERSIONCOMPARE_DEBUG_OUTPUT && !NDEBUG
 #include <QDebug>
-#define DEBUG_VERSION(msg) qDebug() << msg
+#include <source_location>
+#define DEBUG_VERSION(f)                                                                           \
+  do                                                                                               \
+  {                                                                                                \
+    qDebug() << std::source_location::current().function_name() << " " << f;                       \
+  } while (0)
 #else
-#define DEBUG_VERSION(msg) ((void)0)
+#define DEBUG_VERSION(f) ((void)0)
 #endif
 
 namespace update

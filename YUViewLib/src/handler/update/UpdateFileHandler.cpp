@@ -38,9 +38,14 @@
 #define UPDATER_DEBUG_FILE 0
 #if UPDATER_DEBUG_FILE && !NDEBUG
 #include <QDebug>
-#define DEBUG_UPDATE_FILE(msg) qDebug() << msg
+#include <source_location>
+#define DEBUG_UPDATE_FILE(f)                                                                       \
+  do                                                                                               \
+  {                                                                                                \
+    qDebug() << std::source_location::current().function_name() << " " << f;                       \
+  } while (0)
 #else
-#define DEBUG_UPDATE_FILE(msg) ((void)0)
+#define DEBUG_UPDATE_FILE(f) ((void)0)
 #endif
 
 namespace update
@@ -64,14 +69,13 @@ UpdateFileHandler::UpdateFileHandler(QByteArray &byteArray)
 
 void UpdateFileHandler::readFromFile(QString fileName)
 {
-  DEBUG_UPDATE_FILE("UpdateFileHandler::readFromFile Current working dir " << this->updatePath);
+  DEBUG_UPDATE_FILE("Current working dir " << this->updatePath);
 
   // Open the file and get all files and their current version (int) from the file.
   QFileInfo updateFileInfo(fileName);
   if (!updateFileInfo.exists() || !updateFileInfo.isFile())
   {
-    DEBUG_UPDATE_FILE("UpdateFileHandler::readFromFile local update file " << fileName
-                                                                           << " not found");
+    DEBUG_UPDATE_FILE("local update file " << fileName << " not found");
     return;
   }
 
@@ -105,7 +109,7 @@ void UpdateFileHandler::parseOneLine(QString &line, bool checkExistence)
   if (line.startsWith("Last Commit"))
   {
     if (line.startsWith("Last Commit: "))
-      DEBUG_UPDATE_FILE("UpdateFileHandler::parseOneLine Local file last commit: " << lineSplit[2]);
+      DEBUG_UPDATE_FILE("Local file last commit: " << lineSplit[2]);
     return;
   }
   // Ignore all lines that start with %, / or #
@@ -125,8 +129,7 @@ void UpdateFileHandler::parseOneLine(QString &line, bool checkExistence)
         // The file does not exist locally. That is strange since it is in the update info file.
         // Files that do not exist locally should always be downloaded so we don't put them into the
         // list.
-        DEBUG_UPDATE_FILE("UpdateFileHandler::parseOneLine The local file "
-                          << fInfo.absoluteFilePath() << " could not be found.");
+        DEBUG_UPDATE_FILE("The local file " << fInfo.absoluteFilePath() << " could not be found.");
     }
     else
       // Do not check if the file exists
