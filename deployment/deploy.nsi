@@ -2,7 +2,7 @@
 
 ; HM NIS Edit Wizard helper defines
 !define PRODUCT_NAME "YUView"
-!define PRODUCT_VERSION "2.14"
+!define PRODUCT_VERSION "2.15"
 !define PRODUCT_PUBLISHER "Institut für Nachrichtentechnik"
 !define PRODUCT_WEB_SITE "http://www.ient.rwth-aachen.de"
 !define PRODUCT_DIR_REGKEY "Software\Microsoft\Windows\CurrentVersion\App Paths\YUView.exe"

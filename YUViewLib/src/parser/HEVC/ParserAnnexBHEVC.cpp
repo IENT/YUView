@@ -60,6 +60,10 @@ namespace parser
 
 using namespace hevc;
 
+using video::yuv::PixelFormatYUV;
+using video::yuv::PlanarPixelFormat;
+using video::yuv::Subsampling;
+
 namespace
 {
 
@@ -117,10 +121,8 @@ Size ParserAnnexBHEVC::getSequenceSizeSamples() const
   return {};
 }
 
-video::yuv::PixelFormatYUV ParserAnnexBHEVC::getPixelFormat() const
+PixelFormatYUV ParserAnnexBHEVC::getPixelFormat() const
 {
-  using Subsampling = video::yuv::Subsampling;
-
   // Get the subsampling and bit-depth from the sps
   int  bitDepthY   = -1;
   int  bitDepthC   = -1;
@@ -150,7 +152,7 @@ video::yuv::PixelFormatYUV ParserAnnexBHEVC::getPixelFormat() const
         // Different luma and chroma bit depths currently not supported
         return {};
       }
-      return video::yuv::PixelFormatYUV(subsampling, bitDepthY);
+      return PixelFormatYUV(PlanarPixelFormat({subsampling, bitDepthY}));
     }
   }
 
@@ -299,7 +301,7 @@ ParserAnnexBHEVC::parseAndAddNALUnit(int                                        
     {
       // Save the info of the last frame
       if (!this->addFrameToList(
-              curFramePOC, curFrameFileStartEndPos, curFrameIsRandomAccess, curFrameLayerID))
+            curFramePOC, curFrameFileStartEndPos, curFrameIsRandomAccess, curFrameLayerID))
       {
         throw std::logic_error("Error - POC " + std::to_string(curFramePOC) +
                                " alread in the POC list.");
@@ -420,7 +422,7 @@ ParserAnnexBHEVC::parseAndAddNALUnit(int                                        
       newSlice->sliceSegmentHeader.globalPOC = poc;
 
       first_slice_segment_in_pic_flag =
-          newSlice->sliceSegmentHeader.first_slice_segment_in_pic_flag;
+        newSlice->sliceSegmentHeader.first_slice_segment_in_pic_flag;
       if (first_slice_segment_in_pic_flag)
         this->lastFirstSliceSegmentInPic = newSlice;
 
@@ -437,7 +439,7 @@ ParserAnnexBHEVC::parseAndAddNALUnit(int                                        
         else if (nalHEVC->header.nal_unit_type == NalType::IDR_W_RADL ||
                  nalHEVC->header.nal_unit_type == NalType::IDR_N_LP)
           firstPOCRandomAccess =
-              -INT_MAX; // no need to skip the reordered pictures in IDR, they are decodable.
+            -INT_MAX; // no need to skip the reordered pictures in IDR, they are decodable.
         else
           isRandomAccessSkip = true;
       }
@@ -464,7 +466,7 @@ ParserAnnexBHEVC::parseAndAddNALUnit(int                                        
         {
           // Save the info of the last frame
           if (!this->addFrameToList(
-                  curFramePOC, curFrameFileStartEndPos, curFrameIsRandomAccess, curFrameLayerID))
+                curFramePOC, curFrameFileStartEndPos, curFrameIsRandomAccess, curFrameLayerID))
           {
             throw std::logic_error("Error - POC " + std::to_string(curFramePOC) +
                                    " alread in the POC list.");

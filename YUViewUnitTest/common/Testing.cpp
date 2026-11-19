@@ -34,6 +34,11 @@
 
 #include <common/Formatting.h>
 
+void PrintTo(const QString &string, std::ostream *os)
+{
+  *os << string.toStdString();
+}
+
 namespace yuviewTest
 {
 

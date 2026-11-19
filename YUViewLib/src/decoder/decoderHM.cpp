@@ -32,40 +32,45 @@
 
 #include "decoderHM.h"
 
-#include <QCoreApplication>
 #include <QDir>
 #include <QSettings>
-#include <cstring>
 
 #include <common/Functions.h>
 #include <common/Typedef.h>
-
-namespace decoder
-{
 
 // Debug the decoder ( 0:off 1:interactive decoder only 2:caching decoder only 3:both)
 #define DECODERHM_DEBUG_OUTPUT 0
 #if DECODERHM_DEBUG_OUTPUT && !NDEBUG
 #include <QDebug>
+#include <source_location>
 #if DECODERHM_DEBUG_OUTPUT == 1
-#define DEBUG_DECHM                                                                                \
-  if (!isCachingDecoder)                                                                           \
-  qDebug
+#define DEBUG_DECHM(f)                                                                             \
+  do                                                                                               \
+  {                                                                                                \
+    if (!isCachingDecoder)                                                                         \
+      qDebug() << std::source_location::current().function_name() << " " << f;                     \
+  } while (0)
 #elif DECODERHM_DEBUG_OUTPUT == 2
-#define DEBUG_DECHM                                                                                \
-  if (isCachingDecoder)                                                                            \
-  qDebug
+#define DEBUG_DECHM(f)                                                                             \
+  do                                                                                               \
+  {                                                                                                \
+    if (isCachingDecoder)                                                                          \
+      qDebug() << std::source_location::current().function_name() << " " << f;                     \
+  } while (0)
 #elif DECODERHM_DEBUG_OUTPUT == 3
-#define DEBUG_DECHM                                                                                \
-  if (isCachingDecoder)                                                                            \
-    qDebug("c:");                                                                                  \
-  else                                                                                             \
-    qDebug("i:");                                                                                  \
-  qDebug
+#define DEBUG_DECHM(f)                                                                             \
+  do                                                                                               \
+  {                                                                                                \
+    qDebug() << (isCachingDecoder ? "C: " : "I: ")                                                 \
+             << std::source_location::current().function_name() << " " << f;                       \
+  } while (0)
 #endif
 #else
-#define DEBUG_DECHM(fmt, ...) ((void)0)
+#define DEBUG_DECHM(f) ((void)0)
 #endif
+
+namespace decoder
+{
 
 // Restrict is basically a promise to the compiler that for the scope of the pointer, the target of
 // the pointer will only be accessed through that pointer (and pointers copied from it).
@@ -83,7 +88,9 @@ namespace decoder
 #endif
 #endif
 
-using Subsampling = video::yuv::Subsampling;
+using video::yuv::PixelFormatYUV;
+using video::yuv::PlanarPixelFormat;
+using video::yuv::Subsampling;
 
 namespace
 {
@@ -126,7 +133,7 @@ QStringList decoderHM::getLibraryNames() const
   // Since this has been compiled for linux it will fail and not even try to open the .dylib.
   // On windows and linux ommitting the extension works
   auto names =
-      is_Q_OS_MAC ? QStringList() << "libHMDecoder.dylib" : QStringList() << "libHMDecoder";
+    is_Q_OS_MACOS ? QStringList() << "libHMDecoder.dylib" : QStringList() << "libHMDecoder";
 
   return names;
 }
@@ -190,7 +197,7 @@ void decoderHM::resolveLibraryFunctionPointers()
 
   // TODO: could we somehow get the prediction/residual signal?
   // I don't think this is possible without changes to the reference decoder.
-  DEBUG_DECHM("decoderHM::loadDecoderLibrary - prediction/residual internals found");
+  DEBUG_DECHM("prediction/residual internals found");
 }
 
 template <typename T> T decoderHM::resolve(T &fun, const char *symbol, bool optional)
@@ -199,8 +206,8 @@ template <typename T> T decoderHM::resolve(T &fun, const char *symbol, bool opti
   if (!ptr)
   {
     if (!optional)
-      setError(QStringLiteral("Error loading the libde265 library: Can't find function %1.")
-                   .arg(symbol));
+      setError(
+        QStringLiteral("Error loading the libde265 library: Can't find function %1.").arg(symbol));
     return nullptr;
   }
 
@@ -227,7 +234,7 @@ void decoderHM::allocateNewDecoder()
   if (decoder != nullptr)
     return;
 
-  DEBUG_DECHM("decoderHM::allocateNewDecoder - decodeSignal %d", decodeSignal);
+  DEBUG_DECHM("decodeSignal " << decodeSignal);
 
   // Create new decoder object
   decoder = this->lib.libHMDec_new_decoder();
@@ -244,13 +251,13 @@ bool decoderHM::decodeNextFrame()
 {
   if (decoderState != DecoderState::RetrieveFrames)
   {
-    DEBUG_DECHM("decoderHM::decodeNextFrame: Wrong decoder state.");
+    DEBUG_DECHM("Wrong decoder state.");
     return false;
   }
 
   if (currentHMPic == nullptr)
   {
-    DEBUG_DECHM("decoderHM::decodeNextFrame: No frame available.");
+    DEBUG_DECHM("No frame available.");
     return false;
   }
 
@@ -265,47 +272,45 @@ bool decoderHM::decodeNextFrame()
 
 bool decoderHM::getNextFrameFromDecoder()
 {
-  DEBUG_DECHM("decoderHM::getNextFrameFromDecoder");
-
   currentHMPic = this->lib.libHMDec_get_picture(decoder);
   if (currentHMPic == nullptr)
   {
-    decoderState = DecoderState::NeedsMoreData;
+    if (this->eofSent)
+    {
+      this->decoderState = DecoderState::EndOfBitstream;
+      DEBUG_DECHM("Got nullptr and we are at EOF. Switching to EndOfBitstream");
+    }
+    else
+    {
+      decoderState = DecoderState::NeedsMoreData;
+      DEBUG_DECHM("Got nullptr. Switching to NeedsMoreData");
+    }
     return false;
   }
 
+  DEBUG_DECHM("Got frame (POC " << this->lib.libHMDEC_get_POC(currentHMPic) << ") pointer");
+
   // Check the validity of the picture
-  auto picSize = Size(this->lib.libHMDEC_get_picture_width(currentHMPic, LIBHMDEC_LUMA),
-                      this->lib.libHMDEC_get_picture_height(currentHMPic, LIBHMDEC_LUMA));
-  if (!picSize.isValid())
-    DEBUG_DECHM("decoderHM::getNextFrameFromDecoder got invalid size");
+  const auto frameSize = Size(this->lib.libHMDEC_get_picture_width(currentHMPic, LIBHMDEC_LUMA),
+                              this->lib.libHMDEC_get_picture_height(currentHMPic, LIBHMDEC_LUMA));
+  if (!frameSize.isValid())
+    DEBUG_DECHM("Got invalid size");
   auto subsampling =
-      convertFromInternalSubsampling(this->lib.libHMDEC_get_chroma_format(currentHMPic));
+    convertFromInternalSubsampling(this->lib.libHMDEC_get_chroma_format(currentHMPic));
   if (subsampling == video::yuv::Subsampling::UNKNOWN)
-    DEBUG_DECHM("decoderHM::getNextFrameFromDecoder got invalid chroma format");
-  auto bitDepth = functions::clipToUnsigned(
-      this->lib.libHMDEC_get_internal_bit_depth(currentHMPic, LIBHMDEC_LUMA));
+    DEBUG_DECHM("Got invalid chroma format");
+  auto bitDepth = this->lib.libHMDEC_get_internal_bit_depth(currentHMPic, LIBHMDEC_LUMA);
   if (bitDepth < 8 || bitDepth > 16)
-    DEBUG_DECHM("decoderHM::getNextFrameFromDecoder got invalid bit depth");
+    DEBUG_DECHM("Got invalid bit depth");
 
-  if (!frameSize.isValid() && !formatYUV.isValid())
+  if (!checkOrSetBitstreamFormat(frameSize, PlanarPixelFormat({subsampling, bitDepth})))
   {
-    // Set the values
-    frameSize = picSize;
-    formatYUV = video::yuv::PixelFormatYUV(subsampling, bitDepth);
-  }
-  else
-  {
-    // Check the values against the previously set values
-    if (frameSize != picSize)
-      return setErrorB("Received a frame of different size");
-    if (formatYUV.getSubsampling() != subsampling)
-      return setErrorB("Received a frame with different subsampling");
-    if (formatYUV.getBitsPerSample() != bitDepth)
-      return setErrorB("Received a frame with different bit depth");
+    DEBUG_DECHM("Got a frame with an ivalid bitstream format");
+    return false;
   }
 
-  DEBUG_DECHM("decoderHM::getNextFrameFromDecoder got a valid frame");
+  currentOutputBuffer.clear();
+
   return true;
 }
 
@@ -313,39 +318,37 @@ bool decoderHM::pushData(QByteArray &data)
 {
   if (decoderState != DecoderState::NeedsMoreData)
   {
-    DEBUG_DECHM("decoderHM::pushData: Wrong decoder state.");
+    DEBUG_DECHM("Wrong decoder state.");
     return false;
   }
 
-  bool endOfFile = (data.length() == 0);
-  if (endOfFile)
-    DEBUG_DECHM("decoderFFmpeg::pushData: Received empty packet. Setting EOF.");
+  this->eofSent = (data.length() == 0);
+  if (this->eofSent)
+    DEBUG_DECHM("Received empty packet. Setting EOF.");
 
   // Push the data of the NAL unit. The function libHMDec_push_nal_unit can handle data
   // with a start code and without.
   bool checkOutputPictures = false;
   bool bNewPicture         = false;
   auto err                 = this->lib.libHMDec_push_nal_unit(
-      decoder, data, data.length(), endOfFile, bNewPicture, checkOutputPictures);
+    decoder, data, data.length(), this->eofSent, bNewPicture, checkOutputPictures);
   if (err != LIBHMDEC_OK)
     return setErrorB(QString("Error pushing data to decoder (libHMDec_push_nal_unit) length %1")
-                         .arg(data.length()));
-  DEBUG_DECHM("decoderHM::pushData pushed NAL length %d%s%s",
-              data.length(),
-              bNewPicture ? " bNewPicture" : "",
-              checkOutputPictures ? " checkOutputPictures" : "");
+                       .arg(data.length()));
+  DEBUG_DECHM("pushed NAL length " << data.length() << (bNewPicture ? " bNewPicture" : "")
+                                   << (checkOutputPictures ? " checkOutputPictures" : ""));
 
-  if (checkOutputPictures && getNextFrameFromDecoder())
+  if (bNewPicture && getNextFrameFromDecoder())
   {
     decodedFrameWaiting = true;
     decoderState        = DecoderState::RetrieveFrames;
-    currentOutputBuffer.clear();
   }
 
   // If bNewPicture is true, the decoder noticed that a new picture starts with this
   // NAL unit and decoded what it already has (in the original decoder, the bitstream will
   // be rewound). The decoder expects us to push the data again.
-  return !bNewPicture;
+  const auto repushData = !this->eofSent && bNewPicture;
+  return !repushData;
 }
 
 QByteArray decoderHM::getRawFrameData()
@@ -354,7 +357,7 @@ QByteArray decoderHM::getRawFrameData()
     return QByteArray();
   if (decoderState != DecoderState::RetrieveFrames)
   {
-    DEBUG_DECHM("decoderHM::getRawFrameData: Wrong decoder state.");
+    DEBUG_DECHM("Wrong decoder state.");
     return QByteArray();
   }
 
@@ -362,7 +365,7 @@ QByteArray decoderHM::getRawFrameData()
   {
     // Put image data into buffer
     copyImgToByteArray(currentHMPic, currentOutputBuffer);
-    DEBUG_DECHM("decoderHM::getRawFrameData copied frame to buffer");
+    DEBUG_DECHM("copied frame to buffer");
 
     if (this->statisticsEnabled())
       // Get the statistics from the image and put them into the statistics cache
@@ -388,8 +391,8 @@ void decoderHM::copyImgToByteArray(libHMDec_picture *src, QByteArray &dst)
   }
 
   // How many samples are in each component?
-  int outSizeY = this->lib.libHMDEC_get_picture_width(src, LIBHMDEC_LUMA) *
-                 this->lib.libHMDEC_get_picture_height(src, LIBHMDEC_LUMA);
+  int outSizeY  = this->lib.libHMDEC_get_picture_width(src, LIBHMDEC_LUMA) *
+                  this->lib.libHMDEC_get_picture_height(src, LIBHMDEC_LUMA);
   int outSizeCb = (nrPlanes == 1) ? 0
                                   : (this->lib.libHMDEC_get_picture_width(src, LIBHMDEC_CHROMA_U) *
                                      this->lib.libHMDEC_get_picture_height(src, LIBHMDEC_CHROMA_U));
@@ -398,7 +401,7 @@ void decoderHM::copyImgToByteArray(libHMDec_picture *src, QByteArray &dst)
                                      this->lib.libHMDEC_get_picture_height(src, LIBHMDEC_CHROMA_V));
   // How many bytes do we need in the output buffer?
   int nrBytesOutput = (outSizeY + outSizeCb + outSizeCr) * (outputTwoByte ? 2 : 1);
-  DEBUG_DECHM("decoderHM::copyImgToByteArray nrBytesOutput %d", nrBytesOutput);
+  DEBUG_DECHM("nrBytesOutput " << nrBytesOutput);
 
   // Is the output big enough?
   if (dst.capacity() < nrBytesOutput)
@@ -463,15 +466,15 @@ void decoderHM::cacheStatistics(libHMDec_picture *img)
   if (!internalsSupported)
     return;
 
-  DEBUG_DECHM("decoderHM::cacheStatistics POC %d", this->lib.libHMDEC_get_POC(img));
+  DEBUG_DECHM("POC " << this->lib.libHMDEC_get_POC(img));
 
   // Conversion from intra prediction mode to vector.
   // Coordinates are in x,y with the axes going right and down.
   static const int vectorTable[35][2] = {
-      {0, 0},   {0, 0},   {32, -32}, {32, -26}, {32, -21}, {32, -17}, {32, -13}, {32, -9}, {32, -5},
-      {32, -2}, {32, 0},  {32, 2},   {32, 5},   {32, 9},   {32, 13},  {32, 17},  {32, 21}, {32, 26},
-      {32, 32}, {26, 32}, {21, 32},  {17, 32},  {13, 32},  {9, 32},   {5, 32},   {2, 32},  {0, 32},
-      {-2, 32}, {-5, 32}, {-9, 32},  {-13, 32}, {-17, 32}, {-21, 32}, {-26, 32}, {-32, 32}};
+    {0, 0},   {0, 0},   {32, -32}, {32, -26}, {32, -21}, {32, -17}, {32, -13}, {32, -9}, {32, -5},
+    {32, -2}, {32, 0},  {32, 2},   {32, 5},   {32, 9},   {32, 13},  {32, 17},  {32, 21}, {32, 26},
+    {32, 32}, {26, 32}, {21, 32},  {17, 32},  {13, 32},  {9, 32},   {5, 32},   {2, 32},  {0, 32},
+    {-2, 32}, {-5, 32}, {-9, 32},  {-13, 32}, {-17, 32}, {-21, 32}, {-26, 32}, {-32, 32}};
 
   // Get all the statistics
   // TODO: Could we only retrieve the statistics that are active/displayed?
@@ -566,15 +569,15 @@ void decoderHM::fillStatisticList(stats::StatisticsData &statisticsData) const
       // Don't draw the vector values for the intra dir. They don't have actual meaning.
       intraDir.renderVectorDataValues = false;
       intraDir.setMappingValues(
-          {"INTRA_PLANAR",     "INTRA_DC",         "INTRA_ANGULAR_2",  "INTRA_ANGULAR_3",
-           "INTRA_ANGULAR_4",  "INTRA_ANGULAR_5",  "INTRA_ANGULAR_6",  "INTRA_ANGULAR_7",
-           "INTRA_ANGULAR_8",  "INTRA_ANGULAR_9",  "INTRA_ANGULAR_10", "INTRA_ANGULAR_11",
-           "INTRA_ANGULAR_12", "INTRA_ANGULAR_13", "INTRA_ANGULAR_14", "INTRA_ANGULAR_15",
-           "INTRA_ANGULAR_16", "INTRA_ANGULAR_17", "INTRA_ANGULAR_18", "INTRA_ANGULAR_19",
-           "INTRA_ANGULAR_20", "INTRA_ANGULAR_21", "INTRA_ANGULAR_22", "INTRA_ANGULAR_23",
-           "INTRA_ANGULAR_24", "INTRA_ANGULAR_25", "INTRA_ANGULAR_26", "INTRA_ANGULAR_27",
-           "INTRA_ANGULAR_28", "INTRA_ANGULAR_29", "INTRA_ANGULAR_30", "INTRA_ANGULAR_31",
-           "INTRA_ANGULAR_32", "INTRA_ANGULAR_33", "INTRA_ANGULAR_34"});
+        {"INTRA_PLANAR",     "INTRA_DC",         "INTRA_ANGULAR_2",  "INTRA_ANGULAR_3",
+         "INTRA_ANGULAR_4",  "INTRA_ANGULAR_5",  "INTRA_ANGULAR_6",  "INTRA_ANGULAR_7",
+         "INTRA_ANGULAR_8",  "INTRA_ANGULAR_9",  "INTRA_ANGULAR_10", "INTRA_ANGULAR_11",
+         "INTRA_ANGULAR_12", "INTRA_ANGULAR_13", "INTRA_ANGULAR_14", "INTRA_ANGULAR_15",
+         "INTRA_ANGULAR_16", "INTRA_ANGULAR_17", "INTRA_ANGULAR_18", "INTRA_ANGULAR_19",
+         "INTRA_ANGULAR_20", "INTRA_ANGULAR_21", "INTRA_ANGULAR_22", "INTRA_ANGULAR_23",
+         "INTRA_ANGULAR_24", "INTRA_ANGULAR_25", "INTRA_ANGULAR_26", "INTRA_ANGULAR_27",
+         "INTRA_ANGULAR_28", "INTRA_ANGULAR_29", "INTRA_ANGULAR_30", "INTRA_ANGULAR_31",
+         "INTRA_ANGULAR_32", "INTRA_ANGULAR_33", "INTRA_ANGULAR_34"});
       statisticsData.addStatType(intraDir);
     }
   }

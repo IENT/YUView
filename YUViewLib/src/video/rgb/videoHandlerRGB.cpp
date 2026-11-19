@@ -274,7 +274,7 @@ QLayout *videoHandlerRGB::createVideoHandlerControls(bool isSizeFixed)
       ui.rgbFormatComboBox->addItem(QString::fromStdString(*name));
 
   const auto currentFormatInPresetList =
-    vectorContains(videoHandlerRGB::formatPresetList, this->srcPixelFormat);
+    contains(videoHandlerRGB::formatPresetList, this->srcPixelFormat);
   if (!currentFormatInPresetList && this->srcPixelFormat.isValid())
   {
     videoHandlerRGB::formatPresetList.push_back(this->srcPixelFormat);
@@ -427,7 +427,7 @@ void videoHandlerRGB::slotRGBFormatControlChanged(int selectionIndex)
       this->srcPixelFormat = dialog.getSelectedRGBFormat();
 
     const auto isInPresetList =
-      vectorContains(videoHandlerRGB::formatPresetList, this->srcPixelFormat);
+      contains(videoHandlerRGB::formatPresetList, this->srcPixelFormat);
     if (!isInPresetList && this->srcPixelFormat.isValid())
     {
       videoHandlerRGB::formatPresetList.push_back(this->srcPixelFormat);
@@ -650,11 +650,9 @@ void videoHandlerRGB::convertRGBToImage(const QByteArray &sourceBuffer, QImage &
 
   // Check the image buffer size before we write to it
 #if QT_VERSION < QT_VERSION_CHECK(5, 10, 0)
-  assert(functions::clipToUnsigned(outputImage.byteCount()) >=
-         frameSize.width * frameSize.height * 4);
+  assert(outputImage.byteCount() >= frameSize.area() * 4);
 #else
-  assert(functions::clipToUnsigned(outputImage.sizeInBytes()) >=
-         frameSize.width * frameSize.height * 4);
+  assert(outputImage.sizeInBytes() >= frameSize.area() * 4);
 #endif
 
   this->convertSourceToRGBA32Bit(sourceBuffer, outputImage.bits(), format);

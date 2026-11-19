@@ -257,7 +257,7 @@ QStringList SettingsDialog::getLibraryPath(QString currentFile, QString caption,
   fileDialog.setFileMode(multipleFiles ? QFileDialog::ExistingFiles : QFileDialog::ExistingFile);
   if (is_Q_OS_LINUX)
     fileDialog.setNameFilter("Library files (*.so.* *.so)");
-  if (is_Q_OS_MAC)
+  if (is_Q_OS_MACOS)
     fileDialog.setNameFilter("Library files (*.dylib)");
   if (is_Q_OS_WIN)
     fileDialog.setNameFilter("Library files (*.dll)");
@@ -400,8 +400,7 @@ void SettingsDialog::on_pushButtonFFMpegSelectFile_clicked()
       const auto filePath =
           QFileDialog::getSaveFileName(this, "Select a destination for the log file.");
       QFile logFile(filePath);
-      logFile.open(QIODevice::WriteOnly);
-      if (logFile.isOpen())
+      if (logFile.open(QIODevice::WriteOnly))
       {
         QTextStream outputStream(&logFile);
         for (auto l : logList)

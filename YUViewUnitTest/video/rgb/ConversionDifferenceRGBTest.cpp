@@ -36,7 +36,7 @@
 #include <common/FunctionsGui.h>
 #include <video/rgb/ConversionDifferenceRGB.h>
 
-#include <common/Testing.h>
+#include <Testing.h>
 
 #include <random>
 #include <stdexcept>

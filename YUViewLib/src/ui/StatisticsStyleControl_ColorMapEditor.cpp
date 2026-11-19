@@ -197,7 +197,7 @@ void StatisticsStyleControl_ColorMapEditor::keyPressEvent(QKeyEvent *keyEvent)
 {
   if (keyEvent->modifiers() == Qt::NoModifier && keyEvent->key() == Qt::Key_Delete)
     this->on_pushButtonDelete_clicked();
-  if (is_Q_OS_MAC && keyEvent->modifiers() == Qt::NoModifier &&
+  if (is_Q_OS_MACOS && keyEvent->modifiers() == Qt::NoModifier &&
       keyEvent->key() == Qt::Key_Backspace)
     this->on_pushButtonDelete_clicked();
   else if (keyEvent->modifiers() == Qt::NoModifier && keyEvent->key() == Qt::Key_Insert)

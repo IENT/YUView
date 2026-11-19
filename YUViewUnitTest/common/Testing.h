@@ -46,6 +46,8 @@ using ::testing::TestWithParam;
 using ::testing::Values;
 using ::testing::ValuesIn;
 
+void PrintTo(const QString &string, std::ostream *os);
+
 namespace yuviewTest
 {
 

@@ -39,8 +39,8 @@
 namespace video::yuv
 {
 
-PixelFormatYUV
-guessPixelFormatFromSizeAndName(const filesource::frameFormatGuess::GuessedFrameFormat &guessedFrameFormat,
-                                const filesource::frameFormatGuess::FileInfoForGuess   &fileInfo);
+std::optional<PixelFormatYUV> guessPixelFormatFromSizeAndName(
+  const filesource::frameFormatGuess::GuessedFrameFormat &guessedFrameFormat,
+  const filesource::frameFormatGuess::FileInfoForGuess   &fileInfo);
 
 } // namespace video::yuv

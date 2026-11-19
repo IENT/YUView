@@ -256,8 +256,7 @@ void videoHandlerDifference::reportFirstDifferencePosition(QList<InfoItem> &info
   if (!inputsValid())
     return;
 
-  if (functions::clipToUnsigned(currentImage.width()) != frameSize.width ||
-      functions::clipToUnsigned(currentImage.height()) != frameSize.height)
+  if (currentImage.width() != frameSize.width || currentImage.height() != frameSize.height)
     return;
 
   if (codingOrder == CodingOrder::HEVC)
@@ -426,13 +425,15 @@ bool videoHandlerDifference::hierarchicalPosition(int           x,
   return false;
 }
 
-inline int
-getValueFromSource(const unsigned char *src, const int idx, const int bps, const bool bigEndian)
+inline int getValueFromSource(const unsigned char    *src,
+                              const int               idx,
+                              const int               bps,
+                              const video::Endianness endianness)
 {
   if (bps > 8)
     // Read two bytes in the right order
-    return (bigEndian) ? src[idx * 2] << 8 | src[idx * 2 + 1]
-                       : src[idx * 2] | src[idx * 2 + 1] << 8;
+    return (endianness == video::Endianness::Big) ? src[idx * 2] << 8 | src[idx * 2 + 1]
+                                                  : src[idx * 2] | src[idx * 2 + 1] << 8;
   else
     // Just read one byte
     return src[idx];
@@ -453,15 +454,10 @@ bool videoHandlerDifference::hierarchicalPositionYUV(int                        
 
   // The items can be of different size (we then calculate the difference of the top left aligned
   // part)
-  const int w_in = frameSize.width;
-  const int h_in = frameSize.height;
+  const auto [w_in, h_in] = frameSize;
+  const auto [subH, subV] = diffYUVFormat.getSubsamplingRatios();
 
-  // Get subsampling modes (they are identical for both inputs and the output)
-  const int subH = diffYUVFormat.getSubsamplingHor();
-  const int subV = diffYUVFormat.getSubsamplingVer();
-
-  // Get the endianness of the inputs
-  const bool bigEndian = diffYUVFormat.isBigEndian();
+  const auto endianness = diffYUVFormat.getEndianness();
 
   // Get/Set the bit depth of the input
   const int bps_in   = diffYUVFormat.getBitsPerSample();
@@ -482,15 +478,15 @@ bool videoHandlerDifference::hierarchicalPositionYUV(int                        
 
   if (blockSize == 4)
   {
+    const auto isPlanarYUV = diffYUVFormat.getPlanarFormat().has_value() &&
+                             diffYUVFormat.getPlanarFormat()->planeOrder != yuv::PlaneOrder::YUV &&
+                             diffYUVFormat.getPlanarFormat()->planeOrder != yuv::PlaneOrder::YUVA;
+
     const unsigned char *srcY1 = (unsigned char *)diffYUV.data();
-    const unsigned char *srcU1 = (diffYUVFormat.getPlaneOrder() == yuv::PlaneOrder::YUV ||
-                                  diffYUVFormat.getPlaneOrder() == yuv::PlaneOrder::YUVA)
-                                   ? srcY1 + nrBytesLumaPlane_In
-                                   : srcY1 + nrBytesLumaPlane_In + nrBytesChromaPlane_In;
-    const unsigned char *srcV1 = (diffYUVFormat.getPlaneOrder() == yuv::PlaneOrder::YUV ||
-                                  diffYUVFormat.getPlaneOrder() == yuv::PlaneOrder::YUVA)
-                                   ? srcY1 + nrBytesLumaPlane_In + nrBytesChromaPlane_In
-                                   : srcY1 + nrBytesLumaPlane_In;
+    const unsigned char *srcU1 = isPlanarYUV ? srcY1 + nrBytesLumaPlane_In
+                                             : srcY1 + nrBytesLumaPlane_In + nrBytesChromaPlane_In;
+    const unsigned char *srcV1 = isPlanarYUV ? srcY1 + nrBytesLumaPlane_In + nrBytesChromaPlane_In
+                                             : srcY1 + nrBytesLumaPlane_In;
 
     // adjust source pointer according to block position
     srcY1 += y * stride_in;
@@ -504,7 +500,7 @@ bool videoHandlerDifference::hierarchicalPositionYUV(int                        
       for (int subX = x; subX < x + 4; subX++)
       {
 
-        int val1 = getValueFromSource(srcY1, subX, bps_in, bigEndian);
+        int val1 = getValueFromSource(srcY1, subX, bps_in, endianness);
         if (val1 != diffZero)
         {
           firstX = x;
@@ -515,8 +511,8 @@ bool videoHandlerDifference::hierarchicalPositionYUV(int                        
         // is this a position at which we have a chroma sample?
         if (subX % subH == 0 && subY % subV == 0 && subX * subV < w_in)
         {
-          int valU1 = getValueFromSource(srcU1, subX, bps_in, bigEndian);
-          int valV1 = getValueFromSource(srcV1, subX, bps_in, bigEndian);
+          int valU1 = getValueFromSource(srcU1, subX, bps_in, endianness);
+          int valV1 = getValueFromSource(srcV1, subX, bps_in, endianness);
           if (valU1 != diffZero || valV1 != diffZero)
           {
             firstX = x * subV;

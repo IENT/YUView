@@ -32,7 +32,7 @@
 
 #include "gtest/gtest.h"
 #include <array>
-#include <common/Testing.h>
+#include <Testing.h>
 
 #include <string>
 #include <tuple>

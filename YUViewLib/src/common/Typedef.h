@@ -60,11 +60,11 @@
 #endif
 
 // Convenience macro definitions which can be used in if clauses:
-// if (is_Q_OS_MAC) ...
-#ifdef Q_OS_MAC
-constexpr bool is_Q_OS_MAC = true;
+// if (is_Q_OS_MACOS) ...
+#ifdef Q_OS_MACOS
+constexpr bool is_Q_OS_MACOS = true;
 #else
-constexpr bool is_Q_OS_MAC = false;
+constexpr bool is_Q_OS_MACOS = false;
 #endif
 
 #ifdef Q_OS_WIN
@@ -157,10 +157,9 @@ std::optional<std::size_t> vectorIndexOf(const std::vector<T> &vec, const T &ite
   return static_cast<std::size_t>(std::distance(vec.begin(), it));
 }
 
-template <typename T> int vectorContains(const std::vector<T> &vec, const T &item)
+template <class Container, class T> inline bool contains(Container container, const T &value)
 {
-  auto it = std::find(vec.begin(), vec.end(), item);
-  return it != vec.end();
+  return std::find(container.begin(), container.end(), value) != container.end();
 }
 
 typedef std::vector<unsigned char> ByteVector;

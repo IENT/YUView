@@ -30,6 +30,8 @@
 *   along with this program. If not, see <http://www.gnu.org/licenses/>.
 */
 
+#pragma once
+
 #include <QLabel>
 
 // A label that emits a 'clicked' signal when clicked.
