@@ -133,13 +133,8 @@ Size getPlaneSize(const vvdecPlane &plane)
 
 } // namespace
 
-decoderVVDec::decoderVVDec(int signalID, bool cachingDecoder) : decoderBaseSingleLib(cachingDecoder)
+decoderVVDec::decoderVVDec(int, bool cachingDecoder) : decoderBaseSingleLib(cachingDecoder)
 {
-  // For now we don't support different signals (like prediction, residual)
-  (void)signalID;
-
-  this->rawFormat = video::RawFormat::YUV;
-
   // Try to load the decoder library (.dll on Windows, .so on Linux, .dylib on Mac)
   QSettings settings;
   settings.beginGroup("Decoders");
@@ -364,11 +359,11 @@ bool decoderVVDec::getNextFrameFromDecoder()
   }
 
   // Check the validity of the picture
-  const auto lumaSize = getVVDecFrameSize(this->currentFrame);
-  const auto nrPlanes = (this->currentFrame->colorFormat == VVDEC_CF_YUV400_PLANAR) ? 1u : 3u;
+  const auto frameSize = getVVDecFrameSize(this->currentFrame);
+  const auto nrPlanes  = (this->currentFrame->colorFormat == VVDEC_CF_YUV400_PLANAR) ? 1u : 3u;
 
   // Check the validity of the picture
-  if (!lumaSize.isValid())
+  if (!frameSize.isValid())
     DEBUG_vvdec("decoderVVDec::getNextFrameFromDecoder got invalid size");
   const auto subsampling = convertFromInternalSubsampling(this->currentFrame->colorFormat);
   if (subsampling == Subsampling::UNKNOWN)
@@ -381,28 +376,14 @@ bool decoderVVDec::getNextFrameFromDecoder()
 
   for (unsigned i = 1; i < this->currentFrame->numPlanes; i++)
   {
-    const auto expectedChromaSize = getSubsampledSize(lumaSize, subsampling);
+    const auto expectedChromaSize = getSubsampledSize(frameSize, subsampling);
     const auto planeSize          = getPlaneSize(this->currentFrame->planes[i]);
     if (planeSize != expectedChromaSize)
       DEBUG_vvdec("decoderVVDec::getNextFrameFromDecoder plane has different size then expected");
   }
 
-  if (!this->frameSize.isValid() && !this->formatYUV.isValid())
-  {
-    // Set the values
-    this->frameSize = lumaSize;
-    this->formatYUV = PixelFormatYUV(PlanarPixelFormat({subsampling, static_cast<int>(bitDepth)}));
-  }
-  else
-  {
-    // Check the values against the previously set values
-    if (this->frameSize != lumaSize)
-      return setErrorB("Received a frame of different size");
-    if (this->formatYUV.getSubsampling() != subsampling)
-      return setErrorB("Received a frame with different subsampling");
-    if (this->formatYUV.getBitsPerSample() != static_cast<int>(bitDepth))
-      return setErrorB("Received a frame with different bit depth");
-  }
+  if (!checkOrSetBitstreamFormat(frameSize, PlanarPixelFormat({subsampling, static_cast<int>(bitDepth)})))
+    return false;
 
   DEBUG_vvdec("decoderVVDec::getNextFrameFromDecoder got a valid frame");
   return true;

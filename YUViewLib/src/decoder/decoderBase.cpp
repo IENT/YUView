@@ -43,15 +43,15 @@ namespace decoder
 #if DECODERBASE_DEBUG_OUTPUT && !NDEBUG
 #include <QDebug>
 #if DECODERBASE_DEBUG_OUTPUT == 1
-#define DEBUG_HEVCDECODERBASE                                                                      \
+#define DEBUG_DECODERBASE                                                                          \
   if (!isCachingDecoder)                                                                           \
   qDebug
 #elif DECODERBASE_DEBUG_OUTPUT == 2
-#define DEBUG_HEVCDECODERBASE                                                                      \
+#define DEBUG_DECODERBASE                                                                          \
   if (isCachingDecoder)                                                                            \
   qDebug
 #elif DECODERBASE_DEBUG_OUTPUT == 3
-#define DEBUG_HEVCDECODERBASE                                                                      \
+#define DEBUG_DECODERBASE                                                                          \
   if (isCachingDecoder)                                                                            \
     qDebug("c:");                                                                                  \
   else                                                                                             \
@@ -82,6 +82,22 @@ bool decoderBase::isSignalDifference(int signalID) const
   return false;
 }
 
+std::optional<PixelFormatYUV> decoderBase::getPixelFormatYUV() const
+{
+  if (this->bitstreamFormat &&
+      std::holds_alternative<PixelFormatYUV>(this->bitstreamFormat->pixelFormat))
+    return std::get<PixelFormatYUV>(this->bitstreamFormat->pixelFormat);
+  return {};
+}
+
+std::optional<PixelFormatRGB> decoderBase::getRGBPixelFormat() const
+{
+  if (this->bitstreamFormat &&
+      std::holds_alternative<PixelFormatRGB>(this->bitstreamFormat->pixelFormat))
+    return std::get<PixelFormatRGB>(this->bitstreamFormat->pixelFormat);
+  return {};
+}
+
 void decoderBase::setDecodeSignal(int signalID, bool &decoderResetNeeded)
 {
   if (signalID >= 0 && signalID < nrSignalsSupported())
@@ -95,6 +111,22 @@ stats::FrameTypeData decoderBase::getCurrentFrameStatsForType(int typeId) const
     return {};
 
   return statisticsData->getFrameTypeData(typeId);
+}
+
+bool decoderBase::checkOrSetBitstreamFormat(const Size           &frameSize,
+                                            const PixelFormatYUV &pixelFormatYUV)
+{
+  if (!this->bitstreamFormat)
+    this->bitstreamFormat = {frameSize, pixelFormatYUV};
+  else
+  {
+    // Check the values against the previously set values
+    if (this->bitstreamFormat->frameSize != frameSize)
+      return setErrorB("Received a frame of different size");
+    if (this->getPixelFormatYUV() != pixelFormatYUV)
+      return setErrorB("Received a frame with different pixel format");
+  }
+  return true;
 }
 
 void decoderBaseSingleLib::loadDecoderLibrary(QString specificLibrary)
@@ -132,8 +164,8 @@ void decoderBaseSingleLib::loadDecoderLibrary(QString specificLibrary)
                           << searchPath << QDir::currentPath() + "/%1"
                           << QDir::currentPath() + "/decoder/%1"
                           << QDir::currentPath() +
-                                 "/libde265/%1" // for legacy installations before the decoders were
-                                                // moved to the "decoders" folder
+                               "/libde265/%1" // for legacy installations before the decoders were
+                                              // moved to the "decoders" folder
                           << QCoreApplication::applicationDirPath() + "/%1"
                           << QCoreApplication::applicationDirPath() + "/decoder/%1"
                           << QCoreApplication::applicationDirPath() + "/libde265/%1"

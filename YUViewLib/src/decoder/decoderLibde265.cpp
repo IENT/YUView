@@ -95,9 +95,6 @@ decoderLibde265::decoderLibde265(int signalID, bool cachingDecoder)
 {
   this->currentOutputBuffer.clear();
 
-  // Libde265 can only decoder HEVC in YUV format
-  this->rawFormat = video::RawFormat::YUV;
-
   QSettings settings;
   settings.beginGroup("Decoders");
   this->loadDecoderLibrary(settings.value("libde265File", "").toString());
@@ -354,9 +351,9 @@ bool decoderLibde265::decodeFrame()
   if (curImage != nullptr)
   {
     // Get the resolution / yuv format from the frame
-    auto s = Size(this->lib.de265_get_image_width(curImage, 0),
-                  this->lib.de265_get_image_height(curImage, 0));
-    if (!s.isValid())
+    const auto frameSize = Size(this->lib.de265_get_image_width(curImage, 0),
+                                this->lib.de265_get_image_height(curImage, 0));
+    if (!frameSize.isValid())
       DEBUG_LIBDE265("decoderLibde265::decodeFrame got invalid frame size");
     auto subsampling = convertFromInternalSubsampling(this->lib.de265_get_chroma_format(curImage));
     if (subsampling == Subsampling::UNKNOWN)
@@ -365,26 +362,15 @@ bool decoderLibde265::decodeFrame()
     if (bitDepth < 8 || bitDepth > 16)
       DEBUG_LIBDE265("decoderLibde265::decodeFrame got invalid bit depth");
 
-    if (!this->frameSize.isValid() && !this->formatYUV.isValid())
-    {
-      // Set the values
-      this->frameSize = s;
-      this->formatYUV = PixelFormatYUV(PlanarPixelFormat({subsampling, bitDepth}));
-    }
-    else
-    {
-      // Check the values against the previously set values
-      if (this->frameSize != s)
-        return setErrorB("Received a frame of different size");
-      if (this->formatYUV.getSubsampling() != subsampling)
-        return setErrorB("Received a frame with different subsampling");
-      if (this->formatYUV.getBitsPerSample() != bitDepth)
-        return setErrorB("Received a frame with different bit depth");
-    }
+    if (!checkOrSetBitstreamFormat(frameSize,
+                                   PixelFormatYUV(PlanarPixelFormat({subsampling, bitDepth}))))
+      return false;
+
     DEBUG_LIBDE265("decoderLibde265::decodeFrame Picture decoded");
 
     this->decoderState = DecoderState::RetrieveFrames;
     this->currentOutputBuffer.clear();
+    
     return true;
   }
   return false;

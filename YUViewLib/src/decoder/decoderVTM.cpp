@@ -269,9 +269,10 @@ bool decoderVTM::getNextFrameFromDecoder()
   }
 
   // Check the validity of the picture
-  const auto picSize = Size(this->lib.libVTMDec_get_picture_width(currentVTMPic, LIBVTMDEC_LUMA),
-                            this->lib.libVTMDec_get_picture_height(currentVTMPic, LIBVTMDEC_LUMA));
-  if (!picSize.isValid())
+  const auto frameSize =
+    Size(this->lib.libVTMDec_get_picture_width(currentVTMPic, LIBVTMDEC_LUMA),
+         this->lib.libVTMDec_get_picture_height(currentVTMPic, LIBVTMDEC_LUMA));
+  if (!frameSize.isValid())
     DEBUG_DECVTM("decoderVTM::getNextFrameFromDecoder got invalid size");
   auto subsampling =
     convertFromInternalSubsampling(this->lib.libVTMDec_get_chroma_format(currentVTMPic));
@@ -281,21 +282,9 @@ bool decoderVTM::getNextFrameFromDecoder()
   if (bitDepth < 8 || bitDepth > 16)
     DEBUG_DECVTM("decoderVTM::getNextFrameFromDecoder got invalid bit depth");
 
-  if (!this->frameSize.isValid() && !this->formatYUV.isValid())
-  {
-    this->frameSize = picSize;
-    this->formatYUV = PixelFormatYUV(PlanarPixelFormat({subsampling, bitDepth}));
-  }
-  else
-  {
-    // Check the values against the previously set values
-    if (this->frameSize != picSize)
-      return setErrorB("Received a frame of different size");
-    if (this->formatYUV.getSubsampling() != subsampling)
-      return setErrorB("Received a frame with different subsampling");
-    if (this->formatYUV.getBitsPerSample() != bitDepth)
-      return setErrorB("Received a frame with different bit depth");
-  }
+  if (!checkOrSetBitstreamFormat(frameSize,
+                                 PixelFormatYUV(PlanarPixelFormat({subsampling, bitDepth}))))
+    return false;
 
   DEBUG_DECVTM("decoderVTM::getNextFrameFromDecoder got a valid frame wit POC %d",
                this->lib.libVTMDec_get_POC(currentVTMPic));
