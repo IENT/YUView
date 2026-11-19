@@ -133,6 +133,8 @@ private:
   // retrive a new frame.
   bool decodedFrameWaiting{false};
 
+  bool eofSent{false};
+
   // Statistics caching
   void cacheStatistics(libHMDec_picture *pic);
 

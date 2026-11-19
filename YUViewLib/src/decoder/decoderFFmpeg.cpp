@@ -34,7 +34,7 @@
 
 #include <common/Functions.h>
 
-#define DECODERFFMPEG_DEBUG_OUTPUT 1
+#define DECODERFFMPEG_DEBUG_OUTPUT 0
 #if DECODERFFMPEG_DEBUG_OUTPUT && !NDEBUG
 #include <QDebug>
 #include <source_location>
