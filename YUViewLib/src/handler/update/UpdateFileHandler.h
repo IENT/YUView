@@ -40,34 +40,34 @@
 namespace update
 {
 
-typedef QPair<QString, int> downloadFile;
+using DownloadFile = QPair<QString, int>;
 
 class UpdateFileHandler
 {
 public:
   UpdateFileHandler();
-  UpdateFileHandler(QString fileName, QString updatePath);
-  UpdateFileHandler(QByteArray &byteArray);
+  UpdateFileHandler(const QString &fileName, const QString &updatePath);
+  UpdateFileHandler(const QByteArray &byteArray);
 
+  // Call this on the remote file list with a reference to the local file list to get a list
+  // of files that require an update (that need to be downloaded).
+  QList<DownloadFile> getFilesToUpdate(UpdateFileHandler &localFiles) const;
+
+private:
   // Parse the local file list and add all files that exist locally to the list of files
   // which potentially might require an update.
-  void readFromFile(QString fileName);
+  void readFromFile(const QString &fileName);
 
   // Parse the remote file from the given QByteArray. Remote files will not be checked for
   // existence on the remote side. We assume that all files listed in the remote file list
   // also exist on the remote side and can be downloaded.
-  void readRemoteFromData(QByteArray &arr);
+  void readRemoteFromData(const QByteArray &arr);
 
   // Parse one line from the update file list (remote or local)
   void parseOneLine(QString &line, bool checkExistence = false);
 
-  // Call this on the remote file list with a reference to the local file list to get a list
-  // of files that require an update (that need to be downloaded).
-  QList<downloadFile> getFilesToUpdate(UpdateFileHandler &localFiles) const;
-
   QString getInfo() const;
 
-private:
   // For every entry in the "versioninfo.txt" file, these entries present:
   struct fileListEntry
   {

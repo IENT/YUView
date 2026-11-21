@@ -57,17 +57,18 @@ UpdateFileHandler::UpdateFileHandler()
 {
 }
 
-UpdateFileHandler::UpdateFileHandler(QString fileName, QString updatePath) : updatePath(updatePath)
+UpdateFileHandler::UpdateFileHandler(const QString &fileName, const QString &updatePath)
+    : updatePath(updatePath)
 {
   this->readFromFile(fileName);
 }
 
-UpdateFileHandler::UpdateFileHandler(QByteArray &byteArray)
+UpdateFileHandler::UpdateFileHandler(const QByteArray &byteArray)
 {
   this->readRemoteFromData(byteArray);
 }
 
-void UpdateFileHandler::readFromFile(QString fileName)
+void UpdateFileHandler::readFromFile(const QString &fileName)
 {
   DEBUG_UPDATE_FILE("Current working dir " << this->updatePath);
 
@@ -95,7 +96,7 @@ void UpdateFileHandler::readFromFile(QString fileName)
   this->loaded = true;
 }
 
-void UpdateFileHandler::readRemoteFromData(QByteArray &arr)
+void UpdateFileHandler::readRemoteFromData(const QByteArray &arr)
 {
   const QString     reply = QString(arr);
   const QStringList lines = reply.split("\n");
@@ -137,9 +138,9 @@ void UpdateFileHandler::parseOneLine(QString &line, bool checkExistence)
   }
 }
 
-QList<downloadFile> UpdateFileHandler::getFilesToUpdate(UpdateFileHandler &localFiles) const
+QList<DownloadFile> UpdateFileHandler::getFilesToUpdate(UpdateFileHandler &localFiles) const
 {
-  QList<downloadFile> updateList;
+  QList<DownloadFile> updateList;
   for (auto remoteFile : this->updateFileList)
   {
     bool fileFound    = false;
@@ -156,10 +157,12 @@ QList<downloadFile> UpdateFileHandler::getFilesToUpdate(UpdateFileHandler &local
       }
     }
     if (!fileFound || updateNeeded)
-      updateList.append(downloadFile(remoteFile.filePath, remoteFile.fileSize));
+      updateList.append(DownloadFile(remoteFile.filePath, remoteFile.fileSize));
   }
-  // No matter what, we will update the "versioninfo.txt" file (assume it to be 10kbyte)
-  updateList.append(downloadFile(UpdateFileHandler_FILE_NAME, 10000));
+
+  if (!updateList.empty())
+    updateList.append(DownloadFile(UpdateFileHandler_FILE_NAME, 10000));
+
   return updateList;
 }
 

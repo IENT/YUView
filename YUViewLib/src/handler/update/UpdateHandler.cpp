@@ -55,10 +55,6 @@
 #include <ShellAPI.h> // without space also
 #endif
 
-// Don't abort in case a connection is not encrypted.
-// ONLY USE THIS FOR DEBGGING
-#define ALLOW_UNENCRYPTED_CONNECTIONS 0
-
 #define UPDATER_DEBUG_OUTPUT 0
 #if UPDATER_DEBUG_OUTPUT && !NDEBUG
 #include <QDebug>
@@ -68,17 +64,10 @@
 #endif
 
 #define UPDATEFILEHANDLER_FILE_NAME "versioninfo.txt"
-#if ALLOW_UNENCRYPTED_CONNECTIONS
 #define UPDATEFILEHANDLER_URL                                                                      \
   "https://raw.githubusercontent.com/IENT/YUViewReleases/master/win/autoupdate/"
 #define UPDATEFILEHANDLER_TESTDEPLOY_URL                                                           \
   "https://raw.githubusercontent.com/IENT/YUViewReleases/dev/win/autoupdate/"
-#else
-#define UPDATEFILEHANDLER_URL                                                                      \
-  "https://raw.githubusercontent.com/IENT/YUViewReleases/master/win/autoupdate/"
-#define UPDATEFILEHANDLER_TESTDEPLOY_URL                                                           \
-  "https://raw.githubusercontent.com/IENT/YUViewReleases/dev/win/autoupdate/"
-#endif
 
 namespace update
 {
@@ -155,18 +144,11 @@ void UpdateHandler::startCheckForNewVersion(bool userRequest, bool force)
     // Check the Github repository branch binariesAutoUpdate if there is a new version of the YUView
     // executable available. First we will try to establish a secure connection to
     // raw.githubusercontent.com
-#if ALLOW_UNENCRYPTED_CONNECTIONS
-    DEBUG_UPDATE("UpdateHandler::startCheckForNewVersion connectToHost raw.githubusercontent.com");
-    updaterStatus    = UpdateStatus::EstablishConnection;
-    userCheckRequest = userRequest;
-    networkManager.connectToHost("raw.githubusercontent.com");
-#else
     DEBUG_UPDATE(
       "UpdateHandler::startCheckForNewVersion connectToHostEncrypted raw.githubusercontent.com");
     updaterStatus    = UpdateStatus::EstablishConnection;
     userCheckRequest = userRequest;
     networkManager.connectToHostEncrypted("raw.githubusercontent.com");
-#endif
   }
   else if (VERSION_CHECK)
   {
@@ -229,13 +211,11 @@ void UpdateHandler::replyFinished(QNetworkReply *reply)
     }
     else if (updaterStatus == UpdateStatus::Checking && !error)
     {
-#if !ALLOW_UNENCRYPTED_CONNECTIONS
       bool connectionEncrypted =
         reply->attribute(QNetworkRequest::ConnectionEncryptedAttribute).toBool();
       if (!connectionEncrypted)
         return abortUpdate("The " UPDATEFILEHANDLER_FILE_NAME
                            " file could not be downloaded using a secure connection.");
-#endif
 
       // We recieved the version info file. See what it contains.
       QByteArray updateFileInfo = reply->readAll();
@@ -259,7 +239,7 @@ void UpdateHandler::replyFinished(QNetworkReply *reply)
         // - If the file name is versioninfo.txt
         downloadFiles = remoteFile.getFilesToUpdate(localFile);
 
-        if (downloadFiles.count() > 1)
+        if (!downloadFiles.empty())
         {
           // There are files to update besides the versioninfo.txt file.
           // There is a new YUView version available. Do we ask the user first or do we just
@@ -419,8 +399,8 @@ void UpdateHandler::downloadAndInstallUpdate()
   // Get the total download size
   totalDownloadSize       = 0;
   currentDownloadProgress = 0;
-  for (downloadFile f : downloadFiles)
-    totalDownloadSize += f.second;
+  for (const auto &file : downloadFiles)
+    totalDownloadSize += file.second;
   if (downloadProgress)
     downloadProgress->setMaximum(totalDownloadSize);
 
