@@ -53,8 +53,23 @@ namespace update
 
 namespace
 {
-std::optional<FileListEntry> createFileEntry(QStringList &lineSplit)
+
+std::optional<FileListEntry> parseOneLine(const QString &line)
 {
+  QStringList lineSplit = line.split(" ");
+  if (line.startsWith("Last Commit"))
+  {
+    if (line.startsWith("Last Commit: "))
+      DEBUG_UPDATE_FILE("Local file last commit: " << lineSplit[2]);
+    return {};
+  }
+  // Ignore all lines that start with %, / or #
+  if (line.startsWith("%") || line.startsWith("/") || line.startsWith("#"))
+    return {};
+
+  if (lineSplit.size() != 4)
+    return {};
+
   FileListEntry entry;
 
   entry.filePath = lineSplit[0];
@@ -117,7 +132,8 @@ void UpdateFileHandler::readFromFile(const QString &fileName)
     {
       // Convert the line into a file/version pair (they should be separated by a space)
       QString line = in.readLine();
-      this->parseOneLine(line, true);
+      if (const auto updateFile = parseOneLine(line))
+        this->updateFileList.append(*updateFile);
     }
     updateFile.close();
   }
@@ -129,43 +145,8 @@ void UpdateFileHandler::readRemoteFromData(const QByteArray &arr)
   const QString     reply = QString(arr);
   const QStringList lines = reply.split("\n");
   for (auto line : lines)
-    this->parseOneLine(line);
-}
-
-void UpdateFileHandler::parseOneLine(QString &line, bool checkExistence)
-{
-  QStringList lineSplit = line.split(" ");
-  if (line.startsWith("Last Commit"))
-  {
-    if (line.startsWith("Last Commit: "))
-      DEBUG_UPDATE_FILE("Local file last commit: " << lineSplit[2]);
-    return;
-  }
-  // Ignore all lines that start with %, / or #
-  if (line.startsWith("%") || line.startsWith("/") || line.startsWith("#"))
-    return;
-  if (lineSplit.count() == 4)
-  {
-    if (const auto entry = createFileEntry(lineSplit))
-    {
-      if (checkExistence)
-      {
-        // Check if the file exists locally
-        QFileInfo fInfo(this->updatePath + entry->filePath);
-        if (fInfo.exists() && fInfo.isFile())
-          this->updateFileList.append(*entry);
-        else
-          // The file does not exist locally. That is strange since it is in the update info file.
-          // Files that do not exist locally should always be downloaded so we don't put them into
-          // the list.
-          DEBUG_UPDATE_FILE("The local file " << fInfo.absoluteFilePath()
-                                              << " could not be found.");
-      }
-      else
-        // Do not check if the file exists
-        this->updateFileList.append(*entry);
-    }
-  }
+    if (const auto updateFile = parseOneLine(line))
+      this->updateFileList.append(*updateFile);
 }
 
 QList<DownloadFile> UpdateFileHandler::getFilesToUpdate(UpdateFileHandler &localFiles) const

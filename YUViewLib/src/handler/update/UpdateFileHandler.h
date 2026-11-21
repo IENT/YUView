@@ -71,9 +71,6 @@ private:
   // also exist on the remote side and can be downloaded.
   void readRemoteFromData(const QByteArray &arr);
 
-  // Parse one line from the update file list (remote or local)
-  void parseOneLine(QString &line, bool checkExistence = false);
-
   // For every entry in the "versioninfo.txt" file, these entries present:
 
   // For every entry, there is the file path/name and a version string
