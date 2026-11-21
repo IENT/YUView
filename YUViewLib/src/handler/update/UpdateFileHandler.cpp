@@ -51,6 +51,34 @@
 namespace update
 {
 
+namespace
+{
+std::optional<FileListEntry> createFileEntry(QStringList &lineSplit)
+{
+  FileListEntry entry;
+
+  entry.filePath = lineSplit[0];
+  if (entry.filePath.endsWith(","))
+    // There is a comma at the end. Remove it.
+    entry.filePath.chop(1);
+  entry.version = lineSplit[1];
+  if (entry.version.endsWith(","))
+    entry.version.chop(1);
+  entry.hash = lineSplit[2];
+  if (entry.hash.endsWith(","))
+    entry.hash.chop(1);
+  QString sizeString = lineSplit[3];
+  if (sizeString.endsWith(","))
+    sizeString.chop(1);
+
+  bool ok        = true;
+  entry.fileSize = sizeString.toInt(&ok);
+
+  return ok ? std::make_optional(entry) : std::nullopt;
+}
+
+} // namespace
+
 const auto UpdateFileHandler_FILE_NAME = "versioninfo.txt";
 
 UpdateFileHandler::UpdateFileHandler()
@@ -118,30 +146,32 @@ void UpdateFileHandler::parseOneLine(QString &line, bool checkExistence)
     return;
   if (lineSplit.count() == 4)
   {
-    auto entry = createFileEntry(lineSplit);
-
-    if (checkExistence)
+    if (const auto entry = createFileEntry(lineSplit))
     {
-      // Check if the file exists locally
-      QFileInfo fInfo(this->updatePath + entry.filePath);
-      if (fInfo.exists() && fInfo.isFile())
-        this->updateFileList.append(entry);
+      if (checkExistence)
+      {
+        // Check if the file exists locally
+        QFileInfo fInfo(this->updatePath + entry->filePath);
+        if (fInfo.exists() && fInfo.isFile())
+          this->updateFileList.append(*entry);
+        else
+          // The file does not exist locally. That is strange since it is in the update info file.
+          // Files that do not exist locally should always be downloaded so we don't put them into
+          // the list.
+          DEBUG_UPDATE_FILE("The local file " << fInfo.absoluteFilePath()
+                                              << " could not be found.");
+      }
       else
-        // The file does not exist locally. That is strange since it is in the update info file.
-        // Files that do not exist locally should always be downloaded so we don't put them into the
-        // list.
-        DEBUG_UPDATE_FILE("The local file " << fInfo.absoluteFilePath() << " could not be found.");
+        // Do not check if the file exists
+        this->updateFileList.append(*entry);
     }
-    else
-      // Do not check if the file exists
-      this->updateFileList.append(entry);
   }
 }
 
 QList<DownloadFile> UpdateFileHandler::getFilesToUpdate(UpdateFileHandler &localFiles) const
 {
   QList<DownloadFile> updateList;
-  for (auto remoteFile : this->updateFileList)
+  for (const auto &remoteFile : this->updateFileList)
   {
     bool fileFound    = false;
     bool updateNeeded = false;
@@ -164,38 +194,6 @@ QList<DownloadFile> UpdateFileHandler::getFilesToUpdate(UpdateFileHandler &local
     updateList.append(DownloadFile(UpdateFileHandler_FILE_NAME, 10000));
 
   return updateList;
-}
-
-QString UpdateFileHandler::getInfo() const
-{
-  QString s;
-  for (auto f : this->updateFileList)
-  {
-    s += " - " + f.filePath;
-  }
-  return s;
-}
-
-UpdateFileHandler::fileListEntry UpdateFileHandler::createFileEntry(QStringList &lineSplit) const
-{
-  fileListEntry entry;
-
-  entry.filePath = lineSplit[0];
-  if (entry.filePath.endsWith(","))
-    // There is a comma at the end. Remove it.
-    entry.filePath.chop(1);
-  entry.version = lineSplit[1];
-  if (entry.version.endsWith(","))
-    entry.version.chop(1);
-  entry.hash = lineSplit[2];
-  if (entry.hash.endsWith(","))
-    entry.hash.chop(1);
-  QString sizeString = lineSplit[3];
-  if (sizeString.endsWith(","))
-    sizeString.chop(1);
-  entry.fileSize = sizeString.toInt();
-
-  return entry;
 }
 
 } // namespace update

@@ -169,4 +169,25 @@ TEST(UpdateFileHandler, testFileOnlyLocal_shouldIgnoreOnlyLocalFiles)
   EXPECT_TRUE(handlerRemove.getFilesToUpdate(handlerLocal).empty());
 }
 
+TEST(UpdateFileHandler, testFilesizeNotInt_shouldBeHandledAsNonParsable)
+{
+  const auto localFileWithSomeInvalidSizes =
+    QString("Last Commit: v2.16\n"
+            "Last Commit Hash: b666a90f8619c1675ea3807fe14c1c7207fc8536\n"
+            "Last Commit Hash Short: b666a90f\n"
+            "testFile1.dll, 5.13, bca35d064ea1a1639fe3ec1683ffb8ab, invalidSize\n"
+            "testFile2.jpg, 5.13, 6f9dec3ee7cc5ed48cfb0b803b4581c1, 9283Invalid072\n"
+            "someFolder\\file3.dll, 5.13, e2e061e67fe7e6b8f74680b74d692eac, 35840\n"
+            "folder\\subFolder\\file.tst, 5.13, hashStringMustNotBeHex, 229376\n");
+
+  UpdateFileHandler handlerLocal(localFileWithSomeInvalidSizes.toLatin1());
+  UpdateFileHandler handlerRemote(versionFileReference.toLatin1());
+
+  const auto downloadFiles = handlerRemote.getFilesToUpdate(handlerLocal);
+  EXPECT_EQ(downloadFiles.size(), 3);
+  EXPECT_EQ(downloadFiles.at(0), DownloadFile("testFile1.dll", 580096));
+  EXPECT_EQ(downloadFiles.at(1), DownloadFile("testFile2.jpg", 9283072));
+  EXPECT_EQ(downloadFiles.at(2), DownloadFile("versioninfo.txt", 10000));
+}
+
 } // namespace update::test

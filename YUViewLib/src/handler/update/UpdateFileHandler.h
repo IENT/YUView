@@ -42,6 +42,14 @@ namespace update
 
 using DownloadFile = QPair<QString, int>;
 
+struct FileListEntry
+{
+  QString filePath; //< The file name and path
+  QString version;  //< The version of the file
+  QString hash;     //< A hash of the file (unused so far)
+  int     fileSize; //< The size of the file in bytes
+};
+
 class UpdateFileHandler
 {
 public:
@@ -66,20 +74,10 @@ private:
   // Parse one line from the update file list (remote or local)
   void parseOneLine(QString &line, bool checkExistence = false);
 
-  QString getInfo() const;
-
   // For every entry in the "versioninfo.txt" file, these entries present:
-  struct fileListEntry
-  {
-    QString filePath; //< The file name and path
-    QString version;  //< The version of the file
-    QString hash;     //< A hash of the file (unused so far)
-    int     fileSize; //< The size of the file in bytes
-  };
-  fileListEntry createFileEntry(QStringList &lineSplit) const;
 
   // For every entry, there is the file path/name and a version string
-  QList<fileListEntry> updateFileList;
+  QList<FileListEntry> updateFileList;
   QString              updatePath{};
   bool                 loaded{false};
 };
