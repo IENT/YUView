@@ -32,11 +32,21 @@
 
 #include "FrameHandler.h"
 
+#include <QFile>
+#include <QFileInfo>
+#include <QImageReader>
 #include <QPainter>
+#include <QRgba64>
 
 #include <common/FunctionsGui.h>
 #include <decoder/decoderTarga.h>
 #include <playlistitem/playlistItem.h>
+
+#include <array>
+#include <cmath>
+#include <cstring>
+#include <limits>
+#include <optional>
 
 using namespace std::string_view_literals;
 
@@ -50,6 +60,427 @@ namespace video
 #else
 #define DEBUG_FRAME(fmt, ...) ((void)0)
 #endif
+
+struct RgbSample
+{
+  int r{0};
+  int g{0};
+  int b{0};
+  int maxValue{255};
+};
+
+/**
+ * Return true when the image format stores RGB samples with 16 bits per channel.
+ */
+bool is16BitRgbImageFormat(QImage::Format format)
+{
+  return format == QImage::Format_RGBX64 || format == QImage::Format_RGBA64 ||
+         format == QImage::Format_RGBA64_Premultiplied || format == QImage::Format_Grayscale16;
+}
+
+/**
+ * Read a big-endian 16-bit integer from an image file byte stream.
+ */
+uint16_t readBE16(const uchar *data)
+{
+  return (uint16_t(data[0]) << 8) | uint16_t(data[1]);
+}
+
+/**
+ * Read a little-endian 16-bit integer from an image file byte stream.
+ */
+uint16_t readLE16(const uchar *data)
+{
+  return uint16_t(data[0]) | (uint16_t(data[1]) << 8);
+}
+
+/**
+ * Read a little-endian 32-bit integer from an image file byte stream.
+ */
+uint32_t readLE32(const uchar *data)
+{
+  return uint32_t(data[0]) | (uint32_t(data[1]) << 8) | (uint32_t(data[2]) << 16) |
+         (uint32_t(data[3]) << 24);
+}
+
+/**
+ * Read a little-endian signed 32-bit integer from an image file byte stream.
+ */
+int32_t readLE32Signed(const uchar *data)
+{
+  return int32_t(readLE32(data));
+}
+
+struct PngInfo
+{
+  uint32_t width{0};
+  uint32_t height{0};
+  int      bitDepth{0};
+  int      colorType{0};
+};
+
+/**
+ * Read a big-endian 32-bit integer from a PNG byte stream.
+ */
+uint32_t readBE32(const uchar *data)
+{
+  return (uint32_t(data[0]) << 24) | (uint32_t(data[1]) << 16) | (uint32_t(data[2]) << 8) |
+         uint32_t(data[3]);
+}
+
+/**
+ * Return the number of channels used by a PNG color type.
+ */
+int pngChannelCount(int colorType)
+{
+  switch (colorType)
+  {
+  case 0:
+    return 1;
+  case 2:
+    return 3;
+  case 4:
+    return 2;
+  case 6:
+    return 4;
+  default:
+    return 0;
+  }
+}
+
+/**
+ * Return the Paeth predictor used by the PNG filter algorithm.
+ */
+int pngPaethPredictor(int left, int above, int upperLeft)
+{
+  const int predictor  = left + above - upperLeft;
+  const int pLeft      = std::abs(predictor - left);
+  const int pAbove     = std::abs(predictor - above);
+  const int pUpperLeft = std::abs(predictor - upperLeft);
+  if (pLeft <= pAbove && pLeft <= pUpperLeft)
+    return left;
+  if (pAbove <= pUpperLeft)
+    return above;
+  return upperLeft;
+}
+
+/**
+ * Undo PNG scanline filters in-place after IDAT decompression.
+ */
+bool unfilterPngRows(QByteArray &rawData, uint32_t width, uint32_t height, int channelCount)
+{
+  const qsizetype bytesPerPixel = channelCount * 2;
+  const qsizetype rowBytes      = qsizetype(width) * bytesPerPixel;
+  const qsizetype stride        = rowBytes + 1;
+  if (rawData.size() != stride * qsizetype(height))
+    return false;
+
+  for (uint32_t y = 0; y < height; ++y)
+  {
+    auto       *row        = reinterpret_cast<uchar *>(rawData.data()) + qsizetype(y) * stride;
+    auto       *scanline   = row + 1;
+    const auto *previous   = y == 0 ? nullptr : scanline - stride;
+    const int   filterType = row[0];
+
+    for (qsizetype x = 0; x < rowBytes; ++x)
+    {
+      const int left      = x >= bytesPerPixel ? scanline[x - bytesPerPixel] : 0;
+      const int above     = previous ? previous[x] : 0;
+      const int upperLeft = previous && x >= bytesPerPixel ? previous[x - bytesPerPixel] : 0;
+      int       predictor = 0;
+
+      switch (filterType)
+      {
+      case 0:
+        predictor = 0;
+        break;
+      case 1:
+        predictor = left;
+        break;
+      case 2:
+        predictor = above;
+        break;
+      case 3:
+        predictor = (left + above) / 2;
+        break;
+      case 4:
+        predictor = pngPaethPredictor(left, above, upperLeft);
+        break;
+      default:
+        return false;
+      }
+
+      scanline[x] = uchar((int(scanline[x]) + predictor) & 0xff);
+    }
+  }
+
+  return true;
+}
+
+/**
+ * Inflate the concatenated PNG IDAT payload into filtered scanlines.
+ */
+std::optional<QByteArray>
+inflatePngIdat(const QByteArray &compressedData, uint32_t width, uint32_t height, int channelCount)
+{
+  const qsizetype bytesPerPixel = channelCount * 2;
+  const qsizetype rowBytes      = qsizetype(width) * bytesPerPixel;
+  const qsizetype expectedSize  = (rowBytes + 1) * qsizetype(height);
+  if (expectedSize <= 0 || expectedSize > std::numeric_limits<int>::max() ||
+      compressedData.size() > std::numeric_limits<int>::max() - 4)
+    return std::nullopt;
+
+  QByteArray qtCompressed;
+  qtCompressed.resize(4 + compressedData.size());
+  auto *header = reinterpret_cast<uchar *>(qtCompressed.data());
+  header[0]    = uchar((uint32_t(expectedSize) >> 24) & 0xff);
+  header[1]    = uchar((uint32_t(expectedSize) >> 16) & 0xff);
+  header[2]    = uchar((uint32_t(expectedSize) >> 8) & 0xff);
+  header[3]    = uchar(uint32_t(expectedSize) & 0xff);
+  std::memcpy(qtCompressed.data() + 4, compressedData.constData(), compressedData.size());
+
+  const auto inflated = qUncompress(qtCompressed);
+  if (inflated.size() != expectedSize)
+    return std::nullopt;
+
+  return inflated;
+}
+
+/**
+ * Parse PNG metadata and concatenate all IDAT chunks from a PNG file.
+ */
+std::optional<PngInfo> parsePngChunks(const QByteArray &pngData, QByteArray &idatData)
+{
+  static const std::array<uchar, 8> pngSignature{{137, 80, 78, 71, 13, 10, 26, 10}};
+  if (pngData.size() < int(pngSignature.size()) ||
+      std::memcmp(pngData.constData(), pngSignature.data(), pngSignature.size()) != 0)
+    return std::nullopt;
+
+  PngInfo   info;
+  bool      haveIhdr = false;
+  qsizetype offset   = 8;
+  while (offset + 12 <= pngData.size())
+  {
+    const auto *chunk  = reinterpret_cast<const uchar *>(pngData.constData() + offset);
+    const auto  length = readBE32(chunk);
+    if (length > uint32_t(std::numeric_limits<int>::max()) ||
+        offset + 12 + qsizetype(length) > pngData.size())
+      return std::nullopt;
+
+    const QByteArray chunkType(pngData.constData() + offset + 4, 4);
+    const auto      *chunkData = reinterpret_cast<const uchar *>(pngData.constData() + offset + 8);
+    if (chunkType == "IHDR")
+    {
+      if (length != 13)
+        return std::nullopt;
+
+      info.width                  = readBE32(chunkData);
+      info.height                 = readBE32(chunkData + 4);
+      info.bitDepth               = chunkData[8];
+      info.colorType              = chunkData[9];
+      const int compressionMethod = chunkData[10];
+      const int filterMethod      = chunkData[11];
+      const int interlaceMethod   = chunkData[12];
+      if (info.width == 0 || info.height == 0 || compressionMethod != 0 || filterMethod != 0 ||
+          interlaceMethod != 0)
+        return std::nullopt;
+      haveIhdr = true;
+    }
+    else if (chunkType == "IDAT")
+      idatData.append(reinterpret_cast<const char *>(chunkData), int(length));
+    else if (chunkType == "IEND")
+      break;
+
+    offset += 12 + qsizetype(length);
+  }
+
+  if (!haveIhdr || idatData.isEmpty())
+    return std::nullopt;
+  return info;
+}
+
+/**
+ * Load a non-interlaced 16-bit-per-sample PNG into a high bit-depth QImage.
+ */
+std::optional<QImage> load16BitPng(const QString &filePath)
+{
+  QFile file(filePath);
+  if (!file.open(QIODevice::ReadOnly))
+    return std::nullopt;
+
+  const QByteArray pngData = file.readAll();
+  QByteArray       idatData;
+  const auto       info = parsePngChunks(pngData, idatData);
+  if (!info || info->bitDepth != 16)
+    return std::nullopt;
+
+  const int channelCount = pngChannelCount(info->colorType);
+  if (channelCount == 0)
+    return std::nullopt;
+
+  auto rawData = inflatePngIdat(idatData, info->width, info->height, channelCount);
+  if (!rawData || !unfilterPngRows(*rawData, info->width, info->height, channelCount))
+    return std::nullopt;
+
+  const qsizetype rowBytes = qsizetype(info->width) * channelCount * 2;
+  const qsizetype stride   = rowBytes + 1;
+  QImage          image;
+  if (info->colorType == 0)
+  {
+    image = QImage(int(info->width), int(info->height), QImage::Format_Grayscale16);
+    for (uint32_t y = 0; y < info->height; ++y)
+    {
+      const auto *src =
+        reinterpret_cast<const uchar *>(rawData->constData() + qsizetype(y) * stride + 1);
+      auto *dst = reinterpret_cast<quint16 *>(image.scanLine(int(y)));
+      for (uint32_t x = 0; x < info->width; ++x)
+        dst[x] = readBE16(src + qsizetype(x) * 2);
+    }
+  }
+  else
+  {
+    image = QImage(int(info->width), int(info->height), QImage::Format_RGBA64);
+    for (uint32_t y = 0; y < info->height; ++y)
+    {
+      const auto *src =
+        reinterpret_cast<const uchar *>(rawData->constData() + qsizetype(y) * stride + 1);
+      auto *dst = reinterpret_cast<QRgba64 *>(image.scanLine(int(y)));
+      for (uint32_t x = 0; x < info->width; ++x)
+      {
+        const auto *pixel = src + qsizetype(x) * channelCount * 2;
+        uint16_t    r     = 0;
+        uint16_t    g     = 0;
+        uint16_t    b     = 0;
+        uint16_t    a     = 65535;
+        if (info->colorType == 4)
+        {
+          r = g = b = readBE16(pixel);
+          a         = readBE16(pixel + 2);
+        }
+        else
+        {
+          r = readBE16(pixel);
+          g = readBE16(pixel + 2);
+          b = readBE16(pixel + 4);
+          if (info->colorType == 6)
+            a = readBE16(pixel + 6);
+        }
+        dst[x] = QRgba64::fromRgba64(r, g, b, a);
+      }
+    }
+  }
+
+  return image;
+}
+
+/**
+ * Load an uncompressed 48-bit or 64-bit BMP into a high bit-depth QImage.
+ */
+std::optional<QImage> load16BitBmp(const QString &filePath)
+{
+  QFile file(filePath);
+  if (!file.open(QIODevice::ReadOnly))
+    return std::nullopt;
+
+  const QByteArray data = file.readAll();
+  if (data.size() < 54 || data[0] != 'B' || data[1] != 'M')
+    return std::nullopt;
+
+  const uint32_t pixelOffset = readLE32(reinterpret_cast<const uchar *>(data.constData() + 10));
+  const uint32_t dibSize     = readLE32(reinterpret_cast<const uchar *>(data.constData() + 14));
+  if (dibSize < 40 || data.size() < int(14 + dibSize))
+    return std::nullopt;
+
+  const auto    *dib       = reinterpret_cast<const uchar *>(data.constData() + 14);
+  const int32_t  width     = readLE32Signed(dib + 4);
+  const int32_t  rawHeight = readLE32Signed(dib + 8);
+  const uint16_t planes    = readLE16(dib + 12);
+  const uint16_t bitCount  = readLE16(dib + 14);
+  const uint32_t compress  = readLE32(dib + 16);
+  if (width <= 0 || rawHeight == 0 || planes != 1 || compress != 0 ||
+      (bitCount != 48 && bitCount != 64))
+    return std::nullopt;
+
+  const int  height      = std::abs(rawHeight);
+  const bool topDown     = rawHeight < 0;
+  const int  bytesPerPix = bitCount / 8;
+  const int  rowStride   = ((width * bytesPerPix + 3) / 4) * 4;
+  const auto neededBytes = uint64_t(pixelOffset) + uint64_t(rowStride) * uint64_t(height);
+  if (neededBytes > uint64_t(data.size()))
+    return std::nullopt;
+
+  QImage image(width, height, QImage::Format_RGBA64);
+  for (int y = 0; y < height; ++y)
+  {
+    const int   srcY = topDown ? y : height - 1 - y;
+    const auto *src =
+      reinterpret_cast<const uchar *>(data.constData()) + pixelOffset + srcY * rowStride;
+    auto *dst = reinterpret_cast<QRgba64 *>(image.scanLine(y));
+    for (int x = 0; x < width; ++x)
+    {
+      const auto *pixel = src + x * bytesPerPix;
+      const auto  b     = readLE16(pixel);
+      const auto  g     = readLE16(pixel + 2);
+      const auto  r     = readLE16(pixel + 4);
+      const auto  a     = bitCount == 64 ? readLE16(pixel + 6) : uint16_t(65535);
+      dst[x]            = QRgba64::fromRgba64(r, g, b, a);
+    }
+  }
+
+  return image;
+}
+
+/**
+ * Load an image file while preserving 16-bit-per-channel PNG/BMP samples when available.
+ */
+QImage loadImagePreservingHighBitDepth(const QString &filePath)
+{
+  const auto extension = QFileInfo(filePath).suffix().toLower();
+  if (extension == "png")
+  {
+    if (const auto image = load16BitPng(filePath))
+      return *image;
+  }
+  else if (extension == "bmp")
+  {
+    if (const auto image = load16BitBmp(filePath))
+      return *image;
+  }
+
+  QImageReader reader(filePath);
+  reader.setAutoTransform(true);
+  QImage image;
+  reader.read(&image);
+  return image;
+}
+
+/**
+ * Return the RGB sample values for the given pixel in the native image sample range.
+ */
+RgbSample getImageRgbSample(const QImage &image, const QPoint &pos, int bitDepth = 16)
+{
+  if (is16BitRgbImageFormat(image.format()))
+  {
+    const auto rgba = image.pixelColor(pos).rgba64();
+    if (bitDepth == 10)
+    {
+      return {rgba.red() >> 6, rgba.green() >> 6, rgba.blue() >> 6, 1023};
+    }
+    return {rgba.red(), rgba.green(), rgba.blue(), 65535};
+  }
+
+  const auto pixel = image.pixel(pos);
+  return {qRed(pixel), qGreen(pixel), qBlue(pixel), 255};
+}
+
+/**
+ * Return a display-luma decision for a pixel sample.
+ */
+bool isDarkSample(const RgbSample &sample)
+{
+  return sample.r < sample.maxValue / 2 && sample.g < sample.maxValue / 2 &&
+         sample.b < sample.maxValue / 2;
+}
 
 class FrameHandler::frameSizePresetList
 {
@@ -193,7 +624,7 @@ bool FrameHandler::loadCurrentImageFromFile(const QString &filePath)
   else
   {
     // Load the image and return if loading was successful
-    this->currentImage = QImage(filePath);
+    this->currentImage = loadImagePreservingHighBitDepth(filePath);
     auto qFrameSize    = currentImage.size();
     this->setFrameSize(Size(qFrameSize.width(), qFrameSize.height()));
   }
@@ -332,12 +763,12 @@ void FrameHandler::drawPixelValues(QPainter *painter,
       const int formatBase = settings.value("ShowPixelValuesHex").toBool() ? 16 : 10;
       if (item2 != nullptr)
       {
-        auto pixel1 = getPixelVal(x, y);
-        auto pixel2 = item2->getPixelVal(x, y);
+        const auto sample1 = getImageRgbSample(this->currentImage, QPoint(x, y), this->m_bitDepth);
+        const auto sample2 = getImageRgbSample(item2->currentImage, QPoint(x, y), item2->getBitDepth());
 
-        int dR = int(qRed(pixel1)) - int(qRed(pixel2));
-        int dG = int(qGreen(pixel1)) - int(qGreen(pixel2));
-        int dB = int(qBlue(pixel1)) - int(qBlue(pixel2));
+        int dR = sample1.r - sample2.r;
+        int dG = sample1.g - sample2.g;
+        int dB = sample1.b - sample2.b;
 
         const QString RString = ((dR < 0) ? "-" : "") + QString::number(std::abs(dR), formatBase);
         const QString GString = ((dG < 0) ? "-" : "") + QString::number(std::abs(dG), formatBase);
@@ -347,22 +778,22 @@ void FrameHandler::drawPixelValues(QPainter *painter,
           drawWhite = (dR == 0 && dG == 0 && dB == 0);
         else
         {
-          int r     = functions::clip(128 + dR, 0, 255);
-          int g     = functions::clip(128 + dG, 0, 255);
-          int b     = functions::clip(128 + dB, 0, 255);
-          pixVal    = qRgb(r, g, b);
-          drawWhite = (qRed(pixVal) < 128 && qGreen(pixVal) < 128 && qBlue(pixVal) < 128);
+          const int displayR = functions::clip(128 + dR * 255 / sample1.maxValue, 0, 255);
+          const int displayG = functions::clip(128 + dG * 255 / sample1.maxValue, 0, 255);
+          const int displayB = functions::clip(128 + dB * 255 / sample1.maxValue, 0, 255);
+          pixVal             = qRgb(displayR, displayG, displayB);
+          drawWhite          = (qRed(pixVal) < 128 && qGreen(pixVal) < 128 && qBlue(pixVal) < 128);
         }
         valText = QString("R%1\nG%2\nB%3").arg(RString, GString, BString);
       }
       else
       {
-        pixVal    = getPixelVal(x, y);
-        drawWhite = (qRed(pixVal) < 128 && qGreen(pixVal) < 128 && qBlue(pixVal) < 128);
-        valText   = QString("R%1\nG%2\nB%3")
-                      .arg(qRed(pixVal), 0, formatBase)
-                      .arg(qGreen(pixVal), 0, formatBase)
-                      .arg(qBlue(pixVal), 0, formatBase);
+        const auto sample = getImageRgbSample(this->currentImage, QPoint(x, y), this->m_bitDepth);
+        drawWhite         = isDarkSample(sample);
+        valText           = QString("R%1\nG%2\nB%3")
+                              .arg(sample.r, 0, formatBase)
+                              .arg(sample.g, 0, formatBase)
+                              .arg(sample.b, 0, formatBase);
       }
 
       painter->setPen(drawWhite ? Qt::white : Qt::black);
@@ -443,8 +874,7 @@ QImage FrameHandler::calculateDifference(FrameHandler *item2,
 
 bool FrameHandler::isPixelDark(const QPoint &pixelPos) const
 {
-  auto pixVal = this->getPixelVal(pixelPos);
-  return (qRed(pixVal) < 128 && qGreen(pixVal) < 128 && qBlue(pixVal) < 128);
+  return isDarkSample(getImageRgbSample(this->currentImage, pixelPos, this->m_bitDepth));
 }
 
 std::optional<std::string> FrameHandler::getFormatAsString() const
@@ -494,12 +924,12 @@ QStringPairList FrameHandler::getPixelValues(const QPoint &pixelPos,
   if (item2)
   {
     // There is a second item. Return the difference values.
-    auto pixel1 = this->getPixelVal(pixelPos);
-    auto pixel2 = item2->getPixelVal(pixelPos);
+    const auto sample1 = getImageRgbSample(this->currentImage, pixelPos, this->m_bitDepth);
+    const auto sample2 = getImageRgbSample(item2->currentImage, pixelPos, item2->getBitDepth());
 
-    int r = int(qRed(pixel1)) - int(qRed(pixel2));
-    int g = int(qGreen(pixel1)) - int(qGreen(pixel2));
-    int b = int(qBlue(pixel1)) - int(qBlue(pixel2));
+    int r = sample1.r - sample2.r;
+    int g = sample1.g - sample2.g;
+    int b = sample1.b - sample2.b;
 
     values.append(QStringPair("R", QString::number(r)));
     values.append(QStringPair("G", QString::number(g)));
@@ -508,10 +938,10 @@ QStringPairList FrameHandler::getPixelValues(const QPoint &pixelPos,
   else
   {
     // No second item. Return the RGB values of this item.
-    auto val = getPixelVal(pixelPos);
-    values.append(QStringPair("R", QString::number(qRed(val))));
-    values.append(QStringPair("G", QString::number(qGreen(val))));
-    values.append(QStringPair("B", QString::number(qBlue(val))));
+    const auto sample = getImageRgbSample(this->currentImage, pixelPos, this->m_bitDepth);
+    values.append(QStringPair("R", QString::number(sample.r)));
+    values.append(QStringPair("G", QString::number(sample.g)));
+    values.append(QStringPair("B", QString::number(sample.b)));
   }
 
   return values;
