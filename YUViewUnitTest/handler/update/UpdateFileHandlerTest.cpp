@@ -73,28 +73,28 @@ TEST(UpdateFileHandler, testDifferentCommitHash_shouldReturnEmptyFilesDownloadLi
 
 TEST(UpdateFileHandler, testAdditionalComments_shouldReturnEmptyFilesDownloadList)
 {
-  // Comments (starting with %) should be ignored
-  const auto versionFileWithComments =
+  // Comments (starting with %) should be ignored as well as non parsable lines
+  const auto versionFileWithCommentsAndInvalidLines =
     QString("\%SomeComment\n"
             "Last Commit: v2.16\n"
             "Last Commit Hash: b666a90f8619c1675ea3807fe14c1c7207fc8536\n"
             "Last Commit Hash Short: b666a90f\n"
             "testFile1.dll, 5.13, bca35d064ea1a1639fe3ec1683ffb8ab, 580096\n"
             "\%SomeOtherComment\n"
+            "SomeInvalidLine234\n"
             "testFile2.jpg, 5.13, 6f9dec3ee7cc5ed48cfb0b803b4581c1, 9283072\n"
             "someFolder\\file3.dll, 5.13, e2e061e67fe7e6b8f74680b74d692eac, 35840\n"
             "folder\\subFolder\\file.tst, 5.13, hashStringMustNotBeHex, 229376\n"
             "\%YetSomeOtherComment\n");
 
   UpdateFileHandler handler1(versionFileReference.toLatin1());
-  UpdateFileHandler handler2(versionFileWithComments.toLatin1());
+  UpdateFileHandler handler2(versionFileWithCommentsAndInvalidLines.toLatin1());
 
   EXPECT_TRUE(handler1.getFilesToUpdate(handler2).empty());
 }
 
 TEST(UpdateFileHandler, testDifferentFileVersions_shouldReturnFilesWithDifferentVersions)
 {
-  // The "Last Commit" lines are parsed but ignored.
   const auto versionFileWithDifferentAndMissingCommitHashes =
     QString("Last Commit: v3.26\n"
             "Last Commit Hash: 239495DifferentHash293884\n"
@@ -115,7 +115,6 @@ TEST(UpdateFileHandler, testDifferentFileVersions_shouldReturnFilesWithDifferent
 
 TEST(UpdateFileHandler, testDifferentFileHashes_shouldReturnFilesWithDifferentHash)
 {
-  // The "Last Commit" lines are parsed but ignored.
   const auto versionFileWithDifferentAndMissingCommitHashes =
     QString("Last Commit: v2.16\n"
             "Last Commit Hash: b666a90f8619c1675ea3807fe14c1c7207fc8536\n"
@@ -137,8 +136,7 @@ TEST(UpdateFileHandler, testDifferentFileHashes_shouldReturnFilesWithDifferentHa
 
 TEST(UpdateFileHandler, testNewFileInRemote_shouldReturnFilesThatAreNew)
 {
-  // The "Last Commit" lines are parsed but ignored.
-  const auto versionFileWithDifferentAndMissingCommitHashes =
+  const auto remoteVersionFileWithNewFiles =
     QString("Last Commit: v2.16\n"
             "Last Commit Hash: b666a90f8619c1675ea3807fe14c1c7207fc8536\n"
             "Last Commit Hash Short: b666a90f\n"
@@ -149,12 +147,26 @@ TEST(UpdateFileHandler, testNewFileInRemote_shouldReturnFilesThatAreNew)
             "folder\\subFolder\\file.tst, 5.13, hashStringMustNotBeHex, 229376\n");
 
   UpdateFileHandler handlerLocal(versionFileReference.toLatin1());
-  UpdateFileHandler handlerRemove(versionFileWithDifferentAndMissingCommitHashes.toLatin1());
+  UpdateFileHandler handlerRemove(remoteVersionFileWithNewFiles.toLatin1());
 
   const auto downloadFiles = handlerRemove.getFilesToUpdate(handlerLocal);
   EXPECT_EQ(downloadFiles.size(), 2);
   EXPECT_EQ(downloadFiles.at(0), DownloadFile("someNewFile.jpg", 283928));
   EXPECT_EQ(downloadFiles.at(1), DownloadFile("versioninfo.txt", 10000));
+}
+
+TEST(UpdateFileHandler, testFileOnlyLocal_shouldIgnoreOnlyLocalFiles)
+{
+  const auto remoteFileWithFewerFiles =
+    QString("Last Commit: v2.16\n"
+            "Last Commit Hash: b666a90f8619c1675ea3807fe14c1c7207fc8536\n"
+            "Last Commit Hash Short: b666a90f\n"
+            "folder\\subFolder\\file.tst, 5.13, hashStringMustNotBeHex, 229376\n");
+
+  UpdateFileHandler handlerLocal(versionFileReference.toLatin1());
+  UpdateFileHandler handlerRemove(remoteFileWithFewerFiles.toLatin1());
+
+  EXPECT_TRUE(handlerRemove.getFilesToUpdate(handlerLocal).empty());
 }
 
 } // namespace update::test
