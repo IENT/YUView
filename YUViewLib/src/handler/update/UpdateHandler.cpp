@@ -33,8 +33,8 @@
 #include "UpdateHandler.h"
 
 #include "UpdateDialog.h"
-#include "UpdateFileHandler.h"
 #include "VersionComparison.h"
+#include "VersionFileParsing.h"
 
 #include <QCheckBox>
 #include <QDir>
@@ -218,51 +218,59 @@ void UpdateHandler::replyFinished(QNetworkReply *reply)
                            " file could not be downloaded using a secure connection.");
 
       // We recieved the version info file. See what it contains.
-      QByteArray updateFileInfo = reply->readAll();
+      const auto remoteVersionInfo = reply->readAll();
 
-      if (updateFileInfo.size() == 0)
+      if (remoteVersionInfo.size() == 0)
       {
         error       = true;
         errorString = "The download of ther version info file was empty.";
       }
       else
       {
-        UpdateFileHandler remoteFile(updateFileInfo);
-
-        // Next, also load the corresponding local file
-        UpdateFileHandler localFile(updatePath + UPDATEFILEHANDLER_FILE_NAME, this->updatePath);
-
-        // Now compare the two so that we can download all files that require an update.
-        // A file will be updated if:
-        // - The version number of the remote and local file differ
-        // - If the remote file does not exist locally
-        // - If the file name is versioninfo.txt
-        downloadFiles = remoteFile.getFilesToUpdate(localFile);
-
-        if (!downloadFiles.empty())
+        QFile file(updatePath + UPDATEFILEHANDLER_FILE_NAME);
+        if (!file.open(QIODevice::ReadOnly | QIODevice::Text))
         {
-          // There are files to update besides the versioninfo.txt file.
-          // There is a new YUView version available. Do we ask the user first or do we just
-          // install?
-          QSettings settings;
-          settings.beginGroup("updates");
-          QString updateBehavior = settings.value("updateBehavior", "ask").toString();
-          if (updateBehavior == "auto" || forceUpdate)
-            // Don't ask. Just update.
-            downloadAndInstallUpdate();
-          else
+          error       = true;
+          errorString = "Unable to read loval version info text file.";
+        }
+        else
+        {
+          QTextStream in(&file);
+          const auto  localFileContent = in.readAll();
+
+          // Now compare the two so that we can download all files that require an update.
+          // A file will be updated if:
+          // - The version number of the remote and local file differ
+          // - If the remote file does not exist locally
+          // - If the file name is versioninfo.txt
+          this->downloadFiles =
+            parseVersionFilesAndDetermineFilesToDownload(localFileContent, remoteVersionInfo);
+
+          if (!downloadFiles.empty())
           {
-            // Ask the user if he wants to update.
-            UpdateDialog update(mainWidget);
-            if (update.exec() == QDialog::Accepted)
-              // The user pressed 'update'
+            // There are files to update besides the versioninfo.txt file.
+            // There is a new YUView version available. Do we ask the user first or do we just
+            // install?
+            QSettings settings;
+            settings.beginGroup("updates");
+            QString updateBehavior = settings.value("updateBehavior", "ask").toString();
+            if (updateBehavior == "auto" || forceUpdate)
+              // Don't ask. Just update.
               downloadAndInstallUpdate();
             else
-              updaterStatus = UpdateStatus::Idle;
-          }
+            {
+              // Ask the user if he wants to update.
+              UpdateDialog update(mainWidget);
+              if (update.exec() == QDialog::Accepted)
+                // The user pressed 'update'
+                downloadAndInstallUpdate();
+              else
+                updaterStatus = UpdateStatus::Idle;
+            }
 
-          reply->deleteLater();
-          return;
+            reply->deleteLater();
+            return;
+          }
         }
       }
     }

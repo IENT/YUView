@@ -32,7 +32,6 @@
 
 #pragma once
 
-#include <QByteArray>
 #include <QList>
 #include <QPair>
 #include <QString>
@@ -41,42 +40,7 @@ namespace update
 {
 
 using DownloadFile = QPair<QString, int>;
-
-struct FileListEntry
-{
-  QString filePath; //< The file name and path
-  QString version;  //< The version of the file
-  QString hash;     //< A hash of the file (unused so far)
-  int     fileSize; //< The size of the file in bytes
-};
-
-class UpdateFileHandler
-{
-public:
-  UpdateFileHandler();
-  UpdateFileHandler(const QString &fileName, const QString &updatePath);
-  UpdateFileHandler(const QByteArray &byteArray);
-
-  // Call this on the remote file list with a reference to the local file list to get a list
-  // of files that require an update (that need to be downloaded).
-  QList<DownloadFile> getFilesToUpdate(UpdateFileHandler &localFiles) const;
-
-private:
-  // Parse the local file list and add all files that exist locally to the list of files
-  // which potentially might require an update.
-  void readFromFile(const QString &fileName);
-
-  // Parse the remote file from the given QByteArray. Remote files will not be checked for
-  // existence on the remote side. We assume that all files listed in the remote file list
-  // also exist on the remote side and can be downloaded.
-  void readRemoteFromData(const QByteArray &arr);
-
-  // For every entry in the "versioninfo.txt" file, these entries present:
-
-  // For every entry, there is the file path/name and a version string
-  QList<FileListEntry> updateFileList;
-  QString              updatePath{};
-  bool                 loaded{false};
-};
+QList<DownloadFile> parseVersionFilesAndDetermineFilesToDownload(const QString &localFileContent,
+                                                                 const QString &remoteFileContent);
 
 } // namespace update

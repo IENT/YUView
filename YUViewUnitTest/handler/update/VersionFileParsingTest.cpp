@@ -32,7 +32,7 @@
 
 #include <common/Testing.h>
 
-#include <handler/update/UpdateFileHandler.h>
+#include <handler/update/VersionFileParsing.h>
 
 namespace update::test
 {
@@ -46,15 +46,14 @@ const auto versionFileReference =
           "someFolder\\file3.dll, 5.13, e2e061e67fe7e6b8f74680b74d692eac, 35840\n"
           "folder\\subFolder\\file.tst, 5.13, hashStringMustNotBeHex, 229376\n");
 
-TEST(UpdateFileHandler, testIdenticalFiles_shouldReturnEmptyFilesDownloadList)
+TEST(VersionFileParsing, testIdenticalFiles_shouldReturnEmptyFilesDownloadList)
 {
-  UpdateFileHandler handler1(versionFileReference.toLatin1());
-  UpdateFileHandler handler2(versionFileReference.toLatin1());
-
-  EXPECT_TRUE(handler1.getFilesToUpdate(handler2).empty());
+  EXPECT_TRUE(
+    parseVersionFilesAndDetermineFilesToDownload(versionFileReference, versionFileReference)
+      .empty());
 }
 
-TEST(UpdateFileHandler, testDifferentCommitHash_shouldReturnEmptyFilesDownloadList)
+TEST(VersionFileParsing, testDifferentCommitHash_shouldReturnEmptyFilesDownloadList)
 {
   // The "Last Commit" lines are parsed but ignored.
   const auto versionFileWithDifferentAndMissingCommitHashes =
@@ -65,13 +64,12 @@ TEST(UpdateFileHandler, testDifferentCommitHash_shouldReturnEmptyFilesDownloadLi
             "someFolder\\file3.dll, 5.13, e2e061e67fe7e6b8f74680b74d692eac, 35840\n"
             "folder\\subFolder\\file.tst, 5.13, hashStringMustNotBeHex, 229376\n");
 
-  UpdateFileHandler handler1(versionFileReference.toLatin1());
-  UpdateFileHandler handler2(versionFileWithDifferentAndMissingCommitHashes.toLatin1());
-
-  EXPECT_TRUE(handler1.getFilesToUpdate(handler2).empty());
+  EXPECT_TRUE(parseVersionFilesAndDetermineFilesToDownload(
+                versionFileReference, versionFileWithDifferentAndMissingCommitHashes)
+                .empty());
 }
 
-TEST(UpdateFileHandler, testAdditionalComments_shouldReturnEmptyFilesDownloadList)
+TEST(VersionFileParsing, testAdditionalComments_shouldReturnEmptyFilesDownloadList)
 {
   // Comments (starting with %) should be ignored as well as non parsable lines
   const auto versionFileWithCommentsAndInvalidLines =
@@ -87,10 +85,9 @@ TEST(UpdateFileHandler, testAdditionalComments_shouldReturnEmptyFilesDownloadLis
             "folder\\subFolder\\file.tst, 5.13, hashStringMustNotBeHex, 229376\n"
             "\%YetSomeOtherComment\n");
 
-  UpdateFileHandler handler1(versionFileReference.toLatin1());
-  UpdateFileHandler handler2(versionFileWithCommentsAndInvalidLines.toLatin1());
-
-  EXPECT_TRUE(handler1.getFilesToUpdate(handler2).empty());
+  EXPECT_TRUE(parseVersionFilesAndDetermineFilesToDownload(versionFileReference,
+                                                           versionFileWithCommentsAndInvalidLines)
+                .empty());
 }
 
 TEST(UpdateFileHandler, testDifferentFileVersions_shouldReturnFilesWithDifferentVersions)
@@ -103,19 +100,18 @@ TEST(UpdateFileHandler, testDifferentFileVersions_shouldReturnFilesWithDifferent
             "someFolder\\file3.dll, 7.77, e2e061e67fe7e6b8f74680b74d692eac, 35840\n"
             "folder\\subFolder\\file.tst, 5.13, hashStringMustNotBeHex, 229376\n");
 
-  UpdateFileHandler handler1(versionFileReference.toLatin1());
-  UpdateFileHandler handler2(versionFileWithDifferentAndMissingCommitHashes.toLatin1());
+  const auto downloadFiles = parseVersionFilesAndDetermineFilesToDownload(
+    versionFileReference, versionFileWithDifferentAndMissingCommitHashes);
 
-  const auto downloadFiles = handler1.getFilesToUpdate(handler2);
   EXPECT_EQ(downloadFiles.size(), 3);
   EXPECT_EQ(downloadFiles.at(0), DownloadFile("testFile2.jpg", 9283072));
   EXPECT_EQ(downloadFiles.at(1), DownloadFile("someFolder\\file3.dll", 35840));
   EXPECT_EQ(downloadFiles.at(2), DownloadFile("versioninfo.txt", 10000));
 }
 
-TEST(UpdateFileHandler, testDifferentFileHashes_shouldReturnFilesWithDifferentHash)
+TEST(VersionFileParsing, testDifferentFileHashes_shouldReturnFilesWithDifferentHash)
 {
-  const auto versionFileWithDifferentAndMissingCommitHashes =
+  const auto versionFileWithDifferentHash =
     QString("Last Commit: v2.16\n"
             "Last Commit Hash: b666a90f8619c1675ea3807fe14c1c7207fc8536\n"
             "Last Commit Hash Short: b666a90f\n"
@@ -124,17 +120,16 @@ TEST(UpdateFileHandler, testDifferentFileHashes_shouldReturnFilesWithDifferentHa
             "someFolder\\file3.dll, 5.13, e2e061e67fe7e6b8f74680b74d692eac, 35840\n"
             "folder\\subFolder\\file.tst, 5.13, hashStringMustNotBeHex, 229376\n");
 
-  UpdateFileHandler handler1(versionFileReference.toLatin1());
-  UpdateFileHandler handler2(versionFileWithDifferentAndMissingCommitHashes.toLatin1());
+  const auto downloadFiles = parseVersionFilesAndDetermineFilesToDownload(
+    versionFileReference, versionFileWithDifferentHash);
 
-  const auto downloadFiles = handler1.getFilesToUpdate(handler2);
   EXPECT_EQ(downloadFiles.size(), 3);
   EXPECT_EQ(downloadFiles.at(0), DownloadFile("testFile1.dll", 580096));
   EXPECT_EQ(downloadFiles.at(1), DownloadFile("testFile2.jpg", 9283072));
   EXPECT_EQ(downloadFiles.at(2), DownloadFile("versioninfo.txt", 10000));
 }
 
-TEST(UpdateFileHandler, testNewFileInRemote_shouldReturnFilesThatAreNew)
+TEST(VersionFileParsing, testNewFileInRemote_shouldReturnFilesThatAreNew)
 {
   const auto remoteVersionFileWithNewFiles =
     QString("Last Commit: v2.16\n"
@@ -146,16 +141,15 @@ TEST(UpdateFileHandler, testNewFileInRemote_shouldReturnFilesThatAreNew)
             "someFolder\\file3.dll, 5.13, e2e061e67fe7e6b8f74680b74d692eac, 35840\n"
             "folder\\subFolder\\file.tst, 5.13, hashStringMustNotBeHex, 229376\n");
 
-  UpdateFileHandler handlerLocal(versionFileReference.toLatin1());
-  UpdateFileHandler handlerRemove(remoteVersionFileWithNewFiles.toLatin1());
+  const auto downloadFiles = parseVersionFilesAndDetermineFilesToDownload(
+    versionFileReference, remoteVersionFileWithNewFiles);
 
-  const auto downloadFiles = handlerRemove.getFilesToUpdate(handlerLocal);
   EXPECT_EQ(downloadFiles.size(), 2);
   EXPECT_EQ(downloadFiles.at(0), DownloadFile("someNewFile.jpg", 283928));
   EXPECT_EQ(downloadFiles.at(1), DownloadFile("versioninfo.txt", 10000));
 }
 
-TEST(UpdateFileHandler, testFileOnlyLocal_shouldIgnoreOnlyLocalFiles)
+TEST(VersionFileParsing, testFileOnlyLocal_shouldIgnoreOnlyLocalFiles)
 {
   const auto remoteFileWithFewerFiles =
     QString("Last Commit: v2.16\n"
@@ -163,13 +157,12 @@ TEST(UpdateFileHandler, testFileOnlyLocal_shouldIgnoreOnlyLocalFiles)
             "Last Commit Hash Short: b666a90f\n"
             "folder\\subFolder\\file.tst, 5.13, hashStringMustNotBeHex, 229376\n");
 
-  UpdateFileHandler handlerLocal(versionFileReference.toLatin1());
-  UpdateFileHandler handlerRemove(remoteFileWithFewerFiles.toLatin1());
-
-  EXPECT_TRUE(handlerRemove.getFilesToUpdate(handlerLocal).empty());
+  EXPECT_TRUE(
+    parseVersionFilesAndDetermineFilesToDownload(versionFileReference, remoteFileWithFewerFiles)
+      .empty());
 }
 
-TEST(UpdateFileHandler, testFilesizeNotInt_shouldBeHandledAsNonParsable)
+TEST(VersionFileParsing, testFilesizeNotInt_shouldBeHandledAsNonParsable)
 {
   const auto localFileWithSomeInvalidSizes =
     QString("Last Commit: v2.16\n"
@@ -180,10 +173,9 @@ TEST(UpdateFileHandler, testFilesizeNotInt_shouldBeHandledAsNonParsable)
             "someFolder\\file3.dll, 5.13, e2e061e67fe7e6b8f74680b74d692eac, 35840\n"
             "folder\\subFolder\\file.tst, 5.13, hashStringMustNotBeHex, 229376\n");
 
-  UpdateFileHandler handlerLocal(localFileWithSomeInvalidSizes.toLatin1());
-  UpdateFileHandler handlerRemote(versionFileReference.toLatin1());
+  const auto downloadFiles = parseVersionFilesAndDetermineFilesToDownload(
+    localFileWithSomeInvalidSizes, versionFileReference);
 
-  const auto downloadFiles = handlerRemote.getFilesToUpdate(handlerLocal);
   EXPECT_EQ(downloadFiles.size(), 3);
   EXPECT_EQ(downloadFiles.at(0), DownloadFile("testFile1.dll", 580096));
   EXPECT_EQ(downloadFiles.at(1), DownloadFile("testFile2.jpg", 9283072));

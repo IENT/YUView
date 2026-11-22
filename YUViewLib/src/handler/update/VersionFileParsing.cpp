@@ -30,10 +30,7 @@
  *   along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "UpdateFileHandler.h"
-
-#include <QFileInfo>
-#include <QTextStream>
+#include "VersionFileParsing.h"
 
 #define UPDATER_DEBUG_FILE 0
 #if UPDATER_DEBUG_FILE && !NDEBUG
@@ -53,6 +50,14 @@ namespace update
 
 namespace
 {
+
+struct FileListEntry
+{
+  QString filePath; //< The file name and path
+  QString version;  //< The version of the file
+  QString hash;     //< A hash of the file (unused so far)
+  int     fileSize; //< The size of the file in bytes
+};
 
 std::optional<FileListEntry> parseOneLine(const QString &line)
 {
@@ -92,71 +97,27 @@ std::optional<FileListEntry> parseOneLine(const QString &line)
   return ok ? std::make_optional(entry) : std::nullopt;
 }
 
-} // namespace
+QList<FileListEntry> parseFileData(const QString fileData)
+{
+  QList<FileListEntry> downloadFiles;
+  const QStringList    lines = fileData.split("\n");
+  for (auto line : lines)
+    if (const auto updateFile = parseOneLine(line))
+      downloadFiles.append(*updateFile);
+  return downloadFiles;
+}
 
 const auto UpdateFileHandler_FILE_NAME = "versioninfo.txt";
 
-UpdateFileHandler::UpdateFileHandler()
-{
-}
-
-UpdateFileHandler::UpdateFileHandler(const QString &fileName, const QString &updatePath)
-    : updatePath(updatePath)
-{
-  this->readFromFile(fileName);
-}
-
-UpdateFileHandler::UpdateFileHandler(const QByteArray &byteArray)
-{
-  this->readRemoteFromData(byteArray);
-}
-
-void UpdateFileHandler::readFromFile(const QString &fileName)
-{
-  DEBUG_UPDATE_FILE("Current working dir " << this->updatePath);
-
-  // Open the file and get all files and their current version (int) from the file.
-  QFileInfo updateFileInfo(fileName);
-  if (!updateFileInfo.exists() || !updateFileInfo.isFile())
-  {
-    DEBUG_UPDATE_FILE("local update file " << fileName << " not found");
-    return;
-  }
-
-  // Read all lines from the file
-  QFile updateFile(fileName);
-  if (updateFile.open(QIODevice::ReadOnly))
-  {
-    QTextStream in(&updateFile);
-    while (!in.atEnd())
-    {
-      // Convert the line into a file/version pair (they should be separated by a space)
-      QString line = in.readLine();
-      if (const auto updateFile = parseOneLine(line))
-        this->updateFileList.append(*updateFile);
-    }
-    updateFile.close();
-  }
-  this->loaded = true;
-}
-
-void UpdateFileHandler::readRemoteFromData(const QByteArray &arr)
-{
-  const QString     reply = QString(arr);
-  const QStringList lines = reply.split("\n");
-  for (auto line : lines)
-    if (const auto updateFile = parseOneLine(line))
-      this->updateFileList.append(*updateFile);
-}
-
-QList<DownloadFile> UpdateFileHandler::getFilesToUpdate(UpdateFileHandler &localFiles) const
+QList<DownloadFile> calculateFilesToUpdate(const QList<FileListEntry>  localFiles,
+                                           const QList<FileListEntry> &remoteFiles)
 {
   QList<DownloadFile> updateList;
-  for (const auto &remoteFile : this->updateFileList)
+  for (const auto &remoteFile : remoteFiles)
   {
     bool fileFound    = false;
     bool updateNeeded = false;
-    for (auto localFile : localFiles.updateFileList)
+    for (auto localFile : localFiles)
     {
       if (localFile.filePath.toLower() == remoteFile.filePath.toLower())
       {
@@ -175,6 +136,16 @@ QList<DownloadFile> UpdateFileHandler::getFilesToUpdate(UpdateFileHandler &local
     updateList.append(DownloadFile(UpdateFileHandler_FILE_NAME, 10000));
 
   return updateList;
+}
+
+} // namespace
+
+QList<DownloadFile> parseVersionFilesAndDetermineFilesToDownload(const QString &localFileContent,
+                                                                 const QString &remoteFileContent)
+{
+  const auto localFileList  = parseFileData(localFileContent);
+  const auto remoteFileList = parseFileData(remoteFileContent);
+  return calculateFilesToUpdate(localFileList, remoteFileList);
 }
 
 } // namespace update
