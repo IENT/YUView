@@ -24,8 +24,8 @@ if(NOT YUVIEW_HASH)
 endif()
 message(STATUS "YUView commit hash: ${YUVIEW_HASH}")
 
-find_package(Qt6 REQUIRED COMPONENTS Core Gui Widgets OpenGL Xml Concurrent Network)
-find_package(Qt6${QT_VERSION_MAJOR} REQUIRED COMPONENTS Core Gui Widgets OpenGL Xml Concurrent Network)
+find_package(Qt6 REQUIRED COMPONENTS Core Gui Widgets OpenGL Xml Concurrent Network Test)
+find_package(Qt6${QT_VERSION_MAJOR} REQUIRED COMPONENTS Core Gui Widgets OpenGL Xml Concurrent Network Test)
 
 add_subdirectory(YUViewLib)
 add_subdirectory(YUViewApp)
