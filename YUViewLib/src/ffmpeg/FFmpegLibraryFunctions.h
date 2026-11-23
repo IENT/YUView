@@ -34,6 +34,8 @@
 
 #include "FFMpegLibrariesTypes.h"
 #include <QLibrary>
+#include <QMutex>
+#include <QMutexLocker>
 #include <common/Typedef.h>
 
 namespace FFmpeg
@@ -57,86 +59,81 @@ public:
 
   struct AvFormatFunctions
   {
-    std::function<void()> av_register_all;
-    std::function<int(
-        AVFormatContext **ps, const char *url, AVInputFormat *fmt, AVDictionary **options)>
-                                                                    avformat_open_input;
-    std::function<void(AVFormatContext **s)>                        avformat_close_input;
-    std::function<int(AVFormatContext *ic, AVDictionary **options)> avformat_find_stream_info;
-    std::function<int(AVFormatContext *s, AVPacket *pkt)>           av_read_frame;
-    std::function<int(AVFormatContext *s, int stream_index, int64_t timestamp, int flags)>
-                              av_seek_frame;
-    std::function<unsigned()> avformat_version;
+    void (*av_register_all)();
+    int(*avformat_open_input)(
+        AVFormatContext **ps, const char *url, AVInputFormat *fmt, AVDictionary **options);
+                                                                    ;
+    void (*avformat_close_input)(AVFormatContext **s)                        ;
+    int (*avformat_find_stream_info)(AVFormatContext *ic, AVDictionary **options) ;
+    int (*av_read_frame)(AVFormatContext *s, AVPacket *pkt)           ;
+    int (*av_seek_frame)(AVFormatContext *s, int stream_index, int64_t timestamp, int flags)
+                              ;
+    unsigned(*avformat_version)() ;
   };
-  AvFormatFunctions avformat{};
+  static AvFormatFunctions avformat;
 
   struct AvCodecFunctions
   {
-    std::function<AVCodec *(AVCodecID id)>                avcodec_find_decoder;
-    std::function<AVCodecContext *(const AVCodec *codec)> avcodec_alloc_context3;
-    std::function<int(AVCodecContext *avctx, const AVCodec *codec, AVDictionary **options)>
-                                                avcodec_open2;
-    std::function<void(AVCodecContext **avctx)> avcodec_free_context;
-    std::function<AVPacket *()>                 av_packet_alloc;
-    std::function<void(AVPacket **pkt)>         av_packet_free;
-    std::function<void(AVPacket *pkt)>          av_init_packet;
-    std::function<void(AVPacket *pkt)>          av_packet_unref;
-    std::function<void(AVCodecContext *avctx)>  avcodec_flush_buffers;
-    std::function<unsigned()>                   avcodec_version;
-    std::function<const char *(AVCodecID id)>   avcodec_get_name;
-    std::function<AVCodecParameters *()>        avcodec_parameters_alloc;
+    AVCodec *(*avcodec_find_decoder)(AVCodecID id)                ;
+    AVCodecContext *(*avcodec_alloc_context3)(const AVCodec *codec) ;
+    int (*avcodec_open2)(AVCodecContext *avctx, const AVCodec *codec, AVDictionary **options) ;
+    void (*avcodec_free_context)(AVCodecContext **avctx) ;
+    AVPacket *(*av_packet_alloc)()                 ;
+    void (*av_packet_free)(AVPacket **pkt)         ;
+    void (*av_init_packet)(AVPacket *pkt)          ;
+    void (*av_packet_unref)(AVPacket *pkt)          ;
+    void (*avcodec_flush_buffers)(AVCodecContext *avctx)  ;
+    unsigned(*avcodec_version)()                   ;
+    const char *(*avcodec_get_name)(AVCodecID id)   ;
+    AVCodecParameters *(*avcodec_parameters_alloc)()        ;
     // The following functions are part of the new API.
     // We will check if it is available. If not, we will use the old decoding API.
     bool                                                             newParametersAPIAvailable{};
-    std::function<int(AVCodecContext *avctx, const AVPacket *avpkt)> avcodec_send_packet;
-    std::function<int(AVCodecContext *avctx, AVFrame *frame)>        avcodec_receive_frame;
-    std::function<int(AVCodecContext *codec, const AVCodecParameters *par)>
-                          avcodec_parameters_to_context;
-    std::function<void()> avcodec_decode_video2;
+    int (*avcodec_send_packet)(AVCodecContext *avctx, const AVPacket *avpkt) ;
+    int (*avcodec_receive_frame)(AVCodecContext *avctx, AVFrame *frame)        ;
+    int (*avcodec_parameters_to_context)(AVCodecContext *codec, const AVCodecParameters *par)
+                          ;
+    void (*avcodec_decode_video2)() ;
   };
-  AvCodecFunctions avcodec{};
+  static AvCodecFunctions avcodec;
 
   struct AvUtilFunctions
   {
-    std::function<AVFrame *()>           av_frame_alloc;
-    std::function<void(AVFrame **frame)> av_frame_free;
-    std::function<void(size_t size)>     av_mallocz;
-    std::function<unsigned()>            avutil_version;
-    std::function<int(AVDictionary **pm, const char *key, const char *value, int flags)>
-        av_dict_set;
-    std::function<AVDictionaryEntry*(
-        AVDictionary *m, const char *key, const AVDictionaryEntry *prev, int flags)>
-        av_dict_get;
-    std::function<AVFrameSideData *(const AVFrame *frame, AVFrameSideDataType type)>
-                                                        av_frame_get_side_data;
-    std::function<AVDictionary *(const AVFrame *frame)> av_frame_get_metadata;
-    std::function<void(void (*callback)(void *, int, const char *, va_list))> av_log_set_callback;
-    std::function<void(int level)>                                            av_log_set_level;
-    std::function<AVPixFmtDescriptor *(AVPixelFormat pix_fmt)>                av_pix_fmt_desc_get;
-    std::function<AVPixFmtDescriptor *(const AVPixFmtDescriptor *prev)>       av_pix_fmt_desc_next;
-    std::function<AVPixelFormat(const AVPixFmtDescriptor *desc)> av_pix_fmt_desc_get_id;
+    AVFrame *(*av_frame_alloc)()           ;
+    void (*av_frame_free)(AVFrame **frame) ;
+    void (*av_mallocz)(size_t size)     ;
+    unsigned(*avutil_version)()            ;
+    int (*av_dict_set)(AVDictionary **pm, const char *key, const char *value, int flags)
+        ;
+    AVDictionaryEntry*(*av_dict_get)(
+        AVDictionary *m, const char *key, const AVDictionaryEntry *prev, int flags)
+        ;
+    AVFrameSideData *(*av_frame_get_side_data)(const AVFrame *frame, AVFrameSideDataType type)
+                                                        ;
+    AVDictionary *(*av_frame_get_metadata)(const AVFrame *frame) ;
+    void (*av_log_set_callback)(void (*callback)(void *, int, const char *, va_list)) ;
+    void (*av_log_set_level)(int level)                                            ;
+    AVPixFmtDescriptor *(*av_pix_fmt_desc_get)(AVPixelFormat pix_fmt)                ;
+    AVPixFmtDescriptor *(*av_pix_fmt_desc_next)(const AVPixFmtDescriptor *prev)       ;
+    AVPixelFormat (*av_pix_fmt_desc_get_id)(const AVPixFmtDescriptor *desc) ;
   };
-  AvUtilFunctions avutil{};
+  static AvUtilFunctions avutil;
 
   struct SwResampleFunction
   {
-    std::function<unsigned()> swresample_version;
+    unsigned(*swresample_version)() ;
   };
-  SwResampleFunction swresample{};
+  static SwResampleFunction swresample;
 
   void setLogList(QStringList *l) { logList = l; }
 
 private:
   void addLibNamesToList(QString libName, QStringList &l, const QLibrary &lib) const;
-  void unloadAllLibraries();
+  void unloadAllLibrariesLocked();
 
   QStringList *logList{};
   void         log(QString message);
 
-  QLibrary libAvutil;
-  QLibrary libSwresample;
-  QLibrary libAvcodec;
-  QLibrary libAvformat;
 };
 
 } // namespace FFmpeg
