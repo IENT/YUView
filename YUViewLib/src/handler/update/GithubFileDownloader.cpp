@@ -34,6 +34,7 @@
 
 #include <QNetworkReply>
 #include <QTextStream>
+#include <QMetaEnum>
 
 #define UPDATER_GITHUBDOWNLOADER_OUTPUT 0
 #if UPDATER_GITHUBDOWNLOADER_OUTPUT && !NDEBUG

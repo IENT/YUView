@@ -35,6 +35,7 @@
 #include <QJsonArray>
 #include <QJsonDocument>
 #include <QJsonObject>
+#include <QMetaEnum>
 #include <QNetworkReply>
 
 #define UPDATER_GITHUBRELEASETAG_OUTPUT 0
