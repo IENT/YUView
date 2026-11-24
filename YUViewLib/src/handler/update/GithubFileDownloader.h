@@ -37,11 +37,12 @@
 #include <common/EnumMapper.h>
 
 #include <QNetworkAccessManager>
+#include <QObject>
 
 namespace update
 {
 
-class GithubFileDownloader : public IFileDownloader
+class GithubFileDownloader : public QObject, public IFileDownloader
 {
   Q_OBJECT
 
@@ -54,8 +55,13 @@ public:
   };
 
   GithubFileDownloader(UseRepoBranch repoBranch = UseRepoBranch::Deploy);
+  ~GithubFileDownloader() = default;
 
-  void startDownloadOfFile(const QString &filePathAndName) override;
+  void startDownloadOfFile(const QString &filePathAndName);
+
+signals:
+  void downloadFinished(DownloadResult result);
+  void updateDownloadProgress(int percentageValue);
 
 private:
   QNetworkAccessManager networkManager;

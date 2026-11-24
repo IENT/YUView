@@ -41,18 +41,20 @@ namespace update::test
 
 TEST(GithubFileDownloaderTest, testDownloadOfFile_shouldDownloadCorrectly)
 {
-  GithubFileDownloader downloader(GithubFileDownloader::UseRepoBranch::UnitTest);
+  std::unique_ptr<IFileDownloader> downloader(
+    new GithubFileDownloader(GithubFileDownloader::UseRepoBranch::UnitTest));
 
-  QSignalSpy spy(&downloader, &IFileDownloader::downloadFinished);
+  QSignalSpy spy(dynamic_cast<QObject *>(downloader.get()),
+                 SIGNAL(downloadFinished(DownloadResult)));
 
-  downloader.startDownloadOfFile("unittest/testFile1.txt");
+  downloader->startDownloadOfFile("unittest/testFile1.txt");
 
   ASSERT_TRUE(spy.wait(20'000));
 
   ASSERT_EQ(spy.size(), 1);
   const auto resultVariant = spy.at(0).at(0);
-  ASSERT_TRUE(resultVariant.canConvert<IFileDownloader::DownloadResult>());
-  const auto result = resultVariant.value<IFileDownloader::DownloadResult>();
+  ASSERT_TRUE(resultVariant.canConvert<GithubFileDownloader::DownloadResult>());
+  const auto result = resultVariant.value<GithubFileDownloader::DownloadResult>();
 
   EXPECT_TRUE(result.errorMessage.isEmpty())
     << "Error message: " << result.errorMessage.toStdString();

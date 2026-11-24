@@ -42,11 +42,12 @@ namespace update::test
 
 TEST(GithubReleaseRetrieverTest, testRetrievalOfVersion_shouldReturnLastRelease)
 {
-  GithubReleaseRetriever retriever;
+  std::unique_ptr<IGithubReleaseRetriever> retriever(new GithubReleaseRetriever());
 
-  QSignalSpy spy(&retriever, &IGithubReleaseRetriever::gettingReleaseTagFinished);
+  QSignalSpy spy(dynamic_cast<QObject *>(retriever.get()),
+                 SIGNAL(gettingReleaseTagFinished(Result)));
 
-  retriever.startGettingOfReleaseTag();
+  retriever->startGettingOfReleaseTag();
 
   ASSERT_TRUE(spy.wait(20'000));
 

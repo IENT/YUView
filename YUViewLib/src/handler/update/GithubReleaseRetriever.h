@@ -35,17 +35,23 @@
 #include "IGithubReleaseRetriever.h"
 
 #include <QNetworkAccessManager>
+#include <QObject>
 
 namespace update
 {
 
-class GithubReleaseRetriever : public IGithubReleaseRetriever
+class GithubReleaseRetriever : public QObject, public IGithubReleaseRetriever
 {
   Q_OBJECT
 
 public:
   GithubReleaseRetriever();
+  ~GithubReleaseRetriever() = default;
+
   void startGettingOfReleaseTag() override;
+
+signals:
+  void gettingReleaseTagFinished(Result result);
 
 private:
   QNetworkAccessManager networkManager;

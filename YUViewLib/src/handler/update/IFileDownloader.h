@@ -32,16 +32,17 @@
 
 #pragma once
 
-#include <QObject>
+#include <QByteArray>
+#include <QString>
 
 namespace update
 {
 
-class IFileDownloader : public QObject
+class IFileDownloader
 {
-  Q_OBJECT
-
 public:
+  virtual ~IFileDownloader() = default;
+
   virtual void startDownloadOfFile(const QString &url) = 0;
 
   struct DownloadResult
@@ -51,8 +52,8 @@ public:
   };
 
 signals:
-  void downloadFinished(DownloadResult result);
-  void updateDownloadProgress(int percentageValue);
+  virtual void downloadFinished(DownloadResult result)     = 0;
+  virtual void updateDownloadProgress(int percentageValue) = 0;
 };
 
 } // namespace update

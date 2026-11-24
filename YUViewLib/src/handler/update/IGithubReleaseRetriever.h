@@ -32,16 +32,16 @@
 
 #pragma once
 
-#include <QObject>
+#include <QString>
 
 namespace update
 {
 
-class IGithubReleaseRetriever : public QObject
+class IGithubReleaseRetriever
 {
-  Q_OBJECT
-
 public:
+  virtual ~IGithubReleaseRetriever() = default;
+
   virtual void startGettingOfReleaseTag() = 0;
 
   struct Result
@@ -51,7 +51,7 @@ public:
   };
 
 signals:
-  void gettingReleaseTagFinished(Result result);
+  virtual void gettingReleaseTagFinished(Result result) = 0;
 };
 
 } // namespace update
