@@ -124,6 +124,7 @@ void GithubReleaseRetriever::replyFinished(QNetworkReply *reply)
   {
     DEBUG_GETTAG("Error " << reply->error());
     this->state = State::Idle;
+    emit gettingReleaseTagFinished({"", QString("Netwrok reply error: %1").arg(reply->error())});
     return;
   }
 
@@ -133,6 +134,7 @@ void GithubReleaseRetriever::replyFinished(QNetworkReply *reply)
   {
     DEBUG_GETTAG("Error. The connection was not encrypted.");
     this->state = State::Idle;
+    emit gettingReleaseTagFinished({"", "Connection was not encrypted."});
     return;
   }
 
