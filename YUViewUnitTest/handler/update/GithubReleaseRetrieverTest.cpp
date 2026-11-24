@@ -55,8 +55,10 @@ TEST(GithubReleaseRetrieverTest, testRetrievalOfVersion_shouldReturnLastRelease)
   ASSERT_TRUE(resultVariant.canConvert<IGithubReleaseRetriever::Result>());
   const auto result = resultVariant.value<IGithubReleaseRetriever::Result>();
 
-  EXPECT_TRUE(result.errorMessage.isEmpty());
-  EXPECT_TRUE(isServerVersionNewer(result.state, "v2.15"));
+  EXPECT_TRUE(result.errorMessage.isEmpty())
+    << "Error message: " << result.errorMessage.toStdString();
+  EXPECT_TRUE(isServerVersionNewer(result.state, "v2.15"))
+    << "Returned version tag " << result.state.toStdString() << " is not newer then v2.15";
 }
 
 } // namespace update::test

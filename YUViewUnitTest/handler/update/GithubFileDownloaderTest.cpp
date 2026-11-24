@@ -54,7 +54,8 @@ TEST(GithubFileDownloaderTest, testDownloadOfFile_shouldDownloadCorrectly)
   ASSERT_TRUE(resultVariant.canConvert<IFileDownloader::DownloadResult>());
   const auto result = resultVariant.value<IFileDownloader::DownloadResult>();
 
-  EXPECT_TRUE(result.errorMessage.isEmpty());
+  EXPECT_TRUE(result.errorMessage.isEmpty())
+    << "Error message: " << result.errorMessage.toStdString();
 
   EXPECT_EQ(QString(result.downloadedData),
             QString("Unit test file that is downloaded in the GithubFileDownloaderTest.\n"));

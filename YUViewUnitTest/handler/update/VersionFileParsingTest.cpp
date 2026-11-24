@@ -90,7 +90,7 @@ TEST(VersionFileParsing, testAdditionalComments_shouldReturnEmptyFilesDownloadLi
                 .empty());
 }
 
-TEST(UpdateFileHandler, testDifferentFileVersions_shouldReturnFilesWithDifferentVersions)
+TEST(VersionFileParsing, testDifferentFileVersions_shouldReturnFilesWithDifferentVersions)
 {
   const auto versionFileWithDifferentAndMissingCommitHashes =
     QString("Last Commit: v3.26\n"

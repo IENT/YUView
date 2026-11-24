@@ -107,7 +107,20 @@ void GithubReleaseRetriever::startGettingOfReleaseTag()
   }
 
   this->state = State::GettingReleaseTag;
-  this->networkManager.get(QNetworkRequest(QUrl(RELEASE_URL)));
+
+  QNetworkRequest request{QUrl(RELEASE_URL)};
+  request.setHeader(QNetworkRequest::UserAgentHeader, "YUView");
+  request.setRawHeader("Accept", "application/vnd.github+json");
+  request.setRawHeader("X-GitHub-Api-Version", "2022-11-28");
+  request.setAttribute(QNetworkRequest::RedirectPolicyAttribute,
+                       QNetworkRequest::NoLessSafeRedirectPolicy);
+  request.setTransferTimeout(15'000);
+
+  const auto githubToken = qgetenv("GITHUB_TOKEN");
+  if (!githubToken.isEmpty())
+    request.setRawHeader("Authorization", "Bearer " + githubToken);
+
+  this->networkManager.get(request);
 }
 
 void GithubReleaseRetriever::replyFinished(QNetworkReply *reply)
@@ -124,7 +137,10 @@ void GithubReleaseRetriever::replyFinished(QNetworkReply *reply)
   {
     DEBUG_GETTAG("Error " << reply->error());
     this->state = State::Idle;
-    emit gettingReleaseTagFinished({"", QString("Netwrok reply error: %1").arg(reply->error())});
+    const auto replyErrorName =
+      QMetaEnum::fromType<QNetworkReply::NetworkError>().valueToKey(reply->error());
+    emit gettingReleaseTagFinished(
+      {"", QString("Network reply error: %1 (%2)").arg(reply->error()).arg(replyErrorName)});
     return;
   }
 

@@ -131,7 +131,9 @@ void GithubFileDownloader::replyFinished(QNetworkReply *reply)
     if (connectionEncrypted)
       errorMessage << "Error The connection was not encrypted.";
     else
-      errorMessage << "Error " << reply->error();
+      errorMessage << "Error "
+                   << QMetaEnum::fromType<QNetworkReply::NetworkError>().valueToKey(reply->error())
+                   << " (" << reply->error() << ")";
 
     this->state =
       this->state == State::EstablishingConnection ? State::Disconnected : State::Connected;
