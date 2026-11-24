@@ -48,7 +48,7 @@ TEST(GithubReleaseRetrieverTest, testRetrievalOfVersion_shouldReturnLastRelease)
 
   retriever.startGettingOfReleaseTag();
 
-  ASSERT_TRUE(spy.wait(std::chrono::seconds(20)));
+  ASSERT_TRUE(spy.wait(20'000));
 
   ASSERT_EQ(spy.size(), 1);
   const auto resultVariant = spy.at(0).at(0);
