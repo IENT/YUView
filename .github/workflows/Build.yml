@@ -41,6 +41,7 @@ jobs:
       run: ctest --test-dir build --output-on-failure
       env:
         QT_QPA_PLATFORM: 'offscreen'
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
   build-linux-mac:
     runs-on: ${{ matrix.os }}
     strategy:
@@ -100,6 +101,7 @@ jobs:
       run: ctest --test-dir build --output-on-failure
       env:
         QT_QPA_PLATFORM: 'offscreen'
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     - name: Build App (Mac)
       if: runner.os	== 'macOS'
       run: |
@@ -150,8 +152,6 @@ jobs:
         curl -L https://github.com/ChristianFeldmann/YUViewQt/releases/download/QtBase-6.12.0/qtBase-6-12-0-${{ matrix.os }}.zip -o Qt.zip
         7z x  Qt.zip
         echo "${{ github.workspace }}\..\..\YUViewQt\YUViewQt\Qt\bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
-    - name: Test qmake
-      run : qmake --version
     - name: Install libde265
       run: |
         curl -L https://github.com/ChristianFeldmann/libde265/releases/download/v1.1/libde265.dll -o libde265.dll
@@ -183,6 +183,7 @@ jobs:
       run: ctest --test-dir build --output-on-failure -V
       env:
         QT_QPA_PLATFORM: 'offscreen'
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     - name: WindeployQT
       run: |
         mkdir deploy

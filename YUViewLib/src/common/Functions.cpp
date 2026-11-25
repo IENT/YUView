@@ -264,4 +264,13 @@ std::optional<int> toInt(const std::string_view text)
   return value;
 }
 
+std::optional<int> toInt(const QString &str)
+{
+  bool       ok{};
+  const auto value = str.toInt(&ok);
+  if (ok)
+    return value;
+  return {};
+}
+
 } // namespace functions
