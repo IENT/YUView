@@ -72,7 +72,7 @@ inline QImage::Format platformImageFormat(bool needAlpha)
   // see https://code.woboq.org/qt5/qtbase/src/gui/image/qpixmap_raster.cpp.html#97
   // see
   // https://code.woboq.org/data/symbol.html?root=../qt5/&ref=_ZN21QRasterPlatformPixmap18systemOpaqueFormatEv
-  if (is_Q_OS_MAC)
+  if (is_Q_OS_MACOS)
     // https://code.woboq.org/qt5/qtbase/src/plugins/platforms/cocoa/qcocoaintegration.mm.html#117
     // https://code.woboq.org/data/symbol.html?root=../qt5/&ref=_ZN12QCocoaScreen14updateGeometryEv
     // Qt Docs: The image is stored using a 32-bit RGB format (0xffRRGGBB).

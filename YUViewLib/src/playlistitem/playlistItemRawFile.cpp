@@ -51,10 +51,15 @@
 
 using namespace std::string_view_literals;
 
+using video::yuv::PixelFormatYUV;
+using video::yuv::PlanarPixelFormat;
+using video::yuv::PlaneOrder;
+using video::yuv::Subsampling;
+
 namespace
 {
 
-constexpr auto YUV_EXTENSIONS  = {"yuv", "nv12", "y4m"};
+constexpr auto YUV_EXTENSIONS  = {"yuv", "nv12", "y4m", "pyuv"};
 constexpr auto RGB_EXTENSIONS  = {"rgb", "gbr", "bgr", "brg"};
 constexpr auto RGBA_EXTENSIONS = {"rgba", "gbra", "bgra", "brga", "argb", "agbr", "abgr", "abrg"};
 constexpr auto RAW_BAYER_EXTENSIONS = {"raw"};
@@ -250,8 +255,7 @@ bool playlistItemRawFile::parseY4MFile()
   int64_t  offset = 9;
   unsigned width  = 0;
   unsigned height = 0;
-  auto     format =
-    video::yuv::PixelFormatYUV(video::yuv::Subsampling::YUV_420, 8, video::yuv::PlaneOrder::YUV);
+  auto     format = PixelFormatYUV(PlanarPixelFormat({Subsampling::YUV_420, 8, PlaneOrder::YUV}));
 
   while (rawData.at(offset++) == ' ')
   {
@@ -329,13 +333,13 @@ bool playlistItemRawFile::parseY4MFile()
       // 'C420' = 4:2:0 with coincident chroma planes
       // 'C420jpeg' = 4:2 : 0 with biaxially - displaced chroma planes
       // 'C420paldv' = 4 : 2 : 0 with vertically - displaced chroma planes
-      auto subsampling = video::yuv::Subsampling::YUV_420;
+      auto subsampling = Subsampling::YUV_420;
       if (formatName == "422")
-        subsampling = video::yuv::Subsampling::YUV_422;
+        subsampling = Subsampling::YUV_422;
       else if (formatName == "444")
-        subsampling = video::yuv::Subsampling::YUV_444;
+        subsampling = Subsampling::YUV_444;
 
-      unsigned bitsPerSample = 8;
+      int bitsPerSample = 8;
 
       if (rawData.at(offset) == 'p')
       {
@@ -366,7 +370,7 @@ bool playlistItemRawFile::parseY4MFile()
         }
       }
 
-      format = video::yuv::PixelFormatYUV(subsampling, bitsPerSample);
+      format = PixelFormatYUV(PlanarPixelFormat({subsampling, bitsPerSample}));
       DEBUG_RAWFILE("playlistItemRawFile::parseY4MFile Read pixel format "
                     << QString::fromStdString(format.getName()));
     }
@@ -397,9 +401,9 @@ bool playlistItemRawFile::parseY4MFile()
 
   // The offset in bytes to the next frame
   auto stride = width * height * 3 / 2;
-  if (format.getSubsampling() == video::yuv::Subsampling::YUV_422)
+  if (format.getSubsampling() == Subsampling::YUV_422)
     stride = width * height * 2;
-  else if (format.getSubsampling() == video::yuv::Subsampling::YUV_444)
+  else if (format.getSubsampling() == Subsampling::YUV_444)
     stride = width * height * 3;
   if (format.getBitsPerSample() > 8)
     stride *= 2;
@@ -457,15 +461,13 @@ void playlistItemRawFile::setFormatFromFileName()
   const auto frameFormat = filesource::frameFormatGuess::guessFrameFormat(fileInfoForGuess);
 
   if (frameFormat.frameSize)
-  {
     this->video->setFrameSize(*frameFormat.frameSize);
 
-    // We were able to extract width and height from the file name using
-    // regular expressions. Try to get the pixel format by checking with the file size.
-    this->video->guessAndSetPixelFormat(frameFormat, fileInfoForGuess);
-    if (frameFormat.frameRate)
-      this->prop.frameRate = *frameFormat.frameRate;
-  }
+  // Try to get the pixel format. If we know a frame size, we will check the format
+  // against the file size.
+  this->video->guessAndSetPixelFormat(frameFormat, fileInfoForGuess);
+  if (frameFormat.frameRate)
+    this->prop.frameRate = *frameFormat.frameRate;
 }
 
 void playlistItemRawFile::createPropertiesWidget()
@@ -542,13 +544,18 @@ void playlistItemRawFile::loadRawData(int frameIdx)
     return;
 
   auto nrBytes = this->video->getBytesPerFrame();
+  if (nrBytes < 0)
+    return;
 
   // Load the raw data for the given frameIdx from file and set it in the video
   int64_t fileStartPos;
   if (this->isY4MFile)
     fileStartPos = this->y4mFrameIndices.at(frameIdx);
   else
-    fileStartPos = frameIdx * nrBytes;
+    fileStartPos = static_cast<int64_t>(frameIdx) * nrBytes;
+
+  if (fileStartPos < 0)
+    return;
 
   DEBUG_RAWFILE("playlistItemRawFile::loadRawData Start loading frame " << frameIdx << " bytes "
                                                                         << int(nrBytes));
@@ -582,7 +589,7 @@ void playlistItemRawFile::getSupportedFileExtensions(QStringList &allExtensions,
     for (const auto &extension : extensionsList)
       allExtensions.append(QString(extension));
 
-  filters.append("Raw YUV File (*.yuv *.nv21)");
+  filters.append("Raw YUV File (*.yuv *.nv21, *.pyuv)");
   filters.append("Raw RGB File (*.rgb *.rbg *.grb *.gbr *.brg *.bgr)");
   filters.append("Raw RGBA File (*.rgba *.rbga *.grba *.gbra *.brga *.bgra *.argb *.arbg *.agrb "
                  "*.agbr *.abrg *.abgr)");

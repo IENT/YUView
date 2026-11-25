@@ -326,10 +326,15 @@ void AVCodecParametersWrapper::setClearValues()
 void AVCodecParametersWrapper::setAVMediaType(AVMediaType type)
 {
   if (this->libVer.avformat.major == 57 || this->libVer.avformat.major == 58 ||
-      this->libVer.avformat.major == 59 || this->libVer.avformat.major == 60 ||
-      this->libVer.avformat.major == 61)
+      this->libVer.avformat.major == 59 || this->libVer.avformat.major == 60)
   {
     auto p           = reinterpret_cast<AVCodecParameters_57_58_59_60 *>(this->param);
+    p->codec_type    = type;
+    this->codec_type = type;
+  }
+  else if (this->libVer.avformat.major == 61)
+  {
+    auto p           = reinterpret_cast<AVCodecParameters_61 *>(this->param);
     p->codec_type    = type;
     this->codec_type = type;
   }
@@ -355,8 +360,7 @@ void AVCodecParametersWrapper::setAVCodecID(AVCodecID id)
 void AVCodecParametersWrapper::setExtradata(QByteArray data)
 {
   if (this->libVer.avformat.major == 57 || this->libVer.avformat.major == 58 ||
-      this->libVer.avformat.major == 59 || this->libVer.avformat.major == 60 ||
-      this->libVer.avformat.major == 61)
+      this->libVer.avformat.major == 59 || this->libVer.avformat.major == 60)
   {
     this->extradata   = data;
     auto p            = reinterpret_cast<AVCodecParameters_57_58_59_60 *>(this->param);

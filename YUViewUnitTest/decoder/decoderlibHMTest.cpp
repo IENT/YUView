@@ -30,38 +30,28 @@
  *   along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <QObject>
-#include <queue>
+#include <Testing.h>
 
-namespace video
+#include "HEVCDecodersTests.h"
+
+#include <decoder/decoderHM.h>
+#include <filesource/FileSourceAnnexBFile.h>
+
+namespace decoder::test
 {
-class videoHandler;
+
+TEST(decoderHMTest, openDecoder_shouldOpenAndHaveNoError)
+{
+  decoderHM decoder(0);
+
+  EXPECT_FALSE(decoder.errorInDecoder()) << decoder.decoderErrorString().toStdString();
+  EXPECT_EQ(decoder.state(), DecoderState::NeedsMoreData);
 }
 
-namespace video::rgb::test
+TEST(decoderHMTest, decodeFrames_shouldMatchChecksums)
 {
+  decoderHM decoder(0);
+  decodeSintelHEVCAndCheckOutputFrames(decoder);
+}
 
-class videoHandlerDataLoadingTest : public QObject
-{
-  Q_OBJECT
-public:
-  videoHandlerDataLoadingTest(video::videoHandler *video);
-
-  struct LoadingRequest
-  {
-    int        frameIdx{0};
-    QByteArray rawData;
-  };
-
-  void addExpectedLoadingRequests(LoadingRequest expectedLoadingRequest);
-
-public slots:
-  void loadRawTestData(int frameIdx, bool forceDecodingNow);
-
-private:
-  video::videoHandler *video{};
-
-  std::queue<LoadingRequest> expectedLoadingRequests;
-};
-
-} // namespace video::rgb::test
+} // namespace decoder::test

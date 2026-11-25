@@ -141,8 +141,8 @@ std::optional<int> guessFPSFromFPSOrHzIndicators(const std::string &name)
 std::optional<unsigned> guessBitDepthFromName(const std::string &name)
 {
   const auto REGEXP_LIST = {
-      "(8|9|10|12|16)-?(bit)",                // E.g. 10bit, 10BIT, 10-bit, 10-BIT
-      "(?:_|\\.|-)(8|9|10|12|16)b(?:_|\\.|-)" // E.g. _16b_ .8b. -12b-
+      "(8|9|10|12|14|16)-?(bit)",                // E.g. 10bit, 10BIT, 10-bit, 10-BIT
+      "(?:_|\\.|-)(8|9|10|12|14|16)b(?:_|\\.|-)" // E.g. _16b_ .8b. -12b-
   };
 
   for (const auto &regExpStr : REGEXP_LIST)

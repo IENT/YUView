@@ -484,9 +484,7 @@ AVPixelFormat AVCodecContextWrapper::getPixelFormat()
 Size AVCodecContextWrapper::getSize()
 {
   this->update();
-  if (this->width < 0 || this->height < 0)
-    return {};
-  return {static_cast<unsigned>(this->width), static_cast<unsigned>(this->height)};
+  return {this->width, this->height};
 }
 
 AVColorSpace AVCodecContextWrapper::getColorspace()

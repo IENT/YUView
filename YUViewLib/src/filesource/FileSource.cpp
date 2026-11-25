@@ -83,8 +83,20 @@ int64_t FileSource::readBytes(QByteArray &targetBuffer, int64_t startPos, int64_
   if (!this->isOk())
     return 0;
 
+  if (startPos < 0 || nrBytes <= 0)
+    return 0;
+
   if (targetBuffer.size() < nrBytes)
-    targetBuffer.resize(nrBytes);
+  {
+    try
+    {
+      targetBuffer.resize(nrBytes);
+    }
+    catch (const std::bad_alloc &)
+    {
+      return 0;
+    }
+  }
 
 #if FILESOURCE_DEBUG_SIMULATESLOWLOADING && !NDEBUG
   QThread::msleep(50);
@@ -133,7 +145,7 @@ std::optional<int64_t> FileSource::getFileSize() const
     const auto size = std::filesystem::file_size(this->fullFilePath);
     return static_cast<int64_t>(size);
   }
-  catch (const std::filesystem::filesystem_error &e)
+  catch (const std::filesystem::filesystem_error &)
   {
     return {};
   }
@@ -177,7 +189,7 @@ void FileSource::clearFileCache()
 
   LPCWSTR file = this->fullFilePath.wstring().c_str();
   HANDLE  hFile =
-      CreateFile(file, GENERIC_READ, 0, NULL, OPEN_EXISTING, FILE_FLAG_NO_BUFFERING, NULL);
+    CreateFile(file, GENERIC_READ, 0, NULL, OPEN_EXISTING, FILE_FLAG_NO_BUFFERING, NULL);
   CloseHandle(hFile);
 
   this->srcFile.setFileName(this->fullFilePath);

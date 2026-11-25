@@ -32,9 +32,10 @@
 
 #include "AVPixFmtDescriptorWrapper.h"
 
-using Subsampling    = video::yuv::Subsampling;
-using PlaneOrder     = video::yuv::PlaneOrder;
-using PixelFormatYUV = video::yuv::PixelFormatYUV;
+using video::yuv::PixelFormatYUV;
+using video::yuv::PlanarPixelFormat;
+using video::yuv::PlaneOrder;
+using video::yuv::Subsampling;
 
 using namespace std::rel_ops;
 
@@ -55,13 +56,13 @@ typedef struct AVComponentDescriptor_54
 
 typedef struct AVPixFmtDescriptor_54
 {
-  const char *             name;
+  const char              *name;
   uint8_t                  nb_components;
   uint8_t                  log2_chroma_w;
   uint8_t                  log2_chroma_h;
   uint8_t                  flags;
   AVComponentDescriptor_54 comp[4];
-  const char *             alias;
+  const char              *alias;
 } AVPixFmtDescriptor_54;
 
 typedef struct AVComponentDescriptor_55_56
@@ -80,24 +81,24 @@ typedef struct AVComponentDescriptor_55_56
 
 typedef struct AVPixFmtDescriptor_55
 {
-  const char *                name;
+  const char                 *name;
   uint8_t                     nb_components;
   uint8_t                     log2_chroma_w;
   uint8_t                     log2_chroma_h;
   uint64_t                    flags;
   AVComponentDescriptor_55_56 comp[4];
-  const char *                alias;
+  const char                 *alias;
 } AVPixFmtDescriptor_55;
 
 typedef struct AVPixFmtDescriptor_56
 {
-  const char *                name;
+  const char                 *name;
   uint8_t                     nb_components;
   uint8_t                     log2_chroma_w;
   uint8_t                     log2_chroma_h;
   uint64_t                    flags;
   AVComponentDescriptor_55_56 comp[4];
-  const char *                alias;
+  const char                 *alias;
 } AVPixFmtDescriptor_56;
 
 typedef struct AVComponentDescriptor_57
@@ -111,13 +112,13 @@ typedef struct AVComponentDescriptor_57
 
 typedef struct AVPixFmtDescriptor_57_58_59
 {
-  const char *             name;
+  const char              *name;
   uint8_t                  nb_components;
   uint8_t                  log2_chroma_w;
   uint8_t                  log2_chroma_h;
   uint64_t                 flags;
   AVComponentDescriptor_57 comp[4];
-  const char *             alias;
+  const char              *alias;
 } AVPixFmtDescriptor_57_58_59;
 
 AVPixFmtDescriptorWrapper::Flags parseFlags(uint8_t flagsValue)
@@ -218,8 +219,7 @@ AVPixFmtDescriptorWrapper::AVPixFmtDescriptorWrapper(AVPixFmtDescriptor *descrip
     aliases = QString(p->alias);
   }
   else if (libVer.avutil.major == 57 || //
-           libVer.avutil.major == 58 ||
-           libVer.avutil.major == 59)
+           libVer.avutil.major == 58 || libVer.avutil.major == 59)
   {
     auto p              = reinterpret_cast<AVPixFmtDescriptor_57_58_59 *>(descriptor);
     this->name          = QString(p->name);
@@ -290,7 +290,9 @@ PixelFormatYUV AVPixFmtDescriptorWrapper::getPixelFormatYUV() const
     // If you encounter a format that does not work because of this check please let us know.
     return {};
 
-  return PixelFormatYUV(subsampling, bitsPerSample, planeOrder, this->flags.bigEndian);
+  const auto endianness =
+    this->flags.bigEndian ? video::Endianness::Big : video::Endianness::Little;
+  return PixelFormatYUV(PlanarPixelFormat({subsampling, bitsPerSample, planeOrder, endianness}));
 }
 
 video::rgb::PixelFormatRGB AVPixFmtDescriptorWrapper::getRGBPixelFormat() const
@@ -312,20 +314,20 @@ video::rgb::PixelFormatRGB AVPixFmtDescriptorWrapper::getRGBPixelFormat() const
   // The only possible order of planes seems to be RGB(A)
   auto dataLayout = this->flags.planar ? video::DataLayout::Planar : video::DataLayout::Packed;
   auto alphaMode =
-      this->flags.hasAlphaPlane ? video::rgb::AlphaMode::Last : video::rgb::AlphaMode::None;
+    this->flags.hasAlphaPlane ? video::rgb::AlphaMode::Last : video::rgb::AlphaMode::None;
   auto endianness = this->flags.bigEndian ? video::Endianness::Big : video::Endianness::Little;
 
   return video::rgb::PixelFormatRGB(
-      bitsPerSample, dataLayout, video::rgb::ChannelOrder::RGB, alphaMode, endianness);
+    bitsPerSample, dataLayout, video::rgb::ChannelOrder::RGB, alphaMode, endianness);
 }
 
-bool AVPixFmtDescriptorWrapper::setValuesFromPixelFormatYUV(PixelFormatYUV fmt)
+bool AVPixFmtDescriptorWrapper::setValuesFromPixelFormatYUV(const PixelFormatYUV &pixelFormat)
 {
-  const auto planeOrder = fmt.getPlaneOrder();
-  if (planeOrder == PlaneOrder::YVU || planeOrder == PlaneOrder::YVUA)
-    return false;
+  if (const auto planarFormat = pixelFormat.getPlanarFormat())
+    if (planarFormat->planeOrder == PlaneOrder::YVU || planarFormat->planeOrder == PlaneOrder::YVUA)
+      return false;
 
-  const auto subsampling = fmt.getSubsampling();
+  const auto subsampling = pixelFormat.getSubsampling();
   switch (subsampling)
   {
   case Subsampling::YUV_422:
@@ -354,23 +356,23 @@ bool AVPixFmtDescriptorWrapper::setValuesFromPixelFormatYUV(PixelFormatYUV fmt)
 
   this->nb_components = (subsampling == Subsampling::YUV_400 ? 1 : 3);
 
-  this->flags.bigEndian     = fmt.isBigEndian();
-  this->flags.planar        = fmt.isPlanar();
-  this->flags.hasAlphaPlane = (planeOrder == PlaneOrder::YUVA);
+  this->flags.bigEndian     = (pixelFormat.getEndianness() == video::Endianness::Big);
+  this->flags.planar        = pixelFormat.getPlanarFormat().has_value();
+  this->flags.hasAlphaPlane = pixelFormat.hasAlpha();
 
   for (int i = 0; i < this->nb_components; i++)
   {
     this->comp[i].plane  = i;
-    this->comp[i].step   = (fmt.getBitsPerSample() > 8) ? 2 : 1;
+    this->comp[i].step   = (pixelFormat.getBitsPerSample() > 8) ? 2 : 1;
     this->comp[i].offset = 0;
     this->comp[i].shift  = 0;
-    this->comp[i].depth  = fmt.getBitsPerSample();
+    this->comp[i].depth  = pixelFormat.getBitsPerSample();
   }
   return true;
 }
 
 bool AVPixFmtDescriptorWrapper::Flags::operator==(
-    const AVPixFmtDescriptorWrapper::Flags &other) const
+  const AVPixFmtDescriptorWrapper::Flags &other) const
 {
   return this->bigEndian == other.bigEndian && this->pallette == other.pallette &&
          this->bitwisePacked == other.bitwisePacked && this->hwAccelerated == other.hwAccelerated &&

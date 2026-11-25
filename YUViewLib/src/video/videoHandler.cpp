@@ -229,8 +229,8 @@ QImage videoHandler::calculateDifference(FrameHandler    *item2,
                                          const bool       markDifference)
 {
   // Try to cast item2 to a videoHandler
-  videoHandler *videoItem2 = dynamic_cast<videoHandler *>(item2);
-  if (videoItem2 == nullptr)
+  auto videoItem2 = dynamic_cast<videoHandler *>(item2);
+  if (!videoItem2)
   {
     // The item2 is not a videoItem but this one is.
     if (currentImageIndex != frameIdxItem0)

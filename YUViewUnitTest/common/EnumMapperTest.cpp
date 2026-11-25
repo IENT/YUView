@@ -30,7 +30,7 @@
  *   along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <common/Testing.h>
+#include <Testing.h>
 
 #include <common/EnumMapper.h>
 
@@ -121,9 +121,9 @@ TEST(EnumMapperTest, testAt)
   EXPECT_EQ(TestEnumMapper.at(1), std::make_pair(TestEnum::ValueTwo, "ValueTwo"sv));
   EXPECT_EQ(TestEnumMapper.at(2), std::make_pair(TestEnum::ValueThree, "ValueThree"sv));
 
-  EXPECT_THROW(TestEnumMapper.at(3), std::out_of_range);
-  EXPECT_THROW(TestEnumMapper.at(4), std::out_of_range);
-  EXPECT_THROW(TestEnumMapper.at(8902), std::out_of_range);
+  EXPECT_THROW(std::ignore = TestEnumMapper.at(3), std::out_of_range);
+  EXPECT_THROW(std::ignore = TestEnumMapper.at(4), std::out_of_range);
+  EXPECT_THROW(std::ignore = TestEnumMapper.at(8902), std::out_of_range);
 }
 
 TEST(EnumMapperTest, testGetValueAt)

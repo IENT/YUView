@@ -33,10 +33,13 @@
 #pragma once
 
 #include <common/EnumMapper.h>
+#include <common/Size.h>
 #include <common/Typedef.h>
+
+#include <video/PixelFormat.h>
+
 #include <optional>
 #include <string_view>
-#include <video/PixelFormat.h>
 
 #include <string>
 

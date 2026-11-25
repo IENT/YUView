@@ -60,11 +60,11 @@
 #endif
 
 // Convenience macro definitions which can be used in if clauses:
-// if (is_Q_OS_MAC) ...
-#ifdef Q_OS_MAC
-constexpr bool is_Q_OS_MAC = true;
+// if (is_Q_OS_MACOS) ...
+#ifdef Q_OS_MACOS
+constexpr bool is_Q_OS_MACOS = true;
 #else
-constexpr bool is_Q_OS_MAC = false;
+constexpr bool is_Q_OS_MACOS = false;
 #endif
 
 #ifdef Q_OS_WIN
@@ -157,10 +157,9 @@ std::optional<std::size_t> vectorIndexOf(const std::vector<T> &vec, const T &ite
   return static_cast<std::size_t>(std::distance(vec.begin(), it));
 }
 
-template <typename T> int vectorContains(const std::vector<T> &vec, const T &item)
+template <class Container, class T> inline bool contains(Container container, const T &value)
 {
-  auto it = std::find(vec.begin(), vec.end(), item);
-  return it != vec.end();
+  return std::find(container.begin(), container.end(), value) != container.end();
 }
 
 typedef std::vector<unsigned char> ByteVector;
@@ -180,35 +179,6 @@ struct Ratio
 {
   int num{};
   int den{};
-};
-
-struct Size
-{
-  constexpr Size(unsigned width, unsigned height) : width(width), height(height) {}
-  constexpr Size() = default;
-
-  constexpr bool operator==(const Size &other) const
-  {
-    return this->width == other.width && this->height == other.height;
-  }
-  constexpr bool operator!=(const Size &other) const
-  {
-    return this->width != other.width || this->height != other.height;
-  }
-  explicit       operator bool() const { return this->isValid(); }
-  constexpr bool isValid() const { return this->width > 0 && this->height > 0; }
-  unsigned       width{};
-  unsigned       height{};
-};
-
-struct Offset
-{
-  Offset(int x, int y) : x(x), y(y) {}
-  Offset() = default;
-  bool operator==(const Offset &other) const { return this->x == other.x && this->x == other.x; }
-  bool operator!=(const Offset &other) const { return this->x != other.x || this->y != other.y; }
-  int  x{};
-  int  y{};
 };
 
 // A list of value pair lists, where every list has a string (title)

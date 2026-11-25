@@ -86,8 +86,7 @@ public:
   // playlist items.
   void updateSettings();
 
-  // Update the caching status of all items
-  void updateCachingStatus() { emit dataChanged(QModelIndex(), QModelIndex()); };
+  void updateCachingStatus() { this->update(); };
 
   bool isAutosaveAvailable();
   void loadAutosavedPlaylist();

@@ -32,6 +32,7 @@
 
 #pragma once
 
+#include "Size.h"
 #include "Typedef.h"
 
 #include <sstream>

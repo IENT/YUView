@@ -41,15 +41,17 @@ namespace video::rgb
 
 template <typename T> struct DataPointers
 {
-  const T *r;
-  const T *g;
-  const T *b;
+  const T *r{};
+  const T *g{};
+  const T *b{};
+  const T *a{};
 
   DataPointers operator+=(const int offset)
   {
     this->r += offset;
     this->g += offset;
     this->b += offset;
+    this->a += offset;
     return *this;
   }
 };
@@ -69,19 +71,30 @@ DataPointers<T> calculatePointersToStartOfComponents(const QByteArray     &rawFr
   const auto posR = pixelFormat.getChannelPosition(Channel::Red);
   const auto posG = pixelFormat.getChannelPosition(Channel::Green);
   const auto posB = pixelFormat.getChannelPosition(Channel::Blue);
+  const auto posA = pixelFormat.getChannelPosition(Channel::Alpha);
 
   const auto castDataPointer = reinterpret_cast<T const *>(rawFrameData.data());
 
+  DataPointers<T> dataPointers;
   if (pixelFormat.getDataLayout() == DataLayout::Planar)
   {
     const auto offsetToNextPlane = frameSize.width * frameSize.height;
 
-    return {.r = castDataPointer + (posR * offsetToNextPlane),
-            .g = castDataPointer + (posG * offsetToNextPlane),
-            .b = castDataPointer + (posB * offsetToNextPlane)};
+    dataPointers.r = castDataPointer + (posR * offsetToNextPlane);
+    dataPointers.g = castDataPointer + (posG * offsetToNextPlane);
+    dataPointers.b = castDataPointer + (posB * offsetToNextPlane);
+    dataPointers.a =
+      pixelFormat.hasAlpha() ? castDataPointer + (posA * offsetToNextPlane) : nullptr;
+  }
+  else
+  {
+    dataPointers.r = castDataPointer + posR;
+    dataPointers.g = castDataPointer + posG;
+    dataPointers.b = castDataPointer + posB;
+    dataPointers.a = pixelFormat.hasAlpha() ? castDataPointer + posA : nullptr;
   }
 
-  return {.r = castDataPointer + posR, .g = castDataPointer + posG, .b = castDataPointer + posB};
+  return dataPointers;
 }
 
 inline rgba_t extractRGB565Value(const unsigned char *data, const Endianness endianness)

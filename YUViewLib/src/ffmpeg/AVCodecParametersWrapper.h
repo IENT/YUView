@@ -33,6 +33,8 @@
 #pragma once
 
 #include "FFMpegLibrariesTypes.h"
+
+#include <common/Size.h>
 #include <common/Typedef.h>
 
 namespace FFmpeg

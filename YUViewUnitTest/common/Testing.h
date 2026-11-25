@@ -35,6 +35,7 @@
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
+#include <common/Size.h>
 #include <common/Typedef.h>
 
 using ::testing::Bool;
@@ -44,6 +45,8 @@ using ::testing::ElementsAre;
 using ::testing::TestWithParam;
 using ::testing::Values;
 using ::testing::ValuesIn;
+
+void PrintTo(const QString &string, std::ostream *os);
 
 namespace yuviewTest
 {
